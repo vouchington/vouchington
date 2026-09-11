@@ -1,0 +1,35 @@
+const messages = {
+  intents: {
+    productSettings: {
+      aboutMe_0bf7f38a: 'Acerca de mí',
+      accountStatus_dafb01ab: 'Estado de la cuenta',
+      account_7e1b0d56: 'Cuenta',
+      advanced_9f088dbe: 'Avanzado',
+      apiKeys_c08f17eb: 'Claves API',
+      appeals_03e8c5a5: 'Apelaciones',
+      bans_4d5469c7: 'Prohibiciones',
+      cards_a52fcbbc: 'Tarjetas',
+      display_34e108c0: 'Apariencia',
+      disputes_110fa2bb: 'Disputas',
+      household_a1c6c97f: 'Hogar',
+      idVerification_ae349f8e: 'Verificación de ID',
+      identity_999f23fc: 'Identidad',
+      language_a4fe6526: 'Idioma',
+      membership_9feceb93: 'Membresía',
+      moderation_126d4415: 'Moderación',
+      news_69752f23: 'Noticias',
+      pointValues_1a2d98de: 'Valores de puntos',
+      preferences_66962f72: 'Preferencias',
+      privacy_54a57c31: 'Privacidad',
+      profile_d696a35b: 'Perfil',
+      removedPosts_2473d1ec: 'Publicaciones eliminadas',
+      settings_74a883a0: 'Configuración',
+      spending_c2c7ae2a: 'Gasto',
+      statuses_b5c3b907: 'Estados',
+      warnings_0e04cd10: 'Advertencias',
+      yourData_0fdcada4: 'Tus datos',
+    },
+  },
+}
+
+export default messages

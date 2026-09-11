@@ -1,0 +1,260 @@
+name: Main CI (web)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-artifacts.yml'
+      - 'ci/cleanup-artifacts-pattern-matcher.mjs'
+      - 'ci/cleanup-artifacts-patterns.json'
+      - 'ci/cleanup-run-artifacts.mjs'
+      - '.github/workflows/main-web.yml'
+      - '.github/workflows/tests-web.yml'
+      - '.github/workflows/tests-web-api.yml'
+      - '.github/workflows/tests-web-integration.yml'
+      - '.github/workflows/tests-playwright.yml'
+      - '.github/workflows/tests-playwright-credentialed.yml'
+      - '.github/workflows/checks-static.yml'
+      - '.github/actions/**'
+      - 'ci/curl-to.sh'
+      - 'ci/exec-vouchington-gha.sh'
+      - 'ci/with-host-lock.sh'
+      - 'ci/host-pressure-diagnostics.sh'
+      - '.trivyignore.yaml'
+      - 'api-fixtures/**'
+      - 'web/**'
+      - 'backend/types/**'
+      - 'ts-shared/**'
+      - 'cloudflare-worker/**'
+      - 'lambdas/image-resize/**'
+      - 'lambdas/shared/**'
+      - 'playwright/**'
+      - 'playwright.config.mts'
+      - 'playwright.credentialed.config.mts'
+      - 'wrangler.*'
+      - 'integration-tests/web/**'
+      - 'integration-tests/web-api/**'
+      - 'ci/allocate-browser-safe-ports.py'
+      - 'ci/runner-port-policy.json'
+      - 'ci/runner-port-policy.mts'
+      - 'ci/playwright/**'
+      - 'ci/setup-web-integration.mts'
+      - 'ci/run-pnpm-command.mts'
+      - 'ci/host-pressure-snapshot.mts'
+      - 'ci/write-web-build-timings-summary.mts'
+      - 'ci/store-playwright-otel.sh'
+      - 'dev/otel/**'
+      - 'dev/initialize*'
+      - 'ci/prepare-trivy-db.sh'
+      - 'vitest.config.mts'
+      - 'test-helpers/vitest-config/web-projects.mts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+
+concurrency:
+  group: ${{ github.run_attempt == 1 && 'main-web' || format('main-web-retry-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  detect-web-deploy:
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      deploy: ${{ steps.changes.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - name: Separate web deployment intent from cross-component validation
+        id: changes
+        env:
+          AFTER: ${{ github.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          [[ "$BEFORE" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$AFTER" =~ ^[0-9a-f]{40}$ ]]
+          changed_files=$(git diff --no-renames --name-only "$BEFORE" "$AFTER")
+          if grep -Eq '^(web/|backend/types/|ts-shared/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$)' <<<"$changed_files"; then
+            echo 'deploy=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'deploy=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  web-deploy-intent:
+    needs: detect-web-deploy
+    if: needs.detect-web-deploy.outputs.deploy == 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - run: ':'
+
+  test-web:
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
+    uses: ./.github/workflows/tests-web.yml
+    permissions:
+      actions: read
+      contents: read
+    secrets: inherit
+
+  test-web-api:
+    needs: [static-checks, test-web]
+    if: >-
+      always() &&
+      !cancelled() &&
+      needs.static-checks.result == 'success' &&
+      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped')
+    uses: ./.github/workflows/tests-web-api.yml
+    permissions:
+      actions: read
+      contents: read
+    secrets: inherit
+
+  test-web-integration:
+    needs: [static-checks, test-web]
+    if: >-
+      always() &&
+      !cancelled() &&
+      needs.static-checks.result == 'success' &&
+      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped')
+    uses: ./.github/workflows/tests-web-integration.yml
+    permissions:
+      actions: read
+      contents: read
+    secrets: inherit
+
+  playwright-tests:
+    needs: [static-checks, test-web, test-web-api, test-web-integration]
+    if: >-
+      always() &&
+      !cancelled() &&
+      needs.static-checks.result == 'success' &&
+      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped') &&
+      (needs.test-web-api.result == 'success' || needs.test-web-api.result == 'failure' || needs.test-web-api.result == 'skipped') &&
+      (needs.test-web-integration.result == 'success' || needs.test-web-integration.result == 'failure' || needs.test-web-integration.result == 'skipped')
+    uses: ./.github/workflows/tests-playwright.yml
+    permissions:
+      actions: read
+      contents: read
+    with:
+      event-name: ${{ github.event_name }}
+      shard_total_override: '4'
+      # OTel trace export is opt-in (debugging only) — default off to avoid
+      # continuous GitHub Actions artifact storage cost from every main run
+      # (see cost-reduction PR). Dispatch tests-playwright.yml directly with
+      # otel_enabled: true for a one-off debug run regardless of this variable.
+      otel_enabled: ${{ vars.PLAYWRIGHT_OTEL_ENABLED == 'true' }}
+    secrets: inherit
+
+  store-playwright-otel:
+    needs: [playwright-tests]
+    continue-on-error: true
+    # OTel trace upload is opt-in (debugging only) — default off to avoid
+    # continuous S3 storage cost from every main run (see cost-reduction PR).
+    if: >-
+      !cancelled() &&
+      vars.OTEL_TRACE_UPLOAD_ENABLED == 'true' &&
+      (needs.playwright-tests.result == 'success' || needs.playwright-tests.result == 'failure')
+    runs-on: [self-hosted]
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - name: Check OTel store credential availability
+        id: otel-store-credentials
+        env:
+          AWS_OTEL_STORE_ROLE_ARN: ${{ secrets.AWS_OTEL_STORE_ROLE_ARN }}
+          AWS_OTEL_STORE_URI: ${{ secrets.AWS_OTEL_STORE_URI }}
+        run: |
+          if [ -n "$AWS_OTEL_STORE_ROLE_ARN" ] && [ -n "$AWS_OTEL_STORE_URI" ]; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Download Playwright OTel artifacts
+        if: steps.otel-store-credentials.outputs.available == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        timeout-minutes: 2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+          pattern: playwright-otel-output-shard-*
+          path: ${{ runner.temp }}/playwright-otel-output
+          merge-multiple: false
+      - name: Configure AWS credentials for OTel store
+        if: steps.otel-store-credentials.outputs.available == 'true'
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+        timeout-minutes: 2
+        with:
+          role-to-assume: ${{ secrets.AWS_OTEL_STORE_ROLE_ARN }}
+          aws-region: us-west-2
+          action-timeout-s: 90
+      - name: Store Playwright OTel output to S3
+        if: steps.otel-store-credentials.outputs.available == 'true'
+        timeout-minutes: 3
+        env:
+          OTEL_OUTPUT_ROOT: ${{ runner.temp }}/playwright-otel-output
+          OTEL_STORE_URI: ${{ secrets.AWS_OTEL_STORE_URI }}/${{ github.sha }}/${{ github.run_id }}-${{ github.run_attempt }}
+        run: ./ci/store-playwright-otel.sh
+
+  playwright-credentialed-tests:
+    needs: [static-checks, test-web, test-web-api, test-web-integration]
+    if: >-
+      always() &&
+      !cancelled() &&
+      needs.static-checks.result == 'success' &&
+      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped') &&
+      (needs.test-web-api.result == 'success' || needs.test-web-api.result == 'failure' || needs.test-web-api.result == 'skipped') &&
+      (needs.test-web-integration.result == 'success' || needs.test-web-integration.result == 'failure' || needs.test-web-integration.result == 'skipped')
+    uses: ./.github/workflows/tests-playwright-credentialed.yml
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    secrets: inherit
+
+  static-checks:
+    uses: ./.github/workflows/checks-static.yml
+    with:
+      web: true
+    permissions:
+      contents: read
+      actions: read
+
+  cleanup-artifacts:
+    needs: [store-playwright-otel, playwright-credentialed-tests]
+    if: ${{ always() && !cancelled() && !failure() }}
+    uses: ./.github/workflows/cleanup-artifacts.yml
+    permissions:
+      actions: write
+      contents: read
+    with:
+      run_id: ${{ github.run_id }}

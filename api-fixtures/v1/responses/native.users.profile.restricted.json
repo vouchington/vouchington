@@ -1,0 +1,36 @@
+{
+  "profile_links": [],
+  "user": {
+    "__entity_type": "user",
+    "id": "user-restricted",
+    "markdown": "Private collections",
+    "roles": ["user"],
+    "username": "restricted"
+  },
+  "user_bio_html": "<p>Private collections</p>",
+  "user_metrics": {
+    "__entity_type": "user_metrics",
+    "bookmarkers": {
+      "follow": 0
+    },
+    "bookmarks": {
+      "follow": {
+        "posts": 0,
+        "topics": 0,
+        "users": 0
+      }
+    },
+    "bookmarks__updated_at": "2026-07-01T16:00:00Z",
+    "count": {
+      "comments": 2,
+      "communities_member": 0,
+      "discussions": 3,
+      "reviews": 4,
+      "rss_feeds_following": 0,
+      "topics_following": 0,
+      "users_followers": 0,
+      "users_following": 0
+    },
+    "id": "user-restricted"
+  }
+}

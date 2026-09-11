@@ -1,0 +1,22 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "hostname",
+      "blocked": false,
+      "crawlable": true,
+      "hostname": "domain-2.example.com",
+      "id": "domain-2",
+      "link_rel_follow": true,
+      "skip_web_risk": false,
+      "topic_id": null,
+      "votes_count_down": 0,
+      "votes_count_up": 0,
+      "votes_score_net": 0
+    }
+  ]
+}

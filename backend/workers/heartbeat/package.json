@@ -1,0 +1,24 @@
+{
+  "name": "@workers/heartbeat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/heartbeat": "workspace:^",
+    "@services/queue-monitoring": "workspace:^",
+    "glide-mq": "^0.15.5"
+  }
+}

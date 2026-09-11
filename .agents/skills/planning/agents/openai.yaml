@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Planning'
+  short_description: 'Create validated implementation plans'
+  default_prompt: 'Use $planning to create a complete, validated implementation plan for this task.'

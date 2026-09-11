@@ -1,0 +1,82 @@
+{
+  "author_aside": {
+    "about_html": "",
+    "is_following": false,
+    "profile_links": []
+  },
+  "bookmarks": {
+    "comment-root-post": {
+      "save": true
+    }
+  },
+  "election_vote": {
+    "__entity_type": "election_vote",
+    "choice": "like",
+    "created_at": "2026-01-01T00:00:00Z",
+    "entity_id": "comment-root-post",
+    "user_id": "user-1"
+  },
+  "html": "<p>Root post markdown</p>",
+  "post": {
+    "__entity_type": "post",
+    "archived_at": null,
+    "archived_by_id": null,
+    "broadcast": "everyone",
+    "can_delete": true,
+    "can_edit_content": true,
+    "can_lock": true,
+    "clearance_reason": null,
+    "clearance_status": null,
+    "clearance_updated_at": null,
+    "community_id": null,
+    "created_at": "2026-01-01T00:00:00Z",
+    "created_by": {
+      "__entity_type": "user",
+      "id": "user-1",
+      "profile_image_id": null,
+      "roles": [],
+      "username": "testuser"
+    },
+    "created_by_id": "user-1",
+    "deleted_at": null,
+    "deleted_by_id": null,
+    "id": "comment-root-post",
+    "is_anonymous": false,
+    "locked_at": null,
+    "locked_by_id": null,
+    "markdown": "Root post markdown",
+    "parent_id": null,
+    "post_type": "discussion",
+    "privacy": "public",
+    "root_id": null,
+    "slug": "comment-root",
+    "spam_detection_created_at": null,
+    "spam_detection_flagged": null,
+    "spam_detection_results": null,
+    "spam_detection_score": null,
+    "title": "Comment thread fixture",
+    "updated_at": "2026-01-01T00:00:00Z",
+    "updated_by_id": null
+  },
+  "post_election": {
+    "__entity_type": "post_election",
+    "id": "comment-root-post",
+    "votes_count_down": 1,
+    "votes_count_up": 4,
+    "votes_score_net": 3
+  },
+  "post_metrics": {
+    "__entity_type": "post_metrics",
+    "bookmarks": {
+      "follow": 0,
+      "save": 1
+    },
+    "count": {
+      "ancestors": 0,
+      "children": 2,
+      "descendants": 3
+    },
+    "id": "comment-root-post",
+    "updated_at": "2026-01-01T00:00:00Z"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "name": "@backend/worker-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.1127.0",
+    "@data-stores/graceful-shutdown": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/worker-queue-inventory": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "@services/api-keys": "workspace:^",
+    "@services/bedrock-embeddings": "workspace:^",
+    "@services/bloom-filter-maintenance": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/urls-domains-blacklist": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@vouchington/worker-runtime": "0.1.0",
+    "@workers/heartbeat": "workspace:^",
+    "glide-mq": "^0.15.5"
+  }
+}

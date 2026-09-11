@@ -1,0 +1,42 @@
+{
+  "page_info": {
+    "end_cursor": "eyJ0aW1lc3RhbXAiOjE3ODI5MjE2MDAwMDAwMDAsImlkIjoiMDAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwMDAxIn0",
+    "has_next_page": true,
+    "start_cursor": "eyJ0aW1lc3RhbXAiOjE3ODI5MjE2MDAwMDAwMDAsImlkIjoiMDAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwMDAxIn0"
+  },
+  "results": [
+    {
+      "__entity_type": "topic",
+      "aliases": [],
+      "allow_reviews": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "roles": [],
+        "username": "testuser"
+      },
+      "hero_image_id": null,
+      "homepage_url_id": null,
+      "hostname": null,
+      "hostname_id": null,
+      "id": "topic-1",
+      "lingua_rs_detected_language": null,
+      "logo_image_id": null,
+      "markdown": "",
+      "name": "Test Topic",
+      "noindex": false,
+      "referral_program_id": null,
+      "referral_program_slug": null,
+      "rewards_program_id": null,
+      "slug": "test-topic",
+      "topic_type": "topic",
+      "updated_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "roles": [],
+        "username": "testuser"
+      }
+    }
+  ]
+}

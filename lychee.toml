@@ -1,0 +1,57 @@
+exclude_path = [
+  "(^|/)node_modules($|/)",
+  "(^|/)target($|/)",
+  "(^|/)\\.next($|/)",
+  "(^|/)\\.turbo($|/)",
+  "(^|/)\\.cache($|/)",
+  "(^|/)build($|/)",
+  "(^|/)dist($|/)",
+  "(^|/)playwright-report($|/)",
+  "(^|/)\\.git($|/)",
+  "(^|/)\\.claude($|/)",
+  "(^|/)\\.agents($|/)",
+  "(^|/)\\.vercel($|/)",
+  "(^|/)\\.output($|/)",
+  # Test fixtures and snapshots contain scraped external content — links not under our control
+  "(^|/)fixtures($|/)",
+  "(^|/)__fixtures__($|/)",
+  "(^|/)snapshots($|/)",
+  "(^|/)__snapshots__($|/)",
+]
+
+# Accept 429 (rate-limited) and 403 (common bot-rejection from npmjs.com etc.)
+accept = [200, 203, 206, 403, 429]
+
+cache = true
+cache_exclude_status = "500.."
+max_cache_age = "1d"
+max_concurrency = 16
+timeout = 20
+max_retries = 5
+retry_wait_time = 2
+user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+
+exclude = [
+  # Product domain — not yet launched
+  "^https?://voucha\\.ai",
+  "^https?://github\\.com/jonathanong/",
+  # Private host-provisioning repository; unauthenticated checks receive 404.
+  "^https?://github\\.com/vouchington/vouchington-machines(?:[/?#]|$)",
+  # Placeholder host in generated ActivityPub key URL documentation.
+  "^https?://host(?:[/?#]|$)",
+  # Authenticated Sentry settings page redirects to login and can time out in CI.
+  "^https?://sentry\\.io/settings/account/api/auth-tokens/?",
+  "^https?://localhost",
+  "^https?://127\\.0\\.0\\.1",
+  "^https?://0\\.0\\.0\\.0",
+  "^https?://10\\.",
+  "^https?://172\\.(1[6-9]|2[0-9]|3[0-1])\\.",
+  "^https?://192\\.168\\.",
+  "^https?://169\\.254\\.",
+  "^https?://\\[::1\\]",
+  "^https?://\\[(fc|fd)[0-9a-fA-F:]*\\]",
+  "^https?://\\[fe[89abAB][0-9a-fA-F:]*\\]",
+  # Google Drive and Docs require authentication; lychee gets a login redirect
+  "^https?://docs\\.google\\.com",
+  "^https?://drive\\.google\\.com",
+]

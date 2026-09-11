@@ -1,0 +1,53 @@
+const messages = {
+  support: {
+    adminSupportThreadFilters: {
+      allStatuses_8ee57323: 'Todos os estados',
+      all_a52ace42: 'Todos',
+      assigned_8191888d: 'Atribuídos',
+      filterThreadsByStatus_e6fa1f02: 'Filtrar tópicos por estado',
+      open_ed077f3d: 'Abertos',
+      resolved_5be3c2c8: 'Resolvidos',
+      searchBySubjectOrMessage_667f285e: 'Pesquisar por e-mail ou assunto',
+      searchSupportThreads_daac5246: 'Pesquisar tópicos de suporte',
+      search_49c266ba: 'Pesquisar',
+    },
+    adminSupportThreadsClient: {
+      allStatuses_8ee57323: 'Todos os status',
+      all_a52ace42: 'Todos',
+      assigned_8191888d: 'Atribuído',
+      created_d70b9e24: 'Criado',
+      failedToLoadMore_e1499d61: 'Falha ao carregar mais',
+      filterThreadsByStatus_e6fa1f02: 'Filtrar tópicos por status',
+      manageCustomerSupportRequests_1a5e7c93: 'Gerencie as solicitações de suporte ao cliente',
+      noStatusThreadsFound_6d3f9a42: 'Nenhum tópico {status} encontrado',
+      open_ed077f3d: 'Abrir',
+      refreshThreads_4e20c0d7: 'Atualizar tópicos',
+      resolved_5be3c2c8: 'Resolvido',
+      retry_942087cc: 'Tentar novamente',
+      status_920e413c: 'Status',
+      subject_68971283: 'Assunto',
+      supportThreads_a8187e3f: 'Tópicos de suporte',
+      updated_3a5ecca1: 'Atualizado',
+    },
+    page: {
+      assigned_2ebb9294: 'atribuído',
+      created_d70b9e24: 'Criado',
+      newRequest_c648d399: 'Nova solicitação',
+      open_2348f998: 'aberto',
+      resolved_dc676b42: 'resolvido',
+      status_920e413c: 'Status',
+      subject_68971283: 'Assunto',
+      submitARequest_6b491c73: 'Enviar uma solicitação',
+      support_be91940b: 'Suporte',
+      viewAndManageYourSupport_1d84e6b3: 'Ver e gerenciar suas solicitações de suporte',
+      youHaveNoSupportRequestsYet_a9589eaf: 'Você ainda não tem solicitações de suporte.',
+    },
+    supportThreadStatusBadge: {
+      assigned_2ebb9294: 'atribuído',
+      open_2348f998: 'aberto',
+      resolved_dc676b42: 'resolvido',
+    },
+  },
+}
+
+export default messages

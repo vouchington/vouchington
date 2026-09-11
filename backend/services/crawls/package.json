@@ -1,0 +1,66 @@
+{
+  "name": "@services/crawls",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/aws": "workspace:^",
+    "@modules/feed-query-builders": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/search-utils": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/crawl-embeds": "workspace:^",
+    "@queues/crawl-hostnames": "workspace:^",
+    "@queues/crawl-referral-links": "workspace:^",
+    "@queues/crawler": "workspace:^",
+    "@queues/language-detection": "workspace:^",
+    "@queues/rss-feeds": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "@services/bedrock-embeddings": "workspace:^",
+    "@services/crawl-chunks": "workspace:^",
+    "@services/crawl-embeds": "workspace:^",
+    "@services/crawler-html": "workspace:^",
+    "@services/crawler-referral-links": "workspace:^",
+    "@services/crawlers": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/urls-domains-robots": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@services/web-risk": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2",
+    "ssrf-guard": "^1.0.0"
+  },
+  "devDependencies": {
+    "@modules/agents": "workspace:^",
+    "@services/user-referral-program-links": "workspace:^",
+    "@services/users": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^",
+    "@vouchington/embeds": "0.0.2"
+  }
+}

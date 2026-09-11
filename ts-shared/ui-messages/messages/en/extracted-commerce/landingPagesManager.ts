@@ -1,0 +1,61 @@
+const messages = {
+  landingPagesManager: {
+    draftItemsList: {
+      moveItemDown_49a541c6: 'Move item down',
+      moveItemUp_b662a10c: 'Move item up',
+      noItemsYet_866f1e2f: 'No items yet.',
+      remove_c3812fc4: 'Remove',
+      review_aff0766a: 'Review',
+      text_07a2abcd: '↓',
+      text_d2e966bf: '↑',
+    },
+    itemPicker: {
+      addItem_d1a0b329: 'Add item',
+      pageContent_c661980d: 'Page content',
+      saveContent_ff8a3f71: 'Save content',
+    },
+    itemPickerAddType: {
+      addItemType_dc0a53b2: 'Add item type',
+      buttonText_ec208ead: 'Button text',
+      httpsExampleCom_100680ad: 'https://example.com',
+      label_0e66373f: 'Label',
+      link_a6a32dbc: 'Link',
+      profileLink_bdb5518e: 'Profile link',
+      referralLink_441c6d0e: 'Referral link',
+      review_aff0766a: 'Review',
+      selectType_b777140e: 'Select type',
+      topicGroup_dfa81373: 'Topic group',
+      url_e7a241de: 'URL',
+    },
+    itemPickerFields: {
+      item_652bcc3a: 'Item',
+      profileLink_bdb5518e: 'Profile link',
+      referralLinks_fcbca63d: 'Referral links',
+      reviews_84cb7871: 'Reviews',
+      selectItem_2d94cc67: 'Select item',
+      selectTopic_07373f46: 'Select topic',
+      topic_7e61847d: 'Topic',
+    },
+    pageForms: {
+      createLandingPage_e5d92193: 'Create landing page',
+      createNewPage_f2a50371: 'Create new page',
+      delete_e2d0a549: 'Delete',
+      makeDefault_f43b9425: 'Make default',
+      optionalSubtitle_544e248f: 'Optional subtitle',
+      pageDetails_86bbe3b1: 'Page details',
+      pageSlug_5a1d7fb6: 'page-slug',
+      pageTitle_02660ffe: 'Page title',
+      savePageDetails_c382b016: 'Save page details',
+      slug_cd03861f: 'slug',
+      slug_d15387ec: 'Slug',
+      subtitle_383cd6c0: 'Subtitle',
+      title_7e8cd205: 'Title',
+    },
+    pageList: {
+      default_21b111cb: 'Default',
+      yourPages_a14fbf2a: 'Your pages',
+    },
+  },
+}
+
+export default messages

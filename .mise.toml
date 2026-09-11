@@ -1,0 +1,25 @@
+[tools]
+# renovate: datasource=github-releases depName=BurntSushi/ripgrep
+ripgrep = "14.1.1"
+# renovate: datasource=github-releases depName=koalaman/shellcheck extractVersion=^v(?<version>.*)$
+shellcheck = "0.11.0"
+# selene is not in mise's default registry; use the aqua backend (built into mise).
+# renovate: datasource=github-releases depName=Kampfkarren/selene
+"aqua:Kampfkarren/selene" = "0.29.0"
+# renovate: datasource=github-releases depName=rhysd/actionlint extractVersion=^v(?<version>.*)$
+actionlint = "1.7.12"
+# renovate: datasource=github-releases depName=zizmorcore/zizmor
+zizmor = "1.26.1"
+# renovate: datasource=github-releases depName=boyter/scc extractVersion=^v(?<version>.*)$
+"github:boyter/scc" = "3.7.0"
+# lychee is not in mise's default registry; use the aqua backend (built into mise).
+# CI keeps its own pin in .github/actions/setup-lychee/action.yml for self-hosted
+# runner secret isolation (RUNNER_TEMP install, checksum-verified) — keep both pins
+# in sync (enforced by mise-version-pin-guard).
+# renovate: datasource=github-releases depName=lycheeverse/lychee extractVersion=^lychee-v(?<version>.*)$
+"aqua:lycheeverse/lychee" = "0.24.2"
+# Gitleaks is not in mise's default registry; use the aqua backend (built into mise).
+# CI keeps an isolated pin in .github/workflows/gitleaks.yml — keep both pins in sync
+# (enforced by mise-version-pin-guard).
+# renovate: datasource=github-releases depName=gitleaks/gitleaks extractVersion=^v(?<version>.*)$
+"aqua:gitleaks/gitleaks" = "8.30.1"

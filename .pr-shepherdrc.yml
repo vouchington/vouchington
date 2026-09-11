@@ -1,0 +1,36 @@
+# ignoreChecks entries must be the RAW name — either a Checks API check_run `name`
+# (e.g. 'Kilo Code Review') or a Statuses API commit status `context` (e.g.
+# 'CodeRabbit', 'AWS CodeBuild us-west-2 (voucha-ci-runner)') — not the composite
+# display name shown in the PR UI.
+# pr-shepherd matches against the raw name; composite-name entries silently never match.
+ignoreChecks:
+  - 'Kilo Code Review'
+  - 'CodeRabbit'
+  # External AWS CodeBuild commit status (region + CodeBuild project name).
+  # This is the raw StatusContext context string — do not shorten to 'AWS CodeBuild'.
+  - 'AWS CodeBuild us-west-2 (voucha-ci-runner)'
+  # Advisory-only AI code review: these are reusable-workflow-call check runs, formatted as
+  # "<caller job id> / <callee job id>". They can sit pending in a FIFO queue for up to an hour
+  # without ever going red, and must never block a merge — see opencode-code-review.yml.
+  - 'opencode-zen-review / review'
+  - 'opencode-zen-review / post'
+  - 'opencode-openrouter-review / review'
+  - 'opencode-openrouter-review / post'
+  # The Claude-harness reviewer's callee job ids are "review" and "poster" (not "post"
+  # like the OpenCode rows above) — see claude-openrouter-code-reviewer.yml.
+  - 'claude-openrouter-code-reviewer / review'
+  - 'claude-openrouter-code-reviewer / poster'
+  # A workflow_call STARTUP_FAILURE (e.g. the callee runner pool being unavailable) never
+  # reaches job level, so GitHub reports it under the bare caller workflow name instead of
+  # the "caller / callee" composite above — these three cover that failure mode.
+  - 'OpenCode Zen Code Review'
+  - 'OpenCode OpenRouter Code Review'
+  - 'Claude OpenRouter Code Reviewer'
+
+# The repo disallows merge commits and rebase merges (squash-only, see
+# allow_squash_merge/allow_merge_commit/allow_rebase_merge); without this,
+# Shepherd's `--merge` default fails with "Merge commits are not allowed on
+# this repository."
+merge:
+  commandArgs:
+    - '--squash'

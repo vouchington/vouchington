@@ -1,0 +1,59 @@
+{
+  "name": "@voucha/test-helpers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./entities/*": {
+      "types": "./entities/*.mts",
+      "import": "./entities/*.mts",
+      "default": "./entities/*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@aws-sdk/s3-request-presigner": "^3.1127.0",
+    "@data-stores/analytics": "workspace:^",
+    "@data-stores/graceful-shutdown": "workspace:^",
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@data-stores/valkey-pubsub": "workspace:^",
+    "@data-stores/valkey-rate-limiter": "workspace:^",
+    "@jongleberry/vurst-markdown": "^0.4.3",
+    "@modules/agents": "workspace:^",
+    "@modules/openai-utils": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/search-utils": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@sentry/node": "10.71.0",
+    "@ts-shared/money": "workspace:^",
+    "@valkey/valkey-glide": "^2.5.2",
+    "@voucha/api-fixtures": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "otpauth": "^9.5.2",
+    "pgvector": "^0.3.0",
+    "sql-template-strings": "^2.2.2",
+    "uuid": "^14.0.2",
+    "vouchington-tooling": "^0.16.0"
+  },
+  "devDependencies": {
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/ci": "workspace:^"
+  }
+}

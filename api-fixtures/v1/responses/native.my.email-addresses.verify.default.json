@@ -1,0 +1,14 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "created_at": "2026-07-11T12:00:00.000Z",
+      "email_address": "tests+native-user@voucha.ai",
+      "is_primary": true
+    }
+  ]
+}

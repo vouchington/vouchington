@@ -1,0 +1,62 @@
+{
+  "name": "@workers/entity-listeners",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@flows/core": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
+    "@queues/ban-evasion": "workspace:^",
+    "@queues/bedrock-embeddings": "workspace:^",
+    "@queues/crawl-boilerplate-removal": "workspace:^",
+    "@queues/crawler": "workspace:^",
+    "@queues/entity-listeners": "workspace:^",
+    "@queues/entity-metrics-cache-refresh": "workspace:^",
+    "@queues/language-detection": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@queues/openai-moderation": "workspace:^",
+    "@queues/post-mentions": "workspace:^",
+    "@queues/psql": "workspace:^",
+    "@queues/rss-feed-item-categories": "workspace:^",
+    "@queues/spam-detection": "workspace:^",
+    "@queues/vote-weight": "workspace:^",
+    "@services/bookmarks": "workspace:^",
+    "@services/comments": "workspace:^",
+    "@services/communities": "workspace:^",
+    "@services/community-agent-prompts": "workspace:^",
+    "@services/crawlers": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/entity-listener-reconciliation": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/post-clearance": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/stories": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@services/entity-fetch": "workspace:^",
+    "@services/post-revisions": "workspace:^",
+    "@services/referral-program-link-validations": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

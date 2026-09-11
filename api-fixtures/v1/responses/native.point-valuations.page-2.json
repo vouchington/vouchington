@@ -1,0 +1,24 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDcyMyIsInNjb3BlIjoibXktcG9pbnQtdmFsdWF0aW9uczowMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDA3MjA6aWQtYXNjIn0"
+  },
+  "results": [
+    {
+      "id": "00000000-0000-7000-8000-000000000723",
+      "note": "Preferred airline transfer value",
+      "rewards_program": {
+        "id": "00000000-0000-7000-8000-000000000733",
+        "name": "Airline Miles",
+        "slug": "airline-miles"
+      },
+      "rewards_program_id": "00000000-0000-7000-8000-000000000733",
+      "value_per_point": {
+        "amount": 22500,
+        "currency": "usd",
+        "scale": 6
+      }
+    }
+  ]
+}

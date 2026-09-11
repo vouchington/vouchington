@@ -1,0 +1,179 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "dev/codex-hooks/pre-tool-use.mts",
+        "dev/codex-hooks/persist-grok-session-id.mts",
+        "dev/codex-hooks/post-tool-use.mts",
+        "dev/codex-hooks/post-tool-use-command.mts",
+        "dev/cursor-hooks/after-file-edit.mts",
+        "dev/cursor-hooks/before-shell.mts",
+        "dev/cursor-hooks/post-tool.mts",
+        "dev/cursor-hooks/session-start.mts",
+        "dev/pr-description.mts",
+        "dev/agent-issue-labels/**/*.mts",
+        "dev/otel-register.mts",
+        "test-helpers/glide-mq-vitest-shim.mts",
+        // Reached only through backend-data-stores' string-valued Vitest `runner` config.
+        "test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts",
+      ],
+      "project": ["dev/**/*.mts", "test-helpers/**/*.mts", "test-helpers/**/*.ts"],
+      "ignoreBinaries": [
+        "psql", // PostgreSQL system CLI probed by local DB-backed test setup checks
+        "valkey-cli", // Valkey system CLI probed by local DB-backed test setup checks
+      ],
+      // Invoked dynamically by the OpenAPI structural-validation test.
+      "ignoreDependencies": ["@redocly/cli"],
+      "ignoreExportsUsedInFile": true,
+    },
+    "static-code-analysis": {
+      "entry": ["**/*.mts"],
+      "project": ["**/*.mts"],
+    },
+    "backend": {
+      "entry": ["dev.mts"],
+      "project": ["**/*.mts"],
+    },
+    "backend/md": {
+      "entry": ["**/*.mts"],
+    },
+    "backend/api": {
+      "entry": ["v1/**/*.mts"],
+      "includeEntryExports": false,
+      // Required by the new-service runtime packaging rule. Reconciliation runs in the entity
+      // listener worker, so the API package does not have a direct static import for knip to see.
+      "ignoreDependencies": ["@services/entity-listener-reconciliation"],
+    },
+    "backend/entrypoints/worker-cpu": {
+      "entry": ["**/*.mts"],
+    },
+    "backend/entrypoints/worker-io": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": true,
+    },
+    "backend/worker-runtime": {
+      "entry": ["**/*.mts"],
+    },
+    "backend/entrypoints/api": {
+      "entry": ["**/*.mts"],
+      // @modules/bluesky-oauth, @services/bluesky-accounts, and @services/bluesky-follows are
+      // declared here per the "New backend service" rule in docs/checklists/package-json.md
+      // (add to both backend/api/package.json and backend/entrypoints/api/package.json), but
+      // are only imported by files inside backend/api/** (reached transitively via
+      // @voucha/api) — an edge knip cannot see from this workspace's own entry glob.
+      "ignoreDependencies": [
+        "@modules/bluesky-oauth",
+        "@services/bluesky-accounts",
+        "@services/bluesky-follows",
+        "@services/entity-listener-reconciliation",
+      ],
+    },
+    "backend/config": {
+      "entry": ["**/*.mts"],
+    },
+    "backend/test-helpers": {
+      "entry": ["**/*.mts"],
+    },
+    "backend/types": {
+      "entry": ["**/*.mts"],
+    },
+    "backend/scripts": {
+      "entry": ["**/*.mts"],
+    },
+    "backend/tools": {
+      "entry": ["**/*.mts"],
+    },
+    "backend/rss": {
+      "entry": ["**/*.mts"],
+    },
+    "email-templates": {
+      "entry": ["**/*.tsx", "**/*.mts"],
+    },
+    "playwright": {
+      "entry": [
+        "global-setup.mts",
+        "credentialed-global-setup.mts",
+        "setup/**/*.setup.mts",
+        "tests/**/*.spec.mts",
+        "credentialed/**/*.spec.mts",
+        "helpers/**/*.test.mts",
+        "../playwright.credentialed.config.mts",
+      ],
+      "project": ["**/*.mts"],
+      "ignoreExportsUsedInFile": true,
+    },
+    "backend/data-stores/psql": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": true,
+    },
+    "ci": {
+      "entry": ["**/*.mts"],
+      "project": ["**/*.mts"],
+    },
+    "backend/data-stores/*": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": true,
+    },
+    "backend/modules/*": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": true,
+    },
+    "backend/services/*": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": true,
+    },
+    "backend/queues/*": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": true,
+    },
+    "backend/workers/*": {
+      "entry": ["**/*.mts"],
+    },
+    "backend/flows/*": {
+      "entry": ["**/*.mts"],
+    },
+    "backend/agents/*": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": true,
+    },
+    "web": {
+      "entry": [
+        "lib/api/**/*.ts",
+        "types/api-responses.ts",
+        "storybook/mocks/**/*.{ts,tsx}",
+        "public/service-worker.js",
+        // Loaded at runtime by service-worker.js through importScripts(), which knip cannot
+        // follow as a static module edge.
+        "public/service-worker-push.js",
+        // Reached only via the `web-storybook-browser` Vitest project's `setupFiles` string
+        // (test-helpers/vitest-config/storybook-browser-project.mts), never a static import;
+        // same pattern as the root workspace's `test-helpers/glide-mq-vitest-shim.mts` entry.
+        "test-helpers/vitest.setup.fake-timer-guard.mts",
+        // Same pattern: redirect shim for web-storybook-browser's own project-level `setupFiles`
+        // literal (root: 'web' resolves it here); no-mistakes resolves the same literal relative
+        // to the repo root instead, landing on test-helpers/vitest.setup.storybook-browser-guard.mts.
+        "test-helpers/vitest.setup.storybook-browser-guard.mts",
+      ],
+      "ignoreExportsUsedInFile": true,
+    },
+    "cloudflare-worker": {
+      "entry": ["**/*.mts"],
+      // `cloudflare:workers` is a Workers-runtime built-in import protocol
+      // (like `node:fs`), not the npm `cloudflare` API-client package; knip
+      // strips the scheme and flags the bare specifier as unlisted.
+      "ignoreDependencies": ["cloudflare"],
+    },
+    "ts-shared/*": {
+      "entry": ["**/*.mts"],
+    },
+    "lambdas/image-resize": {
+      "entry": ["**/*.mts"],
+      // @fontsource/inter is read at runtime via createRequire().resolve(), which knip's
+      // static import analysis can't follow. @types/react is a devDependency purely so
+      // satori's public .d.ts (which types its element param as React's ReactNode) resolves;
+      // no source file imports 'react' directly.
+      "ignoreDependencies": ["@fontsource/inter", "@types/react"],
+    },
+  },
+}

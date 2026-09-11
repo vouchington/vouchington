@@ -1,0 +1,8 @@
+import './auth-mfa-routes/auth-mfa-passkeys-authentication-options-post.mts'
+import './auth-mfa-routes/auth-mfa-passkeys-authentication-verification-post.mts'
+import './auth-mfa-routes/auth-mfa-re-auth-email-tokens-post.mts'
+import './auth-mfa-routes/auth-mfa-re-auth-email-verification-post.mts'
+import './auth-mfa-routes/auth-mfa-re-auth-tokens-verification-post.mts'
+import './auth-mfa-routes/auth-mfa-re-auth-totp-verification-post.mts'
+import './auth-mfa-routes/auth-mfa-status-get.mts'
+import './auth-mfa-routes/auth-mfa-totp-verification-post.mts'

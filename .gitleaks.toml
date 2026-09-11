@@ -1,0 +1,131 @@
+title = "Voucha gitleaks config"
+
+[extend]
+useDefault = true
+
+# Gitleaks 8.30.1 supports multiple [[allowlists]] blocks plus targetRules,
+# condition, and regexTarget. Keep docs/test placeholders narrow instead of
+# adding broad repository-wide regexes.
+[[allowlists]]
+description = "Generated fixtures and captured test pages"
+paths = ['''(^|/)fixtures/''', '''(^|/)node_modules/''', '''^\.local/''']
+
+[[allowlists]]
+description = "Bluesky keyset code names the environment variable that contains keys; the name is not a credential"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^backend/modules/bluesky-oauth/keyset\.mts$''']
+regexes = ['''VOUCHA_BLUESKY_JWT_PRIVATE_KEYS_B64''']
+
+[[allowlists]]
+description = "Initialize tests use fake local env values"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^dev/initialize\.test\.mts$''']
+regexes = [
+  '''VALKEY_CONTAINER=voucha-valkey-[a-z0-9-]+''',
+  '''CF_WORKER_SECRET=(shared-test-secret|existing-test-secret)-[a-z0-9-]+''',
+]
+
+[[allowlists]]
+description = "Cleanup lifecycle tests use deterministic hashed worktree resource names, not credentials"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^dev/__tests__/cleanup-db-host\.test\.mts$''']
+regexes = ['''voucha-valkey-d[0-9a-f]{12}''']
+
+[[allowlists]]
+description = "API origin guard tests use a deterministic fake worker header value"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^backend/api/app\.origin\.test\.mts$''']
+regexes = ['''(SECRET|WORKER_HEADER_VALUE) = '0123456789abcdef0123456789abcdef'$''']
+
+[[allowlists]]
+description = "Email processor tests use fake OTP/login-token fixtures"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^backend/workers/emails/processors/processors\.test\.mts$''']
+regexes = ["token: 'ABC123456789'(,| )", "malformedLoginToken = 'ABC123456789'$"]
+
+[[allowlists]]
+description = "TOTP test helper uses the canonical Google Authenticator demo secret (JBSWY3DPEHPK3PXP)"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^backend/test-helpers/entities/totp\.mts$''']
+regexes = ["TEST_TOTP_SECRET = 'JBSWY3DPEHPK3PXP'"]
+
+[[allowlists]]
+description = "SES inbound contract tests use one deterministic fake S3 object-key fixture; only its exact assignment and object-property lines are suppressed"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^ts-shared/ses-inbound-contract/index\.test\.mts$''']
+regexes = ["objectKey(?: =|:) 'incoming/abc123'"]
+
+# UUID v7 fixture allowlists use regexTarget = "secret" (not "line") so the
+# regex matches only the detected secret: a real key co-located on the same
+# line as a fixture UUID is still flagged. See #6419.
+[[allowlists]]
+description = "Playwright test fixtures use deterministic UUID v7 seeds — not real secrets"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^playwright/tests/''']
+regexes = ['''[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}''']
+
+[[allowlists]]
+description = "Non-playwright test files use deterministic UUID v7 fixtures — not real secrets"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ['''\.test\.(m?ts|tsx)$''']
+regexes = ['''[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}''']
+
+[[allowlists]]
+description = "Sandbox command audit report test uses a fake 'key=' fixture to verify secrets never leak into non-raw output"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^dev/sandbox-command-audit/__tests__/report\.test\.mts$''']
+regexes = ['''abcd1234efgh5678''']
+
+[[allowlists]]
+description = "API key guide shows placeholder examples prefixed with 'Example:' or in code fences"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^articles/api-keys-guide\.md$''']
+regexes = ['''(?:Example:\s+|`)[^\n]*voucha_rss_[a-f0-9]+_[a-f0-9]+''']
+
+[[allowlists]]
+description = "Dockerfile ARG lines that pin SHA-256 digests for integrity verification (not secrets)"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^backend/Dockerfile$''']
+regexes = ['''ARG \w+_SHA256=[0-9a-f]{64}''']
+
+[[allowlists]]
+description = "linkedin_account is a DB column accessor, not a LinkedIn client secret or ID"
+targetRules = ["linkedin-client-id", "linkedin-client-secret"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^web/app/\(my\)/my/identity/page\.tsx$''']
+regexes = ['''linkedin_account''']
+
+[[allowlists]]
+description = "PEM marker toContain() assertions bridge BEGIN/END PRIVATE KEY text across two lines with no real key material — the default private-key rule treats that gap as a key body"
+targetRules = ["private-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^backend/modules/http-signatures/keys\.test\.mts$''']
+regexes = [
+  '''-----BEGIN PRIVATE KEY-----'\)\n\s+expect\(keypair\.privateKeyPem\)\.toContain\('-----END PRIVATE KEY-----''',
+]

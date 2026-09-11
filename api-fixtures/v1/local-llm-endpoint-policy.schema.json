@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voucha.test/api-fixtures/v1/local-llm-endpoint-policy.schema.json",
+  "title": "Voucha local-LLM endpoint cleartext/origin policy corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "version", "hostPolicyRows", "originPairs"],
+  "properties": {
+    "$schema": { "const": "./local-llm-endpoint-policy.schema.json" },
+    "version": { "const": 1 },
+    "hostPolicyRows": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/hostPolicyRow" }
+    },
+    "originPairs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/originPair" }
+    }
+  },
+  "$defs": {
+    "consumer": {
+      "enum": ["dotnet-core", "swift-core", "swift-android"]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "hostPolicyRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "requiredConsumers", "endpoint", "verdict", "notes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "requiredConsumers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/consumer" }
+        },
+        "endpoint": { "type": "string", "minLength": 1 },
+        "verdict": { "enum": ["allowed", "rejected"] },
+        "notes": { "type": "string", "minLength": 1 }
+      }
+    },
+    "originPair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "requiredConsumers", "variantA", "variantB", "expectedOrigin", "notes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "requiredConsumers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/consumer" }
+        },
+        "variantA": { "type": "string", "minLength": 1 },
+        "variantB": { "type": "string", "minLength": 1 },
+        "expectedOrigin": { "type": "string", "minLength": 1 },
+        "notes": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

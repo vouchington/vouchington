@@ -1,0 +1,61 @@
+id: contribution-quota-after-captcha
+language: Tsx
+severity: error
+message: 'Contribution quota must be consumed after Turnstile verification in CAPTCHA-protected routes.'
+files:
+  - 'backend/api/v1/**/*.mts'
+ignores:
+  - 'backend/api/v1/**/*.test.mts'
+  - 'backend/api/v1/**/*.mock.test.mts'
+  - 'backend/api/v1/**/__tests__/**'
+rule:
+  any:
+    - all:
+        - kind: expression_statement
+        - regex: >-
+            assertWithinContribution(?:Action|Daily)Limit\s*\(
+        - precedes:
+            stopBy:
+              any:
+                - kind: function_declaration
+                - kind: arrow_function
+                - kind: method_definition
+            kind: expression_statement
+            regex: >-
+              verifyCaptchaToken\s*\(
+    - all:
+        - any:
+            - kind: expression_statement
+            - kind: lexical_declaration
+        - regex: >-
+            ^\s*(?:const\s+[^=]+?=\s*)?await\s+Promise\.all[\s\S]*verifyCaptchaToken[\s\S]*assertWithinContribution(?:Action|Daily)Limit
+    - all:
+        - any:
+            - kind: expression_statement
+            - kind: lexical_declaration
+        - regex: >-
+            ^\s*(?:const\s+[^=]+?=\s*)?await\s+Promise\.all[\s\S]*assertWithinContribution(?:Action|Daily)Limit[\s\S]*verifyCaptchaToken
+examples:
+  - code: |
+      await assertWithinContributionActionLimit(user)
+      await verifyCaptchaToken(token, ip)
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: |
+      await Promise.all([verifyCaptchaToken(token, ip), assertWithinContributionDailyLimit(user)])
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: |
+      const [captcha] = await Promise.all([verifyCaptchaToken(token, ip), assertWithinContributionDailyLimit(user)])
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: |
+      await verifyCaptchaToken(token, ip)
+      await assertWithinContributionActionLimit(user)
+    isValid: true
+    file: 'backend/api/v1/posts/create.mts'
+  - code: |
+      await assertWithinContributionActionLimit(user)
+      await verifyCaptchaToken(token, ip)
+    isValid: true
+    file: 'backend/api/v1/posts/create.mock.test.mts'

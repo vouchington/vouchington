@@ -1,0 +1,67 @@
+import { projectScheduledJobs, type ProjectedScheduledJob } from '@modules/scheduled-job-manifest'
+import { getDeployEnvironment } from '@ts-shared/deploy-environment'
+import { SCHEDULED_JOB_MANIFESTS } from './scheduled-job-manifests.mts'
+
+export const SCHEDULED_JOB_API_ORDER = [
+  'activitypub-inbox-recovery',
+  'activitypub-inbox-cleanup',
+  'ses-inbound-reconciliation',
+  'community-activity-digest-weekly',
+  'notification-push-intent-recovery',
+  'dispatchRssFeeds',
+  'refreshRssFeedCrawlTiers',
+  'refreshTopHashtags',
+  'dispatchEngagementEmails',
+  'dispatchCommunityModerationSummaryEmails',
+  'reconcilePostCategoryFinalizations',
+  'wikipedia-recommender-dispatch',
+  'account-data-requests-cleanup',
+  'cleanup-abandoned-uploads-schedule',
+  'dailyVoteWeightRecalculation',
+  'data-retention-cleanup-daily',
+  'reconcile-vote-drift',
+  'kagi-smallweb-sync',
+  'dispatchFindYourFriends',
+  'membershipEntitlementEffects',
+  'membershipGrantExpiry',
+  'appleNotificationRecovery',
+  'membershipVerificationRecovery',
+  'stripeCatalogReconciliation',
+  'renewalNotificationCheck',
+  'blacklistDispatcher',
+  'reconcileTopicAliasCategoryMappings',
+  'reconcileRssFeedItemCategorySnapshots',
+  'reconcile-post-publication',
+  'reconcileStoryPostRelatedUrlProjections',
+  'reconcileAutoDispatchJudgements',
+  'reconcileRuntimeGenerations',
+  'reconcileMemberSupportAgentIntents',
+  'reconcileBackgroundResponses',
+  'poll_dispatcher',
+  'creation_dispatcher',
+  'backlog_dispatcher',
+  'stale_cleanup_dispatcher',
+  'crawl_hostnames_dispatcher',
+  'crawl_tier1_dispatcher',
+  'crawl_cleanup',
+  'boilerplate_removal_dispatcher',
+  'crawl_tier2_dispatcher',
+  'crawl_referral_links_dispatcher',
+  'refresh_hostname_crawler_dispatcher',
+  'unfurl_referral_links_dispatcher',
+  'sitemaps-backfill-processNightlyBackfillWeekDispatcher',
+  'sitemaps-backfill-processWeeklyBackfillMonthDispatcher',
+  'sitemaps-backfill-processMonthlyBackfillArchiveDispatcher',
+  'publish-glidemq-stats',
+] as const
+
+// The hourly floor applies only on staging: production must register every job at its original
+// cadence, and development/test resolve to neither via getDeployEnvironment's fallback, so the
+// clamp stays off there too. See docs/overview/infrastructure/deployment-costs.md.
+export const SCHEDULED_JOBS_REGISTRY: ProjectedScheduledJob[] = projectScheduledJobs(
+  SCHEDULED_JOB_MANIFESTS,
+  SCHEDULED_JOB_API_ORDER,
+  {
+    applyHourlyFloor: getDeployEnvironment() === 'staging',
+  },
+)

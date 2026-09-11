@@ -1,0 +1,26 @@
+{
+  "lists": {
+    "list-1": {
+      "__entity_type": "list",
+      "created_at": "2026-06-28T10:00:00Z",
+      "description": "Articles to read later",
+      "id": "list-1",
+      "name": "Reading Queue",
+      "owner_user_id": "user-abc",
+      "removed_at": null,
+      "updated_at": "2026-06-28T10:00:00Z",
+      "visibility": "private"
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "list",
+      "id": "list-1"
+    }
+  ]
+}

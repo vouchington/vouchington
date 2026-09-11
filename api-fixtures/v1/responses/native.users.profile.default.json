@@ -1,0 +1,77 @@
+{
+  "profile_links": [
+    {
+      "created_at": "2026-07-01T16:00:00Z",
+      "handle": null,
+      "id": "link-1",
+      "image_id": null,
+      "link_type": "url",
+      "name": "Site",
+      "sort_order": 0,
+      "updated_at": "2026-07-01T16:00:00Z",
+      "url": "https://example.test",
+      "url_id": null,
+      "user_id": "user-abc"
+    }
+  ],
+  "user": {
+    "__entity_type": "user",
+    "cards_visibility": "everyone",
+    "community_digest_frequency": "weekly",
+    "community_memberships_visibility": "everyone",
+    "default_post_broadcast": "everyone",
+    "default_post_privacy": "public",
+    "direct_messages_audience": "users",
+    "engagement_emails_enabled": true,
+    "fediverse_federation_enabled": false,
+    "followers_visibility": "everyone",
+    "follows_visibility": "everyone",
+    "id": "user-abc",
+    "likes_visibility": "everyone",
+    "markdown": "Hello",
+    "moderation_email_cadence": "daily",
+    "moderation_email_days_of_week": [1, 2, 3, 4, 5],
+    "moderation_email_time_of_day": "09:00",
+    "moderation_email_timezone": "America/Los_Angeles",
+    "moderation_emails_enabled": true,
+    "news_digest_frequency": "weekly",
+    "profile_image_id": "avatar-1",
+    "rewards_program_statuses_visibility": "everyone",
+    "roles": ["user"],
+    "rss_feed_follows_visibility": "everyone",
+    "spending_categories_visibility": "everyone",
+    "topic_follows_visibility": "everyone",
+    "username": "alice"
+  },
+  "user_bio_html": "<p>Hello</p>",
+  "user_metrics": {
+    "__entity_type": "user_metrics",
+    "bookmarkers": {
+      "follow": 4
+    },
+    "bookmarks": {
+      "follow": {
+        "posts": 2,
+        "topics": 1,
+        "users": 3
+      }
+    },
+    "bookmarks__updated_at": "2026-07-01T16:00:00Z",
+    "count": {
+      "comments": 2,
+      "communities_member": 9,
+      "discussions": 3,
+      "reviews": 4,
+      "rss_feeds_following": 8,
+      "topics_following": 7,
+      "users_followers": 6,
+      "users_following": 5
+    },
+    "id": "user-abc",
+    "viewer_count": {
+      "comments": 7,
+      "discussions": 2,
+      "reviews": 1
+    }
+  }
+}

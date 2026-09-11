@@ -1,0 +1,55 @@
+{
+  "name": "@entrypoints/worker-cpu",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@backend/service-registrations": "workspace:^",
+    "@backend/worker-runtime": "workspace:^",
+    "@data-stores/graceful-shutdown": "workspace:^",
+    "@entrypoints/worker-io": "workspace:^",
+    "@jongleberry/vurst-runtime": "^0.4.3",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@modules/worker-queue-inventory": "workspace:^",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/core": "^2.11.0",
+    "@queues/ai-agents": "workspace:^",
+    "@queues/bedrock-embeddings-batch": "workspace:^",
+    "@queues/crawl-boilerplate-removal": "workspace:^",
+    "@queues/crawl-hostnames": "workspace:^",
+    "@queues/crawl-referral-links": "workspace:^",
+    "@queues/heartbeat": "workspace:^",
+    "@queues/images": "workspace:^",
+    "@queues/language-detection": "workspace:^",
+    "@queues/unfurl-referral-links": "workspace:^",
+    "@queues/wikipedia-recommender": "workspace:^",
+    "@workers/ai-agents": "workspace:^",
+    "@workers/bedrock-embeddings": "workspace:^",
+    "@workers/bedrock-embeddings-batch": "workspace:^",
+    "@workers/crawl-boilerplate-removal": "workspace:^",
+    "@workers/crawl-browser": "workspace:^",
+    "@workers/crawl-hostnames": "workspace:^",
+    "@workers/crawl-referral-links": "workspace:^",
+    "@workers/crawler": "workspace:^",
+    "@workers/images": "workspace:^",
+    "@workers/language-detection": "workspace:^",
+    "@workers/unfurl-referral-links": "workspace:^",
+    "@workers/wikipedia-recommender": "workspace:^"
+  }
+}

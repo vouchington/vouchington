@@ -1,0 +1,53 @@
+{
+  "name": "@services/stories",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@agents/story-clustering": "workspace:^",
+    "@data-stores/psql": "workspace:^",
+    "@modules/feed-query-builders": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
+    "@queues/crawler": "workspace:^",
+    "@queues/entity-listeners": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@queues/story-post-related-url-projections": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/referral-program-link-validations": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/rss-feeds": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-assert": "^1.5.0",
+    "p-map": "7.0.7",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

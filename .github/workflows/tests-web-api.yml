@@ -1,0 +1,267 @@
+name: Web API Tests
+
+on:
+  workflow_call:
+    inputs:
+      publish_coverage:
+        description: 'Whether to publish LCOV for a same-run PR coverage consumer'
+        required: false
+        type: boolean
+        default: false
+      upload_vitest_blob_artifact:
+        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
+        required: false
+        type: boolean
+        default: false
+      full_suite:
+        description: 'Run every shard with no test-file narrowing (default for main and workflow_dispatch)'
+        required: false
+        type: boolean
+        default: true
+      run_tests:
+        description: 'Run Vitest in the web-api shard runner'
+        type: boolean
+        default: true
+      shard_total_override:
+        description: 'Shard count to use instead of the web-api default when full_suite is false'
+        required: false
+        type: string
+        default: ''
+      selected_test_files:
+        description: 'Newline-delimited selected test files (vouchington-tooling/gha-selected-files) to run instead of the full project when full_suite is false'
+        required: false
+        type: string
+        default: ''
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: 'Run Vitest in the web-api shard runner'
+        type: boolean
+        default: true
+      upload_vitest_blob_artifact:
+        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
+        required: false
+        type: boolean
+        default: false
+      shard_total_override:
+        description: 'Shard count to use instead of the web-api default'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  NODE_ENV: test
+
+jobs:
+  prep:
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      shard-matrix: ${{ steps.shards.outputs.matrix }}
+      shard-total: ${{ steps.shards.outputs.total }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+          fetch-depth: ${{ inputs.publish_coverage && 0 || 1 }}
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          deepen: ${{ inputs.publish_coverage && 'true' || 'false' }}
+      - uses: ./.github/actions/make-shard-matrix
+        id: shards
+        with:
+          total: ${{ inputs.shard_total_override || 1 }}
+
+  web-api-tests:
+    needs: [prep]
+    runs-on: [self-hosted, Linux, Docker, Tests]
+    timeout-minutes: 27
+    permissions:
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: '-c max_connections=300'
+        ports:
+          - 5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /var/lib/postgresql:rw,size=1g
+      valkey:
+        image: valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        ports:
+          - 6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /data:rw,size=64m
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+          fetch-depth: ${{ inputs.publish_coverage && 0 || 1 }}
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          deepen: ${{ inputs.publish_coverage && 'true' || 'false' }}
+      - uses: ./.github/actions/load-runner-env
+        with:
+          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
+      - name: Set service ports
+        timeout-minutes: 1
+        run: |
+          echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
+          echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup-backend
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - working-directory: backend
+        run: node data-stores/psql/migrate.mts
+        timeout-minutes: 3
+      - name: Run web API tests
+        if: ${{ inputs.run_tests }}
+        env:
+          IMAGE_ORIGIN: http://127.0.0.1:3100
+          CI_PROJECT: web-api
+          CI_SHARD: ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
+          VITEST_CI_REPORTERS: run
+          VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
+          VITEST_JUNIT_OUTPUT_FILE: web-api-shard-${{ matrix.shard }}.junit.xml
+          VITEST_BLOB_OUTPUT_FILE: .vitest-reports/web-api-shard-${{ matrix.shard }}.json
+          FULL_SUITE: ${{ inputs.full_suite }}
+          SELECTED_TEST_FILES: ${{ inputs.selected_test_files }}
+        run: |
+          FILES=()
+          if [ "${FULL_SUITE:-true}" != "true" ]; then
+            if [ -z "$SELECTED_TEST_FILES" ]; then
+              FILES=("NO_TESTS_MATCHING_SELECTION")
+            else
+              while IFS= read -r file; do
+                if [ -n "$file" ]; then FILES+=("$file"); fi
+              done <<< "$SELECTED_TEST_FILES"
+            fi
+          fi
+          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-api --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"
+        # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
+        # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
+        # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
+        timeout-minutes: 10
+      - name: Stamp web-api-shard-${{ matrix.shard }} coverage provenance
+        id: coverage-stamp-1
+        timeout-minutes: 1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage }}
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CI_SHARD: ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
+        run: node ci/coverage-manifest.mts patch "web-api-shard-${{ matrix.shard }}" "$(node -p "JSON.parse(require('node:fs').readFileSync('node_modules/vitest/package.json','utf8')).version")"
+      - name: Upload web-api-shard-${{ matrix.shard }} vitest blob to GitHub (fallback)
+        id: vitest-blob-fallback-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-blob
+        with:
+          suite: web-api-shard-${{ matrix.shard }}
+      - name: Upload web-api-shard-${{ matrix.shard }} vitest blob to GitHub (fallback attempt 2)
+        id: vitest-blob-fallback-1-retry
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
+        timeout-minutes: 3
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-blob
+        with:
+          suite: web-api-shard-${{ matrix.shard }}
+          name-suffix: -retry
+      - name: Require a persisted web-api-shard-${{ matrix.shard }} vitest blob
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        env:
+          FAMILY: vitest-blob
+          SUITE: web-api-shard-${{ matrix.shard }}
+          FIRST_OUTCOME: ${{ steps.vitest-blob-fallback-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.vitest-blob-fallback-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Persist web-api-shard-${{ matrix.shard }} Vitest report attempt (attempt 1)
+        id: vitest-report-attempt-1
+        if: ${{ always() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-report-attempt
+        with:
+          suite: web-api-shard-${{ matrix.shard }}
+      - name: Persist web-api-shard-${{ matrix.shard }} Vitest report attempt (attempt 2)
+        id: vitest-report-attempt-1-retry
+        if: ${{ always() && inputs.run_tests && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-1.outcome == 'failure' }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-report-attempt
+        with:
+          suite: web-api-shard-${{ matrix.shard }}
+          name-suffix: -retry
+      - name: Assert web-api-shard-${{ matrix.shard }} Vitest report attempt persisted
+        id: vitest-report-attempt-1-outcome
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        env:
+          FAMILY: vitest-report-attempt
+          SUITE: web-api-shard-${{ matrix.shard }}
+          FIRST_OUTCOME: ${{ steps.vitest-report-attempt-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.vitest-report-attempt-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload web-api-shard-${{ matrix.shard }} coverage pair to GitHub (fallback attempt 1)
+        id: coverage-fallback-1-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-coverage-pair
+        with:
+          suite: web-api-shard-${{ matrix.shard }}
+      - name: Upload web-api-shard-${{ matrix.shard }} coverage pair to GitHub (fallback attempt 2)
+        id: coverage-fallback-2-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-coverage-pair
+        with:
+          suite: web-api-shard-${{ matrix.shard }}
+          name-suffix: -retry
+      - name: Require a persisted web-api-shard-${{ matrix.shard }} coverage pair
+        id: coverage-outcome-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        timeout-minutes: 1
+        env:
+          FAMILY: coverage-pair
+          SUITE: web-api-shard-${{ matrix.shard }}
+          FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"

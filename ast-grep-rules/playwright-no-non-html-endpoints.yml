@@ -1,0 +1,28 @@
+id: playwright-no-non-html-endpoints
+language: Tsx
+severity: error
+message: 'Playwright tests must target rendered HTML pages. The URL looks like a non-HTML endpoint. Move this test to integration-tests/web/ instead.'
+files:
+  - 'playwright/**/*.ts'
+  - 'playwright/**/*.mts'
+rule:
+  any:
+    - pattern: '$OBJ.goto($URL)'
+    - pattern: '$OBJ.goto($URL, $$$)'
+    - pattern: 'navigateTo($PAGE, $URL)'
+constraints:
+  URL:
+    regex: "(/api/|\\.json[\"'`]|\\.xml[\"'`]|/sitemap[\"'`/?#]|/robots\\.txt|/\\.well-known/|\\.png[\"'`]|\\.jpe?g[\"'`]|\\.gif[\"'`]|\\.svg[\"'`]|\\.ico[\"'`]|\\.webp[\"'`]|\\.css[\"'`]|\\.js[\"'`]|\\.woff2?[\"'`])"
+examples:
+  - code: "await page.goto('/api/users')"
+    isValid: false
+    file: 'playwright/tests/api.ts'
+  - code: "await page.goto('/data.json')"
+    isValid: false
+    file: 'playwright/tests/api.ts'
+  - code: "await page.goto('/dashboard')"
+    isValid: true
+    file: 'playwright/tests/dashboard.ts'
+  - code: "await navigateTo(page, '/home')"
+    isValid: true
+    file: 'playwright/tests/home.ts'

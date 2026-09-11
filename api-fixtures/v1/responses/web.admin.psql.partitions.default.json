@@ -1,0 +1,30 @@
+{
+  "tables": [
+    {
+      "name": "posts",
+      "partition_count": 2,
+      "partitions": [
+        {
+          "name": "posts_2026_06",
+          "size_bytes": 523776000
+        },
+        {
+          "name": "posts_2026_07",
+          "size_bytes": 463878321
+        }
+      ],
+      "total_size_bytes": 987654321
+    },
+    {
+      "name": "rss_feed_items",
+      "partition_count": 1,
+      "partitions": [
+        {
+          "name": "rss_feed_items_2026_07",
+          "size_bytes": 12345678
+        }
+      ],
+      "total_size_bytes": 12345678
+    }
+  ]
+}

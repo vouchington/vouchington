@@ -1,0 +1,47 @@
+{
+  "name": "@agents/chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@agents/_shared": "workspace:^",
+    "@agents/discovery-agent": "workspace:^",
+    "@agents/profile-agent": "workspace:^",
+    "@agents/research-agent": "workspace:^",
+    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/on-error": "workspace:^",
+    "@modules/openai-utils": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/agents": "workspace:^",
+    "@services/ai-usage": "workspace:^",
+    "@services/conversations-messages": "workspace:^",
+    "@services/openai-agents": "workspace:^",
+    "@services/openai-moderation": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/tools": "workspace:^",
+    "http-errors": "^2.0.1",
+    "openai": "^7.10.0",
+    "undici": "^8.10.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

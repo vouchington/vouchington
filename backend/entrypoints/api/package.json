@@ -1,0 +1,61 @@
+{
+  "name": "@entrypoints/api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@backend/md": "workspace:^",
+    "@backend/service-registrations": "workspace:^",
+    "@data-stores/graceful-shutdown": "workspace:^",
+    "@data-stores/psql": "workspace:^",
+    "@glidemq/dashboard": "^0.4.1",
+    "@jongleberry/vurst-runtime": "^0.4.3",
+    "@modules/api-egress-proxy": "workspace:^",
+    "@modules/bluesky-oauth": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/api-egress-proxy": "workspace:^",
+    "@services/bluesky-accounts": "workspace:^",
+    "@services/bluesky-follows": "workspace:^",
+    "@services/captcha": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/entity-listener-reconciliation": "workspace:^",
+    "@services/fediverse-instances": "workspace:^",
+    "@services/jwt-session": "workspace:^",
+    "@services/queue-monitoring": "workspace:^",
+    "@services/users": "workspace:^",
+    "@services/valkey-admin": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@voucha/api": "workspace:^",
+    "@voucha/rss": "workspace:^",
+    "cookie": "^2.0.1",
+    "express": "^5.2.1",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@services/entity-cache": "workspace:^",
+    "@services/entity-fetch": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.4.0",
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.10.2"
+  }
+}

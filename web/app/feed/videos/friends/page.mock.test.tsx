@@ -1,0 +1,31 @@
+import { render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import FeedVideosFriendsPage from './page'
+import { feedRouteConfigs } from '@/lib/feed-route-configs'
+
+const { mockFeedNewsListPage } = vi.hoisted(() => ({
+  mockFeedNewsListPage: vi.fn<VitestLooseMock>(),
+}))
+
+vi.mock(import('@/components/feed/feed-news-list-page'), () => ({
+  FeedNewsListPage: mockFeedNewsListPage,
+}))
+
+describe('FeedVideosFriendsPage', () => {
+  beforeEach(() => {
+    mockFeedNewsListPage.mockReset()
+    mockFeedNewsListPage.mockReturnValue(<div>feed videos friends page</div>)
+  })
+
+  it('renders FeedNewsListPage with videos/friends config', async () => {
+    const ui = await FeedVideosFriendsPage({ searchParams: Promise.resolve({}) })
+
+    render(ui)
+
+    expect(screen.getByText('feed videos friends page')).toBeDefined()
+    expect(mockFeedNewsListPage.mock.calls[0]![0]).toEqual({
+      config: feedRouteConfigs['videos/friends'],
+      searchParams: {},
+    })
+  })
+})

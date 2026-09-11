@@ -1,0 +1,26 @@
+id: pagination-empty-page-info-allowlist
+language: Tsx
+severity: error
+message: "page_info: EMPTY_PAGE_INFO is reserved for routes where checkShouldReturnEmpty (backend/services/search-params/resolve.mts) proves the result set is provably empty (e.g. an unresolved topic/similar_post filter identifier, or an input guard that provably skips the query) — not as a shortcut for a real, possibly-truncated list. If this site is genuinely provably-empty, add its path to this rule's ignores in the same PR; otherwise build real cursor pagination. Known gap: a hand-rolled literal { has_next_page: false, end_cursor: null, start_cursor: null } bypasses this rule — prefer the named export so the guard applies."
+files:
+  - 'backend/api/v1/**/*.mts'
+ignores:
+  - 'backend/api/v1/**/*.test.mts'
+  - 'backend/api/v1/**/__tests__/**'
+  - 'backend/api/v1/web-search/web-search.mts'
+  - 'backend/api/v1/hostnames/hostnames.mts'
+  - 'backend/api/v1/hostnames/top-hostnames.mts'
+rule:
+  pattern:
+    context: '({ page_info: EMPTY_PAGE_INFO })'
+    selector: pair
+examples:
+  - code: 'ctx.json({ results: [], page_info: EMPTY_PAGE_INFO })'
+    isValid: false
+    file: 'backend/api/v1/agents/agent-moderation.mts'
+  - code: 'ctx.json({ results: [], page_info: EMPTY_PAGE_INFO })'
+    isValid: true
+    file: 'backend/api/v1/hostnames/hostnames.mts'
+  - code: 'ctx.json({ results, page_info })'
+    isValid: true
+    file: 'backend/api/v1/agents/agent-moderation.mts'

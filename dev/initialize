@@ -1,0 +1,1668 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+
+# shellcheck source=dev/lib/schema-drift-detectors.sh
+source "$REPO_ROOT/dev/lib/schema-drift-detectors.sh"
+# shellcheck source=dev/lib/db-target.sh
+source "$REPO_ROOT/dev/lib/db-target.sh"
+# shellcheck source=dev/lib/worktree-resource-env.sh
+source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# shellcheck source=dev/lib/git-worktrees.sh
+source "$REPO_ROOT/dev/lib/git-worktrees.sh"
+# shellcheck source=dev/lib/git-index-lock.sh
+source "$REPO_ROOT/dev/lib/git-index-lock.sh"
+
+register_live_worktree_resource_paths() {
+    local repo_root=$1
+    local live_worktree
+
+    while IFS= read -r live_worktree; do
+        register_worktree_resource_path "$live_worktree"
+    done < <(git_worktree_live_paths "$repo_root")
+    # Standalone disposable clones may not appear in their own Git worktree inventory.
+    register_worktree_resource_path "$repo_root"
+}
+
+# Repairs the shared .git/config for corruption caused by `git worktree add`
+# (git >= 2.36) setting extensions.worktreeConfig=true without ever creating the
+# required per-worktree config.worktree files (see docs/development/git-worktree-locks.md):
+#   - core.bare flips to true during git push (the fetch/push.autoSetupRemote
+#     config write lands in the shared config instead of a missing config.worktree).
+#   - core.worktree gets set to a linked worktree's path in the shared config,
+#     redirecting every git command in every worktree sharing this .git dir to
+#     read/write that worktree's files instead of its own.
+# Runs on every init via --file to bypass worktreeConfig routing (which would look
+# for the missing config.worktree file).
+heal_shared_git_config() {
+    local common_config="$1"
+    git config --file "$common_config" core.bare false 2>/dev/null || true
+    git config --file "$common_config" --unset-all extensions.worktreeConfig 2>/dev/null || true
+    git config --file "$common_config" --unset-all core.worktree 2>/dev/null || true
+}
+
+# Wipe Wrangler/Miniflare and Next.js dev caches so a re-init produces a clean
+# slate. Run only after non-mutating web prerequisites pass so failed preflight
+# checks do not remove cache/build output from an otherwise usable workspace.
+clear_dev_caches() {
+    local path
+    for path in "$@"; do
+        if [ -d "$path" ]; then
+            rm -rf "$path"
+            echo -e "${GREEN}✓ Cleared $path${NC}"
+        fi
+    done
+}
+
+retry_command() {
+    local max_attempts=$1
+    local delay_seconds=$2
+    local description=$3
+    local attempt=1
+    local status
+    shift 3
+
+    while :; do
+        "$@" && return 0
+        status=$?
+        if [ "$attempt" -ge "$max_attempts" ]; then
+            return "$status"
+        fi
+        echo -e "${YELLOW}Warning:${NC} attempt $attempt failed for $description; retrying in ${delay_seconds}s..."
+        sleep "$delay_seconds"
+        attempt=$((attempt + 1))
+    done
+}
+
+HOST_STORAGE_MINIMUM_FREE_KIB=5242880
+
+check_bootstrap_storage_path() {
+    local label=$1
+    local path=$2
+    local df_output
+    local available_kib
+    local filesystem_key
+    local quoted_path
+    local seen_key
+
+    if [ -z "$path" ] || ! df_output=$(LC_ALL=C df -Pk -- "$path" 2>/dev/null); then
+        printf -v quoted_path '%q' "$path"
+        echo -e "${RED}Error: Could not measure free host storage for $label ($quoted_path).${NC}" >&2
+        echo "Inspect it with: df -h $quoted_path. Free host storage, then retry." >&2
+        return 1
+    fi
+    available_kib=$(printf '%s\n' "$df_output" | awk 'END {print $4}')
+    filesystem_key=$(printf '%s\n' "$df_output" | awk 'END {print $1}')
+    case "$filesystem_key" in
+        '')
+            printf -v quoted_path '%q' "$path"
+            echo -e "${RED}Error: Could not parse free host storage for $label ($quoted_path).${NC}" >&2
+            return 1
+            ;;
+    esac
+    case "$available_kib" in
+        ''|*[!0-9]*)
+            printf -v quoted_path '%q' "$path"
+            echo -e "${RED}Error: Could not parse free host storage for $label ($quoted_path).${NC}" >&2
+            return 1
+            ;;
+    esac
+    for seen_key in "${BOOTSTRAP_STORAGE_FILESYSTEMS[@]+"${BOOTSTRAP_STORAGE_FILESYSTEMS[@]}"}"; do
+        [ "$seen_key" = "$filesystem_key" ] && return 0
+    done
+    BOOTSTRAP_STORAGE_FILESYSTEMS+=("$filesystem_key")
+    if [ "$available_kib" -lt "$HOST_STORAGE_MINIMUM_FREE_KIB" ]; then
+        printf -v quoted_path '%q' "$path"
+        echo -e "${RED}Error: Insufficient host storage for $label; 5.00 GiB required.${NC}" >&2
+        echo "Inspect it with: df -h $quoted_path. Free host storage, then retry." >&2
+        return 1
+    fi
+    return 0
+}
+
+check_bootstrap_host_storage() {
+    local failed=0
+    local temporary_directory="${TMPDIR:-${TMP:-${TEMP:-/tmp}}}"
+    local BOOTSTRAP_STORAGE_FILESYSTEMS=()
+
+    check_bootstrap_storage_path "worktree" "$REPO_ROOT" || failed=1
+    check_bootstrap_storage_path "home directory" "${HOME:-}" || failed=1
+    check_bootstrap_storage_path "temporary directory" "$temporary_directory" || failed=1
+    return "$failed"
+}
+
+ensure_node_version() {
+    echo -e "${BLUE}Installing Node.js version...${NC}"
+    if [ "${SKIP_NVM_INSTALL:-}" = "1" ]; then
+        echo -e "${YELLOW}Warning: SKIP_NVM_INSTALL=1, using Node.js from PATH${NC}"
+        echo ""
+        return 0
+    fi
+
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+    # shellcheck source=/dev/null
+    if [ -s "$NVM_DIR/nvm.sh" ]; then
+        \. "$NVM_DIR/nvm.sh"
+        nvm install
+    else
+        echo -e "${YELLOW}Warning: nvm not found at $NVM_DIR/nvm.sh${NC}"
+        echo -e "${YELLOW}Node.js should still be available from PATH (e.g., from a prior nvm install)${NC}"
+    fi
+    echo ""
+}
+
+read_existing_env_var() {
+    local key=$1
+
+    [ -f .env ] || return 0
+
+    (
+        set +u
+        set -a
+        # shellcheck source=/dev/null
+        source .env >/dev/null 2>&1 || exit 0
+        set +a
+        printf '%s' "${!key-}"
+    )
+}
+
+read_env_example_var() {
+    local key=$1
+
+    [ -f .env.example ] || return 0
+
+    (
+        set +u
+        set -a
+        # shellcheck source=/dev/null
+        source .env.example >/dev/null 2>&1 || exit 0
+        set +a
+        printf '%s' "${!key-}"
+    )
+}
+
+extract_port_from_url() {
+    local url=${1:-}
+
+    if [[ "$url" =~ :([0-9]+)(/.*)?$ ]]; then
+        printf '%s' "${BASH_REMATCH[1]}"
+    fi
+}
+
+is_valid_port() {
+    local port=${1:-}
+
+    [[ "$port" =~ ^[0-9]+$ ]] && ((10#$port >= 1 && 10#$port <= 65535))
+}
+
+load_runner_port_policy() {
+    local policy_values
+
+    # Read the JSON directly. The TypeScript loader validates it for Node
+    # consumers; initialize cannot import that module because some callers
+    # (and this script's own isolated tests) run without node_modules.
+    # shellcheck disable=SC2016 # JavaScript template literal is evaluated by node, not Bash.
+    policy_values=$(node -e '
+import { readFileSync } from "node:fs"
+const policy = JSON.parse(readFileSync(process.argv[1], "utf8"))
+if (!Number.isInteger(policy.reservedPortStart) || !Number.isInteger(policy.reservedPortEnd)) {
+  process.exit(1)
+}
+console.log(`${policy.reservedPortStart} ${policy.reservedPortEnd}`)
+' "$REPO_ROOT/ci/runner-port-policy.json") || {
+        echo -e "${RED}Error: Invalid CI runner port policy at ci/runner-port-policy.json${NC}"
+        exit 1
+    }
+    read -r RUNNER_RESERVED_PORT_START RUNNER_RESERVED_PORT_END <<< "$policy_values"
+}
+
+is_allocatable_worktree_port() {
+    local port=${1:-}
+
+    is_valid_port "$port" \
+        && ! ((10#$port >= RUNNER_RESERVED_PORT_START && 10#$port <= RUNNER_RESERVED_PORT_END)) \
+        && ((10#$port != 8787))
+}
+
+is_distinct_from_assigned_core_ports() {
+    local port=${1:-}
+
+    is_valid_port "$port" \
+        && ((10#$port != 10#${BACKEND_PORT:-0})) \
+        && ((10#$port != 10#${NEXT_PORT:-0})) \
+        && ((10#$port != 10#${VALKEY_PORT:-0})) \
+        && ((10#$port != 10#${WORKER_PORT:-0})) \
+        && ((10#$port != 10#${IMAGE_LAMBDA_PORT:-0}))
+}
+
+allocate_random_ports() {
+    local count=${1:-6}
+    node -e "
+const net = require('node:net')
+const count = ${count}
+function openPort() {
+  return new Promise(resolve => {
+    const server = net.createServer()
+    server.listen(0, () => resolve(server))
+  })
+}
+Promise.all(Array.from({ length: count }, () => openPort()))
+  .then(servers => {
+    console.log(servers.map(server => server.address().port).join(' '))
+    servers.forEach(server => server.close())
+  })
+"
+}
+
+assign_worktree_ports() {
+    local existing_backend_port existing_next_port existing_valkey_port existing_worker_port
+    local existing_image_lambda_port existing_valkey_url existing_inspector_port existing_storybook_port reused_ports allocated_ports
+    local existing_worktree_dir
+
+    load_runner_port_policy
+
+    # Entrypoint port: always fixed for main
+    if $IS_MAIN; then
+        WORKER_PORT=8787
+    fi
+
+    existing_backend_port=$(read_existing_env_var PORT)
+    existing_next_port=$(read_existing_env_var NEXT_PORT)
+    existing_valkey_url=$(read_existing_env_var VALKEY_URL)
+    existing_valkey_port=$(extract_port_from_url "$existing_valkey_url")
+    existing_image_lambda_port=$(read_existing_env_var IMAGE_LAMBDA_PORT)
+    existing_inspector_port=$(read_existing_env_var INSPECTOR_PORT)
+    existing_storybook_port=$(read_existing_env_var STORYBOOK_PORT)
+    existing_worker_port=$(read_existing_env_var WORKER_PORT)
+
+    if ! is_valid_port "$existing_valkey_port" && [ -f .valkey-port ]; then
+        existing_valkey_port=$(tr -d '[:space:]' < .valkey-port)
+    fi
+
+    existing_worktree_dir=$(read_existing_env_var WORKTREE_DIR)
+    if [ -n "$existing_worktree_dir" ] && [ "$existing_worktree_dir" != "$WORKTREE_DIR" ]; then
+        echo -e "${YELLOW}Warning:${NC} .env was written for worktree '$existing_worktree_dir' but this is '$WORKTREE_DIR'. Discarding stale ports."
+        echo -e "${YELLOW}After initialization, ./dev/cleanup removes orphaned hashed resources; verify and remove legacy names explicitly.${NC}"
+        existing_backend_port=""
+        existing_next_port=""
+        existing_valkey_port=""
+        existing_worker_port=""
+        existing_image_lambda_port=""
+        existing_inspector_port=""
+        existing_storybook_port=""
+    fi
+
+    reused_ports=false
+
+    if $IS_MAIN; then
+        if is_allocatable_worktree_port "$existing_backend_port" \
+            && is_allocatable_worktree_port "$existing_next_port" \
+            && is_allocatable_worktree_port "$existing_valkey_port" \
+            && is_allocatable_worktree_port "$existing_image_lambda_port"; then
+            BACKEND_PORT=$existing_backend_port
+            NEXT_PORT=$existing_next_port
+            VALKEY_PORT=$existing_valkey_port
+            IMAGE_LAMBDA_PORT=$existing_image_lambda_port
+            reused_ports=true
+        else
+            while :; do
+                allocated_ports=$(allocate_random_ports 4)
+                read -r BACKEND_PORT NEXT_PORT VALKEY_PORT IMAGE_LAMBDA_PORT <<< "$allocated_ports"
+                if is_allocatable_worktree_port "$BACKEND_PORT" \
+                    && is_allocatable_worktree_port "$NEXT_PORT" \
+                    && is_allocatable_worktree_port "$VALKEY_PORT" \
+                    && is_allocatable_worktree_port "$IMAGE_LAMBDA_PORT"; then
+                    break
+                fi
+            done
+        fi
+
+        if [ -z "${BACKEND_PORT:-}" ] || [ -z "${NEXT_PORT:-}" ] || [ -z "${VALKEY_PORT:-}" ] || [ -z "${IMAGE_LAMBDA_PORT:-}" ]; then
+            echo -e "${RED}Error: Failed to determine ports. Is Node.js working correctly?${NC}"
+            exit 1
+        fi
+    else
+        if is_allocatable_worktree_port "$existing_backend_port" \
+            && is_allocatable_worktree_port "$existing_next_port" \
+            && is_allocatable_worktree_port "$existing_valkey_port" \
+            && is_allocatable_worktree_port "$existing_worker_port" \
+            && is_allocatable_worktree_port "$existing_image_lambda_port"; then
+            BACKEND_PORT=$existing_backend_port
+            NEXT_PORT=$existing_next_port
+            VALKEY_PORT=$existing_valkey_port
+            WORKER_PORT=$existing_worker_port
+            IMAGE_LAMBDA_PORT=$existing_image_lambda_port
+            reused_ports=true
+        else
+            # Re-roll reserved main and CI runner ports from ephemeral allocation.
+            while :; do
+                allocated_ports=$(allocate_random_ports 5)
+                read -r BACKEND_PORT NEXT_PORT VALKEY_PORT WORKER_PORT IMAGE_LAMBDA_PORT <<< "$allocated_ports"
+                if is_allocatable_worktree_port "$BACKEND_PORT" \
+                    && is_allocatable_worktree_port "$NEXT_PORT" \
+                    && is_allocatable_worktree_port "$VALKEY_PORT" \
+                    && is_allocatable_worktree_port "$WORKER_PORT" \
+                    && is_allocatable_worktree_port "$IMAGE_LAMBDA_PORT"; then
+                    break
+                fi
+            done
+        fi
+
+        if [ -z "${BACKEND_PORT:-}" ] || [ -z "${NEXT_PORT:-}" ] || [ -z "${VALKEY_PORT:-}" ] || [ -z "${WORKER_PORT:-}" ] || [ -z "${IMAGE_LAMBDA_PORT:-}" ]; then
+            echo -e "${RED}Error: Failed to determine ports. Is Node.js working correctly?${NC}"
+            exit 1
+        fi
+
+        if $reused_ports; then
+            echo -e "${GREEN}Detected worktree:${NC} $WORKTREE_DIR (reusing saved ports)"
+        else
+            BRANCH=$(git branch --show-current 2>/dev/null || echo "detached")
+            echo -e "${GREEN}Detected worktree:${NC} $WORKTREE_DIR (branch: $BRANCH)"
+        fi
+    fi
+
+    # INSPECTOR_PORT is allocated independently so pre-existing worktrees
+    # without it keep their other ports intact on re-initialize.
+    if is_allocatable_worktree_port "$existing_inspector_port" \
+        && is_distinct_from_assigned_core_ports "$existing_inspector_port"; then
+        INSPECTOR_PORT=$existing_inspector_port
+    else
+        # Loop until we get a valid port that doesn't conflict with already-assigned ports.
+        while :; do
+            INSPECTOR_PORT=$(allocate_random_ports 1)
+            if is_allocatable_worktree_port "$INSPECTOR_PORT" \
+                && is_distinct_from_assigned_core_ports "$INSPECTOR_PORT"; then
+                break
+            fi
+        done
+    fi
+
+    # STORYBOOK_PORT is allocated independently so pre-existing worktrees
+    # without it keep their other ports intact on re-initialize.
+    if is_allocatable_worktree_port "$existing_storybook_port" \
+        && is_distinct_from_assigned_core_ports "$existing_storybook_port" \
+        && ((10#$existing_storybook_port != 10#${INSPECTOR_PORT:-0})); then
+        STORYBOOK_PORT=$existing_storybook_port
+    else
+        while :; do
+            STORYBOOK_PORT=$(allocate_random_ports 1)
+            if is_allocatable_worktree_port "$STORYBOOK_PORT" \
+                && is_distinct_from_assigned_core_ports "$STORYBOOK_PORT" \
+                && [ "$STORYBOOK_PORT" != "${INSPECTOR_PORT:-}" ]; then
+                break
+            fi
+        done
+    fi
+}
+
+ensure_valkey_container() {
+    local existing_container_port recreate_reason port_owner
+
+    echo -e "${BLUE}Ensuring Valkey container: $VALKEY_CONTAINER (port $VALKEY_PORT)...${NC}"
+    recreate_reason=""
+
+    if docker ps -a --format '{{.Names}}' | grep -qx "$VALKEY_CONTAINER"; then
+        existing_container_port=$(
+            docker inspect -f '{{with (index .NetworkSettings.Ports "6379/tcp")}}{{with index . 0}}{{.HostPort}}{{end}}{{end}}' "$VALKEY_CONTAINER" 2>/dev/null || true
+        )
+
+        if [ "$existing_container_port" = "$VALKEY_PORT" ]; then
+            if docker ps --format '{{.Names}}' | grep -qx "$VALKEY_CONTAINER"; then
+                echo -e "${GREEN}✓ Reusing existing Valkey container${NC}"
+            else
+                docker start "$VALKEY_CONTAINER" >/dev/null
+                echo -e "${GREEN}✓ Started existing Valkey container${NC}"
+            fi
+        else
+            recreate_reason="port mapping ${existing_container_port:-missing} -> $VALKEY_PORT"
+        fi
+    else
+        recreate_reason="container missing"
+    fi
+
+    if [ -n "$recreate_reason" ]; then
+        if [ "${IS_MAIN:-false}" = true ] \
+            && docker ps -a --format '{{.Names}}' | grep -qx "$VALKEY_CONTAINER" \
+            && [ "${FORCE_MAIN_VALKEY_RECREATE:-}" != "1" ]; then
+            echo -e "${RED}Error: Refusing to recreate main Valkey container $VALKEY_CONTAINER (${recreate_reason}).${NC}" >&2
+            echo "Re-run with FORCE_MAIN_VALKEY_RECREATE=1 if replacing the main Valkey container is intentional." >&2
+            exit 1
+        fi
+
+        port_owner=$(docker ps -a --filter "publish=$VALKEY_PORT" --format '{{.Names}}' 2>/dev/null | head -n1 || true)
+
+        if [ -n "$port_owner" ] && [ "$port_owner" != "$VALKEY_CONTAINER" ]; then
+            echo -e "${RED}Error: Port $VALKEY_PORT is already in use by $port_owner.${NC}"
+            echo "Stop that container or choose a different Valkey port before re-running ./dev/initialize."
+            exit 1
+        fi
+
+        if docker ps -a --format '{{.Names}}' | grep -qx "$VALKEY_CONTAINER"; then
+            docker rm -f "$VALKEY_CONTAINER" >/dev/null 2>&1
+        fi
+
+        if ! docker run -d \
+            --name "$VALKEY_CONTAINER" \
+            -p "$VALKEY_PORT:6379" \
+            --restart unless-stopped \
+            valkey/valkey-bundle:9.1.0 \
+            >/dev/null; then
+            echo -e "${RED}Error: Failed to start Valkey container.${NC}"
+            echo "Check if port $VALKEY_PORT is already in use or if Docker has sufficient resources."
+            exit 1
+        fi
+
+        echo -e "${GREEN}✓ Created Valkey container (${recreate_reason})${NC}"
+    fi
+
+    for i in $(seq 1 30); do
+        if docker exec "$VALKEY_CONTAINER" valkey-cli ping >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ Valkey is ready${NC}\n"
+            return
+        fi
+
+        if [ "$i" -eq 30 ]; then
+            echo -e "${RED}Error: Valkey container failed to start. Check: docker logs $VALKEY_CONTAINER${NC}"
+            exit 1
+        fi
+
+        sleep 0.5
+    done
+}
+
+configure_web_push_keys() {
+    local existing_public_key existing_private_key existing_subject vapid_output
+
+    echo -e "${BLUE}Configuring Web Push VAPID keys...${NC}"
+
+    if [ -n "${WEB_PUSH_PUBLIC_KEY:-}" ] && [ -n "${WEB_PUSH_PRIVATE_KEY:-}" ]; then
+        FINAL_WEB_PUSH_PUBLIC_KEY=$WEB_PUSH_PUBLIC_KEY
+        FINAL_WEB_PUSH_PRIVATE_KEY=$WEB_PUSH_PRIVATE_KEY
+        FINAL_WEB_PUSH_SUBJECT="${WEB_PUSH_SUBJECT:-mailto:team@voucha.ai}"
+        echo -e "${GREEN}✓ Using existing Web Push VAPID keys from shared environment${NC}"
+    else
+        existing_public_key=$(read_existing_env_var WEB_PUSH_PUBLIC_KEY)
+        existing_private_key=$(read_existing_env_var WEB_PUSH_PRIVATE_KEY)
+        existing_subject=$(read_existing_env_var WEB_PUSH_SUBJECT)
+
+        if [ -n "$existing_public_key" ] && [ -n "$existing_private_key" ]; then
+            FINAL_WEB_PUSH_PUBLIC_KEY=$existing_public_key
+            FINAL_WEB_PUSH_PRIVATE_KEY=$existing_private_key
+            FINAL_WEB_PUSH_SUBJECT="${existing_subject:-mailto:team@voucha.ai}"
+            echo -e "${GREEN}✓ Reusing existing local Web Push VAPID keys${NC}"
+        else
+            vapid_output=$(cd backend/services/notifications-push && pnpm exec web-push generate-vapid-keys)
+            FINAL_WEB_PUSH_PUBLIC_KEY=$(printf '%s\n' "$vapid_output" | awk '/Public Key:/{getline; print}')
+            FINAL_WEB_PUSH_PRIVATE_KEY=$(printf '%s\n' "$vapid_output" | awk '/Private Key:/{getline; print}')
+
+            if [ -z "$FINAL_WEB_PUSH_PUBLIC_KEY" ] || [ -z "$FINAL_WEB_PUSH_PRIVATE_KEY" ]; then
+                echo -e "${RED}Error: Failed to generate Web Push VAPID keys.${NC}"
+                exit 1
+            fi
+
+            FINAL_WEB_PUSH_SUBJECT='mailto:team@voucha.ai'
+            echo -e "${GREEN}✓ Generated local Web Push VAPID keys${NC}"
+        fi
+    fi
+
+    echo -e "${GREEN}✓ Web Push subject:${NC} $FINAL_WEB_PUSH_SUBJECT"
+    echo ""
+}
+
+configure_cf_worker_secret() {
+    echo -e "${BLUE}Configuring CF Worker shared secret...${NC}"
+
+    if [ -n "${CF_WORKER_SECRET:-}" ]; then
+        echo -e "${GREEN}✓ Using existing CF_WORKER_SECRET from shared environment${NC}"
+    else
+        local existing_secret
+        existing_secret=$(read_existing_env_var CF_WORKER_SECRET)
+
+        if [ -n "$existing_secret" ]; then
+            CF_WORKER_SECRET=$existing_secret
+            echo -e "${GREEN}✓ Reusing existing local CF_WORKER_SECRET${NC}"
+        else
+            CF_WORKER_SECRET=$(openssl rand -hex 32)
+            echo -e "${GREEN}✓ Generated CF_WORKER_SECRET${NC}"
+        fi
+    fi
+    echo ""
+}
+
+configure_api_key_checksum_secret() {
+    echo -e "${BLUE}Configuring API key checksum secret...${NC}"
+
+    if [ -n "${API_KEY_CHECKSUM_SECRET:-}" ]; then
+        echo -e "${GREEN}✓ Using existing API_KEY_CHECKSUM_SECRET from shared environment${NC}"
+    else
+        local existing_secret default_secret
+        existing_secret=$(read_existing_env_var API_KEY_CHECKSUM_SECRET)
+
+        if [ -n "$existing_secret" ]; then
+            API_KEY_CHECKSUM_SECRET=$existing_secret
+            echo -e "${GREEN}✓ Reusing existing local API_KEY_CHECKSUM_SECRET${NC}"
+        else
+            default_secret=$(read_env_example_var API_KEY_CHECKSUM_SECRET)
+            if [ -z "$default_secret" ]; then
+                echo -e "${RED}Error: API_KEY_CHECKSUM_SECRET is missing from .env.example.${NC}"
+                exit 1
+            fi
+            API_KEY_CHECKSUM_SECRET=$default_secret
+            echo -e "${GREEN}✓ Using development API_KEY_CHECKSUM_SECRET${NC}"
+        fi
+    fi
+    echo ""
+}
+
+configure_token_storage_secrets() {
+    echo -e "${BLUE}Configuring token storage secrets...${NC}"
+
+    if [ -n "${VOUCHA_OTP_TOKEN_HASH_SECRET:-}" ]; then
+        echo -e "${GREEN}✓ Using existing VOUCHA_OTP_TOKEN_HASH_SECRET from shared environment${NC}"
+    else
+        local existing_otp_secret default_otp_secret
+        existing_otp_secret=$(read_existing_env_var VOUCHA_OTP_TOKEN_HASH_SECRET)
+
+        if [ -n "$existing_otp_secret" ]; then
+            VOUCHA_OTP_TOKEN_HASH_SECRET=$existing_otp_secret
+            echo -e "${GREEN}✓ Reusing existing local VOUCHA_OTP_TOKEN_HASH_SECRET${NC}"
+        else
+            default_otp_secret=$(read_env_example_var VOUCHA_OTP_TOKEN_HASH_SECRET)
+            if [ -z "$default_otp_secret" ]; then
+                echo -e "${RED}Error: VOUCHA_OTP_TOKEN_HASH_SECRET is missing from .env.example.${NC}"
+                exit 1
+            fi
+            VOUCHA_OTP_TOKEN_HASH_SECRET=$default_otp_secret
+            echo -e "${GREEN}✓ Using development VOUCHA_OTP_TOKEN_HASH_SECRET${NC}"
+        fi
+    fi
+
+    if [ -n "${VOUCHA_STORED_SECRET_ENCRYPTION_KEYS:-}" ]; then
+        echo -e "${GREEN}✓ Using existing VOUCHA_STORED_SECRET_ENCRYPTION_KEYS from shared environment${NC}"
+    else
+        local existing_encryption_keys default_encryption_keys
+        existing_encryption_keys=$(read_existing_env_var VOUCHA_STORED_SECRET_ENCRYPTION_KEYS)
+
+        if [ -n "$existing_encryption_keys" ]; then
+            VOUCHA_STORED_SECRET_ENCRYPTION_KEYS=$existing_encryption_keys
+            echo -e "${GREEN}✓ Reusing existing local VOUCHA_STORED_SECRET_ENCRYPTION_KEYS${NC}"
+        else
+            default_encryption_keys=$(read_env_example_var VOUCHA_STORED_SECRET_ENCRYPTION_KEYS)
+            if [ -z "$default_encryption_keys" ]; then
+                echo -e "${RED}Error: VOUCHA_STORED_SECRET_ENCRYPTION_KEYS is missing from .env.example.${NC}"
+                exit 1
+            fi
+            VOUCHA_STORED_SECRET_ENCRYPTION_KEYS=$default_encryption_keys
+            echo -e "${GREEN}✓ Using development VOUCHA_STORED_SECRET_ENCRYPTION_KEYS${NC}"
+        fi
+    fi
+    echo ""
+}
+
+has_non_empty_env_var() {
+    local key=$1
+    local value="${!key-}"
+
+    [[ -n "$(printf '%s' "$value" | tr -d '[:space:]')" ]]
+}
+
+has_env_pair() {
+    local access_key_var=$1
+    local secret_key_var=$2
+
+    has_non_empty_env_var "$access_key_var" && has_non_empty_env_var "$secret_key_var"
+}
+
+append_env_var_if_set() {
+    local key=$1
+
+    if has_non_empty_env_var "$key"; then
+        printf 'export %s=%q\n' "$key" "${!key}"
+    fi
+}
+
+# Emits `export KEY=VALUE` only when VALUE is non-empty — the same shape as
+# append_env_var_if_set, but for a value already resolved into a variable
+# (typically via resolve_preserved_env_var below) rather than read directly
+# off a same-named process environment variable.
+append_env_var_value() {
+    local key=$1
+    local value=$2
+
+    if [ -n "$value" ]; then
+        printf 'export %s=%q\n' "$key" "$value"
+    fi
+}
+
+# Resolves a value whose configurer may not have run this invocation because
+# it is gated to a higher mode (e.g. configure_cf_worker_secret and
+# configure_turnstile_keys are web-only, but write_worktree_env now also runs
+# in backend mode): prefer the live shell variable SHELL_KEY when this run's
+# own setup declared it — even to an intentionally empty string, as
+# configure_turnstile_keys does when neither key is configured — falling back
+# to whatever a prior run wrote to .env under ENV_KEY (default: same name as
+# SHELL_KEY) before write_worktree_env truncates it. `declare -p` is the "did
+# this run's configurer touch it at all" test; a plain non-empty check would
+# wrongly treat an intentional empty result as "never ran" and resurrect a
+# stale preserved value.
+resolve_preserved_env_var() {
+    local shell_key=$1
+    local env_key="${2:-$shell_key}"
+
+    if declare -p "$shell_key" >/dev/null 2>&1; then
+        printf '%s' "${!shell_key}"
+        return
+    fi
+    read_existing_env_var "$env_key"
+}
+
+append_s3_credentials_to_env() {
+    if has_env_pair S3_AWS_ACCESS_KEY_ID S3_AWS_SECRET_ACCESS_KEY; then
+        append_env_var_if_set S3_AWS_ACCESS_KEY_ID
+        append_env_var_if_set S3_AWS_SECRET_ACCESS_KEY
+        append_env_var_if_set S3_AWS_SESSION_TOKEN
+        return
+    fi
+
+    append_env_var_if_set AWS_ACCESS_KEY_ID
+    append_env_var_if_set AWS_SECRET_ACCESS_KEY
+    append_env_var_if_set AWS_SESSION_TOKEN
+}
+
+print_s3_credentials_note() {
+    echo -e "${YELLOW}Note: S3 credentials are not configured.${NC}" >&2
+    echo "The app can start, but S3-backed features such as image uploads, sitemap/crawl storage, and user exports require credentials when used." >&2
+    echo "To enable those features locally, add one of these credential pairs to ~/voucha.env, then rerun ./dev/initialize web:" >&2
+    echo "  export S3_AWS_ACCESS_KEY_ID=..." >&2
+    echo "  export S3_AWS_SECRET_ACCESS_KEY=..." >&2
+    echo "  # Optional when using temporary credentials:" >&2
+    echo "  export S3_AWS_SESSION_TOKEN=..." >&2
+    echo "" >&2
+    echo "Fallback shared AWS credentials are also accepted:" >&2
+    echo "  export AWS_ACCESS_KEY_ID=..." >&2
+    echo "  export AWS_SECRET_ACCESS_KEY=..." >&2
+    echo "  # Optional when using temporary credentials:" >&2
+    echo "  export AWS_SESSION_TOKEN=..." >&2
+}
+
+validate_s3_credentials() {
+    echo -e "${BLUE}Validating S3 credentials...${NC}"
+
+    if has_env_pair S3_AWS_ACCESS_KEY_ID S3_AWS_SECRET_ACCESS_KEY; then
+        echo -e "${GREEN}✓ Found S3_AWS_* credentials${NC}\n"
+        return
+    fi
+
+    if has_env_pair AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; then
+        echo -e "${GREEN}✓ Found fallback AWS_* credentials for S3${NC}\n"
+        return
+    fi
+
+    print_s3_credentials_note
+    echo ""
+}
+
+configure_turnstile_keys() {
+    # Apply Turnstile keys as a matched pair. A real site key + test secret (or vice versa)
+    # would cause the frontend to issue real tokens that the backend then rejects.
+    # When neither is set, leave them empty — code-level defaults in
+    # web/lib/turnstile-config.ts and backend/services/captcha/verify.mts use Cloudflare's
+    # public always-pass test keys.
+    # Trim whitespace so a value like "  " is treated as unset, matching the
+    # `.trim()` checks in next.config.ts and verify.mts.
+    local trimmed_public_site_key trimmed_secret_key
+    local TRIMMED_TURNSTILE_SITE_KEY TRIMMED_TURNSTILE_SECRET_KEY
+
+    trimmed_public_site_key="$(printf '%s' "${NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY:-}" | awk '{$1=$1; print}')"
+    trimmed_secret_key="$(printf '%s' "${CLOUDFLARE_TURNSTILE_SECRET_KEY:-}" | awk '{$1=$1; print}')"
+
+    TRIMMED_TURNSTILE_SITE_KEY="$trimmed_public_site_key"
+    TRIMMED_TURNSTILE_SECRET_KEY="$trimmed_secret_key"
+
+    if [ -n "$TRIMMED_TURNSTILE_SITE_KEY" ] && [ -n "$TRIMMED_TURNSTILE_SECRET_KEY" ]; then
+        EFFECTIVE_TURNSTILE_SITE_KEY="$TRIMMED_TURNSTILE_SITE_KEY"
+        EFFECTIVE_TURNSTILE_SECRET_KEY="$TRIMMED_TURNSTILE_SECRET_KEY"
+    else
+        EFFECTIVE_TURNSTILE_SITE_KEY=""
+        EFFECTIVE_TURNSTILE_SECRET_KEY=""
+        echo -e "${YELLOW}Note: NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY / CLOUDFLARE_TURNSTILE_SECRET_KEY not set — falling back to Cloudflare's public always-pass test keys.${NC}"
+        echo -e "${YELLOW}See https://developers.cloudflare.com/turnstile/troubleshooting/testing/${NC}\n"
+    fi
+}
+
+write_worktree_env() {
+    echo "$VALKEY_PORT" > .valkey-port
+    echo -e "${GREEN}✓ Wrote .valkey-port ($VALKEY_PORT)${NC}\n"
+
+    # Shell-quote WORKTREE_DIR so paths containing spaces or shell
+    # metacharacters survive the source-back from .env. printf %q is
+    # available on bash 3.2+ (macOS default).
+    local worktree_dir_quoted
+    worktree_dir_quoted=$(printf '%q' "${WORKTREE_DIR:-}")
+
+    local effective_database_url database_url_quoted existing_worktree_dir candidate_database_url candidate_db_name
+    existing_worktree_dir=$(read_existing_env_var WORKTREE_DIR)
+    effective_database_url="${DATABASE_URL:-}"
+    if [ -n "$effective_database_url" ] && ! worktree_resource_is_main "$(pwd -P)"; then
+        candidate_db_name=$(DATABASE_URL="$effective_database_url" db_name_from_url)
+        if [ "$candidate_db_name" != "$DB_NAME" ]; then
+            effective_database_url=""
+        fi
+    fi
+    if [ -z "$effective_database_url" ] && [ -n "$existing_worktree_dir" ] && [ "$existing_worktree_dir" = "${WORKTREE_DIR:-}" ]; then
+        candidate_database_url=$(read_existing_env_var DATABASE_URL)
+        if [ -n "$candidate_database_url" ]; then
+            candidate_db_name=$(DATABASE_URL="$candidate_database_url" db_name_from_url)
+            if worktree_resource_is_main "$(pwd -P)" || [ "$candidate_db_name" != "voucha" ]; then
+                effective_database_url=$candidate_database_url
+            fi
+        fi
+    fi
+    if [ -z "$effective_database_url" ]; then
+        effective_database_url="$(dev_db_target_default_database_url "$DB_NAME")"
+    fi
+    database_url_quoted=$(printf '%q' "$effective_database_url")
+
+    # Resolve values whose configurers are gated to web mode (configure_cf_worker_secret,
+    # configure_web_push_keys, configure_turnstile_keys) before .env is truncated below.
+    # write_worktree_env itself now also runs in backend mode (B3), so these must always
+    # end up declared — even to an intentionally empty string — rather than left unset:
+    # an unset reference under `set -u` further down in this function would abort the
+    # script. resolve_preserved_env_var prefers this run's own configurer output when one
+    # ran, else falls back to the prior .env, so a backend-mode refresh does not drop a
+    # web worktree's existing secrets, and a web re-run that intentionally clears Turnstile
+    # does not resurrect a stale pair from before.
+    #
+    # CF_WORKER_SECRET is a special case: unlike the other five, its resolver is called
+    # with a single argument, so the shell key resolve_preserved_env_var checks
+    # (CF_WORKER_SECRET) is spelled identically to the name ~/voucha.env would use. The
+    # gate 1186-1250 block above now sources ~/voucha.env into this top-level shell
+    # unconditionally at every mode >= backend (B3), so a changed value there would
+    # satisfy `declare -p` even in backend mode, even though configure_cf_worker_secret
+    # (its actual configurer) never ran. Backend mode never runs write_worker_env or
+    # write_web_env_local — the only other writers of this same secret
+    # (cloudflare-worker/.dev.vars, web/.env.local) — so adopting a live value here alone
+    # would desync .env from those untouched files and break Worker auth. Read straight
+    # from the prior .env outside web mode instead of trusting resolve_preserved_env_var's
+    # declare-p check. (The other five below use an internal FINAL_*/EFFECTIVE_* shell
+    # key distinct from their .env name, so ~/voucha.env sourcing can never satisfy their
+    # declare-p check and they are not exposed to this.)
+    if [ "$MODE" = web ]; then
+        CF_WORKER_SECRET=$(resolve_preserved_env_var CF_WORKER_SECRET)
+    else
+        CF_WORKER_SECRET=$(read_existing_env_var CF_WORKER_SECRET)
+    fi
+    FINAL_WEB_PUSH_PUBLIC_KEY=$(resolve_preserved_env_var FINAL_WEB_PUSH_PUBLIC_KEY WEB_PUSH_PUBLIC_KEY)
+    FINAL_WEB_PUSH_PRIVATE_KEY=$(resolve_preserved_env_var FINAL_WEB_PUSH_PRIVATE_KEY WEB_PUSH_PRIVATE_KEY)
+    FINAL_WEB_PUSH_SUBJECT=$(resolve_preserved_env_var FINAL_WEB_PUSH_SUBJECT WEB_PUSH_SUBJECT)
+    EFFECTIVE_TURNSTILE_SITE_KEY=$(resolve_preserved_env_var EFFECTIVE_TURNSTILE_SITE_KEY NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY)
+    EFFECTIVE_TURNSTILE_SECRET_KEY=$(resolve_preserved_env_var EFFECTIVE_TURNSTILE_SECRET_KEY CLOUDFLARE_TURNSTILE_SECRET_KEY)
+    # NODE_EXTRA_CA_CERTS is deliberately NOT resolved here in web mode: the mkcert
+    # block later in main() is web's sole writer and re-derives it fresh from a live
+    # `mkcert -CAROOT` on every web run (self-healing after a reinstalled mkcert or a
+    # moved cert store). Pre-seeding it here in web mode would make that block's
+    # `grep -q '^export NODE_EXTRA_CA_CERTS='` guard hit and skip re-deriving, silently
+    # reviving a stale path. In backend mode the mkcert block never runs at all, so we
+    # do resolve/preserve it here instead — otherwise a `backend` refresh of a
+    # previously-web worktree would silently drop the value.
+    if [ "$MODE" != web ]; then
+        NODE_EXTRA_CA_CERTS=$(resolve_preserved_env_var NODE_EXTRA_CA_CERTS)
+    fi
+
+    echo -e "${BLUE}Creating worktree .env...${NC}"
+    cat > .env << EOF
+# Source shared secrets
+if [ -f ~/voucha.env ]; then
+    set -a
+    source ~/voucha.env
+    set +a
+fi
+
+# Worktree-specific overrides
+export NODE_ENV=development
+export ENVIRONMENT=development
+export PORT=$BACKEND_PORT
+export DATABASE_URL=$database_url_quoted
+export VALKEY_URL=redis://localhost:$VALKEY_PORT
+export VALKEY_SESSION_URL=redis://localhost:$VALKEY_PORT
+export VALKEY_CACHE_URL=redis://localhost:$VALKEY_PORT
+export VALKEY_RATE_LIMITER_URL=redis://localhost:$VALKEY_PORT
+export VALKEY_DYNAMIC_CONFIG_URL=redis://localhost:$VALKEY_PORT
+export VALKEY_WORKER_QUEUE_URL=redis://localhost:$VALKEY_PORT
+export VALKEY_CONTAINER=$VALKEY_CONTAINER
+export NEXT_PUBLIC_API_BASE_URL=http://localhost:$BACKEND_PORT
+export SITEMAP_BASE_URL=http://localhost:$WORKER_PORT
+export CF_WORKER_ROUTE=http://localhost:$WORKER_PORT
+export API_BASE_URL=http://localhost:$BACKEND_PORT
+# Lightpanda runs as a cloud SaaS (no local binary/port); LIGHTPANDA_TOKEN is left
+# unset here by default — set it yourself (e.g. via ~/voucha.env) to exercise real
+# crawls locally. crawl_browser jobs throw a clear error if run without a token.
+export LIGHTPANDA_CDP_URL=wss://uswest.cloud.lightpanda.io/ws
+export IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT
+export NEXT_PORT=$NEXT_PORT
+export STORYBOOK_PORT=$STORYBOOK_PORT
+export WORKER_PORT=$WORKER_PORT
+export IMAGE_LAMBDA_PORT=$IMAGE_LAMBDA_PORT
+export INSPECTOR_PORT=$INSPECTOR_PORT
+export WORKTREE_DIR=$worktree_dir_quoted
+
+case " \${NODE_OPTIONS:-} " in
+    *" --disable-warning=DEP0205 "*) ;;
+    *) export NODE_OPTIONS="\${NODE_OPTIONS:+\$NODE_OPTIONS }--disable-warning=DEP0205" ;;
+esac
+EOF
+
+    {
+        # CF_WORKER_SECRET and the WEB_PUSH_* triple are configured web-only; omit them
+        # entirely (via append_env_var_value) rather than write an empty export when this
+        # run never configured them and no prior run left one to preserve — e.g. a truly
+        # fresh backend-only worktree.
+        append_env_var_value CF_WORKER_SECRET "$CF_WORKER_SECRET"
+        printf 'export API_KEY_CHECKSUM_SECRET=%q\n' "$API_KEY_CHECKSUM_SECRET"
+        printf 'export VOUCHA_OTP_TOKEN_HASH_SECRET=%q\n' "$VOUCHA_OTP_TOKEN_HASH_SECRET"
+        printf 'export VOUCHA_STORED_SECRET_ENCRYPTION_KEYS=%q\n' "$VOUCHA_STORED_SECRET_ENCRYPTION_KEYS"
+        append_s3_credentials_to_env
+        append_env_var_value WEB_PUSH_PUBLIC_KEY "$FINAL_WEB_PUSH_PUBLIC_KEY"
+        append_env_var_value WEB_PUSH_PRIVATE_KEY "$FINAL_WEB_PUSH_PRIVATE_KEY"
+        append_env_var_value WEB_PUSH_SUBJECT "$FINAL_WEB_PUSH_SUBJECT"
+        printf 'export NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY=%q\n' "$FINAL_WEB_PUSH_PUBLIC_KEY"
+        # Web mode never resolves NODE_EXTRA_CA_CERTS above (see comment there), so it is
+        # left entirely to the later mkcert block, which appends it after deriving CAROOT.
+        if [ "$MODE" != web ]; then
+            append_env_var_value NODE_EXTRA_CA_CERTS "$NODE_EXTRA_CA_CERTS"
+        fi
+        # Turnstile: only write a real pair when both env vars are set in the shared shell.
+        # When unset, code-level defaults in web/lib/turnstile-config.ts and
+        # backend/services/captcha/verify.mts use Cloudflare's public always-pass test keys.
+        if [ -n "${EFFECTIVE_TURNSTILE_SITE_KEY:-}" ] && [ -n "${EFFECTIVE_TURNSTILE_SECRET_KEY:-}" ]; then
+            printf 'export CLOUDFLARE_TURNSTILE_SECRET_KEY=%q\n' "$EFFECTIVE_TURNSTILE_SECRET_KEY"
+            printf 'export NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY=%q\n' "$EFFECTIVE_TURNSTILE_SITE_KEY"
+        fi
+    } >> .env
+
+    echo -e "${GREEN}✓ Created .env${NC}\n"
+}
+
+write_worker_env() {
+    echo -e "${BLUE}Generating cloudflare-worker/.dev.vars...${NC}"
+
+    # Playwright and local dev builds serve Next.js static assets from the Next.js
+    # server origin even when pages are loaded through the HTTPS CF Worker.
+    local csp_asset_origin="http://localhost:$NEXT_PORT"
+
+    cat > cloudflare-worker/.dev.vars << EOF
+BACKEND_ORIGIN=http://localhost:$BACKEND_PORT
+WEB_ORIGIN=http://localhost:$NEXT_PORT
+CSP_ASSET_ORIGIN=$csp_asset_origin
+CSP_BROWSER_UPLOAD_ORIGINS=["https://$S3_BUCKET_IMAGE_UPLOADS.s3.us-west-2.amazonaws.com","https://$S3_BUCKET_IMAGE_UPLOADS.s3.dualstack.us-west-2.amazonaws.com"]
+CF_WORKER_SECRET="$CF_WORKER_SECRET"
+# Local-only Next.js HMR support. The worker rejects WebSocket upgrades when
+# PRODUCTION=true or WEB_ORIGIN is not localhost/127.0.0.1/[::1].
+DEV_WEBSOCKET_PROXY=true
+PRODUCTION=false
+
+# Optional override for real app JWT verification keys in local worker dev.
+# Omit this in normal dev/test to use the shared fallback test key.
+# VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64=<base64-encoded JSON array of public JWKs>
+EOF
+    echo -e "${GREEN}✓ Generated cloudflare-worker/.dev.vars${NC}\n"
+}
+
+write_web_env_local() {
+    echo -e "${BLUE}Updating web/.env.local...${NC}"
+    mkdir -p web
+
+    local cert_dir="dev/certs"
+    local asset_prefix
+    if [ -f "$cert_dir/localhost.pem" ] && [ -f "$cert_dir/localhost-key.pem" ]; then
+        # With mkcert the page is served over HTTPS from the CF Worker; assets must use
+        # the same HTTPS origin to avoid mixed-content blocks. The Worker proxies
+        # _next/static/* to the Next.js dev server.
+        asset_prefix="https://localhost:$WORKER_PORT"
+    else
+        # Without mkcert assets load directly from Next.js (HTTP, no mixed-content risk).
+        asset_prefix="http://localhost:$NEXT_PORT"
+    fi
+
+    cat > web/.env.local << EOF
+NEXT_PUBLIC_API_BASE_URL=http://localhost:$BACKEND_PORT
+API_BASE_URL=http://localhost:$BACKEND_PORT
+NEXT_PUBLIC_META_APP_ID=${META_APP_ID:-}
+NEXT_PUBLIC_FACEBOOK_APP_ID=${FACEBOOK_APP_ID:-}
+SITEMAP_BASE_URL=http://localhost:$WORKER_PORT
+NEXT_PUBLIC_ASSET_PREFIX=$asset_prefix
+# Browser hits the local image-resize Lambda directly. In production, IMAGE_ORIGIN
+# is set per-environment on the ECS task definition (no NEXT_PUBLIC_ prefix so the
+# same Docker image deploys to staging and production); the root layout mirrors it
+# to window.__IMAGE_ORIGIN__ for client components.
+IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT
+NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY=$FINAL_WEB_PUSH_PUBLIC_KEY
+EOF
+    # Append secrets separately so the heredoc doesn't need to handle special characters
+    printf 'CF_WORKER_SECRET="%s"\n' "$CF_WORKER_SECRET" >> web/.env.local
+    # Always write the Turnstile site key — defaults to Cloudflare's public always-pass test key
+    # when no real value is sourced from ~/voucha.env. web/next.config.ts asserts this env var
+    # is set during `phase-production-build` (which next typegen also runs under), so writing the
+    # test key keeps `pnpm run typecheck:web` working on a fresh local setup. Whenever the value
+    # being written is any of Cloudflare's public test site keys (default OR sourced from
+    # ~/voucha.env), also write ALLOW_TURNSTILE_TEST_KEY=true so the build guard does not reject
+    # the test key as a misconfigured production deploy. Keep this list in sync with
+    # TURNSTILE_TEST_SITE_KEYS in web/lib/turnstile-config.ts.
+    local turnstile_site_key="${EFFECTIVE_TURNSTILE_SITE_KEY:-1x00000000000000000000AA}"
+    printf 'NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY=%s\n' "$turnstile_site_key" >> web/.env.local
+    case "$turnstile_site_key" in
+        1x00000000000000000000AA | 2x00000000000000000000AB | 1x00000000000000000000BB | 2x00000000000000000000BB | 3x00000000000000000000FF)
+            printf 'ALLOW_TURNSTILE_TEST_KEY=true\n' >> web/.env.local
+            ;;
+    esac
+    echo -e "${GREEN}✓ Updated web/.env.local${NC}\n"
+}
+
+database_has_migrations_table() {
+    local database_url=$1
+
+    psql "$database_url" -Atqc "
+        SELECT CASE
+          WHEN to_regclass('migrations') IS NOT NULL THEN 't'
+          ELSE 'f'
+        END
+    "
+}
+
+reset_database_if_schema_mismatch() {
+    local database_url migrations_table_exists stale_schema_reason
+
+    if [ "${IS_MAIN:-false}" = true ]; then
+        return 0
+    fi
+
+    database_url="${DATABASE_URL:-$(dev_db_target_default_database_url "$DB_NAME")}"
+    (
+        unset PGHOST PGHOSTADDR PGPORT PGUSER PGPASSWORD PGSERVICE PGSERVICEFILE PGTARGETSESSIONATTRS
+        unset PGSSLMODE PGSSLCERT PGSSLKEY PGSSLROOTCERT PGSSLCRL PGSSLCRLDIR
+        dev_db_target_resolve reset "$database_url" "$DB_NAME"
+        dev_db_target_export_pg_env
+        if ! dev_db_target_local_or_allowed reset; then
+            echo -e "${YELLOW}Skipping automatic stale schema reset for non-local database target; set VOUCHA_ALLOW_NON_LOCAL_DB_RESET=1 to allow it.${NC}"
+            exit 0
+        fi
+
+        migrations_table_exists=$(database_has_migrations_table "$database_url")
+
+        if [ "$migrations_table_exists" != "t" ]; then
+            exit 0
+        fi
+
+        stale_schema_reason=$(detect_stale_schema_reason "$database_url")
+
+        if [ -z "$stale_schema_reason" ]; then
+            exit 0
+        fi
+
+        echo -e "${YELLOW}Detected stale $DEV_DB_TARGET_DB_NAME schema: $stale_schema_reason; resetting database before migrations${NC}"
+
+        dropdb "$DEV_DB_TARGET_DB_NAME"
+        createdb "$DEV_DB_TARGET_DB_NAME"
+        echo -e "${GREEN}✓ Reset database $DEV_DB_TARGET_DB_NAME${NC}"
+    )
+}
+
+print_unsupported_database_target_error() {
+    local variable_name=$1
+
+    echo -e "${RED}Error: $variable_name cannot select the Voucha worktree database.${NC}" >&2
+    echo "Set DATABASE_URL explicitly so ./dev/initialize and the application use the same target." >&2
+}
+
+validate_worktree_database_target() {
+    local connection_variable connection_value existing_worktree_dir
+
+    for connection_variable in PGHOST PGHOSTADDR PGPORT PGSERVICE PGSERVICEFILE; do
+        connection_value="${!connection_variable-}"
+        if [ -n "$connection_value" ]; then
+            print_unsupported_database_target_error "$connection_variable"
+            return 1
+        fi
+    done
+
+    existing_worktree_dir=$(read_existing_env_var WORKTREE_DIR)
+    if [ -n "$existing_worktree_dir" ] && [ "$existing_worktree_dir" = "${WORKTREE_DIR:-}" ]; then
+        for connection_variable in PGHOST PGHOSTADDR PGPORT PGSERVICE PGSERVICEFILE; do
+            connection_value=$(read_existing_env_var "$connection_variable")
+            if [ -n "$connection_value" ]; then
+                print_unsupported_database_target_error "$connection_variable"
+                return 1
+            fi
+        done
+    fi
+}
+
+prepare_worktree_database_host() {
+    # mode defaults to "web" (rather than reading the caller's $MODE) so this
+    # function's hint text is deterministic when unit-tested standalone,
+    # outside of main()'s call frame. Real callers pass "$MODE" explicitly.
+    local mode="${1:-web}"
+    local existing_database_url existing_worktree_dir existing_db_name
+
+    validate_worktree_database_target || return 1
+
+    if [ -n "${DATABASE_URL:-}" ] && [ -n "${DB_NAME:-}" ] && ! worktree_resource_is_main "$(pwd -P)"; then
+        if [ "$(DATABASE_URL="$DATABASE_URL" db_name_from_url)" != "$DB_NAME" ]; then
+            unset DATABASE_URL
+        fi
+    fi
+
+    [ -z "${DATABASE_URL:-}" ] || return 0
+
+    existing_worktree_dir=$(read_existing_env_var WORKTREE_DIR)
+    if [ -n "$existing_worktree_dir" ] && [ "$existing_worktree_dir" = "${WORKTREE_DIR:-}" ]; then
+        existing_database_url=$(read_existing_env_var DATABASE_URL)
+        if [ -n "$existing_database_url" ]; then
+            existing_db_name=$(DATABASE_URL="$existing_database_url" db_name_from_url)
+            if worktree_resource_is_main "$(pwd -P)" || [ "$existing_db_name" != "voucha" ]; then
+                if [ "$existing_database_url" != "$(dev_db_target_default_database_url "$DB_NAME")" ]; then
+                    return 0
+                fi
+            fi
+        fi
+    fi
+
+    [ "$(uname -s)" = Darwin ] || return 0
+
+    if ! command -v brew >/dev/null 2>&1; then
+        echo -e "${RED}Error: Homebrew is required to start the default local PostgreSQL service.${NC}" >&2
+        echo "Provision the host with https://github.com/vouchington/vouchington-machines and rerun './dev/initialize $mode'." >&2
+        return 1
+    fi
+
+    echo -e "${BLUE}Starting local PostgreSQL service...${NC}"
+    if ! brew services start postgresql@18; then
+        echo -e "${RED}Error: Failed to start Homebrew PostgreSQL 18.${NC}" >&2
+        echo "Run 'brew services info postgresql@18' for details, fix the service, and rerun './dev/initialize $mode'." >&2
+        return 1
+    fi
+    echo ""
+}
+
+ensure_database_exists() {
+    # See prepare_worktree_database_host for why mode defaults to "web" here
+    # instead of reading $MODE.
+    local mode="${1:-web}"
+    echo -e "${BLUE}Creating PostgreSQL database: $DB_NAME...${NC}"
+    local psql_err_file="${TMPDIR:-/tmp}/psql-list-err-${USER:-$(id -u)}-$$.txt"
+    local createdb_err_file="${TMPDIR:-/tmp}/createdb-err-${USER:-$(id -u)}-$$.txt"
+    dev_db_target_resolve init "${DATABASE_URL:-}" "$DB_NAME"
+    DB_NAME="$DEV_DB_TARGET_DB_NAME"
+    dev_db_target_export_pg_env
+    if ! dev_db_target_local_or_allowed init; then
+        echo -e "${RED}Error: Refusing to initialize non-local database $DB_NAME.${NC}"
+        echo "Set VOUCHA_ALLOW_NON_LOCAL_DB_INIT=1 to allow this explicitly."
+        rm -f "$psql_err_file" "$createdb_err_file"
+        exit 1
+    fi
+
+    if ! psql --dbname=postgres -lqt 2>"$psql_err_file" | cut -d \| -f 1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -Fqx -- "$DB_NAME"; then
+        if grep -q "No such file\|Connection refused\|could not connect" "$psql_err_file" 2>/dev/null; then
+            print_database_connection_error "$mode"
+            rm -f "$psql_err_file" "$createdb_err_file"
+            exit 1
+        fi
+        if ! createdb "$DB_NAME" 2>"$createdb_err_file"; then
+            if grep -q "No such file\|Connection refused\|could not connect" "$createdb_err_file" 2>/dev/null; then
+                print_database_connection_error "$mode"
+            fi
+            cat "$createdb_err_file" >&2
+            rm -f "$psql_err_file" "$createdb_err_file"
+            exit 1
+        fi
+        echo -e "${GREEN}✓ Created database $DB_NAME${NC}"
+    else
+        echo -e "${YELLOW}Database $DB_NAME already exists, skipping creation${NC}"
+    fi
+    rm -f "$psql_err_file" "$createdb_err_file"
+    echo ""
+}
+
+print_usage() {
+    echo "Usage: ./dev/initialize [monorepo|backend|web]"
+    echo ""
+    echo "  monorepo  Install deps and pinned tooling — no Docker, DB, or .env"
+    echo "            Enables: oxlint, oxfmt, no-mistakes, unit tests (vitest)"
+    echo "  backend   monorepo + ports, Valkey, DB, migrations, .env — no HTTPS certs"
+    echo "            or CF Worker/web-only secrets"
+    echo "            Enables: monorepo + DB/Valkey-backed tests"
+    echo "  web       Full setup: backend + HTTPS certs, CF Worker env, web/.env.local (default)"
+    echo "            Enables: all services via ./dev/tmux, Playwright tests"
+    echo ""
+    echo "Bare './dev/initialize' defaults to 'web'."
+}
+
+print_docker_daemon_error() {
+    # mode defaults to "web" (rather than reading the caller's $MODE) so this
+    # function's hint text is deterministic when unit-tested standalone,
+    # outside of main()'s call frame — an ambient $MODE (e.g. Vitest sets one)
+    # would otherwise leak into the message. Real callers pass "$MODE".
+    local mode="${1:-web}"
+    echo -e "${RED}Error: Docker daemon is not reachable or not running.${NC}"
+    echo -e "${YELLOW}If Docker Desktop is stopped, start it and try again.${NC}"
+    echo -e "${YELLOW}If Docker is already running, rerun ./dev/initialize $mode without sandboxing.${NC}"
+}
+
+print_database_connection_error() {
+    # See print_docker_daemon_error for why mode defaults to "web" here
+    # instead of reading $MODE.
+    local mode="${1:-web}"
+    echo -e "${RED}Error: PostgreSQL connection failed.${NC}"
+    if [ "$(uname -s)" = Darwin ] && command -v brew >/dev/null 2>&1; then
+        echo -e "${YELLOW}Check 'brew services info postgresql@18' and confirm that the configured database target is reachable.${NC}"
+    else
+        echo -e "${YELLOW}Confirm that the host PostgreSQL 18 service is running and the configured database target is reachable.${NC}"
+    fi
+    echo -e "${YELLOW}Inspect DATABASE_URL in .env, correct its host or port if needed, then retry: source .env && ./dev/initialize $mode${NC}"
+}
+
+# Ranks the three-rung initialization ladder so callers can compare modes
+# without string-matching every pair. Unknown/empty input (e.g. a missing
+# .initialized file, or a marker predating this ladder) ranks lowest so it
+# never outranks a real requested mode.
+initialization_mode_rank() {
+    case "$1" in
+        monorepo) printf '%s' 1 ;;
+        backend) printf '%s' 2 ;;
+        web) printf '%s' 3 ;;
+        *) printf '%s' 0 ;;
+    esac
+}
+
+# True (exit 0) when $1's rung is at or above $2's on the ladder.
+mode_at_least() {
+    local mode_rank floor_rank
+    mode_rank=$(initialization_mode_rank "$1")
+    floor_rank=$(initialization_mode_rank "$2")
+    [ "$mode_rank" -ge "$floor_rank" ]
+}
+
+# Probes the worktree on disk (not the requested mode) for the strongest
+# capability its current .env/artifacts actually support: web only when the
+# stricter web validator passes (matching ports across .env, .dev.vars, and
+# web/.env.local), else backend when the backend validator passes, else
+# monorepo. Always exits 0 itself — the validators' own subshell-sourcing of
+# .env must never leak into, or abort, the caller under `set -e`, so run this
+# only inside a command substitution (e.g. `x=$(worktree_validated_capability ...)`).
+worktree_validated_capability() {
+    local repo_root=$1
+
+    if worktree_resource_validate_web_init "$repo_root"; then
+        printf '%s' web
+        return 0
+    fi
+    if worktree_resource_validate_backend_init "$repo_root"; then
+        printf '%s' backend
+        return 0
+    fi
+    printf '%s' monorepo
+    return 0
+}
+
+# The persisted marker is the strongest capability this run can vouch for: the
+# requested mode, or a still-valid capability from a prior run — whichever
+# ranks higher. The prior marker only counts up to what worktree_validated_capability
+# confirms is still true on disk right now, so a marker recorded by an earlier run
+# demotes once its artifacts go stale or missing (e.g. a `web` marker with a deleted
+# cloudflare-worker/.dev.vars, or re-rolled web/.env.local ports) instead of being
+# trusted blindly: marker = max(requested, min(existing_marker, strongest_valid_on_disk)).
+persist_initialization_capability() {
+    local requested_mode="$1"
+    local repo_root="${2:-$REPO_ROOT}"
+    local existing_capability="" strongest_on_disk
+    local requested_rank existing_rank strongest_rank preserved_rank marker_rank
+
+    if [ -f "$repo_root/.initialized" ]; then
+        existing_capability="$(cat "$repo_root/.initialized")"
+    fi
+
+    strongest_on_disk=$(worktree_validated_capability "$repo_root")
+
+    requested_rank=$(initialization_mode_rank "$requested_mode")
+    existing_rank=$(initialization_mode_rank "$existing_capability")
+    strongest_rank=$(initialization_mode_rank "$strongest_on_disk")
+
+    preserved_rank=$existing_rank
+    if [ "$strongest_rank" -lt "$preserved_rank" ]; then
+        preserved_rank=$strongest_rank
+    fi
+
+    marker_rank=$requested_rank
+    if [ "$preserved_rank" -gt "$marker_rank" ]; then
+        marker_rank=$preserved_rank
+    fi
+
+    case "$marker_rank" in
+        3) INITIALIZED_CAPABILITY=web ;;
+        2) INITIALIZED_CAPABILITY=backend ;;
+        *) INITIALIZED_CAPABILITY=monorepo ;;
+    esac
+
+    PRESERVED_CAPABILITY=""
+    if [ "$marker_rank" -gt "$requested_rank" ]; then
+        PRESERVED_CAPABILITY="$INITIALIZED_CAPABILITY"
+    fi
+
+    printf '%s\n' "$INITIALIZED_CAPABILITY" > "$repo_root/.initialized"
+}
+
+print_lower_mode_next_steps() {
+    local requested_mode="$1"
+
+    case "$PRESERVED_CAPABILITY" in
+        web)
+            echo "  Web capability remains available after this $requested_mode refresh."
+            echo "  Load env:       source .env"
+            echo "  Start services: ./dev/tmux"
+            return
+            ;;
+        backend)
+            echo "  Backend capability (DB + Valkey) remains available after this $requested_mode refresh."
+            echo "  Run: source .env"
+            echo "  Run DB/Valkey-backed tests now, or: ./dev/initialize web for the full stack."
+            return
+            ;;
+    esac
+
+    if [ "$requested_mode" = monorepo ]; then
+        echo "  To run DB/Valkey-backed tests: ./dev/initialize backend"
+    fi
+    echo "  To run the full web stack: ./dev/initialize web"
+}
+
+print_mode_summary() {
+    local requested_mode="$1"
+
+    case "$requested_mode" in
+        web)
+            echo -e "${BLUE}Service URLs:${NC}"
+            if [ -f "dev/certs/localhost.pem" ] && [ -f "dev/certs/localhost-key.pem" ]; then
+                echo "  Entry point:  https://localhost:$WORKER_PORT  (open in browser)"
+            else
+                echo "  Entry point:  http://localhost:$WORKER_PORT  (install mkcert for HTTPS)"
+            fi
+            echo "  Backend API:  http://localhost:$BACKEND_PORT"
+            echo "  NextJS:       http://localhost:$NEXT_PORT"
+            echo "  Image Lambda: http://localhost:$IMAGE_LAMBDA_PORT"
+            echo ""
+
+            echo -e "${BLUE}Database:${NC}"
+            echo "  Name:        $DB_NAME"
+            echo "  URL:         $(dev_db_target_display_database_url "${DATABASE_URL:-}" "$DB_NAME")"
+            echo ""
+
+            echo -e "${BLUE}Valkey:${NC}"
+            echo "  Container:   $VALKEY_CONTAINER"
+            echo "  Port:        $VALKEY_PORT"
+            echo "  URL:         redis://localhost:$VALKEY_PORT"
+            echo ""
+
+            echo -e "${BLUE}Next Steps:${NC}"
+            echo "  1. Load env:       source .env     (this shell; DB/Valkey-backed tests need it)"
+            echo "  2. Start services: ./dev/tmux      (services + assistant windows)"
+            if [ -f "dev/certs/localhost.pem" ] && [ -f "dev/certs/localhost-key.pem" ]; then
+                echo "  3. Open browser:   https://localhost:$WORKER_PORT"
+            else
+                echo "  3. Open browser:   http://localhost:$WORKER_PORT  (install mkcert for HTTPS)"
+            fi
+            echo "  4. Check status:   ./dev/status"
+            echo ""
+            ;;
+        backend)
+            echo -e "${BLUE}Database:${NC}"
+            echo "  Name:        $DB_NAME"
+            echo "  URL:         $(dev_db_target_display_database_url "${DATABASE_URL:-}" "$DB_NAME")"
+            echo ""
+
+            echo -e "${BLUE}Valkey:${NC}"
+            echo "  Container:   $VALKEY_CONTAINER"
+            echo "  Port:        $VALKEY_PORT"
+            echo "  URL:         redis://localhost:$VALKEY_PORT"
+            echo ""
+
+            echo -e "${BLUE}Next Steps:${NC}"
+            echo "  1. Run: source .env"
+            echo "  2. DB/Valkey-backed tests are ready to run (no HTTPS certs or CF Worker/web-only secrets)."
+            print_lower_mode_next_steps "$requested_mode"
+            echo ""
+            ;;
+        *)
+            echo -e "${GREEN}Monorepo tools ready:${NC}"
+            echo "  Lint:       pnpm exec oxlint --type-aware && pnpm exec oxfmt"
+            echo "  Static:     pnpm run no-mistakes"
+            echo "  Unit tests: pnpm exec vitest run --project ts-shared"
+            echo ""
+            echo -e "${BLUE}Next Steps:${NC}"
+            print_lower_mode_next_steps "$requested_mode"
+            echo ""
+            ;;
+    esac
+}
+
+main() {
+    if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
+        print_usage
+        exit 0
+    fi
+    if [ "$#" -gt 1 ]; then
+        echo -e "${RED}Error: expected at most one mode.${NC}" >&2
+        print_usage >&2
+        exit 2
+    fi
+    local MODE="${1:-web}"
+    case "$MODE" in
+        monorepo|backend|web) ;;
+        *)
+            echo -e "${RED}Error: unknown mode '$1'.${NC}" >&2
+            print_usage >&2
+            exit 2
+            ;;
+    esac
+
+    local shared_env
+    local INITIALIZED_CAPABILITY=""
+    local PRESERVED_CAPABILITY=""
+
+    cd "$REPO_ROOT"
+
+    echo -e "${BLUE}=== Voucha Worktree Initializer (mode: $MODE) ===${NC}\n"
+
+    # ── Phase A: prerequisites for both modes ──────────────────────────────────
+
+    if ! command -v node >/dev/null 2>&1; then
+        echo -e "${RED}Error: Node.js is not available.${NC}"
+        echo -e "${YELLOW}Provision the host with https://github.com/vouchington/vouchington-machines${NC}"
+        echo -e "${YELLOW}Required capabilities: docs/development/system-dependencies.md${NC}"
+        exit 1
+    fi
+
+    # This Bash/df gate supports bootstrap Node versions that cannot execute
+    # native TypeScript and runs before nvm can download the repository version.
+    if ! check_bootstrap_host_storage; then
+        exit 1
+    fi
+    echo ""
+
+    if ! git rev-parse --git-dir >/dev/null 2>&1; then
+        echo -e "${RED}Error: Not inside a git repository${NC}"
+        exit 1
+    fi
+
+    GIT_DIR=$(git rev-parse --git-dir)
+    clear_stale_index_lock "$GIT_DIR"
+    COMMON_CONFIG="$(git -C "$REPO_ROOT" rev-parse --git-common-dir 2>/dev/null || echo "$GIT_DIR")/config"
+    heal_shared_git_config "$COMMON_CONFIG"
+    IS_MAIN=false
+    if worktree_resource_is_main "$REPO_ROOT"; then
+        IS_MAIN=true
+    elif is_disposable_checkout_path "$REPO_ROOT" && [ -d "$REPO_ROOT/.git" ]; then
+        register_disposable_checkout_path "$REPO_ROOT"
+    fi
+
+    register_live_worktree_resource_paths "$REPO_ROOT"
+
+    WORKTREE_DIR=$(worktree_resource_current_dir "$REPO_ROOT")
+
+    ensure_node_version
+
+    # Node activation makes the comprehensive TypeScript probe available. Its
+    # optional pnpm/Docker discovery runs only after required probes pass.
+    local storage_preflight_args=(--worktree "$REPO_ROOT" --pnpm-store)
+    if mode_at_least "$MODE" backend; then
+        storage_preflight_args+=(--docker-root)
+    fi
+    if ! node "$REPO_ROOT/dev/host-storage-preflight.mts" "${storage_preflight_args[@]}"; then
+        exit 1
+    fi
+    echo ""
+
+    # ── Phase B: backend-and-above prerequisites (Docker, DB, Valkey) ─────────
+
+    if mode_at_least "$MODE" backend; then
+        if ! command -v docker >/dev/null 2>&1; then
+            echo -e "${RED}Error: Docker is not installed.${NC}"
+            echo -e "${YELLOW}Provision the host with https://github.com/vouchington/vouchington-machines${NC}"
+            echo -e "${YELLOW}Required capabilities: docs/development/system-dependencies.md${NC}"
+            exit 1
+        fi
+
+        if ! docker info >/dev/null 2>&1; then
+            print_docker_daemon_error "$MODE"
+            exit 1
+        fi
+
+        if $IS_MAIN; then
+            DB_NAME="voucha"
+            VALKEY_CONTAINER="voucha-valkey"
+        else
+            DB_NAME=$(worktree_resource_owned_db_name "$REPO_ROOT")
+            VALKEY_CONTAINER=$(worktree_resource_owned_valkey_container "$REPO_ROOT")
+        fi
+
+        shared_env="$HOME/voucha.env"
+        owned_db_name=$DB_NAME
+        owned_valkey_container=$VALKEY_CONTAINER
+        if [ -f "$shared_env" ]; then
+            echo -e "${GREEN}✓ Found shared secrets at $shared_env${NC}\n"
+            set -a
+            # shellcheck source=/dev/null
+            source "$shared_env"
+            set +a
+        else
+            echo -e "${YELLOW}Note: $shared_env not found — using current shell environment for secrets${NC}\n"
+        fi
+        if ! $IS_MAIN; then
+            DB_NAME=$owned_db_name
+            VALKEY_CONTAINER=$owned_valkey_container
+            worktree_resource_acquire_operation_lock
+            trap worktree_resource_release_operation_lock EXIT
+        fi
+        validate_worktree_database_target || exit 1
+
+        if [ "$MODE" = web ]; then
+            echo -e "${BLUE}Clearing stale dev caches...${NC}"
+            clear_dev_caches "cloudflare-worker/.wrangler/state" "cloudflare-worker/.wrangler/runtime" "web/.next"
+            echo ""
+        fi
+
+        assign_worktree_ports
+
+        if $IS_MAIN; then
+            echo -e "${GREEN}Detected main worktree${NC}"
+        fi
+
+        echo -e "${GREEN}Port assignments:${NC}"
+        echo "  CF Worker:    $WORKER_PORT  (entry point)"
+        echo "  Backend API:  $BACKEND_PORT"
+        echo "  NextJS:       $NEXT_PORT"
+        echo "  Image Lambda: $IMAGE_LAMBDA_PORT"
+        echo "  Inspector:    $INSPECTOR_PORT"
+        echo "  Valkey:       $VALKEY_PORT"
+        echo ""
+
+        if [ "$MODE" = web ]; then
+            validate_s3_credentials
+            configure_turnstile_keys
+        fi
+
+        ensure_valkey_container
+    fi
+
+    # ── Phase A (continued): dependencies + pinned tooling ────────────────────
+
+    echo -e "${BLUE}Ensuring pnpm is available...${NC}"
+    if ! command -v pnpm >/dev/null 2>&1; then
+        if command -v corepack >/dev/null 2>&1; then
+            corepack enable pnpm
+        else
+            echo -e "${RED}Error: pnpm is not installed and corepack is not available.${NC}"
+            echo "Install pnpm 11 or enable Corepack, then rerun ./dev/initialize $MODE."
+            exit 1
+        fi
+    fi
+    if ! command -v pnpm >/dev/null 2>&1; then
+        echo -e "${RED}Error: pnpm is still unavailable after enabling Corepack.${NC}"
+        echo "Install pnpm 11, then rerun ./dev/initialize $MODE."
+        exit 1
+    fi
+    echo ""
+
+    echo -e "${BLUE}Installing dependencies...${NC}"
+    # Both modes do a full unfiltered install. Monorepo mode used to narrow
+    # the filter to root + backend + ts-shared + cloudflare-worker, but the
+    # pre-push lint pass (knip + dep-cruise-scripts) requires web,
+    # static-code-analysis, ci, and lambdas/* workspaces too — see #3221, #3222.
+    # Local worktrees install bare so node_modules always matches an updated lockfile
+    # after a rebase/merge (issue #5269); CI keeps --frozen-lockfile to enforce
+    # lockfile reproducibility.
+    # confirmModulesPurge=false is unconditional: any caller without a TTY (Auto
+    # Harness sessions, other automation) hits ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY
+    # on a stale node_modules otherwise, since CI is only set for actual CI runners.
+    local lockfile_arg=""
+    [ -n "${CI:-}" ] && lockfile_arg="--frozen-lockfile"
+    retry_command 3 5 "pnpm install${CI:+ --frozen-lockfile} --config.confirmModulesPurge=false" \
+        pnpm install ${lockfile_arg:+"$lockfile_arg"} \
+            --config.disallow-workspace-cycles=false --config.confirmModulesPurge=false
+    echo ""
+
+    echo -e "${BLUE}Checking native addon readiness...${NC}"
+    node "$REPO_ROOT/dev/native-addon-readiness.mts"
+    echo ""
+
+    # Install pinned CI tool versions (ripgrep, shellcheck, selene, actionlint)
+    # from .mise.toml so lint/static-analysis and pre-push run with the same
+    # versions as CI. The host repository installs mise. Fall back to its common
+    # ~/.local/bin location when a fresh shell has not activated that path yet.
+    local mise_bin="mise"
+    if ! command -v mise >/dev/null 2>&1 && [ -x "$HOME/.local/bin/mise" ]; then
+        mise_bin="$HOME/.local/bin/mise"
+    fi
+    if command -v "$mise_bin" >/dev/null 2>&1; then
+        echo -e "${BLUE}Installing pinned CI tools via mise...${NC}"
+        # Trust this worktree's .mise.toml so `mise install` does not skip it on
+        # mise versions that require explicit trust before parsing a config.
+        "$mise_bin" trust "$REPO_ROOT/.mise.toml" >/dev/null 2>&1 || true
+        if "$mise_bin" install; then
+            echo -e "${GREEN}✓ mise tools ready${NC}\n"
+        else
+            # Non-fatal: the app and DB setup do not depend on these lint tools.
+            # pre-push will surface a missing tool clearly if install genuinely failed.
+            echo -e "${YELLOW}Warning: 'mise install' failed — pinned CI tools may be missing. Re-run './dev/initialize $MODE' or 'mise install' after resolving the error.${NC}\n"
+        fi
+    else
+        echo -e "${YELLOW}Warning: mise not found — provision the host with https://github.com/vouchington/vouchington-machines${NC}\n"
+        echo -e "${YELLOW}See docs/development/system-dependencies.md for required host capabilities.${NC}\n"
+    fi
+
+    if mode_at_least "$MODE" backend; then
+        if [ "$MODE" = web ]; then
+            configure_web_push_keys
+            configure_cf_worker_secret
+        fi
+        configure_api_key_checksum_secret
+        configure_token_storage_secrets
+        prepare_worktree_database_host "$MODE"
+        write_worktree_env
+        if ! $IS_MAIN; then
+            worktree_resource_release_operation_lock
+            trap - EXIT
+        fi
+    fi
+
+    # ── Phase B (continued): web-only HTTPS + worker env ──────────────────────
+
+    if [ "$MODE" = web ]; then
+        echo -e "${BLUE}Setting up HTTPS certificates...${NC}"
+        local cert_dir="dev/certs"
+        if [ -f "$cert_dir/localhost.pem" ] && [ -f "$cert_dir/localhost-key.pem" ]; then
+            echo -e "${GREEN}✓ HTTPS certificates already exist${NC}"
+        elif command -v mkcert >/dev/null 2>&1; then
+            mkdir -p "$cert_dir"
+            (cd "$cert_dir" && mkcert -cert-file localhost.pem -key-file localhost-key.pem localhost 127.0.0.1 ::1)
+            echo -e "${GREEN}✓ Generated HTTPS certificates${NC}"
+        else
+            echo -e "${YELLOW}Warning: mkcert not installed — CF Worker will serve HTTP only${NC}"
+            echo -e "${YELLOW}Provision the host with https://github.com/vouchington/vouchington-machines${NC}"
+            echo -e "${YELLOW}Required capabilities: docs/development/system-dependencies.md${NC}"
+        fi
+        # When mkcert certs exist, Node.js (used by playwright's webServer URL polling)
+        # must trust the mkcert CA or HTTPS readiness checks fail with
+        # UNABLE_TO_VERIFY_LEAF_SIGNATURE. NODE_EXTRA_CA_CERTS tells Node.js to trust it.
+        if [ -f "$cert_dir/localhost.pem" ] && command -v mkcert >/dev/null 2>&1; then
+            local mkcert_ca_root
+            mkcert_ca_root="$(mkcert -CAROOT)"
+            if [ -f "$mkcert_ca_root/rootCA.pem" ] && ! grep -q '^export NODE_EXTRA_CA_CERTS=' .env 2>/dev/null; then
+                printf 'export NODE_EXTRA_CA_CERTS=%q\n' "$mkcert_ca_root/rootCA.pem" >> .env
+                echo -e "${GREEN}✓ Added NODE_EXTRA_CA_CERTS to .env (mkcert root CA)${NC}"
+            fi
+        fi
+        echo ""
+
+        write_worker_env
+    fi
+
+    # ── Phase B (continued): backend-and-above database + migrations ─────────
+
+    if mode_at_least "$MODE" backend; then
+        set -a
+        # shellcheck source=/dev/null
+        source .env
+        set +a
+        url_db_name=$(db_name_from_url)
+        if [ -n "$url_db_name" ]; then
+            DB_NAME="$url_db_name"
+        fi
+        ensure_database_exists "$MODE"
+
+        echo -e "${BLUE}Running database migrations...${NC}"
+        reset_database_if_schema_mismatch
+        set -a
+        # shellcheck source=/dev/null
+        source .env
+        set +a
+        (cd backend && pnpm run db:migrate)
+        echo ""
+
+        if [ "$MODE" = web ]; then
+            write_web_env_local
+        fi
+    fi
+
+    # ── Write init marker ──────────────────────────────────────────────────────
+
+    clear_stale_index_lock "$GIT_DIR"
+    persist_initialization_capability "$MODE"
+
+    # ── Summary ────────────────────────────────────────────────────────────────
+
+    echo -e "${GREEN}========================================${NC}"
+    echo -e "${GREEN}✓ Worktree initialization complete!${NC}"
+    echo -e "${GREEN}========================================${NC}\n"
+
+    echo -e "${BLUE}Worktree Details:${NC}"
+    echo "  Directory:   ${WORKTREE_DIR:-$(basename "$(pwd -P)")}"
+    echo "  Branch:      $(git branch --show-current)"
+    echo "  Requested:   $MODE"
+    echo "  Capability:  $INITIALIZED_CAPABILITY"
+    echo ""
+
+    print_mode_summary "$MODE"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

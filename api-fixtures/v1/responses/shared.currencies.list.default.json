@@ -1,0 +1,33 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "currency-aud-cursor"
+  },
+  "results": [
+    {
+      "code": "aud",
+      "minor_unit_exponent": 2
+    },
+    {
+      "code": "cad",
+      "minor_unit_exponent": 2
+    },
+    {
+      "code": "eur",
+      "minor_unit_exponent": 2
+    },
+    {
+      "code": "gbp",
+      "minor_unit_exponent": 2
+    },
+    {
+      "code": "jpy",
+      "minor_unit_exponent": 0
+    },
+    {
+      "code": "usd",
+      "minor_unit_exponent": 2
+    }
+  ]
+}

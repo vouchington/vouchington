@@ -1,0 +1,13 @@
+# Trust / Data Quality (7 loops)
+
+[Back to Feedback Loops reference](reference-feedback-loops-existing-loops.md)
+
+| Loop                           | Mechanism                                                                                                                                                                                                                 | Status                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **Trust Accumulation**         | Contribute, trust score grows based on current factors (auth diversity, OAuth/account age, membership tier), with planned future calibration to vote accuracy/alignment, leading to higher vote weight and more influence | Phase 1 built; Phase 2-3 planned |
+| **Data Quality Compounding**   | More data points improve aggregates (approval rates, medians), better answers attract more contributors                                                                                                                   | Built                            |
+| **Domain Trust Voting**        | Community votes on news sources, trust badges curate feed quality                                                                                                                                                         | Built                            |
+| **Autotagger**                 | AI tags posts with topics, tagged content surfaces under topics, metrics grow, topics trend                                                                                                                               | Built                            |
+| **Topic-Rating Recompute**     | Every topic vote or review enqueues a debounced 24h rating-stat refresh; contributions visibly move topic averages, creating a quality signal users can act on                                                            | Built                            |
+| **Election Vote-Stat Refresh** | Async recompute after every vote keeps trust-weighted leaderboards fresh without blocking the write path; accurate scores propagate continuously without stale reads                                                      | Built                            |
+| **Bookmark Bloom Filter**      | Bookmarks feed into a per-user bloom filter that powers fast "already saved" UI hints; lowers friction on subsequent browsing sessions, reinforcing content discovery and return                                          | Built                            |

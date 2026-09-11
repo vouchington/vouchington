@@ -1,0 +1,40 @@
+{
+  "name": "@workers/images",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "workers.mts",
+  "exports": {
+    ".": {
+      "types": "./workers.mts",
+      "import": "./workers.mts",
+      "default": "./workers.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@data-stores/valkey-pubsub": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@queues/entity-listeners": "workspace:^",
+    "@queues/images": "workspace:^",
+    "@services/images": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@vouchington/media": "0.2.0",
+    "glide-mq": "^0.15.5",
+    "http-errors": "^2.0.1",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "@services/users": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

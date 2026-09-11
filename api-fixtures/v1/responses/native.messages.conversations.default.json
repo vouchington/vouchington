@@ -1,0 +1,29 @@
+{
+  "page_info": {
+    "end_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAxVDA5OjE1OjAwLjAwMDAwMFoiLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiJ9",
+    "has_next_page": true,
+    "start_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAxVDEwOjEwOjAwLjAwMDAwMFoiLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMSJ9"
+  },
+  "results": [
+    {
+      "channel_type": "direct_message",
+      "created_at": "2026-07-01T10:00:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "id": "00000000-0000-7000-8000-000000000101",
+      "participant_add_policy": "all_members",
+      "participant_usernames": ["alice", "bob"],
+      "title": "Alice, Bob",
+      "updated_at": "2026-07-01T10:10:00Z"
+    },
+    {
+      "channel_type": "direct_message",
+      "created_at": "2026-07-01T09:00:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "id": "00000000-0000-7000-8000-000000000102",
+      "participant_add_policy": "owner_only",
+      "participant_usernames": ["casey"],
+      "title": "Casey",
+      "updated_at": "2026-07-01T09:15:00Z"
+    }
+  ]
+}

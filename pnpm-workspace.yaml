@@ -1,0 +1,126 @@
+packages:
+  - 'api-fixtures'
+  - backend
+  - backend/agents/*
+  - backend/api
+  - backend/config
+  - backend/data-stores/*
+  - backend/md
+  - backend/modules/*
+  - backend/rss
+  - backend/scripts
+  - backend/entrypoints/api
+  - backend/entrypoints/worker-cpu
+  - backend/entrypoints/worker-io
+  - backend/service-registrations
+  - backend/worker-runtime
+  - backend/services/*
+  - backend/queues/*
+  - backend/workers/*
+  - backend/flows/*
+  - backend/test-helpers
+  - backend/tools
+  - backend/types
+  - email-templates
+  - cloudflare-worker
+  - ci
+  - lambdas/*
+  - playwright
+  - static-code-analysis
+  - ts-shared/*
+  - web
+allowBuilds:
+  '@ast-grep/cli': true
+  '@jongleberry/vurst-ai': false
+  '@jongleberry/vurst-html': false
+  '@jongleberry/vurst-markdown': false
+  '@launchql/protobufjs': true
+  '@sentry/cli': true
+  core-js: true
+  esbuild: true
+  lingua-rs: true
+  msgpackr-extract: true
+  no-mistakes: false
+  protobufjs: true
+  sharp: true
+  squawk-cli: true
+  workerd: true
+dangerouslyAllowAllBuilds: false
+disallowWorkspaceCycles: true
+engineStrict: true
+ignoredOptionalDependencies:
+  # Next's optional Sharp range includes a vulnerable release; web's direct dependency is authoritative.
+  - sharp
+minimumReleaseAge: 2880
+minimumReleaseAgeExclude:
+  - '@jongleberry/api-server'
+  - '@jongleberry/vurst-ai'
+  - '@jongleberry/vurst-ai-darwin-arm64'
+  - '@jongleberry/vurst-ai-darwin-x64'
+  - '@jongleberry/vurst-ai-linux-arm64-gnu'
+  - '@jongleberry/vurst-ai-linux-x64-gnu'
+  - lingua-rs
+  - '@jongleberry/vurst-html'
+  - '@jongleberry/vurst-html-darwin-arm64'
+  - '@jongleberry/vurst-html-darwin-x64'
+  - '@jongleberry/vurst-html-linux-arm64-gnu'
+  - '@jongleberry/vurst-html-linux-x64-gnu'
+  - '@jongleberry/vurst-markdown'
+  - '@jongleberry/vurst-markdown-darwin-arm64'
+  - '@jongleberry/vurst-markdown-darwin-x64'
+  - '@jongleberry/vurst-markdown-linux-arm64-gnu'
+  - '@jongleberry/vurst-markdown-linux-x64-gnu'
+  - '@jongleberry/vurst-prompt'
+  - '@jongleberry/vurst-runtime'
+  - '@vouchington/auth'
+  - '@vouchington/csv'
+  - '@vouchington/crawler-html'
+  - '@vouchington/embeds'
+  - '@vouchington/domain-verification'
+  - '@vouchington/frontmatter'
+  - '@vouchington/html-utils'
+  - '@vouchington/http-transport'
+  - '@vouchington/image-resize'
+  - '@vouchington/media'
+  - '@vouchington/memberships'
+  - '@vouchington/pagination'
+  - '@vouchington/phone-validation'
+  - '@vouchington/postgres'
+  - '@vouchington/queue-errors'
+  - '@vouchington/rss-crawler'
+  - '@vouchington/rss-parser'
+  - '@vouchington/robots'
+  - '@vouchington/session-jwt'
+  - '@vouchington/typed-entities'
+  - '@vouchington/utils'
+  - '@vouchington/uuid-v7'
+  - '@vouchington/wikimedia'
+  - '@vouchington/worker-runtime'
+  - agent-blackboard
+  - auto-harness-client
+  - coverage-check
+  - eslint-plugin-no-mistakes
+  - eslint-plugin-vouchington
+  - gh-pr-attach-screenshots
+  - no-mistakes
+  - no-mistakes-darwin-arm64
+  - no-mistakes-linux-arm64-gnu
+  - no-mistakes-linux-x64-gnu
+  - no-mistakes-win32-x64-msvc
+  - pr-shepherd
+  - ssrf-guard
+  - valkyries
+  - vouchington-tooling
+packageExtensions:
+  # @ghostery/adblocker-playwright peer-depends on playwright, but its runtime code does
+  # not import playwright — only playwright-core is needed (no browser download). Making
+  # the peer dep optional prevents pnpm from pulling the full playwright package into the
+  # tree just to satisfy an unused peer.
+  '@ghostery/adblocker-playwright@*':
+    peerDependenciesMeta:
+      playwright:
+        optional: true
+preferFrozenLockfile: true
+strictDepBuilds: true
+updateNotifier: false
+verifyDepsBeforeRun: error

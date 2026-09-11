@@ -1,0 +1,2548 @@
+ci:
+  actionDirs:
+    - .github/actions
+  workflowDirs:
+    - .github/workflows
+    - ci/no-mistakes-workflows
+
+projects:
+  web:
+    type: nextjs
+    root: web
+
+  web-app:
+    type: nextjs
+    root: web/app
+
+  web-components:
+    type: library
+    root: web/components
+
+  web-lib:
+    type: library
+    root: web/lib
+
+  backend:
+    type: server
+    root: backend
+    routes:
+      - api/**
+      - sitemap/**
+      - md/**
+    queues:
+      enqueues:
+        - queues/*/enqueues.mts
+        - queues/*/enqueues/*.mts
+      workers:
+        - workers/*/**
+
+  cloudflare-worker:
+    type: cloudflare-workers
+    root: cloudflare-worker
+
+  ci-playwright:
+    type: tests
+    root: ci/playwright
+
+  ci-transient-retry:
+    type: tests
+    root: ci/transient-retry
+
+  github-actions:
+    type: tests
+    root: .github
+
+  dev-initialize:
+    type: tests
+    root: dev
+    include:
+      - initialize*
+
+checks:
+  commands:
+    - name: typecheck-backend
+      command: [pnpm, exec, tsc, --noEmit, --incremental, --project, backend/tsconfig.json]
+      fileArgs: none
+      always: true
+    - name: typecheck-backend-email
+      command: [pnpm, exec, tsc, --noEmit, --incremental, --project, email-templates/tsconfig.json]
+      fileArgs: none
+      always: true
+    - name: typecheck-web
+      command:
+        [bash, -c, 'cd web && pnpm exec next typegen && pnpm exec tsc --noEmit --incremental']
+      fileArgs: none
+      always: true
+    - name: typecheck-lambdas
+      command: [pnpm, exec, tsc, --noEmit, --incremental, --project, lambdas/tsconfig.json]
+      fileArgs: none
+      always: true
+    - name: typecheck-cloudflare-worker
+      command:
+        [pnpm, exec, tsc, --noEmit, --incremental, --project, cloudflare-worker/tsconfig.json]
+      fileArgs: none
+      always: true
+    - name: typecheck-scripts
+      command: [pnpm, exec, tsc, --noEmit, --incremental, --project, tsconfig.json]
+      fileArgs: none
+      always: true
+    - name: typecheck-ts-shared
+      command: [pnpm, exec, tsc, --noEmit, --incremental, --project, ts-shared/tsconfig.json]
+      fileArgs: none
+      always: true
+    - name: typecheck-playwright
+      command: [pnpm, exec, tsc, --noEmit, --incremental, --project, playwright/tsconfig.json]
+      fileArgs: none
+      always: true
+    - name: typecheck-test-helpers
+      command: [pnpm, exec, tsc, --noEmit, --incremental, --project, test-helpers/tsconfig.json]
+      fileArgs: none
+      always: true
+    - name: typecheck-integration-tests
+      command:
+        [pnpm, exec, tsc, --noEmit, --incremental, --project, integration-tests/tsconfig.json]
+      fileArgs: none
+      always: true
+
+tests:
+  playwright:
+    configs: playwright.config.mts
+    projects:
+      setup:
+        include:
+          - playwright/setup/**/*.setup.mts
+      chromium:
+        include:
+          - playwright/tests/**/*.spec.mts
+      support-tests:
+        include:
+          - ci/playwright/**/*.test.mts
+          - playwright/helpers/**/*.test.mts
+    coverage:
+      routes: false
+      selectors: true
+    selectors:
+      testIds:
+        - data-pw
+        - data-testid
+      componentTestIds:
+        dataPw: data-pw
+      htmlIds: false
+      wrappers:
+        - module: playwright/helpers/aside-locator.mts
+          export: getAsideLocator
+          testIdArgument: 1
+        - module: playwright/helpers/semantic-vote.mts
+          export: chooseVote
+          testIdArgument: 1
+        - module: playwright/helpers/semantic-vote.mts
+          export: voteBinaryChoice
+          testIdArgument: 1
+        - module: playwright/helpers/semantic-vote.mts
+          export: voteChoice
+          testIdArgument: 1
+        - module: playwright/helpers/semantic-vote.mts
+          export: voteChoiceGroup
+          testIdArgument: 1
+        - module: playwright/helpers/semantic-vote.mts
+          export: voteClear
+          testIdArgument: 1
+        - module: playwright/helpers/semantic-vote.mts
+          export: voteTrigger
+          testIdArgument: 1
+        - module: playwright/helpers/semantic-vote.mts
+          export: userSignalChoice
+          testIdArgument: 1
+    selectorRoots:
+      - web/app
+      - web/components
+      - web/lib/navigation
+      - web/lib/podcast-player
+      - web/lib/routes
+    selectorExclude:
+      - '**/*.test.ts'
+      - '**/*.test.tsx'
+      - '**/*.stories.ts'
+      - '**/*.stories.tsx'
+      - '**/__tests__/**'
+      - '**/*.mock.test.tsx'
+  vitest:
+    configs: vitest.config.mts
+    projects:
+      web:
+        include:
+          - web/**/*.test.ts
+          - web/**/*.test.tsx
+        exclude:
+          - '**/node_modules/**'
+          - '**/.git/**'
+          - web/.next/**
+          - web/storybook/**
+      backend-aws:
+        integration_suites:
+          aws:
+            - aws
+      backend-bedrock:
+        integration_suites:
+          bedrock:
+            - bedrock
+      backend-openai:
+        integration_suites:
+          openai:
+            - openai
+
+test_plan:
+  playwright:
+    fullSuiteTriggers:
+      ignoreChangedTests:
+        - vitest
+      triggers:
+        - name: root-config
+          paths:
+            - package.json
+            - cloudflare-worker/wrangler.local.jsonc
+            - playwright.config.*
+            - playwright/config/**
+            - playwright/setup/**
+            - ci/test-plan.mts
+            - ci/setup-web-integration.mts
+            - '!**/*.test.*'
+            - '!**/*.mock.test.*'
+            - '!**/__tests__/**'
+            - '!playwright/tests/**'
+      projects:
+        cloudflare-worker:
+          - src/**/*.mts
+          - '!src/**/*.test.mts'
+          - '!src/**/*.mock.test.mts'
+          - '!src/**/__tests__/**'
+          - '!src/**/test-helpers/**'
+          - '!src/auth/test-*.mts'
+        web:
+          - next.config.*
+          - proxy.*
+        ci-playwright:
+          - '**'
+          - '!**/*.test.*'
+          - '!**/__tests__/**'
+        github-actions:
+          - workflows/tests-playwright.yml
+          - actions/build-web-targets/**
+          - actions/setup-playwright/**
+          - actions/setup-node-pnpm/**
+    environments:
+      # Regression #9440: `direct` has no budget, while
+      # the fan-out-capable groups (`coverage`, `dependencies`) each carry their own scoped budget
+      # instead of a shared env-level `limit`.
+      prePush:
+        exclude:
+          - playwright/tests/storybook/**
+          - playwright/credentialed/**
+        groups:
+          - type: direct
+          - type: coverage
+            limit:
+              percent: 1
+          - type: dependencies
+            limit:
+              percent: 1
+      pullRequest:
+        globalConfigFallback: false
+        exclude:
+          - playwright/credentialed/**
+        groups:
+          - type: direct
+          - type: coverage
+          - type: dependencies
+          - type: sample
+            limit:
+              percent: 1
+            sampleWhenLimited: true
+      credentialed:
+        include:
+          - playwright/credentialed/**
+        groups:
+          - type: direct
+          - type: coverage
+          - type: dependencies
+          - type: sample
+            limit:
+              percent: 100
+      main:
+        all: true
+  vitest:
+    fullSuiteTriggers:
+      ignoreChangedTests:
+        - vitest
+      triggers:
+        - name: root-config
+          paths:
+            - package.json
+            - vitest.config.mts
+            - test-helpers/vitest-config/**
+        - name: api-contracts
+          paths:
+            - api-fixtures/v1/openapi.json
+            - api-fixtures/v1/schema-lock.json
+            - backend/api/v1/**
+          targets:
+            - backend-test-helpers
+        - name: workspace-package-boundaries
+          paths:
+            - api-fixtures/package.json
+            - backend/**/*.mts
+            - backend/**/*.ts
+            - backend/**/package.json
+            - ts-shared/**/*.mts
+            - ts-shared/**/*.ts
+            - ts-shared/**/package.json
+            - pnpm-workspace.yaml
+            - static-code-analysis/docker-deploy/**
+          targets:
+            - docker-deploy
+        - name: postgres-resources
+          paths:
+            - backend/data-stores/psql/migrations/**/*.sql
+            - backend/data-stores/psql/config-driven/**/*.sql
+            - backend/data-stores/psql/config-driven/**/*.mts
+          targets:
+            - backend/analytics-integration
+            - backend-data-stores
+            - backend-postgres-schema
+            - backend-mocks
+            - backend-aws
+            - backend-openai
+            - web-api
+            - web-integration
+        - name: agent-tools-docs
+          paths:
+            - docs/overview/architecture/agent-tools/**
+          targets:
+            - backend-docs-freshness
+        - name: automation-prompt-docs
+          paths:
+            - docs/prompts/**
+          targets:
+            - github-actions
+            - ci-tools
+            - dev-tools
+        - name: agent-skill-docs
+          paths:
+            - .agents/skills/**
+          targets:
+            - github-actions
+            - ci-tools
+            - dev-tools
+            - static-analysis-tools
+        - name: ci-inventory-config
+          paths:
+            - .no-mistakes.yml
+            - .github/ci-path-filters.yml
+            - .github/workflows/ci-detect-changes.yml
+            - .github/workflows/main-checks.yml
+          targets:
+            - github-actions
+            - ci-tools
+    environments:
+      # Regression #9440: `direct` is bounded by what the
+      # developer actually edited in the push, so it must never share a budget with the
+      # fan-out-capable `dependencies` group -- a shared budget can silently drop test files the
+      # developer directly edited from the plan.
+      prePush:
+        exclude:
+          - '**/*.openai*.test.mts'
+          - '**/*.bedrock*.test.mts'
+          - '**/*.stripe.test.mts'
+        groups:
+          - type: direct
+          - type: dependencies
+            limit:
+              percent: 1
+      pullRequest:
+        globalConfigFallback: false
+        groups:
+          - type: direct
+          - type: dependencies
+          - type: sample
+            limit:
+              percent: 1
+            sampleWhenLimited: true
+
+rules:
+  - name: GitHub Actions uses pins
+    rule: github-actions-pinned-hash
+    scope: repository
+
+  - name: test sources do not embed exact Git revisions
+    rule: no-test-git-sha
+    scope: repository
+    include:
+      - '**/*.test.*'
+      - '**/*.spec.*'
+      - '**/*.stories.*'
+      - '**/*.fixture.*'
+      - '**/*.fixtures.*'
+      - '**/test/**'
+      - '**/tests/**'
+      - '**/Tests/**'
+      - '**/__tests__/**'
+      - '**/__snapshots__/**'
+      - '**/fixture/**'
+      - '**/fixtures/**'
+      - '**/__fixtures__/**'
+      - '**/integration-tests/**'
+      - '**/test-helpers/**'
+      - '**/test-support.*'
+      - '**/*-fixture.*'
+      - '**/*-fixtures.*'
+      - '**/*-test-helper.*'
+      - '**/*-test-helpers.*'
+      - '**/*-test-scripts.*'
+      - '**/*-test-support.*'
+      - 'web/storybook/**'
+    exclude:
+      - '**/packages.lock.json'
+      - '**/package-lock.json'
+      - '**/pnpm-lock.yaml'
+      - '**/yarn.lock'
+      - '**/Cargo.lock'
+      - '**/Package.resolved'
+  - name: GitHub Actions does not use sparse checkout
+    rule: no-sparse-checkout
+    scope: repository
+    options:
+      include:
+        - '.github/workflows/**'
+        - '.github/actions/**'
+        - 'ci/no-mistakes-workflows/**'
+
+  - name: Vitest tests do not invoke real timers
+    rule: forbidden-calls
+    scope: repository
+    options:
+      roots:
+        - vitest: true
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - global: setTimeout
+        - moduleExport:
+            module: node:timers
+            export: setTimeout
+        - moduleExport:
+            module: node:timers/promises
+            export: setTimeout
+
+  - name: Playwright tests do not invoke fixed sleeps
+    rule: forbidden-calls
+    scope: repository
+    options:
+      roots:
+        - playwright: true
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - global: setTimeout
+        - terminal: waitForTimeout
+        - moduleExport:
+            module: node:timers
+            export: setTimeout
+        - moduleExport:
+            module: node:timers/promises
+            export: setTimeout
+
+  - name: Configuration paths reference tracked repository content
+    rule: config-path-references
+    scope: repository
+    options:
+      presets:
+        - no-mistakes
+        - oxlintrc
+        - knip
+        - dependabot
+        - sgconfig
+        - syncpack
+        - coverage-rules
+        - pnpm-workspace-filters
+
+  - name: TypeScript compiler gate coverage
+    rule: tsconfig-gate-coverage
+    scope: repository
+    options:
+      allowProjects:
+        web/tsconfig.dependency-cruiser.json: Used only by dependency-cruiser, not as a compiler program.
+
+  - name: web unique exports
+    rule: unique-exports
+    projects:
+      - web-app
+      - web-components
+      - web-lib
+
+  - name: web no Next.js API routes
+    rule: nextjs-no-api-routes
+    projects:
+      - web
+
+  - name: web no Next.js caching
+    rule: nextjs-no-caching
+    projects:
+      - web
+
+  - name: web no unmocked dynamic imports
+    rule: test-no-unmocked-dynamic-imports
+    tests:
+      vitest:
+        - web
+
+  - name: web Playwright selector coverage
+    rule: playwright-coverage
+    projects:
+      - web
+
+  - name: web unique Playwright test IDs
+    rule: playwright-unique-test-ids
+    projects:
+      - web
+
+  - name: web unique HTML IDs
+    rule: playwright-unique-html-ids
+    projects:
+      - web
+
+  # Flags getByRole/getByLabel/getByText only when the app source has the same
+  # static copy next to a data-pw. i18n `t(...)` copy is invisible, so those
+  # locators stay silent without suppressions (#9503).
+  - name: web Playwright prefer test-id locators
+    rule: playwright-prefer-test-id-locators
+    projects:
+      - web
+    tests:
+      playwright:
+        - chromium
+
+  - name: agent docs max size
+    rule: agents-md-max-size
+    scope: repository
+    options:
+      maxLines: 180
+      maxChars: 12000
+      advisoryCharsRemaining: 500
+
+  - name: developer Markdown is reachable from agent instructions
+    rule: markdown-reachability
+    scope: repository
+    include:
+      - '**/*.md'
+    exclude:
+      - '**/CLAUDE.md'
+      - articles/**
+      - '**/fixtures/**/*.md'
+      - '**/__fixtures__/**/*.md'
+      - '**/snapshots/**/*.md'
+      - '**/__snapshots__/**/*.md'
+      - '**/test-fixtures/**/*.md'
+      - '**/test-cases/**/*.md'
+      - '**/__test-cases__/**/*.md'
+      - '**/testcases/**/*.md'
+      - '**/__testcases__/**/*.md'
+    options:
+      rootFilenames: [CLAUDE.md]
+      indexFilenames: [README.md]
+      maxDepth: 2
+
+  - name: scheduled job manifests are registered in the API catalog
+    rule: required-entrypoint-reachability
+    scope: repository
+    options:
+      sourceGlobs:
+        - backend/queues/*/enqueues/schedules.mts
+      entrypoints:
+        - backend/api/v1/mq/scheduled-job-manifests.mts
+      maxDepth: 1
+
+  - name: scheduled job manifests are registered in a worker runtime
+    rule: required-entrypoint-reachability
+    scope: repository
+    options:
+      sourceGlobs:
+        - backend/queues/*/enqueues/schedules.mts
+      entrypoints:
+        - backend/entrypoints/worker-cpu/schedule-definitions.mts
+        - backend/entrypoints/worker-io/definitions.mts
+      maxDepth: 1
+
+  - name: worker modules are registered in a runtime definition root
+    rule: required-entrypoint-reachability
+    scope: repository
+    exclude:
+      - backend/workers/**/*.test.mts
+      - backend/workers/**/__tests__/**
+    options:
+      sourceGlobs:
+        - backend/workers/*/workers.mts
+        - backend/workers/*/workers/*.mts
+      entrypoints:
+        - backend/entrypoints/worker-cpu/worker-definitions.mts
+        - backend/entrypoints/worker-io/worker-definitions.mts
+        - backend/entrypoints/worker-io/sqs-consumer-definitions.mts
+        - backend/worker-runtime/universal-workers.mts
+      maxDepth: 2
+
+  # `register-*.mts` under services/ is by convention a side-effect registrar and nothing else;
+  # a future file matching this name that is not one must be renamed, not excluded.
+  - name: service registrars are wired into the registration root
+    rule: required-entrypoint-reachability
+    scope: repository
+    exclude: ['**/*.test.mts', '**/__tests__/**']
+    options:
+      sourceGlobs:
+        - backend/services/*/register-*.mts
+        - backend/services/*/*/register-*.mts
+      entrypoints:
+        - backend/service-registrations/index.mts
+      maxDepth: 1
+
+  # One instance per entrypoint: with exactly one `entrypoints` entry the assertion is unambiguous
+  # regardless of the rule's multi-entrypoint ("any" vs. "all") semantics.
+  - name: api entrypoint loads service registrations
+    rule: required-entrypoint-reachability
+    scope: repository
+    options:
+      sourceGlobs:
+        - backend/service-registrations/index.mts
+      entrypoints:
+        - backend/entrypoints/api/index.mts
+      maxDepth: 1
+
+  - name: worker-cpu entrypoint loads service registrations
+    rule: required-entrypoint-reachability
+    scope: repository
+    options:
+      sourceGlobs:
+        - backend/service-registrations/index.mts
+      entrypoints:
+        - backend/entrypoints/worker-cpu/index.mts
+      maxDepth: 1
+
+  - name: worker-io entrypoint loads service registrations
+    rule: required-entrypoint-reachability
+    scope: repository
+    options:
+      sourceGlobs:
+        - backend/service-registrations/index.mts
+      entrypoints:
+        - backend/entrypoints/worker-io/index.mts
+      maxDepth: 1
+
+  - name: seed entrypoint loads service registrations
+    rule: required-entrypoint-reachability
+    scope: repository
+    options:
+      sourceGlobs:
+        - backend/service-registrations/index.mts
+      entrypoints:
+        - backend/scripts/seed/index.mts
+      maxDepth: 1
+
+  - name: large Markdown has a focused visual structure
+    rule: markdown-structure-budget
+    scope: repository
+    include:
+      - '**/*.md'
+    exclude:
+      - '**/CLAUDE.md'
+      - articles/**
+      - '**/fixtures/**/*.md'
+      - '**/__fixtures__/**/*.md'
+      - '**/snapshots/**/*.md'
+      - '**/__snapshots__/**/*.md'
+      - '**/test-fixtures/**/*.md'
+      - '**/test-cases/**/*.md'
+      - '**/__test-cases__/**/*.md'
+      - '**/testcases/**/*.md'
+      - '**/__testcases__/**/*.md'
+    options:
+      maxLines: 180
+      maxChars: 12000
+      maxTables: 1
+      maxMermaid: 1
+
+  - name: integration tests do not call mock helpers
+    rule: forbidden-calls
+    scope: repository
+    include:
+      - integration-tests/**/*.mts
+    options:
+      roots:
+        - vitest: true
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - exact: vi.mock
+        - exact: vi.doMock
+        - exact: vi.importMock
+        - exact: vi.fn
+        - exact: vi.spyOn
+        - exact: vi.stubGlobal
+        - exact: jest.mock
+        - exact: jest.doMock
+
+  - name: integration tests use real dependencies
+    rule: integration-test-no-mocks
+    scope: repository
+    include:
+      - integration-tests/**/*.mts
+    options:
+      forbiddenModules:
+        - msw
+        - nock
+        - sinon
+
+  - name: test email fixtures use voucha test domain
+    rule: test-email-domain-policy
+    scope: repository
+    include:
+      - '**/*.test.*'
+      - '**/*.spec.*'
+      - '**/__tests__/**'
+      - '**/__snapshots__/**'
+      - '**/fixtures/**'
+      - backend/test-helpers/**
+      - backend/scripts/seeds/playwright-test-data/**
+      - web/test-helpers/**
+      - test-helpers/**
+      - integration-tests/**
+      - playwright/**
+    options:
+      bannedDomains:
+        - example.com
+      allowedEmailPatterns:
+        - '(?i)^tests(?:\+[a-z0-9._%${}-]+|%2b[a-z0-9._%${}-]+)(?:@|%40)voucha\.ai$'
+      replacement: tests+<hash>@voucha.ai
+      extensions:
+        - .cjs
+        - .css
+        - .csv
+        - .cts
+        - .html
+        - .js
+        - .json
+        - .jsonc
+        - .md
+        - .mjs
+        - .mts
+        - .sql
+        - .ts
+        - .tsx
+        - .txt
+        - .xml
+        - .yml
+        - .yaml
+
+  - name: markdown link filename text matches target
+    rule: markdown-link-display-text
+    scope: repository
+    include:
+      - '**/*.md'
+
+  - name: Next.js middleware files are renamed to proxy
+    rule: banned-renamed-files
+    scope: repository
+    options:
+      scope: web
+      bannedBasenames:
+        - name: middleware
+          message: rename middleware.{ts,mts,js} to proxy.ts (Next.js 16+)
+      extensions:
+        - .ts
+        - .mts
+        - .js
+
+  - name: no webpack config files
+    rule: banned-renamed-files
+    scope: repository
+    options:
+      bannedBasenames:
+        - name: webpack.config
+          message: >-
+            webpack config files are not allowed; this project uses Turbopack for
+            Next.js and Vite for Storybook
+      extensions:
+        - .js
+        - .cjs
+        - .mjs
+        - .ts
+        - .mts
+        - .cts
+
+  - name: repository package-manager lockfiles
+    rule: lockfile-allowlist
+    scope: repository
+    options:
+      allowed:
+        - pnpm-lock.yaml
+        - integration-tests/*/pnpm-lock.yaml
+      bannedBasenames:
+        - package-lock.json
+        - npm-shrinkwrap.json
+        - yarn.lock
+        - bun.lock
+        - bun.lockb
+
+  - name: banned repository paths
+    rule: banned-paths
+    scope: repository
+    # Nested helper directories are a migration backlog. Each exception is one tracked file, so
+    # a new nested helper cannot silently inherit an entire directory-level exemption.
+    exclude:
+      - backend/agents/_shared/test-helpers/run-tool-loop-test-helpers.mts
+      - backend/agents/_shared/test-helpers/subagent-fixtures.mts
+      - backend/agents/chat/test-helpers/stream-recovery.mts
+      - backend/api/test-helpers/http-boundary.mts
+      - backend/api/test-helpers/server.mts
+      - backend/api/test-helpers/server.test.mts
+      - backend/api/v1/entity-relations/test-helpers/entity-relations-pagination.mts
+      - backend/api/v1/sessions-authentication/test-helpers/auth-sessions-pagination.mts
+      - backend/data-stores/analytics/test-helpers/suppressed-error.mts
+      - backend/data-stores/psql/test-helpers/config-driven/cte-segment-ranges.mts
+      - backend/data-stores/psql/test-helpers/config-driven/ddl-precheck-stack-helpers.mts
+      - backend/data-stores/psql/test-helpers/config-driven/ddl-statement-classifiers.mts
+      - backend/data-stores/psql/test-helpers/config-driven/do-block-readers.mts
+      - backend/data-stores/psql/test-helpers/config-driven/generated-ddl-execute-helpers.mts
+      - backend/data-stores/psql/test-helpers/config-driven/generated-ddl-guard-helpers.mts
+      - backend/data-stores/psql/test-helpers/config-driven/generated-ddl-insert-invariants.mts
+      - backend/data-stores/psql/test-helpers/config-driven/generated-ddl-schema-invariants.mts
+      - backend/data-stores/psql/test-helpers/config-driven/not-exists-guard-depth.mts
+      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-arbiter.mts
+      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-column-refs.mts
+      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-convergence.mts
+      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-excluded-provenance.mts
+      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-generated-arbiter.mts
+      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-guarded-select.mts
+      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-triggers.mts
+      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-volatility.mts
+      - backend/data-stores/psql/test-helpers/config-driven/query-wrapper-executability.mts
+      - backend/data-stores/psql/test-helpers/config-driven/schema-snapshot-facts.mts
+      - backend/data-stores/psql/test-helpers/config-driven/sql-literal-readers.mts
+      - backend/data-stores/psql/test-helpers/config-driven/sql-quoted-identifier-mask.mts
+      - backend/data-stores/psql/test-helpers/config-driven/sql-text-scanner-helpers.mts
+      - backend/data-stores/psql/test-helpers/election-schema.mts
+      - backend/data-stores/psql/test-helpers/email-addresses.mts
+      - backend/data-stores/psql/test-helpers/entity-relation-partitions.mts
+      - backend/data-stores/psql/test-helpers/oauth-accounts.mts
+      - backend/data-stores/psql/test-helpers/posts.mts
+      - backend/data-stores/psql/test-helpers/rss-feeds.mts
+      - backend/data-stores/psql/test-helpers/schema-snapshot-constraints.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/conventions.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/membership-timestamp-allowlists.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/membership-uuid-allowlists.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/moderation-ledger-allowlists.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/name-helpers.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/post-publication-allowlists.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/queries.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/story-post-related-url-projection-uuid-allowlists.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/timestamp-allowlists.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/timestamp-query.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/user-deletion-uuid-allowlists.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/uuid-allowlists.mts
+      - backend/data-stores/psql/test-helpers/schema-static-analysis/uuid-query.mts
+      - backend/data-stores/psql/test-helpers/statement-timeout.mts
+      - backend/data-stores/psql/test-helpers/users.mts
+      - backend/data-stores/psql/test-helpers/vector-search-recall.mts
+      - backend/data-stores/psql/views/test-helpers/view-rss-feed-current-states.mts
+      - backend/data-stores/psql/views/test-helpers/view-users.mts
+      - backend/modules/openai-utils/test-helpers/responses.mts
+      - backend/services/identity-verification/test-helpers/start-test-fixtures.mts
+      - backend/services/identity-verification/test-helpers/transaction-resource.mts
+      - backend/services/jwt-session/test-helpers/concurrent-user-agent.mts
+      - backend/services/jwt-session/test-helpers/index.mts
+      - backend/services/jwt-session/test-helpers/legacy-jwt.mts
+      - backend/services/memberships/test-helpers/won-dispute-recovery-fixtures.mts
+      - backend/services/notifications/test-helpers/rss-feed-items.mts
+      - backend/services/oauth/test-helpers/authorization-completion.mts
+      - backend/services/stories/test-helpers/post-topic-vote-capture.mts
+      - backend/services/stories/test-helpers/story-post-related-url-projection.mts
+      - backend/services/stripe/test-helpers/membership-sync-event.mts
+      - backend/services/wikipedia-topic-recommendations/test-helpers/vote-stats.mts
+      - ci/transient-retry/test-helpers/helpers.mts
+      - cloudflare-worker/src/test-helpers/cache.mts
+      - cloudflare-worker/src/test-helpers/mock-env.mts
+      - dev/blackboard/test-helpers/client-fixtures.mts
+      - dev/plan-issue/test-helpers/no-change-plan.mts
+      - dev/plan-issue/test-helpers/valid-plan-body.mts
+      - dev/pr-description/test-helpers/fake-cli.mts
+      - dev/pr-description/test-helpers/valid-pr-body.mts
+      - lambdas/image-resize/test-helpers/index.mts
+      - static-code-analysis/config-inventory/test-helpers/repo-fixture.mts
+      - web/app/(support-admin)/support/threads/[[]threadId[]]/test-helpers/admin-support-thread-detail-client-test-helpers.ts
+      - web/components/my/test-helpers/household-manager.ts
+      - web/components/topics/test-helpers/topic-route-layout-fixtures.ts
+      - web/lib/api/client/test-helpers/images.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/agent-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/community-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/crm-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/endpoint-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/engineering-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/moderation-integrity-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/moderation-parity-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/moderation-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/native-support-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/non-web-account-and-feeds-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/non-web-auth-and-fediverse-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/non-web-content-and-profiles-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/non-web-membership-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/non-web-registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/registry.ts
+      - web/lib/api/client/test-helpers/manifest-coverage/resource-registry.ts
+      - web/lib/api/test-helpers/api-fixture-endpoint-context.ts
+      - web/lib/navigation/test-helpers/breadcrumbs-test-helpers.ts
+      - web/storybook/test-helpers/component-story-coverage/imports.ts
+      - web/storybook/test-helpers/component-story-coverage/keys.ts
+      - web/storybook/test-helpers/component-story-coverage/message.ts
+      - web/storybook/test-helpers/component-story-coverage/source.ts
+      - web/storybook/test-helpers/component-story-coverage/workspace.ts
+    options:
+      bannedPaths:
+        - glob: '*/*/**/test-helpers/**'
+          message: Test helpers must live under test-helpers/** or <top-level>/test-helpers/**.
+        - glob: '**/test-helper/**'
+          message: Test helpers must live under test-helpers/** or <top-level>/test-helpers/**.
+        - glob: '**/test-support/**'
+          message: Test helpers must live under test-helpers/** or <top-level>/test-helpers/**.
+        - glob: '**/test-utils/**'
+          message: Test helpers must live under test-helpers/** or <top-level>/test-helpers/**.
+        - glob: '**/testutils/**'
+          message: Test helpers must live under test-helpers/** or <top-level>/test-helpers/**.
+        - glob: '**/test-utilities/**'
+          message: Test helpers must live under test-helpers/** or <top-level>/test-helpers/**.
+        - glob: '**/testutilities/**'
+          message: Test helpers must live under test-helpers/** or <top-level>/test-helpers/**.
+        - glob: '**/testing-helper/**'
+          message: Test helpers must live under test-helpers/** or <top-level>/test-helpers/**.
+        - glob: '**/testing-helpers/**'
+          message: Test helpers must live under test-helpers/** or <top-level>/test-helpers/**.
+        - glob: swift-clients/**
+          message: Native Swift source belongs in vouchington/vouchington-clients
+        - glob: dotnet-clients/**
+          message: Native .NET source belongs in vouchington/vouchington-clients
+        - glob: ci/coverage-dotnet-lcov-merge.mts
+          message: Native .NET coverage tooling belongs in vouchington/vouchington-clients
+        - glob: ci/coverage-dotnet-lcov-runs.mts
+          message: Native .NET coverage tooling belongs in vouchington/vouchington-clients
+        - glob: ci/__fixtures__/stale-dotnet-app.mts
+          message: Native .NET fixtures belong in vouchington/vouchington-clients
+        - glob: ci/swift-source-offset.mts
+          message: Native Swift coverage tooling belongs in vouchington/vouchington-clients
+        - glob: ci/swift-resolved-pin-delta.mts
+          message: Native Swift dependency tooling belongs in vouchington/vouchington-clients
+        - glob: ci/swift-resolved-pin-delta.test.mts
+          message: Native Swift dependency tooling belongs in vouchington/vouchington-clients
+        - glob: dev/actions-runner-health/**
+          message: Runner host health tooling belongs in vouchington-machines
+        - glob: dev/setup-local-macos
+          message: Host setup belongs in vouchington-machines
+        - glob: dev/setup-local-linux
+          message: Host setup belongs in vouchington-machines
+        - glob: .github/actions/cleanup-build-outputs/**
+          message: Runner host cleanup belongs in vouchington-machines
+        - glob: web/pages/**
+          message: Next.js pages router files are not allowed
+        - glob: web/src/pages/**
+          message: Next.js pages router files are not allowed
+        - glob: 'web/app/**/[[]topicType[]]/**'
+          message: >-
+            [topicType] dynamic segments are banned; use explicit routes per topic type.
+            See web/CLAUDE.md routing rules.
+        - glob: '**/*.[pP][aA][tT][cC][hH]'
+          message: >-
+            patch and diff files are not allowed; fix the underlying problem upstream
+            or file and link a Filaments issue labeled dependencies
+        - glob: '**/*.[dD][iI][fF][fF]'
+          message: >-
+            patch and diff files are not allowed; fix the underlying problem upstream
+            or file and link a Filaments issue labeled dependencies
+
+  - name: package dependencies resolve from registries
+    rule: package-json-registry-only
+    scope: repository
+    options:
+      lockfile: pnpm-lock.yaml
+
+  - name: pnpm overrides ban
+    rule: pnpm-overrides-ban
+    scope: repository
+
+  - name: first-party package release-age exemptions stay synchronized
+    rule: pnpm-release-age-policy
+    scope: repository
+    options:
+      permanentPackages:
+        - name: '@jongleberry/api-server'
+          reason: First-party API server utility published by the repo author.
+        - name: '@jongleberry/vurst-ai'
+          reason: First-party AI utility published by the repo author.
+        - name: '@jongleberry/vurst-ai-darwin-arm64'
+          reason: First-party macOS ARM64 AI native package published by the repo author.
+        - name: '@jongleberry/vurst-ai-darwin-x64'
+          reason: First-party macOS x64 AI native package published by the repo author.
+        - name: '@jongleberry/vurst-ai-linux-arm64-gnu'
+          reason: First-party Linux ARM64 AI native package published by the repo author.
+        - name: '@jongleberry/vurst-ai-linux-x64-gnu'
+          reason: First-party Linux x64 AI native package published by the repo author.
+        - name: '@jongleberry/vurst-html'
+          reason: First-party HTML utility published by the repo author.
+        - name: '@jongleberry/vurst-html-darwin-arm64'
+          reason: First-party macOS ARM64 HTML native package published by the repo author.
+        - name: '@jongleberry/vurst-html-darwin-x64'
+          reason: First-party macOS x64 HTML native package published by the repo author.
+        - name: '@jongleberry/vurst-html-linux-arm64-gnu'
+          reason: First-party Linux ARM64 HTML native package published by the repo author.
+        - name: '@jongleberry/vurst-html-linux-x64-gnu'
+          reason: First-party Linux x64 HTML native package published by the repo author.
+        - name: '@jongleberry/vurst-markdown'
+          reason: First-party Markdown utility published by the repo author.
+        - name: '@jongleberry/vurst-markdown-darwin-arm64'
+          reason: First-party macOS ARM64 Markdown native package published by the repo author.
+        - name: '@jongleberry/vurst-markdown-darwin-x64'
+          reason: First-party macOS x64 Markdown native package published by the repo author.
+        - name: '@jongleberry/vurst-markdown-linux-arm64-gnu'
+          reason: First-party Linux ARM64 Markdown native package published by the repo author.
+        - name: '@jongleberry/vurst-markdown-linux-x64-gnu'
+          reason: First-party Linux x64 Markdown native package published by the repo author.
+        - name: '@jongleberry/vurst-prompt'
+          reason: First-party prompt utility published by the repo author.
+        - name: '@jongleberry/vurst-runtime'
+          reason: First-party runtime utility published by the repo author.
+        - name: '@vouchington/auth'
+          reason: First-party injected authentication protocol engines published by the repo author.
+        - name: '@vouchington/csv'
+          reason: First-party CSV parsing and safe serialization primitives published by the repo author.
+        - name: '@vouchington/crawler-html'
+          reason: First-party HTML decoding and extraction primitives published by the repo author.
+        - name: '@vouchington/embeds'
+          reason: First-party policy-injected HTML unfurl and oEmbed primitives published by the repo author.
+        - name: '@vouchington/domain-verification'
+          reason: First-party DNS and well-known domain-verification primitives published by the repo author.
+        - name: '@vouchington/frontmatter'
+          reason: First-party deterministic YAML frontmatter serializer published by the repo author.
+        - name: '@vouchington/html-utils'
+          reason: First-party HTML entity and text-safe escaping primitives published by the repo author.
+        - name: '@vouchington/http-transport'
+          reason: First-party policy-injected HTTP transport contracts published by the repo author.
+        - name: '@vouchington/image-resize'
+          reason: First-party image transformation and negotiation utilities published by the repo author.
+        - name: '@vouchington/media'
+          reason: First-party media validation, streaming, and S3 utilities published by the repo author.
+        - name: '@vouchington/memberships'
+          reason: First-party membership catalog, SKU grouping, and status utilities published by the repo author.
+        - name: '@vouchington/pagination'
+          reason: First-party pagination primitives published by the repo author.
+        - name: '@vouchington/phone-validation'
+          reason: First-party phone validation primitives published by the repo author.
+        - name: '@vouchington/postgres'
+          reason: First-party PostgreSQL runtime published by the repo author.
+        - name: '@vouchington/queue-errors'
+          reason: First-party GlideMQ retry-classification runtime published by the repo author.
+        - name: '@vouchington/rss-crawler'
+          reason: First-party transport-injected RSS crawler published by the repo author.
+        - name: '@vouchington/rss-parser'
+          reason: First-party RSS, Atom, RDF, and JSON Feed parser published by the repo author.
+        - name: '@vouchington/robots'
+          reason: First-party robots.txt parsing and evaluation primitives published by the repo author.
+        - name: '@vouchington/session-jwt'
+          reason: First-party portable JWT primitive library published by the repo author.
+        - name: '@vouchington/typed-entities'
+          reason: First-party typed-entity alias, hierarchy, hostname, and merge primitives published by the repo author.
+        - name: '@vouchington/utils'
+          reason: First-party generic utility primitives published by the repo author.
+        - name: '@vouchington/uuid-v7'
+          reason: First-party UUIDv7 generation, validation, bounds, and conversion primitives published by the repo author.
+        - name: '@vouchington/wikimedia'
+          reason: First-party Wikimedia API client primitives published by the repo author.
+        - name: '@vouchington/worker-runtime'
+          reason: First-party generic worker queue-selection, loading, and scheduling runtime published by the repo author.
+        - name: agent-blackboard
+          reason: First-party agent session client and MCP server published by the repo author.
+        - name: auto-harness-client
+          reason: First-party Auto Harness dispatch client published by the repo author.
+        - name: coverage-check
+          reason: First-party test coverage utility published by the repo author.
+        - name: eslint-plugin-no-mistakes
+          reason: First-party ESLint plugin published by the repo author.
+        - name: eslint-plugin-vouchington
+          reason: First-party Vouchington house-style ESLint plugin published by the repo author.
+        - name: gh-pr-attach-screenshots
+          reason: First-party GitHub PR helper published by the repo author.
+        - name: lingua-rs
+          reason: First-party N-API language-detection addon whose hotfixes must bypass the release gate.
+        - name: no-mistakes
+          reason: First-party structural analysis tool used by CI static analysis.
+        - name: no-mistakes-darwin-arm64
+          reason: First-party no-mistakes native package for macOS ARM64.
+        - name: no-mistakes-linux-arm64-gnu
+          reason: First-party no-mistakes native package for Linux ARM64 with glibc.
+        - name: no-mistakes-linux-x64-gnu
+          reason: First-party no-mistakes native package for Linux x64 with glibc.
+        - name: no-mistakes-win32-x64-msvc
+          reason: First-party no-mistakes native package for Windows x64 with MSVC.
+        - name: pr-shepherd
+          reason: First-party PR management tool published by the repo author.
+        - name: ssrf-guard
+          reason: First-party SSRF protection utility published by the repo author.
+        - name: valkyries
+          reason: First-party utility published by the repo author.
+        - name: vouchington-tooling
+          reason: First-party CLI and extractable tooling libraries published by the repo author.
+      scopedPrefixes:
+        - '@jongleberry/'
+        - '@jonathanong/'
+        - '@vouchington/'
+      workspaceYaml: pnpm-workspace.yaml
+      dependabotPath: .github/dependabot.yml
+      lockfilePath: pnpm-lock.yaml
+
+  - name: tracked package.json files are workspace members
+    rule: package-json-workspace-coverage
+    scope: repository
+    options:
+      packageRoots:
+        - .agents
+        - .claude
+        - .codex
+        - .cursor
+        - .github
+        - .grok
+        - .husky
+        - .opencode
+        - .pr-shepherd
+        - api-fixtures
+        - articles
+        - ast-grep-rules
+        - backend
+        - ci
+        - cloudflare-worker
+        - dev
+        - docs
+        - email-templates
+        - integration-tests
+        - lambdas
+        - monitors
+        - playwright
+        - seed
+        - static-code-analysis
+        - test-helpers
+        - ts-shared
+        - web
+
+  - name: package manifests use the repository field shape
+    rule: package-json-required-fields
+    scope: repository
+    options:
+      requireScopedName: true
+      unscopedNameExceptions: [voucha, web]
+
+  - name: scoped package manifests are private unlicensed modules
+    rule: package-json-required-fields
+    scope: repository
+    exclude:
+      - package.json
+      - web/package.json
+    options:
+      private: true
+      type: module
+      license: UNLICENSED
+
+  - name: package entrypoints are declared when index.mts exists
+    rule: package-json-required-fields
+    scope: repository
+    exclude:
+      - package.json
+      - backend/scripts/package.json
+      - web/package.json
+    options:
+      mainWhenFileExists: index.mts
+
+  - name: nested workspaces exactly cover ts-shared dependencies
+    rule: package-json-nested-workspace-coverage
+    scope: repository
+    options:
+      roots:
+        - backend
+        - web
+        - cloudflare-worker
+        - lambdas/*
+      dependencyNamePrefixes:
+        - '@ts-shared/'
+
+  - name: package-owned validation dependencies and canonical names
+    rule: structured-config-policy
+    scope: repository
+    options:
+      policies:
+        - files: [package.json]
+          requiredKeys:
+            - devDependencies.vitest
+            - devDependencies.jsdom
+        - files: [email-templates/package.json]
+          requiredKeys: [devDependencies.vitest]
+        - files: [lambdas/image-resize/package.json]
+          requiredKeys: [devDependencies.@typescript/native]
+        - files: [cloudflare-worker/package.json]
+          requiredKeys:
+            - devDependencies.@typescript/native
+            - devDependencies.vitest
+          valueAssertions:
+            - key: name
+              kind: equals
+              value: '@voucha/cloudflare-worker'
+        - files: [web/package.json]
+          requiredKeys: [devDependencies.jsdom]
+
+  - name: workspace package dependency graph has no cycles
+    rule: workspace-package-cycles
+    scope: repository
+
+  - name: lightweight entrypoints must not reach worker-cpu-only modules
+    rule: forbidden-dependencies
+    scope: repository
+    options:
+      roots:
+        - backend/entrypoints/api/serve.mts
+        - backend/entrypoints/worker-io/serve.mts
+      forbiddenModules:
+        - sharp
+        - sharp/**
+        - '@jongleberry/vurst-ai'
+        - '@jongleberry/vurst-ai/**'
+
+  - name: api entrypoint must not reach worker-only npm modules
+    rule: forbidden-dependencies
+    scope: repository
+    options:
+      roots:
+        - backend/entrypoints/api/serve.mts
+      forbiddenModules:
+        - web-push
+        - web-push/**
+        - pg-copy-streams
+        - pg-copy-streams/**
+        - '@aws-sdk/client-bedrock'
+        - '@aws-sdk/client-bedrock/**'
+
+  - name: api workspace closure excludes worker-only packages
+    rule: forbidden-workspace-closure
+    scope: repository
+    options:
+      packages:
+        - '@entrypoints/api'
+      forbidden:
+        - sharp
+        - '@jongleberry/vurst-ai'
+        - web-push
+        - '@entrypoints/worker-cpu'
+      dependencyTypes:
+        - dependencies
+        - optionalDependencies
+      lockfile: pnpm-lock.yaml
+
+  - name: worker-io workspace closure excludes worker-cpu-only packages
+    rule: forbidden-workspace-closure
+    scope: repository
+    options:
+      packages:
+        - '@entrypoints/worker-io'
+      forbidden:
+        - sharp
+        - '@jongleberry/vurst-ai'
+        - '@entrypoints/worker-cpu'
+      dependencyTypes:
+        - dependencies
+        - optionalDependencies
+      lockfile: pnpm-lock.yaml
+
+  - name: production entrypoint closures exclude agent-blackboard
+    rule: forbidden-workspace-closure
+    scope: repository
+    options:
+      packages:
+        - '@entrypoints/api'
+        - '@entrypoints/worker-cpu'
+        - '@entrypoints/worker-io'
+      forbidden:
+        - agent-blackboard
+      dependencyTypes:
+        - dependencies
+        - optionalDependencies
+      lockfile: pnpm-lock.yaml
+
+  - name: Production dependency declarations
+    rule: production-dependency-declarations
+    scope: repository
+    options:
+      workspaceRoots: [backend, ts-shared]
+      allowedFields: [dependencies, optionalDependencies, peerDependencies]
+      testFilePatterns:
+        - '**/__tests__/**'
+        - '**/*.test.*'
+        - '**/*.d.*ts' # declaration files: no runtime imports, so excluded from the check
+        - '**/test-helpers/**'
+        - '**/*test-helpers.mts'
+
+  - name: tracked code files are not empty placeholders
+    rule: no-empty-or-comments-only-files
+    scope: repository
+    options:
+      extensions:
+        - .ts
+        - .mts
+        - .cts
+        - .tsx
+        - .js
+        - .jsx
+        - .mjs
+        - .cjs
+        - .sql
+        - .rs
+        - .css
+      intentionallyEmpty:
+        - backend/modules/rss-feed-cover-art/index.mts
+        - backend/queues/openai-embeddings/setup.mts
+        - backend/queues/openai-moderation/setup.mts
+
+  - name: TypeScript extension policy
+    rule: file-extension-policy
+    scope: repository
+    options:
+      allowlist:
+        - .dependency-cruiser.cjs
+        - backend/.dependency-cruiser.cjs
+        - backend/dependency-cruiser-rules/api-fixtures-typescript-reachability.cjs
+        - backend/dependency-cruiser-rules/data-stores-primary.cjs
+        - backend/dependency-cruiser-rules/data-stores-secondary.cjs
+        - backend/dependency-cruiser-rules/entity-relations-build-insert-query.cjs
+        - backend/dependency-cruiser-rules/package-boundaries.cjs
+        - backend/dependency-cruiser-rules/workspace-package-relative-import-boundaries.cjs
+        - lambdas/.dependency-cruiser.cjs
+        - web/.dependency-cruiser.cjs
+        - web/next.config.ts
+        - web/postcss.config.mjs
+        - web/public/service-worker.js
+        - web/public/service-worker-push.js
+      scopes:
+        - path: backend
+          bannedExtensions: [.js, .mjs, .cjs, .cts, .ts]
+        - path: lambdas
+          bannedExtensions: [.js, .mjs, .cjs, .cts, .ts]
+        - path: cloudflare-worker
+          bannedExtensions: [.js, .mjs, .cjs, .cts, .ts]
+        - path: playwright
+          bannedExtensions: [.js, .mjs, .cjs, .cts, .ts]
+        - path: web
+          bannedExtensions: [.js, .mjs, .cjs, .cts]
+
+  - name: backend local owner docs
+    rule: required-local-docs
+    scope: repository
+    options:
+      roots:
+        - backend/agents
+        - backend/api/v1
+        - backend/data-stores
+        - backend/entrypoints
+        - backend/flows
+        - backend/modules
+        - backend/queues
+        - backend/services
+        - backend/workers
+      requiredFile: README.md
+      codeExtensions:
+        - ts
+        - mts
+        - cts
+        - js
+        - jsx
+        - mjs
+        - cjs
+        - tsx
+        - rs
+        - lua
+        - sql
+      testExcludePatterns:
+        - '*.test.*'
+        - '*.spec.*'
+        - __tests__
+
+  - name: API docs include performance section
+    rule: required-doc-section
+    scope: repository
+    options:
+      glob: backend/api/v1/**/README.md
+      requiredHeading: '## Performance'
+
+  - name: git identity is not mutated by repo scripts
+    rule: no-git-identity-mutation
+    scope: repository
+    options:
+      excludePaths:
+        - .github/workflows/runner-policy.test.mts
+      conditionallyAllowedWorkflows:
+        - .github/workflows/pnpm-dedupe.yml
+
+  - name: shell scripts pass shellcheck
+    rule: shellcheck-runner
+    scope: repository
+    options:
+      shellFiles:
+        - ci/lint-links.sh
+        - ci/check-needs-results.sh
+        - ci/coverage-artifacts.sh
+        - ci/merge-vitest-reports.sh
+        - ci/playwright-install-ubicloud-browsers.sh
+        - ci/with-node-test-options
+      shebangDirs:
+        - dev
+      shellcheck:
+        severity: warning
+
+  - name: backend queue worker package layout
+    rule: strict-package-layout
+    scope: repository
+    options:
+      testFilePatterns:
+        - '*.test.mts'
+        - '*.spec.mts'
+        - '*.generated.test.mts'
+      testDirName: __tests__
+      packages:
+        - root: backend/queues
+          sourceExtension: .mts
+          allowedRootFiles:
+            - package.json
+            - config.mts
+            - maintenance-config.mts
+            - queue-names.mts
+            - types.mts
+            - queues.mts
+            - enqueues.mts
+          allowedSubdirs:
+            - enqueues
+        - root: backend/workers
+          sourceExtension: .mts
+          allowedRootFiles:
+            - package.json
+            - types.mts
+            - workers.mts
+            - processors.mts
+            - test-support.mts
+          allowedSubdirs:
+            - workers
+            - processors
+        - root: backend/flows
+          sourceExtension: .mts
+          allowedRootFiles:
+            - package.json
+            - types.mts
+            - queues.mts
+            - enqueues.mts
+          allowedSubdirs: []
+
+  - name: backend agent test coverage
+    rule: require-test-per-subdir
+    scope: repository
+    options:
+      roots: [backend/agents]
+      testGlob: '*.test.mts'
+      directChild: true
+
+  - name: backend package required files
+    rule: require-files-in-subdirs
+    scope: repository
+    options:
+      packages:
+        - root: backend/queues
+          requiredFiles: [package.json, config.mts, queues.mts]
+          requireAnyOf:
+            - [enqueues.mts, 'enqueues/*.mts']
+        - root: backend/workers
+          requiredFiles: [package.json]
+          requireAnyOf:
+            - [workers.mts, 'workers/*.mts']
+        - root: backend/flows
+          requiredFiles: [package.json, queues.mts, enqueues.mts]
+        - root: backend/services
+          requiredFiles: [package.json, index.mts]
+        - root: backend/agents
+          requiredFiles: [package.json, index.mts]
+        - root: backend/data-stores
+          requiredFiles: [package.json, index.mts]
+        - root: backend/modules
+          requiredFiles: [package.json, index.mts]
+        - root: backend/entrypoints
+          requiredFiles: [package.json, serve.mts]
+
+  # finite-set-consistency enforces the basic set-equality invariants from
+  # finite-enum-ripple-guard.mts (topicTypes backend/web/SQL, PostType/SQL).
+  # Slug-property consistency, factory-arg validation, and route-config
+  # structural checks remain in the repo-local parser (Voucha-specific logic).
+  - name: topicTypes cross-surface set consistency
+    rule: finite-set-consistency
+    scope: repository
+    options:
+      sets:
+        - name: backendTopicTypes
+          file: backend/types/entities/topic.mts
+          kind: ts-const-object-keys
+          target: topicTypes
+        - name: webTopicTypes
+          file: web/types/topics.ts
+          kind: ts-const-object-keys
+          target: topicTypes
+        - name: sqlTopicTypes
+          file: backend/data-stores/psql/migrations/0060-00-00-topics-taxonomy.sql
+          kind: sql-enum
+          target: topic_types
+      comparisons:
+        - left: backendTopicTypes
+          right: webTopicTypes
+        - left: backendTopicTypes
+          right: sqlTopicTypes
+
+  - name: PostType SQL enum consistency
+    rule: finite-set-consistency
+    scope: repository
+    options:
+      sets:
+        - name: postTypes
+          file: backend/types/entities/post.mts
+          kind: ts-string-union
+          target: PostType
+        - name: sqlPostTypes
+          file: backend/data-stores/psql/migrations/0070-00-00-posts-feed-content.sql
+          kind: sql-enum
+          target: post_types
+      comparisons:
+        - left: postTypes
+          right: sqlPostTypes
+
+  # finite-set-consistency equal-set for Claude skill discovery:
+  # every .agents/skills/<name>/SKILL.md ↔ .claude/skills/<name>.
+  - name: Claude skill discovery set consistency
+    rule: finite-set-consistency
+    scope: repository
+    options:
+      sets:
+        - name: agentSkills
+          kind: path-regex-capture
+          pattern: '^\.agents/skills/(?<value>[^/]+)/SKILL\.md$'
+        - name: claudeSkillDiscovery
+          kind: path-regex-capture
+          pattern: '^\.claude/skills/(?<value>[^/]+)$'
+      comparisons:
+        - left: agentSkills
+          right: claudeSkillDiscovery
+
+  # Replaces ci/backend-package-json-workspaces-sync.test.mts (deleted). The
+  # `../ts-shared/*` entries are covered separately by
+  # `package-json-nested-workspace-coverage` above.
+  - name: backend/package.json workspaces match pnpm-workspace.yaml
+    rule: finite-set-consistency
+    scope: repository
+    options:
+      sets:
+        - name: workspaceYamlBackendPackages
+          file: pnpm-workspace.yaml
+          kind: yaml-sequence
+          key: packages
+          stripPrefix: 'backend/'
+          minSize: 1
+        - name: packageJsonWorkspaces
+          file: backend/package.json
+          kind: yaml-string-selector
+          key: workspaces.[]
+          excludePrefix: '../'
+          minSize: 1
+      comparisons:
+        - left: workspaceYamlBackendPackages
+          right: packageJsonWorkspaces
+
+  - name: vitest project mapping
+    rule: vitest-project-mapping
+    scope: repository
+    options:
+      testExtensions:
+        - .test.mts
+        - .test.ts
+        - .test.tsx
+        - .stories.ts
+        - .stories.tsx
+
+  - name: vitest test correspondence
+    rule: vitest-test-correspondence
+    scope: repository
+    options:
+      scopes:
+        - backend
+        - web
+        - lambdas
+        - cloudflare-worker
+      direction: test-to-source
+      stemSuffixesToStrip:
+        - .stripe
+        - .no-data.mock
+        - .real-glide.mock
+        - .mock
+        - .generated
+        - .routes
+        - .topic-ratings.generated
+        - .hardening
+        - .stamping
+        - .rollover
+        - .spend-cap-recheck
+        - .spend-cap.real-glide.mock
+        - .spend-cap-rollover.real-glide.mock
+        - .spend-cap
+        - .spend-cap-moderation
+        - .spend-cap-autotagger
+        - .spend-cap-story-post
+        - .spend-cap-mid-loop
+        - .mid-loop-breach.mock
+
+  - name: Vitest CI path coverage
+    rule: vitest-ci-path-coverage
+    scope: repository
+    options:
+      projectFilters:
+        # Target-scoped API and PostgreSQL resource triggers cover their owning projects;
+        # root-config now contains only repository-wide tooling configuration.
+        root-config: [tooling, backend]
+        api-contracts: [backend]
+        workspace-package-boundaries: [tooling]
+        postgres-resources: [backend, postgres-schema, backend-credentialed, web-integration]
+        agent-tools-docs: [tooling]
+        automation-prompt-docs: [tooling]
+        agent-skill-docs: [tooling]
+        ci-inventory-config: [tooling]
+        ts-shared: [ts-shared]
+        static-analysis-tools: [tooling]
+        static-analysis-ast-grep: [tooling]
+        dev-tools: [tooling]
+        ci-transient-retry: [tooling]
+        ci-tools: [tooling]
+        github-actions: [tooling]
+        git-hooks: [tooling]
+        playwright-helpers: [tooling]
+        backend-docs-freshness: [tooling]
+        i18n-extract-codemod: [tooling]
+        docker-deploy: [tooling]
+        backend/data-stores/analytics: [backend]
+        backend/services/analytics: [backend]
+        backend/analytics-integration: [backend]
+        backend-data-stores: [backend]
+        backend-activitypub-capacity: [backend, postgres-schema]
+        backend-mocks: [backend]
+        backend-real-glide-mq: [backend]
+        backend-no-data-mocks: [backend]
+        backend-modules: [backend]
+        backend-test-helpers: [backend]
+        backend-contract-program: [backend]
+        backend-email-templates: [backend]
+        backend-postgres-schema: [postgres-schema]
+        backend-aws: [backend-credentialed]
+        backend-bedrock: [backend-credentialed]
+        backend-openai: [backend-credentialed]
+        backend-stripe: [backend-credentialed]
+        web: [web]
+        web-storybook: [storybook]
+        web-storybook-component-coverage: [storybook]
+        web-storybook-browser: [storybook]
+        web-api: [web-integration]
+        web-integration: [web-integration]
+        lambdas: [lambdas]
+        lambdas-mocks: [lambdas]
+        lambdas-portability: [lambdas, portability]
+        cloudflare-worker: [cloudflare-worker]
+        cloudflare-worker-mocks: [cloudflare-worker]
+        cloudflare-worker-portability: [cloudflare-worker, portability]
+      workflows:
+        - path: ci/no-mistakes-workflows/ci-path-coverage.yml
+          job: detect-changes
+          stepId: filter
+
+  - name: web/components/ui story coverage
+    rule: required-companion-imports
+    scope: repository
+    options:
+      sourceDirs:
+        - web/components/ui
+      directChildOnly: true
+      sourceExtensions:
+        - .tsx
+      excludeBasenames:
+        - _button-tooltip.tsx
+        - availability-indicator.test.tsx
+        - breadcrumb.mock.test.tsx
+        - carousel.mock.test.tsx
+        - checkbox-card.test.tsx
+        - error-boundary.test.tsx
+      companionGlobs:
+        - web/storybook/**/*.stories.ts
+        - web/storybook/**/*.stories.tsx
+        - web/**/__tests__/**/*.test.ts
+        - web/**/__tests__/**/*.test.tsx
+      specifierTemplate: '@/{sourcePath}'
+      stripSourcePrefix: web
+
+  - name: pnpm-workspace.yaml value types
+    rule: structured-config-policy
+    scope: repository
+    options:
+      policies:
+        - files:
+            - pnpm-workspace.yaml
+          bannedKeys:
+            - patchedDependencies
+            - allowUnusedPatches
+          valueAssertions:
+            - key: minimumReleaseAge
+              kind: positive-number
+            - key: dangerouslyAllowAllBuilds
+              kind: boolean
+            - key: strictDepBuilds
+              kind: boolean
+            - key: minimumReleaseAgeExclude
+              kind: string-array
+            - key: allowBuilds
+              kind: record-of-boolean
+
+  - name: root oxlintrc override globs and bind ban
+    rule: structured-config-policy
+    scope: repository
+    options:
+      policies:
+        - files:
+            - .oxlintrc.json
+          valueAssertions:
+            - key: overrides.[].files.[]
+              kind: string-prefix
+              prefix: '**/'
+            - key: overrides.[].files.[]
+              kind: not-single-file
+            - key: rules.no-restricted-properties.0
+              kind: equals
+              value: error
+            - key: rules.no-restricted-properties.[]
+              kind: object-shape
+              match: any
+              requiredKeys: [message]
+              forbiddenKeys: [object]
+              requiredValues:
+                property: bind
+            - key: overrides.[].rules.no-restricted-properties.[]
+              kind: object-shape
+              match: any
+              requiredKeys: [message]
+              forbiddenKeys: [object]
+              requiredValues:
+                property: bind
+        - files:
+            - '**/.oxlintrc.json'
+          when:
+            - key: extends
+          valueAssertions:
+            - kind: ancestor-override-subset
+            - key: plugins
+              kind: equals-file
+              file: .oxlintrc.json
+              fromKey: plugins
+  - name: tests must not pin exact dependency versions
+    rule: test-no-dependency-pins
+    scope: repository
+
+  - name: composite-action steps use only supported keys
+    rule: github-actions-composite-step-schema
+    scope: repository
+
+  - name: Next.js redirect destinations resolve to App Router pages
+    rule: nextjs-redirect-destinations
+    scope: repository
+    options:
+      configPath: web/next.config.ts
+      appRoot: web/app
+      includeRewrites: false
+
+  - name: multi-row FOR UPDATE locks have a deterministic order
+    rule: postgres-lock-ordering
+    scope: repository
+    options:
+      include:
+        - backend/**/*.mts
+        - backend/**/*.ts
+      exclude:
+        - '**/*.test.*'
+        - '**/test-helpers/**'
+        - '**/__tests__/**'
+      safeDirective: deadlock-safe
+
+  - name: production PostgreSQL writers acquire conflicts in catalog order
+    rule: postgres-conflict-ordering
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/schema.json
+      sqlInclude:
+        - backend/data-stores/psql/config-driven/**/*.sql
+      executorNames: [query, write]
+      unanalyzableSql: ignore
+      include:
+        - backend/**/*.mts
+        - backend/**/*.ts
+      exclude:
+        - '**/*.test.*'
+        - '**/test-helpers/**'
+        - '**/__tests__/**'
+        - '**/fixtures/**'
+        - '**/*test-helper*.*'
+        - '**/*test-support.*'
+        - '**/*fixture*.*'
+        - '**/scripts/**'
+        - backend/data-stores/psql/config-driven/**/*seed*.mts
+        - backend/data-stores/psql/config-driven/**/*seed*.sql
+        - backend/data-stores/psql/config-driven/0080-00-01-publisher-type-topics.mts
+        - backend/data-stores/psql/config-driven/0080-00-02-publisher-type-relations.sql
+      safeDirective: deadlock-safe
+
+  - name: production PostgreSQL locks use catalog key prefixes
+    rule: postgres-lock-ordering
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/schema.json
+      sqlInclude:
+        - backend/data-stores/psql/config-driven/**/*.sql
+      include:
+        - backend/**/*.mts
+        - backend/**/*.ts
+      exclude:
+        - '**/*.test.*'
+        - '**/test-helpers/**'
+        - '**/__tests__/**'
+        - '**/fixtures/**'
+        - '**/*test-helper*.*'
+        - '**/*test-support.*'
+        - '**/*fixture*.*'
+        - '**/scripts/**'
+        - backend/data-stores/psql/config-driven/**/*seed*.mts
+        - backend/data-stores/psql/config-driven/**/*seed*.sql
+        - backend/data-stores/psql/config-driven/0080-00-01-publisher-type-topics.mts
+        - backend/data-stores/psql/config-driven/0080-00-02-publisher-type-relations.sql
+      safeDirective: deadlock-safe
+
+  - name: migration columns stay in their original table definitions
+    rule: postgres-no-add-column
+    scope: repository
+    options:
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+      allowedMigrations:
+        - path: backend/data-stores/psql/migrations/0630-00-00-membership-ineligible-purchase-reversal-refund-scan-cycles.sql
+          table: membership_ineligible_purchase_reversal_refund_scans
+          column: registered_cycle_generation
+          type: BIGINT
+          nullable: false
+          default: '1'
+        - path: backend/data-stores/psql/migrations/0630-00-00-membership-ineligible-purchase-reversal-refund-scan-cycles.sql
+          table: membership_ineligible_purchase_reversal_refund_scans
+          column: verified_cycle_generation
+          type: BIGINT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0623-00-00-membership-operation-reversal-leases.sql
+          table: membership_operations
+          column: provider_refund_id
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0623-00-00-membership-operation-reversal-leases.sql
+          table: membership_lineage_bindings
+          column: originating_invoice_id
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0623-00-00-membership-operation-reversal-leases.sql
+          table: membership_operations
+          column: execution_claim_token
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0623-00-00-membership-operation-reversal-leases.sql
+          table: membership_operations
+          column: execution_claimed_at
+          type: TIMESTAMPTZ
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0624-00-00-membership-operation-binding.sql
+          table: membership_operations
+          column: membership_lineage_binding_id
+          type: UUID
+          nullable: false
+        - path: backend/data-stores/psql/migrations/0624-00-00-image-upload-staging.sql
+          table: images
+          column: upload_staged_at
+          type: TIMESTAMPTZ
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0624-00-00-image-upload-staging.sql
+          table: images
+          column: upload_source_deleted_at
+          type: TIMESTAMPTZ
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0628-00-00-user-data-request-attempt-conventions.sql
+          table: user_data_request_attempts
+          column: updated_at
+          type: TIMESTAMPTZ
+          nullable: false
+          default: CURRENT_TIMESTAMP
+        - path: backend/data-stores/psql/migrations/0621-00-00-rss-feed-item-source-publications.sql
+          table: rss_feed_item_sources
+          column: published_at
+          type: TIMESTAMPTZ
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0611-00-00-post-creation-source-url.sql
+          table: posts
+          column: creation_source_url_id
+          type: UUID
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0608-00-01-notification-publication-targets.sql
+          table: notifications
+          column: publication_post_id
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0608-00-01-notification-publication-targets.sql
+          table: notifications
+          column: publication_rss_feed_item_id
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0604-00-00-ap-inbox-delivery-storage-bounds.sql
+          table: ap_inbox_deliveries
+          column: first_failed_at
+          type: TIMESTAMPTZ
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0604-00-00-ap-inbox-delivery-storage-bounds.sql
+          table: ap_inbox_deliveries
+          column: retention_expires_at
+          type: TIMESTAMPTZ
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0591-00-00-support-draft-generation-reservation.sql
+          table: support_agent_runs
+          column: staff_draft_requested_at
+          type: TIMESTAMPTZ
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0586-00-00-support-draft-agent-run-idempotency.sql
+          table: support_messages
+          column: agent_run_id
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0585-00-00-support-agent-run-idempotency.sql
+          table: support_agent_runs
+          column: idempotency_key
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0585-00-00-support-agent-run-idempotency.sql
+          table: support_agent_runs
+          column: claim_token
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0583-00-00-bluesky-disconnect-requested-at.sql
+          table: bluesky_linked_accounts
+          column: disconnect_requested_at
+          type: TIMESTAMPTZ
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0603-00-00-user-hn-discussions.sql
+          table: users
+          column: hn_discussions
+          type: BOOLEAN
+          nullable: false
+          default: 'false'
+
+  - name: DML must not write PostgreSQL generated columns
+    rule: postgres-no-generated-column-writes
+    scope: repository
+    options:
+      # 0.46.1 peels DO $tag$ bodies for pairing engines. This rule may still
+      # skip chr()-encoded statements. extraGeneratedColumns stays only for
+      # config-driven vote tables whose DDL is TypeScript.
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+      include:
+        - backend/**/*.{ts,mts,tsx,js,sql}
+        - integration-tests/**/*.{ts,mts,tsx,js,sql}
+        - playwright/**/*.{ts,mts,tsx,js,sql}
+        - web/**/*.{ts,mts,tsx,js,sql}
+      extraGeneratedColumns:
+        - { table: agent_moderation_votes, column: created_at }
+        - { table: entity_relation_votes, column: created_at }
+        - { table: hostname_votes, column: created_at }
+        - { table: post_votes, column: created_at }
+        - { table: rss_feed_item_votes, column: created_at }
+        - { table: topic_votes, column: created_at }
+        - { table: user_vouch_votes, column: created_at }
+
+  - name: tests must not eval markdown shell fences
+    rule: markdown-eval-tests
+    scope: repository
+    options:
+      include: ['**/*.test.mts']
+
+  - name: Markdown Mermaid fences parse
+    rule: markdown-mermaid-validation
+    scope: repository
+    include:
+      - '**/*.md'
+      - '**/*.markdown'
+      - '**/*.mdx'
+
+  - name: foreign keys have a supporting index
+    rule: postgres-fk-index
+    scope: repository
+    options:
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+      allowDirective: fk-index-guard-allow
+      allowedColumns:
+        - agent_moderations.deleted_by_id
+        - agent_prompts.created_by_id
+        - agent_prompts.deleted_by_id
+        - agent_prompts.updated_by_id
+        - agents.created_by_id
+        - agents.deleted_by_id
+        - agents.updated_by_id
+        - community_agent_prompt_changes.changed_by_id
+        - community_agent_prompts.deleted_by_id
+        - community_applications.reviewed_by_id
+        - community_auto_tagger_agents.disabled_by_id
+        - community_auto_tagger_agents.enabled_by_id
+        - community_bans.banned_by_id
+        - community_bans.lifted_by_id
+        - community_list_items__posts.added_by_id
+        - community_list_items__posts.removed_by_id
+        - community_list_items__rss_feeds.added_by_id
+        - community_list_items__rss_feeds.removed_by_id
+        - community_list_items__topics.added_by_id
+        - community_list_items__topics.removed_by_id
+        - community_list_items__url_hostnames.added_by_id
+        - community_list_items__url_hostnames.removed_by_id
+        - community_list_items__urls.added_by_id
+        - community_list_items__urls.removed_by_id
+        - community_members.approved_by_id
+        - community_members.removed_by_id
+        - community_members.suspected_ban_evader_dismissed_by_id
+        - community_post_reviews.escalated_by_id
+        - community_post_reviews.reviewed_by_id
+        - community_post_reviews.submitted_by_id
+        - community_post_reviews.unpublished_by_id
+        - community_restrictions.activated_by_id
+        - community_restrictions.lifted_by_id
+        - community_saved_replies.created_by_id
+        - community_saved_replies.deleted_by_id
+        - conversation_messages.approved_by_id
+        - conversation_messages.deleted_by_id
+        - conversation_messages.edited_by_id
+        - conversation_messages.updated_by_id
+        - conversation_participants.removed_by_id
+        - crawlers.deleted_by_id
+        - crawlers.updated_by_id
+        - curated_aside_items.created_by_id
+        - dynamic_config_change_logs.changed_by_id
+        - fediverse_instance_integration_changes.changed_by_id
+        - images.deleted_by_id
+        - moderation_appeal_lifecycle_changes.changed_by_id
+        - moderation_appeals.approved_by_id
+        - moderation_appeals.edited_by_id
+        - moderation_appeals.resolved_by_id
+        - moderation_cases.resolved_by_id
+        - moderation_report_judgements.rerun_by_id
+        - moderation_reports.escalated_by_id
+        - post_autotagger_results.created_by_id
+        - post_autotagger_results.deleted_by_id
+        - post_autotagger_results.updated_by_id
+        - post_dispute_annotations.removed_by_id
+        - post_locks.lifted_by_id
+        - post_locks.locked_by_id
+        - post_revisions.revised_by_id
+        - remote_actors.deleted_by_id
+        - report_abuse_penalties.created_by_id
+        - report_abuse_penalties.revoked_by_id
+        - report_integrity_flags.resolved_by_id
+        - review_dispute_lifecycle_changes.changed_by_id
+        - review_disputes.approved_by_id
+        - review_disputes.edited_by_id
+        - review_disputes.resolved_by_id
+        - rss_feed_discoverability_changes.created_by_id
+        - rss_feed_enablement_changes.created_by_id
+        - rss_feed_item_autotagger_results.created_by_id
+        - rss_feed_item_autotagger_results.deleted_by_id
+        - rss_feed_item_autotagger_results.updated_by_id
+        - rss_feed_item_category_rejections.created_by_id
+        - rss_feeds.created_by_id
+        - support_messages.approved_by_id
+        - support_messages.created_by_id
+        - support_messages.edited_by_id
+        - support_threads.resolved_by_id
+        - topic_revisions.revised_by_id
+        - url_hostname_blocks.blocked_by_id
+        - url_hostname_blocks.lifted_by_id
+        - url_hostnames.created_by_id
+        - urls.created_by_id
+        - user_referral_program_links.created_by_id
+        - user_referral_program_links.deleted_by_id
+        - user_suspensions.lifted_by_id
+        - user_suspensions.suspended_by_id
+        - user_warnings.issued_by_id
+        - user_warnings.revoked_by_id
+        - users.deleted_by_id
+        - vote_integrity_flags.resolved_by_id
+        - vote_weight_penalties.revoked_by_id
+      allowedTables: []
+
+  - name: NOT VALID constraints have a matching VALIDATE CONSTRAINT
+    rule: postgres-constraint-validate
+    scope: repository
+    options:
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+
+  - name: foreign keys declare an explicit ON DELETE action
+    rule: postgres-require-fk-on-delete
+    scope: repository
+    options:
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+
+  - name: added foreign keys and checks use named constraints
+    rule: postgres-require-named-constraints
+    scope: repository
+    options:
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+
+  - name: config-driven SQL does not contain schema DDL
+    rule: postgres-sql-statement-policy
+    scope: repository
+    options:
+      sqlInclude:
+        - backend/data-stores/psql/config-driven/**/*.sql
+
+  - name: executed INSERTs stay replay-safe
+    rule: postgres-idempotent-insert
+    scope: repository
+    options:
+      sqlInclude:
+        - backend/data-stores/psql/config-driven/**/*.sql
+      include:
+        - backend/data-stores/psql/config-driven/**/*.{ts,mts,js,sql}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+      scanEmbedded: true
+      replaySafeTriggerFunctions:
+        - fn_update_updated_at
+        - fn_lock_agent_moderation_transparency_agent
+      triggerWrittenColumns:
+        fn_update_updated_at: [updated_at]
+
+  - name: do not wrap set operations in correlated EXISTS
+    rule: postgres-sql-shape-policy
+    scope: repository
+    options:
+      sqlInclude:
+        - backend/data-stores/psql/config-driven/**/*.sql
+      include:
+        - backend/**/*.{ts,mts,js}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+        - backend/scripts/**
+      # Skip dynamically interpolated executor SQL. The deleted topics-active-filter
+      # and EXISTS-shape guards only judged recoverable SQL; fail would flag every
+      # composed `read`/`write` wrapper. Parsed queries still fail-closed.
+      unanalyzableSql: ignore
+
+  - name: topics queries keep the active-topic filter
+    rule: postgres-required-predicates
+    scope: repository
+    options:
+      include:
+        - backend/**/*.{ts,mts,js}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+        - backend/scripts/**
+      # Same skip as postgres-sql-shape-policy: interpolated templates are not
+      # recoverable. Parsed `topics` queries still fail-closed; lifecycle
+      # exceptions use no-mistakes-disable-file.
+      unanalyzableSql: ignore
+      relations:
+        - table: topics
+          require:
+            - deleted_at IS NULL
+            - merged_into_topic_id IS NULL
+
+  - name: split-requirement parents link canonical children
+    rule: markdown-child-links
+    scope: repository
+    options:
+      groups:
+        - parents: ['docs/requirements/ADMIN-NAVIGATION-MATRIX.md']
+          children:
+            - 'docs/requirements/reference-admin-navigation-matrix-table-a-entity-surface-actions-navigation.md'
+            - 'docs/requirements/reference-admin-navigation-matrix-table-b-entity-action-description.md'
+            - 'docs/requirements/reference-admin-navigation-matrix-known-gaps.md'
+          requireWholeFile: true
+
+  - name: dependency policy documentation stays canonical
+    rule: doc-consistency
+    scope: repository
+    options:
+      requiredFiles:
+        - docs/development/dependency-updates.md
+        - docs/development/reference-dependency-updates-supply-chain-policy.md
+        - docs/development/reference-dependency-updates-first-party-release-gate-exemptions.md
+        - docs/development/first-party-dependencies.md
+      requiredSubstrings:
+        - file: docs/development/dependency-updates.md
+          substring: '[Supply-chain policy](reference-dependency-updates-supply-chain-policy.md)'
+        - file: docs/development/reference-dependency-updates-supply-chain-policy.md
+          substring: '[First-party release-gate exemptions](reference-dependency-updates-first-party-release-gate-exemptions.md)'
+
+  - name: permanent package documentation stays synchronized
+    rule: finite-set-consistency
+    scope: repository
+    options:
+      sets:
+        - name: permanentPackages
+          file: .no-mistakes.yml
+          kind: yaml-string-selector
+          key: rules.[].options.permanentPackages.[].name
+          minSize: 1
+        - name: releaseAgeExemptionTable
+          file: docs/development/reference-dependency-updates-first-party-release-gate-exemptions.md
+          kind: markdown-table-code-cells
+          minSize: 1
+        - name: firstPartyDependencyTable
+          file: docs/development/first-party-dependencies.md
+          kind: markdown-table-code-cells
+          minSize: 1
+      comparisons:
+        - left: permanentPackages
+          right: releaseAgeExemptionTable
+          mode: equal-set
+        - left: permanentPackages
+          right: firstPartyDependencyTable
+          mode: equal-set
+
+  - name: remaining split-requirement parents link canonical children
+    rule: markdown-child-links
+    scope: repository
+    options:
+      groups:
+        - parents: ['docs/requirements/CLIENT-PARITY-MATRIX.md']
+          children:
+            - 'docs/requirements/reference-client-parity-matrix-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/ENTITIES.md']
+          children:
+            - 'docs/requirements/reference-entities-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/ENTITY-ACTION-MATRIX.md']
+          children:
+            - 'docs/requirements/reference-entity-action-matrix-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/ENTITY-LIFECYCLE-MATRIX.md']
+          children:
+            - 'docs/requirements/reference-entity-lifecycle-matrix-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/admin/CUSTOMER-SUPPORT.md']
+          children:
+            - 'docs/requirements/admin/reference-customer-support-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/anatomy/fediverse-instance.md']
+          children:
+            - 'docs/requirements/anatomy/reference-fediverse-instance-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/community/community-lists.md']
+          children:
+            - 'docs/requirements/community/reference-community-lists-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/content/LISTS.md']
+          children:
+            - 'docs/requirements/content/reference-lists-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/content/PODCASTS.md']
+          children:
+            - 'docs/requirements/content/reference-podcasts-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/content/TOPICS.md']
+          children:
+            - 'docs/requirements/content/reference-topics-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/content/stories.md']
+          children:
+            - 'docs/requirements/content/reference-stories-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/moderation/MODERATION-FLOWS.md']
+          children:
+            - 'docs/requirements/moderation/reference-moderation-flows-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/moderation/MODERATION-TEST-MATRIX.md']
+          children:
+            - 'docs/requirements/moderation/reference-moderation-test-matrix-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/moderation/POST-MODERATION.md']
+          children:
+            - 'docs/requirements/moderation/reference-post-moderation-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/moderation/REPORTING.md']
+          children:
+            - 'docs/requirements/moderation/reference-reporting-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/moderation/community-moderation.md']
+          children:
+            - 'docs/requirements/moderation/reference-community-moderation-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/navigation/ACTIONS.md']
+          children:
+            - 'docs/requirements/navigation/reference-actions-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/navigation/ASIDES.md']
+          children:
+            - 'docs/requirements/navigation/reference-asides-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/navigation/COMPONENTS.md']
+          children:
+            - 'docs/requirements/navigation/reference-components-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/navigation/NAVIGATION.md']
+          children:
+            - 'docs/requirements/navigation/reference-navigation-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/navigation/SIDEBAR.md']
+          children:
+            - 'docs/requirements/navigation/reference-sidebar-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/platform/JOB-REPLAYABILITY.md']
+          children:
+            - 'docs/requirements/platform/reference-job-replayability-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/platform/data-points-spec.md']
+          children:
+            - 'docs/requirements/platform/reference-data-points-spec-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/security/SECURITY-NEXTJS-CVES.md']
+          children:
+            - 'docs/requirements/security/reference-security-nextjs-cves-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/security/SECURITY.md']
+          children:
+            - 'docs/requirements/security/reference-security-response-headers.md'
+            - 'docs/requirements/security/reference-backend-defence-in-depth.md'
+            - 'docs/requirements/security/reference-security-authentication-sessions.md'
+            - 'docs/requirements/security/reference-security-ssrf-protection.md'
+            - 'docs/requirements/security/reference-security-honeypot-fields.md'
+            - 'docs/requirements/security/reference-security-observability-scrubbing.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/trust-safety/trust-system.md']
+          children:
+            - 'docs/requirements/trust-safety/reference-trust-system-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/users/REFERRAL-LINKS.md']
+          children:
+            - 'docs/requirements/users/reference-referral-links-*.md'
+          requireWholeFile: true
+        - parents: ['docs/requirements/users/memberships.md']
+          children:
+            - 'docs/requirements/users/reference-memberships-*.md'
+          requireWholeFile: true
+
+  - name: GitHub Actions jobs declare timeout-minutes within budget
+    rule: github-actions-job-timeouts
+    scope: repository
+    options:
+      maxMinutes: 10
+      rejectStepExceedingJob: true
+      allow:
+        # 20m end-to-end fail-fast ceiling covers real max 10.5m (n=36); Docker build/publish steps fail earlier at 10m/5m. See #8078 and #8825.
+        - job: '.github/workflows/build-backend.yml#build'
+          maxMinutes: 20
+        # 15m end-to-end fail-fast ceiling covers build, publish, smoke, scan, static extraction, and artifact upload; Docker build/publish steps fail earlier at 10m/5m. See #8078 and #8825.
+        - job: '.github/workflows/build-web.yml#build'
+          maxMinutes: 15
+        # Static backend setup, dependency, and typecheck step budgets sum 12m; cap adds runner-overhead buffer. See PR #8489.
+        - job: '.github/workflows/checks-static.yml#static-backend'
+          maxMinutes: 15
+        # Static Cloudflare setup, retry install, typecheck, smoke, and dry-run budgets sum 17m; cap adds buffer. See PR #8489.
+        - job: '.github/workflows/checks-static.yml#static-cloudflare'
+          maxMinutes: 20
+        # Static lambdas setup, typecheck, depcruise, smoke, and diagnostics step budgets sum 15m; cap adds buffer. See PR #8489.
+        - job: '.github/workflows/checks-static.yml#static-lambdas'
+          maxMinutes: 18
+        # Static web setup, retry install, pages-router, dependency, typecheck, build, and smoke budgets sum 29m; cap adds buffer. See PR #8489.
+        - job: '.github/workflows/checks-static.yml#static-web'
+          maxMinutes: 35
+        # Fail-safe ceiling covering checkout/setup/validation plus headroom for the GitHub-artifact
+        # coverage download and merge, including a 5m sharded-artifact fallback.
+        - job: '.github/workflows/ci-test-coverage.yml#test-coverage'
+          maxMinutes: 14
+        # Fail-safe ceiling covering checkout/setup/validation plus headroom for the GitHub-artifact
+        # coverage download and merge, including a 5m sharded-artifact fallback.
+        - job: '.github/workflows/ci-tests-processing.yml#tests-processing'
+          maxMinutes: 14
+        # setup-node-pnpm (5m) plus the strictly serial sweep engine (20m) sum 25m; cap adds
+        # buffer for the unbounded checkout/workspace-restore steps ahead of them. See #11280.
+        - job: '.github/workflows/cleanup-artifacts.yml#cleanup-sweep'
+          maxMinutes: 26
+        # Backend setup (5m), migration (3m), a 5m Vitest watchdog, report persistence, and headroom
+        # for the GitHub-artifact coverage upload, retained from the pre-revert coverage-transport
+        # budget. The outer cap is fail-safe, not a runtime target.
+        - job: '.github/workflows/tests-web-api.yml#web-api-tests'
+          maxMinutes: 27
+        # The bounded initializer may consume 18m before the trusted supervisor gives Codex 105m; the 150m outer ceiling leaves 27m for setup, transcript upload, completion bundling, and failure diagnostics. A successful shepherd reached 103m38s; run 30189230576 proved that unsupervised worker death requires a hard outer ceiling.
+        - job: '.github/workflows/codex-dispatch.yml#codex'
+          maxMinutes: 150
+        # The credential-free validator includes one bounded 8m immutable-runtime install plus cheap local checks inside bubblewrap; 35m leaves checkout, exact-patch rebase, and diagnostics headroom without expanding publisher write authority.
+        - job: '.github/workflows/codex-dispatch.yml#trusted-completion-validator'
+          maxMinutes: 35
+        # Step budgets across worktree prep (1) + three ./dev/initialize passes (5 each, monorepo/backend/web) + Postgres provisioning (5) + always() cleanup (5) sum 26m; cap adds buffer for the unbounded checkout/setup-node/corepack steps ahead of them. See #10850.
+        - job: '.github/workflows/initialize-smoke-test.yml#initialize-smoke-test'
+          maxMinutes: 30
+        # Type-aware oxlint can wait at most 1m for its sole best-effort slot; the 70m cap is set by the full-workspace relink retry window (static-code-analysis.test.mts), which exceeds the analyzer acquisition budget.
+        - job: '.github/workflows/static-code-analysis.yml#static-code-analysis'
+          maxMinutes: 70
+        # Unexercised 30m GH-Pages build plus a ~20m test-retry watchdog budget. See #8078.
+        - job: '.github/workflows/storybook.yml#storybook'
+          maxMinutes: 94
+        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
+        # pre-revert coverage-transport budget.
+        - job: '.github/workflows/tests-backend-credentialed.yml#backend-credentialed-tests'
+          maxMinutes: 20
+        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
+        # pre-revert coverage-transport budget.
+        - job: '.github/workflows/tests-backend-modules.yml#backend-modules'
+          maxMinutes: 22
+        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
+        # pre-revert coverage-transport budget.
+        - job: '.github/workflows/tests-backend-unit.yml#backend-tests'
+          maxMinutes: 29
+        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
+        # pre-revert coverage-transport budget.
+        - job: '.github/workflows/tests-cloudflare-worker.yml#cloudflare-worker-tests'
+          maxMinutes: 17
+        # Step budgets sum ~27m; real max 2.72m (n=30), cap must cover the steps. See #8078.
+        - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
+          maxMinutes: 37
+        # A strict Next build may spend 5m acquiring the host admission lock plus the bounded build/drain window before the sharded browser runtime begins.
+        - job: '.github/workflows/tests-playwright.yml#playwright-tests'
+          maxMinutes: 35
+        # A strict Next build may spend 5m acquiring the host admission lock plus the bounded build/drain window before credentialed browser setup and execution begin.
+        - job: '.github/workflows/tests-playwright-credentialed.yml#playwright-credentialed-tests'
+          maxMinutes: 25
+        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
+        # pre-revert coverage-transport budget.
+        - job: '.github/workflows/tests-portability.yml#portability-linux'
+          maxMinutes: 17
+        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
+        # pre-revert coverage-transport budget.
+        - job: '.github/workflows/tests-portability.yml#portability-macos'
+          maxMinutes: 17
+        # Step budgets sum ~23m; real max ~1.3m (n=24) via proxy data. See #8078.
+        - job: '.github/workflows/tests-postgres-schema.yml#postgres-schema-tests'
+          maxMinutes: 20
+        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
+        # pre-revert coverage-transport budget.
+        - job: '.github/workflows/tests-tooling.yml#tooling'
+          maxMinutes: 32
+        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
+        # pre-revert coverage-transport budget.
+        - job: '.github/workflows/tests-ts-shared.yml#ts-shared'
+          maxMinutes: 17
+        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
+        # pre-revert coverage-transport budget.
+        - job: '.github/workflows/tests-web-integration.yml#web-integration-tests'
+          maxMinutes: 26
+        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
+        # pre-revert coverage-transport budget.
+        - job: '.github/workflows/tests-web.yml#web-tests'
+          maxMinutes: 24
+
+  - name: tracked TypeScript files belong to a tsconfig program
+    rule: tsconfig-file-coverage
+    scope: repository
+    options:
+      allow:
+        - path: test-helpers/vitest.setup.storybook-browser-guard.mts
+          reason: >-
+            Content-free redirect shim so no-mistakes can resolve web-storybook-browser's
+            setupFiles literal to a real repo-root path; Vitest never executes this copy
+            (see test-helpers/tsconfig.json's exclude comment). Its real logic is
+            web/.storybook/vitest.setup.ts, typechecked under web/tsconfig.json. See #8876.
+      auxiliaryConfigs:
+        - path: web/tsconfig.dependency-cruiser.json
+          reason: >-
+            Path-alias resolver config consumed only by web/.dependency-cruiser.cjs; never
+            passed to tsc directly. See #9225.
+
+  - name: lychee version pin matches mise
+    rule: version-pin-consistency
+    scope: repository
+    options:
+      sourceFile: .mise.toml
+      sourceKey: tools.aqua:lycheeverse/lychee
+      anchors:
+        - file: .github/actions/setup-lychee/action.yml
+          pattern: 'LYCHEE_VERSION:\s*(\d+\.\d+\.\d+)'
+          label: lychee
+
+  - name: gitleaks version pin matches mise
+    rule: version-pin-consistency
+    scope: repository
+    options:
+      sourceFile: .mise.toml
+      sourceKey: tools.aqua:gitleaks/gitleaks
+      anchors:
+        - file: .github/workflows/gitleaks.yml
+          pattern: 'GITLEAKS_VERSION:\s*(\d+\.\d+\.\d+)'
+          label: gitleaks
+
+  - name: no raw ephemeral port 0 binds
+    rule: no-raw-ephemeral-port
+    scope: repository
+    options:
+      allow:
+        - ci/runner-port-policy.mts
+      message: use ci/allocate-browser-safe-ports.py or listenOnRunnerUnreservedEphemeralPort()
+
+  - name: workflow tests do not restate timeout-minutes literals
+    rule: github-actions-test-timeout-literals
+    scope: repository
+
+  - name: setup-aws steps pair caller and nested timeouts
+    rule: github-actions-action-timeout-pair
+    scope: repository
+    options:
+      uses:
+        - ./.github/actions/setup-aws
+        - aws-actions/configure-aws-credentials@
+      stepTimeoutMinutes: 2
+      nestedInput: action-timeout-s
+      nestedTimeoutSeconds: 90
+      forbidNestedInComposite: true
+
+  - name: btree indexes are not a strict prefix of another live index
+    rule: postgres-redundant-index
+    scope: repository
+    options:
+      sqlInclude:
+        - backend/data-stores/psql/migrations/**/*.sql
+      allowDirective: redundant-index-guard-allow
+      # 0.48.1 honors later DROP INDEX, so retired prefixes from 0572/0588/0589 no
+      # longer need allowlisting. These remaining names are live prefixes of
+      # implicit unique/PK composites. Do not drop them in this consume PR.
+      allowedIndexes:
+        - topics__referral_program_link_validations.idx_topics__referral_program_validations__referral_program_id
+        - admin_import_rows.idx_admin_import_rows__batch_id

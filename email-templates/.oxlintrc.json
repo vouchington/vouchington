@@ -1,0 +1,7 @@
+{
+  "$schema": "https://oxc.rs/schema/oxlintrc.json",
+  "extends": ["../.oxlintrc.json", "../.oxlintrc.react.json"],
+  // "extends" does not inherit the root "plugins" array — keep this in exact sync with it. See
+  // static-code-analysis/README.md nested .oxlintrc.json section for why.
+  "plugins": ["react", "nextjs", "jsx-a11y", "react-perf", "vitest", "jest", "promise", "oxc"]
+}

@@ -1,0 +1,27 @@
+name: Make Shard Matrix
+description: >
+  Generates a JSON shard matrix array and total count for use with
+  GitHub Actions strategy.matrix. Input total must be a positive integer string.
+
+inputs:
+  total:
+    description: 'Total number of shards (positive integer)'
+    required: true
+
+outputs:
+  total:
+    description: 'The validated total shard count'
+    value: ${{ steps.shards.outputs.total }}
+  matrix:
+    description: 'JSON array of shard indices, e.g. [1,2,3]'
+    value: ${{ steps.shards.outputs.matrix }}
+
+runs:
+  using: composite
+  steps:
+    - name: Generate shard matrix
+      id: shards
+      shell: bash
+      env:
+        TOTAL: ${{ inputs.total }}
+      run: bash "$GITHUB_WORKSPACE/ci/make-shard-matrix.sh" "$TOTAL"

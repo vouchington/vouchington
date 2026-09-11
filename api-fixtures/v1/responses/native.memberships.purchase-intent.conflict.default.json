@@ -1,0 +1,9 @@
+{
+  "code": "CONFLICT",
+  "eligible_at": "2027-01-01T00:00:00.000Z",
+  "error": "Membership purchase is not eligible.",
+  "management": {
+    "destination": "billing_portal",
+    "provider": "stripe"
+  }
+}

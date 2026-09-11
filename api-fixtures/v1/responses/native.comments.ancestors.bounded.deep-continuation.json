@@ -1,0 +1,180 @@
+{
+  "markdown_to_html": {
+    "bounded-ancestor-comment-0": "<p>Bounded ancestor comment 0</p>",
+    "bounded-ancestor-comment-1": "<p>Bounded ancestor comment 1</p>",
+    "bounded-ancestor-root": "<p>Bounded ancestor root</p>"
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "fixture-ancestor-deep-continuation-start"
+  },
+  "posts": {
+    "bounded-ancestor-comment-0": {
+      "__entity_type": "post",
+      "ai_summary_markdown": "",
+      "approved_at": null,
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": "everyone",
+      "clearance_reason": null,
+      "clearance_status": "pending",
+      "clearance_updated_at": null,
+      "community_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "html": "",
+      "id": "bounded-ancestor-comment-0",
+      "in_review_at": null,
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": "Bounded ancestor comment 0",
+      "parent_id": "bounded-ancestor-root",
+      "post_type": "comment",
+      "privacy": "public",
+      "rejected_at": null,
+      "root_id": "bounded-ancestor-root",
+      "slug": null,
+      "spam_detection_created_at": null,
+      "spam_detection_flagged": null,
+      "spam_detection_results": null,
+      "spam_detection_score": null,
+      "title": "",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "updated_by_id": null
+    },
+    "bounded-ancestor-comment-1": {
+      "__entity_type": "post",
+      "ai_summary_markdown": "",
+      "approved_at": null,
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": "everyone",
+      "clearance_reason": null,
+      "clearance_status": "pending",
+      "clearance_updated_at": null,
+      "community_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "html": "",
+      "id": "bounded-ancestor-comment-1",
+      "in_review_at": null,
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": "Bounded ancestor comment 1",
+      "parent_id": "bounded-ancestor-comment-0",
+      "post_type": "comment",
+      "privacy": "public",
+      "rejected_at": null,
+      "root_id": "bounded-ancestor-root",
+      "slug": null,
+      "spam_detection_created_at": null,
+      "spam_detection_flagged": null,
+      "spam_detection_results": null,
+      "spam_detection_score": null,
+      "title": "",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "updated_by_id": null
+    },
+    "bounded-ancestor-root": {
+      "__entity_type": "post",
+      "ai_summary_markdown": "",
+      "approved_at": null,
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": "everyone",
+      "clearance_reason": null,
+      "clearance_status": "pending",
+      "clearance_updated_at": null,
+      "community_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "html": "",
+      "id": "bounded-ancestor-root",
+      "in_review_at": null,
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": "Bounded ancestor root",
+      "parent_id": null,
+      "post_type": "discussion",
+      "privacy": "public",
+      "rejected_at": null,
+      "root_id": null,
+      "slug": "fixture-bounded-ancestor-root",
+      "spam_detection_created_at": null,
+      "spam_detection_flagged": null,
+      "spam_detection_results": null,
+      "spam_detection_score": null,
+      "title": "Bounded ancestor thread",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "updated_by_id": null
+    }
+  },
+  "posts_metrics": {
+    "bounded-ancestor-comment-0": {
+      "__entity_type": "post_metrics",
+      "bookmarks": {
+        "follow": 0,
+        "save": 0
+      },
+      "count": {
+        "ancestors": 3,
+        "children": 1,
+        "descendants": 2
+      },
+      "id": "bounded-ancestor-comment-0",
+      "updated_at": "2026-01-01T00:00:00Z"
+    },
+    "bounded-ancestor-comment-1": {
+      "__entity_type": "post_metrics",
+      "bookmarks": {
+        "follow": 0,
+        "save": 0
+      },
+      "count": {
+        "ancestors": 4,
+        "children": 2,
+        "descendants": 3
+      },
+      "id": "bounded-ancestor-comment-1",
+      "updated_at": "2026-01-01T00:00:00Z"
+    },
+    "bounded-ancestor-root": {
+      "__entity_type": "post_metrics",
+      "bookmarks": {
+        "follow": 0,
+        "save": 0
+      },
+      "count": {
+        "ancestors": 2,
+        "children": 0,
+        "descendants": 1
+      },
+      "id": "bounded-ancestor-root",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  "results": [
+    {
+      "__entity_type": "post",
+      "id": "bounded-ancestor-root"
+    },
+    {
+      "__entity_type": "post",
+      "id": "bounded-ancestor-comment-0"
+    },
+    {
+      "__entity_type": "post",
+      "id": "bounded-ancestor-comment-1"
+    }
+  ]
+}

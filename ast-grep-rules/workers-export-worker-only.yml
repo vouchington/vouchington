@@ -1,0 +1,37 @@
+id: workers-export-worker-only
+language: Tsx
+severity: error
+message: 'worker leaf files may only export Worker or createWorker instances'
+files:
+  - 'backend/workers/*/workers/*.mts'
+rule:
+  any:
+    - pattern: 'export default $EXP'
+    - pattern: 'export function $NAME($$$) { $$$ }'
+    - pattern: 'export class $NAME { $$$ }'
+    - pattern: "export * from '$MOD'"
+    - pattern: 'export type $NAME = $TYPE'
+    - pattern: 'export interface $NAME { $$$ }'
+    - pattern: "export { $$$SPECS } from '$MOD'"
+    - pattern: 'export { $$$SPECS }'
+    - pattern: 'export let $NAME = $INIT'
+    - pattern: 'export var $NAME = $INIT'
+    - all:
+        - pattern: 'export const $NAME = $INIT'
+        - not:
+            any:
+              - pattern: 'export const $NAME = new Worker($$$)'
+              - pattern: 'export const $NAME = createWorker($$$)'
+examples:
+  - code: 'export function processJob() {}'
+    isValid: false
+    file: 'backend/workers/email/workers/send.mts'
+  - code: 'export type JobData = { email: string }'
+    isValid: false
+    file: 'backend/workers/email/workers/send.mts'
+  - code: "export const emailWorker = createWorker('email', handler)"
+    isValid: true
+    file: 'backend/workers/email/workers/send.mts'
+  - code: "const emailWorker = createWorker('email', handler)"
+    isValid: true
+    file: 'backend/workers/email/workers/send.mts'

@@ -1,0 +1,72 @@
+{
+  "bookmarks": {},
+  "election_votes": {},
+  "fediverse_instances": {
+    "00000000-0000-7000-8000-00000000f005": {
+      "monthly_active_users": 80,
+      "nodeinfo_software_version": "0.19.12",
+      "open_registrations": null,
+      "protocol": "activitypub",
+      "software": "lemmy",
+      "total_users": 500
+    }
+  },
+  "hostname_elections": {},
+  "markdown_to_html": {},
+  "page_info": {
+    "end_cursor": "last",
+    "has_next_page": false,
+    "start_cursor": "next"
+  },
+  "results": [
+    {
+      "__entity_type": "topic",
+      "id": "00000000-0000-7000-8000-00000000f005",
+      "name": "lemmy.example",
+      "slug": "lemmy-example",
+      "topic_type": "fediverse_instance"
+    }
+  ],
+  "topic_elections": {},
+  "topics": {
+    "00000000-0000-7000-8000-00000000f005": {
+      "__entity_type": "topic",
+      "aliases": [],
+      "allow_reviews": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "roles": [],
+        "username": "testuser"
+      },
+      "hero_image_id": null,
+      "homepage_url_id": null,
+      "hostname": {
+        "__entity_type": "hostname",
+        "hostname": "lemmy.example",
+        "id": "00000000-0000-7000-8000-00000000f006",
+        "topic_id": "00000000-0000-7000-8000-00000000f005"
+      },
+      "hostname_id": "00000000-0000-7000-8000-00000000f006",
+      "id": "00000000-0000-7000-8000-00000000f005",
+      "lingua_rs_detected_language": null,
+      "logo_image_id": null,
+      "markdown": "",
+      "name": "lemmy.example",
+      "noindex": false,
+      "referral_program_id": null,
+      "referral_program_slug": null,
+      "rewards_program_id": null,
+      "slug": "lemmy-example",
+      "topic_type": "fediverse_instance",
+      "updated_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "roles": [],
+        "username": "testuser"
+      }
+    }
+  },
+  "topics_metrics": {}
+}

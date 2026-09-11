@@ -1,0 +1,9 @@
+{
+  "verification": {
+    "created_at": "2026-09-10T00:00:00.000Z",
+    "id": "00000000-0000-7000-8000-000000000809",
+    "provider": "google_play",
+    "reason_code": "competing_direct_source",
+    "status": "conflict"
+  }
+}

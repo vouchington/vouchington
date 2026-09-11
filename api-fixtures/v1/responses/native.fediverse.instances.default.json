@@ -1,0 +1,143 @@
+{
+  "bookmarks": {},
+  "election_votes": {},
+  "fediverse_instances": {
+    "00000000-0000-7000-8000-00000000f001": {
+      "monthly_active_users": 340,
+      "nodeinfo_software_version": "4.4.0",
+      "open_registrations": true,
+      "protocol": "activitypub",
+      "software": "mastodon",
+      "total_users": 1200
+    },
+    "00000000-0000-7000-8000-00000000f003": {
+      "monthly_active_users": null,
+      "nodeinfo_software_version": null,
+      "open_registrations": false,
+      "protocol": null,
+      "software": null,
+      "total_users": null
+    }
+  },
+  "hostname_elections": {
+    "00000000-0000-7000-8000-00000000f002": {
+      "__entity_type": "hostname_election",
+      "id": "00000000-0000-7000-8000-00000000f002",
+      "votes_count_down": 2,
+      "votes_count_up": 12,
+      "votes_score_net": 10
+    }
+  },
+  "markdown_to_html": {
+    "00000000-0000-7000-8000-00000000f001": "<p>A community-run Mastodon instance.</p>"
+  },
+  "page_info": {
+    "end_cursor": "next",
+    "has_next_page": true,
+    "start_cursor": "first"
+  },
+  "results": [
+    {
+      "__entity_type": "topic",
+      "id": "00000000-0000-7000-8000-00000000f001",
+      "name": "social.example",
+      "slug": "social-example",
+      "topic_type": "fediverse_instance"
+    },
+    {
+      "__entity_type": "topic",
+      "id": "00000000-0000-7000-8000-00000000f003",
+      "name": "unknown.example",
+      "slug": "unknown-example",
+      "topic_type": "fediverse_instance"
+    }
+  ],
+  "topic_elections": {
+    "00000000-0000-7000-8000-00000000f001": {
+      "__entity_type": "topic_election",
+      "id": "00000000-0000-7000-8000-00000000f001",
+      "votes_count_down": 2,
+      "votes_count_up": 10,
+      "votes_score_net": 8
+    }
+  },
+  "topics": {
+    "00000000-0000-7000-8000-00000000f001": {
+      "__entity_type": "topic",
+      "aliases": [],
+      "allow_reviews": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "roles": [],
+        "username": "testuser"
+      },
+      "hero_image_id": null,
+      "homepage_url_id": null,
+      "hostname": {
+        "__entity_type": "hostname",
+        "hostname": "social.example",
+        "id": "00000000-0000-7000-8000-00000000f002",
+        "topic_id": "00000000-0000-7000-8000-00000000f001"
+      },
+      "hostname_id": "00000000-0000-7000-8000-00000000f002",
+      "id": "00000000-0000-7000-8000-00000000f001",
+      "lingua_rs_detected_language": null,
+      "logo_image_id": null,
+      "markdown": "A community-run Mastodon instance.",
+      "name": "social.example",
+      "noindex": false,
+      "referral_program_id": null,
+      "referral_program_slug": null,
+      "rewards_program_id": null,
+      "slug": "social-example",
+      "topic_type": "fediverse_instance",
+      "updated_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "roles": [],
+        "username": "testuser"
+      }
+    },
+    "00000000-0000-7000-8000-00000000f003": {
+      "__entity_type": "topic",
+      "aliases": [],
+      "allow_reviews": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "roles": [],
+        "username": "testuser"
+      },
+      "hero_image_id": null,
+      "homepage_url_id": null,
+      "hostname": {
+        "__entity_type": "hostname",
+        "hostname": "unknown.example",
+        "id": "00000000-0000-7000-8000-00000000f004",
+        "topic_id": "00000000-0000-7000-8000-00000000f003"
+      },
+      "hostname_id": "00000000-0000-7000-8000-00000000f004",
+      "id": "00000000-0000-7000-8000-00000000f003",
+      "lingua_rs_detected_language": null,
+      "logo_image_id": null,
+      "markdown": "",
+      "name": "unknown.example",
+      "noindex": false,
+      "referral_program_id": null,
+      "referral_program_slug": null,
+      "rewards_program_id": null,
+      "slug": "unknown-example",
+      "topic_type": "fediverse_instance",
+      "updated_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "roles": [],
+        "username": "testuser"
+      }
+    }
+  },
+  "topics_metrics": {}
+}

@@ -1,0 +1,223 @@
+id: no-redundant-test-user-fixture-non-null-assertion
+language: Tsx
+severity: error
+message: 'Test-user fixture creators return PrivateUser; remove this redundant non-null assertion.'
+files:
+  - 'backend/**/*.test.mts'
+  - 'backend/**/*.spec.mts'
+  - 'backend/**/__tests__/**/*.mts'
+  - 'backend/test-helpers/**/*.mts'
+  - 'backend/**/test-helpers/**/*.mts'
+  - 'backend/**/test-support.mts'
+  - 'backend/**/test-support/**/*.mts'
+  - 'backend/**/*.test-helpers.mts'
+  - 'backend/**/*-test-support.mts'
+  - 'backend/**/test-fixtures.mts'
+  - 'integration-tests/**/*.mts'
+  - 'playwright/**/*.mts'
+rule:
+  any:
+    - all:
+        - matches: direct-create-test-user-assertion
+        - matches: imports-create-test-user
+    - all:
+        - matches: direct-create-test-user-direct-assertion
+        - matches: imports-create-test-user-direct
+    - all:
+        - matches: direct-create-unonboarded-test-user-direct-assertion
+        - matches: imports-create-unonboarded-test-user-direct
+    - all:
+        - matches: direct-create-test-user-with-age-assertion
+        - matches: imports-create-test-user-with-age
+    - all:
+        - matches: aliased-creator-assertion
+        - matches: imports-aliased-creator
+    - all:
+        - matches: namespace-creator-assertion
+        - matches: imports-namespace
+utils:
+  direct-create-test-user-assertion:
+    any:
+      - pattern: '(await createTestUser($$$ARGS))!'
+      - pattern: 'createTestUser($$$ARGS).then($USER => $USER!)'
+  direct-create-test-user-direct-assertion:
+    any:
+      - pattern: '(await createTestUserDirect($$$ARGS))!'
+      - pattern: 'createTestUserDirect($$$ARGS).then($USER => $USER!)'
+  direct-create-unonboarded-test-user-direct-assertion:
+    any:
+      - pattern: '(await createUnonboardedTestUserDirect($$$ARGS))!'
+      - pattern: 'createUnonboardedTestUserDirect($$$ARGS).then($USER => $USER!)'
+  direct-create-test-user-with-age-assertion:
+    any:
+      - pattern: '(await createTestUserWithAge($$$ARGS))!'
+      - pattern: 'createTestUserWithAge($$$ARGS).then($USER => $USER!)'
+  aliased-creator-assertion:
+    any:
+      - pattern: '(await $CREATE($$$ARGS))!'
+      - pattern: '$CREATE($$$ARGS).then($USER => $USER!)'
+  namespace-creator-assertion:
+    any:
+      - pattern: '(await $HELPERS.createTestUser($$$ARGS))!'
+      - pattern: '(await $HELPERS.createTestUserDirect($$$ARGS))!'
+      - pattern: '(await $HELPERS.createUnonboardedTestUserDirect($$$ARGS))!'
+      - pattern: '(await $HELPERS.createTestUserWithAge($$$ARGS))!'
+      - pattern: '$HELPERS.createTestUser($$$ARGS).then($USER => $USER!)'
+      - pattern: '$HELPERS.createTestUserDirect($$$ARGS).then($USER => $USER!)'
+      - pattern: '$HELPERS.createUnonboardedTestUserDirect($$$ARGS).then($USER => $USER!)'
+      - pattern: '$HELPERS.createTestUserWithAge($$$ARGS).then($USER => $USER!)'
+  imports-create-test-user:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - matches: supported-creator-source
+          - has:
+              stopBy: end
+              kind: import_specifier
+              regex: '^createTestUser$'
+  imports-create-test-user-direct:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - matches: supported-creator-source
+          - has:
+              stopBy: end
+              kind: import_specifier
+              regex: '^createTestUserDirect$'
+  imports-create-unonboarded-test-user-direct:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - matches: supported-creator-source
+          - has:
+              stopBy: end
+              kind: import_specifier
+              regex: '^createUnonboardedTestUserDirect$'
+  imports-create-test-user-with-age:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - matches: supported-creator-source
+          - has:
+              stopBy: end
+              kind: import_specifier
+              regex: '^createTestUserWithAge$'
+  imports-aliased-creator:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - matches: supported-creator-source
+          - has:
+              stopBy: end
+              kind: import_specifier
+              any:
+                - pattern:
+                    context: "import { createTestUser as $CREATE } from 'fixtures'"
+                    selector: import_specifier
+                - pattern:
+                    context: "import { createTestUserDirect as $CREATE } from 'fixtures'"
+                    selector: import_specifier
+                - pattern:
+                    context: "import { createUnonboardedTestUserDirect as $CREATE } from 'fixtures'"
+                    selector: import_specifier
+                - pattern:
+                    context: "import { createTestUserWithAge as $CREATE } from 'fixtures'"
+                    selector: import_specifier
+  imports-namespace:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - matches: supported-creator-source
+          - pattern: import * as $HELPERS from '$SOURCE'
+  supported-creator-source:
+    regex: >-
+      \bfrom\s*['"](?:@voucha/test-helpers(?:/entities/users(?:-direct)?)?|@services/users/test-support|\.\./test-support\.mts|(?:\.\.?/)+(?:backend/)?test-helpers(?:/index|/entities/users(?:-direct)?)?\.mts|(?:\.\.?/)+backend/services/users/test-support\.mts)['"]
+examples:
+  - code: |
+      import { createTestUser } from '@voucha/test-helpers'
+      const user = (await createTestUser({ username: 'fixture-user' }, auditContext))!
+    isValid: false
+    file: 'backend/services/posts/create.test.mts'
+  - code: |
+      import { createTestUserDirect as insertUser } from '@voucha/test-helpers/entities/users-direct'
+      const user = (await insertUser({ username: 'fixture-user' }))!
+    isValid: false
+    file: 'backend/data-stores/psql/users.test.mts'
+  - code: |
+      import * as fixtures from '../../backend/test-helpers/index.mts'
+      const user = await fixtures.createTestUserWithAge(60_000, { username: 'fixture-user' }).then(value => value!)
+    isValid: false
+    file: 'playwright/helpers/users.mts'
+  - code: |
+      import { createUnonboardedTestUserDirect } from '../../../backend/test-helpers/index.mts'
+      const user = createUnonboardedTestUserDirect().then(value => value!)
+    isValid: false
+    file: 'integration-tests/web-api/users.test.mts'
+  - code: |
+      import { createTestUser } from '@services/users/test-support'
+      const user = (await createTestUser())!
+    isValid: false
+    file: 'backend/services/users/create.test.mts'
+  - code: |
+      import { createTestUser } from '../test-support.mts'
+      const user = (await createTestUser())!
+    isValid: false
+    file: 'backend/services/users/__tests__/test-support.test.mts'
+  - code: |
+      import { createTestUser } from '@voucha/test-helpers'
+      const user = await createTestUser()
+    isValid: true
+    file: 'backend/services/posts/create.test.mts'
+  - code: |
+      import { getTestPrivateUserById } from '@voucha/test-helpers/entities/users-direct'
+      const user = (await getTestPrivateUserById(userId))!
+    isValid: true
+    file: 'backend/services/posts/create.test.mts'
+  - code: |
+      import { createTestUser } from './local-fixtures.mts'
+      const user = (await createTestUser())!
+    isValid: true
+    file: 'backend/services/posts/create.test.mts'
+  - code: |
+      function createTestUser() {
+        return Promise.resolve<PrivateUser | null>(null)
+      }
+      const user = (await createTestUser())!
+    isValid: true
+    file: 'backend/services/posts/create.test.mts'
+  - code: |
+      import { createTestUser } from '@voucha/test-helpers'
+      const user = (await createTestUser()) as PrivateUser
+      const required = requireTestValue(await createTestUser())
+      const id = (await createTestUser())?.id
+    isValid: true
+    file: 'backend/services/posts/create.test.mts'
+  - code: |
+      import { createTestUser } from '@voucha/test-helpers'
+      const user = (await createTestUser())!
+    isValid: true
+    file: 'web/lib/users.test.ts'

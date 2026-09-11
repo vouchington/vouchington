@@ -1,0 +1,19 @@
+{
+  "flag": {
+    "agent_moderation_id": null,
+    "created_at": "2026-06-01T12:00:00.000Z",
+    "details": {
+      "vote_count": 20
+    },
+    "entity_relation_id": null,
+    "flag_type": "velocity_spike",
+    "hostname_id": null,
+    "id": "vote-flag-1",
+    "post_id": "post-1",
+    "resolution": "suspended",
+    "resolved_at": "2026-06-01T13:00:00.000Z",
+    "resolved_by_id": "admin-1",
+    "rss_feed_item_id": null,
+    "topic_id": null
+  }
+}

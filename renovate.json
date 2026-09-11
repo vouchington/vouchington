@@ -1,0 +1,87 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":disableDependencyDashboard",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "enabledManagers": ["nvm", "custom.regex", "github-actions"],
+  "automerge": true,
+  "platformAutomerge": true,
+  "labels": ["dependencies", "renovate"],
+  "major": {
+    "automerge": false
+  },
+  "schedule": ["before 6am on monday"],
+  "timezone": "America/Los_Angeles",
+  "prHourlyLimit": 4,
+  "prConcurrentLimit": 8,
+  "packageRules": [
+    {
+      "description": "Require aged, manually reviewed pnpm toolchain updates",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["pnpm"],
+      "minimumReleaseAge": "2 days",
+      "internalChecksFilter": "strict",
+      "automerge": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "pnpm toolchain pin in the root package.json packageManager field",
+      "managerFilePatterns": ["/^package\\.json$/"],
+      "matchStrings": ["\"packageManager\"\\s*:\\s*\"pnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
+      "datasourceTemplate": "npm",
+      "depNameTemplate": "pnpm"
+    },
+    {
+      "customType": "regex",
+      "description": "Workflow env vars annotated with `# renovate: datasource=… depName=…`",
+      "managerFilePatterns": [".github/workflows/*.yml", ".github/actions/*/action.yml"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+?)(?: extractVersion=(?<extractVersion>[^\\s]+))?(?: versioning=(?<versioning>[a-z-]+))?\\s*\\n\\s*[A-Za-z_][A-Za-z0-9_]*:\\s*['\"]?(?<currentValue>[^'\"\\s]+)['\"]?"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "NVM install URL in dev/initialize",
+      "managerFilePatterns": ["dev/initialize"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+?)(?: extractVersion=(?<extractVersion>[^\\s]+))?\\s*\\n[^\\n]*nvm-sh/nvm/v(?<currentValue>\\d+\\.\\d+\\.\\d+)/install\\.sh"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Dockerfile ARG annotated with `# renovate: datasource=… depName=…`",
+      "managerFilePatterns": ["**/Dockerfile"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+?)(?: extractVersion=(?<extractVersion>[^\\s]+))?(?: versioning=(?<versioning>[a-z-]+))?\\s*\\nARG\\s+[A-Z_][A-Z0-9_]*=(?<currentValue>[^\\s]+)"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": ".mise.toml tool versions annotated with `# renovate: datasource=… depName=…`",
+      "managerFilePatterns": [".mise.toml"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+?)(?: extractVersion=(?<extractVersion>[^\\s]+))?(?: versioning=(?<versioning>[a-z-]+))?\\s*\\n\\s*\"?[A-Za-z0-9_:/.-]+\"?\\s*=\\s*['\"](?<currentValue>[^'\"\\s]+)['\"]"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Valkey bundle image shared by CI, local initialization, and mirrored tests",
+      "managerFilePatterns": [
+        ".github/workflows/*.yml",
+        ".github/workflows/*.yaml",
+        ".github/workflows/*.test.mts",
+        "dev/initialize",
+        "dev/initialize-tests/*.test.mts"
+      ],
+      "matchStrings": [
+        "valkey/valkey-bundle:(?<currentValue>\\d+\\.\\d+\\.\\d+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "valkey/valkey-bundle"
+    }
+  ]
+}

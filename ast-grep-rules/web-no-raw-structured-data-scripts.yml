@@ -1,0 +1,44 @@
+id: web-no-raw-structured-data-scripts
+language: Tsx
+severity: error
+message: "Use <StructuredDataScript> component instead of raw <script type='application/ld+json'>"
+files:
+  - 'web/**/*.tsx'
+ignores:
+  - '**/*.test.tsx'
+  - '**/*.spec.tsx'
+  - '**/*.stories.tsx'
+  - 'web/components/seo/structured-data-script.tsx'
+rule:
+  # JSX attribute patterns like `type="application/ld+json"` don't work in Tsx
+  # because ast-grep parses them as TypeScript, not JSX. Instead, find a
+  # jsx_attribute descendant that (a) is named `type` and (b) contains the
+  # MIME string. This scopes the match to the type attribute so that script
+  # body content or other attributes such as data-format="application/ld+json"
+  # are not falsely reported.
+  all:
+    - pattern: '<script $$$>$$$</script>'
+    - has:
+        stopBy: end
+        all:
+          - kind: jsx_attribute
+          - has:
+              kind: property_identifier
+              regex: '^type$'
+          - has:
+              stopBy: end
+              kind: string
+              regex: 'application/ld\+json'
+examples:
+  - code: '<script type="application/ld+json">{}</script>'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<StructuredDataScript data={schema} />'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: '<script data-format="application/ld+json">{}</script>'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: '<script type="application/ld+json">{}</script>'
+    isValid: true
+    file: 'web/components/seo/structured-data-script.tsx'

@@ -1,0 +1,28 @@
+id: playwright-no-raw-goto
+language: Tsx
+severity: error
+message: 'Use `navigateTo(page, url)` instead of bare `page.goto(url)`. Exception: `const response = await page.goto(url)` is allowed when you need the response object.'
+files:
+  - 'playwright/**/*.ts'
+  - 'playwright/**/*.mts'
+ignores:
+  - 'playwright/helpers/*.mts'
+rule:
+  kind: expression_statement
+  has:
+    any:
+      - pattern: 'await $OBJ.goto($$$)'
+      - pattern: '$OBJ.goto($$$)'
+examples:
+  - code: "await page.goto('https://example.com');"
+    isValid: false
+    file: 'playwright/tests/home.ts'
+  - code: "const response = await page.goto('https://example.com');"
+    isValid: true
+    file: 'playwright/tests/home.ts'
+  - code: "await navigateTo(page, 'https://example.com');"
+    isValid: true
+    file: 'playwright/tests/home.ts'
+  - code: "await page.goto('https://example.com');"
+    isValid: true
+    file: 'playwright/helpers/navigate-to.mts'

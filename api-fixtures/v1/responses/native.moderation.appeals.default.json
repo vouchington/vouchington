@@ -1,0 +1,70 @@
+{
+  "appeals": [
+    {
+      "ai_drafted_at": "2026-06-01T12:00:00.000Z",
+      "ai_internal_response": "Partial reduction recommended.",
+      "ai_public_response": "We reviewed your appeal.",
+      "appeal_reason": "Please review this again.",
+      "appellant_id": "user-1",
+      "approved_at": null,
+      "approved_by_id": null,
+      "case_id": "case-1",
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "drafted_at": null,
+      "edited_at": null,
+      "edited_by_id": null,
+      "id": "00000000-0000-7000-8000-000000000102",
+      "internal_notes": null,
+      "is_overdue": false,
+      "latest_lifecycle_change_id": null,
+      "model": "gpt-test",
+      "post_id": "post-1",
+      "post_removal_kind": "platform",
+      "public_response": null,
+      "recommended_action": "reduce",
+      "resolution_action": null,
+      "resolved_at": null,
+      "resolved_by_id": null,
+      "sent_at": null,
+      "staff_context": {
+        "appellant": {
+          "id": "user-1",
+          "profile_image_id": null,
+          "username": "appealing-reviewer",
+          "verified_display_name": null
+        },
+        "original_decision": {
+          "actor": {
+            "id": "admin-1",
+            "profile_image_id": null,
+            "username": "moderator",
+            "verified_display_name": null
+          },
+          "internal_reason": "The post did not meet the content policy."
+        }
+      },
+      "status": "pending",
+      "target_context": {
+        "community": null,
+        "decided_at": "2026-06-01T11:30:00.000Z",
+        "declared_language": null,
+        "id": "post-1",
+        "kind": "platform",
+        "lingua_rs_detected_language": "en",
+        "public_reason": "The post did not meet the content policy.",
+        "title": "A removed review",
+        "type": "post_removal"
+      },
+      "updated_at": "2026-06-01T12:00:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": null
+    }
+  ],
+  "page_info": {
+    "end_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnN0YWZmLWFsbDppZC1kZXNjIn0",
+    "has_next_page": true,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnN0YWZmLWFsbDppZC1kZXNjIn0"
+  }
+}

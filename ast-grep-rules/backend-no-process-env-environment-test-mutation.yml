@@ -1,0 +1,37 @@
+id: backend-no-process-env-environment-test-mutation
+language: Tsx
+severity: error
+message: 'Do not assign process.env.ENVIRONMENT in backend tests; pass an env object to the helper under test so deployment environment state cannot leak across parallel Vitest files.'
+files:
+  - 'backend/**/*.test.mts'
+  - 'backend/**/__tests__/**/*.mts'
+rule:
+  any:
+    - pattern: process.env.ENVIRONMENT = $$$
+    - pattern: process.env['ENVIRONMENT'] = $$$
+    - pattern: process.env["ENVIRONMENT"] = $$$
+    - pattern: delete process.env.ENVIRONMENT
+    - pattern: delete process.env['ENVIRONMENT']
+    - pattern: delete process.env["ENVIRONMENT"]
+examples:
+  - code: "process.env.ENVIRONMENT = 'staging'"
+    isValid: false
+    file: 'backend/modules/aws/s3-client-credentials.test.mts'
+  - code: "process.env['ENVIRONMENT'] = 'production'"
+    isValid: false
+    file: 'backend/services/images/__tests__/complete-upload.success.test.mts'
+  - code: 'delete process.env.ENVIRONMENT'
+    isValid: false
+    file: 'backend/modules/aws/s3-client-credentials.test.mts'
+  - code: "delete process.env['ENVIRONMENT']"
+    isValid: false
+    file: 'backend/services/images/__tests__/s3-get-image.test.mts'
+  - code: 'delete process.env["ENVIRONMENT"]'
+    isValid: false
+    file: 'backend/services/images/__tests__/s3-bucket.test.mts'
+  - code: "expect(getImageS3Environment({ ENVIRONMENT: 'staging', NODE_ENV: 'production' })).toBe('staging')"
+    isValid: true
+    file: 'backend/workers/images/processors/__tests__/extract-metadata-env.test.mts'
+  - code: "process.env.ENVIRONMENT = 'staging'"
+    isValid: true
+    file: 'web/lib/env.test.mts'

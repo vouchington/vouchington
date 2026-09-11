@@ -1,0 +1,50 @@
+import { describe, expect, it } from 'vitest'
+import type { ExplainResult } from '@data-stores/psql'
+import { assertPaginationPlanShape } from './plan-pagination-gates.mts'
+
+function result(scenarioId: string, queryText: string, plan: unknown): ExplainResult {
+  const root = (plan as { Plan?: Record<string, unknown> } | null)?.Plan
+  return {
+    name: scenarioId,
+    scenario_id: scenarioId,
+    query_text: queryText,
+    plan: root ? { ...(plan as object), Plan: { ...root, 'Actual Rows': 1 } } : plan,
+    execution_time_ms: 1,
+    planning_time_ms: 1,
+    timestamp: new Date().toISOString(),
+  }
+}
+
+describe('story post related URL projection EXPLAIN plan', () => {
+  it('requires story URL projection pages to use the covering story cursor index', () => {
+    const queryText =
+      'SELECT rfi.id, rfi.url_id FROM rss_feed_items rfi WHERE rfi.story_id = $1 ORDER BY rfi.id LIMIT $4'
+    const indexed = result('story-post-related-url-projection-source-page', queryText, {
+      Plan: {
+        'Node Type': 'Index Only Scan',
+        'Relation Name': 'rss_feed_items',
+        'Index Name': 'idx_rss_feed_items__story_id__id__url_id',
+      },
+    })
+    expect(() => assertPaginationPlanShape(indexed)).not.toThrow()
+
+    const partitionIndexed = result('story-post-related-url-projection-source-page', queryText, {
+      Plan: {
+        'Node Type': 'Index Only Scan',
+        'Relation Name': 'rss_feed_items_default',
+        'Index Name': 'rss_feed_items_default_story_id_id_url_id_idx',
+      },
+    })
+    expect(() => assertPaginationPlanShape(partitionIndexed)).not.toThrow()
+
+    const scanned = result('story-post-related-url-projection-source-page', queryText, {
+      Plan: {
+        'Node Type': 'Sort',
+        Plans: [{ 'Node Type': 'Seq Scan', 'Relation Name': 'rss_feed_items' }],
+      },
+    })
+    expect(() => assertPaginationPlanShape(scanned)).toThrow(
+      'idx_rss_feed_items__story_id__id__url_id',
+    )
+  })
+})

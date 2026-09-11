@@ -1,0 +1,44 @@
+{
+  "name": "@modules/aws",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@aws-sdk/client-bedrock": "^3.1127.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.1127.0",
+    "@aws-sdk/client-cloudwatch": "^3.1127.0",
+    "@aws-sdk/client-firehose": "^3.1127.0",
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@aws-sdk/client-ses": "^3.1127.0",
+    "@aws-sdk/client-sqs": "^3.1127.0",
+    "@aws-sdk/s3-request-presigner": "^3.1127.0",
+    "@data-stores/graceful-shutdown": "workspace:^",
+    "@modules/api-egress-proxy": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@smithy/node-http-handler": "^4.12.1",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "http-errors": "^2.0.1",
+    "https-proxy-agent": "^9.1.0"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5"
+  }
+}

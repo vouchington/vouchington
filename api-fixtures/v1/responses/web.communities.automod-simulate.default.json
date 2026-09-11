@@ -1,0 +1,11 @@
+{
+  "results": [],
+  "simulation": {
+    "false_positive_estimate": null,
+    "prompt_id": "prompt-1",
+    "sample_count": 0,
+    "time_window_hours": 24,
+    "would_flag_count": 0,
+    "would_unpublish_count": 0
+  }
+}

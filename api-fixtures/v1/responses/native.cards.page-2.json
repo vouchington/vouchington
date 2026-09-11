@@ -1,0 +1,29 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDcwMyIsInNjb3BlIjoibXktY2FyZHM6MDAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwNzAwOmlkLWFzYyJ9"
+  },
+  "results": [
+    {
+      "authorized_user_of_card": null,
+      "authorized_user_of_id": null,
+      "card": {
+        "id": "00000000-0000-7000-8000-000000000711",
+        "name": "Sapphire Reserve",
+        "slug": "sapphire-reserve"
+      },
+      "card_id": "00000000-0000-7000-8000-000000000711",
+      "closed_on": null,
+      "credit_limit": {
+        "amount": 2500000,
+        "currency": "usd"
+      },
+      "id": "00000000-0000-7000-8000-000000000703",
+      "is_authorized_user": false,
+      "note": "Primary travel card",
+      "opened_on": "2021-04-15",
+      "received_sign_up_bonus_on": "2021-07-01"
+    }
+  ]
+}

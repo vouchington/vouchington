@@ -1,0 +1,1 @@
+import './trending-posts.mts'

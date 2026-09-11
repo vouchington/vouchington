@@ -1,0 +1,34 @@
+{
+  "name": "@services/crawler-referral-links",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@queues/crawl-referral-links": "workspace:^",
+    "@services/urls-domains-robots": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@services/urls": "workspace:^",
+    "@services/user-referral-program-links": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

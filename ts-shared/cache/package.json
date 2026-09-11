@@ -1,0 +1,26 @@
+{
+  "name": "@ts-shared/cache",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared Cache-Tag scheme for Cloudflare Workers Cache purge, used by cloudflare-worker (mint) and backend (purge) so tag strings can't drift.",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@ts-shared/utils": "workspace:^"
+  }
+}

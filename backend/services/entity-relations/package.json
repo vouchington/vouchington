@@ -1,0 +1,46 @@
+{
+  "name": "@services/entity-relations",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/activitypub-delivery": "workspace:^",
+    "@queues/bluesky-follow-propagation": "workspace:^",
+    "@queues/crawler": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@queues/rss-feed-discoverability": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/user-deletions": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

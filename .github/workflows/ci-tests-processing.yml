@@ -1,0 +1,155 @@
+name: CI tests processing
+
+on:
+  workflow_call:
+    inputs:
+      skip-ci-producers: { required: true, type: string }
+      skip-settled-producers: { required: true, type: string }
+      docs-only: { required: true, type: string }
+      has-vitest-full: { required: true, type: string }
+      vitest-report-expectations: { required: true, type: string }
+      postgres-result: { required: true, type: string }
+      postgres-vitest-ran: { required: true, type: string }
+      postgres-vitest-attempt: { required: true, type: string }
+      results: { required: true, type: string }
+
+concurrency:
+  group: ci-tests-processing-${{ github.run_id }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  tests-processing:
+    runs-on: [self-hosted]
+    timeout-minutes: 14
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')"
+        with:
+          clean: false
+          fetch-depth: 0
+      - name: Restore workspace cleaner
+        shell: bash
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')"
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')"
+        with:
+          deepen: 'true'
+      - uses: ./.github/actions/setup-node-pnpm
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')"
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Resolve merge Vitest report expectations
+        id: merge-vitest-report-expectations
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')"
+        env:
+          BASE_CONTEXT: ${{ inputs.vitest-report-expectations }}
+          POSTGRES_RESULT: ${{ inputs.postgres-result }}
+          POSTGRES_VITEST_RAN: ${{ inputs.postgres-vitest-ran }}
+          POSTGRES_VITEST_ATTEMPT: ${{ inputs.postgres-vitest-attempt }}
+        run: |
+          context=$(jq -ce \
+            --arg result "$POSTGRES_RESULT" \
+            --arg ran "$POSTGRES_VITEST_RAN" \
+            --arg postgres_attempt "$POSTGRES_VITEST_ATTEMPT" \
+            --argjson attempt "$GITHUB_RUN_ATTEMPT" '
+              . as $context |
+              select(
+                (keys | sort) == ["attempt", "suites", "version"] and
+                .version == "vitest-report-expectations:v2" and
+                (.attempt | type) == "number" and
+                (.attempt | floor) == .attempt and
+                .attempt >= 1 and
+                .attempt <= $attempt and
+                (.suites | type) == "array" and
+                all(.suites[];
+                  type == "object" and
+                  (keys | sort) == ["minimumAttempt", "suite"] and
+                  (.suite | type) == "string" and
+                  (.suite | test("^[a-z0-9]+(-[a-z0-9]+)*$")) and
+                  (.minimumAttempt | type) == "number" and
+                  (.minimumAttempt | floor) == .minimumAttempt and
+                  .minimumAttempt >= 1 and
+                  .minimumAttempt <= $context.attempt
+                ) and
+                ([.suites[].suite] | unique | length) == (.suites | length)
+              ) |
+              .attempt = $attempt |
+              if $ran == "true" and ($result == "success" or $result == "failure" or $result == "cancelled")
+              then
+                (if ($postgres_attempt | test("^[1-9][0-9]*$"))
+                then ($postgres_attempt | tonumber)
+                elif $result == "success"
+                then error("successful PostgreSQL Vitest producer has no run attempt")
+                else $attempt
+                end) as $producer_attempt |
+                if $producer_attempt > $attempt
+                then error("PostgreSQL Vitest producer attempt is from the future")
+                else .suites += [{suite: "postgres-schema", minimumAttempt: $producer_attempt}] |
+                  .suites |= unique_by(.suite) | .suites |= sort_by(.suite)
+                end
+              else .
+              end
+            ' <<< "$BASE_CONTEXT")
+          echo "context=$context" >> "$GITHUB_OUTPUT"
+      - name: Download Vitest blob reports from GitHub (fallback)
+        id: vitest-blob-consumer-fallback
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')"
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./ci/download-optional-run-artifacts.sh --pattern 'vitest-blob-*' --dir './vitest-blob-fallback'
+      - name: Merge Vitest reports
+        id: merge-vitest-reports
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')"
+        env:
+          VITEST_REPORT_EXPECTATIONS: ${{ steps.merge-vitest-report-expectations.outputs.context }}
+          VITEST_CI_REPORTERS: merge
+        run: ./ci/merge-vitest-reports.sh
+        timeout-minutes: 3
+      - name: All checks passed
+        id: all-checks-passed
+        if: "!cancelled() && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')"
+        env:
+          HAS_FAN_IN_DEPENDENCIES: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true') }}
+          # Explicit compact results avoid the ARG_MAX failure caused by toJSON(needs).
+          RESULTS: ${{ inputs.results }}
+        run: |
+          if [ "$HAS_FAN_IN_DEPENDENCIES" != "true" ]; then
+            if ! jq -e '
+              type == "object" and
+              length > 0 and
+              all(.[];
+                type == "object" and
+                keys == ["result"] and
+                (.result == "success" or .result == "skipped")
+              )
+            ' <<< "$RESULTS" >/dev/null; then
+              echo "Dependency-free required job results were missing, malformed, or unsuccessful" >&2
+              exit 1
+            fi
+            echo "All dependency-free required jobs passed or were skipped"
+          else
+            ./ci/check-needs-results.sh "required jobs"
+          fi
+      - name: Delete inter-job blob artifacts
+        if: steps.all-checks-passed.outcome == 'success' && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          artifact_ids=$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.name | test("^(vitest-blob-|vitest-report-attempt-|coverage-)")) | .id | tostring')
+          for artifact_id in $artifact_ids; do
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" || true
+          done

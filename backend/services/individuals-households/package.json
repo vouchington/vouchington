@@ -1,0 +1,36 @@
+{
+  "name": "@services/individuals-households",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/money": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-assert": "^1.5.0",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

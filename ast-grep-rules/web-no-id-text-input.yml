@@ -1,0 +1,110 @@
+id: web-no-id-text-input
+language: Tsx
+severity: error
+message: 'Use an autocomplete picker instead of asking users to type a raw entity ID or UUID.'
+files:
+  - 'web/**/*.tsx'
+ignores:
+  - 'web/components/ui/**'
+  - '**/*.test.tsx'
+  - '**/*.spec.tsx'
+  - '**/*.stories.tsx'
+rule:
+  any:
+    - all:
+        - kind: jsx_attribute
+        - regex: '^(placeholder|aria-label)\s*=\s*"[^"]* (ID|UUID)\s*"$'
+    - all:
+        - kind: jsx_attribute
+        - regex: '^(placeholder|aria-label)\s*=\s*''[^'']* (ID|UUID)\s*''$'
+    - all:
+        - kind: jsx_attribute
+        - regex: '^(placeholder|aria-label)\s*=\s*\{\s*"[^"]* (ID|UUID)\s*"\s*\}$'
+    - all:
+        - kind: jsx_attribute
+        - regex: '^(placeholder|aria-label)\s*=\s*\{\s*''[^'']* (ID|UUID)\s*''\s*\}$'
+    - all:
+        - pattern: '<Label $$$>$TEXT</Label>'
+        - regex: ' (ID|UUID)\s*</Label>$'
+    - all:
+        - pattern: '<FormLabel $$$>$TEXT</FormLabel>'
+        - regex: ' (ID|UUID)\s*</FormLabel>$'
+    - all:
+        - pattern: '<Label $$$>{$TEXT}</Label>'
+        - regex: ' (ID|UUID)\s*"\s*\}\s*</Label>$'
+    - all:
+        - pattern: '<FormLabel $$$>{$TEXT}</FormLabel>'
+        - regex: ' (ID|UUID)\s*"\s*\}\s*</FormLabel>$'
+    - all:
+        - pattern: '<Label $$$>{$TEXT}</Label>'
+        - regex: ' (ID|UUID)\s*''\s*\}\s*</Label>$'
+    - all:
+        - pattern: '<FormLabel $$$>{$TEXT}</FormLabel>'
+        - regex: ' (ID|UUID)\s*''\s*\}\s*</FormLabel>$'
+examples:
+  - code: '<Input placeholder="Company topic ID" />'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<Input placeholder="Topic UUID" />'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: "<Input aria-label='User ID' />"
+    isValid: false
+    file: 'web/app/(crm)/crm/page.tsx'
+  - code: '<Input placeholder={"Company topic ID   "} />'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<Label>Company ID</Label>'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<Label>Entity UUID</Label>'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<Label className="font-bold" htmlFor="company-id">Company ID</Label>'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<FormLabel htmlFor="x">Rewards Program ID</FormLabel>'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<FormLabel>{"Rewards Program ID"}</FormLabel>'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<FormLabel htmlFor="x">{"Rewards Program ID"}</FormLabel>'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: |
+      <Label>
+        {"User ID"}
+      </Label>
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: "<Label>{'User ID'}</Label>"
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<TopicAutocomplete label="Company" value={null} onChange={() => {}} />'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: '<Input placeholder="Search topics..." />'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: '<th>Entity ID</th>'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: '<Label><span>User ID</span></Label>'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: '<Input placeholder={placeholder} />'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: '<Input placeholder="Company ID" />'
+    isValid: true
+    file: 'web/components/ui/input.tsx'
+  - code: '<Label>User ID</Label>'
+    isValid: true
+    file: 'web/components/ui/sidebar/layout.tsx'
+  - code: '<Input placeholder="Company ID" />'
+    isValid: true
+    file: 'web/app/page.test.tsx'
+  - code: '<Input placeholder="Company ID" />'
+    isValid: true
+    file: 'web/storybook/design-system/input.stories.tsx'

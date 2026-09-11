@@ -1,0 +1,38 @@
+{
+  "name": "@services/hostname-blocking",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@queues/vote-weight": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@services/users": "workspace:^",
+    "@services/vote-integrity": "workspace:^",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^",
+    "@voucha/types": "workspace:^"
+  }
+}

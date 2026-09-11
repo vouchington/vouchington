@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Organize GitHub Issues'
+  short_description: 'Organize existing issues and PR milestones'
+  default_prompt: 'Use $organize-github-issues to organize existing open issues and pull request milestones.'

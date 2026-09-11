@@ -1,0 +1,45 @@
+{
+  "name": "@agents/autotagger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@agents/_shared": "workspace:^",
+    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/on-error": "workspace:^",
+    "@modules/openai-utils": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/ai-usage": "workspace:^",
+    "@services/autotagger": "workspace:^",
+    "@services/conversations-messages": "workspace:^",
+    "@services/openai-agents": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/tools": "workspace:^",
+    "openai": "^7.10.0"
+  },
+  "devDependencies": {
+    "@services/rss-feeds": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

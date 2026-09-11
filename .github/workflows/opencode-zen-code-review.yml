@@ -1,0 +1,53 @@
+name: OpenCode Zen Code Review
+
+on:
+  pull_request:
+    # closed and converted_to_draft are included only so their run enters the concurrency group
+    # below and coalesces away a still-queued review. closed needs an explicit if: exclusion below
+    # since draft stays false; converted_to_draft needs none because the event's
+    # pull_request.draft is already true by the time it fires, which the existing draft == false
+    # check already excludes.
+    types: [opened, reopened, ready_for_review, synchronize, closed, converted_to_draft]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opencode-zen-code-review-${{ github.event.pull_request.number }}
+  # Queued reviews for the same PR coalesce to the latest commit; an already-running review is
+  # never cancelled, only a still-queued one is superseded by a newer push.
+  cancel-in-progress: false
+
+jobs:
+  opencode-zen-review:
+    if: >-
+      vars.OPENCODE_ZEN_CODE_REVIEW_ENABLED == 'true' &&
+      github.event.action != 'closed' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !endsWith(github.event.pull_request.user.login, '[bot]')
+    concurrency:
+      group: opencode-zen-review-fleet-admission
+      # Repo-wide cap: only 1 run of this reviewer executes at a time across all PRs, so the
+      # shared 4-runner "Code Review" pool never oversubscribes. queue: max (FIFO) so a distinct
+      # PR's request is only delayed, never silently dropped by coalescing — same rationale as
+      # harness-dispatch-fleet-admission in fix-issue.yml and its siblings.
+      queue: max
+      cancel-in-progress: false
+    uses: vouchington/vouchington-tooling/.github/workflows/opencode-code-review.yml@63a35ab37df9c53f5df316f9bda92e35a995a467 # v0.16.0
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: write
+    with:
+      provider: opencode-zen
+      model: opencode/muse-spark-1.3-contributor-free
+      pr_number: ${{ github.event.pull_request.number }}
+      runs_on: '["self-hosted","Linux","X64","Docker","Code Review"]'
+      # Lowered from 60: successful runs complete in 1m46s-3m55s. A hung run (#11267) now burns a
+      # 10-minute runner slot instead of the full 60, and no longer holds this reviewer's own
+      # single-slot fleet-admission group hostage for an hour at a time.
+      timeout_minutes: '10'
+    secrets:
+      code_review_api_key: ${{ secrets.OPENCODE_FREE_API_KEY }}

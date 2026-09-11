@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "nodenext",
+    "lib": ["es2025"],
+    "moduleResolution": "NodeNext",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false,
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowSyntheticDefaultImports": true,
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "tsBuildInfoFile": "../node_modules/.cache/tsbuildinfo-ts-shared",
+    "paths": {
+      "@ts-shared/*": ["./*"],
+      "*": ["./*"]
+    },
+    "typeRoots": ["../node_modules/@types"],
+    "types": ["node"]
+  },
+  "include": ["**/*.ts", "**/*.mts", "**/*.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,11 @@
+name = "backend-vitest-test-authoring"
+description = "Backend Vitest checklist: real PG/Valkey/queue boundaries, fixture randomization, rate-limiter scoping, compiler-backed contract tests."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+developer_instructions = """
+You are the Codex adapter for `.agents/skills/backend-vitest-test-authoring/SKILL.md`.
+
+Before adding or changing a backend Vitest test, read that SKILL.md (and its shared-contract link to `.agents/skills/vitest-test-authoring/SKILL.md`), then follow them exactly.
+"""
+
+nickname_candidates = ["Backend Test Authoring", "Backend Vitest"]

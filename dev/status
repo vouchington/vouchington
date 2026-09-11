@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+
+# shellcheck source=lib/db-name-from-url.sh
+source "$REPO_ROOT/dev/lib/db-name-from-url.sh"
+# shellcheck source=lib/orphan-scan.sh
+source "$REPO_ROOT/dev/lib/orphan-scan.sh"
+# shellcheck source=lib/git-worktrees.sh
+source "$REPO_ROOT/dev/lib/git-worktrees.sh"
+
+# Check if a port has a listening process (cross-platform)
+is_port_listening() {
+    local port=$1
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -Pi :"$port" -sTCP:LISTEN -t >/dev/null 2>&1
+    elif command -v ss >/dev/null 2>&1; then
+        ss -tlnp "sport = :$port" 2>/dev/null | grep -q LISTEN
+    else
+        echo -e "${YELLOW}Warning: Neither lsof nor ss found. Cannot check port status.${NC}" >&2
+        return 1
+    fi
+}
+
+echo -e "${BLUE}=== Voucha Worktree Status ===${NC}\n"
+
+# Find all live worktrees via git
+WORKTREE_PATHS=()
+worktree_paths_append_command_output git_worktree_live_paths "$REPO_ROOT"
+worktree_paths_append_command_output worktree_resource_live_paths
+
+if [ ${#WORKTREE_PATHS[@]} -eq 0 ]; then
+    echo "No worktrees found"
+    exit 0
+fi
+
+# Print header
+printf "%-30s %-25s %-15s %-15s %-15s %-15s %-25s %-30s\n" \
+    "WORKTREE" "BRANCH" "BACKEND" "NEXTJS" "WORKER" "IMAGE-LAMBDA" "DATABASE" "VALKEY"
+echo "-----------------------------------------------------------------------------------------------------------------------------------------------------------"
+
+# Check each worktree
+for worktree in "${WORKTREE_PATHS[@]}"; do
+    WORKTREE_NAME=$(worktree_dir_from_path "$worktree")
+
+    # Skip if not initialized (check both new .initialized and legacy .env markers)
+    if [ ! -f "$worktree/.initialized" ] && [ ! -f "$worktree/.env" ]; then
+        printf "%-30s %-25s %-15s %-15s %-15s %-15s %-25s %-30s\n" \
+            "$WORKTREE_NAME" "?" "Not initialized" "-" "-" "-" "-" "-"
+        continue
+    fi
+
+    # Monorepo-only mode: no web services to show
+    INITIALIZED_MODE="web"
+    if [ -f "$worktree/.initialized" ]; then
+        INITIALIZED_MODE=$(cat "$worktree/.initialized")
+    fi
+    if [ "$INITIALIZED_MODE" = "monorepo" ]; then
+        BRANCH=$(cd "$worktree" && git branch --show-current 2>/dev/null || echo "?")
+        printf "%-30s %-25s %-15s %-15s %-15s %-15s %-25s %-30s\n" \
+            "$WORKTREE_NAME" "${BRANCH:0:24}" "monorepo only" "-" "-" "-" "-" "-"
+        continue
+    fi
+
+    # Load environment in a subshell
+    (
+        cd "$worktree"
+        set -a
+        source .env 2>/dev/null || true
+        set +a
+
+        # Get branch name
+        BRANCH=$(git branch --show-current 2>/dev/null || echo "?")
+
+        # Check backend (allocated and startable in backend mode too, unlike the
+        # web-only services below)
+        BACKEND_STATUS="✗"
+        if [ -n "${PORT:-}" ] && is_port_listening "${PORT}"; then
+            BACKEND_STATUS="✓ :${PORT}"
+        fi
+
+        # Backend mode never sets up CF Worker/HTTPS/web push secrets, so these
+        # services are never meant to listen there; render "-" (matching the
+        # monorepo row's convention) instead of probing their ports.
+        NEXTJS_STATUS="-"
+        WORKER_STATUS="-"
+        IMAGE_LAMBDA_STATUS="-"
+        if [ "$INITIALIZED_MODE" != "backend" ]; then
+            # Check NextJS
+            NEXTJS_STATUS="✗"
+            if [ -n "${NEXT_PORT:-}" ] && is_port_listening "${NEXT_PORT}"; then
+                NEXTJS_STATUS="✓ :${NEXT_PORT}"
+            fi
+
+            # Check CF Worker
+            WORKER_STATUS="✗"
+            if [ -n "${WORKER_PORT:-}" ] && is_port_listening "${WORKER_PORT}"; then
+                WORKER_STATUS="✓ :${WORKER_PORT}"
+            fi
+
+            # Check Image Lambda
+            IMAGE_LAMBDA_STATUS="✗"
+            if [ -n "${IMAGE_LAMBDA_PORT:-}" ] && is_port_listening "${IMAGE_LAMBDA_PORT}"; then
+                IMAGE_LAMBDA_STATUS="✓ :${IMAGE_LAMBDA_PORT}"
+            fi
+        fi
+
+        # Check database
+        DB_STATUS="✗"
+        DB_NAME_VAR=$(db_name_from_url)
+        if [ -n "$DB_NAME_VAR" ] && psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$DB_NAME_VAR"; then
+            DB_STATUS="✓ $DB_NAME_VAR"
+        fi
+
+        # Check Valkey container
+        VALKEY_STATUS="✗"
+        if [ -n "${VALKEY_CONTAINER:-}" ]; then
+            if docker ps --format '{{.Names}}' | grep -qx "$VALKEY_CONTAINER" 2>/dev/null; then
+                VALKEY_PORT_NUM=$(cat .valkey-port 2>/dev/null || echo "?")
+                KEY_COUNT=$(docker exec "$VALKEY_CONTAINER" valkey-cli DBSIZE 2>/dev/null | awk '{print $NF}' || echo "?")
+                VALKEY_STATUS="✓ :${VALKEY_PORT_NUM} ($KEY_COUNT keys)"
+            else
+                VALKEY_STATUS="stopped"
+            fi
+        fi
+
+        printf "%-30s %-25s %-15s %-15s %-15s %-15s %-25s %-30s\n" \
+            "$WORKTREE_NAME" "${BRANCH:0:24}" "$BACKEND_STATUS" "$NEXTJS_STATUS" "$WORKER_STATUS" "$IMAGE_LAMBDA_STATUS" "$DB_STATUS" "$VALKEY_STATUS"
+    )
+done
+
+echo ""
+
+# Check for orphaned databases
+echo -e "${BLUE}Checking for orphaned databases...${NC}"
+scan_orphaned_dbs
+if [ ${#ORPHANED_DBS[@]} -gt 0 ]; then
+    echo -e "${YELLOW}Orphaned databases (no worktree references them):${NC}"
+    for db in "${ORPHANED_DBS[@]}"; do
+        echo "  - $db"
+    done
+    echo -e "${YELLOW}Run ./dev/cleanup to remove them${NC}"
+else
+    echo -e "${GREEN}No orphaned databases${NC}"
+fi
+echo ""
+
+# Check for orphaned Valkey containers
+echo -e "${BLUE}Checking for orphaned Valkey containers...${NC}"
+scan_orphaned_containers
+if [ ${#ORPHANED_CONTAINERS[@]} -gt 0 ]; then
+    echo -e "${YELLOW}Orphaned Valkey containers (no worktree references them):${NC}"
+    for container in "${ORPHANED_CONTAINERS[@]}"; do
+        echo "  - $container"
+    done
+    echo -e "${YELLOW}Run ./dev/cleanup to remove them${NC}"
+else
+    echo -e "${GREEN}No orphaned Valkey containers${NC}"
+fi
+
+echo ""

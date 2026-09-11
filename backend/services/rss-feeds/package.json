@@ -1,0 +1,70 @@
+{
+  "name": "@services/rss-feeds",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@modules/feed-query-builders": "workspace:^",
+    "@modules/membership-helpers": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/rss-feed-cover-art": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/crawler": "workspace:^",
+    "@queues/language-detection": "workspace:^",
+    "@queues/psql": "workspace:^",
+    "@queues/rss-feed-discoverability": "workspace:^",
+    "@queues/rss-feed-item-categories": "workspace:^",
+    "@queues/rss-feeds": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "@services/bookmarks": "workspace:^",
+    "@services/crawler-rss": "workspace:^",
+    "@services/crawlers": "workspace:^",
+    "@services/crawls": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/memberships": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/topic-revisions": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/urls-domains-robots": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@services/users": "workspace:^",
+    "@services/web-risk": "workspace:^",
+    "@ts-shared/languages": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@ts-shared/utils": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "@vouchington/rss-parser": "0.0.1"
+  }
+}

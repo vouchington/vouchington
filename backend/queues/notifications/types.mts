@@ -1,0 +1,13 @@
+export type NotificationJobs =
+  | 'processReconcilePostNotifications'
+  | 'processReconcileRssFeedItemNotifications'
+  | 'processDeliverNotificationPushIntent'
+  | 'processReconcileNotificationPushIntents'
+  | 'processDeleteNotification'
+  | 'processFollowNotification'
+  | 'processReferralSignupNotification'
+  | 'processReferralClickNotification'
+  | 'processConversationMessageNotification'
+  | 'processCommunityActivityDigestDispatch'
+  | 'processCommunityActivityDigestScheduleTick'
+  | 'processCommunityActivityDigestBatch'

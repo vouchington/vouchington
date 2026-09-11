@@ -1,0 +1,24 @@
+name: Docs Publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api-fixtures/v1/openapi.json'
+      - 'backend/data-stores/psql/schema-snapshot/**'
+      - 'ci/render-psql-docs.mts'
+      - '.github/workflows/docs-publish.yml'
+
+permissions: {}
+
+concurrency:
+  group: docs-publish-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  complete:
+    runs-on: [self-hosted]
+    timeout-minutes: 1
+    permissions: {}
+    steps:
+      - run: 'true'

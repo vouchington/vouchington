@@ -1,0 +1,29 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "conversation_id": "00000000-0000-7000-8000-000000000101",
+      "created_at": "2026-07-01T10:00:00Z",
+      "id": "00000000-0000-7000-8000-000000000301",
+      "profile_image_id": null,
+      "removed_at": null,
+      "role": "owner",
+      "user_id": "00000000-0000-7000-8000-000000000001",
+      "username": "fixtureuser"
+    },
+    {
+      "conversation_id": "00000000-0000-7000-8000-000000000101",
+      "created_at": "2026-07-01T10:00:00Z",
+      "id": "00000000-0000-7000-8000-000000000302",
+      "profile_image_id": "image-alice",
+      "removed_at": null,
+      "role": "member",
+      "user_id": "00000000-0000-7000-8000-000000000002",
+      "username": "alice"
+    }
+  ]
+}

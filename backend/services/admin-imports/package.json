@@ -1,0 +1,43 @@
+{
+  "name": "@services/admin-imports",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/csv": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/crm-contacts": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/referral-program-link-validations": "workspace:^",
+    "@services/rss-feeds": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@services/user-import-export": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-assert": "^1.5.0",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

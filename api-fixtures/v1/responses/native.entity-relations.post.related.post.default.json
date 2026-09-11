@@ -1,0 +1,50 @@
+{
+  "election_votes": {
+    "relation-post-related-post-1": {
+      "__entity_type": "election_vote",
+      "choice": "confirm",
+      "created_at": "2026-06-01T12:00:00Z",
+      "entity_id": "relation-post-related-post-1",
+      "user_id": "fixture-user"
+    }
+  },
+  "entity_relation_elections": {
+    "relation-post-related-post-1": {
+      "__entity_type": "entity_relation_election",
+      "id": "relation-post-related-post-1",
+      "votes_count_down": 2,
+      "votes_count_up": 7,
+      "votes_score_net": 5
+    }
+  },
+  "entity_relations": {
+    "relation-post-related-post-1": {
+      "created_at": "2026-06-01T12:00:00Z",
+      "created_by_id": "user-abc",
+      "id": "relation-post-related-post-1",
+      "object_data": {
+        "id": "post-2",
+        "post_type": "discussion",
+        "slug": "related-post",
+        "title": "Related Post"
+      },
+      "object_id": "post-2",
+      "subject_id": "post-1",
+      "votes_count_down": 2,
+      "votes_count_up": 7,
+      "votes_score_net": 5,
+      "votes_score_sort": 5
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "entity_relation",
+      "id": "relation-post-related-post-1"
+    }
+  ]
+}

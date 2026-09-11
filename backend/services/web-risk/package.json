@@ -1,0 +1,42 @@
+{
+  "name": "@services/web-risk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-rate-limiter": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/hostname-blocking": "workspace:^",
+    "@services/urls-domains-blacklist": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@services/users": "workspace:^",
+    "@valkey/valkey-glide": "^2.5.2",
+    "http-errors": "^2.0.1",
+    "tldts": "^7.4.12",
+    "undici": "^8.10.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^",
+    "vitest": "^5.0.0"
+  }
+}

@@ -1,0 +1,247 @@
+version: 2
+# Companion: Renovate (renovate.json) handles the root package.json pnpm
+# toolchain pin, .nvmrc, and regex-annotated version literals in workflow YAML
+# and shell scripts. Dependabot owns registry dependencies and pnpm-lock.yaml.
+# Coverage matrix:
+# docs/development/dependency-updates.md
+updates:
+  # All npm/pnpm workspaces — single root entry so Dependabot walks
+  # pnpm-workspace.yaml and updates pnpm-lock.yaml from the directory that
+  # owns it. Per-workspace directory entries cause lockfile mismatches; see
+  # docs/development/dependency-updates.md for details.
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'cron'
+      cronjob: '0 4 * * *'
+      timezone: 'America/Los_Angeles'
+    cooldown:
+      default-days: 2
+      exclude:
+        - '@jongleberry/*'
+        - '@vouchington/*'
+        - 'agent-blackboard'
+        - 'auto-harness-client'
+        - 'coverage-check'
+        - 'eslint-plugin-no-mistakes'
+        - 'eslint-plugin-vouchington'
+        - 'gh-pr-attach-screenshots'
+        - 'lingua-rs'
+        - 'no-mistakes'
+        - 'no-mistakes-darwin-arm64'
+        - 'no-mistakes-linux-arm64-gnu'
+        - 'no-mistakes-linux-x64-gnu'
+        - 'no-mistakes-win32-x64-msvc'
+        - 'pr-shepherd'
+        - 'ssrf-guard'
+        - 'valkyries'
+        - 'vouchington-tooling'
+    # Sentry 10.72.0 and 10.73.0 crash Node/jsdom imports of @sentry/nextjs
+    # (getsentry/sentry-javascript#23789, issue #10523). 10.71.0 is the last
+    # good line. Allow 10.74+ to prove the unreleased upstream fix.
+    ignore:
+      - dependency-name: '@sentry/nextjs'
+        versions: ['10.72.x', '10.73.x']
+      - dependency-name: '@sentry/node'
+        versions: ['10.72.x', '10.73.x']
+      - dependency-name: '@sentry/cloudflare'
+        versions: ['10.72.x', '10.73.x']
+      - dependency-name: '@sentry/aws-serverless'
+        versions: ['10.72.x', '10.73.x']
+    open-pull-requests-limit: 5
+    groups:
+      # ---- first-party ----
+      first-party:
+        applies-to: 'version-updates'
+        patterns:
+          - '@jongleberry/*'
+          - '@vouchington/*'
+          - 'agent-blackboard'
+          - 'auto-harness-client'
+          - 'coverage-check'
+          - 'eslint-plugin-no-mistakes'
+          - 'eslint-plugin-vouchington'
+          - 'gh-pr-attach-screenshots'
+          - 'lingua-rs'
+          - 'no-mistakes'
+          - 'no-mistakes-darwin-arm64'
+          - 'no-mistakes-linux-arm64-gnu'
+          - 'no-mistakes-linux-x64-gnu'
+          - 'no-mistakes-win32-x64-msvc'
+          - 'pr-shepherd'
+          - 'ssrf-guard'
+          - 'valkyries'
+          - 'vouchington-tooling'
+      # ---- shared tooling ----
+      vitest:
+        applies-to: 'version-updates'
+        patterns:
+          - 'vitest'
+          - '@vitest/*'
+      vite:
+        applies-to: 'version-updates'
+        patterns:
+          - 'vite'
+          - '@vitejs/*'
+      commitlint:
+        applies-to: 'version-updates'
+        patterns:
+          - '@commitlint/*'
+      oxc:
+        applies-to: 'version-updates'
+        patterns:
+          - 'oxlint'
+          - 'oxfmt'
+          - 'oxlint-tsgolint'
+      ast-grep:
+        applies-to: 'version-updates'
+        patterns:
+          - '@ast-grep/*'
+      playwright:
+        applies-to: 'version-updates'
+        patterns:
+          - '@playwright/*'
+          - '@axe-core/playwright'
+          - 'playwright'
+          - 'playwright-core'
+      testing-library:
+        applies-to: 'version-updates'
+        patterns:
+          - '@testing-library/*'
+      # ---- backend ----
+      aws-sdk:
+        applies-to: 'version-updates'
+        patterns:
+          - '@aws-sdk/*'
+          - '@smithy/*'
+      glide-mq:
+        applies-to: 'version-updates'
+        patterns:
+          - 'glide-mq'
+          - '@glidemq/*'
+      valkey:
+        applies-to: 'version-updates'
+        patterns:
+          - '@valkey/*'
+      node-postgres:
+        applies-to: 'version-updates'
+        patterns:
+          - 'pg'
+          - 'pg-*'
+      ajv:
+        applies-to: 'version-updates'
+        patterns:
+          - 'ajv'
+          - 'ajv-*'
+      csv:
+        applies-to: 'version-updates'
+        patterns:
+          - 'csv'
+          - 'csv-*'
+      react-email:
+        applies-to: 'version-updates'
+        patterns:
+          - 'react-email'
+          - '@react-email/*'
+      # ---- web ----
+      nextjs:
+        applies-to: 'version-updates'
+        patterns:
+          - 'next'
+      react:
+        applies-to: 'version-updates'
+        patterns:
+          - 'react'
+          - 'react-dom'
+      radix-ui:
+        applies-to: 'version-updates'
+        patterns:
+          - '@radix-ui/*'
+      tailwind:
+        applies-to: 'version-updates'
+        patterns:
+          - 'tailwindcss'
+          - '@tailwindcss/*'
+      storybook:
+        applies-to: 'version-updates'
+        patterns:
+          - 'storybook'
+          - '@storybook/*'
+      typescript:
+        applies-to: 'version-updates'
+        patterns:
+          - 'typescript'
+          - 'tslib'
+          - '@typescript/*'
+      typescript-eslint:
+        applies-to: 'version-updates'
+        patterns:
+          - '@typescript-eslint/*'
+      # ---- cloudflare-worker ----
+      cloudflare:
+        applies-to: 'version-updates'
+        patterns:
+          - 'wrangler'
+          - '@cloudflare/*'
+      auth:
+        applies-to: 'version-updates'
+        patterns:
+          - 'jose'
+      bots:
+        applies-to: 'version-updates'
+        patterns:
+          - 'isbot'
+      # ---- cross-workspace ----
+      sentry:
+        applies-to: 'version-updates'
+        patterns:
+          - '@sentry/*'
+
+  # Backend Docker image
+  - package-ecosystem: 'docker'
+    directory: '/backend'
+    schedule:
+      interval: 'cron'
+      cronjob: '0 4 * * *'
+      timezone: 'America/Los_Angeles'
+    cooldown:
+      default-days: 2
+    open-pull-requests-limit: 5
+
+  # Web Docker image
+  - package-ecosystem: 'docker'
+    directory: '/web'
+    schedule:
+      interval: 'cron'
+      cronjob: '0 4 * * *'
+      timezone: 'America/Los_Angeles'
+    cooldown:
+      default-days: 2
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  # Note: jonathanong/exec is currently private so the composite action cannot be used
+  # directly. Its release version is pinned in .execrc.yml and bumped by the
+  # exec release updater until exec is made public.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'cron'
+      cronjob: '0 4 * * *'
+      timezone: 'America/Los_Angeles'
+    cooldown:
+      default-days: 2
+      exclude:
+        - 'jonathanong/*'
+        - 'vouchington/*'
+    open-pull-requests-limit: 5
+    groups:
+      # ---- first-party ----
+      auto-harness:
+        applies-to: 'version-updates'
+        patterns:
+          - 'jonathanong/auto-harness*'
+      vouchington-tooling:
+        applies-to: 'version-updates'
+        patterns:
+          - 'vouchington/vouchington-tooling*'

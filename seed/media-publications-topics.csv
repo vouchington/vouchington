@@ -1,0 +1,23 @@
+name,slug,topic_type,aliases,parent_slugs,extensions,rss_feed_url,rss_feed_title,notes
+Media Publications,media-publications,topic,,,,,,
+The Verge,the-verge-theverge-com-rss-index-xml,rss_feed,Verge,media-publications,,https://www.theverge.com/rss/index.xml,The Verge,Cross-vertical; sub-brands in ai/hardware/cars
+TechCrunch,techcrunch-techcrunch-com-feed,rss_feed,TC,media-publications,,https://techcrunch.com/feed/,TechCrunch,Cross-vertical; sub-brand in ai
+Ars Technica,ars-technica-feeds-arstechnica-com-arstechnica-index,rss_feed,Ars,media-publications,,https://feeds.arstechnica.com/arstechnica/index,Ars Technica,Cross-vertical; sub-brands in ai/hardware/cars
+Wired,wired-wired-com-feed-rss,rss_feed,WIRED,media-publications,,https://www.wired.com/feed/rss,Wired,
+CNET,cnet-cnet-com-rss-news,rss_feed,,media-publications,,https://www.cnet.com/rss/news/,CNET,
+Engadget,engadget-engadget-com-rss-xml,rss_feed,,media-publications,,https://www.engadget.com/rss.xml,Engadget,
+Gizmodo,gizmodo-gizmodo-com-feed,rss_feed,,media-publications,,https://gizmodo.com/feed,Gizmodo,
+VentureBeat,venturebeat-venturebeat-com-feed,rss_feed,VB,media-publications,,https://venturebeat.com/feed,VentureBeat,
+The Information,the-information,topic,,,,,,
+TechRadar,techradar-techradar-com-feeds-xml,rss_feed,Tech Radar,media-publications,,https://www.techradar.com/feeds.xml,TechRadar,
+ZDNet,zdnet-zdnet-com-news-rss-xml,rss_feed,,media-publications,,https://www.zdnet.com/news/rss.xml,ZDNet,
+Mashable,mashable-mashable-com-feeds-rss-all,rss_feed,,media-publications,,https://mashable.com/feeds/rss/all,Mashable,
+Recode,recode,topic,,,,,,
+Protocol,protocol,topic,,,,,,
+Bloomberg Technology,bloomberg-technology,topic,Bloomberg Tech,,,,,
+Reuters Technology,reuters-technology,topic,Reuters Tech,,,,,
+404 Media,404-media-404media-co-rss,rss_feed,,media-publications,,https://www.404media.co/rss/,404 Media,
+Daring Fireball,daring-fireball-daringfireball-net-feeds-main,rss_feed,,media-publications,,https://daringfireball.net/feeds/main,Daring Fireball,
+Stratechery,stratechery-stratechery-com-feed,rss_feed,,media-publications,,https://stratechery.com/feed/,Stratechery,
+Platformer,platformer-platformer-news-rss,rss_feed,Platformer News,media-publications,,https://www.platformer.news/rss/,Platformer,
+Simon Willison's Weblog,simon-willisons-weblog-simonwillison-net-atom-everything,rss_feed,,media-publications,,https://simonwillison.net/atom/everything/,Simon Willison's Weblog,

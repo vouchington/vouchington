@@ -1,0 +1,31 @@
+{
+  "page_info": {
+    "end_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDc0MiIsInNjb3BlIjoibXktcmV3YXJkcy1wcm9ncmFtLXN0YXR1c2VzOjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDc0MDppZC1hc2MifQ",
+    "has_next_page": true,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDc0MSIsInNjb3BlIjoibXktcmV3YXJkcy1wcm9ncmFtLXN0YXR1c2VzOjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDc0MDppZC1hc2MifQ"
+  },
+  "results": [
+    {
+      "id": "00000000-0000-7000-8000-000000000741",
+      "rewards_program_status": {
+        "id": "00000000-0000-7000-8000-000000000751",
+        "name": "Gold",
+        "slug": "gold"
+      },
+      "rewards_program_status_id": "00000000-0000-7000-8000-000000000751",
+      "since": "2025-01-01",
+      "until": null
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000000742",
+      "rewards_program_status": {
+        "id": "00000000-0000-7000-8000-000000000752",
+        "name": "Platinum",
+        "slug": "platinum"
+      },
+      "rewards_program_status_id": "00000000-0000-7000-8000-000000000752",
+      "since": null,
+      "until": "2026-12-31"
+    }
+  ]
+}

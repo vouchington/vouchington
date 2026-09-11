@@ -1,0 +1,19 @@
+{
+  "card": {
+    "authorized_user_of_card": null,
+    "authorized_user_of_id": null,
+    "card": {
+      "id": "00000000-0000-7000-8000-000000000713",
+      "name": "Everyday Cash",
+      "slug": "everyday-cash"
+    },
+    "card_id": "00000000-0000-7000-8000-000000000713",
+    "closed_on": "2025-12-31",
+    "credit_limit": null,
+    "id": "00000000-0000-7000-8000-000000000702",
+    "is_authorized_user": false,
+    "note": null,
+    "opened_on": null,
+    "received_sign_up_bonus_on": null
+  }
+}

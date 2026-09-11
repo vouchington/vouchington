@@ -1,0 +1,77 @@
+id: web-no-inline-api-response-mock
+language: Tsx
+severity: error
+message: 'Use the typed API response factory from @/test-helpers/api-responses instead of an inline API response literal.'
+files:
+  - web/**/*.test.ts
+  - web/**/*.mock.test.ts
+  - web/components/feed/**/*.mock.test.tsx
+  - web/components/news/**/*.mock.test.tsx
+ignores:
+  - web/test-helpers/api-responses/**/*.ts
+rule:
+  all:
+    - kind: expression_statement
+    - regex: >-
+        ^\s*[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*\s*\.\s*mockResolvedValue(?:Once)?\s*\(\s*\{\s*(?:[\s\S]*,\s*)?(?:community_ai_agent|communities|community|community_metrics|has_pending_application|membership|rss_feed|rss_feed_item|rss_feed_items|topic|topics)\s*:
+examples:
+  - code: |
+      api.get.mockResolvedValue({ community_ai_agent: null })
+    isValid: false
+    file: 'web/lib/api/__tests__/communities.test.ts'
+  - code: |
+      api.get.mockResolvedValueOnce({ results: [], page_info: {}, communities: [] })
+    isValid: false
+    file: 'web/lib/api/__tests__/communities.mock.test.ts'
+  - code: |
+      api.get.mockResolvedValue({ community: { id: String(1) } })
+    isValid: false
+    file: 'web/lib/api/__tests__/community.test.ts'
+  - code: |
+      api.get.mockResolvedValue({ rss_feed_item: { id: String(1) } })
+    isValid: false
+    file: 'web/lib/api/__tests__/rss-feed-items.test.ts'
+  - code: |
+      api.get.mockResolvedValueOnce({ results: [], page_info: {}, topics: {} })
+    isValid: false
+    file: 'web/lib/api/__tests__/topics.mock.test.ts'
+  - code: |
+      api.get.mockResolvedValue({ exact_topic: null, similar_topics: [] })
+    isValid: true
+    file: 'web/lib/api/__tests__/topic-recommendations.mock.test.ts'
+  - code: |
+      api.get.mockResolvedValue(makeCommunityResponse())
+    isValid: true
+    file: 'web/lib/api/__tests__/community.test.ts'
+  - code: |
+      api.get.mockResolvedValue(makeRssFeedItem())
+    isValid: true
+    file: 'web/lib/api/__tests__/rss-feed-items.test.ts'
+  - code: |
+      api.get.mockResolvedValueOnce(makeTopicsSearchResponse({ topicsMetrics, topics: [topic] }))
+    isValid: true
+    file: 'web/lib/api/__tests__/topics.mock.test.ts'
+  - code: |
+      api.get.mockResolvedValue({ result: { id: String(1) } })
+    isValid: true
+    file: 'web/lib/api/__tests__/other.mock.test.ts'
+  - code: |
+      api.get.mockResolvedValue({ community_ai_agent: null })
+    isValid: true
+    file: 'web/test-helpers/api-responses/community.ts'
+  - code: |
+      api.get.mockResolvedValueOnce({ results: [], page_info: {}, rss_feed_items: {} })
+    isValid: false
+    file: web/components/feed/__tests__/news-item-list.mock.test.tsx
+  - code: |
+      api.get.mockResolvedValueOnce({ results: [], page_info: {}, topics: {} })
+    isValid: false
+    file: web/components/news/__tests__/news-item-cluster.mock.test.tsx
+  - code: |
+      api.get.mockResolvedValueOnce(makeRssFeedItemsFeedResponse({ rssFeedItems: [item] }))
+    isValid: true
+    file: web/components/feed/__tests__/news-item-list.mock.test.tsx
+  - code: |
+      api.get.mockResolvedValueOnce(makeTopicsSearchResponse({ topicsMetrics, topics: [topic] }))
+    isValid: true
+    file: web/components/news/__tests__/news-item-cluster.mock.test.tsx

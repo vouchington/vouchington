@@ -1,0 +1,293 @@
+name: Automation Plan
+
+# Triggered when an authorized user comments /plan on any issue.
+# Dispatches Auto Harness to investigate and post a plan reply without editing code.
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: plan-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Validate /plan trigger
+    if: >-
+      vars.HARNESS_DISPATCH_ENABLED == 'true' &&
+      vars.HARNESS_PLAN_ENABLED == 'true' &&
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, '/plan') &&
+      contains(fromJSON('["OWNER","COLLABORATOR"]'),
+               github.event.comment.author_association)
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      accepted: ${{ steps.extract-plan.outputs.accepted }}
+      plan_request: ${{ steps.extract-plan.outputs.plan_request }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          clean: false
+          persist-credentials: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - name: Extract /plan request
+        id: extract-plan
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          set -euo pipefail
+
+          REQUEST_FILE="$(mktemp)"
+
+          escape_command() {
+            local value="$1"
+            value="${value//'%'/'%25'}"
+            value="${value//$'\r'/'%0D'}"
+            value="${value//$'\n'/'%0A'}"
+            printf '%s' "$value"
+          }
+
+          COMMENT_BODY_FILE="$(mktemp)"
+          FOUND_FILE="$(mktemp)"
+          printf '%s' "$COMMENT_BODY" > "$COMMENT_BODY_FILE"
+          echo "accepted=false" >> "$GITHUB_OUTPUT"
+
+          COMMAND="$(head -n 1 "$COMMENT_BODY_FILE" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+          if [[ "$COMMAND" != "/plan" ]]; then
+            echo "Ignoring comment whose first line is not the standalone /plan command."
+            exit 0
+          fi
+
+          awk -v found_file="$FOUND_FILE" '
+            BEGIN { found = 0 }
+            {
+              if (found) {
+                print
+                next
+              }
+
+              search = $0
+              offset = 0
+              while ((pos = index(search, "/plan")) > 0) {
+                absolute = offset + pos
+                before = substr($0, 1, absolute - 1)
+                after = substr($0, absolute + length("/plan"))
+                if (before ~ /(^|[[:space:]])$/ && after ~ /^($|[[:space:]])/) {
+                  sub(/^[[:space:]]+/, "", after)
+                  if (after != "") print after
+                  found = 1
+                  next
+                }
+                offset += pos + length("/plan") - 1
+                search = substr($0, offset + 1)
+              }
+            }
+            END {
+              if (found) {
+                print "found" > found_file
+              }
+            }
+          ' "$COMMENT_BODY_FILE" > "$REQUEST_FILE"
+
+          if [[ ! -s "$FOUND_FILE" ]]; then
+            COMMENT_LENGTH="$(wc -c < "$COMMENT_BODY_FILE" | tr -d '[:space:]')"
+            PREVIEW="$(tr '\r\n' '  ' < "$COMMENT_BODY_FILE" | cut -c 1-160)"
+            echo "::error::Unable to extract exact /plan command from issue comment. comment_id=$COMMENT_ID comment_length=$COMMENT_LENGTH preview=$(escape_command "$PREVIEW")"
+            {
+              echo "## /plan extraction failed"
+              echo
+              echo "- Comment id: $COMMENT_ID"
+              echo "- Comment length: $COMMENT_LENGTH"
+              echo "- Preview: \`$PREVIEW\`"
+              echo
+              echo "The comment matched the workflow gate but did not contain an exact \`/plan\` command token."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          "$GITHUB_WORKSPACE/ci/write-github-multiline-output.sh" plan_request < "$REQUEST_FILE"
+          echo "accepted=true" >> "$GITHUB_OUTPUT"
+
+      - name: Acknowledge with eyes reaction and run link
+        if: steps.extract-plan.outputs.accepted == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          if ! gh api -X POST \
+            "/repos/${{ github.repository }}/issues/comments/${COMMENT_ID}/reactions" \
+            -f content=eyes; then
+            echo "::warning::Could not add eyes reaction to /plan comment. comment_id=${COMMENT_ID}. Continuing so Harness dispatch can run."
+          fi
+
+          if [[ "$RUN_ATTEMPT" == "1" ]] && ! gh issue comment "$ISSUE_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body "👀 [View the automation workflow run]($RUN_URL)."; then
+            echo "::warning::Could not post workflow run link for /plan. issue_number=${ISSUE_NUMBER}. Continuing so Harness dispatch can run."
+          fi
+
+  render-prompt:
+    name: Render automation prompt
+    needs: [gate]
+    if: needs.gate.outputs.accepted == 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      prompt: ${{ steps.render.outputs.prompt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          runner-lifecycle: persistent
+
+      - name: Prepare prompt variables
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          REQUEST_BODY: ${{ needs.gate.outputs.plan_request }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$ISSUE_TITLE" > issue-title.txt
+          printf '%s' "$REQUEST_BODY" > request-body.txt
+
+      - name: Render prompt
+        id: render
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+        with:
+          template: docs/prompts/automation/plan.md
+          vars: |
+            ISSUE_NUMBER=${{ github.event.issue.number }}
+            ISSUE_URL=${{ github.event.issue.html_url }}
+            TRIGGER_COMMENT_ID=${{ github.event.comment.id }}
+          var-files: |
+            ISSUE_TITLE=issue-title.txt
+            REQUEST_BODY=request-body.txt
+
+  dispatch:
+    name: Harness dispatch
+    needs: [gate, render-prompt]
+    if: needs.gate.outputs.accepted == 'true'
+    uses: ./.github/workflows/harness-dispatch.yml
+    permissions:
+      contents: read
+    secrets:
+      HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
+    with:
+      surface-gate: HARNESS_PLAN_ENABLED
+      agent-ref: ${{ github.sha }}
+      expected-head-sha: ${{ github.sha }}
+      concurrency-id: filaments:plan:${{ github.event.issue.number }}
+      completion-mode: issue-comment
+      issue-number: ${{ github.event.issue.number }}
+      trigger-comment-id: ${{ github.event.comment.id }}
+      slack-source: |
+        *Source:* `/plan` on issue #${{ github.event.issue.number }}
+        *Issue:* ${{ github.event.issue.html_url }}
+        *Issue title:* ${{ github.event.issue.title }}
+      prompt: ${{ needs.render-prompt.outputs.prompt }}
+
+  escalate:
+    name: Comment failure on issue
+    needs: [gate, render-prompt, dispatch]
+    if: >-
+      always() &&
+      needs.gate.result == 'success' &&
+      needs.gate.outputs.accepted == 'true' &&
+      (
+        needs.render-prompt.result == 'failure' ||
+        needs.render-prompt.result == 'cancelled' ||
+        (needs.dispatch.result == 'failure' || needs.dispatch.result == 'cancelled')
+      )
+    runs-on: [self-hosted]
+    timeout-minutes: 2
+    permissions:
+      issues: write
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
+    steps:
+      - name: Comment failure on source issue
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" --jq \
+            'select(.state == "open") | .number' | grep -qx "$ISSUE_NUMBER"
+          COMMENT_JSON="$(gh api "repos/$GITHUB_REPOSITORY/issues/comments/$TRIGGER_COMMENT_ID")"
+          jq -e \
+            'select((.id | tostring) == env.TRIGGER_COMMENT_ID and
+              (.issue_url | endswith("/issues/" + env.ISSUE_NUMBER)) and
+              (.author_association == "OWNER" or .author_association == "COLLABORATOR"))' \
+            <<< "$COMMENT_JSON" > /dev/null
+          COMMAND="$(jq -r '.body | split("\n")[0]' <<< "$COMMENT_JSON" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+          if [[ "$COMMAND" != "/plan" ]]; then
+            echo "Suppressing failure comment because the triggering /plan command is no longer valid."
+            exit 0
+          fi
+
+          SESSION_ID="${{ needs.dispatch.outputs.session-id }}"
+          THIS_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          BODY="/plan run failed — plan generation could not complete.
+
+          **Plan run:** $THIS_RUN_URL"
+
+          if [[ -n "$SESSION_ID" ]]; then
+            BODY="$BODY
+          **Harness session:** $SESSION_ID"
+          fi
+
+          BODY="$BODY
+
+          Please investigate manually or re-comment \`/plan\` to retry."
+
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body "$BODY"

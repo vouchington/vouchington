@@ -1,0 +1,39 @@
+{
+  "name": "@services/contribution-gating",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Contribution gating service — controls write access for new accounts",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-rate-limiter": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "@services/memberships": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "sql-template-strings": "^2.2.2",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

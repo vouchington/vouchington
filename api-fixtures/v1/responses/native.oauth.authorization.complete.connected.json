@@ -1,0 +1,7 @@
+{
+  "oauth_account": {
+    "email_address": "tests+github@voucha.ai",
+    "id": "github-fixture-user",
+    "name": "Fixture GitHub User"
+  }
+}

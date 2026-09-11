@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$#" -ne 2 ]; then
+  echo "Usage: ./dev/audit-rename <old-name> <new-name>" >&2
+  exit 2
+fi
+
+old_name="$1"
+new_name="$2"
+temp_files=()
+
+cleanup() {
+  if [ "${#temp_files[@]}" -gt 0 ]; then
+    rm -f "${temp_files[@]}"
+  fi
+}
+trap cleanup EXIT
+
+if [ -z "$old_name" ] || [ -z "$new_name" ]; then
+  echo "Error: old-name and new-name must be non-empty." >&2
+  exit 2
+fi
+
+if ! command -v git >/dev/null 2>&1; then
+  echo "Error: git is required to locate the repository root." >&2
+  exit 1
+fi
+
+if ! repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+  echo "Error: ./dev/audit-rename must run from inside the repository worktree." >&2
+  exit 1
+fi
+
+cd "$repo_root"
+
+if ! command -v rg >/dev/null 2>&1; then
+  echo "Error: rg is required. Install ripgrep before running the rename audit." >&2
+  exit 1
+fi
+
+search_name() {
+  local label="$1"
+  local needle="$2"
+
+  printf '== %s: %s ==\n' "$label" "$needle"
+  local matches_file
+  matches_file="$(mktemp)"
+  temp_files+=("$matches_file")
+
+  local status=0
+  rg --fixed-strings --hidden --glob '!.git/**' --line-number --with-filename --color=never -- "$needle" . >"$matches_file" || status="$?"
+
+  if [ "$status" -eq 1 ]; then
+    printf 'No matches for %s.\n' "$needle"
+  elif [ "$status" -ne 0 ]; then
+    return "$status"
+  else
+    awk '
+      function category(path) {
+        if (path ~ /^\.\/\.github\// || path ~ /^\.\/ci\// || path ~ /^\.\/dev\// || path ~ /^\.\/\.husky\//) return "ci-dev"
+        if (path ~ /^\.\/monitors\//) return "infra"
+        if (path ~ /^\.\/\.env/ || path ~ /^\.\/\.gitleaks/ || path ~ /(^|\/)knip\.jsonc$/ || path ~ /(^|\/)package\.json$/ || path ~ /(^|\/)pnpm-workspace\.yaml$/) return "config"
+        if (path ~ /^\.\/docs\//) return "docs"
+        if (path ~ /^\.\/backend\// || path ~ /^\.\/web\// || path ~ /^\.\/cloudflare-worker\// || path ~ /^\.\/lambdas\// || path ~ /^\.\/email-templates\// || path ~ /^\.\/ts-shared\// || path ~ /^\.\/playwright\//) return "app"
+        return "other"
+      }
+      {
+        split($0, parts, ":")
+        bucket = category(parts[1])
+        lines[bucket] = lines[bucket] $0 "\n"
+      }
+      END {
+        order[1] = "app"
+        order[2] = "ci-dev"
+        order[3] = "infra"
+        order[4] = "config"
+        order[5] = "docs"
+        order[6] = "other"
+        for (i = 1; i <= 6; i++) {
+          bucket = order[i]
+          if (bucket in lines) {
+            printf "-- %s --\n%s", bucket, lines[bucket]
+          }
+        }
+      }
+    ' "$matches_file"
+  fi
+}
+
+search_name "old name" "$old_name"
+search_name "new name" "$new_name"

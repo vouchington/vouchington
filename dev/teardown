@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+usage() { echo "Usage: ./dev/teardown [--yes|-y] [--remove]"; }
+if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
+AUTO_YES=false
+AUTO_REMOVE=false
+for arg in "$@"; do
+    case "$arg" in
+        --yes|-y)
+            if $AUTO_YES; then echo "Error: duplicate option: $arg" >&2; usage >&2; exit 2; fi
+            AUTO_YES=true
+            ;;
+        --remove)
+            if $AUTO_REMOVE; then echo "Error: duplicate option: $arg" >&2; usage >&2; exit 2; fi
+            AUTO_REMOVE=true
+            ;;
+        *) echo "Error: unknown option: $arg" >&2; usage >&2; exit 2 ;;
+    esac
+done
+
+# Refuse to run on main worktree
+# shellcheck source=lib/refuse-on-main.sh
+source "$REPO_ROOT/dev/lib/refuse-on-main.sh"
+refuse_on_main "./dev/teardown" "$REPO_ROOT"
+
+# shellcheck source=lib/db-target.sh
+source "$REPO_ROOT/dev/lib/db-target.sh"
+# shellcheck source=lib/git-worktrees.sh
+source "$REPO_ROOT/dev/lib/git-worktrees.sh"
+# shellcheck source=lib/worktree-resource-env.sh
+source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
+
+# Check for initialized state
+if [ ! -f "$REPO_ROOT/.valkey-port" ]; then
+    if [ -f "$REPO_ROOT/.env" ]; then
+        echo -e "${YELLOW}Worktree already torn down (tracking files missing but .env exists).${NC}"
+        echo "Run ./dev/initialize backend (or web) to re-create resources."
+        exit 0
+    else
+        echo -e "${RED}Error: Not initialized. Was this worktree initialized?${NC}"
+        exit 1
+    fi
+fi
+
+# Only the backend-level check is required here: teardown removes DB +
+# Valkey resources, which backend mode owns just as much as web mode. Gating
+# on the stricter web validator would wrongly refuse to tear down a
+# backend-only worktree's real Postgres database and Docker container.
+if ! worktree_resource_validate_backend_init "$REPO_ROOT"; then
+    echo -e "${RED}Error: Worktree resources are not initialized for this worktree (${WORKTREE_RESOURCE_STATUS:-unknown}).${NC}"
+    echo "Run ./dev/initialize backend (or web) before tearing down this worktree."
+    exit 1
+fi
+
+dev_db_target_resolve teardown
+DB_NAME="$DEV_DB_TARGET_DB_NAME"
+dev_db_target_export_pg_env
+if [ -n "$DB_NAME" ] && ! dev_db_target_local_or_allowed teardown; then
+    echo -e "${RED}Error: Refusing to drop non-local database $DB_NAME.${NC}"
+    echo "Set VOUCHA_ALLOW_NON_LOCAL_DB_TEARDOWN=1 to allow this explicitly."
+    exit 1
+fi
+
+echo -e "${RED}=== Worktree Teardown ===${NC}\n"
+echo -e "${YELLOW}WARNING: This will:${NC}"
+echo "  - Stop all running processes"
+[ -n "${VALKEY_CONTAINER:-}" ] && echo "  - Remove Valkey container $VALKEY_CONTAINER"
+[ -n "$DB_NAME" ] && echo "  - Drop database $DB_NAME"
+echo ""
+
+if ! $AUTO_YES; then
+    read -r -p "Continue? (yes/no): " CONFIRM
+    if [ "$CONFIRM" != "yes" ]; then
+        echo "Teardown cancelled"
+        exit 0
+    fi
+fi
+echo ""
+
+"$REPO_ROOT/dev/stop-services"
+
+# Brief pause to allow killed processes to release DB connections before
+# removing the Valkey container and dropping the database.
+sleep 2
+
+# Remove Valkey container
+if [ -n "${VALKEY_CONTAINER:-}" ]; then
+    echo -e "${YELLOW}Removing Valkey container $VALKEY_CONTAINER...${NC}"
+    docker rm -f "$VALKEY_CONTAINER" 2>/dev/null || echo "  Container already removed"
+    echo -e "${GREEN}✓ Valkey container removed${NC}"
+else
+    echo -e "${YELLOW}  VALKEY_CONTAINER not set, skipping${NC}"
+fi
+echo ""
+
+# Drop PostgreSQL database
+if [ -n "$DB_NAME" ]; then
+    echo -e "${YELLOW}Dropping database $DB_NAME...${NC}"
+    if dropdb "$DB_NAME" 2>/dev/null; then
+        echo -e "${GREEN}✓ Database dropped${NC}"
+    else
+        echo -e "${YELLOW}  Database may not exist or already dropped${NC}"
+    fi
+    echo ""
+fi
+
+# Ask about removing worktree directory
+if $AUTO_REMOVE && $AUTO_YES; then
+    REMOVE_DIR="yes"
+elif $AUTO_REMOVE; then
+    # --remove without --yes: still prompt for directory removal confirmation
+    echo -e "${RED}Do you want to remove the worktree directory?${NC}"
+    echo "  This will delete: $REPO_ROOT"
+    echo "  You will need to re-create the worktree with: git worktree add"
+    echo ""
+    read -r -p "Remove directory? (yes/no): " REMOVE_DIR
+elif $AUTO_YES; then
+    REMOVE_DIR="no"
+else
+    echo -e "${RED}Do you want to remove the worktree directory?${NC}"
+    echo "  This will delete: $REPO_ROOT"
+    echo "  You will need to re-create the worktree with: git worktree add"
+    echo ""
+    read -r -p "Remove directory? (yes/no): " REMOVE_DIR
+fi
+
+WORKTREE_PATH="$REPO_ROOT"
+
+if [ "$REMOVE_DIR" == "yes" ]; then
+    if is_disposable_checkout_path "$REPO_ROOT" && [ -d "$REPO_ROOT/.git" ]; then
+        if [[ -z "$REPO_ROOT" || "$REPO_ROOT" == "/" ]]; then
+            echo -e "${RED}Error: refusing to remove an unsafe disposable checkout path.${NC}"
+            exit 1
+        fi
+        cd "$HOME"
+        rm -rf "$REPO_ROOT"
+        echo -e "${GREEN}✓ Disposable checkout directory removed${NC}"
+        REMOVE_DIR="done"
+    elif [ -d "$REPO_ROOT/.git" ]; then
+        echo -e "${RED}Error: Refusing to remove the main worktree directory.${NC}"
+        echo "Run without --remove, or remove main worktree resources manually if intentional."
+        exit 1
+    fi
+
+    if [ "$REMOVE_DIR" == "yes" ]; then
+        MAIN_WORKTREE=$(git_worktree_main_path "$REPO_ROOT")
+        if [ -z "$MAIN_WORKTREE" ]; then
+            echo -e "${RED}Error: Could not resolve main worktree for safe removal${NC}"
+            exit 1
+        fi
+
+        cd "$MAIN_WORKTREE"
+
+        if git -C "$MAIN_WORKTREE" worktree remove "$WORKTREE_PATH" --force 2>/dev/null; then
+            echo -e "${GREEN}✓ Worktree directory removed${NC}"
+        else
+            echo -e "${YELLOW}  git worktree remove failed, falling back to rm -rf${NC}"
+            # Safety check: refuse to rm -rf if path is empty or not a registered worktree
+            if [[ -z "$WORKTREE_PATH" ]]; then
+                echo -e "${RED}Error: WORKTREE_PATH is empty, refusing to rm -rf${NC}"
+                exit 1
+            fi
+            if ! git_worktree_path_is_registered "$MAIN_WORKTREE" "$WORKTREE_PATH"; then
+                echo -e "${RED}Error: '$WORKTREE_PATH' is not a registered git worktree, refusing to rm -rf${NC}"
+                exit 1
+            fi
+            rm -rf "$WORKTREE_PATH"
+            git -C "$MAIN_WORKTREE" worktree prune 2>/dev/null || true
+            echo -e "${GREEN}✓ Worktree directory removed (manual cleanup)${NC}"
+        fi
+    fi
+else
+    rm -f "$REPO_ROOT/.valkey-port" "$REPO_ROOT/.initialized"
+    echo -e "${GREEN}✓ Removed tracking files${NC}"
+    echo "  Directory preserved — run ./dev/initialize backend (or web) to re-create resources"
+fi
+echo ""
+
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}✓ Teardown complete!${NC}"
+echo -e "${GREEN}========================================${NC}\n"

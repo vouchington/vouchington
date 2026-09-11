@@ -1,0 +1,15 @@
+{
+  "community_agent_moderations": [],
+  "openai_moderation": {
+    "flagged": true,
+    "results": [
+      {
+        "categories": {
+          "harassment": true,
+          "violence": false
+        },
+        "flagged": true
+      }
+    ]
+  }
+}

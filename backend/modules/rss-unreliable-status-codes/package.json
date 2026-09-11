@@ -1,0 +1,22 @@
+{
+  "name": "@modules/rss-unreliable-status-codes",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "http-errors": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5"
+  }
+}

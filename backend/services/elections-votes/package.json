@@ -1,0 +1,84 @@
+{
+  "name": "@services/elections-votes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Entity-specific election voting system",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./shared": {
+      "types": "./shared/index.mts",
+      "import": "./shared/index.mts",
+      "default": "./shared/index.mts"
+    },
+    "./topic": {
+      "types": "./topic/index.mts",
+      "import": "./topic/index.mts",
+      "default": "./topic/index.mts"
+    },
+    "./hostname": {
+      "types": "./hostname/index.mts",
+      "import": "./hostname/index.mts",
+      "default": "./hostname/index.mts"
+    },
+    "./agent-moderation": {
+      "types": "./agent-moderation/index.mts",
+      "import": "./agent-moderation/index.mts",
+      "default": "./agent-moderation/index.mts"
+    },
+    "./post": {
+      "types": "./post/index.mts",
+      "import": "./post/index.mts",
+      "default": "./post/index.mts"
+    },
+    "./entity-relation": {
+      "types": "./entity-relation/index.mts",
+      "import": "./entity-relation/index.mts",
+      "default": "./entity-relation/index.mts"
+    },
+    "./rss-feed-item": {
+      "types": "./rss-feed-item/index.mts",
+      "import": "./rss-feed-item/index.mts",
+      "default": "./rss-feed-item/index.mts"
+    },
+    "./user-vouch": {
+      "types": "./user-vouch/index.mts",
+      "import": "./user-vouch/index.mts",
+      "default": "./user-vouch/index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/elections": "workspace:^",
+    "@queues/entity-metrics-cache-refresh": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@queues/psql": "workspace:^",
+    "@queues/rss-feed-discoverability": "workspace:^",
+    "@queues/topic-ratings": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

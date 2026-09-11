@@ -1,0 +1,30 @@
+{
+  "name": "@services/openai-agents",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@services/conversations-messages": "workspace:^",
+    "http-errors": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5"
+  }
+}

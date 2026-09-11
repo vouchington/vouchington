@@ -1,0 +1,12 @@
+{
+  "participant": {
+    "conversation_id": "00000000-0000-7000-8000-000000000101",
+    "created_at": "2026-07-01T10:04:00Z",
+    "id": "00000000-0000-7000-8000-000000000303",
+    "profile_image_id": null,
+    "removed_at": null,
+    "role": "member",
+    "user_id": "00000000-0000-7000-8000-000000000003",
+    "username": "bob"
+  }
+}

@@ -1,0 +1,195 @@
+{
+  "markdown_to_html": {
+    "comment-a": "<p>Top-level native comment</p>",
+    "comment-b": "<p>Nested reply with votes</p>",
+    "comment-root-post": "<p>Root post markdown</p>"
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "fixture-ancestor-shallow-start"
+  },
+  "posts": {
+    "comment-a": {
+      "__entity_type": "post",
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": "everyone",
+      "can_delete": true,
+      "can_edit_content": true,
+      "can_lock": true,
+      "clearance_reason": null,
+      "clearance_status": null,
+      "clearance_updated_at": null,
+      "community_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "profile_image_id": null,
+        "roles": [],
+        "username": "testuser"
+      },
+      "created_by_id": "user-1",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "comment-a",
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": "Top-level native comment",
+      "parent_id": "comment-root-post",
+      "post_type": "comment",
+      "privacy": "public",
+      "root_id": "comment-root-post",
+      "slug": null,
+      "spam_detection_created_at": null,
+      "spam_detection_flagged": null,
+      "spam_detection_results": null,
+      "spam_detection_score": null,
+      "title": "",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "updated_by_id": null
+    },
+    "comment-b": {
+      "__entity_type": "post",
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": "everyone",
+      "can_delete": false,
+      "can_edit_content": false,
+      "can_lock": false,
+      "clearance_reason": null,
+      "clearance_status": null,
+      "clearance_updated_at": null,
+      "community_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "id": "comment-user-2",
+        "profile_image_id": null,
+        "roles": [],
+        "username": "commenter"
+      },
+      "created_by_id": "comment-user-2",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "comment-b",
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": "Nested reply with votes",
+      "parent_id": "comment-a",
+      "post_type": "comment",
+      "privacy": "public",
+      "root_id": "comment-root-post",
+      "slug": null,
+      "spam_detection_created_at": null,
+      "spam_detection_flagged": null,
+      "spam_detection_results": null,
+      "spam_detection_score": null,
+      "title": "",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "updated_by_id": null
+    },
+    "comment-root-post": {
+      "__entity_type": "post",
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": "everyone",
+      "can_delete": true,
+      "can_edit_content": true,
+      "can_lock": true,
+      "clearance_reason": null,
+      "clearance_status": null,
+      "clearance_updated_at": null,
+      "community_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "profile_image_id": null,
+        "roles": [],
+        "username": "testuser"
+      },
+      "created_by_id": "user-1",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "comment-root-post",
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": "Root post markdown",
+      "parent_id": null,
+      "post_type": "discussion",
+      "privacy": "public",
+      "root_id": null,
+      "slug": "comment-root",
+      "spam_detection_created_at": null,
+      "spam_detection_flagged": null,
+      "spam_detection_results": null,
+      "spam_detection_score": null,
+      "title": "Comment thread fixture",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "updated_by_id": null
+    }
+  },
+  "posts_metrics": {
+    "comment-a": {
+      "__entity_type": "post_metrics",
+      "bookmarks": {
+        "follow": 0,
+        "save": 0
+      },
+      "count": {
+        "ancestors": 3,
+        "children": 1,
+        "descendants": 2
+      },
+      "id": "comment-a",
+      "updated_at": "2026-01-01T00:00:00Z"
+    },
+    "comment-b": {
+      "__entity_type": "post_metrics",
+      "bookmarks": {
+        "follow": 0,
+        "save": 0
+      },
+      "count": {
+        "ancestors": 4,
+        "children": 2,
+        "descendants": 3
+      },
+      "id": "comment-b",
+      "updated_at": "2026-01-01T00:00:00Z"
+    },
+    "comment-root-post": {
+      "__entity_type": "post_metrics",
+      "bookmarks": {
+        "follow": 0,
+        "save": 0
+      },
+      "count": {
+        "ancestors": 2,
+        "children": 0,
+        "descendants": 1
+      },
+      "id": "comment-root-post",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  "results": [
+    {
+      "__entity_type": "post",
+      "id": "comment-root-post"
+    },
+    {
+      "__entity_type": "post",
+      "id": "comment-a"
+    },
+    {
+      "__entity_type": "post",
+      "id": "comment-b"
+    }
+  ]
+}

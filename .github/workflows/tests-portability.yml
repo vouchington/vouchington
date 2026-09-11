@@ -1,0 +1,338 @@
+name: Portability Tests
+
+on:
+  workflow_call:
+    inputs:
+      publish_coverage:
+        description: 'Whether to publish LCOV for a same-run PR coverage consumer'
+        required: false
+        type: boolean
+        default: false
+      upload_vitest_blob_artifact:
+        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
+        required: false
+        type: boolean
+        default: false
+      full_suite:
+        description: 'Run the complete configured projects instead of selected test files'
+        type: boolean
+        default: true
+      selected_test_files:
+        description: 'Space-delimited selected test files when full_suite is false'
+        type: string
+        default: ''
+  workflow_dispatch:
+    inputs:
+      upload_vitest_blob_artifact:
+        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
+        required: false
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/tests-portability.yml'
+      - 'ci/curl-to.sh'
+      - 'ci/exec-vouchington-gha.sh'
+      - 'ci/runner-port-policy.json'
+      - 'ci/runner-port-policy.mts'
+      - 'ci/run-vitest-project-group.mts'
+      - 'cloudflare-worker/scripts/wrangler/runtime.mts'
+      - 'cloudflare-worker/scripts/wrangler/runtime.test.mts'
+      - 'lambdas/dev-server.mts'
+      - 'lambdas/dev-server.test.mts'
+      - 'lambdas/image-resize/**'
+      - 'lambdas/playwright-podcast-cover.mts'
+      - 'lambdas/shared/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'test-helpers/vitest-config/**'
+      - 'ts-shared/url-signing/**'
+      - 'vitest.config.mts'
+
+concurrency:
+  group: portability-tests-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  portability-macos:
+    runs-on: [self-hosted, macOS, Tests]
+    timeout-minutes: 17
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+          fetch-depth: ${{ inputs.publish_coverage && 0 || 1 }}
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          deepen: ${{ inputs.publish_coverage && 'true' || 'false' }}
+      - uses: ./.github/actions/load-runner-env
+        with:
+          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Run portability tests
+        env:
+          VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}
+          VITEST_CI_REPORTERS: run
+          VITEST_JUNIT_OUTPUT_FILE: portability-macos-test-report.junit.xml
+          VITEST_BLOB_OUTPUT_FILE: .vitest-reports/portability-macos.json
+          VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
+        run: |
+          # VITEST_SELECTED_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
+          # encodeSelectedFiles). A quoted read loop plus a quoted array expansion
+          # preserve paths containing spaces or shell glob metacharacters, replacing the
+          # previous unquoted $VITEST_SELECTED_FILES word-splitting/glob-expansion. A
+          # blank-line guard (mirroring decodeSelectedFiles's blank filter) is required:
+          # `<<<` always appends a trailing newline, so an empty VITEST_SELECTED_FILES
+          # (the full-suite case) still yields one empty-string read, which must not
+          # become a stray positional arg. This avoids `mapfile` (bash 4.0+) since
+          # self-hosted runner shells are not guaranteed to be bash 4+.
+          FILES=()
+          while IFS= read -r file; do
+            if [ -n "$file" ]; then FILES+=("$file"); fi
+          done <<< "$VITEST_SELECTED_FILES"
+          pnpm run test:portability -- --bail=3 "${FILES[@]}"
+        timeout-minutes: 5
+      - name: Stamp portability-macos coverage provenance
+        id: coverage-stamp-1
+        timeout-minutes: 1
+        if: ${{ !cancelled() && inputs.publish_coverage }}
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node ci/coverage-manifest.mts patch "portability-macos" "$(node -p "JSON.parse(require('node:fs').readFileSync('node_modules/vitest/package.json','utf8')).version")"
+      - name: Upload portability-macos vitest blob to GitHub (fallback)
+        id: vitest-blob-fallback-1
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-blob
+        with:
+          suite: portability-macos
+      - name: Upload portability-macos vitest blob to GitHub (fallback attempt 2)
+        id: vitest-blob-fallback-1-retry
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
+        timeout-minutes: 3
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-blob
+        with:
+          suite: portability-macos
+          name-suffix: -retry
+      - name: Require a persisted portability-macos vitest blob
+        id: vitest-blob-outcome-1
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        env:
+          FAMILY: vitest-blob
+          SUITE: portability-macos
+          FIRST_OUTCOME: ${{ steps.vitest-blob-fallback-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.vitest-blob-fallback-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Persist portability-macos Vitest report attempt (attempt 1)
+        id: vitest-report-attempt-1
+        if: ${{ always() && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-report-attempt
+        with:
+          suite: portability-macos
+      - name: Persist portability-macos Vitest report attempt (attempt 2)
+        id: vitest-report-attempt-1-retry
+        if: ${{ always() && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-1.outcome == 'failure' }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-report-attempt
+        with:
+          suite: portability-macos
+          name-suffix: -retry
+      - name: Assert portability-macos Vitest report attempt persisted
+        id: vitest-report-attempt-1-outcome
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        env:
+          FAMILY: vitest-report-attempt
+          SUITE: portability-macos
+          FIRST_OUTCOME: ${{ steps.vitest-report-attempt-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.vitest-report-attempt-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload portability-macos coverage pair to GitHub (fallback attempt 1)
+        id: coverage-fallback-1-1
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-coverage-pair
+        with:
+          suite: portability-macos
+      - name: Upload portability-macos coverage pair to GitHub (fallback attempt 2)
+        id: coverage-fallback-2-1
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-coverage-pair
+        with:
+          suite: portability-macos
+          name-suffix: -retry
+      - name: Require a persisted portability-macos coverage pair
+        id: coverage-outcome-1
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        timeout-minutes: 1
+        env:
+          FAMILY: coverage-pair
+          SUITE: portability-macos
+          FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+
+  portability-linux:
+    runs-on: [self-hosted, Linux, Docker, Tests]
+    timeout-minutes: 17
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+          fetch-depth: ${{ inputs.publish_coverage && 0 || 1 }}
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          deepen: ${{ inputs.publish_coverage && 'true' || 'false' }}
+      - uses: ./.github/actions/load-runner-env
+        with:
+          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Run portability tests
+        env:
+          VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}
+          VITEST_CI_REPORTERS: run
+          VITEST_JUNIT_OUTPUT_FILE: portability-linux-test-report.junit.xml
+          VITEST_BLOB_OUTPUT_FILE: .vitest-reports/portability-linux.json
+          VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
+        run: |
+          # VITEST_SELECTED_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
+          # encodeSelectedFiles). A quoted read loop plus a quoted array expansion
+          # preserve paths containing spaces or shell glob metacharacters, replacing the
+          # previous unquoted $VITEST_SELECTED_FILES word-splitting/glob-expansion. A
+          # blank-line guard (mirroring decodeSelectedFiles's blank filter) is required:
+          # `<<<` always appends a trailing newline, so an empty VITEST_SELECTED_FILES
+          # (the full-suite case) still yields one empty-string read, which must not
+          # become a stray positional arg. This avoids `mapfile` (bash 4.0+) since
+          # self-hosted runner shells are not guaranteed to be bash 4+.
+          FILES=()
+          while IFS= read -r file; do
+            if [ -n "$file" ]; then FILES+=("$file"); fi
+          done <<< "$VITEST_SELECTED_FILES"
+          pnpm run test:portability -- --bail=3 "${FILES[@]}"
+        timeout-minutes: 5
+      - name: Stamp portability-linux coverage provenance
+        id: coverage-stamp-2
+        timeout-minutes: 1
+        if: ${{ !cancelled() && inputs.publish_coverage }}
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node ci/coverage-manifest.mts patch "portability-linux" "$(node -p "JSON.parse(require('node:fs').readFileSync('node_modules/vitest/package.json','utf8')).version")"
+      - name: Upload portability-linux vitest blob to GitHub (fallback)
+        id: vitest-blob-fallback-2
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-blob
+        with:
+          suite: portability-linux
+      - name: Upload portability-linux vitest blob to GitHub (fallback attempt 2)
+        id: vitest-blob-fallback-2-retry
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-2.outcome == 'failure' }}
+        timeout-minutes: 3
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-blob
+        with:
+          suite: portability-linux
+          name-suffix: -retry
+      - name: Require a persisted portability-linux vitest blob
+        id: vitest-blob-outcome-2
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        env:
+          FAMILY: vitest-blob
+          SUITE: portability-linux
+          FIRST_OUTCOME: ${{ steps.vitest-blob-fallback-2.outcome }}
+          RETRY_OUTCOME: ${{ steps.vitest-blob-fallback-2-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Persist portability-linux Vitest report attempt (attempt 1)
+        id: vitest-report-attempt-2
+        if: ${{ always() && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-report-attempt
+        with:
+          suite: portability-linux
+      - name: Persist portability-linux Vitest report attempt (attempt 2)
+        id: vitest-report-attempt-2-retry
+        if: ${{ always() && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-2.outcome == 'failure' }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-report-attempt
+        with:
+          suite: portability-linux
+          name-suffix: -retry
+      - name: Assert portability-linux Vitest report attempt persisted
+        id: vitest-report-attempt-2-outcome
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        env:
+          FAMILY: vitest-report-attempt
+          SUITE: portability-linux
+          FIRST_OUTCOME: ${{ steps.vitest-report-attempt-2.outcome }}
+          RETRY_OUTCOME: ${{ steps.vitest-report-attempt-2-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload portability-linux coverage pair to GitHub (fallback attempt 1)
+        id: coverage-fallback-1-2
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-coverage-pair
+        with:
+          suite: portability-linux
+      - name: Upload portability-linux coverage pair to GitHub (fallback attempt 2)
+        id: coverage-fallback-2-2
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' && steps.coverage-fallback-1-2.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-coverage-pair
+        with:
+          suite: portability-linux
+          name-suffix: -retry
+      - name: Require a persisted portability-linux coverage pair
+        id: coverage-outcome-2
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        timeout-minutes: 1
+        env:
+          FAMILY: coverage-pair
+          SUITE: portability-linux
+          FIRST_OUTCOME: ${{ steps.coverage-fallback-1-2.outcome }}
+          RETRY_OUTCOME: ${{ steps.coverage-fallback-2-2.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"

@@ -1,0 +1,33 @@
+{
+  "extends": "../backend/tsconfig.json",
+  "compilerOptions": {
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "lib": ["es2025", "dom", "dom.iterable"],
+    // Leaf test suite: nothing imports integration-tests/**'s compiled output, so
+    // declaration emit is meaningless here — see playwright/tsconfig.json for why this
+    // must be overridden rather than left inherited from backend.
+    "declaration": false,
+    "declarationMap": false,
+    "tsBuildInfoFile": "../node_modules/.cache/integration-tests-pnpm.tsbuildinfo",
+    // integration-tests is not a pnpm workspace member, so these backend/ts-shared specifiers have
+    // no node_modules symlink here. Compile-time-only resolution, mirroring web/tsconfig.json's
+    // @ts-shared/<pkg> precedent — see docs/development/reference-tests-linters-and-static-analysis.md.
+    "paths": {
+      "@/*": ["../web/*"],
+      "@ts-shared/money": ["../ts-shared/money/index.mts"],
+      "@ts-shared/session-jwt": ["../ts-shared/session-jwt/index.mts"],
+      "@modules/pagination": ["../backend/modules/pagination/index.mts"],
+      "@voucha/scripts/seed": ["../backend/scripts/seed/index.mts"],
+      "@services/bedrock-embeddings": ["../backend/services/bedrock-embeddings/index.mts"],
+      "@services/urls-domains-blacklist": ["../backend/services/urls-domains-blacklist/index.mts"],
+      "@services/dynamic-config-admin": ["../backend/services/dynamic-config-admin/index.mts"],
+      "@voucha/api/queues": ["../backend/api/queues.mts"],
+      "@data-stores/graceful-shutdown": ["../backend/data-stores/graceful-shutdown/index.mts"]
+    }
+  },
+  "include": ["**/*.mts", "../backend/types/**/*.d.ts"],
+  "exclude": ["../node_modules", "**/node_modules"]
+}

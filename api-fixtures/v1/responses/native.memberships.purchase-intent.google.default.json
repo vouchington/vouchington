@@ -1,0 +1,15 @@
+{
+  "purchase_intent": {
+    "id": "00000000-0000-7000-8000-000000000804",
+    "launch": {
+      "base_plan_id": "monthly",
+      "kind": "google_play",
+      "obfuscated_account_id": "6f4b2c9d5e1a8b7c3d0f4a9e6c2b1d8f7a5c3e0b9d6f4a2c8e1b7d5f0a3c9e6b",
+      "offer_id": null,
+      "product_id": "voucha.plus.monthly"
+    },
+    "product_id": "00000000-0000-7000-8000-000000000701",
+    "provider": "google_play",
+    "replayed": false
+  }
+}

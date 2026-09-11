@@ -1,0 +1,12 @@
+{
+  "purchase_intent": {
+    "id": "00000000-0000-7000-8000-000000000806",
+    "launch": {
+      "checkout_url": "https://checkout.stripe.test/session",
+      "kind": "stripe_checkout"
+    },
+    "product_id": "00000000-0000-7000-8000-000000000701",
+    "provider": "stripe",
+    "replayed": false
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "@services/jwt-session",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/analytics": "workspace:^",
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "@services/user-rate-limits": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@ts-shared/session-jwt": "workspace:^",
+    "@valkey/valkey-glide": "^2.5.2",
+    "@voucha/types": "workspace:^",
+    "jose": "^6.2.12",
+    "sql-template-strings": "^2.2.2",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

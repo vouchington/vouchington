@@ -1,0 +1,37 @@
+{
+  "name": "@workers/activitypub-inbox",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Worker for durable inbound ActivityPub verification and dispatch",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./workers.mts",
+      "import": "./workers.mts",
+      "default": "./workers.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/activitypub-inbox-storage-policy": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@queues/activitypub-inbox": "workspace:^",
+    "@services/ap-inbox-activities": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@modules/http-signatures": "workspace:^",
+    "@services/remote-actors": "workspace:^",
+    "@services/route-rate-limits": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

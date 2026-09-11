@@ -1,0 +1,14 @@
+{
+  "community_restrictions": {},
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "raid_mode_suggestion": {
+    "flag_count": 0,
+    "latest_flagged_at": null,
+    "velocity_spike": false
+  },
+  "results": []
+}

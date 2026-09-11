@@ -1,0 +1,26 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDc0NCIsInNjb3BlIjoibXktc3BlbmRpbmctY2F0ZWdvcmllczowMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDA3NDA6aWQtYXNjIn0"
+  },
+  "results": [
+    {
+      "amount": {
+        "amount": 120000,
+        "currency": "usd"
+      },
+      "can_manage": false,
+      "id": "00000000-0000-7000-8000-000000000744",
+      "note": null,
+      "owner_type": "household",
+      "spending_category": {
+        "id": "00000000-0000-7000-8000-000000000741",
+        "name": "Groceries",
+        "slug": "groceries"
+      },
+      "spending_category_id": "00000000-0000-7000-8000-000000000741",
+      "spending_frequency": "annually"
+    }
+  ]
+}

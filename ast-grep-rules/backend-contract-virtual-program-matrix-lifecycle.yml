@@ -1,0 +1,293 @@
+id: backend-contract-virtual-program-matrix-lifecycle
+language: Tsx
+severity: error
+message: >-
+  Build the consuming test file's single virtual TypeScript program matrix directly inside the
+  function callback passed to beforeAll(). API-fixture helper modules must not hide per-call,
+  module-scope, or synthetic-owner matrix construction.
+files:
+  - 'backend/test-helpers/api-fixtures/**/*.mts'
+ignores:
+  - 'backend/test-helpers/api-fixtures/virtual-program.mts'
+rule:
+  any:
+    - all:
+        - kind: call_expression
+          regex: >-
+            ^(?:buildVirtualProgramMatrix|[A-Za-z_$][\w$]*(?:\.buildVirtualProgramMatrix|\[['"]buildVirtualProgramMatrix['"]\]))\s*\(
+        - not:
+            regex: >-
+              ^(?:buildVirtualProgramMatrix|[A-Za-z_$][\w$]*(?:\.buildVirtualProgramMatrix|\[['"]buildVirtualProgramMatrix['"]\]))\s*\(\s*import\.meta\s*,
+    - all:
+        - kind: call_expression
+          regex: >-
+            ^(?:buildVirtualProgramMatrix|[A-Za-z_$][\w$]*(?:\.buildVirtualProgramMatrix|\[['"]buildVirtualProgramMatrix['"]\]))\s*\(
+        - not:
+            inside:
+              any:
+                - all:
+                    - kind: arrow_function
+                    - inside:
+                        kind: arguments
+                        inside:
+                          kind: call_expression
+                          regex: '^beforeAll\s*\('
+                - all:
+                    - kind: function_expression
+                    - inside:
+                        kind: arguments
+                        inside:
+                          kind: call_expression
+                          regex: '^beforeAll\s*\('
+              stopBy:
+                any:
+                  - kind: arrow_function
+                  - kind: function_expression
+                  - kind: generator_function
+                  - kind: generator_function_declaration
+                  - kind: function_declaration
+                  - kind: method_definition
+    - all:
+        - kind: call_expression
+          regex: >-
+            ^import\s*\(\s*['"](?:[^'"]*/)?virtual-program(?:\.mts)?['"](?:\s*,[\s\S]*)?\)$
+        - not:
+            inside:
+              kind: type_query
+              stopBy: end
+    - all:
+        - kind: import_statement
+          regex: '\bbuildVirtualProgramMatrix\s+as\s+[A-Za-z_$][\w$]*'
+        - not:
+            regex: '^import\s+type\b'
+        - not:
+            regex: '\btype\s+buildVirtualProgramMatrix\s+as\b'
+    - kind: variable_declarator
+      regex: >-
+        ^(?:\{[^}]*\bbuildVirtualProgramMatrix\b[^}]*\}|[A-Za-z_$][\w$]*)\s*=\s*(?:buildVirtualProgramMatrix|[A-Za-z_$][\w$]*(?:\.buildVirtualProgramMatrix|\[['"]buildVirtualProgramMatrix['"]\]))$
+    - kind: object_pattern
+      has:
+        regex: '\bbuildVirtualProgramMatrix\b'
+        stopBy: end
+    - kind: assignment_expression
+      regex: >-
+        ^(?:\{[^}]*\bbuildVirtualProgramMatrix\b[^}]*\}|[A-Za-z_$][\w$]*)\s*=\s*(?:buildVirtualProgramMatrix|[A-Za-z_$][\w$]*(?:\.buildVirtualProgramMatrix|\[['"]buildVirtualProgramMatrix['"]\]))$
+    - all:
+        - kind: export_specifier
+        - regex: '^(?:buildVirtualProgramMatrix(?:\s+as\s+[A-Za-z_$][\w$]*)?|[A-Za-z_$][\w$]*\s+as\s+buildVirtualProgramMatrix)$'
+        - not:
+            inside:
+              kind: export_statement
+              regex: '^export\s+type\b'
+examples:
+  - code: |
+      let matrix
+      beforeAll(() => {
+        matrix = buildVirtualProgramMatrix(import.meta, sources)
+      })
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      let matrix
+      beforeAll(() => {
+        matrix = buildVirtualProgramMatrix('file:///tmp/not-the-owning-test.mts', sources)
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(async function () {
+        matrix = buildVirtualProgramMatrix(import.meta, sources)
+      })
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(async () => {
+        matrix = buildVirtualProgramMatrix(import.meta, sources)
+      })
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(function () {
+        matrix = buildVirtualProgramMatrix(import.meta, sources)
+      })
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      describe('contract', () => {
+        beforeAll(() => {
+          matrix = buildVirtualProgramMatrix(import.meta, sources)
+        })
+      })
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(register(buildVirtualProgramMatrix(import.meta, sources)))
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(() => register(() => buildVirtualProgramMatrix(import.meta, sources)))
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(() => () => buildVirtualProgramMatrix(import.meta, sources))
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(function () {
+        register(function () {
+          matrix = buildVirtualProgramMatrix(import.meta, sources)
+        })
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(function () {
+        const deferred = function* () {
+          matrix = buildVirtualProgramMatrix(import.meta, sources)
+        }
+        deferred().next()
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(function () {
+        function* deferred() {
+          matrix = buildVirtualProgramMatrix(import.meta, sources)
+        }
+        deferred().next()
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      it('extracts a contract', () => {
+        const matrix = buildVirtualProgramMatrix(import.meta, sources)
+        expect(matrix.sourceFile('case')).toBeDefined()
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeEach(() => {
+        matrix = buildVirtualProgramMatrix(import.meta, sources)
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeEach(async () => {
+        matrix = (await import('./virtual-program.mts')).buildVirtualProgramMatrix(
+          import.meta,
+          sources,
+        )
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(async () => {
+        const virtualProgram = await import('./virtual-program')
+        matrix = virtualProgram.buildVirtualProgramMatrix(import.meta, sources)
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      beforeAll(async () => {
+        const virtualProgram = await import(
+          '@voucha/test-helpers/api-fixtures/virtual-program.mts',
+          { with: { type: 'module' } }
+        )
+        matrix = virtualProgram.buildVirtualProgramMatrix(import.meta, sources)
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      const matrix = buildVirtualProgramMatrix(import.meta, sources)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      export const matrix = buildVirtualProgramMatrix(import.meta, sources)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      export function extractContract(source) {
+        const matrix = buildVirtualProgramMatrix(import.meta, { source })
+        return matrix.sourceFile('source')
+      }
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      export function buildForConsumer(owner, sources) {
+        return buildVirtualProgramMatrix(import.meta, sources)
+      }
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      import { buildVirtualProgramMatrix as buildMatrix } from './virtual-program.mts'
+      beforeAll(() => {
+        matrix = buildMatrix(sources)
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      import { buildVirtualProgramMatrix } from './virtual-program.mts'
+      const buildMatrix = buildVirtualProgramMatrix
+      beforeAll(() => {
+        matrix = buildMatrix(sources)
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      import * as virtualProgram from './virtual-program.mts'
+      const { buildVirtualProgramMatrix: buildMatrix } = virtualProgram
+      beforeAll(() => {
+        matrix = buildMatrix(sources)
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      export {
+        buildVirtualProgramMatrix as buildMatrix,
+      } from './virtual-program.mts'
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/virtual-builder-helper.mts'
+  - code: |
+      export type {
+        VirtualProgramMatrix,
+      } from './virtual-program.mts'
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/virtual-builder-types.mts'
+  - code: |
+      import * as virtualProgram from './virtual-program.mts'
+      it('extracts a contract', () => {
+        const matrix = virtualProgram.buildVirtualProgramMatrix(import.meta, sources)
+        expect(matrix.sourceFile('case')).toBeDefined()
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      import type {
+        buildVirtualProgramMatrix as VirtualProgramMatrixBuilder,
+      } from './virtual-program.mts'
+      let builder: typeof VirtualProgramMatrixBuilder
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      type VirtualProgramModule = typeof import('./virtual-program.mts')
+      let builder: VirtualProgramModule['buildVirtualProgramMatrix']
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema.test.mts'
+  - code: |
+      it('tests the owner', () => {
+        buildVirtualProgramMatrix(import.meta, {
+          one: 'export {}',
+        })
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/virtual-program.test.mts'
+  - code: |
+      it('tests the owner dynamically', async () => {
+        await import('./virtual-program.mts')
+      })
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/virtual-program.test.mts'
+  - code: |
+      export const implementationMatrix = buildVirtualProgramMatrix(import.meta, sources)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/virtual-program.mts'

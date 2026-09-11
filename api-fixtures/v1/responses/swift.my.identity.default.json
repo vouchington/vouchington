@@ -1,0 +1,40 @@
+{
+  "identity": {
+    "__entity_type": "user",
+    "bluesky_account": {
+      "did": "did:plc:z72i7hdynmk6r22z27h6tvur",
+      "handle": "alice.bsky.social"
+    },
+    "cards_visibility": "everyone",
+    "community_digest_frequency": "weekly",
+    "community_memberships_visibility": "everyone",
+    "default_post_broadcast": "everyone",
+    "default_post_privacy": "public",
+    "direct_messages_audience": "users",
+    "email_address": "tests+api-fixtures@voucha.ai",
+    "engagement_emails_enabled": true,
+    "fediverse_federation_enabled": false,
+    "followers_visibility": "everyone",
+    "follows_visibility": "everyone",
+    "id": "user-abc",
+    "is_official_account": false,
+    "likes_visibility": "everyone",
+    "markdown": null,
+    "membership_plan": null,
+    "moderation_email_cadence": "daily",
+    "moderation_email_days_of_week": [1, 2, 3, 4, 5],
+    "moderation_email_time_of_day": "09:00",
+    "moderation_email_timezone": "America/Los_Angeles",
+    "moderation_emails_enabled": true,
+    "news_digest_frequency": "weekly",
+    "profile_image_id": null,
+    "rewards_program_statuses_visibility": "everyone",
+    "roles": ["user"],
+    "rss_feed_follows_visibility": "everyone",
+    "spending_categories_visibility": "everyone",
+    "suspended_at": null,
+    "topic_follows_visibility": "everyone",
+    "username": "alice",
+    "verification_status": null
+  }
+}

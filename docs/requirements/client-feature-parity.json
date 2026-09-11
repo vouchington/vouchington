@@ -1,0 +1,2751 @@
+{
+  "version": 1,
+  "features": [
+    {
+      "id": "authentication",
+      "title": "Authentication flows",
+      "domain": "Account",
+      "intents": [],
+      "requirements": ["docs/requirements/security/AUTH.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "authentication (email otp / passkey / apple / mfa)"
+        },
+        {
+          "table": "B",
+          "surface": "auth / account"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/login/page.tsx", "web/components/auth/oauth-broker-button.tsx"],
+          "behaviorTests": ["web/lib/auth/oauth-broker.mock.test.ts"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Auth/SignInView.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+OAuth.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/NativeOAuthAuthorizationTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/SignInViewTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/AuthPage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/SettingsPage.xaml"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Auth/AuthCoverageTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Auth/NativeOAuthAuthorizationCoordinatorTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "voting",
+      "title": "Semantic voting",
+      "domain": "Content",
+      "intents": [],
+      "requirements": ["docs/requirements/trust-safety/vote-integrity.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "voting — semantic choices for posts, news, topics, and user trust"
+        },
+        {
+          "table": "B",
+          "surface": "news / rss feed items"
+        },
+        {
+          "table": "B",
+          "surface": "posts / discussions / articles"
+        },
+        {
+          "table": "B",
+          "surface": "topics"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/votes/score-vote.tsx",
+            "web/components/users/user-vouch-election-card.tsx"
+          ],
+          "behaviorTests": ["web/components/votes/__tests__/score-vote.semantic.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/PostsList/PostsListView.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/RSSFeedList/RSSFeedListView.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeDetailSurface+Controls.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeUserProfileSurface.swift",
+            "swift-clients/ui/Sources/VouchaDesignSystem/VoteControls.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/PostsListViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/RSSFeedListViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeRouteSurfaceViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeRouteSurfaceViewModelVoteTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/PostsPage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/NewsFeedsPage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/TopicDetailPage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/ProfilePage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/TagManagementPage.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Posts/PostsListViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/NewsFeeds/NewsFeedsViewModelVotingTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Topics/TopicsViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "post-compose",
+      "title": "Post and community-post compose",
+      "domain": "Content",
+      "intents": ["posts"],
+      "requirements": ["docs/requirements/content/POSTS.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "post & community-post compose"
+        },
+        {
+          "table": "B",
+          "surface": "posts / discussions / articles"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(posts)/discussions/create/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativePostComposeSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativePostComposeViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/PostComposePage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Posts/PostComposeViewModelPublishTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "follower-distribution",
+      "title": "Follower share and manual send",
+      "domain": "Content",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/content/POSTS.md",
+        "docs/requirements/content/NEWS-DISCUSSIONS.md",
+        "docs/requirements/navigation/NOTIFICATIONS.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "follower share and manual send"
+        },
+        {
+          "table": "B",
+          "surface": "news / rss feed items"
+        },
+        {
+          "table": "B",
+          "surface": "posts / discussions / articles"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/shared/follower-share-actions.tsx"],
+          "behaviorTests": [
+            "web/components/shared/__tests__/follower-share-actions.mock.test.tsx",
+            "web/components/shared/__tests__/follower-share-actions.part-2.mock.test.tsx",
+            "web/components/shared/__tests__/follower-share-actions.part-3.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/PostsList/PostsListView.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/RSSFeedList/RSSFeedListView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/FollowerDistributionEndpointTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/FollowerDistributionViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/FollowerDistributionSendPage.cs",
+            "dotnet-clients/src/Voucha.Client.App/Pages/PostsPage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/NewsFeedsPage.xaml"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/FollowerDistributions/FollowerDistributionViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "notifications-inbox",
+      "title": "Notifications inbox",
+      "domain": "Communication",
+      "intents": [],
+      "requirements": ["docs/requirements/navigation/NOTIFICATIONS.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "notifications inbox"
+        },
+        {
+          "table": "B",
+          "surface": "notifications"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(my)/my/notifications/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NotificationsList/NotificationsListView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NotificationsListActivationTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/NotificationsPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Notifications/NotificationsViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "markdown-authoring",
+      "title": "Markdown and HTML rendering and authoring",
+      "domain": "Content",
+      "intents": [],
+      "requirements": ["docs/requirements/content/POSTS.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "markdown/html rendering & authoring"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(posts)/test-markdown-html/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeMarkdownEditor.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeCommentThreadMarkdownPreviewTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Controls/NativeMarkdownEditorView.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Posts/CommentThreadViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "lists",
+      "title": "Lists CRUD",
+      "domain": "Library",
+      "intents": ["lists"],
+      "requirements": ["docs/requirements/content/LISTS.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "lists crud"
+        },
+        {
+          "table": "B",
+          "surface": "lists"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(my)/my/lists/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": ["swift-clients/ui/Sources/VouchaFeatures/Lists/ListsView.swift"],
+          "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/ListsViewModelTests.swift"]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ListsPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Lists/ListsViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "comment-threads",
+      "title": "Comment and reply threads",
+      "domain": "Content",
+      "intents": [],
+      "requirements": ["docs/requirements/content/COMMENTS.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "comment / reply thread"
+        },
+        {
+          "table": "B",
+          "surface": "posts / discussions / articles"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/comments/comment-tree.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeCommentThreadSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeCommentThreadViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/PostDetailPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Posts/CommentThreadViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "direct-messages",
+      "title": "Direct messages",
+      "domain": "Communication",
+      "intents": ["messages"],
+      "requirements": ["docs/requirements/users/USER-PRIVACY-MATRIX.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "direct-message compose & send"
+        },
+        {
+          "table": "B",
+          "surface": "messages / direct messages"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(messages)/messages/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/DirectMessages/DirectMessagesSurface.swift"
+          ],
+          "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/DirectMessagesSurfaceTests.swift"]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/DirectMessagesPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Messages/DirectMessagesViewModel.MutationTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "member-support",
+      "title": "Member support threads",
+      "domain": "Support",
+      "intents": ["chat"],
+      "requirements": ["docs/requirements/content/CHAT.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "support thread creation and first reply"
+        },
+        {
+          "table": "B",
+          "surface": "chat / support"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(chat)/chat/support/new/new-support-thread-client.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeSupportSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeChatSupportSurfaceTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/SupportThreadPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Chat/SupportThreadViewModelPaginationTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Chat/ChatViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/VouchaApiClientChatSupportTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "image-upload",
+      "title": "Post and profile image upload",
+      "domain": "Media",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/content/POSTS.md",
+        "docs/requirements/users/USER_SETTINGS.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "image upload (posts / profile avatar)"
+        },
+        {
+          "table": "B",
+          "surface": "posts / discussions / articles"
+        },
+        {
+          "table": "B",
+          "surface": "profile (own & others)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/shared/image-upload-button.tsx",
+            "web/components/my/identity-profile-image-section.tsx"
+          ],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativePostComposeSurface+Images.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/Profile/ProfileView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativePostComposeSurfaceImageTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ProfileViewModelImageUploadTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/PostComposePage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/ProfilePage.xaml"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Posts/PostComposeImageTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Profiles/ProfileViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "search",
+      "title": "Omnisearch and web search",
+      "domain": "Discovery",
+      "intents": ["web-search"],
+      "requirements": ["docs/requirements/navigation/TOPBAR-SEARCH.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "omnisearch"
+        },
+        {
+          "table": "B",
+          "surface": "omnisearch"
+        },
+        {
+          "table": "B",
+          "surface": "web search"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(topics)/web-search/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteDestinationView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeRouteSurfaceViewModelDiscoveryTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/OmnisearchPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Search/OmnisearchViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "native-navigation",
+      "title": "Deep links and navigation customization",
+      "domain": "Navigation",
+      "intents": [],
+      "requirements": ["docs/requirements/navigation/NAVIGATION.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "deep linking"
+        },
+        {
+          "table": "A",
+          "surface": "navigation customization"
+        },
+        {
+          "table": "B",
+          "surface": "navigation customization"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/app-sidebar.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteDestinationRootView.swift",
+            "swift-clients/apps/shared-app/BottomBarEditView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeRouteDestinationViewRoutingTests.swift"
+          ],
+          "sourceAuditTests": [
+            "swift-clients/ui/Tests/VouchaUITests/AppSectionPreferencesSourceTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/BottomTabCustomizePage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/NativeDeepLinkResolverTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/BottomTabPreferencesTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "communities",
+      "title": "Communities",
+      "domain": "Community",
+      "intents": ["communities"],
+      "requirements": ["docs/requirements/community/COMMUNITIES.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "communities"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(communities)/communities/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Communities/CommunitySurface.swift"
+          ],
+          "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/CommunitySurfaceViewTests.swift"]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/CommunityDetailPage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Communities/CommunityDetailViewModelSurfaceTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "referral-links",
+      "title": "Referral links",
+      "domain": "Growth",
+      "intents": ["referral-links"],
+      "requirements": ["docs/requirements/users/REFERRAL-LINKS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "referral links"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(my)/my/referral-links/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeReferralLinksManagementView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeReferralLinksManagementViewTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ReferralLinksPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/ReferralLinks/ReferralLinksViewModelManagementTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "tags",
+      "title": "Tag management",
+      "domain": "Library",
+      "intents": [],
+      "requirements": ["docs/requirements/content/TAGS.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "tags & bookmarks"
+        },
+        {
+          "table": "B",
+          "surface": "tags"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/tags/manage-tags-dialog.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeTagManagementSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeTagManagementViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/TagManagementPage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Tags/TagManagementViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "crm",
+      "title": "CRM",
+      "domain": "Staff",
+      "intents": ["crm"],
+      "requirements": ["docs/requirements/admin/CRM.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "crm (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(crm)/crm/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/CRMContactsSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/CRMContactsSurfaceInteractionTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/CrmContactsPage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Crm/CrmViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "growth-dashboard",
+      "title": "Growth dashboard",
+      "domain": "Staff",
+      "intents": ["growth"],
+      "requirements": ["docs/requirements/admin/GROWTH-DASHBOARD.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "growth dashboard (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "read",
+          "uiEvidence": ["web/app/(growth)/growth/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "read",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/GrowthDashboardSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/GrowthDashboardSurfaceTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "read",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/GrowthDashboardPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Growth/GrowthDashboardViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "moderation-log-analytics",
+      "title": "Moderation logs and analytics",
+      "domain": "Staff",
+      "intents": ["moderation"],
+      "requirements": [
+        "docs/requirements/moderation/MODLOG.md",
+        "docs/requirements/moderation/MODERATION-ANALYTICS.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "moderation ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/admin/modlog/page.tsx",
+            "web/app/admin/moderation-analytics/page.tsx"
+          ],
+          "behaviorTests": [
+            "web/app/admin/modlog/page.mock.test.tsx",
+            "web/app/admin/moderation-analytics/page.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteDestinationSurfaces.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeModerationSurfaceViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ModerationPage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Moderation/ModerationViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "moderation-report-triage",
+      "title": "Moderation report triage actions",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/moderation/REPORTING.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "moderation ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/admin/reports-client.tsx"],
+          "behaviorTests": ["web/components/admin/reports-client.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/ModerationReportsSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/ModerationReportContractsTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ModerationReportsSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ModerationReportsViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ModerationReportsPage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/ModerationReportContractTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Moderation/ModerationReportsViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Moderation/ModerationReportsRemediationTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/ModerationReportsAccessTests.cs"
+          ],
+          "sourceAuditTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Moderation/ModerationReportsPageSourceTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "moderation-appeal-operations",
+      "title": "Moderation appeal operations",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/moderation/MODERATION-APPEALS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "moderation ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/appeals/appeal-row.tsx"],
+          "behaviorTests": [
+            "web/components/appeals/appeal-row.mock.test.tsx",
+            "web/lib/lifecycle-scenarios/runner.test.ts"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/ModerationAppealsSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/ModerationAppealsSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ModerationAppealsViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/LifecycleScenarioContractTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ModerationAppealsPage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Moderation/ModerationAppealsViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Lifecycle/LifecycleScenarioContractTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "moderation-dispute-operations",
+      "title": "Review dispute operations",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/moderation/REVIEW-DISPUTES.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "moderation ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/disputes/disputes-client.tsx"],
+          "behaviorTests": ["web/components/disputes/__tests__/disputes-client-flows.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/ReviewDisputesSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/ReviewDisputesSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ReviewDisputesViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ModerationDisputesPage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Moderation/ModerationDisputesViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/ModerationDisputesPageTests.cs"
+          ],
+          "sourceAuditTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/ModerationDisputesPageSourceTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "moderation-review-queue-actions",
+      "title": "Moderation review queue actions",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/moderation/POST-MODERATION.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "moderation ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(posts)/posts/review-queue/review-queue-client.tsx"],
+          "behaviorTests": ["web/app/(posts)/posts/review-queue/review-queue-client.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeReviewQueueSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeReviewQueueSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeReviewQueueViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeReviewQueueExposureTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeReviewQueueMediaSurfaceTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ReviewQueuePage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Moderation/ReviewQueueViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Moderation/ReviewQueueExposureViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Moderation/ReviewQueueMediaRowTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/ReviewQueuePageTests.cs"
+          ],
+          "sourceAuditTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/ReviewQueuePageSourceTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "moderation-integrity-actions",
+      "title": "Vote and report integrity actions",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/moderation/MODERATION-FLOWS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "moderation ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(vote-integrity)/vote-integrity/flags/vote-integrity-flag-actions.tsx",
+            "web/app/(report-integrity)/report-integrity/flags/report-integrity-flag-actions.tsx"
+          ],
+          "behaviorTests": [
+            "web/app/(vote-integrity)/vote-integrity/flags/__tests__/page.mock.test.tsx",
+            "web/app/(report-integrity)/report-integrity/flags/__tests__/report-integrity-flags-actions.mock.test.tsx",
+            "web/lib/lifecycle-scenarios/runner.test.ts"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/ReportIntegritySurface.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/VoteIntegritySurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/IntegritySurfacesTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ReportIntegrityViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/VoteIntegrityViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/LifecycleScenarioContractTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/ReportIntegrityPage.cs",
+            "dotnet-clients/src/Voucha.Client.App/Pages/VoteIntegrityPage.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.App.Tests/ModerationIntegrityPageTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/ModerationIntegrity/ReportIntegrityViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/ModerationIntegrity/VoteIntegrityViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Lifecycle/LifecycleScenarioContractTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "member-moderation-appeals",
+      "title": "Member moderation cases and appeal submission",
+      "domain": "Account",
+      "intents": [],
+      "requirements": ["docs/requirements/moderation/MODERATION-APPEALS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "member moderation / appeals"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/appeals/appeal-dialog.tsx",
+            "web/app/(my)/my/appeals/page.tsx"
+          ],
+          "behaviorTests": ["web/components/appeals/__tests__/appeal-dialog.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/MemberAppealsSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/MemberAppealsLoadingTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/MemberAppealsSubmissionTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/MemberAppealsSurfaceTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/MemberAppealsPage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Moderation/MemberAppealsViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/MemberAppealsPageTests.cs"
+          ],
+          "sourceAuditTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/MemberAppealsPageSourceTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "engineering-core",
+      "title": "Engineering queues, PostgreSQL, and Valkey operations",
+      "domain": "Staff",
+      "intents": ["engineering"],
+      "requirements": ["docs/requirements/platform/JOB-REPLAYABILITY.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "engineering ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/admin/postgresql/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeEngineeringQueuesSurface.swift"
+          ],
+          "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/EngineeringOpsSurfaceTests.swift"]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/EngineeringPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Engineering/EngineeringViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "landing-page-analytics",
+      "title": "Landing page analytics",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/admin/LANDING-PAGE-ANALYTICS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "landing page analytics (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/admin/landing-pages/[pageId]/analytics/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/LandingPages/LandingPageAnalyticsSection.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/LandingPagesAnalyticsViewTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/LandingPageAnalyticsPage.xaml"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/LandingPages/LandingPageAnalyticsViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "localization",
+      "title": "Localized client UI",
+      "domain": "Account",
+      "intents": ["settings"],
+      "requirements": ["docs/requirements/users/LOCALIZATION.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "native ui localization"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(my)/my/language/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET still contain untranslated or non-locale-aware UI.",
+        "trackingIssue": "https://github.com/jonathanong/filaments/issues/7892"
+      }
+    },
+    {
+      "id": "public-profile-social",
+      "title": "Public profile scoped routes and social actions",
+      "domain": "Social",
+      "intents": ["friends"],
+      "requirements": [
+        "docs/requirements/users/USER-PROFILE-TAB-MATRIX.md",
+        "docs/requirements/users/USER-RELATION-MATRIX.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "friends / social graph"
+        },
+        {
+          "table": "B",
+          "surface": "friends / social graph"
+        },
+        {
+          "table": "A",
+          "surface": "profile — view & edit"
+        },
+        {
+          "table": "A",
+          "surface": "relations — save / hide / follow / mute / block"
+        },
+        {
+          "table": "B",
+          "surface": "profile (own & others)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/users/user-profile-tabs.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeUserProfileSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeUserProfileScopeTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeUserProfileSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeUserProfileViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ProfilePage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Profiles/NativeUserProfileScopeTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Profiles/ProfileViewModelFollowTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Profiles/ProfileViewModelScopePaginationTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "friend-recommendations",
+      "title": "Friend recommendations",
+      "domain": "Social",
+      "intents": [],
+      "requirements": ["docs/requirements/users/USERS.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "friends / social graph"
+        },
+        {
+          "table": "B",
+          "surface": "friends / social graph"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/my/friend-recommendations-list.tsx"],
+          "behaviorTests": ["web/components/my/__tests__/friend-recommendations-list.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Friends/FriendRecommendationsView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/FriendRecommendationsViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/FriendRecommendationsPage.xaml"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Friends/FriendRecommendationsViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "notification-settings",
+      "title": "Notification settings route and focus behavior",
+      "domain": "Communication",
+      "intents": [],
+      "requirements": ["docs/requirements/navigation/NOTIFICATIONS.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "notification preferences route"
+        },
+        {
+          "table": "B",
+          "surface": "settings"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(my)/my/notification-settings/page.tsx",
+            "web/components/my/notification-settings-form.tsx",
+            "web/components/notifications/notifications-header.tsx"
+          ],
+          "behaviorTests": ["web/components/my/__tests__/notification-settings-form.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+Notifications.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NotificationsList/NotificationsListView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeRouteDestinationViewRoutingTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/SettingsNotificationTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "partial",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/SettingsPage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/NotificationsPage.xaml"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/NativeDeepLinkResolverTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/NativeRouteCatalogTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/NavigationCatalogTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Settings/SettingsViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/NotificationPreferencesViewTests.cs"
+          ]
+        }
+      },
+      "gap": {
+        "summary": "Web and Swift cover the complete interaction and accessibility contract. .NET has equivalent Core and realized-control evidence, but its non-skipping Mac Catalyst app-shell run remains tracked by #8625.",
+        "trackingIssue": "https://github.com/jonathanong/filaments/issues/8600"
+      }
+    },
+    {
+      "id": "payment-cards",
+      "title": "Payment card management",
+      "domain": "Account",
+      "intents": [],
+      "requirements": ["docs/requirements/users/USER_SETTINGS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "settings"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/my/cards-manager.tsx"],
+          "behaviorTests": [
+            "web/app/(my)/my/cards/page.mock.test.tsx",
+            "web/components/my/__tests__/cards-manager-pagination.mock.test.tsx"
+          ],
+          "apiEvidence": ["web/lib/api/client/my.ts"],
+          "routeEvidence": ["web/app/(my)/my/cards/page.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/PaymentCards/PaymentCardsSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/PaymentCardsRouteAndSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/PaymentCardsViewModelTests.swift"
+          ],
+          "apiEvidence": [
+            "swift-clients/core/Sources/VouchaAPI/Endpoint+PaymentCards.swift",
+            "swift-clients/core/Sources/VouchaModels/PaymentCard.swift"
+          ],
+          "routeEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeRoutes/NativeRouteCatalogAccount.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/PaymentCardsPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/PaymentCardsRouteTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/PaymentCards/PaymentCardsViewModelTests.cs"
+          ],
+          "apiEvidence": [
+            "dotnet-clients/src/Voucha.Client.Core/Api/VouchaApiClient.PaymentCards.cs",
+            "dotnet-clients/src/Voucha.Client.Core/PaymentCards/PaymentCard.cs"
+          ],
+          "routeEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/AppShell.PaymentCardsRoute.cs",
+            "dotnet-clients/src/Voucha.Client.Core/Navigation/NativeDeepLinkResolver.Mappings.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "household",
+      "title": "Household management",
+      "domain": "Account",
+      "intents": [],
+      "requirements": ["docs/requirements/users/USER_SETTINGS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "settings"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/my/household-manager.tsx"],
+          "behaviorTests": [
+            "web/app/(my)/my/household/page.mock.test.tsx",
+            "web/components/my/__tests__/household-manager.mock.test.tsx",
+            "web/components/my/__tests__/household-manager-rollback.mock.test.tsx",
+            "web/components/my/__tests__/household-manager-races.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Households/HouseholdSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/HouseholdRouteTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/HouseholdSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/HouseholdViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/HouseholdViewModelRaceTests.swift"
+          ],
+          "sourceAuditTests": [
+            "swift-clients/ui/Tests/VouchaUITests/HouseholdRouteSourceTests.swift"
+          ],
+          "apiEvidence": [
+            "swift-clients/core/Tests/VouchaCoreTests/HouseholdEndpointAndModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/HouseholdPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Households/HouseholdViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Households/HouseholdViewModelRaceTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Households/HouseholdSectionStateTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/HouseholdRouteTests.cs"
+          ],
+          "sourceAuditTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/HouseholdRouteSourceTests.cs"
+          ],
+          "apiEvidence": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Households/HouseholdApiTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "spending-categories",
+      "title": "Spending category management",
+      "domain": "Topics",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/content/TOPICS.md",
+        "docs/requirements/users/USER_SETTINGS.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "topics"
+        },
+        {
+          "table": "B",
+          "surface": "settings"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(my)/my/spending-categories/page.tsx",
+            "web/components/my/spending-categories-manager.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/my/__tests__/spending-categories-manager.mock.test.tsx",
+            "web/components/my/__tests__/spending-categories-manager.part-2.mock.test.tsx",
+            "web/components/my/__tests__/spending-categories-manager.part-3.mock.test.tsx",
+            "web/components/my/__tests__/spending-categories-manager.part-4.mock.test.tsx",
+            "web/components/my/__tests__/spending-categories-manager.part-5.mock.test.tsx",
+            "web/components/my/__tests__/spending-categories-pagination.test.ts"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/SpendingCategories/SpendingCategoriesSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/SpendingCategoryEndpointAndModelTests.swift",
+            "swift-clients/core/Tests/VouchaCoreTests/ApiFixtureCoverage.SpendingCategories.swift",
+            "swift-clients/core/Tests/VouchaCoreTests/EndpointManifestCoverage.SpendingCategories.swift",
+            "swift-clients/ui/Tests/VouchaUITests/SpendingCategoriesRouteAndSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/SpendingCategoriesViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/SpendingCategoriesPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/SpendingCategories/SpendingCategoryApiAndDraftTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/SpendingCategories/SpendingCategoriesViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/SpendingCategoriesPageTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/SpendingCategoriesRouteTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/ApiFixtureCoverageTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "reward-status-management",
+      "title": "Reward status management",
+      "domain": "Topics",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/content/TOPICS.md",
+        "docs/requirements/users/USER_SETTINGS.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "topics"
+        },
+        {
+          "table": "B",
+          "surface": "settings"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(my)/my/rewards-program-statuses/page.tsx",
+            "web/components/my/rewards-program-statuses-manager.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/my/__tests__/rewards-program-statuses-manager.mock.test.tsx",
+            "web/components/my/__tests__/rewards-program-statuses-manager.part-2.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/RewardsProgramStatuses/RewardsProgramStatusesSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/RewardsProgramStatusesRenderedInteractionTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/RewardsProgramStatusesViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/RewardsProgramStatusesRouteAndSurfaceTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/RewardsProgramStatusesPage.xaml"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/RewardsProgramStatuses/RewardsProgramStatusesViewModelLoadingTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/RewardsProgramStatuses/RewardsProgramStatusesViewModelMutationTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/RewardsProgramStatusesPageTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/RewardsProgramStatusesRouteTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "point-valuation-management",
+      "title": "Point valuation management",
+      "domain": "Topics",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/content/TOPICS.md",
+        "docs/requirements/users/USER_SETTINGS.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "topics"
+        },
+        {
+          "table": "B",
+          "surface": "settings"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(my)/my/rewards-program-point-valuations/page.tsx",
+            "web/components/my/point-valuations-manager.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/my/__tests__/point-valuations-manager.mock.test.tsx",
+            "web/components/my/__tests__/point-valuations-manager.part-2.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/PointValuations/PointValuationsSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/PointValuationEndpointAndModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/PointValuationDraftTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/PointValuationsRouteAndSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/PointValuationsViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/PointValuationsPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.App.Tests/PointValuationsPageTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/PointValuationsRouteTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/PointValuations/PointValuationApiAndDraftTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/PointValuations/PointValuationsViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "bookmark-item-actions",
+      "title": "Saved collection item actions",
+      "domain": "Library",
+      "intents": [],
+      "requirements": ["docs/requirements/content/BOOKMARKS-CATALOG.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "tags & bookmarks"
+        },
+        {
+          "table": "B",
+          "surface": "saved / bookmarks"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/users/user-rss-feed-item-list.tsx",
+            "web/components/users/relation-management-action.tsx"
+          ],
+          "behaviorTests": [
+            "web/lib/lifecycle-scenarios/runner.test.ts",
+            "web/components/users/__tests__/user-post-relation-list.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeBookmarkRowsSurface.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeFocusedRssFeedItemSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeBookmarkCollectionActionTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeFocusedRssFeedItemTests.swift"
+          ],
+          "apiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteSurfaceViewModelLoadingBookmarkCollections.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/BookmarkCollectionPage.cs",
+            "dotnet-clients/src/Voucha.Client.App/Pages/RssFeedItemDetailPage.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Bookmarks/BookmarkCollectionActionTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/NewsFeeds/RssFeedItemDetailViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "topic-import-export",
+      "title": "Topic import/export",
+      "domain": "Topics",
+      "intents": ["topics"],
+      "requirements": ["docs/requirements/content/TOPICS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "topics"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(my)/my/topics/import-export/page.tsx",
+            "web/components/my/import-export/import-export-manager.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/my/import-export/__tests__/import-export-manager.mock.test.tsx",
+            "web/components/my/import-export/__tests__/import-export-manager-file.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/ImportExport/ImportExportView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/ImportExportViewTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ImportExportTopicRetryViewTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ImportExportConcurrencyTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeImportExportFilesTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ImportExportPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/ImportExport/ImportExportViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/ImportExportApiTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/ImportExport/ImportExportFileAdapterTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/ImportExportRouteTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rss-source-import-export",
+      "title": "RSS source import/export",
+      "domain": "Sources",
+      "intents": [],
+      "requirements": ["docs/requirements/content/SOURCES-DOMAINS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "sources / rss feed directory"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(my)/my/sources/import-export/page.tsx",
+            "web/components/my/import-export/import-export-manager.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/my/import-export/__tests__/import-export-manager.mock.test.tsx",
+            "web/components/my/import-export/__tests__/import-export-manager-file.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/ImportExport/ImportExportView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/ImportExportViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ImportExportViewTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ImportExportConcurrencyTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ImportExportFileSelectionRaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/ImportExportSourceExportAcceptanceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeImportExportFilesTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ImportExportPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/ImportExport/ImportExportViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/ImportExportApiTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/ImportExport/ImportExportFileAdapterTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/ImportExportRouteTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "landing-page-candidate-picker",
+      "title": "Landing-page candidate picker",
+      "domain": "Landing pages",
+      "intents": ["landing-pages"],
+      "requirements": ["docs/requirements/users/LANDING-PAGES.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "user landing pages / link management"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/my/landing-pages-manager/item-picker.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/LandingPages/LandingPageContentSection.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/LandingPagePickerOptionsTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/LandingPagePickerViewTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/LandingPagesDraftRefreshTests.swift"
+          ],
+          "apiEvidence": ["swift-clients/core/Sources/VouchaAPI/Endpoint+LandingPages.swift"]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/LandingPagesPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.App.Tests/LandingPagesPageTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/LandingPages/LandingPagesDraftMergeTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/LandingPages/LandingPagesPickerTests.cs"
+          ],
+          "apiEvidence": [
+            "dotnet-clients/src/Voucha.Client.Core/LandingPages/ApiLandingPagesService.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "domain-url-reporting",
+      "title": "Domain and URL reporting",
+      "domain": "Topics",
+      "intents": [],
+      "requirements": ["docs/requirements/moderation/REPORTING.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "domains / hostnames / urls"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/shared/report-dialog.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeDetailSurface.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeDetailSurface+ReportNote.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeDetailSurface+Reporting.swift"
+          ],
+          "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/NativeDetailReportingTests.swift"]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/OmnisearchPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Search/OmnisearchViewModelReportingTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "embed-only-media",
+      "title": "YouTube/Vimeo embed-only video playback",
+      "domain": "Media",
+      "intents": ["videos"],
+      "requirements": ["docs/requirements/content/PODCASTS.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "media playback — podcast & video player"
+        },
+        {
+          "table": "B",
+          "surface": "videos"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/feed/video-embed.tsx"],
+          "behaviorTests": ["web/components/feed/__tests__/video-embed.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Native clients still display supported YouTube and Vimeo embed-only videos as unavailable on main. The approved provider-only WebView implementation is tracked in the client repository; Open source remains separate.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/57"
+      }
+    },
+    {
+      "id": "fediverse-provider-filters",
+      "title": "Fediverse provider filters",
+      "domain": "Discovery",
+      "intents": ["fediverse"],
+      "requirements": ["docs/requirements/content/FEDIVERSE.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "fediverse"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(fediverse)/fediverse/page.tsx"],
+          "behaviorTests": ["web/app/(fediverse)/fediverse/page.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeSearchSurface.swift"
+          ],
+          "apiEvidence": ["swift-clients/core/Sources/VouchaAPI/Endpoint+UserFacing.swift"],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/FediverseNativeSurfaceTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/OmnisearchPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Search/OmnisearchViewModelFediverseTests.cs"
+          ],
+          "apiEvidence": [
+            "dotnet-clients/src/Voucha.Client.Core/Api/VouchaApiEndpoints.UserFacing.cs",
+            "dotnet-clients/src/Voucha.Client.Core/Api/VouchaApiClient.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "fediverse-instance-discovery",
+      "title": "Fediverse instance discovery and detail",
+      "domain": "Discovery",
+      "intents": ["fediverse"],
+      "requirements": [
+        "docs/requirements/content/FEDIVERSE.md",
+        "docs/requirements/anatomy/fediverse-instance.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "fediverse"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(topics)/instances/page.tsx",
+            "web/app/(topics)/instance/[id]/layout.tsx",
+            "web/components/topics/topic-card-fediverse-row.tsx"
+          ],
+          "behaviorTests": ["web/components/topics/__tests__/topic-card.part-4.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteDestinationSurfaces.swift"
+          ],
+          "routeEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteDestinationFediverseMetadata.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/FediverseNativeSurfaceTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/FediverseInstancesPage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/FediverseInstanceDetailPage.xaml"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Fediverse/FediverseInstanceViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "billing",
+      "title": "Store billing and subscription management",
+      "domain": "Memberships",
+      "intents": [],
+      "requirements": ["docs/requirements/users/memberships.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "plans / memberships / billing"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/memberships/checkout-button.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "present",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+Membership.swift"
+          ],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "present",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/SettingsPage.xaml"],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Native clients present plan status but lack store billing and management.",
+        "trackingIssue": "https://github.com/jonathanong/filaments/issues/6582",
+        "relatedIssues": ["https://github.com/jonathanong/filaments/issues/6742"]
+      }
+    },
+    {
+      "id": "staff-support",
+      "title": "Staff support console",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/admin/CUSTOMER-SUPPORT.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "chat / support"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(support-admin)/support/admin-support-threads-client.tsx"],
+          "behaviorTests": [
+            "web/app/(support-admin)/support/__tests__/admin-support-threads-client.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/StaffSupportSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/StaffSupportEndpointTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/StaffSupportSurfaceTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/StaffSupportThreadsPage.cs",
+            "dotnet-clients/src/Voucha.Client.App/Pages/StaffSupportContactsPage.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/StaffSupportEndpointTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/CrmRouteDispatchTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "membership-grants",
+      "title": "Membership grants",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/users/memberships.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "plans / memberships / billing"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(memberships)/memberships/grants/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/MembershipGrantSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/MembershipGrantViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeRouteDestinationViewRoutingTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/AppSectionCatalogTests.swift",
+            "swift-clients/core/Tests/VouchaCoreTests/ApiFixtureEndpointCoverageTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/MembershipGrantPage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/MembershipAdministration/MembershipGrantViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/VouchaApiClientMembershipAdministrationTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/NativeDeepLinkResolverMembershipGrantTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/MembershipGrantPageTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "engineering-agents",
+      "title": "Agent directory and conversation browsing",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/ADMIN-NAVIGATION-MATRIX.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "engineering ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/agents/agent-list-page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeEngineeringAgentsSurface.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeEngineeringAgentDetailSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeEngineeringAgentsSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeRouteSurfaceViewModelAgentSupportTests.swift"
+          ],
+          "apiEvidence": [
+            "swift-clients/core/Sources/VouchaAPI/Endpoint+EngineeringAgents.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteSurfaceViewModelLoadingAgents.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteSurfaceViewModelLoadingAgentMessages.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/AgentListsPage.cs",
+            "dotnet-clients/src/Voucha.Client.App/Pages/AgentConversationPage.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.App.Tests/AgentPagesTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Engineering/AgentListsViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Engineering/AgentConversationViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/EngineeringAgentsAccessTests.cs"
+          ],
+          "apiEvidence": [
+            "dotnet-clients/src/Voucha.Client.Core/Api/VouchaApiEndpoints.Engineering.cs",
+            "dotnet-clients/src/Voucha.Client.Core/Engineering/ApiAgentConversationsService.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "ai-costs",
+      "title": "AI cost operations",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/ADMIN-NAVIGATION-MATRIX.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "engineering ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/admin/ai-costs/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeAiCostsSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/AiCostTotalsTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeAiCostsViewModelTests.swift"
+          ],
+          "apiEvidence": ["swift-clients/core/Sources/VouchaAPI/Endpoint+AiCosts.swift"]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/AiCostsPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Engineering/AiCostsViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/ApiFixtureCoverage.Endpoints.AiCosts.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/AiCostsPageTests.cs"
+          ],
+          "apiEvidence": ["dotnet-clients/src/Voucha.Client.Core/Api/VouchaApiEndpoints.AiCosts.cs"]
+        }
+      }
+    },
+    {
+      "id": "dynamic-config-administration",
+      "title": "Dynamic configuration administration",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/ADMIN-NAVIGATION-MATRIX.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "dynamic config (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/admin/dynamic-config/namespace-panel.tsx"],
+          "behaviorTests": ["web/app/admin/dynamic-config/namespace-panel.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeDynamicConfigSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeDynamicConfigSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/DynamicConfigViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/DynamicConfigPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.App.Tests/DynamicConfigPageTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Engineering/DynamicConfigViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "local-feature-flag-overrides",
+      "title": "Local feature flag overrides",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/ADMIN-NAVIGATION-MATRIX.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "dynamic config (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/admin/dynamic-config/field-row.tsx",
+            "web/app/admin/dynamic-config/namespace-panel.tsx"
+          ],
+          "behaviorTests": ["web/app/admin/dynamic-config/namespace-panel.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": ["swift-clients/apps/shared-app/SectionDetailView+Content.swift"],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/DynamicConfigViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/EngineeringPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/FeatureFlags/FeatureFlagStateTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "topic-browsing",
+      "title": "Topic browse and detail",
+      "domain": "Topics",
+      "intents": [],
+      "requirements": ["docs/requirements/content/TOPICS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "topics"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(topics)/topics/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeTopicManagementSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeRouteSurfaceViewModelDiscoveryTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/TopicsPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Topics/TopicsViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "source-browsing",
+      "title": "Source directory browse and relations",
+      "domain": "Sources",
+      "intents": [],
+      "requirements": ["docs/requirements/content/SOURCES-DOMAINS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "sources / rss feed directory"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(topics)/sources/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": ["swift-clients/ui/Sources/VouchaFeatures/Sources/SourcesListView.swift"],
+          "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/SourcesListViewModelTests.swift"]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/NewsFeedsPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/NewsFeeds/NewsFeedsViewModelSourceFeedTypeTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "domain-url-browsing",
+      "title": "Domain and URL browse and relations",
+      "domain": "Topics",
+      "intents": [],
+      "requirements": ["docs/requirements/content/SOURCES-DOMAINS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "domains / hostnames / urls"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(topics)/domains/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeDetailSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeRouteEntitySurfaceViewModelTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/OmnisearchPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Search/OmnisearchViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Search/OmnisearchViewModelHostnameActionTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "direct-media-playback",
+      "title": "Direct podcast and video playback",
+      "domain": "Media",
+      "intents": ["news", "podcasts"],
+      "requirements": ["docs/requirements/content/PODCASTS.md"],
+      "matrixRows": [
+        {
+          "table": "A",
+          "surface": "media playback — podcast & video player"
+        },
+        {
+          "table": "B",
+          "surface": "news / rss feed items"
+        },
+        {
+          "table": "B",
+          "surface": "podcasts"
+        },
+        {
+          "table": "B",
+          "surface": "videos"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/feed/podcast-episode-player.tsx"],
+          "behaviorTests": ["web/components/feed/__tests__/podcast-episode-player.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/PodcastPlayback/PodcastMiniPlayerView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/PodcastPlaybackControllerTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/MediaPlaybackPage.xaml"],
+          "behaviorTests": [],
+          "sourceAuditTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/NewsFeeds/MediaPlaybackPageSourceTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "landing-page-management",
+      "title": "Landing page management",
+      "domain": "Landing pages",
+      "intents": [],
+      "requirements": ["docs/requirements/users/LANDING-PAGES.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "user landing pages / link management"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(my)/my/landing-pages/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/LandingPages/LandingPagesView.swift"
+          ],
+          "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/LandingPagesViewModelTests.swift"]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/LandingPagesPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/LandingPages/LandingPagesViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "fediverse-results",
+      "title": "Fediverse result browsing",
+      "domain": "Discovery",
+      "intents": [],
+      "requirements": ["docs/requirements/content/FEDIVERSE.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "fediverse"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(fediverse)/fediverse/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteDestinationView.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeRouteSurfaceViewModelDiscoveryTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/OmnisearchPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Search/OmnisearchViewModelFediverseTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "settings-core",
+      "title": "Core account settings",
+      "domain": "Account",
+      "intents": [],
+      "requirements": ["docs/requirements/users/USER_SETTINGS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "settings"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/app/(my)/my/preferences/page.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": ["swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface.swift"],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/SettingsViewModelActionCoverageTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/SettingsPage.xaml"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Settings/SettingsViewModelTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "hn-discussions",
+      "title": "Hacker News discussion asides",
+      "domain": "Content",
+      "intents": [],
+      "requirements": ["docs/requirements/users/PREFERENCES.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "settings"
+        },
+        {
+          "table": "B",
+          "surface": "news / rss feed items"
+        },
+        {
+          "table": "B",
+          "surface": "posts / discussions / articles"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/my/preferences-form.tsx",
+            "web/components/asides/hn-discussions-aside.tsx",
+            "web/components/rss-feed-items/rss-feed-item-modal.tsx"
+          ],
+          "behaviorTests": [
+            "web/lib/hn-discussions/__tests__/search.test.ts",
+            "web/components/asides/hn-discussions-aside.mock.test.tsx",
+            "web/components/my/__tests__/preferences-form.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+Sections.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeCommentThreadSurface.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeFocusedRssFeedItemSurface.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/HnDiscussionsClientTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/SettingsPage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/PostDetailPage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Pages/RssFeedItemDetailPage.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/HnDiscussions/HnDiscussionsClientTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "user-search-admin-navigation",
+      "title": "User search (staff)",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/users/USERS.md", "docs/requirements/reference-users.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "user search (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/users/user-search-list-item-content.tsx"],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteDestinationSurfaces.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/NativeUsersBrowseAdminNavigationTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/NativeListSurfaceNavigationTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/UsersBrowsePage.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Users/UsersBrowseViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Users/UsersBrowseAdminTargetTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/UsersBrowsePageTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "admin-identity-verification-retry",
+      "title": "Administrator identity-verification retry",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/users/USERS.md", "docs/requirements/reference-users.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "user administration (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(user)/user/[idOrUsername]/admin/identity-verification-attempt-grant.tsx"
+          ],
+          "behaviorTests": []
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/IdentityVerificationAttemptGrantSurface.swift"
+          ],
+          "apiEvidence": [
+            "swift-clients/core/Sources/VouchaAPI/Endpoint+IdentityVerificationAdministration.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/IdentityVerificationGrantViewModelTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/IdentityVerificationAttemptGrantSurfaceTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/IdentityVerificationAttemptGrantRoutePresentationTests.swift",
+            "swift-clients/core/Tests/VouchaCoreTests/IdentityVerificationAdministrationEndpointTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/IdentityVerificationAttemptGrantPage.cs"
+          ],
+          "apiEvidence": [
+            "dotnet-clients/src/Voucha.Client.Core/Api/VouchaApiClient.IdentityVerificationAdministration.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/IdentityVerificationAdministration/IdentityVerificationAttemptGrantViewModelTests.cs",
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/NativeDeepLinkResolverUserAdminTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/IdentityVerificationAttemptGrantPageTests.cs"
+          ]
+        }
+      }
+    },
+    {
+      "id": "bluesky-account-linking",
+      "title": "Bluesky account linking",
+      "domain": "Account",
+      "intents": [],
+      "requirements": ["docs/requirements/users/USER_SETTINGS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "settings"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(my)/my/identity/page.tsx",
+            "web/components/my/bluesky-connection.tsx"
+          ],
+          "behaviorTests": ["web/components/my/__tests__/bluesky-connection.mock.test.tsx"]
+        },
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+Bluesky.swift"
+          ],
+          "apiEvidence": [
+            "swift-clients/core/Sources/VouchaAPI/Endpoint+SettingsManagement.swift",
+            "swift-clients/core/Sources/VouchaModels/PrivateUser.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/core/Tests/VouchaCoreTests/NativeBlueskyLinkStoreTests.swift",
+            "swift-clients/ui/Tests/VouchaUITests/SettingsViewModelBlueskyTests.swift"
+          ]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/SettingsPage.xaml"],
+          "apiEvidence": ["dotnet-clients/src/Voucha.Client.Core/Api/VouchaApiClient.Fediverse.cs"],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Fediverse/NativeBlueskyLinkCoordinatorTests.cs"
+          ]
+        }
+      }
+    }
+  ]
+}

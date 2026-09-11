@@ -1,0 +1,73 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "crawl",
+      "completed_at": "2026-01-02T00:01:00Z",
+      "crawler_id": "crawler-1",
+      "created_at": "2026-01-02T00:00:00Z",
+      "embed_metadata": {
+        "author": {
+          "name": "Fixture author",
+          "url": "https://www.youtube.com/@fixture-author"
+        },
+        "description": "A complete normalized video fixture",
+        "kind": "player",
+        "player": {
+          "height": 360,
+          "url": "https://www.youtube-nocookie.com/embed/video-123",
+          "width": 640
+        },
+        "provider": {
+          "key": "youtube",
+          "name": "YouTube",
+          "resourceId": "video-123",
+          "url": "https://www.youtube.com"
+        },
+        "requestedUrl": "https://www.youtube.com/watch?v=video-123",
+        "resolvedUrl": "https://www.youtube.com/watch?v=video-123",
+        "thumbnail": {
+          "height": 360,
+          "url": "https://i.ytimg.com/vi/video-123/hqdefault.jpg",
+          "width": 480
+        },
+        "title": "Native embed fixture"
+      },
+      "embed_oembed_resolved_at": "2026-01-02T00:01:00Z",
+      "embed_oembed_url": "https://www.youtube.com/oembed?url=video-123",
+      "embeddings_generated_at": null,
+      "etag": null,
+      "has_pending_embeddings": false,
+      "html_sha256": null,
+      "html_snapshot_uploaded_at": null,
+      "id": "crawl-1",
+      "lang": "en",
+      "last_modified_at": null,
+      "links": {},
+      "markdown": "# Native client guide\n\nFixture content for native URL details.",
+      "meta_tags": {
+        "description": "Native client guide",
+        "nested": {
+          "locales": [
+            "en_US",
+            {
+              "primary": true
+            }
+          ]
+        },
+        "og:title": "Native embed fixture"
+      },
+      "network_error": null,
+      "redirect_url_id": null,
+      "request_headers": {},
+      "response_headers": {},
+      "response_status_code": 200,
+      "title": "Native client guide",
+      "url_id": "url-1"
+    }
+  ]
+}

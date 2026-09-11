@@ -1,0 +1,131 @@
+export const nativeRouteMainEntitiesEnEsMessages = {
+  en: {
+    mainTopicsBrowseTopicsTitle: 'Topics',
+    mainTopicsBrowseTopicsDescription:
+      'Browse topics, cards, rewards programs, and spending categories',
+    mainTopicsBrowseFollowStateTitle: 'Follow state',
+    mainTopicsBrowseFollowStateDescription: 'Follow or mute topic surfaces',
+    mainTopicDetailTopicDetailTitle: 'Topic detail',
+    mainTopicDetailTopicDetailDescription:
+      'Open topic overview, posts, sources, and related entities',
+    mainTopicDetailRecommendationsTitle: 'Recommendations',
+    mainTopicDetailRecommendationsDescription: 'Manage topic recommendation context',
+    mainTopicManagementTopicSettingsTitle: 'Topic settings',
+    mainTopicManagementTopicSettingsDescription: 'Create and edit admin-managed topic settings',
+    mainTopicManagementImagesTitle: 'Images',
+    mainTopicManagementImagesDescription: 'Manage topic logo and hero images',
+    mainSourcesBrowseSourcesTitle: 'Sources',
+    mainSourcesBrowseSourcesDescription: 'Browse news, podcast, channel, and video sources',
+    mainSourcesBrowseImportExportTitle: 'Import/export',
+    mainSourcesBrowseImportExportDescription: 'Manage source import and export workflows',
+    mainSourceDetailSourceDetailTitle: 'Source detail',
+    mainSourceDetailSourceDetailDescription: 'Open source profile and recent items',
+    mainSourceDetailSubscriptionControlsTitle: 'Subscription controls',
+    mainSourceDetailSubscriptionControlsDescription:
+      'Follow, mute, and subscribe to source updates',
+    mainDomainsBrowseDomainsTitle: 'Domains',
+    mainDomainsBrowseDomainsDescription: 'Browse hostname trust votes and URL collections',
+    mainDomainsBrowseSavedDomainsTitle: 'Saved domains',
+    mainDomainsBrowseSavedDomainsDescription: 'Open hostname mute and block collections',
+    mainDomainDetailDomainDetailTitle: 'Domain detail',
+    mainDomainDetailDomainDetailDescription:
+      'Open hostname trust, mute, block, and report surfaces',
+    mainDomainDetailCompareTitle: 'Compare',
+    mainDomainDetailCompareDescription: 'Compare this hostname with related entities',
+    mainUrlsBrowseUrlsTitle: 'URLs',
+    mainUrlsBrowseUrlsDescription: 'Browse signed-in URLs and crawlable links',
+    mainUrlsBrowseUrlFiltersTitle: 'URL filters',
+    mainUrlsBrowseUrlFiltersDescription: 'Filter saved, viewed, or hidden URLs',
+    mainUrlDetailUrlDetailTitle: 'URL detail',
+    mainUrlDetailUrlDetailDescription: 'Open URL status, crawl history, and latest crawl',
+    mainUrlDetailSavedStateTitle: 'Saved state',
+    mainUrlDetailSavedStateDescription: 'Save, hide, or review this URL',
+    mainUsersBrowseUsersTitle: 'Users',
+    mainUsersBrowseUsersDescription: 'Browse users and friend recommendations',
+    mainUsersBrowseRelationshipsTitle: 'Relationships',
+    mainUsersBrowseRelationshipsDescription: 'Open following, followers, muted, and blocked users',
+    mainUserProfileUserProfileTitle: 'User profile',
+    mainUserProfileUserProfileDescription: 'Open user profile, posts, feeds, and landing pages',
+    mainUserProfilePublicLinksTitle: 'Public links',
+    mainUserProfilePublicLinksDescription: 'Open native landing-page links',
+    mainCommunitiesBrowseCommunitiesTitle: 'Communities',
+    mainCommunitiesBrowseCommunitiesDescription: 'Browse community directory and your communities',
+    mainCommunitiesBrowseMembershipsTitle: 'Memberships',
+    mainCommunitiesBrowseMembershipsDescription: 'Open membership and join surfaces',
+    mainCommunityDetailCommunityDetailTitle: 'Community detail',
+    mainCommunityDetailCommunityDetailDescription:
+      'Open community overview, posts, sources, and members',
+    mainCommunityDetailCommunityFeedsTitle: 'Community feeds',
+    mainCommunityDetailCommunityFeedsDescription:
+      'Browse native community news, podcast, and video routes',
+  },
+  es: {
+    mainTopicsBrowseTopicsTitle: 'Temas',
+    mainTopicsBrowseTopicsDescription:
+      'Explore temas, tarjetas, programas de recompensas y categorías de gastos',
+    mainTopicsBrowseFollowStateTitle: 'Seguir estado',
+    mainTopicsBrowseFollowStateDescription: 'Seguir o silenciar superficies de temas',
+    mainTopicDetailTopicDetailTitle: 'Detalle del tema',
+    mainTopicDetailTopicDetailDescription:
+      'Descripción general del tema abierto, publicaciones, fuentes y entidades relacionadas',
+    mainTopicDetailRecommendationsTitle: 'Recomendaciones',
+    mainTopicDetailRecommendationsDescription: 'Administrar el contexto de recomendación de temas',
+    mainTopicManagementTopicSettingsTitle: 'Configuración del tema',
+    mainTopicManagementTopicSettingsDescription:
+      'Crear y editar configuraciones de temas administrados por el administrador',
+    mainTopicManagementImagesTitle: 'Imágenes',
+    mainTopicManagementImagesDescription:
+      'Administrar el logotipo del tema y las imágenes destacadas',
+    mainSourcesBrowseSourcesTitle: 'Fuentes',
+    mainSourcesBrowseSourcesDescription: 'Explore fuentes de noticias, podcasts, canales y videos',
+    mainSourcesBrowseImportExportTitle: 'Importar/exportar',
+    mainSourcesBrowseImportExportDescription:
+      'Administrar flujos de trabajo de importación y exportación de fuentes',
+    mainSourceDetailSourceDetailTitle: 'Detalle de la fuente',
+    mainSourceDetailSourceDetailDescription: 'Perfil de código abierto y elementos recientes',
+    mainSourceDetailSubscriptionControlsTitle: 'Controles de suscripción',
+    mainSourceDetailSubscriptionControlsDescription:
+      'Siga, silencie y suscríbase a las actualizaciones de fuentes',
+    mainDomainsBrowseDomainsTitle: 'Dominios',
+    mainDomainsBrowseDomainsDescription:
+      'Explorar votos de confianza de nombres de host y colecciones de URL',
+    mainDomainsBrowseSavedDomainsTitle: 'Dominios guardados',
+    mainDomainsBrowseSavedDomainsDescription:
+      'Abrir nombres de host silenciar y bloquear colecciones',
+    mainDomainDetailDomainDetailTitle: 'Detalle del dominio',
+    mainDomainDetailDomainDetailDescription:
+      'Abrir superficies de confianza, silenciar, bloquear e informar de nombres de host',
+    mainDomainDetailCompareTitle: 'Comparar',
+    mainDomainDetailCompareDescription: 'Compare este nombre de host con entidades relacionadas',
+    mainUrlsBrowseUrlsTitle: 'URL',
+    mainUrlsBrowseUrlsDescription: 'Explorar URL registradas y enlaces rastreables',
+    mainUrlsBrowseUrlFiltersTitle: 'Filtros de URL',
+    mainUrlsBrowseUrlFiltersDescription: 'Filtrar URL guardadas, vistas u ocultas',
+    mainUrlDetailUrlDetailTitle: 'Detalle de URL',
+    mainUrlDetailUrlDetailDescription:
+      'Abrir estado de URL, historial de rastreo y rastreo más reciente',
+    mainUrlDetailSavedStateTitle: 'Estado guardado',
+    mainUrlDetailSavedStateDescription: 'Guarde, oculte o revise esta URL',
+    mainUsersBrowseUsersTitle: 'Usuarios',
+    mainUsersBrowseUsersDescription: 'Explorar recomendaciones de usuarios y amigos',
+    mainUsersBrowseRelationshipsTitle: 'Relaciones',
+    mainUsersBrowseRelationshipsDescription:
+      'Abrir seguidores, seguidores, usuarios silenciados y bloqueados',
+    mainUserProfileUserProfileTitle: 'Perfil de usuario',
+    mainUserProfileUserProfileDescription:
+      'Abrir perfil de usuario, publicaciones, feeds y páginas de destino',
+    mainUserProfilePublicLinksTitle: 'Enlaces públicos',
+    mainUserProfilePublicLinksDescription: 'Abrir enlaces de páginas de destino nativas',
+    mainCommunitiesBrowseCommunitiesTitle: 'Comunidades',
+    mainCommunitiesBrowseCommunitiesDescription:
+      'Explorar el directorio de la comunidad y sus comunidades',
+    mainCommunitiesBrowseMembershipsTitle: 'Membresías',
+    mainCommunitiesBrowseMembershipsDescription: 'Abrir membresía y unirse a superficies',
+    mainCommunityDetailCommunityDetailTitle: 'Detalle de la comunidad',
+    mainCommunityDetailCommunityDetailDescription:
+      'Descripción general, publicaciones, fuentes y miembros de la comunidad abierta',
+    mainCommunityDetailCommunityFeedsTitle: 'Feeds de la comunidad',
+    mainCommunityDetailCommunityFeedsDescription:
+      'Explorar noticias, podcasts y rutas de vídeo de la comunidad nativa',
+  },
+} as const

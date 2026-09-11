@@ -1,0 +1,26 @@
+{
+  "name": "@ts-shared/user-profile-collections",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Canonical user profile relation collection catalog shared by backend, web, and route classification.",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@ts-shared/ui-messages": "workspace:^"
+  }
+}

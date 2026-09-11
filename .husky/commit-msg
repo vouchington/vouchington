@@ -1,0 +1,14 @@
+#!/bin/sh
+[ "${GITHUB_ACTIONS:-}" = "true" ] && exit 0
+set -e
+
+pnpm exec commitlint --edit "$1"
+
+cat <<'EOF'
+
+Before pushing, run only these cheap commands. GitHub Actions is the full gate.
+  pnpm exec oxlint --deny-warnings --type-aware <changed TS/MTS files>
+  pnpm exec vitest run <directly changed test files> --bail=3
+  git diff --name-only origin/main...HEAD
+  pnpm exec oxfmt --check <changed supported files>
+EOF

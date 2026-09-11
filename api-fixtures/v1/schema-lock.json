@@ -1,0 +1,2800 @@
+{
+  "backendResponseContracts": {
+    "DELETE:/api/v1/auth/bluesky/link": {
+      "fixtureIds": ["native.auth.bluesky.unlink.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
+      "fixtureIds": ["native.moderation.ban-evasion.dismiss"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/crm/contacts/:contactId": {
+      "fixtureIds": ["native.crm.contact-archive.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/crm/contacts/:contactId/notes/:noteId": {
+      "fixtureIds": ["native.crm.contact-note-delete.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/crm/contacts/:contactId/user-link": {
+      "fixtureIds": ["native.crm.contact-unlink-user.default"],
+      "hash": "810a0326a4505b632bf72d79e124ce04ea648fa24fedc79de90663fcdfdb5a1a"
+    },
+    "DELETE:/api/v1/households/:id/memberships/:membershipId": {
+      "fixtureIds": ["native.household-memberships.delete.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/membership-grants/:grantId": {
+      "fixtureIds": ["native.memberships.grant.delete.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/my/cards/:id": {
+      "fixtureIds": ["native.cards.delete.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/my/messages/:conversationId/participants/:userId": {
+      "fixtureIds": ["native.messages.participant-remove.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/my/rewards-program-point-valuations/:id": {
+      "fixtureIds": ["native.point-valuations.delete.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/my/rewards-program-statuses/:id": {
+      "fixtureIds": ["native.rewards-statuses.delete.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/my/spending-categories/:id": {
+      "fixtureIds": ["native.spending-categories.delete.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/report-integrity/penalties/:id": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.revoke"],
+      "hash": "46134781a0c930db743424aba7713894ee9433692a0b7374e18cef966946dc1d"
+    },
+    "DELETE:/api/v1/users/:idOrSlug": {
+      "fixtureIds": ["native.users.delete.default"],
+      "hash": "36d977532e88d581b08000ee0b9446ed61ecdc62a1c63dc9cf3fc9cb3aa4d292"
+    },
+    "DELETE:/api/v1/vote-integrity/penalties/:id": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.revoke"],
+      "hash": "506c822b0f01069314c3222349a95dfee6cf08e9f2581ddf60131cd6f8c32112"
+    },
+    "GET:/api/v1/admin/ai-costs": {
+      "fixtureIds": [
+        "native.admin-ai-costs.default",
+        "native.admin-ai-costs.empty",
+        "native.admin-ai-costs.page-2"
+      ],
+      "hash": "fbd669c4e61cfc0e0c00f91522f1eb9c0a0b38635a7b6ea7ec4865680892fbef"
+    },
+    "GET:/api/v1/admin/landing-pages/:pageId/analytics": {
+      "fixtureIds": ["native.admin-landing-page-analytics.default"],
+      "hash": "43c5583374f1f65df702e447289c1b0770758988f12c4da05a333a2dad872639"
+    },
+    "GET:/api/v1/admin/moderation-analytics": {
+      "fixtureIds": ["native.moderation.analytics.default"],
+      "hash": "07a1bf8c35bd38366023e37a632b331bc455b236083243d4c5a525768a3dea21"
+    },
+    "GET:/api/v1/admin/modlog": {
+      "fixtureIds": ["native.moderation.modlog.default"],
+      "hash": "0fd39306d16ab2c451fcb06b94ce541bae1823792a5699844617ea5c0b7309e7"
+    },
+    "GET:/api/v1/admin/users/:userId/landing-pages": {
+      "fixtureIds": ["native.admin-user-landing-pages.default"],
+      "hash": "41f4d78bc8bce20a2f94ab6df2bcb0b3a9b69496834bb3458d09776c683475e2"
+    },
+    "GET:/api/v1/agents": {
+      "fixtureIds": ["native.agents.default", "native.agents.page-2"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/agents/:idOrSlug": {
+      "fixtureIds": ["native.agents.detail.default"],
+      "hash": "4e0c3722b80075e56bf18ea7d5490b13a0f38e24399928834338defaef51f2fb"
+    },
+    "GET:/api/v1/agents/:idOrSlug/conversations": {
+      "fixtureIds": [
+        "native.agents.conversations.default",
+        "native.agents.conversations.filtered-username",
+        "native.agents.conversations.page-2"
+      ],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/agents/:idOrSlug/conversations/:conversationId": {
+      "fixtureIds": ["native.agents.conversation.default", "native.agents.conversation.page-2"],
+      "hash": "cf017c9290beb8c1111f11c810ef502308e79c50a08a2d4964e28710a5e34f7e"
+    },
+    "GET:/api/v1/appeals#staff": {
+      "fixtureIds": ["native.moderation.appeals.default", "native.moderation.appeals.page-2"],
+      "hash": "d07ee46c4b78884ac52da4932f247da697852887b1594494814fb4b3e164206f"
+    },
+    "GET:/api/v1/article-syncs/:jobId#active": {
+      "fixtureIds": ["web.admin.article-syncs.status.active"],
+      "hash": "c9bf7660ac3eaa4e709e87979c50378e1e1dba5889ca5e83050ea99808775962"
+    },
+    "GET:/api/v1/auth/oauth/providers": {
+      "fixtureIds": ["native.oauth.providers.broker-capabilities"],
+      "hash": "475c8c80da939cec4d90fb23ee49d2e7ddca5fb883726b1fa86d34dee5d04e1b"
+    },
+    "GET:/api/v1/auth/sessions": {
+      "fixtureIds": ["native.auth.sessions.default"],
+      "hash": "537613ef6ea6334d9a50f8981463f0b78be7e68b8add2bd049df1e33c5762b66"
+    },
+    "GET:/api/v1/captcha-config": {
+      "fixtureIds": ["native.captcha-config.default"],
+      "hash": "76ec2304e0d85b99d02f5fe0cfdbe2bfe2fd761b8ca946852384d5e899bd4ed8"
+    },
+    "GET:/api/v1/communities": {
+      "fixtureIds": ["web.communities.search.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:communitySlug": {
+      "fixtureIds": ["web.communities.show.default"],
+      "hash": "1cc51442c61e2a415a53c7d1c31ea546805701a6e8b9a788328debdce7b9b0a9"
+    },
+    "GET:/api/v1/communities/:communitySlug/agent-prompts": {
+      "fixtureIds": ["web.communities.agent-prompts.default"],
+      "hash": "06f16953e930e659ade2bbc72b8064bfbe461a9de8cb808ef4066b91ca228a02"
+    },
+    "GET:/api/v1/communities/:communitySlug/agent-prompts/history": {
+      "fixtureIds": ["web.communities.agent-prompts.history.default"],
+      "hash": "c6f30d7ffdd6fe7c9837e29719cb70e34d99934b04ecc0f8e5ecf1e1ef5ab588"
+    },
+    "GET:/api/v1/communities/:communitySlug/ai-agents": {
+      "fixtureIds": ["web.communities.ai-agents.default"],
+      "hash": "dafc4f6c0b893ddf8908cae6ab42c18e7548d42e1a79cd09393d7fec7891e917"
+    },
+    "GET:/api/v1/communities/:communitySlug/application-questions": {
+      "fixtureIds": ["web.communities.application-questions.default"],
+      "hash": "32a9fba5ab37ec46acf43db9ae34770772b147fcdbcff366d176343129a5ed4d"
+    },
+    "GET:/api/v1/communities/:communitySlug/applications": {
+      "fixtureIds": ["web.communities.applications.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:communitySlug/automod/recent-actions": {
+      "fixtureIds": ["web.communities.automod-recent-actions.default"],
+      "hash": "d5d2d4d604fedfdc8f0505b31405aaf455d8c2834e0b98397b52fc185fbd85a3"
+    },
+    "GET:/api/v1/communities/:communitySlug/bans": {
+      "fixtureIds": ["web.communities.bans.default"],
+      "hash": "ae6205eeafb4e73ab314ce85acb34f97886fcf46f5adfa8db1d814e577d7f302"
+    },
+    "GET:/api/v1/communities/:communitySlug/invites": {
+      "fixtureIds": ["web.communities.invites.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:communitySlug/list-items/counts": {
+      "fixtureIds": ["web.communities.list-items.counts.default"],
+      "hash": "2bb97bfe38daf4c69dc95a8d1a522f223e02b4f2548e243fd3f77cadf610ae7d"
+    },
+    "GET:/api/v1/communities/:communitySlug/members": {
+      "fixtureIds": ["web.communities.members.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:communitySlug/moderation-analytics": {
+      "fixtureIds": ["web.communities.moderation-analytics.default"],
+      "hash": "07a1bf8c35bd38366023e37a632b331bc455b236083243d4c5a525768a3dea21"
+    },
+    "GET:/api/v1/communities/:communitySlug/moderation-queue": {
+      "fixtureIds": ["web.communities.moderation-queue.default"],
+      "hash": "46f9897789eaeec3cf7d1ae64f906173dafd138fbb604c9f280a939e9362facb"
+    },
+    "GET:/api/v1/communities/:communitySlug/moderator-stats": {
+      "fixtureIds": ["web.communities.moderator-stats.default"],
+      "hash": "297780f52fb8dde3da349ef3c16c15958f91b94ea79ea981b17530fdc5e06341"
+    },
+    "GET:/api/v1/communities/:communitySlug/moderator-vacation": {
+      "fixtureIds": ["web.communities.moderator-vacation.default"],
+      "hash": "6b87c0c0f70e89bafe3a724bb37a87a30fbed6da48bd4ed630ffcb53eb69a7e7"
+    },
+    "GET:/api/v1/communities/:communitySlug/modlog": {
+      "fixtureIds": ["web.communities.modlog.default"],
+      "hash": "0fd39306d16ab2c451fcb06b94ce541bae1823792a5699844617ea5c0b7309e7"
+    },
+    "GET:/api/v1/communities/:communitySlug/modmail": {
+      "fixtureIds": ["web.communities.modmail.default", "web.communities.modmail.page-2"],
+      "hash": "c0a6af76b9f1cd4b2d897f3e588879f4b04380b3f2b160308e34c120a6d47a92"
+    },
+    "GET:/api/v1/communities/:communitySlug/modmail/:threadId/messages": {
+      "fixtureIds": [
+        "web.communities.modmail-messages.default",
+        "web.communities.modmail-messages.page-2"
+      ],
+      "hash": "441b8be7a5f048f2a6f691e51611c9c14e9395aa372cc1b5bf5f79cc51129b6d"
+    },
+    "GET:/api/v1/communities/:communitySlug/news": {
+      "fixtureIds": ["web.communities.news.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:communitySlug/pinned-posts": {
+      "fixtureIds": ["web.communities.pinned-posts.default"],
+      "hash": "230044a0f22267ef09da29bf855a06e25fa860c9671ab477a6aea0c8d1359d3f"
+    },
+    "GET:/api/v1/communities/:communitySlug/posts": {
+      "fixtureIds": ["web.communities.posts.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:communitySlug/posts/:postId/moderation-results": {
+      "fixtureIds": ["web.communities.moderation-results.default"],
+      "hash": "c43d47ade7c52f37191055822795855fb0587d541b4a8caa9c6a31f0a37f69c0"
+    },
+    "GET:/api/v1/communities/:communitySlug/restrictions": {
+      "fixtureIds": ["web.communities.restrictions.default"],
+      "hash": "a93259c4f9fc6942bd831472e99a183a29bf1c7d860b2d1173b16c103d9b9d5d"
+    },
+    "GET:/api/v1/communities/:communitySlug/saved-replies": {
+      "fixtureIds": [
+        "web.communities.saved-replies.default",
+        "web.communities.saved-replies.page-2"
+      ],
+      "hash": "40d269301d000acc207dc7a33aae6e550c85d8b7eec61c825d12d3990d07df28"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/domains": {
+      "fixtureIds": ["web.communities.list-items.domains.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/posts": {
+      "fixtureIds": ["web.communities.list-items.posts.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/rss-feeds": {
+      "fixtureIds": ["web.communities.list-items.rss-feeds.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/topics": {
+      "fixtureIds": ["web.communities.list-items.topics.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/urls": {
+      "fixtureIds": ["web.communities.list-items.urls.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/communities/:idOrSlug/moderation-transparency": {
+      "fixtureIds": ["native.community.moderation-transparency.default"],
+      "hash": "8888e2d3e3c82038d9b1845d906a9fc924d555058e57fe870eb3b612c09ad598"
+    },
+    "GET:/api/v1/communities/:idOrSlug/reports/pending": {
+      "fixtureIds": ["native.community.pending-reports.paginated"],
+      "hash": "7ffd9104ac4cb195630ebe8f01d89caa883f4f52f2b4b7020f17ea82a55b25f6"
+    },
+    "GET:/api/v1/crm/contacts": {
+      "fixtureIds": ["native.crm.contacts.default"],
+      "hash": "f5166fcdbc44ec3cccbb6339f96a2261b5fd1b8a79d3fcdab5be863a4fbbacc8"
+    },
+    "GET:/api/v1/crm/contacts/:contactId": {
+      "fixtureIds": ["native.crm.contact-detail.default"],
+      "hash": "e6f9fb775e65c66d7d028b55a774694e46289300930131b4f4bade0790c5fa30"
+    },
+    "GET:/api/v1/crm/contacts/:contactId/emails": {
+      "fixtureIds": ["native.crm.contact-emails.default"],
+      "hash": "27d97b570ab4f80c25f8959c2525886f1ff010938f85706e4eb23aa051d6d521"
+    },
+    "GET:/api/v1/crm/contacts/:contactId/notes": {
+      "fixtureIds": ["native.crm.contact-notes.default"],
+      "hash": "72bf172b91d5a4db58fe2c34ec1b3afcaa3ed0c7409bc8222dd0970544a5fd05"
+    },
+    "GET:/api/v1/currencies": {
+      "fixtureIds": ["shared.currencies.list.default"],
+      "hash": "c741658b0f89e883e57fc6fc975c26bb3c5898cbed5282cb8916102d7cc5753c"
+    },
+    "GET:/api/v1/disputes#staff": {
+      "fixtureIds": ["native.moderation.disputes.default"],
+      "hash": "c2fb7e843803f003e553c4d68e7fd2e7b8177041bb50b3d2d17019c509345cea"
+    },
+    "GET:/api/v1/disputes/:id#staff": {
+      "fixtureIds": ["native.moderation.disputes.detail.default"],
+      "hash": "ff3e92da79d3ba5049858e4848887465bf5ec57d4935194321555698f764643e"
+    },
+    "GET:/api/v1/dynamic-config/namespaces": {
+      "fixtureIds": ["native.dynamic-config.namespaces.developer"],
+      "hash": "bcf889760ddcf57896702248a00bf182d9973b807f1030bf6cf9a570ddc0acfa"
+    },
+    "GET:/api/v1/dynamic-config/namespaces/:namespace": {
+      "fixtureIds": [
+        "native.dynamic-config.namespace.integer",
+        "native.dynamic-config.namespace.string",
+        "native.dynamic-config.namespace.typed"
+      ],
+      "hash": "e5786a84aa6ff9fbe252d7c193abaffadd2877fbb5bbad177a1a3074c94a1892"
+    },
+    "GET:/api/v1/dynamic-config/namespaces/:namespace/history": {
+      "fixtureIds": ["native.dynamic-config.history.default"],
+      "hash": "078185ff42694a039f411ff5fbb8fc91a8df8c3e4641e39cb7da982506500795"
+    },
+    "GET:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType": {
+      "fixtureIds": [
+        "native.entity-relations.post.category.topic.default",
+        "native.entity-relations.post.related.post.default",
+        "native.entity-relations.post.related.url.default",
+        "native.entity-relations.rss-feed-item.category.topic.default",
+        "native.entity-relations.topic.publisher-type.topic.default",
+        "native.entity-relations.user.category.topic.default"
+      ],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/feature-flags": {
+      "fixtureIds": ["native.feature-flags.default"],
+      "hash": "7580ef5f3db282b73bd55be0b214e19688fe9ea7a8833533f27a18a2a81d255a"
+    },
+    "GET:/api/v1/fediverse/instances": {
+      "fixtureIds": [
+        "native.fediverse.instances.default",
+        "native.fediverse.instances.empty",
+        "native.fediverse.instances.page-2"
+      ],
+      "hash": "61bf1e3eac1dbbdd86ac9741113583e49cee6c5600f1c561d7fd328f16cbc6f7"
+    },
+    "GET:/api/v1/fediverse/instances/:id": {
+      "fixtureIds": ["native.fediverse.instance.slug", "native.fediverse.instance.uuid"],
+      "hash": "99020247343c19c36e8283d6851db1f029388c8e4ef03758c0faff8ecc8635a2"
+    },
+    "GET:/api/v1/feeds/posts/:feed_type": {
+      "fixtureIds": ["swift.posts.feed.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/feeds/referral_links/:feed_type": {
+      "fixtureIds": ["web.referral-links.feed.default"],
+      "hash": "c3dd80c22a2e4f4c2dadcddba2fed7cdbe6587dfa0fd6938bf946b0e871b4e93"
+    },
+    "GET:/api/v1/feeds/rss_feed_items/:feed_type": {
+      "fixtureIds": [
+        "swift.integration.rss-feed-items.audio",
+        "swift.integration.rss-feed-items.video",
+        "swift.rss-feed-items.feed.default",
+        "web.rss-feed-items.feed.default"
+      ],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/growth-metrics": {
+      "fixtureIds": ["web.growth-metrics.default"],
+      "hash": "44b673150e44d489701c6b73fccd83a65ad8a53d3a340e60ab556b83169d3faa"
+    },
+    "GET:/api/v1/hostnames": {
+      "fixtureIds": ["native.hostnames.default"],
+      "hash": "c18637ccd56bbf8eadf16d9873c252930f5e78c9a90d4489f410099e79096fd5"
+    },
+    "GET:/api/v1/hostnames/:id#public": {
+      "fixtureIds": ["native.hostname.default"],
+      "hash": "9d70f6d5ee043cbe9f22ec1c12e9ee3c3d00b6fcbb5f8fc9e3a3ebe9bda3e522"
+    },
+    "GET:/api/v1/households": {
+      "fixtureIds": [
+        "native.households.empty",
+        "native.households.member.default",
+        "native.households.member.page-2",
+        "native.households.multiple",
+        "native.households.owned",
+        "native.households.single-owned"
+      ],
+      "hash": "4f34209996874b7a7477559480de27a5be5a9e21886bd91e39623bc1c76a3d37"
+    },
+    "GET:/api/v1/households/:id/memberships": {
+      "fixtureIds": [
+        "native.household-memberships.empty",
+        "native.household-memberships.multiple",
+        "native.household-memberships.page-1",
+        "native.household-memberships.page-2",
+        "native.household-memberships.single"
+      ],
+      "hash": "daade691d459e881da78fb55d4fc0b9ee9fdf8f42aeb70e38051567ae8e54f80"
+    },
+    "GET:/api/v1/lists": {
+      "fixtureIds": ["native.lists.default"],
+      "hash": "fc9b30ac27b05cce8e9edaf97996f43f1d068fcd1f1ba47702d2c81eabd520fd"
+    },
+    "GET:/api/v1/lists/:id/items": {
+      "fixtureIds": ["native.list-items.default"],
+      "hash": "24153f0a8ad17b1a4e6f23e0ba81ed9d1b01fb9327a671b06e1917f484550dbd"
+    },
+    "GET:/api/v1/lists/contains": {
+      "fixtureIds": ["native.lists-containing.default"],
+      "hash": "9f584e531a45db95de1ef181a4dd7cabe8051109f36244c3299d339a77ef73fb"
+    },
+    "GET:/api/v1/membership-verifications/:verificationId": {
+      "fixtureIds": [
+        "native.memberships.verification-status.conflict.default",
+        "native.memberships.verification-status.pending.default",
+        "native.memberships.verification-status.rejected.default",
+        "native.memberships.verification-status.verified.default"
+      ],
+      "hash": "21ec9923bf6d6c94db0cad278c3fffae3a162cd517ab2394c02b35f4404b043b"
+    },
+    "GET:/api/v1/memberships/me": {
+      "fixtureIds": ["native.memberships.me.default", "native.memberships.me.lifecycle.default"],
+      "hash": "258cb435d78f85654a535269fc2da6690cb9832908d67cce0dfcf1602482e527"
+    },
+    "GET:/api/v1/memberships/plans": {
+      "fixtureIds": ["native.memberships.plans.default"],
+      "hash": "24c63ed1bda9fba8b12af00086b1978256a0ccc863c76c4dd620844168be7ac1"
+    },
+    "GET:/api/v1/moderation-transparency": {
+      "fixtureIds": ["native.moderation.transparency.default"],
+      "hash": "8888e2d3e3c82038d9b1845d906a9fc924d555058e57fe870eb3b612c09ad598"
+    },
+    "GET:/api/v1/moderation/exposure": {
+      "fixtureIds": ["native.moderation.exposure.default"],
+      "hash": "3b207898e38f139fc31949bb9c487dcf748accd4888a2e2ffdc1b1ce407db9a2"
+    },
+    "GET:/api/v1/mq/backfills": {
+      "fixtureIds": ["web.admin.mq.backfills.default"],
+      "hash": "36f6b330d2af6c73fc4f75cf316b7a3f7e888c1d67d43129a24a9e308a005ebc"
+    },
+    "GET:/api/v1/mq/queues": {
+      "fixtureIds": ["web.admin.mq.queues.default"],
+      "hash": "1f7c8dd762920aed5741a196cabc5b4efc269bde021e92172379daa4656b0526"
+    },
+    "GET:/api/v1/mq/scheduled-jobs": {
+      "fixtureIds": ["web.admin.mq.scheduled-jobs.default"],
+      "hash": "cb11c715d25f665842d4b84350722645de3538dd3626547878071d12fa5176f7"
+    },
+    "GET:/api/v1/mq/stats": {
+      "fixtureIds": ["web.admin.mq.stats.default"],
+      "hash": "4a11d4e3a2a93eed4b9983d9dfe9aacfa7aa81fed57e778428c41a672160ddb2"
+    },
+    "GET:/api/v1/my/api-keys": {
+      "fixtureIds": ["native.my.api-keys.paginated"],
+      "hash": "0a35e421fef52b2045d0d391ade05b90db52463a998c3a2f154b36d06c12a6a5"
+    },
+    "GET:/api/v1/my/cards": {
+      "fixtureIds": ["native.cards.empty", "native.cards.page-1", "native.cards.page-2"],
+      "hash": "271b5f8980c4290e70c65a42d9e9496ea779ffc6b8a30edc97a7faf14ac802f0"
+    },
+    "GET:/api/v1/my/email-addresses": {
+      "fixtureIds": ["native.my.email-addresses.empty"],
+      "hash": "96f3cd2d68fa7d115f3275747a122290649ba7ae8b57681b17aeedd2e8515c03"
+    },
+    "GET:/api/v1/my/email-preferences": {
+      "fixtureIds": ["native.my.email-preferences.default"],
+      "hash": "608f61a0a880702f3ce46a006ea60eab11780672ae37d6ee3f7ddbc3aebe912b"
+    },
+    "GET:/api/v1/my/export/topics#default": {
+      "fixtureIds": ["native.import-export.topics.export.default"],
+      "hash": "7f8475fa4b44a8c40bf5cec152645e3880d088a023e8836e08ec8a30e6280e1e"
+    },
+    "GET:/api/v1/my/export/topics#download": {
+      "fixtureIds": ["native.import-export.topics.export.download"],
+      "hash": "ea092ea5e6b5cd3e8d286da65015ade7156470416e52f9ba9b8c88165c8bb1f0"
+    },
+    "GET:/api/v1/my/friend-recommendations": {
+      "fixtureIds": [
+        "native.friend-recommendations.default",
+        "native.friend-recommendations.empty",
+        "native.friend-recommendations.second-page"
+      ],
+      "hash": "86836d62cd3185aa0121266e7c9cbe4e1660a394c37abbcee7cedbd256443215"
+    },
+    "GET:/api/v1/my/identity": {
+      "fixtureIds": ["swift.my.identity.default"],
+      "hash": "20334ee2a5a3fe1b19845946fe49d5a2eaacb2083038c418ed297dbf0ef23291"
+    },
+    "GET:/api/v1/my/import/rss-feeds/:importId": {
+      "fixtureIds": [
+        "native.import-export.rss-feeds.status.partial",
+        "native.import-export.rss-feeds.status.retrying"
+      ],
+      "hash": "13169d796ee0ecd32ebaeb4d1df5f6f49f3c0637fa6b6f40fac680f988b9c440"
+    },
+    "GET:/api/v1/my/landing-pages": {
+      "fixtureIds": ["native.landing-pages.default"],
+      "hash": "25cc0bca4f1c715f31299c8b735f21617abc1d3911f529d60766a31e7042ee22"
+    },
+    "GET:/api/v1/my/landing-pages/:pageId": {
+      "fixtureIds": ["native.landing-page-detail.default"],
+      "hash": "b1b4878ebd328942902eb3925b574f1e857f3706c2030b931d59784a5d50341a"
+    },
+    "GET:/api/v1/my/landing-pages/:pageId/analytics": {
+      "fixtureIds": ["native.landing-page-analytics.default"],
+      "hash": "85eb7b2e99f5b242b10d88e039eb9f7366e3c0a763095bd36cba8cf4d9f2cdf6"
+    },
+    "GET:/api/v1/my/landing-pages/candidates": {
+      "fixtureIds": ["native.landing-page-candidates.default"],
+      "hash": "da11321d2e566d004ab980e539740c719e369b7572b73f413f36fc1342ca22ac"
+    },
+    "GET:/api/v1/my/messages": {
+      "fixtureIds": [
+        "native.messages.conversations.default",
+        "native.messages.conversations.page-2"
+      ],
+      "hash": "924f7d372bd03a3a07a6fcf6d07e30ad7780fc29f532737a4696b57f698b8c09"
+    },
+    "GET:/api/v1/my/messages/:conversationId": {
+      "fixtureIds": ["native.messages.conversation.default"],
+      "hash": "b080c2981f4a0669c214dbcaae0b425bc23f3d233bbfbe070be7509e8c602f45"
+    },
+    "GET:/api/v1/my/messages/:conversationId/messages": {
+      "fixtureIds": ["native.messages.thread.default", "native.messages.thread.page-2"],
+      "hash": "441b8be7a5f048f2a6f691e51611c9c14e9395aa372cc1b5bf5f79cc51129b6d"
+    },
+    "GET:/api/v1/my/messages/:conversationId/participants": {
+      "fixtureIds": ["native.messages.participants.default"],
+      "hash": "f7da53cd956201682ea5c1bd352422558d43bdab5c220dafc0d4f1b92b712d85"
+    },
+    "GET:/api/v1/my/notifications": {
+      "fixtureIds": ["swift.notifications.default"],
+      "hash": "4dce63fa48999d7cfa884fe0f9c68c2c44d56cfa03eba85a733a10c3cf05d10c"
+    },
+    "GET:/api/v1/my/notifications/:id/redirect-target": {
+      "fixtureIds": ["native.notifications.redirect-target.default"],
+      "hash": "6639cbce401133b888414e485132bf3388d44f52e6b5f38e2ebe396f269e7d2f"
+    },
+    "GET:/api/v1/my/notifications/push-subscriptions": {
+      "fixtureIds": ["native.my.push-subscriptions.paginated"],
+      "hash": "92d8ef479a566a03f959f26efba9cc03d7233a11e6dee6c2cd4a86d88a26dd62"
+    },
+    "GET:/api/v1/my/profile": {
+      "fixtureIds": ["swift.my.profile.default"],
+      "hash": "412d652309f73aa0940aef35c31df16b2fbb8c5339873ca944c2c17706ff3120"
+    },
+    "GET:/api/v1/my/referral-clicks": {
+      "fixtureIds": ["native.referral-clicks.mine.default", "web.referral-clicks.mine.default"],
+      "hash": "ceee9fc2d1d43ab1e6efde48538e09e34dccea99fa9e4d316c016571ac31b49e"
+    },
+    "GET:/api/v1/my/removed-posts#include-platform": {
+      "fixtureIds": [
+        "native.moderation.removed-posts.default",
+        "native.moderation.removed-posts.page-2"
+      ],
+      "hash": "0d89d1674255be58a3c878718c57c64312e308f11f32849bf8140641f0ebbaee"
+    },
+    "GET:/api/v1/my/rewards-program-point-valuations": {
+      "fixtureIds": [
+        "native.point-valuations.empty",
+        "native.point-valuations.page-1",
+        "native.point-valuations.page-2"
+      ],
+      "hash": "fbaa247a7cdc76c6a0e5e43a95a46913031e3ec44b6dd0e7914ce7d50700dbf1"
+    },
+    "GET:/api/v1/my/rewards-program-statuses": {
+      "fixtureIds": [
+        "native.rewards-statuses.empty",
+        "native.rewards-statuses.page-1",
+        "native.rewards-statuses.page-2"
+      ],
+      "hash": "973b0c7129b99a6b7ff641002661cec7ea0ec52357da2fdd0327d0568a1d3ff0"
+    },
+    "GET:/api/v1/my/spending-categories": {
+      "fixtureIds": [
+        "native.spending-categories.empty",
+        "native.spending-categories.owned-household",
+        "native.spending-categories.page-1",
+        "native.spending-categories.page-2"
+      ],
+      "hash": "0de08c52cfc38e93425cdfecd8bede086f504c7eeea9e4820f689441bab77ea7"
+    },
+    "GET:/api/v1/podcast-episodes/:id/chapters": {
+      "fixtureIds": ["swift.podcast-episode-chapters.default"],
+      "hash": "5c47d5611210457574486ed7cece63619357312c8a8ace34d517576d5d688f8f"
+    },
+    "GET:/api/v1/podcast-episodes/:id/playback-position": {
+      "fixtureIds": ["swift.podcast-playback-position.default"],
+      "hash": "959281d38011012129c196360591fc3a895bd2eb0776a60afe4a65554193c64d"
+    },
+    "GET:/api/v1/posts": {
+      "fixtureIds": [
+        "native.users.profile.posts.all",
+        "native.users.profile.posts.comments",
+        "native.users.profile.posts.discussions",
+        "native.users.profile.posts.reviews"
+      ],
+      "hash": "e4ab1206712cd8249abda13d65a6f50ce0f6ce2d669779ef02a88baea3365ec6"
+    },
+    "GET:/api/v1/posts/:idOrSlug/ancestors": {
+      "fixtureIds": [
+        "native.comments.ancestors.bounded.deep-continuation",
+        "native.comments.ancestors.bounded.deep-initial",
+        "native.comments.ancestors.bounded.shallow",
+        "native.comments.ancestors.permalink"
+      ],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/posts/:idOrSlug/descendants": {
+      "fixtureIds": ["native.comments.descendants.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/posts/:postIdOrSlug": {
+      "fixtureIds": ["native.comments.post-detail.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/posts/review-queue": {
+      "fixtureIds": [
+        "native.moderation.review-queue.default",
+        "native.moderation.review-queue.page-2"
+      ],
+      "hash": "4b66793d5b390fb2753c043f9bfadc136c5b0464fcf5043818be2de80fe61685"
+    },
+    "GET:/api/v1/psql/migrations": {
+      "fixtureIds": ["web.admin.psql.migrations.default"],
+      "hash": "123cada22eab14dd3a3d8abd35857c89929c8be17985343c50d1f8acdebc2188"
+    },
+    "GET:/api/v1/psql/partitions": {
+      "fixtureIds": ["web.admin.psql.partitions.default"],
+      "hash": "3f9555763239360e936d6c9dd87610637c1e88dc64b0ebd74d13c6b0ffb38c1b"
+    },
+    "GET:/api/v1/referral-links": {
+      "fixtureIds": ["native.referral-links.mine.default", "web.referral-links.mine.default"],
+      "hash": "41810af6f931915a482b21867a7e80f95e4fb574382909ba77501769a0a72655"
+    },
+    "GET:/api/v1/report-integrity/flags": {
+      "fixtureIds": [
+        "native.moderation.report-integrity.default",
+        "native.moderation.report-integrity.pending",
+        "native.moderation.report-integrity.resolved"
+      ],
+      "hash": "e5f7a7d65592b620ffd10355f64c348e0a4463f5e1c34971fd8d7e193efb627f"
+    },
+    "GET:/api/v1/report-integrity/penalties": {
+      "fixtureIds": [
+        "native.moderation.report-integrity.penalties.active",
+        "native.moderation.report-integrity.penalties.all",
+        "native.moderation.report-integrity.penalties.default",
+        "native.moderation.report-integrity.penalties.page-2",
+        "native.moderation.report-integrity.penalties.revoked"
+      ],
+      "hash": "9e32e0d3138dfd6c2769d4dc666d60e9176db250d1e08eabb4d055489499d4ff"
+    },
+    "GET:/api/v1/report-integrity/penalties/:id": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.get"],
+      "hash": "8a3f8a50ce36add82d19f02af1fc17042e87f14b70593754083c47b21c3c0208"
+    },
+    "GET:/api/v1/reports#clustered": {
+      "fixtureIds": [
+        "native.moderation.reports.clustered.default",
+        "native.moderation.reports.clustered.page-2"
+      ],
+      "hash": "08c53c459eddfa8f5b3619d903ecab5345d1fd45c2260e441b1f5f0a8b091a30"
+    },
+    "GET:/api/v1/reports#member": {
+      "fixtureIds": ["native.moderation.reports.member.default"],
+      "hash": "f81375d216c274f21498499197ce49c31f7602922a842e2fff01f8a40040a176"
+    },
+    "GET:/api/v1/reports#staff": {
+      "fixtureIds": ["native.moderation.reports.default"],
+      "hash": "ddc44b8585f513bb4f1bb380449960f835120068d16eeb8dc6378ba916f5bd11"
+    },
+    "GET:/api/v1/rss-feed-items/:id": {
+      "fixtureIds": ["native.rss-feed-item.detail.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/rss-feeds": {
+      "fixtureIds": ["swift.rss-feeds.default"],
+      "hash": "21a3d7f30311c3a0f5ce463b044a09c95b9164513090c19b83fcdbd6a8cda37b"
+    },
+    "GET:/api/v1/rss-feeds/:id/crawls": {
+      "fixtureIds": ["web.paid.rss-feed-crawls.default"],
+      "hash": "d868e5ad7edf937a663be2aa348ce7bbf63215f453d8ade2a313aff152ab798f"
+    },
+    "GET:/api/v1/rss-feeds/:id/crawls/:crawlId#paid": {
+      "fixtureIds": ["web.paid.rss-feed-crawl.default"],
+      "hash": "d39557616e2c1073a4316ddf065ce28ddb2725c8c27c9dad8782f02a66ba2d42"
+    },
+    "GET:/api/v1/rss-feeds/:id/crawls/:crawlId#privileged": {
+      "fixtureIds": ["web.admin.rss-feed-crawl.default"],
+      "hash": "fb57a6c281e407e32fb6aa6f04e058e65ba2736b4320f7babfe2220a9e021d44"
+    },
+    "GET:/api/v1/support/contacts": {
+      "fixtureIds": ["native.staff-support.contacts.default"],
+      "hash": "619a0bae2213716436c76cec3beb880b1c523c47ed461cd6ab32ca98b44d35cd"
+    },
+    "GET:/api/v1/support/contacts/:contactId": {
+      "fixtureIds": ["native.staff-support.contact-detail.default"],
+      "hash": "95270c90163c6282340e2f0e532c2d4712d887cd47ce6b05b377d08b63c18933"
+    },
+    "GET:/api/v1/support/threads": {
+      "fixtureIds": ["native.staff-support.threads.default"],
+      "hash": "163c2a86eea6b90e9f54d5341f9a2e0a2ed02f43ab884aa275c1b740680569a1"
+    },
+    "GET:/api/v1/support/threads/:threadId": {
+      "fixtureIds": ["native.staff-support.thread-detail.default"],
+      "hash": "322aa97eec6f6a9cbef548441bd93a45cba7c59626836353e06318e794c588c9"
+    },
+    "GET:/api/v1/support/threads/:threadId/messages": {
+      "fixtureIds": ["native.staff-support.messages.default"],
+      "hash": "12285e099d74a7ad0548cf35246afdcfd9e6d79c62fa88861e715ba1cf2866be"
+    },
+    "GET:/api/v1/topic-recommendations/:id": {
+      "fixtureIds": ["native.topic-recommendation.detail.default"],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/topic-recommendations/top-hashtags": {
+      "fixtureIds": ["native.topic-recommendations.top-hashtags.default"],
+      "hash": "cc3be08456010e2c9b1b298485b0c4ee72417aa3a2b7bcc773f9114011e4ff47"
+    },
+    "GET:/api/v1/topics": {
+      "fixtureIds": [
+        "native.card-topics.search.default",
+        "native.rewards-program-status-topics.search.default",
+        "native.rewards-program-topics.search.default",
+        "native.spending-category-topics.search.default",
+        "web.topics.search.default",
+        "web.topics.search.referral-programs.default"
+      ],
+      "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
+    },
+    "GET:/api/v1/topics/:topicId/prioritized-referral-links": {
+      "fixtureIds": ["web.referral-links.prioritized.default"],
+      "hash": "d40d5dcacba80d4101e0eee26b715fa038186e1231ab6ae06058f069af1aaf29"
+    },
+    "GET:/api/v1/topics/publisher-types": {
+      "fixtureIds": ["web.topics.publisher-types.default"],
+      "hash": "df88ebf1c8aa79aed7344fc7c0c85bdb8fc70fa6086ef935a08eebd61e578ee9"
+    },
+    "GET:/api/v1/topics/user-tags": {
+      "fixtureIds": ["native.topics.user-tags.default"],
+      "hash": "c82a3bed39f4cd3c6e52927e52a7fd41d0bcd57fb950e45adced3ebf5d27dac5"
+    },
+    "GET:/api/v1/trending-referral-programs": {
+      "fixtureIds": ["web.trending-referral-programs.default"],
+      "hash": "a356e5960f47d6f4beb1326e129dee6c54c7dc7554267712b76d6e161d113d3f"
+    },
+    "GET:/api/v1/urls#public": {
+      "fixtureIds": ["native.urls.default"],
+      "hash": "cef123164b8e4897dca2d390f66bd0a584a014ba11504805f6ffd022f5504831"
+    },
+    "GET:/api/v1/urls/:id#privileged": {
+      "fixtureIds": ["native.url.default"],
+      "hash": "d9a0fc16ad771153427d25f2f98a91cb8361ee55125c393500a15695580244d0"
+    },
+    "GET:/api/v1/urls/:id/crawls#paid": {
+      "fixtureIds": ["native.paid.url-crawls.default"],
+      "hash": "fd89335036c58bc2f4c9485f0f635958903ab0c03eabbc7f9fd357112dda429f"
+    },
+    "GET:/api/v1/urls/:id/crawls#privileged": {
+      "fixtureIds": ["native.url-crawls.default"],
+      "hash": "51657e78b3f55a4f965281dab28dcece739f5c5f768043e4bdb93b5f5d35fcf6"
+    },
+    "GET:/api/v1/urls/:id/crawls/:crawlId#paid": {
+      "fixtureIds": ["native.paid.url-crawl.default"],
+      "hash": "c91fdbd887b16e6a235d16218dc3ee8185bc3cc4fd5473448dd4df810b5eb598"
+    },
+    "GET:/api/v1/urls/:id/crawls/:crawlId#privileged": {
+      "fixtureIds": ["native.url-crawl.default"],
+      "hash": "f613c20f9630d6ab95dafc066cadebbd2846e771495474808be5e35f8e8f510f"
+    },
+    "GET:/api/v1/users#search": {
+      "fixtureIds": ["native.messages.user-search.default"],
+      "hash": "a7b5b20ea79247e5b846dd239422a9d4a831ce74cea0fb8e0b940ab72f4c882e"
+    },
+    "GET:/api/v1/users/:id/vouch-context": {
+      "fixtureIds": ["native.users.vouch-context.default"],
+      "hash": "de50ba21c16eb6e6a255c6c32b2976e85a34bc6e7f2977591afd64ebb0632000"
+    },
+    "GET:/api/v1/users/:idOrSlug": {
+      "fixtureIds": ["native.users.profile.restricted"],
+      "hash": "e7ee3a5854607621566647c9b319fb586ef92e42715c574e54fa1c97333fc45e"
+    },
+    "GET:/api/v1/users/:idOrSlug#self": {
+      "fixtureIds": ["native.users.profile.default"],
+      "hash": "e75f50254e53bccf64823609f9d81e3be3f7fce4297449491ec69ff40f184322"
+    },
+    "GET:/api/v1/users/:idOrSlug/communities/:listType": {
+      "fixtureIds": [
+        "native.bookmarks.communities.proxy-following.default",
+        "native.users.profile.communities-member.first-page",
+        "native.users.profile.communities-member.next-page"
+      ],
+      "hash": "e34ce002a34609f7ff3a8086e34bd6fbb063553b16bf263720c62aa475ec2a2f"
+    },
+    "GET:/api/v1/users/:idOrSlug/data-request": {
+      "fixtureIds": ["native.users.data-request.default"],
+      "hash": "7e83ca362dd913a7dfee85d653fdf4a6e39b9dc92466945bd75bfe567e6da1d0"
+    },
+    "GET:/api/v1/users/:idOrSlug/domains/:listType": {
+      "fixtureIds": [
+        "native.bookmarks.domains.blocked.default",
+        "native.bookmarks.domains.muted.default"
+      ],
+      "hash": "037ca4adc193b69e1faa7ca85684987186569c7c636034f2ce39239cb971f0fe"
+    },
+    "GET:/api/v1/users/:idOrSlug/posts/:listType": {
+      "fixtureIds": [
+        "native.bookmarks.posts.saved.default",
+        "native.bookmarks.posts.saved.next-page"
+      ],
+      "hash": "e255e1cc4a70c56a99ac92cad2bf501ea89683443161928ec70d4ea832d53e90"
+    },
+    "GET:/api/v1/users/:idOrSlug/rss-feed-items/:listType": {
+      "fixtureIds": ["native.bookmarks.rss-feed-items.saved.default"],
+      "hash": "2f13287199cf19ede142e903d616116da6e4d1479896354311242427a13c7e1e"
+    },
+    "GET:/api/v1/users/:idOrSlug/rss-feeds/:listType": {
+      "fixtureIds": [
+        "native.bookmarks.rss-feeds.muted.default",
+        "native.bookmarks.rss-feeds.viewed.default",
+        "native.users.profile.sources-following.article"
+      ],
+      "hash": "21a3d7f30311c3a0f5ce463b044a09c95b9164513090c19b83fcdbd6a8cda37b"
+    },
+    "GET:/api/v1/users/:idOrSlug/topics/:listType": {
+      "fixtureIds": [
+        "native.bookmarks.topics.muted.default",
+        "native.bookmarks.topics.viewed.default",
+        "native.users.profile.topics-following.first-page",
+        "native.users.profile.topics-following.next-page"
+      ],
+      "hash": "f6efe3d3b3e3cf4952fdb8a44b4dc3a035d3c3aaefc047e6439cc174222f9c45"
+    },
+    "GET:/api/v1/users/:idOrSlug/urls/:listType": {
+      "fixtureIds": ["native.bookmarks.urls.saved.default"],
+      "hash": "800c92c63ea9755b6cabe727357f7bbe848e668fdbacc48756359f458cb1cb4f"
+    },
+    "GET:/api/v1/users/:idOrSlug/users/:listType": {
+      "fixtureIds": [
+        "native.bookmarks.users.dismissed-recommendations.default",
+        "native.bookmarks.users.subscribed-posts.default",
+        "native.users.followers.search",
+        "swift.users.followers.default",
+        "swift.users.following.default"
+      ],
+      "hash": "dc650d03c1192d8063d487ffcf00a939102320b7ffe2a17891d84da8e4b4b340"
+    },
+    "GET:/api/v1/valkey/cache-groups": {
+      "fixtureIds": ["web.admin.valkey.cache-groups.default"],
+      "hash": "f1430c64bb0b6fc683dae815744806943cca78ed99f40c0782cf9222e0668c6a"
+    },
+    "GET:/api/v1/vote-integrity/flags": {
+      "fixtureIds": [
+        "native.moderation.vote-integrity.default",
+        "native.moderation.vote-integrity.pending",
+        "native.moderation.vote-integrity.resolved"
+      ],
+      "hash": "36ee7f0c66923cf2c8e1c12ce968630cf509d5460dc0c1a7747a56b53b653474"
+    },
+    "GET:/api/v1/vote-integrity/penalties": {
+      "fixtureIds": [
+        "native.moderation.vote-integrity.penalties.active",
+        "native.moderation.vote-integrity.penalties.all",
+        "native.moderation.vote-integrity.penalties.default",
+        "native.moderation.vote-integrity.penalties.page-2",
+        "native.moderation.vote-integrity.penalties.revoked"
+      ],
+      "hash": "112a8af46fd50259846912ed723550c95817e9bae7cf9cf349a23108db0ef147"
+    },
+    "GET:/api/v1/vote-integrity/penalties/:id": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.get"],
+      "hash": "506c822b0f01069314c3222349a95dfee6cf08e9f2581ddf60131cd6f8c32112"
+    },
+    "PATCH:/api/v1/appeals/:id#staff": {
+      "fixtureIds": ["native.moderation.appeals.update.default"],
+      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e"
+    },
+    "PATCH:/api/v1/communities/:communitySlug": {
+      "fixtureIds": ["web.communities.archive.default"],
+      "hash": "3edece41173876bbbe97a93f60a48496ebe14ec5f4e8688f8ed1a2ed231a3414"
+    },
+    "PATCH:/api/v1/communities/:communitySlug/post-type-settings": {
+      "fixtureIds": ["web.communities.post-type-settings.update.default"],
+      "hash": "3edece41173876bbbe97a93f60a48496ebe14ec5f4e8688f8ed1a2ed231a3414"
+    },
+    "PATCH:/api/v1/crm/contacts/:contactId": {
+      "fixtureIds": ["native.crm.contact-update.default"],
+      "hash": "810a0326a4505b632bf72d79e124ce04ea648fa24fedc79de90663fcdfdb5a1a"
+    },
+    "PATCH:/api/v1/disputes/:id#staff": {
+      "fixtureIds": ["native.moderation.disputes.update.default"],
+      "hash": "ff3e92da79d3ba5049858e4848887465bf5ec57d4935194321555698f764643e"
+    },
+    "PATCH:/api/v1/dynamic-config/namespaces/:namespace": {
+      "fixtureIds": ["native.dynamic-config.update.changed", "native.dynamic-config.update.no-op"],
+      "hash": "648843673029bdbaa69cea646858d411a25f8083820c9e8d40782eb3096f03d7"
+    },
+    "PATCH:/api/v1/my/cards/:id": {
+      "fixtureIds": ["native.cards.update.clear", "native.cards.update.full"],
+      "hash": "740e553e66b12087d8c40da38e544a00160e9c0779a6eada7944d852ed317c4e"
+    },
+    "PATCH:/api/v1/my/landing-pages/:pageId": {
+      "fixtureIds": ["native.landing-page-mutation.default"],
+      "hash": "ce46a63be1a8571f5d3b7c423386ab3f4cc013767229c7623d3eab4f1b28f17a"
+    },
+    "PATCH:/api/v1/my/messages/:conversationId": {
+      "fixtureIds": ["native.messages.policy.default"],
+      "hash": "8583c029321cf9c1cedc2ed17f11af0724461ed87a3ccff42f8159a8f34ffe18"
+    },
+    "PATCH:/api/v1/my/rewards-program-point-valuations/:id": {
+      "fixtureIds": [
+        "native.point-valuations.update.clear-note",
+        "native.point-valuations.update.full"
+      ],
+      "hash": "51af8d6f60f96b58765c99434ea609bbf530eb47597e048d37b492cebb81131d"
+    },
+    "PATCH:/api/v1/my/rewards-program-statuses/:id": {
+      "fixtureIds": [
+        "native.rewards-statuses.update.clear-dates",
+        "native.rewards-statuses.update.full"
+      ],
+      "hash": "acf8c46ebfdde1f8dfbeff832689bd913aa27eb6424d4b0bfe52a911b1094bf1"
+    },
+    "PATCH:/api/v1/my/spending-categories/:id": {
+      "fixtureIds": ["native.spending-categories.update.clear-note"],
+      "hash": "f2127ada892422d1160e35df570d52f828ca8e9d8fd6b27cdc6a0b53171833c8"
+    },
+    "PATCH:/api/v1/report-integrity/flags/:id": {
+      "fixtureIds": ["native.moderation.report-integrity.resolution.dismissed"],
+      "hash": "17a89a3f9ee940281970ccfbeaf542221f7f043bd92b66ca179488653fcfead3"
+    },
+    "PATCH:/api/v1/reports/:id": {
+      "fixtureIds": ["native.moderation.report-resolution.reviewed"],
+      "hash": "1bacfeaddeea85f745d47dbfc060ca6d2fa7f30d8bcd0205ee71ca749246c316"
+    },
+    "PATCH:/api/v1/support/contacts/:contactId": {
+      "fixtureIds": ["native.staff-support.contact-update.default"],
+      "hash": "e0010a185a65aad57e212fd73fd53d1c3c5d063ba3e0c51a39c32975f0f6eb2b"
+    },
+    "PATCH:/api/v1/support/threads/:threadId": {
+      "fixtureIds": [
+        "native.staff-support.thread-assign.default",
+        "native.staff-support.thread-reopen.default",
+        "native.staff-support.thread-resolve.default"
+      ],
+      "hash": "eda75a384c90f0679e62dfa4e9f350568cc564a72fe563f91eae0f9d8a6ba34a"
+    },
+    "PATCH:/api/v1/support/threads/:threadId/messages/:messageId": {
+      "fixtureIds": ["native.staff-support.message-edit.default"],
+      "hash": "9eb2c6423d5bae14904555ef5bf06a18b5f666c6cce392968281346dbcba27bc"
+    },
+    "PATCH:/api/v1/vote-integrity/flags/:id": {
+      "fixtureIds": [
+        "native.moderation.vote-integrity.resolution.dismissed",
+        "native.moderation.vote-integrity.resolution.penalized",
+        "native.moderation.vote-integrity.resolution.suspended"
+      ],
+      "hash": "1c19c73ae54847be2523fa31bc0d2e7283a2d7e9571916f4aeed2ef3da7565e8"
+    },
+    "POST:/api/v1/admin/users/:userId/identity-verification-attempts": {
+      "fixtureIds": ["native.identity-verification-attempts.grant.default"],
+      "hash": "d4a724d2d08a6ca968bee74bd43d7adb7997f8f24aa5416888a828ea34fbcf23"
+    },
+    "POST:/api/v1/admin/warnings": {
+      "fixtureIds": ["native.moderation.admin-warning.report"],
+      "hash": "35609b1c22fa84fb7fd6a28d41e891169af9dd7a94617eda041b823a4c611331"
+    },
+    "POST:/api/v1/appeals/:id/approval#staff": {
+      "fixtureIds": ["native.moderation.appeals.approval.default"],
+      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e"
+    },
+    "POST:/api/v1/appeals/:id/delivery#staff": {
+      "fixtureIds": ["native.moderation.appeals.delivery.default"],
+      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e"
+    },
+    "POST:/api/v1/appeals/:id/resolution#staff": {
+      "fixtureIds": [
+        "native.moderation.appeals.resolution.accept",
+        "native.moderation.appeals.resolution.deny",
+        "native.moderation.appeals.resolution.reduce"
+      ],
+      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e"
+    },
+    "POST:/api/v1/appeals/:id/resolution-drafts#staff": {
+      "fixtureIds": ["native.moderation.appeals.resolution-drafts.default"],
+      "hash": "a258c49cc3ce25e47176b80b7cd63640324c9898070986281c0ea65c563d1041"
+    },
+    "POST:/api/v1/article-syncs": {
+      "fixtureIds": ["web.admin.article-syncs.trigger.default"],
+      "hash": "a56a7510f38a146e4427582e5be32a76f4fb871d3ae4433b8580981b3dc11a6a"
+    },
+    "POST:/api/v1/auth/bluesky/link": {
+      "fixtureIds": ["native.auth.bluesky.link.default", "native.auth.bluesky.link.native"],
+      "hash": "0525171ec59b2256f2c0aa566621d84ab1e9fa8fd78b2f94d1692b1ce352dba9"
+    },
+    "POST:/api/v1/auth/bluesky/link-completions": {
+      "fixtureIds": ["native.auth.bluesky.link-completion.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "POST:/api/v1/auth/oauth/:provider/authorizations": {
+      "fixtureIds": ["native.oauth.authorization.begin"],
+      "hash": "e735720f6f196dca040648c74bbeb459895bfdd30226ec03b1bceed6dc98b09c"
+    },
+    "POST:/api/v1/auth/oauth/authorizations/:flowId/complete#acknowledged": {
+      "fixtureIds": ["web.oauth.authorization.complete.acknowledged"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "POST:/api/v1/auth/oauth/authorizations/:flowId/complete#authenticated": {
+      "fixtureIds": ["native.oauth.authorization.complete.authenticated"],
+      "hash": "8682f53eb815254b90ab359c5cf7525abbeb98177156e54b9b645417bcda5672"
+    },
+    "POST:/api/v1/auth/oauth/authorizations/:flowId/complete#connected": {
+      "fixtureIds": ["native.oauth.authorization.complete.connected"],
+      "hash": "b25a022fc38cf5536bd59e31c500dedd300ab87cc11d6cb8cece530828e15eb5"
+    },
+    "POST:/api/v1/auth/oauth/authorizations/:flowId/complete#mfa": {
+      "fixtureIds": ["native.oauth.authorization.complete.mfa"],
+      "hash": "5fa22c67303fc88833986de49aa7541c97ada3da604d7e69c384e74f6074ff13"
+    },
+    "POST:/api/v1/auth/oauth/authorizations/:flowId/complete#pending": {
+      "fixtureIds": ["native.oauth.authorization.complete.pending"],
+      "hash": "96cc955daf2ee31976e71f34f4e09bbb2613a937c0dd48b64f50b72803b610ed"
+    },
+    "POST:/api/v1/communities/:communitySlug/automod/recent-actions/:sourceKey/feedback": {
+      "fixtureIds": ["web.communities.automod-feedback.create.default"],
+      "hash": "83814d6370be07703b22ed3ad8138cce0fb53e3a05bd5488b81e6c7ca890d31b"
+    },
+    "POST:/api/v1/communities/:communitySlug/automod/simulate": {
+      "fixtureIds": ["web.communities.automod-simulate.default"],
+      "hash": "689fde9fe4933a3e640f13d06d3b6d18f3ece0dac24647e442ba677011c6e299"
+    },
+    "POST:/api/v1/communities/:communitySlug/saved-replies": {
+      "fixtureIds": ["web.communities.saved-reply.create.default"],
+      "hash": "7de8a9a1eee4c352386003f339d0163685696b2cc884f17e1f8d72f258573f9e"
+    },
+    "POST:/api/v1/communities/:communitySlug/warnings": {
+      "fixtureIds": ["web.communities.warning.create.default"],
+      "hash": "db3345b186d6eaa5bf8977553ac196016f1a78e1097a5a280039dba1fe4ed208"
+    },
+    "POST:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
+      "fixtureIds": ["native.moderation.ban-evasion.confirm"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "POST:/api/v1/crm/contacts": {
+      "fixtureIds": ["native.crm.contact-create.default"],
+      "hash": "810a0326a4505b632bf72d79e124ce04ea648fa24fedc79de90663fcdfdb5a1a"
+    },
+    "POST:/api/v1/crm/contacts/:contactId/email-drafts": {
+      "fixtureIds": ["native.crm.contact-email-draft.default"],
+      "hash": "1cc31280e863ca9f757ea286f2689bfbde80cf436475a45c77cc1929ae72161e"
+    },
+    "POST:/api/v1/crm/contacts/:contactId/emails": {
+      "fixtureIds": ["native.crm.contact-email-send.default"],
+      "hash": "474e1f1274bef58a32b2f7b14b5440dc3f5dbc4aa1f845b227af0676a1ab262e"
+    },
+    "POST:/api/v1/crm/contacts/:contactId/notes": {
+      "fixtureIds": ["native.crm.contact-note-create.default"],
+      "hash": "2993166ccaf7199b37dd3fc4265937ed02896febfd303b1abebd561b06b517bf"
+    },
+    "POST:/api/v1/disputes/:id/approval#staff": {
+      "fixtureIds": ["native.moderation.disputes.approval.default"],
+      "hash": "ff3e92da79d3ba5049858e4848887465bf5ec57d4935194321555698f764643e"
+    },
+    "POST:/api/v1/disputes/:id/delivery#staff": {
+      "fixtureIds": ["native.moderation.disputes.delivery.default"],
+      "hash": "ff3e92da79d3ba5049858e4848887465bf5ec57d4935194321555698f764643e"
+    },
+    "POST:/api/v1/disputes/:id/resolution#staff": {
+      "fixtureIds": [
+        "native.moderation.disputes.resolution.annotate",
+        "native.moderation.disputes.resolution.dismiss",
+        "native.moderation.disputes.resolution.remove"
+      ],
+      "hash": "ff3e92da79d3ba5049858e4848887465bf5ec57d4935194321555698f764643e"
+    },
+    "POST:/api/v1/disputes/:id/resolution-drafts#staff": {
+      "fixtureIds": ["native.moderation.disputes.resolution-drafts.default"],
+      "hash": "a258c49cc3ce25e47176b80b7cd63640324c9898070986281c0ea65c563d1041"
+    },
+    "POST:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType": {
+      "fixtureIds": [
+        "native.entity-relations.post.category.topic.create.default",
+        "native.entity-relations.user.category.topic.create.default"
+      ],
+      "hash": "3bff26e45a66c481d199bfda8b6a062d44272f4c2aad4c89c191d6effcb81948"
+    },
+    "POST:/api/v1/households": {
+      "fixtureIds": ["native.households.create.default"],
+      "hash": "56c574f5f689434e1990c3aac4f384cc1679079063a244a7196d1b7dbe940fc0"
+    },
+    "POST:/api/v1/imports/crm-contacts#success": {
+      "fixtureIds": ["native.crm.import.success.default"],
+      "hash": "cfc494154d52cdb5f26027a2d40a239b3a9c3e0e88adf3448c5cd00ff046d5b3"
+    },
+    "POST:/api/v1/imports/crm-contacts#validation": {
+      "fixtureIds": ["native.crm.import.validation.default"],
+      "hash": "31f552224a7176534594671c4f4499ddf22a63ad2ead9056a732bc819e779e04"
+    },
+    "POST:/api/v1/lists/:id/import": {
+      "fixtureIds": ["native.list-import.default"],
+      "hash": "61903f7a3460db4344e72d92cd565ab42021b91dee99fd9e097d828b8a5c9d66"
+    },
+    "POST:/api/v1/membership-grants": {
+      "fixtureIds": ["native.memberships.grant.default"],
+      "hash": "326f11c4b4a7bbc3cffc0b9dda5e5cb800ff1d6540da8a285474d4555fd498bc"
+    },
+    "POST:/api/v1/membership-purchase-intents": {
+      "fixtureIds": [
+        "native.memberships.purchase-intent.apple.default",
+        "native.memberships.purchase-intent.google.default",
+        "native.memberships.purchase-intent.microsoft.default",
+        "native.memberships.purchase-intent.stripe.default"
+      ],
+      "hash": "a9ae72b3aa0a68df5ace862cfee0e178847440acafc885e9d8bd64d36e6a436d"
+    },
+    "POST:/api/v1/membership-purchase-intents#conflict": {
+      "fixtureIds": ["native.memberships.purchase-intent.conflict.default"],
+      "hash": "d74782053289f43a5c76f7e20a629ff328f212e0474cd2480023f7310fd0af4b"
+    },
+    "POST:/api/v1/membership-verifications": {
+      "fixtureIds": ["native.memberships.verification.pending.default"],
+      "hash": "28e1573f8a1e979aee45c2f7bb7049edc7efe0392f3d3b1b7792270ddb22616e"
+    },
+    "POST:/api/v1/moderation/reveals": {
+      "fixtureIds": ["native.moderation.reveals.default"],
+      "hash": "3b207898e38f139fc31949bb9c487dcf748accd4888a2e2ffdc1b1ce407db9a2"
+    },
+    "POST:/api/v1/mq/backfills/:id/runs": {
+      "fixtureIds": ["web.admin.mq.backfills.trigger.default"],
+      "hash": "62b2946c19b0c95fe66dfc3ec6e4efc43021f2dc8d2945a27f6fc7efe4e5251e"
+    },
+    "POST:/api/v1/mq/queues/:name/pause": {
+      "fixtureIds": ["web.admin.mq.queues.pause.default"],
+      "hash": "62b2946c19b0c95fe66dfc3ec6e4efc43021f2dc8d2945a27f6fc7efe4e5251e"
+    },
+    "POST:/api/v1/mq/queues/:name/resume": {
+      "fixtureIds": ["web.admin.mq.queues.resume.default"],
+      "hash": "62b2946c19b0c95fe66dfc3ec6e4efc43021f2dc8d2945a27f6fc7efe4e5251e"
+    },
+    "POST:/api/v1/mq/scheduled-jobs/:id/runs": {
+      "fixtureIds": ["web.admin.mq.scheduled-jobs.trigger.default"],
+      "hash": "62b2946c19b0c95fe66dfc3ec6e4efc43021f2dc8d2945a27f6fc7efe4e5251e"
+    },
+    "POST:/api/v1/my/cards": {
+      "fixtureIds": ["native.cards.create.default"],
+      "hash": "740e553e66b12087d8c40da38e544a00160e9c0779a6eada7944d852ed317c4e"
+    },
+    "POST:/api/v1/my/email-addresses": {
+      "fixtureIds": ["native.my.email-addresses.request.default"],
+      "hash": "1d959628b69bf9859504da182ef94992ef3b63138df348a9b1b4d028c64e7779"
+    },
+    "POST:/api/v1/my/email-addresses/:email/verifications": {
+      "fixtureIds": ["native.my.email-addresses.verify.default"],
+      "hash": "96f3cd2d68fa7d115f3275747a122290649ba7ae8b57681b17aeedd2e8515c03"
+    },
+    "POST:/api/v1/my/import/rss-feeds": {
+      "fixtureIds": ["native.import-export.rss-feeds.submit.default"],
+      "hash": "76b76d90c5c0aedbcd51a9e14ff540490e85141a579ad0d06a5b2c8ebca9b90e"
+    },
+    "POST:/api/v1/my/import/topics": {
+      "fixtureIds": ["native.import-export.topics.import.outcomes"],
+      "hash": "eb9c18db24e935f685b80f22f4632edee588ecac4d5e7bd6842f0e149706b5c2"
+    },
+    "POST:/api/v1/my/messages": {
+      "fixtureIds": ["native.messages.create.default"],
+      "hash": "36afde80d2ad3f995d1a7c8202dbf04fc457531dceb2f5f7c260fe3dca346fbb"
+    },
+    "POST:/api/v1/my/messages/:conversationId/messages": {
+      "fixtureIds": ["native.messages.send.default"],
+      "hash": "d5e604698bd2d50fceecd59d0f45f6b9b5db58ad6db658d600f2f12ab094618d"
+    },
+    "POST:/api/v1/my/messages/:conversationId/participants": {
+      "fixtureIds": ["native.messages.participant-add.default"],
+      "hash": "d5c551d7c0536efe0be009101addf7f2edd265b28c2c9021022ade15bc6ba35e"
+    },
+    "POST:/api/v1/my/rewards-program-point-valuations": {
+      "fixtureIds": ["native.point-valuations.create.default"],
+      "hash": "51af8d6f60f96b58765c99434ea609bbf530eb47597e048d37b492cebb81131d"
+    },
+    "POST:/api/v1/my/rewards-program-statuses": {
+      "fixtureIds": ["native.rewards-statuses.create.default"],
+      "hash": "acf8c46ebfdde1f8dfbeff832689bd913aa27eb6424d4b0bfe52a911b1094bf1"
+    },
+    "POST:/api/v1/my/spending-categories": {
+      "fixtureIds": ["native.spending-categories.create.default"],
+      "hash": "f2127ada892422d1160e35df570d52f828ca8e9d8fd6b27cdc6a0b53171833c8"
+    },
+    "POST:/api/v1/my/support-threads": {
+      "fixtureIds": ["web.my.support-threads.create.default"],
+      "hash": "a818763bb278db16592589a6a300a02038d06c3d9ab5d04663e6ae90a1e982fd"
+    },
+    "POST:/api/v1/posts/:idOrSlug/clearances": {
+      "fixtureIds": [
+        "native.moderation.clearance.approved",
+        "native.moderation.clearance.in-review",
+        "native.moderation.clearance.rejected"
+      ],
+      "hash": "c50267d3c1ab98efdbc5f0b0e3aae1932a6103e88f005e1ef0de96715b31fda4"
+    },
+    "POST:/api/v1/posts/:idOrSlug/sends": {
+      "fixtureIds": ["native.posts.followers.send-selected"],
+      "hash": "4e08b0299f6aaa051f39f3ac907f5f863849bb7bf99269b46429ad539b12504b"
+    },
+    "POST:/api/v1/posts/:idOrSlug/shares": {
+      "fixtureIds": ["native.posts.followers.share"],
+      "hash": "4e08b0299f6aaa051f39f3ac907f5f863849bb7bf99269b46429ad539b12504b"
+    },
+    "POST:/api/v1/psql/jobs": {
+      "fixtureIds": ["web.admin.psql.jobs.default"],
+      "hash": "62b2946c19b0c95fe66dfc3ec6e4efc43021f2dc8d2945a27f6fc7efe4e5251e"
+    },
+    "POST:/api/v1/report-integrity/flags/:id/penalties": {
+      "fixtureIds": ["native.moderation.report-integrity.penalty"],
+      "hash": "cc38f2f03e7dc070e571623728ce6ae0c1c97f277328b4f3b7bd6a7478cf3071"
+    },
+    "POST:/api/v1/reports/:reportId/judgements": {
+      "fixtureIds": ["native.moderation.report-judgement.default"],
+      "hash": "e858196b2dbd42699e4e515febd51c36eae27df00c7a92ac542bf32cda25fcb4"
+    },
+    "POST:/api/v1/rss-feed-items/:rssFeedItemId/sends": {
+      "fixtureIds": ["native.rss-feed-items.followers.send-selected"],
+      "hash": "4e08b0299f6aaa051f39f3ac907f5f863849bb7bf99269b46429ad539b12504b"
+    },
+    "POST:/api/v1/rss-feed-items/:rssFeedItemId/shares": {
+      "fixtureIds": ["native.rss-feed-items.followers.share"],
+      "hash": "4e08b0299f6aaa051f39f3ac907f5f863849bb7bf99269b46429ad539b12504b"
+    },
+    "POST:/api/v1/support/threads/:threadId/drafts": {
+      "fixtureIds": ["native.staff-support.draft-create.default"],
+      "hash": "dcefa9533486909453960f63c0e0334c3ff2efeba0f93205c3da8afac8e8d62b"
+    },
+    "POST:/api/v1/support/threads/:threadId/messages": {
+      "fixtureIds": ["native.staff-support.message-create.default"],
+      "hash": "9eb2c6423d5bae14904555ef5bf06a18b5f666c6cce392968281346dbcba27bc"
+    },
+    "POST:/api/v1/support/threads/:threadId/messages/:messageId/approvals": {
+      "fixtureIds": ["native.staff-support.message-approve.default"],
+      "hash": "45b706437836d7a17d511574a27277d7d7dc6d7b298dc049068965094ecb70d2"
+    },
+    "POST:/api/v1/support/threads/:threadId/messages/:messageId/sends": {
+      "fixtureIds": ["native.staff-support.message-send.default"],
+      "hash": "45b706437836d7a17d511574a27277d7d7dc6d7b298dc049068965094ecb70d2"
+    },
+    "POST:/api/v1/topics": {
+      "fixtureIds": ["web.topics.mutation.default"],
+      "hash": "105f204afabe661ed5b3f88bc900a17c6e74d7b50941e686ba00d9b1cd039112"
+    },
+    "POST:/api/v1/urls/:id/crawl": {
+      "fixtureIds": ["native.url-crawl-trigger.default"],
+      "hash": "17c9984dd235f6404a41a52a04931188925497d32ee3ad2f4fbc8d3b9be36552"
+    },
+    "POST:/api/v1/users/:idOrSlug/data-request": {
+      "fixtureIds": ["native.users.data-request.create.default"],
+      "hash": "4236781e8318f79a2c223344d702e528e578bc07def18fc41ada98e70ea47c50"
+    },
+    "POST:/api/v1/valkey/bloom-filters/rebuild": {
+      "fixtureIds": ["web.admin.valkey.bloom-filters.rebuild.default"],
+      "hash": "a1d0377e1e3d7bc16a196eda470d7517ee7e4fd9984efcfe796a942d0f205f50"
+    },
+    "POST:/api/v1/valkey/caches/clear": {
+      "fixtureIds": ["web.admin.valkey.caches.clear.default"],
+      "hash": "84d7c2f9dc9f79806166f8fce368d53c67edd12f59276a8118c8792f04a4a55d"
+    },
+    "POST:/api/v1/valkey/flush": {
+      "fixtureIds": ["web.admin.valkey.flush.default"],
+      "hash": "de7303ca4ce6ad1f2215b62ee00a36b9775e4f116d884dade796d057bf6ed4ce"
+    },
+    "POST:/api/v1/vote-integrity/flags/:id/penalties": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalty"],
+      "hash": "bda7233f875cee571d2ec5ff966ce2c9c31c5e4859c34acb4da2e0028a5188d5"
+    },
+    "PUT:/api/v1/communities/:communitySlug/ai-agents/:agentSlug": {
+      "fixtureIds": ["web.communities.ai-agent.default"],
+      "hash": "508e0dc9da176d75b71aebcf12dd0ae2285beeede8f42145ef6ad01a139af6b4"
+    },
+    "PUT:/api/v1/crm/contacts/:contactId/user-link": {
+      "fixtureIds": ["native.crm.contact-link-user.default"],
+      "hash": "810a0326a4505b632bf72d79e124ce04ea648fa24fedc79de90663fcdfdb5a1a"
+    },
+    "PUT:/api/v1/entity-relations/:id/vote": {
+      "fixtureIds": ["native.entity-relations.post.category.topic.vote.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "PUT:/api/v1/my/landing-pages/:pageId/items": {
+      "fixtureIds": ["native.landing-page-items-mutation.default"],
+      "hash": "b1b4878ebd328942902eb3925b574f1e857f3706c2030b931d59784a5d50341a"
+    }
+  },
+  "schemas": {
+    "native.admin-ai-costs.default": {
+      "fixtureIds": ["native.admin-ai-costs.default"],
+      "hash": "ac66f8b66c99a89826b968de973d4ad16275f753c732793229a09e6b622b61ed"
+    },
+    "native.admin-ai-costs.empty": {
+      "fixtureIds": ["native.admin-ai-costs.empty"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "native.admin-ai-costs.page-2": {
+      "fixtureIds": ["native.admin-ai-costs.page-2"],
+      "hash": "dd9259fecfdc74dc75b0979effded930ea9fef4108971b4f2c45cf2cb9598769"
+    },
+    "native.admin-landing-page-analytics.default": {
+      "fixtureIds": ["native.admin-landing-page-analytics.default"],
+      "hash": "b76d93376d8d1afb70afc2cfc9120007b7ec62e0b0590732d133f3fd676f991a"
+    },
+    "native.admin-user-landing-pages.default": {
+      "fixtureIds": ["native.admin-user-landing-pages.default"],
+      "hash": "a002e4b29abf2809dbdaf42c2dc71dfde8f956111d411446f3fc8d0aa2ba0fd2"
+    },
+    "native.agents.conversation.default": {
+      "fixtureIds": ["native.agents.conversation.default"],
+      "hash": "de2aee6832ac058e442e5ba1b45ca5f562a2ad9bacff02e8f68878e2f69d5e7e"
+    },
+    "native.agents.conversation.page-2": {
+      "fixtureIds": ["native.agents.conversation.page-2"],
+      "hash": "db4af26b59dffbc058d7c493ba5b73e5dcb9565902e70a99e22172b39aeb7ae1"
+    },
+    "native.agents.conversations.default": {
+      "fixtureIds": ["native.agents.conversations.default"],
+      "hash": "76e5de0a33d784ad94dfdd3bbc1ddc44a01f0be0fa0bb1299ca0630c10194748"
+    },
+    "native.agents.conversations.filtered-username": {
+      "fixtureIds": ["native.agents.conversations.filtered-username"],
+      "hash": "81c30b470e7ef9c493bd9c0dc9deeb4ddae31548d8f4be461737d4c70f999759"
+    },
+    "native.agents.conversations.page-2": {
+      "fixtureIds": ["native.agents.conversations.page-2"],
+      "hash": "6f5d456af9901a88f67083be7017f561992564592a823b4a80aeaf9e09d3efb3"
+    },
+    "native.agents.default": {
+      "fixtureIds": ["native.agents.default"],
+      "hash": "ee59099fa4b9cbcb97ca9dea24a9c7a80bc8b7d7f4eaba6707395c46859fe6be"
+    },
+    "native.agents.detail.default": {
+      "fixtureIds": ["native.agents.detail.default"],
+      "hash": "3f7c5e8d6bef406fec7dd02cab17a2a8e32bbb8d63023d0afe73d1ea63f7577f"
+    },
+    "native.agents.page-2": {
+      "fixtureIds": ["native.agents.page-2"],
+      "hash": "33209af7104601cf5b5c0e9ad3c81c845ed366f28fe84c306ee4e5968d924c4d"
+    },
+    "native.auth.bluesky.link-completion.default": {
+      "fixtureIds": ["native.auth.bluesky.link-completion.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.auth.bluesky.link.default": {
+      "fixtureIds": ["native.auth.bluesky.link.default"],
+      "hash": "fa421ebd58bf64279b54a21e31185093cd0a83114db39d62edd0e082628179f5"
+    },
+    "native.auth.bluesky.link.native": {
+      "fixtureIds": ["native.auth.bluesky.link.native"],
+      "hash": "fbaa274b7e2ae46f65cd4f1f907e6d74192dce10ff2462ca6a95bd762baaf9f9"
+    },
+    "native.auth.bluesky.unlink.default": {
+      "fixtureIds": ["native.auth.bluesky.unlink.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.auth.sessions.default": {
+      "fixtureIds": ["native.auth.sessions.default"],
+      "hash": "dd94218575514d39085bec7d67aa4a5fb8707f29f6e5a133311266cc85b5caa0"
+    },
+    "native.bookmarks.communities.proxy-following.default": {
+      "fixtureIds": ["native.bookmarks.communities.proxy-following.default"],
+      "hash": "7c5bddc8ac56cb85ca09ab9dcde55bbe4f834480cbfe0bb28e2cc2c59b9ba4ee"
+    },
+    "native.bookmarks.domains.blocked.default": {
+      "fixtureIds": ["native.bookmarks.domains.blocked.default"],
+      "hash": "dd26e00a6564b7167fc93cdd3b234b6caf28e0314b533e873c398b4a1cf35c7f"
+    },
+    "native.bookmarks.domains.muted.default": {
+      "fixtureIds": ["native.bookmarks.domains.muted.default"],
+      "hash": "dd26e00a6564b7167fc93cdd3b234b6caf28e0314b533e873c398b4a1cf35c7f"
+    },
+    "native.bookmarks.posts.saved.default": {
+      "fixtureIds": ["native.bookmarks.posts.saved.default"],
+      "hash": "092c98794f5e3567a5202f2e279d6f937a15278d1ee148e196b1460137e3d057"
+    },
+    "native.bookmarks.posts.saved.next-page": {
+      "fixtureIds": ["native.bookmarks.posts.saved.next-page"],
+      "hash": "9d92b73e997d8a2338571056a63e6cf6786a0112d4e3ec64fc0ed87cb66aab5b"
+    },
+    "native.bookmarks.rss-feed-items.saved.default": {
+      "fixtureIds": ["native.bookmarks.rss-feed-items.saved.default"],
+      "hash": "660e95f3480ac76958ce1698bdb7d7cb11a0aa0e812a349911898842454692bc"
+    },
+    "native.bookmarks.rss-feeds.muted.default": {
+      "fixtureIds": ["native.bookmarks.rss-feeds.muted.default"],
+      "hash": "41d372b1a21a16d57caf3a65b1815b142e5c1c8efe800027adbf4f9f8d658ea4"
+    },
+    "native.bookmarks.rss-feeds.viewed.default": {
+      "fixtureIds": ["native.bookmarks.rss-feeds.viewed.default"],
+      "hash": "41d372b1a21a16d57caf3a65b1815b142e5c1c8efe800027adbf4f9f8d658ea4"
+    },
+    "native.bookmarks.topics.muted.default": {
+      "fixtureIds": ["native.bookmarks.topics.muted.default"],
+      "hash": "498ad66b331a72eb36f1d69bdef62db93e775ec29c0564b7bf6f443225112d2d"
+    },
+    "native.bookmarks.topics.viewed.default": {
+      "fixtureIds": ["native.bookmarks.topics.viewed.default"],
+      "hash": "498ad66b331a72eb36f1d69bdef62db93e775ec29c0564b7bf6f443225112d2d"
+    },
+    "native.bookmarks.urls.saved.default": {
+      "fixtureIds": ["native.bookmarks.urls.saved.default"],
+      "hash": "c7e8b4ee36a25d98e0f565ecdd6ceea121421799f00fd9409633a61fa7841088"
+    },
+    "native.bookmarks.users.dismissed-recommendations.default": {
+      "fixtureIds": ["native.bookmarks.users.dismissed-recommendations.default"],
+      "hash": "f2d91138a2f22a5ccc87cc0b7f1123e683d90281c1ddb1f7309af2ce47c9d5e4"
+    },
+    "native.bookmarks.users.subscribed-posts.default": {
+      "fixtureIds": ["native.bookmarks.users.subscribed-posts.default"],
+      "hash": "f2d91138a2f22a5ccc87cc0b7f1123e683d90281c1ddb1f7309af2ce47c9d5e4"
+    },
+    "native.captcha-config.default": {
+      "fixtureIds": ["native.captcha-config.default"],
+      "hash": "eeb3b761ca91a15a41ab30fe835a5253f99a5800e0b665e3dfa5c20c9e6967d0"
+    },
+    "native.card-topics.search.default": {
+      "fixtureIds": ["native.card-topics.search.default"],
+      "hash": "bab0214d52bf4f8426b7d94acf980a7f6d935da7dd741c7a5b7857fb362d909b"
+    },
+    "native.cards.create.default": {
+      "fixtureIds": ["native.cards.create.default"],
+      "hash": "b8a957d210d2abf712c5cb4521aea64163d902bea40089b19e3ba9ed96a0178f"
+    },
+    "native.cards.delete.default": {
+      "fixtureIds": ["native.cards.delete.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.cards.empty": {
+      "fixtureIds": ["native.cards.empty"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "native.cards.page-1": {
+      "fixtureIds": ["native.cards.page-1"],
+      "hash": "a95e5ff41ffaa5a3c47a4a1c0e4fd2e62d4538d6baa3e51214b2431645208df8"
+    },
+    "native.cards.page-2": {
+      "fixtureIds": ["native.cards.page-2"],
+      "hash": "a46a2e0861ce0d2c36c6f63ed6bd58e8a9b99a5c1ba613447f5c114b39eb96aa"
+    },
+    "native.cards.update.clear": {
+      "fixtureIds": ["native.cards.update.clear"],
+      "hash": "78478b4b31c056effcf0460fff889b22cdfc33d8f30c0fe620651c42a854740b"
+    },
+    "native.cards.update.full": {
+      "fixtureIds": ["native.cards.update.full"],
+      "hash": "807b88dc92295e86e3c343ae9ec88dd526ed465802c08908c50644c36164c248"
+    },
+    "native.comments.ancestors.bounded.deep-continuation": {
+      "fixtureIds": ["native.comments.ancestors.bounded.deep-continuation"],
+      "hash": "ea4ede3fe741378681a34159e2c1aef66fb98b87bba8856075f9cc80b856ea30"
+    },
+    "native.comments.ancestors.bounded.deep-initial": {
+      "fixtureIds": ["native.comments.ancestors.bounded.deep-initial"],
+      "hash": "fd338b7c7edd20e0714078fc196e4cc08080579b64f44b8b3e6a0b589d68e2e0"
+    },
+    "native.comments.ancestors.bounded.shallow": {
+      "fixtureIds": ["native.comments.ancestors.bounded.shallow"],
+      "hash": "19ca04cf141b8fb6695731f1a83f05cd3b9ced76d215c94bb8bd39dc084cb53b"
+    },
+    "native.comments.ancestors.permalink": {
+      "fixtureIds": ["native.comments.ancestors.permalink"],
+      "hash": "699c88ab17b7d6073ca6842a78a5b3c59377bd25c75261824dfa3fb6dd55134e"
+    },
+    "native.comments.descendants.default": {
+      "fixtureIds": ["native.comments.descendants.default"],
+      "hash": "71ed86a6d4d8a08c7ee20765c634d04f52871b899fb33e39ccc822bf7288535d"
+    },
+    "native.comments.post-detail.default": {
+      "fixtureIds": ["native.comments.post-detail.default"],
+      "hash": "ba974a79f5c1a149b350931945f10f9a23c851379d30ff7d1094185d6f4e8c1a"
+    },
+    "native.community.moderation-transparency.default": {
+      "fixtureIds": ["native.community.moderation-transparency.default"],
+      "hash": "7e2c69af9db2cd6d8e3e51fca0a09c8f1a3726d8cbc34c9dfd41f01467d19d36"
+    },
+    "native.community.pending-reports.paginated": {
+      "fixtureIds": ["native.community.pending-reports.paginated"],
+      "hash": "719aeb07d437561056048c7ccd2aa328393169c437cfa0f6114aa82171ebc50b"
+    },
+    "native.crm.contact-archive.default": {
+      "fixtureIds": ["native.crm.contact-archive.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.crm.contact-create.default": {
+      "fixtureIds": ["native.crm.contact-create.default"],
+      "hash": "3dd9b64bb145de6b0d59548e0d3269d2ebe6d98379685c70693eb85f657a8090"
+    },
+    "native.crm.contact-detail.default": {
+      "fixtureIds": ["native.crm.contact-detail.default"],
+      "hash": "b362486a6c1ddafac8ae2a522f0b6eb8859c70f838ad5336872e4b8ce4cfc683"
+    },
+    "native.crm.contact-email-draft.default": {
+      "fixtureIds": ["native.crm.contact-email-draft.default"],
+      "hash": "cd075cd911a18a1129189d47f7c801730a0dc62df93bcb6f448858a94e7732c0"
+    },
+    "native.crm.contact-email-send.default": {
+      "fixtureIds": ["native.crm.contact-email-send.default"],
+      "hash": "69439b4a370687df0327d332560613113b7702ce325762a17be37e1a4136d818"
+    },
+    "native.crm.contact-emails.default": {
+      "fixtureIds": ["native.crm.contact-emails.default"],
+      "hash": "b09ab5580b6d9a752858ff283cea036f5a83a61a4526a10174ad98a8962f52dd"
+    },
+    "native.crm.contact-link-user.default": {
+      "fixtureIds": ["native.crm.contact-link-user.default"],
+      "hash": "e25e47fd81fcb25af1992be14f349b4e492f47299251ac841f6a350875dc378a"
+    },
+    "native.crm.contact-note-create.default": {
+      "fixtureIds": ["native.crm.contact-note-create.default"],
+      "hash": "52f46c7b6087dfebf943b3e7e5c000a38a4f360d07446ddf8c2d70ef95817254"
+    },
+    "native.crm.contact-note-delete.default": {
+      "fixtureIds": ["native.crm.contact-note-delete.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.crm.contact-notes.default": {
+      "fixtureIds": ["native.crm.contact-notes.default"],
+      "hash": "0a49aed27781abeeb8ef0ae599f9d6143978b4e564ba54a504b26d48ce779c01"
+    },
+    "native.crm.contact-unlink-user.default": {
+      "fixtureIds": ["native.crm.contact-unlink-user.default"],
+      "hash": "3dd9b64bb145de6b0d59548e0d3269d2ebe6d98379685c70693eb85f657a8090"
+    },
+    "native.crm.contact-update.default": {
+      "fixtureIds": ["native.crm.contact-update.default"],
+      "hash": "0527fda5f104d31d5c26f0f56444bd738d5eb19584c12ab6e471229a64cc9027"
+    },
+    "native.crm.contacts.default": {
+      "fixtureIds": ["native.crm.contacts.default"],
+      "hash": "3767e6f384cd1f55e1ffd93b74db1991f287c3e8d0b1d433bd6b0be0acbf290f"
+    },
+    "native.crm.import.success.default": {
+      "fixtureIds": ["native.crm.import.success.default"],
+      "hash": "a63fba0b7b8ecbdedea6fcf7b66fa13e898af31e16455976da099e1b0cac6684"
+    },
+    "native.crm.import.validation.default": {
+      "fixtureIds": ["native.crm.import.validation.default"],
+      "hash": "1c2419337b6f61541e658848089332f7e34ccf2e5b8c90a3f632fb8ed8d9ac4a"
+    },
+    "native.dynamic-config.history.default": {
+      "fixtureIds": ["native.dynamic-config.history.default"],
+      "hash": "e62e1eca9461241ed77a1e020aa5ed7f37b8efff0310bf60ee82f148b4c091a0"
+    },
+    "native.dynamic-config.namespace.integer": {
+      "fixtureIds": ["native.dynamic-config.namespace.integer"],
+      "hash": "382a58af71d92449dd8cf59e216a5ece4e888fd40ccddb902988f4bfabafdae0"
+    },
+    "native.dynamic-config.namespace.string": {
+      "fixtureIds": ["native.dynamic-config.namespace.string"],
+      "hash": "6ffac054e79e32ba47decdccb3f52681f127ae845826f9ad07dde3e111d50971"
+    },
+    "native.dynamic-config.namespace.typed": {
+      "fixtureIds": ["native.dynamic-config.namespace.typed"],
+      "hash": "ae8bfba2e188f73870e0625b8a8937b9699c9c749cb780574b8a61ad4e482171"
+    },
+    "native.dynamic-config.namespaces.developer": {
+      "fixtureIds": ["native.dynamic-config.namespaces.developer"],
+      "hash": "5f67a1d1dc827d55a741db9a43769f5fff2d8ae15a822bc50a2d3fbe9dc6829a"
+    },
+    "native.dynamic-config.update.changed": {
+      "fixtureIds": ["native.dynamic-config.update.changed"],
+      "hash": "2f74118062b8205ca06c0027dac4af3f786993e7005c64257191d42735dacc2b"
+    },
+    "native.dynamic-config.update.no-op": {
+      "fixtureIds": ["native.dynamic-config.update.no-op"],
+      "hash": "2f74118062b8205ca06c0027dac4af3f786993e7005c64257191d42735dacc2b"
+    },
+    "native.entity-relations.post.category.topic.create.default": {
+      "fixtureIds": ["native.entity-relations.post.category.topic.create.default"],
+      "hash": "8befaf514cf60022e0070e114e15c5fb0b3417966153dd9cb881535456feb329"
+    },
+    "native.entity-relations.post.category.topic.default": {
+      "fixtureIds": ["native.entity-relations.post.category.topic.default"],
+      "hash": "8a468184904d9ed6646d07b0b647e59a98f3ef065ee31cb31804e507f754b4a6"
+    },
+    "native.entity-relations.post.category.topic.vote.default": {
+      "fixtureIds": ["native.entity-relations.post.category.topic.vote.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.entity-relations.post.related.post.default": {
+      "fixtureIds": ["native.entity-relations.post.related.post.default"],
+      "hash": "59424583846443e109c51899fc9101bd103dc4c13139cfcd4303886c50965b62"
+    },
+    "native.entity-relations.post.related.url.default": {
+      "fixtureIds": ["native.entity-relations.post.related.url.default"],
+      "hash": "0e7b422f807bc35411dd0f18117bbc419789333782ba58bebda2115440f06249"
+    },
+    "native.entity-relations.rss-feed-item.category.topic.default": {
+      "fixtureIds": ["native.entity-relations.rss-feed-item.category.topic.default"],
+      "hash": "8a468184904d9ed6646d07b0b647e59a98f3ef065ee31cb31804e507f754b4a6"
+    },
+    "native.entity-relations.topic.publisher-type.topic.default": {
+      "fixtureIds": ["native.entity-relations.topic.publisher-type.topic.default"],
+      "hash": "8a468184904d9ed6646d07b0b647e59a98f3ef065ee31cb31804e507f754b4a6"
+    },
+    "native.entity-relations.user.category.topic.create.default": {
+      "fixtureIds": ["native.entity-relations.user.category.topic.create.default"],
+      "hash": "8befaf514cf60022e0070e114e15c5fb0b3417966153dd9cb881535456feb329"
+    },
+    "native.entity-relations.user.category.topic.default": {
+      "fixtureIds": ["native.entity-relations.user.category.topic.default"],
+      "hash": "8a468184904d9ed6646d07b0b647e59a98f3ef065ee31cb31804e507f754b4a6"
+    },
+    "native.feature-flags.default": {
+      "fixtureIds": ["native.feature-flags.default"],
+      "hash": "7602aaa588ce61cf760766a6839d6554fb552015ece3707d15b6c9bdf244c002"
+    },
+    "native.fediverse.instance.slug": {
+      "fixtureIds": ["native.fediverse.instance.slug"],
+      "hash": "c66229f15867aba13e55aa36f649c5af065493e733df12875d798b2dda54d00e"
+    },
+    "native.fediverse.instance.uuid": {
+      "fixtureIds": ["native.fediverse.instance.uuid"],
+      "hash": "88e77389264ebffda4e7bd5051f967e551b1977e7043c1130a6f42eeec250da7"
+    },
+    "native.fediverse.instances.default": {
+      "fixtureIds": ["native.fediverse.instances.default"],
+      "hash": "6d91f9b7ac6b7fa56e9dd88ca0ba01895af686669803ec16ba5b72712448647c"
+    },
+    "native.fediverse.instances.empty": {
+      "fixtureIds": ["native.fediverse.instances.empty"],
+      "hash": "b7929339913c7e093ff508b89f2a3fb55d62512eb3bb92f1534701894899a985"
+    },
+    "native.fediverse.instances.page-2": {
+      "fixtureIds": ["native.fediverse.instances.page-2"],
+      "hash": "8d82a7d5eaa2720f0cf36fd6320833c6023e19045328a234d386a714c7811cd7"
+    },
+    "native.friend-recommendations.default": {
+      "fixtureIds": ["native.friend-recommendations.default"],
+      "hash": "2dfb8c05aac5c863c9fe0c8a0d00bf919bab2881e4272ee20c54ee14a9cb1db3"
+    },
+    "native.friend-recommendations.empty": {
+      "fixtureIds": ["native.friend-recommendations.empty"],
+      "hash": "4a171c7f7fdd3cdb1d5deec39b5fe582e249897e5dbccb21733d28c4f89ce66a"
+    },
+    "native.friend-recommendations.second-page": {
+      "fixtureIds": ["native.friend-recommendations.second-page"],
+      "hash": "91998616ad38239b78f6839c097f633f67b96b929c8f8716bb7494428ddd2512"
+    },
+    "native.hostname.default": {
+      "fixtureIds": ["native.hostname.default"],
+      "hash": "0042e85beb41db8f4b1ad77058a1e35212ecc5f46f3fd2d9606440ed1006f1be"
+    },
+    "native.hostnames.default": {
+      "fixtureIds": ["native.hostnames.default"],
+      "hash": "d474aaa2758e24d3c6aa927b74f302ec82cbfecb3a254e2eae7a062673d2a1d6"
+    },
+    "native.household-memberships.delete.default": {
+      "fixtureIds": ["native.household-memberships.delete.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.household-memberships.empty": {
+      "fixtureIds": ["native.household-memberships.empty"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "native.household-memberships.multiple": {
+      "fixtureIds": ["native.household-memberships.multiple"],
+      "hash": "3fac36691ea371ed377527f7655ae5a13d794c97774238171470dac62d861140"
+    },
+    "native.household-memberships.page-1": {
+      "fixtureIds": ["native.household-memberships.page-1"],
+      "hash": "9aab9b71ab760bd2bfdbc7b4756c496f927d64e02d5267e742bb19594308323a"
+    },
+    "native.household-memberships.page-2": {
+      "fixtureIds": ["native.household-memberships.page-2"],
+      "hash": "f89eb8670adc372b61b83e4ed346b407c0fbedbee921059cc96e17fa8a2ecd22"
+    },
+    "native.household-memberships.single": {
+      "fixtureIds": ["native.household-memberships.single"],
+      "hash": "8bc6e15c7c39d2b52b0c8645b6f86768672077d1f8eeab07aba013cc72680b8d"
+    },
+    "native.households.create.default": {
+      "fixtureIds": ["native.households.create.default"],
+      "hash": "2d2a7a708c59f5dec906e3e93af4a503ca8f654ca5b3fcfa248b61747dadc584"
+    },
+    "native.households.empty": {
+      "fixtureIds": ["native.households.empty"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "native.households.member.default": {
+      "fixtureIds": ["native.households.member.default"],
+      "hash": "d18af1184e7021bbc27d04249e01d849aeff41f931b621cce767bcbe66724fc5"
+    },
+    "native.households.member.page-2": {
+      "fixtureIds": ["native.households.member.page-2"],
+      "hash": "54f0e0e284be184c0010720149f5306eb939cfe401ae012575c424b2c12cabdb"
+    },
+    "native.households.multiple": {
+      "fixtureIds": ["native.households.multiple"],
+      "hash": "54f0e0e284be184c0010720149f5306eb939cfe401ae012575c424b2c12cabdb"
+    },
+    "native.households.owned": {
+      "fixtureIds": ["native.households.owned"],
+      "hash": "54f0e0e284be184c0010720149f5306eb939cfe401ae012575c424b2c12cabdb"
+    },
+    "native.households.single-owned": {
+      "fixtureIds": ["native.households.single-owned"],
+      "hash": "54f0e0e284be184c0010720149f5306eb939cfe401ae012575c424b2c12cabdb"
+    },
+    "native.identity-verification-attempts.grant.default": {
+      "fixtureIds": ["native.identity-verification-attempts.grant.default"],
+      "hash": "990926e4caa76f0e4643f342039fade0c02c80c2c67e61c1027b9bebce32dce8"
+    },
+    "native.import-export.rss-feeds.status.partial": {
+      "fixtureIds": ["native.import-export.rss-feeds.status.partial"],
+      "hash": "c50e3bd2cadecad9f93fdd708dca6cab35afcfcfd676d5dab6d8773e9f52c0af"
+    },
+    "native.import-export.rss-feeds.status.retrying": {
+      "fixtureIds": ["native.import-export.rss-feeds.status.retrying"],
+      "hash": "20cdf10dc909c98451adb305c066e817cf36eb004c3765da188d63482c6087f6"
+    },
+    "native.import-export.rss-feeds.submit.default": {
+      "fixtureIds": ["native.import-export.rss-feeds.submit.default"],
+      "hash": "1a048bba00e087501451f0654fc0832d6ef6e393e336b644135557aaba67eece"
+    },
+    "native.import-export.topics.export.default": {
+      "fixtureIds": ["native.import-export.topics.export.default"],
+      "hash": "0517df671a5cb18319155ff98ed25e3e0a4f14174072fb40230d44ed6187701a"
+    },
+    "native.import-export.topics.export.download": {
+      "fixtureIds": ["native.import-export.topics.export.download"],
+      "hash": "09cfaacca1a2ec5a2a34efb1c443ca9e290786324c20cc2ba728304406470d07"
+    },
+    "native.import-export.topics.import.outcomes": {
+      "fixtureIds": ["native.import-export.topics.import.outcomes"],
+      "hash": "4e15bfea644cf9aacd301e957ae0a7e204ffd129a7aa0d0b79a3c48ea8a62a20"
+    },
+    "native.landing-page-analytics.default": {
+      "fixtureIds": ["native.landing-page-analytics.default"],
+      "hash": "0ff6ef43102964cf45c4e8f8bba19f2667fa4a732591ede71b5694846b0052b1"
+    },
+    "native.landing-page-candidates.default": {
+      "fixtureIds": ["native.landing-page-candidates.default"],
+      "hash": "42142bf10047a96ee6e070dbe4ef32b67c8c4f1c1e219e1acb1cb056dd00cf38"
+    },
+    "native.landing-page-detail.default": {
+      "fixtureIds": ["native.landing-page-detail.default"],
+      "hash": "88b4dcc62d0bc722a1dc8a20594897b806343b5d4855da8642d7c7c03429a175"
+    },
+    "native.landing-page-items-mutation.default": {
+      "fixtureIds": ["native.landing-page-items-mutation.default"],
+      "hash": "88b4dcc62d0bc722a1dc8a20594897b806343b5d4855da8642d7c7c03429a175"
+    },
+    "native.landing-page-mutation.default": {
+      "fixtureIds": ["native.landing-page-mutation.default"],
+      "hash": "c942e26fba6100f8fa2b384f64b6af348e184b24760adc7fcbdac5dea3f52e3e"
+    },
+    "native.landing-pages.default": {
+      "fixtureIds": ["native.landing-pages.default"],
+      "hash": "728663173dc1a395dab747453a9816ee6a12bb80be33a21b21baa7bdd41fe5fe"
+    },
+    "native.list-import.default": {
+      "fixtureIds": ["native.list-import.default"],
+      "hash": "4b02a23742fb530f59b4d1e827a29e7997d646418d72b3c1edcae513e4fae2ea"
+    },
+    "native.list-items.default": {
+      "fixtureIds": ["native.list-items.default"],
+      "hash": "3141764b9a5587099c679576b05ea4d8c7b5f657203d17ca0eddb512b31be3b3"
+    },
+    "native.lists-containing.default": {
+      "fixtureIds": ["native.lists-containing.default"],
+      "hash": "9fee0b5471ad192e80ec7181454265b9a0ab6ed30054f3f5fb1ed9cd88d67da6"
+    },
+    "native.lists.default": {
+      "fixtureIds": ["native.lists.default"],
+      "hash": "49e6fc19e91a99e017b8fec1491c343c5a9288bba25078f6f9e11eddc93d9151"
+    },
+    "native.memberships.grant.default": {
+      "fixtureIds": ["native.memberships.grant.default"],
+      "hash": "0179b3b6917a060e146af7428cf21411e5525d81c65938bcd5ff9a46e9958b5c"
+    },
+    "native.memberships.grant.delete.default": {
+      "fixtureIds": ["native.memberships.grant.delete.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.memberships.me.default": {
+      "fixtureIds": ["native.memberships.me.default"],
+      "hash": "8c203cb577397da82f63909043405bae53562e93f03291d5ce661e2bbc81cc44"
+    },
+    "native.memberships.me.lifecycle.default": {
+      "fixtureIds": ["native.memberships.me.lifecycle.default"],
+      "hash": "9d23459f7ff7b95ef1af512c8631af411905f24b532948ff635e00c3473ebaff"
+    },
+    "native.memberships.plans.default": {
+      "fixtureIds": ["native.memberships.plans.default"],
+      "hash": "b463ca5d12876d75754b9ecc6238b6e8abf6fb0134423642c1d0aabef3d63807"
+    },
+    "native.memberships.purchase-intent.apple.default": {
+      "fixtureIds": ["native.memberships.purchase-intent.apple.default"],
+      "hash": "f0240dd47561080de8ed7c22690de67e804f2897748d0ea594c09bbd78bfecf4"
+    },
+    "native.memberships.purchase-intent.conflict.default": {
+      "fixtureIds": ["native.memberships.purchase-intent.conflict.default"],
+      "hash": "00b6f6dc7341f5ecfa2ad988c844a02a1b5d7d37de92ec0dced4ca6fa0af5d25"
+    },
+    "native.memberships.purchase-intent.google.default": {
+      "fixtureIds": ["native.memberships.purchase-intent.google.default"],
+      "hash": "a5c680112db406e14387c07836636f0fd03becc797c8d1c18bfcb457f3a73daf"
+    },
+    "native.memberships.purchase-intent.microsoft.default": {
+      "fixtureIds": ["native.memberships.purchase-intent.microsoft.default"],
+      "hash": "dc9d56693040652480c3fdd09bcab8665d55e157b8933e57aa29becd14d5d9a0"
+    },
+    "native.memberships.purchase-intent.stripe.default": {
+      "fixtureIds": ["native.memberships.purchase-intent.stripe.default"],
+      "hash": "10e644f2c09f7a21686807f820bab8a28b2f0cc13328090d9f888eeb5a01e6a4"
+    },
+    "native.memberships.verification-status.conflict.default": {
+      "fixtureIds": ["native.memberships.verification-status.conflict.default"],
+      "hash": "43f8bbbee82c88d0bf9bb85274847ee789adc7d3c1679d710587db788839fe70"
+    },
+    "native.memberships.verification-status.pending.default": {
+      "fixtureIds": ["native.memberships.verification-status.pending.default"],
+      "hash": "08ac2e8bfabfed6d229f110120c54edbed04354659d4a4b7e9f39ebdcfcef2e4"
+    },
+    "native.memberships.verification-status.rejected.default": {
+      "fixtureIds": ["native.memberships.verification-status.rejected.default"],
+      "hash": "43f8bbbee82c88d0bf9bb85274847ee789adc7d3c1679d710587db788839fe70"
+    },
+    "native.memberships.verification-status.verified.default": {
+      "fixtureIds": ["native.memberships.verification-status.verified.default"],
+      "hash": "43f8bbbee82c88d0bf9bb85274847ee789adc7d3c1679d710587db788839fe70"
+    },
+    "native.memberships.verification.pending.default": {
+      "fixtureIds": ["native.memberships.verification.pending.default"],
+      "hash": "08ac2e8bfabfed6d229f110120c54edbed04354659d4a4b7e9f39ebdcfcef2e4"
+    },
+    "native.messages.conversation.default": {
+      "fixtureIds": ["native.messages.conversation.default"],
+      "hash": "77563339aee5098d47ffdf83ecca1f55131215643fd74d5f39ea0bf17e7beb20"
+    },
+    "native.messages.conversations.default": {
+      "fixtureIds": ["native.messages.conversations.default"],
+      "hash": "fc0a52564fd36028cb926945dc551b07e91d5fae19e15924c0273470a765b519"
+    },
+    "native.messages.conversations.page-2": {
+      "fixtureIds": ["native.messages.conversations.page-2"],
+      "hash": "e5ab2afba5f2ed7c975889df9a5895c89a2a03b265e3c5855454aa6ea64d81f8"
+    },
+    "native.messages.create.default": {
+      "fixtureIds": ["native.messages.create.default"],
+      "hash": "e33e82865fd90beac8a694a55ba2d86dfa35739a1bd796ba269ae22aa176eee1"
+    },
+    "native.messages.participant-add.default": {
+      "fixtureIds": ["native.messages.participant-add.default"],
+      "hash": "c5875460dcfebc2f7209b892b8fdb03c8046aa28f8cd32359adb399e2217a5f1"
+    },
+    "native.messages.participant-remove.default": {
+      "fixtureIds": ["native.messages.participant-remove.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.messages.participants.default": {
+      "fixtureIds": ["native.messages.participants.default"],
+      "hash": "a656be4e402c9351a5a3e4c9a46a9ffcf826b33b819ac9ad56256c1350a28022"
+    },
+    "native.messages.policy.default": {
+      "fixtureIds": ["native.messages.policy.default"],
+      "hash": "5cbc82536200679fbb5aeef07fddc014d4343a5de55caecdd2ec3c6228c15cd4"
+    },
+    "native.messages.send.default": {
+      "fixtureIds": ["native.messages.send.default"],
+      "hash": "600170b43f0b22d920d57f8261d6454387ce8f27859b01ef46a1324753784f81"
+    },
+    "native.messages.thread.default": {
+      "fixtureIds": ["native.messages.thread.default"],
+      "hash": "11e6b58259212d36f9a7e7a8124b77ecb67e30400a9859355cf08fffb8eba92e"
+    },
+    "native.messages.thread.page-2": {
+      "fixtureIds": ["native.messages.thread.page-2"],
+      "hash": "17616903a847412cefa7907290456f98a448d9844575612e601db784ccf72ad9"
+    },
+    "native.messages.user-search.default": {
+      "fixtureIds": ["native.messages.user-search.default"],
+      "hash": "392df99fc9adf53c2b74e9525acce60473b1a63d3deb31568aa7f6aada6432df"
+    },
+    "native.moderation.admin-warning.report": {
+      "fixtureIds": ["native.moderation.admin-warning.report"],
+      "hash": "03b53ff95b9d13ee2d724322b00745421fe7848b41a6b6469af895f15ad8794b"
+    },
+    "native.moderation.analytics.default": {
+      "fixtureIds": ["native.moderation.analytics.default"],
+      "hash": "b4daf9fff1ee37a976367af64a8e683b67ac24d5c7ee0caf01cf7884ffc6b867"
+    },
+    "native.moderation.appeals.approval.default": {
+      "fixtureIds": ["native.moderation.appeals.approval.default"],
+      "hash": "cbfab9100c7329ae23c3713eb009f6eb4ae9e23afd22c603866a0045ae88b9e9"
+    },
+    "native.moderation.appeals.default": {
+      "fixtureIds": ["native.moderation.appeals.default"],
+      "hash": "fef1a861f9975099b20919b2a4d877cd2edc31786753c92ef80158edfbe38a16"
+    },
+    "native.moderation.appeals.delivery.default": {
+      "fixtureIds": ["native.moderation.appeals.delivery.default"],
+      "hash": "f1f3a961934227c95cfb26d00c05500f046e9acb1e51713ce559391ac516597b"
+    },
+    "native.moderation.appeals.page-2": {
+      "fixtureIds": ["native.moderation.appeals.page-2"],
+      "hash": "b308929194ea3def50ce43aa2f1e99f4a7b8756b71a8185d8522b087857eeae6"
+    },
+    "native.moderation.appeals.resolution-drafts.default": {
+      "fixtureIds": ["native.moderation.appeals.resolution-drafts.default"],
+      "hash": "20e75d65b89e7e2ed3b08b4f223f47570b26efc7cbb151bbc40d4261fde3c2c6"
+    },
+    "native.moderation.appeals.resolution.accept": {
+      "fixtureIds": ["native.moderation.appeals.resolution.accept"],
+      "hash": "bc9508a3eb41a69b7aa555b548361a8fbd330be31f9b0bdcb3fdebbad02f8392"
+    },
+    "native.moderation.appeals.resolution.deny": {
+      "fixtureIds": ["native.moderation.appeals.resolution.deny"],
+      "hash": "bc9508a3eb41a69b7aa555b548361a8fbd330be31f9b0bdcb3fdebbad02f8392"
+    },
+    "native.moderation.appeals.resolution.reduce": {
+      "fixtureIds": ["native.moderation.appeals.resolution.reduce"],
+      "hash": "bc9508a3eb41a69b7aa555b548361a8fbd330be31f9b0bdcb3fdebbad02f8392"
+    },
+    "native.moderation.appeals.update.default": {
+      "fixtureIds": ["native.moderation.appeals.update.default"],
+      "hash": "4b0536ceb1f550598c5231c8dde3471daae3510d2610d73b61d2bfaf19081e96"
+    },
+    "native.moderation.ban-evasion.confirm": {
+      "fixtureIds": ["native.moderation.ban-evasion.confirm"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.moderation.ban-evasion.dismiss": {
+      "fixtureIds": ["native.moderation.ban-evasion.dismiss"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.moderation.clearance.approved": {
+      "fixtureIds": ["native.moderation.clearance.approved"],
+      "hash": "607e08537fdebd5bc93feb1996635dc9b216395e27a9e534ef85b489d06b66a5"
+    },
+    "native.moderation.clearance.in-review": {
+      "fixtureIds": ["native.moderation.clearance.in-review"],
+      "hash": "607e08537fdebd5bc93feb1996635dc9b216395e27a9e534ef85b489d06b66a5"
+    },
+    "native.moderation.clearance.rejected": {
+      "fixtureIds": ["native.moderation.clearance.rejected"],
+      "hash": "607e08537fdebd5bc93feb1996635dc9b216395e27a9e534ef85b489d06b66a5"
+    },
+    "native.moderation.disputes.approval.default": {
+      "fixtureIds": ["native.moderation.disputes.approval.default"],
+      "hash": "3e3c20404e30fe222d649f0f433c15e5644a8a68f9e2de333b71778b04c526c3"
+    },
+    "native.moderation.disputes.default": {
+      "fixtureIds": ["native.moderation.disputes.default"],
+      "hash": "90957b80cf790b6f4bd843985d63abcc42ab84dda6ceba6343f391632cd1ff88"
+    },
+    "native.moderation.disputes.delivery.default": {
+      "fixtureIds": ["native.moderation.disputes.delivery.default"],
+      "hash": "689d4f70c495625b295a27b2060ff728e88ea3b130e6e69feef6419b3c31d8c3"
+    },
+    "native.moderation.disputes.detail.default": {
+      "fixtureIds": ["native.moderation.disputes.detail.default"],
+      "hash": "bc6d86d33506ec2b71542d6525c0745cd400169a511fb2d6a89830735d52e198"
+    },
+    "native.moderation.disputes.resolution-drafts.default": {
+      "fixtureIds": ["native.moderation.disputes.resolution-drafts.default"],
+      "hash": "20e75d65b89e7e2ed3b08b4f223f47570b26efc7cbb151bbc40d4261fde3c2c6"
+    },
+    "native.moderation.disputes.resolution.annotate": {
+      "fixtureIds": ["native.moderation.disputes.resolution.annotate"],
+      "hash": "9a8a77d54c6d9681496cf4091b50b780f585cfa926f621a5cd9680847e43ee93"
+    },
+    "native.moderation.disputes.resolution.dismiss": {
+      "fixtureIds": ["native.moderation.disputes.resolution.dismiss"],
+      "hash": "9a8a77d54c6d9681496cf4091b50b780f585cfa926f621a5cd9680847e43ee93"
+    },
+    "native.moderation.disputes.resolution.remove": {
+      "fixtureIds": ["native.moderation.disputes.resolution.remove"],
+      "hash": "9a8a77d54c6d9681496cf4091b50b780f585cfa926f621a5cd9680847e43ee93"
+    },
+    "native.moderation.disputes.update.default": {
+      "fixtureIds": ["native.moderation.disputes.update.default"],
+      "hash": "f4685b74b5125cc1872dd76728dbf84e92d984231ea79f5de73431af5deedbd6"
+    },
+    "native.moderation.exposure.default": {
+      "fixtureIds": ["native.moderation.exposure.default"],
+      "hash": "a1fa6267ac88a7a6eae436d9ba7695bffa0a9d949a16231dd35e17245368df40"
+    },
+    "native.moderation.modlog.default": {
+      "fixtureIds": ["native.moderation.modlog.default"],
+      "hash": "4dedbd178e3b2e80e096f254abeaa5f51b66ed492a2602442d26cf125bc3b59a"
+    },
+    "native.moderation.removed-posts.default": {
+      "fixtureIds": ["native.moderation.removed-posts.default"],
+      "hash": "92983f56362dee66448a21c045aebcc9f3fdb5e487a05b50758088d8f621f5ce"
+    },
+    "native.moderation.removed-posts.page-2": {
+      "fixtureIds": ["native.moderation.removed-posts.page-2"],
+      "hash": "3850c7ac9bb26da3f5641fd6621e70bb793e34e60758f0ba519f3a20491ca1b6"
+    },
+    "native.moderation.report-integrity.default": {
+      "fixtureIds": ["native.moderation.report-integrity.default"],
+      "hash": "dd793a5f5b1d4109a040defd4722e1fff29b8de5c06581736f2d6861d467db94"
+    },
+    "native.moderation.report-integrity.penalties.active": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.active"],
+      "hash": "7256479600ff86d0b8eaffbb3d747b6270ba3d63af7311c8e92d3156aacac0c4"
+    },
+    "native.moderation.report-integrity.penalties.all": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.all"],
+      "hash": "75f05015bcb01286136ad643e3efb51574e9434eaf368ac93bc4a1473bee2323"
+    },
+    "native.moderation.report-integrity.penalties.default": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.default"],
+      "hash": "75f05015bcb01286136ad643e3efb51574e9434eaf368ac93bc4a1473bee2323"
+    },
+    "native.moderation.report-integrity.penalties.get": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.get"],
+      "hash": "062adcde5b49c70f309edf7746aa06081b621cb4710afc6d73c515e9c3d8885a"
+    },
+    "native.moderation.report-integrity.penalties.page-2": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.page-2"],
+      "hash": "7256479600ff86d0b8eaffbb3d747b6270ba3d63af7311c8e92d3156aacac0c4"
+    },
+    "native.moderation.report-integrity.penalties.revoke": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.revoke"],
+      "hash": "b8d90a050c681a4c100b1767915517efefa39d27b826ff3d6665c37226bf0c7c"
+    },
+    "native.moderation.report-integrity.penalties.revoked": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.revoked"],
+      "hash": "14c7765e72e783e4fca70e488b4b37761e78c80049c4603af41a02c091d04f4f"
+    },
+    "native.moderation.report-integrity.penalty": {
+      "fixtureIds": ["native.moderation.report-integrity.penalty"],
+      "hash": "5d67e3cfdcf709c7bc373d56eb5d55fd21fe85a5c3ae3272aa0376889d72da2a"
+    },
+    "native.moderation.report-integrity.pending": {
+      "fixtureIds": ["native.moderation.report-integrity.pending"],
+      "hash": "40e64db67b0e70d3cc35896cea5a7812b36acb8c6f5dcf27cd19dbf55827bd1a"
+    },
+    "native.moderation.report-integrity.resolution.dismissed": {
+      "fixtureIds": ["native.moderation.report-integrity.resolution.dismissed"],
+      "hash": "de0ee40f94d33d307a0ddcecd51ec420d8eb22d921b5571d7be2f6301f3f0f03"
+    },
+    "native.moderation.report-integrity.resolved": {
+      "fixtureIds": ["native.moderation.report-integrity.resolved"],
+      "hash": "5685c557b69f4de0410e8a67a28fc28d5ae767738c6ee27e99d7a1e38514e99b"
+    },
+    "native.moderation.report-judgement.default": {
+      "fixtureIds": ["native.moderation.report-judgement.default"],
+      "hash": "20e75d65b89e7e2ed3b08b4f223f47570b26efc7cbb151bbc40d4261fde3c2c6"
+    },
+    "native.moderation.report-resolution.reviewed": {
+      "fixtureIds": ["native.moderation.report-resolution.reviewed"],
+      "hash": "24157fdaa46322a95e0a15d969dc11b7229278bb87973772ef55f5a1e38295ea"
+    },
+    "native.moderation.reports.clustered.default": {
+      "fixtureIds": ["native.moderation.reports.clustered.default"],
+      "hash": "05e13dba0df79c6ecbe1b37bb5b9c20249321e7291d14a73a9e7d6b89f22da72"
+    },
+    "native.moderation.reports.clustered.page-2": {
+      "fixtureIds": ["native.moderation.reports.clustered.page-2"],
+      "hash": "9efcdb770c1024a2fee967f92a7376f85495d34c24d7242b39ece5361f22b83a"
+    },
+    "native.moderation.reports.default": {
+      "fixtureIds": ["native.moderation.reports.default"],
+      "hash": "1dd13b72500291dc788c40852a0f3d668723e8ddb65d4e94d0be7aa6430a911b"
+    },
+    "native.moderation.reports.member.default": {
+      "fixtureIds": ["native.moderation.reports.member.default"],
+      "hash": "7c3c360cb35df18da9512bb98aab2f5d7947a61437d02611cac8614b3200beb2"
+    },
+    "native.moderation.reveals.default": {
+      "fixtureIds": ["native.moderation.reveals.default"],
+      "hash": "a1fa6267ac88a7a6eae436d9ba7695bffa0a9d949a16231dd35e17245368df40"
+    },
+    "native.moderation.review-queue.default": {
+      "fixtureIds": ["native.moderation.review-queue.default"],
+      "hash": "85e4a45ce4bd5cfda09980a40025b121d6f64aaee20a967f6bdd3291d2ad5aff"
+    },
+    "native.moderation.review-queue.page-2": {
+      "fixtureIds": ["native.moderation.review-queue.page-2"],
+      "hash": "8b96b06e276377f8fb1ddc31ed79dce62c86396591598469af6161402ee81485"
+    },
+    "native.moderation.transparency.default": {
+      "fixtureIds": ["native.moderation.transparency.default"],
+      "hash": "7e2c69af9db2cd6d8e3e51fca0a09c8f1a3726d8cbc34c9dfd41f01467d19d36"
+    },
+    "native.moderation.vote-integrity.default": {
+      "fixtureIds": ["native.moderation.vote-integrity.default"],
+      "hash": "9680c6842bf5f1386c7e60283c1f6239e04573ea6d0668a8e445abed7f3205a5"
+    },
+    "native.moderation.vote-integrity.penalties.active": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.active"],
+      "hash": "b688c518ddb3d66a61c8767d27debfccaa35ab1079a18760005f3fce3437515b"
+    },
+    "native.moderation.vote-integrity.penalties.all": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.all"],
+      "hash": "05d94ba7af48bb581d1d2d4586e597304b4ff9d68eb7eabe351e9df3d526bf0a"
+    },
+    "native.moderation.vote-integrity.penalties.default": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.default"],
+      "hash": "05d94ba7af48bb581d1d2d4586e597304b4ff9d68eb7eabe351e9df3d526bf0a"
+    },
+    "native.moderation.vote-integrity.penalties.get": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.get"],
+      "hash": "efbe757d3b728a7292ed3503ddbd777843bb944117cffc7b86257a4606b2cff5"
+    },
+    "native.moderation.vote-integrity.penalties.page-2": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.page-2"],
+      "hash": "55dc6794f5ec550b5718b1eeb18fde2ebf3880a54f6f5beda4356df53a0af34e"
+    },
+    "native.moderation.vote-integrity.penalties.revoke": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.revoke"],
+      "hash": "595fcb879c7353ed1885eb8498a74c47132fda4b308f2cc23e2318ed14d3e813"
+    },
+    "native.moderation.vote-integrity.penalties.revoked": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.revoked"],
+      "hash": "e765665839d6974b205d2003c6f39abe5d8efce559d5b013a6989e061e16693e"
+    },
+    "native.moderation.vote-integrity.penalty": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalty"],
+      "hash": "8d817a7fa16c493d05952d14471734e633998029067735fb71b7b0b8013e4750"
+    },
+    "native.moderation.vote-integrity.pending": {
+      "fixtureIds": ["native.moderation.vote-integrity.pending"],
+      "hash": "178c687e66b5dfbe1ce20f5ea485d01e23d73fbbff94e0d18eac1b3188bb15b8"
+    },
+    "native.moderation.vote-integrity.resolution.dismissed": {
+      "fixtureIds": ["native.moderation.vote-integrity.resolution.dismissed"],
+      "hash": "3f80c7462e50439689469b12254d230cb67d463e8da6fa7626506a0ee9ec7659"
+    },
+    "native.moderation.vote-integrity.resolution.penalized": {
+      "fixtureIds": ["native.moderation.vote-integrity.resolution.penalized"],
+      "hash": "3f80c7462e50439689469b12254d230cb67d463e8da6fa7626506a0ee9ec7659"
+    },
+    "native.moderation.vote-integrity.resolution.suspended": {
+      "fixtureIds": ["native.moderation.vote-integrity.resolution.suspended"],
+      "hash": "3f80c7462e50439689469b12254d230cb67d463e8da6fa7626506a0ee9ec7659"
+    },
+    "native.moderation.vote-integrity.resolved": {
+      "fixtureIds": ["native.moderation.vote-integrity.resolved"],
+      "hash": "c5a8f75975cfa585052faf27270a6e35e9756ca94baa3f76f1b1109614d524d3"
+    },
+    "native.my.api-keys.paginated": {
+      "fixtureIds": ["native.my.api-keys.paginated"],
+      "hash": "6215a0600f43cf36468de822d664bd3783bfb6a5e48b2c7640f2c8e39ad61ec4"
+    },
+    "native.my.email-addresses.empty": {
+      "fixtureIds": ["native.my.email-addresses.empty"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "native.my.email-addresses.request.default": {
+      "fixtureIds": ["native.my.email-addresses.request.default"],
+      "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d"
+    },
+    "native.my.email-addresses.verify.default": {
+      "fixtureIds": ["native.my.email-addresses.verify.default"],
+      "hash": "afa1a5c784004c22180370d6e4624c43e9d59203def103a6229510c371035b48"
+    },
+    "native.my.email-preferences.default": {
+      "fixtureIds": ["native.my.email-preferences.default"],
+      "hash": "ab3b28b9184b5aa35ffb267565dcf10fe42be614a6cf30059f1c376e7022be62"
+    },
+    "native.my.push-subscriptions.paginated": {
+      "fixtureIds": ["native.my.push-subscriptions.paginated"],
+      "hash": "ba6814e811fbddf2cd0a6dfd3f020b4068ffb89680a6f0c109c274e73e8c6614"
+    },
+    "native.notifications.redirect-target.default": {
+      "fixtureIds": ["native.notifications.redirect-target.default"],
+      "hash": "a952dd3877ef81213f7c44af92056850186f388e4279eb96b2a11918427284fe"
+    },
+    "native.oauth.authorization.begin": {
+      "fixtureIds": ["native.oauth.authorization.begin"],
+      "hash": "070d0d021d9ea31a826b56ed574290f3dabd19ef2a77e99393476f392ec36efc"
+    },
+    "native.oauth.authorization.complete.authenticated": {
+      "fixtureIds": ["native.oauth.authorization.complete.authenticated"],
+      "hash": "4957b3007f4ecfe00df245c5620d70ba7d8a97ccb6da4ab01e7a644d56510e3b"
+    },
+    "native.oauth.authorization.complete.connected": {
+      "fixtureIds": ["native.oauth.authorization.complete.connected"],
+      "hash": "cc805b3f150e165807b88df4c972685397723688a4c95c421033ac49cb925d22"
+    },
+    "native.oauth.authorization.complete.mfa": {
+      "fixtureIds": ["native.oauth.authorization.complete.mfa"],
+      "hash": "55a7500e07ea6637e2be4742b86d9ebb5a4b1a4bb16d6543c6b3c8d1c60a3fe9"
+    },
+    "native.oauth.authorization.complete.pending": {
+      "fixtureIds": ["native.oauth.authorization.complete.pending"],
+      "hash": "c0c2eeb06783383e6eadec2cdd682ce2f33468051952b39d94ef352e629a1698"
+    },
+    "native.oauth.providers.broker-capabilities": {
+      "fixtureIds": ["native.oauth.providers.broker-capabilities"],
+      "hash": "1329dcdb19289c7af36e21b9342f68c6c67206b922f7157e63e06673c6299720"
+    },
+    "native.paid.url-crawl.default": {
+      "fixtureIds": ["native.paid.url-crawl.default"],
+      "hash": "9f1761a631e3a73fe94426462a533af11ff848068deb640d20dd9c0eba93f6a7"
+    },
+    "native.paid.url-crawls.default": {
+      "fixtureIds": ["native.paid.url-crawls.default"],
+      "hash": "8a0b418d26642b3470d2a4ef36b928725c8efdfc876cb6d6b3ef421a7cf315b1"
+    },
+    "native.point-valuations.create.default": {
+      "fixtureIds": ["native.point-valuations.create.default"],
+      "hash": "5859a6cd986d4e2a0451fb6aa5348c5b184fd01f044dfd0a7f4eb596bdfde6c3"
+    },
+    "native.point-valuations.delete.default": {
+      "fixtureIds": ["native.point-valuations.delete.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.point-valuations.empty": {
+      "fixtureIds": ["native.point-valuations.empty"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "native.point-valuations.page-1": {
+      "fixtureIds": ["native.point-valuations.page-1"],
+      "hash": "6c31cedb191af28465b9313b479135df51cb50074e7c47e1c2a0b08421eaac3a"
+    },
+    "native.point-valuations.page-2": {
+      "fixtureIds": ["native.point-valuations.page-2"],
+      "hash": "b15f9d9b69b36f78435ee93f9481525b43a442f101109ce6467eabf71782efeb"
+    },
+    "native.point-valuations.update.clear-note": {
+      "fixtureIds": ["native.point-valuations.update.clear-note"],
+      "hash": "16225f175c7b0624012d023e3dfb5fd5f220051ce358a163e318b19658870083"
+    },
+    "native.point-valuations.update.full": {
+      "fixtureIds": ["native.point-valuations.update.full"],
+      "hash": "5859a6cd986d4e2a0451fb6aa5348c5b184fd01f044dfd0a7f4eb596bdfde6c3"
+    },
+    "native.posts.followers.send-selected": {
+      "fixtureIds": ["native.posts.followers.send-selected"],
+      "hash": "dc76276b1480b614bf08d2d4930aca0fce600d5d117dcf4d36023831c85fc03b"
+    },
+    "native.posts.followers.share": {
+      "fixtureIds": ["native.posts.followers.share"],
+      "hash": "dc76276b1480b614bf08d2d4930aca0fce600d5d117dcf4d36023831c85fc03b"
+    },
+    "native.rewards-program-status-topics.search.default": {
+      "fixtureIds": ["native.rewards-program-status-topics.search.default"],
+      "hash": "8cb756d11a98e927319968b0c5ea1e24a447d6d527d0997d730b41336df511ec"
+    },
+    "native.rewards-program-topics.search.default": {
+      "fixtureIds": ["native.rewards-program-topics.search.default"],
+      "hash": "e34bad7f4dd090acc71f3e199df23c648b4da3950eabd8a99097b3e867c04fa7"
+    },
+    "native.rewards-statuses.create.default": {
+      "fixtureIds": ["native.rewards-statuses.create.default"],
+      "hash": "2abd58939e21775b097a2511fb945de67c78312b7d329114a56a54b90128a185"
+    },
+    "native.rewards-statuses.delete.default": {
+      "fixtureIds": ["native.rewards-statuses.delete.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.rewards-statuses.empty": {
+      "fixtureIds": ["native.rewards-statuses.empty"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "native.rewards-statuses.page-1": {
+      "fixtureIds": ["native.rewards-statuses.page-1"],
+      "hash": "782ef7a7a30131d9adb1d78850f9c8c218533f3a906cd3688bd450b30da232c6"
+    },
+    "native.rewards-statuses.page-2": {
+      "fixtureIds": ["native.rewards-statuses.page-2"],
+      "hash": "5fa6a059d69318845ea3f476dd3ecd78d0c14ab4d64bc3f4993659c4f75dea21"
+    },
+    "native.rewards-statuses.update.clear-dates": {
+      "fixtureIds": ["native.rewards-statuses.update.clear-dates"],
+      "hash": "2abd58939e21775b097a2511fb945de67c78312b7d329114a56a54b90128a185"
+    },
+    "native.rewards-statuses.update.full": {
+      "fixtureIds": ["native.rewards-statuses.update.full"],
+      "hash": "91b15c23fc9e75423236aae7a8f0801c0b0c0160aa1e2318954af910015d0214"
+    },
+    "native.rss-feed-item.detail.default": {
+      "fixtureIds": ["native.rss-feed-item.detail.default"],
+      "hash": "d31c6e3bf5ef00b848461e2d695d519177c55828c905f552d091800b3cd7866a"
+    },
+    "native.rss-feed-items.followers.send-selected": {
+      "fixtureIds": ["native.rss-feed-items.followers.send-selected"],
+      "hash": "dc76276b1480b614bf08d2d4930aca0fce600d5d117dcf4d36023831c85fc03b"
+    },
+    "native.rss-feed-items.followers.share": {
+      "fixtureIds": ["native.rss-feed-items.followers.share"],
+      "hash": "dc76276b1480b614bf08d2d4930aca0fce600d5d117dcf4d36023831c85fc03b"
+    },
+    "native.spending-categories.create.default": {
+      "fixtureIds": ["native.spending-categories.create.default"],
+      "hash": "ca80a26abb02deda268538b75a78428440f2c3b8b6592df3d88fe9e52a41b6e3"
+    },
+    "native.spending-categories.delete.default": {
+      "fixtureIds": ["native.spending-categories.delete.default"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "native.spending-categories.empty": {
+      "fixtureIds": ["native.spending-categories.empty"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "native.spending-categories.owned-household": {
+      "fixtureIds": ["native.spending-categories.owned-household"],
+      "hash": "09c84c100b084ea9c70a7cffd57f7f7445766231b45d8b5b2b3aab17190e79d2"
+    },
+    "native.spending-categories.page-1": {
+      "fixtureIds": ["native.spending-categories.page-1"],
+      "hash": "44fb0fc89333d0eaed657f03a95a47f27246969c56b4c8542aebc6593882f584"
+    },
+    "native.spending-categories.page-2": {
+      "fixtureIds": ["native.spending-categories.page-2"],
+      "hash": "5a578674ac966bfa7305d51360fd9cdf5b717dcc3adfd23743a5303aa4bef515"
+    },
+    "native.spending-categories.update.clear-note": {
+      "fixtureIds": ["native.spending-categories.update.clear-note"],
+      "hash": "63a79f441c7f48778a0f6ca827d21d8dcc99e605179df9014682b36d6a02bb98"
+    },
+    "native.spending-category-topics.search.default": {
+      "fixtureIds": ["native.spending-category-topics.search.default"],
+      "hash": "a4c895cbbde9c92724889e116c191ce69f099ef57d1075fc158468beae71eda7"
+    },
+    "native.staff-support.contact-detail.default": {
+      "fixtureIds": ["native.staff-support.contact-detail.default"],
+      "hash": "59c435a6c0f8ce22549315cb6b850a1e552debef3af7f49e6d634fa9f5a87347"
+    },
+    "native.staff-support.contact-update.default": {
+      "fixtureIds": ["native.staff-support.contact-update.default"],
+      "hash": "7740a089328497b39855ec09e9de3c009d1e781d7cec306acb13ee479e4c808f"
+    },
+    "native.staff-support.contacts.default": {
+      "fixtureIds": ["native.staff-support.contacts.default"],
+      "hash": "5a6941d2d3c288af735babfcb632076dd85457821c012712f531fae85605d1d5"
+    },
+    "native.staff-support.draft-create.default": {
+      "fixtureIds": ["native.staff-support.draft-create.default"],
+      "hash": "fa7692a06a5fbc8acca1ad48ac96d86b3b17cf2203dd99a883c5d90bd91081b3"
+    },
+    "native.staff-support.message-approve.default": {
+      "fixtureIds": ["native.staff-support.message-approve.default"],
+      "hash": "b3a1f2682f0710b948b741c1d1952525e2e1ae35f3b65aa9b94053f93f5ad2fd"
+    },
+    "native.staff-support.message-create.default": {
+      "fixtureIds": ["native.staff-support.message-create.default"],
+      "hash": "796d9d656152fc5c3678d435bef2a2c95295c3f54c2a0bb4092933b4814652e6"
+    },
+    "native.staff-support.message-edit.default": {
+      "fixtureIds": ["native.staff-support.message-edit.default"],
+      "hash": "11e6f1a68e019fae2c3ff211f7e1d08b6a994734f3deffa3b94267a2a4ea7029"
+    },
+    "native.staff-support.message-send.default": {
+      "fixtureIds": ["native.staff-support.message-send.default"],
+      "hash": "57d1893f34419b278c448fdfff3afc9a9911742b364508ded7973b884f5db1c0"
+    },
+    "native.staff-support.messages.default": {
+      "fixtureIds": ["native.staff-support.messages.default"],
+      "hash": "dd5ac92d2f64760fa64e2e879673f9da1e654ef3a40ddc2a0ecccf42f72d49cc"
+    },
+    "native.staff-support.thread-assign.default": {
+      "fixtureIds": ["native.staff-support.thread-assign.default"],
+      "hash": "c61a278038010a61726e0b81d95da7ce421ba7ee2dd88f5c60c4096a38902fef"
+    },
+    "native.staff-support.thread-detail.default": {
+      "fixtureIds": ["native.staff-support.thread-detail.default"],
+      "hash": "0a4768ea6eff4c39749a1b67050373768ca722cced5c5cacdcf69fce03e0dc6b"
+    },
+    "native.staff-support.thread-reopen.default": {
+      "fixtureIds": ["native.staff-support.thread-reopen.default"],
+      "hash": "0a4768ea6eff4c39749a1b67050373768ca722cced5c5cacdcf69fce03e0dc6b"
+    },
+    "native.staff-support.thread-resolve.default": {
+      "fixtureIds": ["native.staff-support.thread-resolve.default"],
+      "hash": "7bf92433ee68d75698bcd878c2815baee255b5dea1a36ec7f00875c1b30e0f24"
+    },
+    "native.staff-support.threads.default": {
+      "fixtureIds": ["native.staff-support.threads.default"],
+      "hash": "16d7ddd42101fa6279ecf346ba8a2b28a8bed6ad6613452480d7aa38fe0eba8a"
+    },
+    "native.topic-recommendation.detail.default": {
+      "fixtureIds": ["native.topic-recommendation.detail.default"],
+      "hash": "823c22f67c0669f9e6713f109fb7b5de64def4f0d407ac74e410ad5ff79de0d0"
+    },
+    "native.topic-recommendations.top-hashtags.default": {
+      "fixtureIds": ["native.topic-recommendations.top-hashtags.default"],
+      "hash": "659dae7d79084999f7b8816b818877117eb27cf8dfbf2867fe7dc5754388d947"
+    },
+    "native.topics.user-tags.default": {
+      "fixtureIds": ["native.topics.user-tags.default"],
+      "hash": "edac9dc0ffff4a9028eb84b86c8dd35fd9146c95bcb961bc8dea051b41330349"
+    },
+    "native.url-crawl-trigger.default": {
+      "fixtureIds": ["native.url-crawl-trigger.default"],
+      "hash": "d897db0f9a2eda987e8f560f968e69c873fcccf3359cc79ca566d6270e711998"
+    },
+    "native.url-crawl.default": {
+      "fixtureIds": ["native.url-crawl.default"],
+      "hash": "368b446b0e63a278bdd21b231b2ede3a99dc1e52415e86934d7678f4eecd5d67"
+    },
+    "native.url-crawls.default": {
+      "fixtureIds": ["native.url-crawls.default"],
+      "hash": "13380cf8e6cf609beed6789baaf0268c49f031a5594ac42fa2a7da8c650d6d98"
+    },
+    "native.url.default": {
+      "fixtureIds": ["native.url.default"],
+      "hash": "085bb75eca6211dc652b351324dd9db8c7d1672541f520bb375ab66c976f86b6"
+    },
+    "native.urls.default": {
+      "fixtureIds": ["native.urls.default"],
+      "hash": "83f7e85e6cec9c0137d039d3b65d218b21f4b391b692cb9dabbbbe16c0a601c1"
+    },
+    "native.users.data-request.create.default": {
+      "fixtureIds": ["native.users.data-request.create.default"],
+      "hash": "520b90ef41aad2d8bf39f6b92b910863342db4d5db4d773837919cfc3fe8b8b8"
+    },
+    "native.users.data-request.default": {
+      "fixtureIds": ["native.users.data-request.default"],
+      "hash": "01bcaf006d7e8058b9ec7f37b64991604f4783bf59d025af4747c80086945660"
+    },
+    "native.users.delete.default": {
+      "fixtureIds": ["native.users.delete.default"],
+      "hash": "f78771c8efe41680c04e54336cf73375d6ce7cc0b586136ca6cb38905cffa585"
+    },
+    "native.users.followers.search": {
+      "fixtureIds": ["native.users.followers.search"],
+      "hash": "b55263c46f3266cef5a85ccfe52813acf5c318802ebfdc8dbc5ab032cb68df6e"
+    },
+    "native.users.profile.communities-member.first-page": {
+      "fixtureIds": ["native.users.profile.communities-member.first-page"],
+      "hash": "bb3c10ceb566f001079f5e597cfd1ac4f1d5d77b8ed3ed1eade430986afb807c"
+    },
+    "native.users.profile.communities-member.next-page": {
+      "fixtureIds": ["native.users.profile.communities-member.next-page"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "native.users.profile.default": {
+      "fixtureIds": ["native.users.profile.default"],
+      "hash": "8d88ab66b68577f3663be941231bfbd8ef36afe27266fad86758634be8114b4c"
+    },
+    "native.users.profile.posts.all": {
+      "fixtureIds": ["native.users.profile.posts.all"],
+      "hash": "fbf6f674678e7f2b81d152ad47bb33d21f86f4d230dfc765ba461ccd780430f0"
+    },
+    "native.users.profile.posts.comments": {
+      "fixtureIds": ["native.users.profile.posts.comments"],
+      "hash": "eb8f77c527fda1ddc9fc295f66b921311c33f48922c8ad67c673db0abe6609ab"
+    },
+    "native.users.profile.posts.discussions": {
+      "fixtureIds": ["native.users.profile.posts.discussions"],
+      "hash": "a46c9f7d2545c8994666f6ba726a8645845d2af2c7c774dc1c64f031e0eb2339"
+    },
+    "native.users.profile.posts.reviews": {
+      "fixtureIds": ["native.users.profile.posts.reviews"],
+      "hash": "5b19af5632dd8a5053cf512ca34f99ba11b3bf5747c541bc616b1bb30e69281a"
+    },
+    "native.users.profile.restricted": {
+      "fixtureIds": ["native.users.profile.restricted"],
+      "hash": "ecd63222e5f8d355e5d4a188be9f6e17529fea1977bfd7051ec0ed35d5116be0"
+    },
+    "native.users.profile.sources-following.article": {
+      "fixtureIds": ["native.users.profile.sources-following.article"],
+      "hash": "4546ae67af400dc4e0456d8f92be81843ed1e629cd2bec51af08fe46980959cf"
+    },
+    "native.users.profile.topics-following.first-page": {
+      "fixtureIds": ["native.users.profile.topics-following.first-page"],
+      "hash": "d94a90d21a6dc6a4f1b2de63da2e18de3c9991cc19ac6f5529803ccf0886d0d3"
+    },
+    "native.users.profile.topics-following.next-page": {
+      "fixtureIds": ["native.users.profile.topics-following.next-page"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "native.users.vouch-context.default": {
+      "fixtureIds": ["native.users.vouch-context.default"],
+      "hash": "2dcff536b12a416dd41379d29983d30ba7527145aa24db70532d6b48bee133d1"
+    },
+    "referral-clicks.mine": {
+      "fixtureIds": ["native.referral-clicks.mine.default", "web.referral-clicks.mine.default"],
+      "hash": "45b58a957cb40c0c31446368db12ecbd2f042392019dca95f45fa61eadd811af"
+    },
+    "referral-links.mine": {
+      "fixtureIds": ["native.referral-links.mine.default", "web.referral-links.mine.default"],
+      "hash": "0c130198023bcc33b8a924f7f184a41d6928120b0eb28cb8a9e5d3d317b88713"
+    },
+    "shared.currencies.list.default": {
+      "fixtureIds": ["shared.currencies.list.default"],
+      "hash": "703ae6e0bfab27a594de57fef893707566935aae601f69ab79edffc2a9236cb1"
+    },
+    "swift.integration.rss-feed-items.audio": {
+      "fixtureIds": ["swift.integration.rss-feed-items.audio"],
+      "hash": "d5faa7a8ffecb8c3e09a03d5c1a89b2f9cae197f168d3fc23c18898a95ab8b30"
+    },
+    "swift.integration.rss-feed-items.video": {
+      "fixtureIds": ["swift.integration.rss-feed-items.video"],
+      "hash": "6a61230061295518e850908e990ae3c5f388fd39c72f4d6081ed6e5f3f52851d"
+    },
+    "swift.my.identity.default": {
+      "fixtureIds": ["swift.my.identity.default"],
+      "hash": "9827ab76a83dee834bd3f33fb45f86182f1d14e533f1c747ff24491049165f43"
+    },
+    "swift.my.profile.default": {
+      "fixtureIds": ["swift.my.profile.default"],
+      "hash": "e00a89d066b50e2a8565b7dfb5ecf44ba6a8043898730cfe7b9e92539db848f6"
+    },
+    "swift.notifications.default": {
+      "fixtureIds": ["swift.notifications.default"],
+      "hash": "36abb44e9b8160954d4f8c9cbf64fb9e1c5ff33a36cc19cf7798faaad9e509fd"
+    },
+    "swift.podcast-episode-chapters.default": {
+      "fixtureIds": ["swift.podcast-episode-chapters.default"],
+      "hash": "b0d7dc285953cee51157dc51ab27feb18263a085878e15bb7e8c15e33ccd9ed1"
+    },
+    "swift.podcast-playback-position.default": {
+      "fixtureIds": ["swift.podcast-playback-position.default"],
+      "hash": "f21d7d4e226022bd884bf1ce87dceae8334910ee4e27b5c5c7ca0cf79a523f8e"
+    },
+    "swift.posts.feed.default": {
+      "fixtureIds": ["swift.posts.feed.default"],
+      "hash": "3430be063a4aa8daeae82a5431f4a68a7ca7bd85a3d08464a21694ed89b539ca"
+    },
+    "swift.rss-feed-items.feed.default": {
+      "fixtureIds": ["swift.rss-feed-items.feed.default"],
+      "hash": "00af2da23708c91ce4a9946cb5c676a865918001865d9bd6e67497aeb1fe24d2"
+    },
+    "swift.rss-feeds.default": {
+      "fixtureIds": ["swift.rss-feeds.default"],
+      "hash": "3acee0fa0c69bf8ff433531f5d42d764a0bf5b552671d4e149c60fe6d0a946ea"
+    },
+    "swift.users.followers.default": {
+      "fixtureIds": ["swift.users.followers.default"],
+      "hash": "b55263c46f3266cef5a85ccfe52813acf5c318802ebfdc8dbc5ab032cb68df6e"
+    },
+    "swift.users.following.default": {
+      "fixtureIds": ["swift.users.following.default"],
+      "hash": "b55263c46f3266cef5a85ccfe52813acf5c318802ebfdc8dbc5ab032cb68df6e"
+    },
+    "web.admin.article-syncs.status.active": {
+      "fixtureIds": ["web.admin.article-syncs.status.active"],
+      "hash": "c0c2eeb06783383e6eadec2cdd682ce2f33468051952b39d94ef352e629a1698"
+    },
+    "web.admin.article-syncs.trigger.default": {
+      "fixtureIds": ["web.admin.article-syncs.trigger.default"],
+      "hash": "707b974a7e7f87315aefb24f3f214b0b26d7a924d4a54408f174f1671fe3cff2"
+    },
+    "web.admin.mq.backfills.default": {
+      "fixtureIds": ["web.admin.mq.backfills.default"],
+      "hash": "b5623baafe3786d638c6e864ea361a299668f438cd2862de1c1ceed9c7377025"
+    },
+    "web.admin.mq.backfills.trigger.default": {
+      "fixtureIds": ["web.admin.mq.backfills.trigger.default"],
+      "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46"
+    },
+    "web.admin.mq.queues.default": {
+      "fixtureIds": ["web.admin.mq.queues.default"],
+      "hash": "247be239a9daa4b2ee9785cd6590e9b2959ec5c6076b0bd935bdf0c4494caa92"
+    },
+    "web.admin.mq.queues.pause.default": {
+      "fixtureIds": ["web.admin.mq.queues.pause.default"],
+      "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46"
+    },
+    "web.admin.mq.queues.resume.default": {
+      "fixtureIds": ["web.admin.mq.queues.resume.default"],
+      "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46"
+    },
+    "web.admin.mq.scheduled-jobs.default": {
+      "fixtureIds": ["web.admin.mq.scheduled-jobs.default"],
+      "hash": "874472de164a94f3a755ed9e2290a9e419d8ede7d3836bf1759d757cbec90ab8"
+    },
+    "web.admin.mq.scheduled-jobs.trigger.default": {
+      "fixtureIds": ["web.admin.mq.scheduled-jobs.trigger.default"],
+      "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46"
+    },
+    "web.admin.mq.stats.default": {
+      "fixtureIds": ["web.admin.mq.stats.default"],
+      "hash": "bace65bcc8c2ffd88be160044b9c2948dcea767b29917454fec0585c972d010f"
+    },
+    "web.admin.psql.jobs.default": {
+      "fixtureIds": ["web.admin.psql.jobs.default"],
+      "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46"
+    },
+    "web.admin.psql.migrations.default": {
+      "fixtureIds": ["web.admin.psql.migrations.default"],
+      "hash": "0ab2ea04521a05aabdb0bd643739e807e2fede1f2a78019784b37310f08efa83"
+    },
+    "web.admin.psql.partitions.default": {
+      "fixtureIds": ["web.admin.psql.partitions.default"],
+      "hash": "9060fdf56dd3dcb8be273deca20f0b2acf353a9aa23f15efd1dfdaf8c4af4d8d"
+    },
+    "web.admin.rss-feed-crawl.default": {
+      "fixtureIds": ["web.admin.rss-feed-crawl.default"],
+      "hash": "0edd5d1048811100eafaedb387f96eef61d2aad3a4a00ade7aa735b211965f2c"
+    },
+    "web.admin.valkey.bloom-filters.rebuild.default": {
+      "fixtureIds": ["web.admin.valkey.bloom-filters.rebuild.default"],
+      "hash": "b74d2402dc3bda1045b2f9ba469a7e3609fde4c7cdab1ee5b178f2f90b24df47"
+    },
+    "web.admin.valkey.cache-groups.default": {
+      "fixtureIds": ["web.admin.valkey.cache-groups.default"],
+      "hash": "88b787d80fd75f0b0e232c83e9e80b5788d455c5a6b1c91f5bea20c5f806b85e"
+    },
+    "web.admin.valkey.caches.clear.default": {
+      "fixtureIds": ["web.admin.valkey.caches.clear.default"],
+      "hash": "9e97327a6160376d3837e65d882a39b09c6ec086998c9e96a380401d07a861da"
+    },
+    "web.admin.valkey.flush.default": {
+      "fixtureIds": ["web.admin.valkey.flush.default"],
+      "hash": "9888fa51734d12072d7ca1c25a61e03d272aab83f6e0405427fe1af3d80010da"
+    },
+    "web.communities.agent-prompts.default": {
+      "fixtureIds": ["web.communities.agent-prompts.default"],
+      "hash": "9f29219f18b0bf68123d7e31ab206e65de4140cb790708b5707f37687de4dbea"
+    },
+    "web.communities.agent-prompts.history.default": {
+      "fixtureIds": ["web.communities.agent-prompts.history.default"],
+      "hash": "9aff93c94e3b8d0a8bf828a27a19d4a078f956b5887aaa64d1d6024afd4eb01e"
+    },
+    "web.communities.ai-agent.default": {
+      "fixtureIds": ["web.communities.ai-agent.default"],
+      "hash": "757fcab86dd9cd13fb0fba722a25438aa99ed9a04223da0a1344ed19b1322298"
+    },
+    "web.communities.ai-agents.default": {
+      "fixtureIds": ["web.communities.ai-agents.default"],
+      "hash": "4ad531be035dd7b716d5586ecd3fb2d7659f4e11251f36196ef467c48ef0d498"
+    },
+    "web.communities.application-questions.default": {
+      "fixtureIds": ["web.communities.application-questions.default"],
+      "hash": "ed5a465ed4136043faa218f68745fa8052e91a6bd3379666c62959453c26dabf"
+    },
+    "web.communities.applications.default": {
+      "fixtureIds": ["web.communities.applications.default"],
+      "hash": "2b893ae3523cb188c32149d798d9b9690baeb533dca0c374aef31e41e3fa2829"
+    },
+    "web.communities.archive.default": {
+      "fixtureIds": ["web.communities.archive.default"],
+      "hash": "37066b857c5d42a650fbf7b4311154fa5479dbd1784376b05f03952b5200eec3"
+    },
+    "web.communities.automod-feedback.create.default": {
+      "fixtureIds": ["web.communities.automod-feedback.create.default"],
+      "hash": "7e32c1f7fe4ccd5c8efb5b8c37bd25a4648a5c37d4ded545bfda544f5581d314"
+    },
+    "web.communities.automod-recent-actions.default": {
+      "fixtureIds": ["web.communities.automod-recent-actions.default"],
+      "hash": "440e03e8e8cef49e5e09fcc55ca1c041e6526895a55764e9b9261c80eba35b2b"
+    },
+    "web.communities.automod-simulate.default": {
+      "fixtureIds": ["web.communities.automod-simulate.default"],
+      "hash": "ebf265d6e2247461df83a123e15d2ef94afb4aff568fcad4fdc6c7f3ee1d6ef5"
+    },
+    "web.communities.bans.default": {
+      "fixtureIds": ["web.communities.bans.default"],
+      "hash": "c66170a7bbe1844050055806dc5a56fd729211c7c5be80f8a739f2de96a544e5"
+    },
+    "web.communities.invites.default": {
+      "fixtureIds": ["web.communities.invites.default"],
+      "hash": "b4b190c5154aec307d05d8039a07a19af09dbdad5136953df1ad4ccf658b3635"
+    },
+    "web.communities.list-items.counts.default": {
+      "fixtureIds": ["web.communities.list-items.counts.default"],
+      "hash": "e84e3b8c594d53f41b4896a90a7ad136df2a01e68574b5217fd7e424c059480c"
+    },
+    "web.communities.list-items.domains.default": {
+      "fixtureIds": ["web.communities.list-items.domains.default"],
+      "hash": "4c99fcfd2bc6505f47221a58286abaa73d46557d9b14550236860d0a700727a9"
+    },
+    "web.communities.list-items.posts.default": {
+      "fixtureIds": ["web.communities.list-items.posts.default"],
+      "hash": "de8c83b535124ea254211337622996d3090ed6a6c17ee93d8c5b175b9e2ad1e5"
+    },
+    "web.communities.list-items.rss-feeds.default": {
+      "fixtureIds": ["web.communities.list-items.rss-feeds.default"],
+      "hash": "d284028af2267e25474da67c15ecf4e4676ea5ae25de7e8f411a4429f03569cf"
+    },
+    "web.communities.list-items.topics.default": {
+      "fixtureIds": ["web.communities.list-items.topics.default"],
+      "hash": "11e0aa3fb5a063ef001453a8dc9ce4bcb84cd03531486792332531f909ae815d"
+    },
+    "web.communities.list-items.urls.default": {
+      "fixtureIds": ["web.communities.list-items.urls.default"],
+      "hash": "c007f48b6812b8658687f3910090b18d67fd2332e5929c0c7dc08de9d013facb"
+    },
+    "web.communities.members.default": {
+      "fixtureIds": ["web.communities.members.default"],
+      "hash": "5ae4d59a845eee1c5e0cfe0812620a22a81122fe44e31df76ea38e31ca1ed4fe"
+    },
+    "web.communities.moderation-analytics.default": {
+      "fixtureIds": ["web.communities.moderation-analytics.default"],
+      "hash": "15d33eb1e95aa11fe09ab2a4288a0746760e107504ade59d8106cbc2d1ed7afe"
+    },
+    "web.communities.moderation-queue.default": {
+      "fixtureIds": ["web.communities.moderation-queue.default"],
+      "hash": "c61606981461c8204731f17d2653cac44e9faa6c48be0095d66c93455becaeee"
+    },
+    "web.communities.moderation-results.default": {
+      "fixtureIds": ["web.communities.moderation-results.default"],
+      "hash": "d5fa5d884dd89e005faea8e81530c4148a33112a937915c7bdb0adc638eba4ec"
+    },
+    "web.communities.moderator-stats.default": {
+      "fixtureIds": ["web.communities.moderator-stats.default"],
+      "hash": "02f9e10a7bb77a50380d0b303e192c6cf2a186d3b1eefe06710bafab06c51b6f"
+    },
+    "web.communities.moderator-vacation.default": {
+      "fixtureIds": ["web.communities.moderator-vacation.default"],
+      "hash": "909cae7454ea7c8acf850c1f12c4e504098bebe2713ef94d91b2df6aee364c57"
+    },
+    "web.communities.modlog.default": {
+      "fixtureIds": ["web.communities.modlog.default"],
+      "hash": "6d8f66a53771433cf99b88deb6abbc4f91f01210c438d6dddb2389e3216f2403"
+    },
+    "web.communities.modmail-messages.default": {
+      "fixtureIds": ["web.communities.modmail-messages.default"],
+      "hash": "17616903a847412cefa7907290456f98a448d9844575612e601db784ccf72ad9"
+    },
+    "web.communities.modmail-messages.page-2": {
+      "fixtureIds": ["web.communities.modmail-messages.page-2"],
+      "hash": "17616903a847412cefa7907290456f98a448d9844575612e601db784ccf72ad9"
+    },
+    "web.communities.modmail.default": {
+      "fixtureIds": ["web.communities.modmail.default"],
+      "hash": "51a87203de0aa0feaeab6c35a65077800f5bab35479c72ea52d5a77d0f842293"
+    },
+    "web.communities.modmail.page-2": {
+      "fixtureIds": ["web.communities.modmail.page-2"],
+      "hash": "cb4554238cabe0aa9cba6ead38b9b86808d83a8d0b5091e2f165f202accb8238"
+    },
+    "web.communities.news.default": {
+      "fixtureIds": ["web.communities.news.default"],
+      "hash": "ade947b5513970b12a9423bcff1c9805edf03c8274dcf33b05bd9ed4f4585b39"
+    },
+    "web.communities.pinned-posts.default": {
+      "fixtureIds": ["web.communities.pinned-posts.default"],
+      "hash": "a70e7e6b5822b41b525748e0386cb0a72448da24156dc7faa3ece01fdc1f6f36"
+    },
+    "web.communities.post-type-settings.update.default": {
+      "fixtureIds": ["web.communities.post-type-settings.update.default"],
+      "hash": "9ad5d9241cfc0d421443ac65852ad887afcc477b5745371db5904df4ca57bbf5"
+    },
+    "web.communities.posts.default": {
+      "fixtureIds": ["web.communities.posts.default"],
+      "hash": "91882696eb656b3c54e8c7fd4892b134c73000639e6274b6672f36e836328188"
+    },
+    "web.communities.restrictions.default": {
+      "fixtureIds": ["web.communities.restrictions.default"],
+      "hash": "7b5819fc4668951f4b109b40b160a6ec28c6712cfef1831e611c5e90dda23089"
+    },
+    "web.communities.saved-replies.default": {
+      "fixtureIds": ["web.communities.saved-replies.default"],
+      "hash": "fc9fe418a69a248bd4cbdbe543decd7d9ae25c7b06c2bcb7653b91e5d952c068"
+    },
+    "web.communities.saved-replies.page-2": {
+      "fixtureIds": ["web.communities.saved-replies.page-2"],
+      "hash": "fc9fe418a69a248bd4cbdbe543decd7d9ae25c7b06c2bcb7653b91e5d952c068"
+    },
+    "web.communities.saved-reply.create.default": {
+      "fixtureIds": ["web.communities.saved-reply.create.default"],
+      "hash": "1f9b203e7b689a6866b0eccb4f914db8d3aae1ca2baf33851e6ca701bbe8a626"
+    },
+    "web.communities.search.default": {
+      "fixtureIds": ["web.communities.search.default"],
+      "hash": "7b5d83a026087364bf8e0a903b52c91da0de27021a5514b81c48c46029441b8b"
+    },
+    "web.communities.show.default": {
+      "fixtureIds": ["web.communities.show.default"],
+      "hash": "a352ce798cb1e5a0ac561b2345af2ec2c57b613622e1461c401317f389a61ab6"
+    },
+    "web.communities.warning.create.default": {
+      "fixtureIds": ["web.communities.warning.create.default"],
+      "hash": "b038a2f206ce0215d4d59994436070776411fd7e26ec212e912a03af1ee89ef9"
+    },
+    "web.growth-metrics.default": {
+      "fixtureIds": ["web.growth-metrics.default"],
+      "hash": "9f0de577377137f7d006bd52535c382875fa6343bea9b2e9f0037eeacb82ccfc"
+    },
+    "web.my.support-threads.create.default": {
+      "fixtureIds": ["web.my.support-threads.create.default"],
+      "hash": "11deaf4535dac4b7e9491ba3a57d07dde8e17e878e32375fbfa430e28a749e37"
+    },
+    "web.oauth.authorization.complete.acknowledged": {
+      "fixtureIds": ["web.oauth.authorization.complete.acknowledged"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "web.paid.rss-feed-crawl.default": {
+      "fixtureIds": ["web.paid.rss-feed-crawl.default"],
+      "hash": "c557eeb3343f171250fd4eef98be00f8260facf444ec53c137f669c81a679dbd"
+    },
+    "web.paid.rss-feed-crawls.default": {
+      "fixtureIds": ["web.paid.rss-feed-crawls.default"],
+      "hash": "bc66d9af089e1911bb36343c517956321af86ff5d587003d0588d84d6e3cbd0d"
+    },
+    "web.referral-links.feed.default": {
+      "fixtureIds": ["web.referral-links.feed.default"],
+      "hash": "0c50acaa7d29e507469968ebea165fbbf103abb05fe1bfad86251da613e82c07"
+    },
+    "web.referral-links.prioritized.default": {
+      "fixtureIds": ["web.referral-links.prioritized.default"],
+      "hash": "862919f82355653bf3ca17daf47d946f6f9f7a310cf20cc82d835be7881153d9"
+    },
+    "web.rss-feed-items.feed.default": {
+      "fixtureIds": ["web.rss-feed-items.feed.default"],
+      "hash": "6a61230061295518e850908e990ae3c5f388fd39c72f4d6081ed6e5f3f52851d"
+    },
+    "web.topics.mutation.default": {
+      "fixtureIds": ["web.topics.mutation.default"],
+      "hash": "002419b3b3c569cc45683ebe0f1b1f4d652882396bde000cdb93e87c00e1b12e"
+    },
+    "web.topics.publisher-types.default": {
+      "fixtureIds": ["web.topics.publisher-types.default"],
+      "hash": "720629e71c08e3bfac0bc4e591e5f72a3a58d9ce49e7877eeff4c27b35f5952d"
+    },
+    "web.topics.search.default": {
+      "fixtureIds": ["web.topics.search.default"],
+      "hash": "3e1c485f1b0f37b567b09526c8c8e7e9c3d39429b49d5c51d75a5b1b560ebac3"
+    },
+    "web.topics.search.referral-programs.default": {
+      "fixtureIds": ["web.topics.search.referral-programs.default"],
+      "hash": "6ff90bd5a42e3413182fe658039af667fdc675fa1fdbae0fb149551c6b195727"
+    },
+    "web.trending-referral-programs.default": {
+      "fixtureIds": ["web.trending-referral-programs.default"],
+      "hash": "86c4e4b9aa4dcbc078a60b081c11935da32583e9b764e996cf2f99a9d1cae44d"
+    }
+  },
+  "source": {
+    "caseRoot": "backend/test-helpers/api-fixtures",
+    "generator": "backend/test-helpers/api-fixtures/generate.mts",
+    "kind": "generated"
+  },
+  "version": 2
+}

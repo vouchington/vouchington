@@ -1,0 +1,45 @@
+{
+  "name": "@modules/utils",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/graceful-shutdown": "workspace:^",
+    "@jongleberry/api-server": "^2.1.0",
+    "@modules/on-error": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "@vouchington/frontmatter": "0.0.0",
+    "@vouchington/utils": "0.5.1",
+    "@vouchington/uuid-v7": "0.0.0",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1",
+    "slugify": "^1.6.9",
+    "ssrf-guard": "^1.0.0",
+    "undici": "^8.10.2",
+    "validator": "^13.15.35"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@types/validator": "^13.15.10"
+  }
+}

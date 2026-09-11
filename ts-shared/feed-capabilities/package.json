@@ -1,0 +1,24 @@
+{
+  "name": "@ts-shared/feed-capabilities",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Worker-safe feed, post, and RSS surface capability catalogs.",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {}
+}

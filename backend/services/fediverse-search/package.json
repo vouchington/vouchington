@@ -1,0 +1,36 @@
+{
+  "name": "@services/fediverse-search",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Provider-normalized Fediverse and social search.",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey": "workspace:^",
+    "@modules/api-egress-proxy": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "http-assert": "^1.5.0",
+    "undici": "^8.10.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

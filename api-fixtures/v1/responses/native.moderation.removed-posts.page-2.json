@@ -1,0 +1,20 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTA2LTMwVDA5OjAwOjAwLjAwMDAwMFoiLCJ0aWVyIjoxLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMiIsInNjb3BlIjoidXNlci1yZW1vdmVkLXBvc3RzOjAwMDAwMDAwLTAwMDAtNzAwMC04NzAwLTAwMDAwMDAwMDEwMTpyZW1vdmVkLWRlc2Mta2luZC1kZXNjLXBvc3QtZGVzYzp2MiJ9"
+  },
+  "removed_posts": [
+    {
+      "__entity_type": "removed_post",
+      "community_id": null,
+      "community_slug": null,
+      "post_declared_language": null,
+      "post_id": "00000000-0000-7000-8000-000000000202",
+      "post_lingua_rs_detected_language": "en",
+      "post_removal_kind": "platform",
+      "post_title": "A platform removed global post",
+      "unpublished_at": "2026-06-30T09:00:00.000000Z"
+    }
+  ]
+}

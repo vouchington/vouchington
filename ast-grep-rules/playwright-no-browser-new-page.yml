@@ -1,0 +1,18 @@
+id: playwright-no-browser-new-page
+language: Tsx
+severity: error
+message: 'Use the monitored page supplied by the shared Playwright helper instead of `browser.newPage()`.'
+files:
+  - 'playwright/tests/**/*.spec.mts'
+rule:
+  pattern: 'browser.newPage($$$)'
+examples:
+  - code: 'const page = await browser.newPage();'
+    isValid: false
+    file: 'playwright/tests/home.spec.mts'
+  - code: 'const page = await context.newPage();'
+    isValid: true
+    file: 'playwright/tests/home.spec.mts'
+  - code: 'const page = await browser.newPage();'
+    isValid: true
+    file: 'playwright/helpers/browser.mts'

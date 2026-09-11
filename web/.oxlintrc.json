@@ -1,0 +1,73 @@
+{
+  "$schema": "https://oxc.rs/schema/oxlintrc.json",
+  "extends": ["../.oxlintrc.json", "../.oxlintrc.react.json"],
+  // "extends" does not inherit the root "plugins" array — keep this in exact sync with it. See
+  // static-code-analysis/README.md nested .oxlintrc.json section for why.
+  "plugins": ["react", "nextjs", "jsx-a11y", "react-perf", "vitest", "jest", "promise", "oxc"],
+  "env": {
+    "browser": true,
+    "es2024": true
+  },
+  "rules": {
+    "require-await": "off",
+    // Native React Compiler rules. Replaces the removed react/react-compiler catch-all.
+    // Recommended rules are error. Suspicious/perf compiler rules stay off so root
+    // categories do not turn on ESLint-preset-off diagnostics.
+    "react/error-boundaries": "error",
+    "react/globals": "error",
+    "react/immutability": "error",
+    "react/incompatible-library": "error",
+    "react/preserve-manual-memoization": "error",
+    "react/purity": "error",
+    "react/refs": "error",
+    "react/set-state-in-effect": "error",
+    "react/set-state-in-render": "error",
+    "react/static-components": "error",
+    "react/unsupported-syntax": "error",
+    "react/use-memo": "error",
+    "react/void-use-memo": "error",
+    "react/capitalized-calls": "off",
+    "react/exhaustive-effect-dependencies": "off",
+    "react/hooks": "off",
+    "react/memo-dependencies": "off",
+    "react/no-deriving-state-in-effects": "off",
+    "react-doctor/no-async-effect-callback": "error",
+    "react-doctor/no-create-ref-in-function-component": "error",
+    "react-doctor/no-mutating-reducer-state": "error",
+    "react-doctor/no-self-updating-effect": "error",
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "mts": "always",
+        "tsx": "always",
+        "js": "never",
+        "jsx": "never",
+        "cjs": "never",
+        "cts": "never",
+        "mjs": "never"
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+      "rules": {
+        "no-mistakes/nextjs-static-fetch-method": "error",
+        "no-mistakes/nextjs-static-fetch-url": "error"
+      }
+    },
+    {
+      "files": [
+        "app/**/page.{ts,tsx}",
+        "app/**/layout.{ts,tsx}",
+        "app/**/opengraph-image.{ts,tsx}",
+        "app/**/twitter-image.{ts,tsx}",
+        "components/ui/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "react/only-export-components": "off"
+      }
+    }
+  ]
+}

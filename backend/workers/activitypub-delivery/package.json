@@ -1,0 +1,42 @@
+{
+  "name": "@workers/activitypub-delivery",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./workers.mts",
+      "import": "./workers.mts",
+      "default": "./workers.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/activitypub-uris": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@queues/activitypub-delivery": "workspace:^",
+    "@services/activitypub-delivery": "workspace:^",
+    "@services/ap-actor-keys": "workspace:^",
+    "@services/users": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@modules/http-signatures": "workspace:^",
+    "@services/ap-inbox-activities": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/remote-actors": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^",
+    "http-errors": "^2.0.1"
+  }
+}

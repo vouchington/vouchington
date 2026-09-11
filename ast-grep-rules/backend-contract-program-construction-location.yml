@@ -1,0 +1,410 @@
+id: backend-contract-program-construction-location
+language: Tsx
+severity: error
+message: >-
+  TypeScript compiler hosts, programs, and language services for backend API contracts must be constructed only in
+  backend-program.mts. Reuse loadBackendProgram() or
+  buildVirtualProgramMatrix().
+files:
+  - 'backend/test-helpers/api-fixtures/**/*.mts'
+ignores:
+  - 'backend/test-helpers/api-fixtures/backend-program.mts'
+rule:
+  # The compiler-host, program, builder, watch, solution-builder, and language-service factory
+  # list below is duplicated
+  # verbatim across every regex arm below because YAML cannot import JS: it must stay in sync by
+  # hand with the canonical `FACTORIES` set in
+  # static-code-analysis/oxlint-plugin/typescript-program-surface.cjs, which is the single source
+  # of truth for which `ts.*` factory names count as program/language-service construction.
+  any:
+    # These two forms are context-free: the exact module is present in the matched syntax. Static
+    # default/namespace imports and all transitive aliases are owned by the scope-aware Oxlint rule.
+    - all:
+        - kind: import_specifier
+        - regex: >-
+            ^(?:['"])?(?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)(?:['"])?(?:\s+as\b|$)
+        - inside:
+            stopBy: end
+            all:
+              - kind: import_statement
+              - regex: '\bfrom\s*[''"]typescript[''"]'
+              - not:
+                  regex: '^import\s+type\b'
+    - kind: call_expression
+      regex: >-
+        ^\(\s*await\s+import\(\s*['"]typescript['"]\s*\)\s*\)\s*(?:(?:\.|\?\.)\s*(?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)|(?:\[|\?\.\s*\[)\s*['"](?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)['"]\s*\])\s*(?:\?\.)?\s*(?:<[\s\S]+>\s*)?\(
+    # createRequire(<arg>)('typescript').FACTORY(...) is the one createRequire()/require() loader
+    # shape that is "context-free": the whole chain -- call, module string, and factory member --
+    # is one expression, with no variable hop for ast-grep (which has no data-flow/scope
+    # analysis) to lose track of. This arm matches on the literal `createRequire` identifier and
+    # cannot verify it is actually bound to node:module's export, so it will also flag a
+    # same-named/same-shaped domain helper -- a false positive ast-grep cannot avoid here. Every
+    # multi-statement, destructured, aliased, shadowed-parameter, or reassignment ("kill-pattern")
+    # variant of this loader shape is explicitly out of scope for this arm and stays covered only
+    # by the scope-aware AST-walking Oxlint rule (create-require-provenance.cjs), which is
+    # authoritative for createRequire()/require() provenance.
+    - kind: call_expression
+      regex: >-
+        ^createRequire\([\s\S]*?\)\s*\(\s*['"]typescript['"]\s*\)\s*(?:(?:\.|\?\.)\s*(?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)|(?:\[|\?\.\s*\[)\s*['"](?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)['"]\s*\])\s*(?:\?\.)?\s*(?:<[\s\S]+>\s*)?\(
+    - kind: variable_declarator
+      regex: >-
+        ^[A-Za-z_$][\w$]*\s*=\s*(?:\(\s*await\s+import\(\s*['"]typescript['"]\s*\)\s*\)\s*(?:(?:\.|\?\.)\s*(?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)|(?:\[|\?\.\s*\[)\s*['"](?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)['"]\s*\]))$
+    - kind: assignment_expression
+      regex: >-
+        ^[A-Za-z_$][\w$]*\s*=\s*\(\s*await\s+import\(\s*['"]typescript['"]\s*\)\s*\)\s*(?:(?:\.|\?\.)\s*(?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)|(?:\[|\?\.\s*\[)\s*['"](?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)['"]\s*\])$
+    - all:
+        - kind: variable_declarator
+        - has:
+            field: value
+            regex: '^await\s+import\(\s*[''"]typescript[''"]\s*\)$'
+        - has:
+            field: name
+            all:
+              - kind: object_pattern
+              - has:
+                  stopBy: neighbor
+                  matches: protected-factory-destructure-key
+    - all:
+        - kind: assignment_expression
+        - has:
+            field: right
+            regex: '^await\s+import\(\s*[''"]typescript[''"]\s*\)$'
+        - has:
+            field: left
+            all:
+              - kind: object_pattern
+              - has:
+                  stopBy: neighbor
+                  matches: protected-factory-destructure-key
+    - kind: export_statement
+      regex: >-
+        ^export\s+\*(?:\s+as\s+[A-Za-z_$][\w$]*)?\s+from\s*['"]typescript['"]
+    - all:
+        - kind: export_specifier
+        - regex: >-
+            ^(?:['"])?(?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)(?:['"])?(?:\s+as\s+[\s\S]+)?$
+        - not:
+            regex: '^type\b'
+        - inside:
+            stopBy: end
+            kind: export_statement
+            regex: >-
+              \sfrom\s*['"]typescript['"]
+        - not:
+            inside:
+              stopBy: end
+              kind: export_statement
+              regex: '\bexport\s+type\b'
+    - all:
+        - kind: export_specifier
+        - regex: '^(?:[''"])?default(?:[''"])?(?:\s+as\s+[\s\S]+)?$'
+        - inside:
+            stopBy: end
+            kind: export_statement
+            regex: >-
+              \sfrom\s*['"]typescript['"]
+        - not:
+            inside:
+              stopBy: end
+              kind: export_statement
+              regex: '\bexport\s+type\b'
+utils:
+  protected-factory-destructure-key:
+    any:
+      - kind: shorthand_property_identifier_pattern
+        regex: >-
+          ^(?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)$
+      - all:
+          - kind: object_assignment_pattern
+          - has:
+              field: left
+              kind: shorthand_property_identifier_pattern
+              regex: >-
+                ^(?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)$
+      - all:
+          - kind: pair_pattern
+          - has:
+              field: key
+              regex: >-
+                ^(?:(?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)|['"](?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)['"]|\[\s*(?:['"](?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)['"]|`(?:create(?:CompilerHost|IncrementalCompilerHost|WatchCompilerHost|SolutionBuilderHost|SolutionBuilderWithWatchHost|Program|AbstractBuilder|IncrementalProgram|SemanticDiagnosticsBuilderProgram|EmitAndSemanticDiagnosticsBuilderProgram|LanguageService|WatchProgram|BuilderProgram|BuilderProgramUsingIncrementalBuildInfo|RedirectedBuilderProgram|SolutionBuilderWithWatch|SolutionBuilder)|readBuilderProgram)`)\s*\])$
+examples:
+  - code: |
+      import { "createCompilerHost" as buildHost } from 'typescript'
+      buildHost(options, true)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-quoted-host.mts'
+  - code: |
+      import {
+        createCompilerHost,
+        createIncrementalCompilerHost,
+        createSolutionBuilderHost,
+        createSolutionBuilderWithWatchHost,
+        createWatchCompilerHost,
+      } from 'typescript'
+      createCompilerHost(options, true)
+      createIncrementalCompilerHost(options)
+      createWatchCompilerHost(configPath, options, system, createProgram, reportDiagnostic, reportStatus)
+      createSolutionBuilderHost(system, createProgram, reportDiagnostic, reportStatus, reportBuilderStatus)
+      createSolutionBuilderWithWatchHost(system, createProgram, reportDiagnostic, reportStatus, reportBuilderStatus)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-host.mts'
+  - code: |
+      import { createProgram as makeProgram } from 'typescript'
+      makeProgram(files, options)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      import { createLanguageService as makeService } from 'typescript'
+      makeService(host)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      import {
+        createWatchProgram,
+        readBuilderProgram,
+      } from 'typescript'
+      createWatchProgram(host)
+      readBuilderProgram(options, host)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-watch.mts'
+  - code: |
+      export {
+        createProgram as buildProgram,
+      } from 'typescript'
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/compiler-export.mts'
+  - code: |
+      export { createSolutionBuilderWithWatchHost } from 'typescript'
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/compiler-host-export.mts'
+  - code: |
+      export { "createCompilerHost" as buildHost } from 'typescript'
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/compiler-quoted-host-export.mts'
+  - code: |
+      export { createCompilerHost as "build-host" } from 'typescript'
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/compiler-quoted-host-alias.mts'
+  - code: |
+      export { type createCompilerHost, createProgram } from 'typescript'
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/compiler-mixed-export.mts'
+  - code: |
+      export * as compiler from 'typescript'
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/compiler-namespace-export.mts'
+  - code: |
+      export { default as compiler } from 'typescript'
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/compiler-default-namespace-export.mts'
+  - code: |
+      export { default } from 'typescript'
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/compiler-default-export.mts'
+  - code: |
+      export { "default" } from 'typescript'
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/compiler-quoted-default-export.mts'
+  - code: |
+      const program = (await import('typescript'))?.createProgram?.(files, options)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      const host = (await import('typescript')).createWatchCompilerHost(
+        configPath,
+        options,
+        system,
+        createProgram,
+        reportDiagnostic,
+        reportStatus,
+      )
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-host-dynamic.mts'
+  - code: |
+      const host = (await import('typescript')).createWatchCompilerHost<
+        ts.EmitAndSemanticDiagnosticsBuilderProgram
+      >(configPath, options, system, createProgram, reportDiagnostic, reportStatus)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-generic-host-dynamic.mts'
+  - code: |
+      let makeProgram
+      makeProgram = (await import('typescript'))['createProgram']
+      makeProgram?.(files, options)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      let makeHost
+      makeHost = (await import('typescript')).createSolutionBuilderHost
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-host-assignment.mts'
+  - code: |
+      const makeHost = (await import('typescript')).createIncrementalCompilerHost
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-host-declarator.mts'
+  - code: |
+      const { createProgram: actualFactory, SyntaxKind: createCompilerHost } = await import('typescript')
+      actualFactory(files, options)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-destructure-protected-first.mts'
+  - code: |
+      let actualFactory
+      ({ SyntaxKind: createCompilerHost, ['createProgram']: actualFactory } = await import('typescript'))
+      actualFactory(files, options)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-destructure-protected-last.mts'
+  - code: |
+      const { "createCompilerHost": actualFactory, SyntaxKind: createCompilerHost } = await import('typescript')
+      actualFactory(options, true)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-destructure-quoted-factory.mts'
+  - code: |
+      const { createProgram = fallback } = await import('typescript')
+      createProgram(files, options)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-destructure-default-factory.mts'
+  - code: |
+      const { [`createCompilerHost`]: makeHost } = await import('typescript')
+      makeHost(options, true)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-destructure-template-factory.mts'
+  - code: |
+      let makeProgram
+      ;({ [`createProgram`]: makeProgram } = await import('typescript'))
+      makeProgram(files, options)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/contract-schema-destructure-template-factory-assignment.mts'
+  - code: |
+      import { createProgram } from '@domain/programs'
+      createProgram(files, options)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      import { createProgram } from '@domain/typescript'
+      createProgram(files, options)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema-domain-native.mts'
+  - code: |
+      import { createLanguageService } from '@domain/compiler'
+      createLanguageService(host)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      function createProgram(files: string[], options: DomainOptions) {
+        return domainProgram(files, options)
+      }
+      createProgram(files, options)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      type ProgramFactory = typeof import('typescript')['createProgram']
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/contract-schema-extractor.mts'
+  - code: |
+      export type { Program } from 'typescript'
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-types.mts'
+  - code: |
+      export type { default as Compiler } from 'typescript'
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-default-type.mts'
+  - code: |
+      export { type createCompilerHost, SyntaxKind } from 'typescript'
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-inline-types.mts'
+  - code: |
+      const { SyntaxKind: createCompilerHost } = await import('typescript')
+      createCompilerHost()
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-destructure-local-name.mts'
+  - code: |
+      const { SyntaxKind: createCompilerHost, ScriptKind } = await import('typescript')
+      createCompilerHost()
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-destructure-local-name-declaration.mts'
+  - code: |
+      let createCompilerHost
+      let ScriptKind
+      ({ ScriptKind, SyntaxKind: createCompilerHost } = await import('typescript'))
+      createCompilerHost()
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-destructure-local-name-assignment.mts'
+  - code: |
+      const { ['SyntaxKind']: createCompilerHost, "ScriptKind": scriptKind } = await import('typescript')
+      createCompilerHost()
+      scriptKind()
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-destructure-computed-local-name.mts'
+  - code: |
+      const { SyntaxKind: { createProgram } } = await import('typescript')
+      createProgram(files, options)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-destructure-nested-local-name-declaration.mts'
+  - code: |
+      const suffix = 'CompilerHost'
+      const { [`create${suffix}`]: makeHost } = await import('typescript')
+      makeHost(options, true)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-destructure-interpolated-template.mts'
+  - code: |
+      let createProgram
+      ;({ SyntaxKind: { createProgram } } = await import('typescript'))
+      createProgram(files, options)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-destructure-nested-local-name-assignment.mts'
+  - code: |
+      export { SyntaxKind } from 'typescript'
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/compiler-syntax.mts'
+  - code: |
+      import { createProgram } from 'typescript'
+      createProgram(files, options)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/backend-program.mts'
+  - code: |
+      import { createWatchCompilerHost } from 'typescript'
+      createWatchCompilerHost(configPath, options, system, createProgram, reportDiagnostic, reportStatus)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/backend-program.mts'
+  - code: |
+      import { createSolutionBuilderHost } from 'typescript'
+      createSolutionBuilderHost(system, createProgram, reportDiagnostic, reportStatus, reportBuilderStatus)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/backend-program.mts'
+  - code: |
+      import { createRequire } from 'node:module'
+      createRequire(import.meta.url)('typescript').createLanguageService(host)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/require-direct.mts'
+  - code: |
+      import { createRequire } from 'node:module'
+      createRequire(import.meta.url)('typescript').createCompilerHost(options, true)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/require-host-direct.mts'
+  - code: |
+      import { createRequire } from 'node:module'
+      createRequire(import.meta.url)('typescript')['createSemanticDiagnosticsBuilderProgram'](files, options)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/require-direct-bracket.mts'
+  - code: |
+      import { createRequire } from 'node:module'
+      createRequire(
+        import.meta.url,
+      )('typescript').createProgram(files, options)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/require-direct-multiline.mts'
+  - code: |
+      import { createRequire } from 'node:module'
+      createRequire(import.meta.url)
+      ('typescript').createProgram(files, options)
+    isValid: false
+    file: 'backend/test-helpers/api-fixtures/require-direct-chain-break.mts'
+  - code: |
+      import { createRequire } from 'node:module'
+      createRequire(import.meta.url)('@domain/typescript').createProgram(files, options)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/require-domain-module.mts'
+  - code: |
+      import { createRequire } from 'node:module'
+      createRequire(import.meta.url)('typescript').getDefaultLibFileName(options)
+    isValid: true
+    file: 'backend/test-helpers/api-fixtures/require-non-factory-member.mts'

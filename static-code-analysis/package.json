@@ -1,0 +1,24 @@
+{
+  "name": "@voucha/static-code-analysis",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static-analysis tools and invariant tests for repository policy",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "scripts": {},
+  "dependencies": {
+    "@libpg-query/parser": "^18.0.0",
+    "@ts-shared/utils": "workspace:^",
+    "@typescript-eslint/parser": "^8.69.0",
+    "@vouchington/postgres": "0.0.7",
+    "ajv": "^8.20.0",
+    "smol-toml": "^1.8.0",
+    "vouchington-tooling": "^0.16.0",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vitest": "^5.0.0"
+  }
+}

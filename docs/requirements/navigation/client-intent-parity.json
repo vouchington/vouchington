@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "source": "web/lib/navigation/intents/nav-intents.ts",
+  "intents": [
+    {
+      "id": "news",
+      "label": "News",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "news",
+      "dotnetSection": "news",
+      "requiresAuth": false,
+      "roles": []
+    },
+    {
+      "id": "podcasts",
+      "label": "Podcasts",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "podcasts",
+      "dotnetSection": "podcasts",
+      "requiresAuth": false,
+      "roles": []
+    },
+    {
+      "id": "videos",
+      "label": "Videos",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "videos",
+      "dotnetSection": "videos",
+      "requiresAuth": false,
+      "roles": []
+    },
+    {
+      "id": "posts",
+      "label": "Posts",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "posts",
+      "dotnetSection": "posts",
+      "requiresAuth": false,
+      "roles": []
+    },
+    {
+      "id": "topics",
+      "label": "Topics",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "topics",
+      "dotnetSection": "topics",
+      "requiresAuth": false,
+      "roles": []
+    },
+    {
+      "id": "referral-links",
+      "label": "Referral Links",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "discover",
+      "dotnetSection": "discover",
+      "requiresAuth": false,
+      "roles": []
+    },
+    {
+      "id": "web-search",
+      "label": "Web Search",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "discover",
+      "dotnetSection": "discover",
+      "requiresAuth": false,
+      "roles": []
+    },
+    {
+      "id": "fediverse",
+      "label": "Fediverse",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "discover",
+      "dotnetSection": "discover",
+      "featureFlag": "fediverse",
+      "requiresAuth": false,
+      "roles": []
+    },
+    {
+      "id": "chat",
+      "label": "Chat",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "messages",
+      "dotnetSection": "messages",
+      "requiresAuth": true,
+      "roles": []
+    },
+    {
+      "id": "messages",
+      "label": "Messages & Notifications",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "messages",
+      "dotnetSection": "messages",
+      "requiresAuth": true,
+      "roles": []
+    },
+    {
+      "id": "landing-pages",
+      "label": "Landing Pages",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "library",
+      "dotnetSection": "library",
+      "requiresAuth": true,
+      "roles": []
+    },
+    {
+      "id": "communities",
+      "label": "Communities",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "communities",
+      "dotnetSection": "communities",
+      "requiresAuth": false,
+      "roles": []
+    },
+    {
+      "id": "friends",
+      "label": "Users & Friends",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "friends",
+      "dotnetSection": "friends",
+      "requiresAuth": true,
+      "roles": []
+    },
+    {
+      "id": "lists",
+      "label": "Lists",
+      "nativePlacement": "bottom-nav",
+      "swiftSection": "library",
+      "dotnetSection": "library",
+      "requiresAuth": true,
+      "roles": []
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "nativePlacement": "account-directory",
+      "swiftSection": "settings",
+      "dotnetSection": "settings",
+      "requiresAuth": true,
+      "roles": []
+    },
+    {
+      "id": "moderation",
+      "label": "Moderation",
+      "nativePlacement": "staff-directory",
+      "swiftSection": "moderation",
+      "dotnetSection": "moderation",
+      "requiresAuth": true,
+      "roles": []
+    },
+    {
+      "id": "crm",
+      "label": "CRM",
+      "nativePlacement": "staff-directory",
+      "swiftSection": "crm",
+      "dotnetSection": "crm",
+      "requiresAuth": false,
+      "roles": ["administrator"]
+    },
+    {
+      "id": "engineering",
+      "label": "Engineering",
+      "nativePlacement": "staff-directory",
+      "swiftSection": "engineering",
+      "dotnetSection": "engineering",
+      "requiresAuth": false,
+      "roles": ["administrator", "moderator", "developer", "customer_support", "investor"]
+    },
+    {
+      "id": "growth",
+      "label": "Growth",
+      "nativePlacement": "staff-directory",
+      "swiftSection": "growth",
+      "dotnetSection": "growth",
+      "requiresAuth": false,
+      "roles": ["administrator", "investor"]
+    }
+  ]
+}

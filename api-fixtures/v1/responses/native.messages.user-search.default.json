@@ -1,0 +1,41 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "user",
+      "display_account": {
+        "id": "00000000-0000-7000-8000-000000000003",
+        "name": "Bob Brown"
+      },
+      "id": "00000000-0000-7000-8000-000000000003",
+      "lingua_rs_detected_language": null,
+      "markdown": "Bio text for Bob",
+      "profile_image_id": null,
+      "public_verified_name_display": null,
+      "roles": [],
+      "use_display_name_from": "google",
+      "username": "bob",
+      "verification_status": null,
+      "verified_badge_visible": null,
+      "verified_display_name": null
+    },
+    {
+      "__entity_type": "user",
+      "id": "00000000-0000-7000-8000-000000000004",
+      "lingua_rs_detected_language": null,
+      "markdown": null,
+      "profile_image_id": "image-bonnie",
+      "public_verified_name_display": null,
+      "roles": [],
+      "use_display_name_from": "username",
+      "username": "bonnie",
+      "verification_status": null,
+      "verified_badge_visible": null,
+      "verified_display_name": null
+    }
+  ]
+}

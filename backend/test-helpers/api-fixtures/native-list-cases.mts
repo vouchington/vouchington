@@ -1,0 +1,107 @@
+import type { ApiFixtureCase } from './types.mts'
+
+export const nativeListApiFixtureCases: ApiFixtureCase[] = [
+  {
+    id: 'native.lists.default',
+    method: 'GET',
+    path: '/api/v1/lists',
+    query: { limit: '25' },
+    route: { routeTemplate: '/api/v1/lists' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      results: [{ __entity_type: 'list', id: 'list-1' }],
+      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+      lists: {
+        'list-1': {
+          __entity_type: 'list',
+          id: 'list-1',
+          owner_user_id: 'user-abc',
+          name: 'Reading Queue',
+          description: 'Articles to read later',
+          visibility: 'private',
+          created_at: '2026-06-28T10:00:00Z',
+          updated_at: '2026-06-28T10:00:00Z',
+          removed_at: null,
+        },
+      },
+    },
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['web/lib/api/client/lists.ts'],
+  },
+  {
+    id: 'native.list-items.default',
+    method: 'GET',
+    path: '/api/v1/lists/list-1/items',
+    query: { limit: '25' },
+    route: {
+      routeTemplate: '/api/v1/lists/:id/items',
+      pathParams: { id: 'list-1' },
+    },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      results: [
+        { __entity_type: 'list_item', id: 'list-item-1' },
+        { __entity_type: 'list_item', id: 'list-item-2' },
+      ],
+      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+      list_items: {
+        'list-item-1': {
+          __entity_type: 'list_item',
+          id: 'list-item-1',
+          list_id: 'list-1',
+          item_type: 'rss_feed_item',
+          entity_id: 'item-1',
+          order_index: 0,
+          created_at: '2026-06-28T10:05:00Z',
+          media_type: 'article',
+        },
+        'list-item-2': {
+          __entity_type: 'list_item',
+          id: 'list-item-2',
+          list_id: 'list-1',
+          item_type: 'post',
+          entity_id: 'post-1',
+          order_index: 1,
+          created_at: '2026-06-28T10:06:00Z',
+          media_type: 'discussion',
+        },
+      },
+    },
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['web/lib/api/client/lists.ts'],
+  },
+  {
+    id: 'native.lists-containing.default',
+    method: 'GET',
+    path: '/api/v1/lists/contains',
+    query: { entity_id: 'item-1', item_type: 'rss_feed_item' },
+    route: { routeTemplate: '/api/v1/lists/contains' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      list_ids: ['list-1'],
+    },
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['web/lib/api/client/lists.ts'],
+  },
+  {
+    id: 'native.list-import.default',
+    method: 'POST',
+    path: '/api/v1/lists/list-1/import',
+    requestBody: { community_slug: 'test-community' },
+    route: {
+      routeTemplate: '/api/v1/lists/:id/import',
+      pathParams: { id: 'list-1' },
+    },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      posts: 1,
+      items: 1,
+    },
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['web/lib/api/client/lists.ts'],
+  },
+]

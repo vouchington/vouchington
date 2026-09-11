@@ -1,0 +1,24 @@
+id: playwright-no-scroll-into-view-sentinel
+language: Tsx
+severity: error
+message: '`scrollIntoViewIfNeeded()` is a documented no-op on an already-visible element — on the infinite-scroll sentinel it can silently no-op and never trigger a page load. Use `scrollToLoadMore(page)` from `playwright/helpers/` instead, which performs a real scroll.'
+files:
+  - 'playwright/**/*.ts'
+  - 'playwright/**/*.mts'
+ignores:
+  - 'playwright/helpers/*.mts'
+rule:
+  pattern: $PAGE.getByTestId($ID).scrollIntoViewIfNeeded()
+constraints:
+  ID:
+    regex: 'infinite-scroll-sentinel'
+examples:
+  - code: "await page.getByTestId('infinite-scroll-sentinel').scrollIntoViewIfNeeded()"
+    isValid: false
+    file: 'playwright/tests/posts/search-pagination.spec.mts'
+  - code: "await page.getByTestId('chat-input-textarea').scrollIntoViewIfNeeded()"
+    isValid: true
+    file: 'playwright/tests/chat/chat.spec.mts'
+  - code: 'await scrollToLoadMore(page)'
+    isValid: true
+    file: 'playwright/tests/posts/search-pagination.spec.mts'

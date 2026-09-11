@@ -1,0 +1,30 @@
+{
+  "name": "@workers/follower-distributions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./workers.mts",
+      "import": "./workers.mts",
+      "default": "./workers.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/follower-distributions": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@services/follower-distributions": "workspace:^",
+    "glide-mq": "^0.15.5"
+  }
+}

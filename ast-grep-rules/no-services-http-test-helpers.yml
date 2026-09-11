@@ -1,0 +1,23 @@
+id: no-services-http-test-helpers
+language: Tsx
+severity: error
+message: "Service tests must not import HTTP test helpers ('supertest'). Use real PostgreSQL/Valkey; HTTP-layer tests belong in backend/api/."
+files:
+  - 'backend/services/**/*.test.mts'
+rule:
+  any:
+    - pattern: "import $X from 'supertest'"
+    - pattern: "import { $$$ } from 'supertest'"
+    - pattern: "import * as $X from 'supertest'"
+    - pattern: "import('supertest')"
+    - pattern: "require('supertest')"
+examples:
+  - code: "import request from 'supertest'"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "import { agent } from 'supertest'"
+    isValid: false
+    file: 'backend/services/auth/auth.test.mts'
+  - code: "import { describe, it } from 'vitest'"
+    isValid: true
+    file: 'backend/services/auth/auth.test.mts'

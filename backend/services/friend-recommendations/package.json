@@ -1,0 +1,34 @@
+{
+  "name": "@services/friend-recommendations",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/search-utils": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/types": "workspace:^"
+  },
+  "devDependencies": {
+    "@services/entity-relations": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

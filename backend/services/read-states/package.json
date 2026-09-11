@@ -1,0 +1,32 @@
+{
+  "name": "@services/read-states",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-assert": "^1.5.0"
+  },
+  "devDependencies": {
+    "@services/users": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

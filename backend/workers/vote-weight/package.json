@@ -1,0 +1,24 @@
+{
+  "name": "@workers/vote-weight",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/vote-weight": "workspace:^",
+    "@services/vote-weight": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

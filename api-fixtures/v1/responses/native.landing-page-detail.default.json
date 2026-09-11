@@ -1,0 +1,117 @@
+{
+  "landing_page": {
+    "created_at": "2026-06-28T10:00:00Z",
+    "id": "landing-page-1",
+    "is_default": true,
+    "items": [
+      {
+        "id": "item-profile-1",
+        "profile_link": {
+          "created_at": "2026-06-28T10:00:00Z",
+          "handle": null,
+          "id": "profile-link-1",
+          "image_id": null,
+          "link_type": "url",
+          "name": "Website",
+          "sort_order": 1,
+          "updated_at": "2026-06-28T10:00:00Z",
+          "url": "https://example.com",
+          "url_id": "url-profile-1",
+          "user_id": "user-abc"
+        },
+        "type": "profile_link"
+      },
+      {
+        "id": "item-review-1",
+        "review": {
+          "created_at": "2026-06-28T10:00:00Z",
+          "declared_language": "en",
+          "id": "review-1",
+          "lingua_rs_detected_language": "en",
+          "markdown": "Useful review",
+          "review_topic_ratings": [
+            {
+              "order_index": 0,
+              "rating": 5,
+              "topic_id": "topic-1",
+              "topic_name": "Travel Cards",
+              "topic_slug": "travel-cards"
+            }
+          ],
+          "slug": "best-travel-card",
+          "title": "Best Travel Card"
+        },
+        "type": "review"
+      },
+      {
+        "id": "item-referral-1",
+        "referral_link": {
+          "id": "referral-link-1",
+          "label": "Apply",
+          "referral_program_id": "topic-1",
+          "referral_program_name": "Travel Cards",
+          "referral_program_slug": "travel-cards",
+          "url": "https://example.com/apply"
+        },
+        "type": "referral_link"
+      },
+      {
+        "entries": [
+          {
+            "id": "group-entry-review-1",
+            "review": {
+              "created_at": "2026-06-28T11:00:00Z",
+              "declared_language": null,
+              "id": "review-2",
+              "lingua_rs_detected_language": "en",
+              "markdown": "A second useful review",
+              "review_topic_ratings": [
+                {
+                  "order_index": 0,
+                  "rating": 4,
+                  "topic_id": "topic-1",
+                  "topic_name": "Travel Cards",
+                  "topic_slug": "travel-cards"
+                }
+              ],
+              "slug": "travel-card-benefits",
+              "title": "Travel Card Benefits"
+            },
+            "type": "review"
+          },
+          {
+            "id": "group-entry-referral-1",
+            "referral_link": {
+              "id": "referral-link-2",
+              "label": "Learn more",
+              "referral_program_id": "topic-1",
+              "referral_program_name": "Travel Cards",
+              "referral_program_slug": "travel-cards",
+              "url": "https://example.com/travel-card"
+            },
+            "type": "referral_link"
+          }
+        ],
+        "id": "item-topic-group-1",
+        "topic": {
+          "id": "topic-1",
+          "name": "Travel Cards",
+          "slug": "travel-cards",
+          "topic_type": "referral_program"
+        },
+        "type": "topic_group"
+      },
+      {
+        "id": "item-link-1",
+        "label": "Newsletter",
+        "type": "link",
+        "url": "https://example.com/newsletter"
+      }
+    ],
+    "slug": "links",
+    "subtitle": "Cards and reviews I recommend",
+    "title": "My Links",
+    "updated_at": "2026-06-29T10:00:00Z",
+    "user_id": "user-abc"
+  }
+}

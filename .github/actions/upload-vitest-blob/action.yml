@@ -1,0 +1,50 @@
+name: Upload Vitest Blob
+description: Upload one suite's vitest blob artifact fallback to GitHub.
+
+inputs:
+  suite:
+    description: Lowercase hyphen-delimited vitest suite identity.
+    required: true
+  name-suffix:
+    description: >-
+      Optional suffix appended to the uploaded artifact's name, so a same-name retry cannot
+      collide with an unfinalized upload left behind by a prior attempt (actions/upload-artifact
+      overwrite:true does not delete an unfinalized artifact, so its reserved name still 409s).
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Validate vitest suite
+      shell: bash
+      env:
+        SUITE: ${{ inputs.suite }}
+      run: |
+        case "$SUITE" in
+          ''|-*|*-|*--*|*[![:lower:][:digit:]-]*)
+            echo "::error::Invalid vitest suite: expected lowercase alphanumeric segments separated by single hyphens" >&2
+            exit 1
+            ;;
+        esac
+    - name: Stamp vitest blob manifest
+      shell: bash
+      env:
+        SUITE: ${{ inputs.suite }}
+      run: pnpm exec vouchington vitest-blob-manifest "$SUITE"
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        overwrite: true
+        # github.run_attempt scopes every upload to its workflow attempt, so a failed-job rerun
+        # (same run ID, new attempt) never collides with a zombie left by a prior attempt — even
+        # one where both the primary and -retry uploads finalized-failed in the same attempt.
+        # Safe for every consumer: they match by prefix (ci-tests-processing.yml) or by the
+        # manifest's own suite/run.attempt fields (vouchington-tooling prepareVitestReports), not
+        # by this literal name.
+        name: vitest-blob-${{ inputs.suite }}-attempt-${{ github.run_attempt }}${{ inputs.name-suffix }}
+        path: |
+          .vitest-reports/vitest-blob-manifest.json
+          .vitest-reports/${{ inputs.suite }}.json
+        include-hidden-files: true
+        retention-days: 1
+        if-no-files-found: error

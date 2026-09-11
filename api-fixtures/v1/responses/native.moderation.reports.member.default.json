@@ -1,0 +1,31 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "has_previous_page": false,
+    "start_cursor": "eyJjbHVzdGVyIjpmYWxzZSwiaWQiOiIwMTlmNjU1OS02YjMxLTcxNzEtYjViMS1jY2Q5ZDcwMmM0NWUiLCJzb3J0IjoiY3JlYXRlZF9hdF9kZXNjIiwic3RhdHVzIjoicGVuZGluZyIsInNjb3BlIjoie1wiYXVkaWVuY2VcIjpcIm1lbWJlclwiLFwib3duZXJJZFwiOlwiMDAwMDAwMDAtMDAwMC03MDAwLTg3MDAtMDAwMDAwMDAwMTAxXCJ9In0"
+  },
+  "results": [
+    {
+      "case_id": "case-1",
+      "created_at": "2026-06-01T12:00:00.000Z",
+      "entity_id": "post-1",
+      "entity_type": "post",
+      "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e",
+      "post_moderation_context": null,
+      "reason": "spam",
+      "report_count": 3,
+      "reviewed_at": null,
+      "status": "pending",
+      "target_available": true,
+      "target_content": {
+        "declared_language": null,
+        "kind": "post",
+        "lingua_rs_detected_language": null,
+        "text": "Native post"
+      },
+      "target_label": "Native post",
+      "target_path": "/review/native-post"
+    }
+  ]
+}

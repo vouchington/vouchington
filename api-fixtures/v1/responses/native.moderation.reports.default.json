@@ -1,0 +1,42 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "has_previous_page": false,
+    "start_cursor": "eyJjbHVzdGVyIjpmYWxzZSwiaWQiOiIwMTlmNjU1OS02YjMxLTcxNzEtYjViMS1jY2Q5ZDcwMmM0NWUiLCJzb3J0Ijoic2V2ZXJpdHkiLCJzdGF0dXMiOiJwZW5kaW5nIiwic2NvcGUiOiJ7XCJhdWRpZW5jZVwiOlwic3RhZmZcIixcIm93bmVySWRcIjpudWxsfSIsInJlcG9ydF9jb3VudCI6Mywic2V2ZXJpdHlfcmFuayI6MX0"
+  },
+  "results": [
+    {
+      "admin_action_path": "/review/native-post",
+      "case_id": "case-1",
+      "created_at": "2026-06-01T12:00:00.000Z",
+      "entity_id": "post-1",
+      "entity_type": "post",
+      "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e",
+      "is_system_generated": false,
+      "judgement": {
+        "current_report_count": 3,
+        "internal_response": "Likely spam.",
+        "is_stale": false,
+        "judged_report_count": 3,
+        "public_response": "Thanks for the report.",
+        "recommended_action": "remove"
+      },
+      "note": "Looks automated.",
+      "post_moderation_context": null,
+      "reason": "spam",
+      "report_count": 3,
+      "reporter_user_id": "user-1",
+      "reporter_username": "alice",
+      "resolved_by_id": null,
+      "reviewed_at": null,
+      "status": "pending",
+      "target_available": true,
+      "target_content": null,
+      "target_is_restricted": false,
+      "target_label": "Native post",
+      "target_path": "/review/native-post",
+      "target_user_id": "user-2"
+    }
+  ]
+}

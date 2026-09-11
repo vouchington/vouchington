@@ -1,0 +1,45 @@
+id: web-no-raw-api-response-client-boundary
+language: Tsx
+severity: error
+message: Audited client boundaries must consume a display-specific view model, not a raw API response envelope.
+files:
+  - web/components/comments/use-comment-tree-state.ts
+  - web/components/home/*.tsx
+  - web/components/comments/comment-tree.tsx
+  - web/components/posts/post-list.tsx
+rule:
+  all:
+    - kind: import_statement
+    - regex: "from\\s+['\"]@/types/api-responses(?:/[^'\"]+)?['\"]"
+examples:
+  - code: |
+      import type { PostsResponseBody } from '@/types/api-responses'
+    isValid: false
+    file: 'web/components/comments/use-comment-tree-state.ts'
+  - code: |
+      import type { PostsResponseBody } from '@/types/api-responses/posts-topics-and-feeds'
+    isValid: false
+    file: 'web/components/comments/use-comment-tree-state.ts'
+  - code: |
+      import type { CommentTreeViewModel } from './comment-tree-view-model'
+    isValid: true
+    file: 'web/components/comments/use-comment-tree-state.ts'
+  - code: |
+      'use client'
+      import type { TrendingFeedsResponse } from '@/types/api-responses'
+    isValid: false
+    file: web/components/home/trending-feeds.tsx
+  - code: |
+      'use client'
+      import type { TrendingFeedsResponse } from '@/types/api-responses/urls-onboarding-and-trends'
+    isValid: false
+    file: web/components/home/trending-feeds.tsx
+  - code: |
+      'use client'
+      import type { TrendingFeedsViewModel } from '@/lib/view-models/homepage-view-models'
+    isValid: true
+    file: web/components/home/trending-feeds.tsx
+  - code: |
+      import type { TopicsResponseBody } from '@/types/api-responses'
+    isValid: true
+    file: web/app/topics/page.tsx

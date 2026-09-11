@@ -1,0 +1,23 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "url",
+      "canonical_url_id": null,
+      "hostname": {
+        "__entity_type": "hostname",
+        "hostname": "example.com",
+        "id": "hostname-1",
+        "topic_id": "topic-1"
+      },
+      "id": "url-1",
+      "pathname": "/guides/native-clients",
+      "search_params": {},
+      "url": "https://example.com/guides/native-clients"
+    }
+  ]
+}

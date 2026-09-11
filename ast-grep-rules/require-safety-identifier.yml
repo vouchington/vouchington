@@ -1,0 +1,46 @@
+id: require-safety-identifier
+language: Tsx
+severity: error
+message: 'agentic API call is missing safety_identifier in the first argument'
+files:
+  - 'backend/agents/**/*.mts'
+ignores:
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+rule:
+  any:
+    - all:
+        - pattern: 'createOpenAIResponse({ $$$ })'
+        - not:
+            has:
+              regex: "\\bsafety_identifier\\b"
+    - all:
+        - pattern: '$OBJ.responses.create({ $$$ })'
+        - not:
+            has:
+              regex: "\\bsafety_identifier\\b"
+    - all:
+        - pattern: 'createOpenAIResponse({ $$$ }, $$$)'
+        - not:
+            has:
+              regex: "\\bsafety_identifier\\b"
+    - all:
+        - pattern: '$OBJ.responses.create({ $$$ }, $$$)'
+        - not:
+            has:
+              regex: "\\bsafety_identifier\\b"
+    - pattern: 'createOpenAIResponse()'
+    - pattern: '$OBJ.responses.create()'
+examples:
+  - code: "createOpenAIResponse({ model: 'gpt-4o' })"
+    isValid: false
+    file: 'backend/agents/my-agent/run.mts'
+  - code: "client.responses.create({ model: 'gpt-4o' })"
+    isValid: false
+    file: 'backend/agents/my-agent/run.mts'
+  - code: "createOpenAIResponse({ model: 'gpt-4o', safety_identifier: 'my-agent' })"
+    isValid: true
+    file: 'backend/agents/my-agent/run.mts'
+  - code: "client.responses.create({ model: 'gpt-4o', safety_identifier: 'my-agent' })"
+    isValid: true
+    file: 'backend/agents/my-agent/run.mts'

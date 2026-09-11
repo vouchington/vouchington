@@ -1,0 +1,38 @@
+{
+  "name": "@services/captcha",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey": "workspace:^",
+    "@jongleberry/api-server": "^2.1.0",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/app-attestation": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "http-errors": "^2.0.1",
+    "undici": "^8.10.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

@@ -1,0 +1,109 @@
+name: Cleanup Artifacts
+
+# Deletes intermediate CI artifacts once they are no longer needed so the
+# account stays under its billed Actions storage cap. Producer workflows call
+# this workflow from their terminal success fan-in, which keeps immediate
+# deletion ordered inside the attempt that created the artifacts. `ci.yml`'s
+# "tests" job also deletes its own vitest-blob-*/coverage-* artifacts as soon
+# as their consumers finish; this workflow catches everything that job cannot
+# reach:
+#
+#   - cancelled delete-classified artifacts (rapid-push concurrency cancellation), which never run
+#     the in-job cleanup step and become sweep-eligible once their `created_at` is over 6 hours old
+#   - non-blob intermediates such as playwright-otel output
+#     that no in-job step deletes
+#
+# See ci/cleanup-artifacts-patterns.json for the shared classification policy,
+# ci/cleanup-run-artifacts.mjs for dependency-free fan-in deletion, and
+# ci/cleanup-artifacts.mts for scheduled sweep logic. See also
+# AUTHORING.md's "Artifact Rerun Safety" section for why cancelled artifacts wait for a later
+# 6-hourly sweep after that eligibility threshold, while `failure`, `timed_out`, and
+# `action_required` artifacts remain until GitHub expiration. An unavailable run lookup skips that
+# sweep and is retried later. A failed-jobs rerun may still need sibling artifacts from the original
+# attempt.
+
+on:
+  workflow_call:
+    inputs:
+      run_id:
+        description: Run whose terminal producer fan-in is invoking cleanup
+        required: true
+        type: string
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: cleanup-artifacts-${{ inputs.run_id || 'sweep' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup-run:
+    if: inputs.run_id != ''
+    name: Cleanup producer artifacts
+    runs-on: [self-hosted]
+    timeout-minutes: 10
+    continue-on-error: true
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Delete artifacts for the completed run
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        timeout-minutes: 3
+        continue-on-error: true
+        env:
+          WORKFLOW_RUN_ID: ${{ inputs.run_id }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          retries: 4
+          retry-exempt-status-codes: 400,401,404,422
+          script: |-
+            const { pathToFileURL } = require('node:url');
+            const moduleUrl = pathToFileURL(
+              `${process.env.GITHUB_WORKSPACE}/ci/cleanup-run-artifacts.mjs`,
+            );
+            const { cleanupRunArtifacts } = await import(moduleUrl.href);
+            await cleanupRunArtifacts({
+              github,
+              repo: context.repo,
+              runId: process.env.WORKFLOW_RUN_ID,
+              log: { info: core.info, warning: core.warning },
+            });
+
+  cleanup-sweep:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: Sweep stale artifacts
+    runs-on: [self-hosted]
+    # Job ceiling must exceed the sum of step budgets: setup-node-pnpm (5 min) + the sweep engine
+    # itself (20 min), plus headroom for checkout/workspace-restore.
+    timeout-minutes: 26
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Sweep artifacts older than 6 hours
+        timeout-minutes: 20
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node ci/cleanup-artifacts.mts sweep --older-than-hours 6

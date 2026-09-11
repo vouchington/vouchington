@@ -1,0 +1,92 @@
+name: backend-smoke
+
+# The backend API/worker smoke gate is deliberately separate from Vitest shards. It owns the
+# one migration and deterministic server-port handoff needed to exercise the running backend;
+# backend-unit retains its own service setup and migration in every shard.
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_ENV: test
+
+jobs:
+  smoke:
+    runs-on: [self-hosted, Linux, Docker, Tests]
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: '-c max_connections=300'
+        ports:
+          - 5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /var/lib/postgresql:rw,size=1g
+      valkey:
+        image: valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        ports:
+          - 6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /data:rw,size=64m
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - name: Set service ports
+        timeout-minutes: 1
+        run: |
+          echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
+          echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup-backend
+        id: setup-backend
+        timeout-minutes: 6
+        with:
+          runner-lifecycle: persistent
+      - name: Migrate backend database
+        working-directory: backend
+        run: node data-stores/psql/migrate.mts
+        timeout-minutes: 3
+      - name: Allocate backend port
+        id: port
+        uses: ./.github/actions/allocate-ports
+        with:
+          count: '1'
+      - name: Export backend port to env
+        timeout-minutes: 1
+        run: echo "PORT=${{ steps.port.outputs.port1 }}" >> "$GITHUB_ENV"
+      - name: Smoke test backend
+        timeout-minutes: 3
+        working-directory: backend
+        run: ./scripts/tests/smoke-test-server.sh && ./scripts/tests/smoke-test-worker.sh
+      - name: Diagnose browser port collision
+        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
+        continue-on-error: true
+        timeout-minutes: 2
+        uses: ./.github/actions/diagnose-browser-port-collision
+        with:
+          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
+          artifact-suffix: backend-smoke

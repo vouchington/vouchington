@@ -1,0 +1,198 @@
+{
+  "version": 1,
+  "capture_api": "backend/services/post-publication/capture.mts",
+  "captured_writers": [
+    "backend/services/posts/create.mts",
+    "backend/services/posts/update.mts",
+    "backend/services/posts/delete.mts",
+    "backend/services/posts/agent-moderate.mts",
+    "backend/services/posts/review-successions/mutations.mts",
+    "backend/services/posts/images-rollback.mts",
+    "backend/services/posts/update-story-post-agent-result.mts",
+    "backend/services/images/delete-rollback.mts",
+    "backend/services/posts/archive.mts",
+    "backend/services/posts/post-ratings.mts",
+    "backend/services/posts/post-ratings/delete.mts",
+    "backend/services/post-clearance/check-clearance.mts",
+    "backend/services/post-clearance/reset-clearance.mts",
+    "backend/services/post-clearance/update-status.mts",
+    "backend/services/post-publication/capture-author-deletion-batch.mts",
+    "backend/services/communities/archive.mts",
+    "backend/services/communities/delete.mts",
+    "backend/services/communities/update.mts",
+    "backend/services/communities/publications/add.mts",
+    "backend/services/communities/publications/agent-moderate.mts",
+    "backend/services/communities/publications/moderate.mts",
+    "backend/services/rss-feeds/delete.mts",
+    "backend/services/rss-feeds/discoverability.mts",
+    "backend/services/rss-feeds/update.mts",
+    "backend/services/rss-feeds/fetch-redirect.mts",
+    "backend/services/rss-feed-items/upsert.mts",
+    "backend/services/stories/assign.mts",
+    "backend/services/stories/cluster.mts",
+    "backend/services/stories/story-post-create.mts",
+    "backend/services/stories/story-post-related-url-projection-reconcile.mts",
+    "backend/services/stories/story-post-related-url-projection-relations.mts",
+    "backend/services/users/suspension.mts",
+    "backend/services/users/delete-entity-relation-votes.mts",
+    "backend/services/users/delete-entity-relation-votes-batches.mts",
+    "backend/services/data-retention/cleanup-soft-deleted-user.mts",
+    "backend/services/moderation-appeals/lift-sanctions.mts",
+    "backend/services/moderation-appeals/resolve.mts",
+    "backend/services/moderation-training/automod-feedback.mts",
+    "backend/services/openai-moderation/persist-post-results.mts",
+    "backend/services/entity-relations/upsert.mts",
+    "backend/services/entity-relations/write-relations.mts",
+    "backend/services/entity-relations/delete.mts",
+    "backend/services/elections-votes/entity-relation/vote-stats.mts",
+    "backend/services/elections-votes/entity-relation/vote-stats-batch.mts",
+    "backend/services/elections-votes/shared/vote-stats-update.mts",
+    "backend/services/topics/aliases.mts",
+    "backend/services/topics/delete-topic-aliases.mts",
+    "backend/services/topics/merge-aliases.mts",
+    "backend/services/topics/claim-topic-alias.mts",
+    "backend/services/rss-feed-items/categories.mts",
+    "backend/services/hostname-blocking/soft-delete-relations.mts",
+    "backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts",
+    "backend/services/rss-feed-items/clear-unlinked-topic-alias-categories.mts",
+    "backend/services/rss-feed-items/reconcile-categories.mts"
+  ],
+  "excluded_writers": [
+    {
+      "path": "backend/services/data-retention/cleanup-batches.mts",
+      "reason": "delegates each selected user to the captured transactional cleanup writer"
+    },
+    {
+      "path": "backend/services/communities/ban-evasion/get.mts",
+      "reason": "enforcement is a precursor signal; clearance owns publication state"
+    },
+    {
+      "path": "backend/services/communities/create.mts",
+      "reason": "new empty community has no published posts"
+    },
+    {
+      "path": "backend/services/communities/post-type-settings.mts",
+      "reason": "future authoring policy does not change existing publication"
+    },
+    {
+      "path": "backend/services/images/delete.mts",
+      "reason": "image lifecycle is not a publication predicate"
+    },
+    {
+      "path": "backend/services/language-detection/batch-detect-entities.mts",
+      "reason": "language metadata does not change publication eligibility"
+    },
+    {
+      "path": "backend/services/language-detection/batch-detect.mts",
+      "reason": "language metadata does not change publication eligibility"
+    },
+    {
+      "path": "backend/services/language-detection/entities/communities.mts",
+      "reason": "language metadata does not change publication eligibility"
+    },
+    {
+      "path": "backend/services/language-detection/entities/posts.mts",
+      "reason": "language metadata does not change publication eligibility"
+    },
+    {
+      "path": "backend/services/language-detection/entities/rss-feed-items.mts",
+      "reason": "language metadata does not change publication eligibility"
+    },
+    {
+      "path": "backend/services/moderation-threads/escalate.mts",
+      "reason": "moderation thread state is not a publication predicate"
+    },
+    {
+      "path": "backend/services/moderation-training/post-level-flags.mts",
+      "reason": "moderation signal is a precursor; clearance captures the transition"
+    },
+    {
+      "path": "backend/services/openai-moderation/posts.mts",
+      "reason": "delegates flag persistence to captured post result writer"
+    },
+    {
+      "path": "backend/services/posts/create-story-post.mts",
+      "reason": "called inside captured story-post creation"
+    },
+    {
+      "path": "backend/services/posts/create/insert-post.mts",
+      "reason": "called inside captured post creation"
+    },
+    {
+      "path": "backend/services/posts/create/transaction-side-effects.mts",
+      "reason": "called inside captured post creation"
+    },
+    {
+      "path": "backend/services/posts/images.mts",
+      "reason": "image attachment lifecycle does not alter public eligibility"
+    },
+    {
+      "path": "backend/services/posts/update/post-update-query.mts",
+      "reason": "called inside captured post update"
+    },
+    {
+      "path": "backend/services/rss-feed-items/upsert-queries.mts",
+      "reason": "called inside captured RSS source upsert"
+    },
+    {
+      "path": "backend/services/rss-feed-items/upsert-content-query.mts",
+      "reason": "builds the RSS-item content statement executed inside captured RSS source upsert"
+    },
+    {
+      "path": "backend/services/rss-feed-items/upsert-sources.mts",
+      "reason": "called inside captured RSS source upsert"
+    },
+    {
+      "path": "backend/services/rss-feeds/create-source-helpers.mts",
+      "reason": "new feed setup has no existing story-post projection"
+    },
+    {
+      "path": "backend/services/rss-feeds/create.mts",
+      "reason": "new feed setup has no existing story-post projection"
+    },
+    {
+      "path": "backend/services/rss-feeds/set-canonical.mts",
+      "reason": "canonical URL routing does not change source discoverability"
+    },
+    {
+      "path": "backend/services/spam-detection/apply-results.mts",
+      "reason": "spam signal is a precursor; clearance captures the transition"
+    },
+    {
+      "path": "backend/services/stories/update.mts",
+      "reason": "story metadata refresh does not itself change story-post eligibility"
+    },
+    {
+      "path": "backend/services/stories/create.mts",
+      "reason": "new story has no story-post projection until the separately captured story-post writer runs"
+    },
+    {
+      "path": "backend/services/wikipedia-topic-recommendations/create-topic-recommendation.mts",
+      "reason": "private topic-recommendation is explicitly excluded from public publication"
+    },
+    {
+      "path": "backend/services/wikipedia-topic-recommendations/delete-pending-recommendation.mts",
+      "reason": "private topic-recommendation is explicitly excluded from public publication"
+    },
+    {
+      "path": "backend/services/wikipedia-topic-recommendations/update-topic-recommendation.mts",
+      "reason": "private topic-recommendation is explicitly excluded from public publication"
+    },
+    {
+      "path": "backend/services/users/delete.mts",
+      "reason": "commits only the privacy fence and durable request; the captured deletion worker owns publication mutations"
+    },
+    {
+      "path": "backend/services/stories/refresh-story-post.mts",
+      "reason": "caller records the refresh aggregate inside its enclosing transaction"
+    },
+    {
+      "path": "backend/services/topics/create-unlinked-alias.mts",
+      "reason": "inserts or reads unowned aliases only; no existing alias ownership changes or post-topic projection exists."
+    },
+    {
+      "path": "backend/services/rss-feed-items/categories-chunks.mts",
+      "reason": "The parent category transaction captures each returned rss_feed_item_categories.topic_id mutation as a durable story scope."
+    }
+  ]
+}

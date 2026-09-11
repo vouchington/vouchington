@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [
+    "**/.claude/skills/**",
+    ".agent-retrospectives/**",
+    "coverage-full/**",
+    "email-templates/__snapshots__/*.html",
+    "web/tsconfig.json"
+  ],
+  "arrowParens": "avoid",
+  "jsxSingleQuote": true,
+  "semi": false,
+  "singleAttributePerLine": true,
+  "singleQuote": true,
+  "trailingComma": "all"
+}

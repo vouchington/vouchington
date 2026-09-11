@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Local Site Testing'
+  short_description: 'Set up and test the local Voucha site'
+  default_prompt: 'Use $local-site-testing to set up the Voucha local site and run browser validation.'

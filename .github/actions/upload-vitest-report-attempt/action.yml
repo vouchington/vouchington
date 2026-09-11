@@ -1,0 +1,52 @@
+name: Upload Vitest report attempt
+description: Persist one suite's producing run attempt for rerun-safe fan-in
+
+inputs:
+  suite:
+    description: Exact Vitest suite name
+    required: true
+  name-suffix:
+    description: >-
+      Optional suffix appended to the uploaded artifact's name, so a same-name retry cannot
+      collide with an unfinalized upload left behind by a prior attempt (actions/upload-artifact
+      overwrite:true does not delete an unfinalized artifact, so its reserved name still 409s).
+      Unlike upload-vitest-blob, this deliberately does NOT also embed github.run_attempt: this
+      artifact's consumer (vouchington-tooling's readVitestReportAttempts) keys a downloaded
+      directory's suite by stripping a fixed "vitest-report-attempt-" prefix off its literal
+      name, so a per-attempt name would let a "re-run all jobs" leave two distinct, both-finalized
+      directories for one suite simultaneously visible with no name-based way to collapse them.
+      A within-attempt name-suffix is sufficient because the primary and retry uploads are
+      already mutually exclusive within one attempt (the retry step only runs when the primary
+      failed, and an unfinalized primary is invisible to list-artifacts/download), so a repo-local
+      normalization step can safely strip a trailing "-retry" from the downloaded directory name.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Validate suite
+      shell: bash
+      env:
+        SUITE: ${{ inputs.suite }}
+      run: |
+        case "$SUITE" in
+          retry|*-retry)
+            echo "::error::Invalid Vitest suite: must not be \"retry\" or end in \"-retry\" (reserved for this action's own name-suffix retry mechanism)" >&2
+            exit 1
+            ;;
+        esac
+    - shell: bash
+      env:
+        SUITE: ${{ inputs.suite }}
+      run: pnpm exec vouchington vitest-report-attempt write .vitest-report-attempt "$SUITE"
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      env:
+        ACTIONS_ARTIFACT_UPLOAD_TIMEOUT_MS: '30000'
+      with:
+        name: vitest-report-attempt-${{ inputs.suite }}${{ inputs.name-suffix }}
+        path: .vitest-report-attempt/${{ inputs.suite }}.json
+        include-hidden-files: true
+        if-no-files-found: error
+        overwrite: true
+        retention-days: 1

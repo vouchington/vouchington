@@ -1,0 +1,47 @@
+name: Main CI (cloudflare-worker)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/main-cloudflare-worker.yml'
+      - '.github/workflows/tests-cloudflare-worker.yml'
+      - '.github/workflows/checks-static.yml'
+      - '.github/actions/**'
+      - 'cloudflare-worker/**'
+      - 'backend/config/**'
+      - 'ci/allocate-browser-safe-ports.py'
+      - 'ci/runner-port-policy.json'
+      - 'ci/runner-port-policy.mts'
+      - 'ci/cloudflare-worker-staging-*.mts'
+      - 'ci/write-private-json.mts'
+      - 'ts-shared/**'
+      - 'vitest.config.mts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+
+concurrency:
+  group: main-cloudflare-worker
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cloudflare-worker-tests:
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
+    permissions:
+      actions: read
+      contents: read
+    uses: ./.github/workflows/tests-cloudflare-worker.yml
+    secrets: inherit
+
+  static-checks:
+    uses: ./.github/workflows/checks-static.yml
+    with:
+      cloudflare-worker: true
+    permissions:
+      contents: read
+      actions: read

@@ -1,0 +1,14 @@
+Hi,
+
+You can log in to Voucha by clicking this link:
+
+https://voucha.ai/login?emailAddress=tests%2Bpreview%40voucha.ai&otp=ABC12345
+
+Or you can log in with your email address and one-time password:
+
+ABC12345
+
+This token will expire in 15 minutes.
+If you did not request this, please ignore this email.
+
+- The Voucha Team

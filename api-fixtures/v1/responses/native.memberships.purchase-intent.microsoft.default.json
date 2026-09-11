@@ -1,0 +1,13 @@
+{
+  "purchase_intent": {
+    "id": "00000000-0000-7000-8000-000000000805",
+    "launch": {
+      "kind": "microsoft_store",
+      "product_id": "9NBLGGH4V0Q1",
+      "sku_id": "0010"
+    },
+    "product_id": "00000000-0000-7000-8000-000000000701",
+    "provider": "microsoft_store",
+    "replayed": false
+  }
+}

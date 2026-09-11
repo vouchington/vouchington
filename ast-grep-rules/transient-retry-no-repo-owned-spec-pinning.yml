@@ -1,0 +1,27 @@
+id: transient-retry-no-repo-owned-spec-pinning
+language: Tsx
+severity: error
+message: 'Do not fingerprint a repo-owned Playwright spec path in a transient-retry rule — a test failure that matches your own diff is a real bug, not infrastructure noise (see ci/transient-retry/CLAUDE.md). File an issue and fix the spec instead. Exceptions: playwright/credentialed/** (credentialed external-dependency probes) and playwright/helpers/** (shared helpers) are infrastructure by construction and are not caught by this rule.'
+files:
+  - 'ci/transient-retry/**/*.mts'
+ignores:
+  - 'ci/transient-retry/**/*.test.mts'
+  - 'ci/transient-retry/**/__tests__/**'
+rule:
+  any:
+    - kind: string
+    - kind: template_string
+  regex: 'playwright/tests/.*\.spec\.mts'
+examples:
+  - code: "const specPath = 'playwright/tests/posts/search-pagination.spec.mts'"
+    isValid: false
+    file: 'ci/transient-retry/playwright-search-pagination-response-timeout-rules.mts'
+  - code: 'log.includes(`playwright/tests/posts/search-pagination.spec.mts`)'
+    isValid: false
+    file: 'ci/transient-retry/playwright-search-pagination-response-timeout-rules.mts'
+  - code: "log.includes('playwright/helpers/navigate-to.mts')"
+    isValid: true
+    file: 'ci/transient-retry/playwright-rules.mts'
+  - code: "expect(log).toContain('playwright/tests/posts/search-pagination.spec.mts')"
+    isValid: true
+    file: 'ci/transient-retry/playwright-search-pagination-response-timeout-rules.test.mts'

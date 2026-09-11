@@ -1,0 +1,72 @@
+{
+  "management": {
+    "destination": "apple_subscriptions",
+    "provider": "apple_app_store"
+  },
+  "membership": null,
+  "pending": {
+    "financial_operations": [
+      {
+        "id": "00000000-0000-7000-8000-000000000814",
+        "kind": "automatic_refund",
+        "provider": "stripe",
+        "status": "pending"
+      }
+    ],
+    "grants": 1,
+    "switches": [
+      {
+        "eligible_at": "2027-01-01T00:00:00.000Z",
+        "plan": "pro",
+        "provider": "apple_app_store",
+        "source_id": "00000000-0000-7000-8000-000000000812"
+      }
+    ],
+    "verifications": [
+      {
+        "id": "00000000-0000-7000-8000-000000000809",
+        "next_processing_at": null,
+        "provider": "google_play",
+        "reason_code": "competing_direct_source",
+        "status": "conflict"
+      },
+      {
+        "id": "00000000-0000-7000-8000-000000000810",
+        "next_processing_at": null,
+        "provider": "microsoft_store",
+        "reason_code": "wrong_account",
+        "status": "rejected"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "access_ends_at": "2027-01-01T00:00:00.000Z",
+      "auto_renews": false,
+      "effective_at": "2026-09-10T00:00:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000813",
+      "is_effective": false,
+      "kind": "direct",
+      "plan": "plus",
+      "provider": "stripe",
+      "renewal": null,
+      "status": "revoked"
+    },
+    {
+      "access_ends_at": "2027-02-01T00:00:00.000Z",
+      "auto_renews": true,
+      "effective_at": "2027-01-01T00:00:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000812",
+      "is_effective": false,
+      "kind": "direct",
+      "plan": "pro",
+      "provider": "apple_app_store",
+      "renewal": {
+        "effective_at": "2027-02-01T00:00:00.000Z",
+        "price": null,
+        "product_id": "00000000-0000-7000-8000-000000000701"
+      },
+      "status": "active"
+    }
+  ]
+}

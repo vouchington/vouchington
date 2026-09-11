@@ -1,0 +1,20 @@
+# Postgres version matches the runtime (pgvector/pgvector:pg18)
+pg_version = "18.0"
+
+# Rules out of scope for this repo
+excluded_rules = [
+  # These rules apply better to online-schema-change workflows; this repo
+  # uses offline migrations with explicit downtime tolerances.
+  "require-concurrent-index-creation",
+  "require-concurrent-index-deletion",
+  "require-timeout-settings", # The pinned migration session applies configurable lock_timeout and statement_timeout values to every migration.
+  # Fixed migrations and their ledger rows are wrapped atomically by migration-session.mts.
+  "prefer-robust-stmts",
+  # Voucha intentionally uses bounded INT/SMALLINT columns for small counters,
+  # ordinals, and lookup identities. See backend/data-stores/psql/README.md.
+  "prefer-bigint-over-smallint",
+  "prefer-bigint-over-int",
+  # Enum declaration order is not a semantic contract in this repo; new values
+  # are intentionally appended unless a migration needs an explicit position.
+  "require-enum-value-ordering",
+]

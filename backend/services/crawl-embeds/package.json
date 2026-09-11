@@ -1,0 +1,40 @@
+{
+  "name": "@services/crawl-embeds",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Crawl-scoped embed planning and remote enrichment.",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/crawl-embeds": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "@vouchington/crawler-html": "0.0.1",
+    "@vouchington/embeds": "0.0.2",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2",
+    "ssrf-guard": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.10.2"
+  }
+}

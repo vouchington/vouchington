@@ -1,0 +1,30 @@
+{
+  "name": "@workers/spam-detection",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@services/post-clearance": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/spam-detection": "workspace:^",
+    "@services/vote-integrity": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@services/users": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

@@ -1,0 +1,53 @@
+const messages = {
+  support: {
+    adminSupportThreadFilters: {
+      allStatuses_8ee57323: 'Tous les statuts',
+      all_a52ace42: 'Tous',
+      assigned_8191888d: 'Attribués',
+      filterThreadsByStatus_e6fa1f02: 'Filtrer les fils par statut',
+      open_ed077f3d: 'Ouverts',
+      resolved_5be3c2c8: 'Résolus',
+      searchBySubjectOrMessage_667f285e: 'Rechercher par e-mail ou objet',
+      searchSupportThreads_daac5246: 'Rechercher des fils de support',
+      search_49c266ba: 'Rechercher',
+    },
+    adminSupportThreadsClient: {
+      allStatuses_8ee57323: 'Tous les statuts',
+      all_a52ace42: 'Tous',
+      assigned_8191888d: 'Assigné',
+      created_d70b9e24: 'Créé',
+      failedToLoadMore_e1499d61: 'Échec du chargement de plus',
+      filterThreadsByStatus_e6fa1f02: 'Filtrer les fils par statut',
+      manageCustomerSupportRequests_1a5e7c93: "Gérez les demandes d'assistance client",
+      noStatusThreadsFound_6d3f9a42: 'Aucun fil {status} trouvé',
+      open_ed077f3d: 'Ouvrir',
+      refreshThreads_4e20c0d7: 'Actualiser les fils',
+      resolved_5be3c2c8: 'Résolu',
+      retry_942087cc: 'Réessayer',
+      status_920e413c: 'Statut',
+      subject_68971283: 'Sujet',
+      supportThreads_a8187e3f: "Fils d'assistance",
+      updated_3a5ecca1: 'Mise à jour',
+    },
+    page: {
+      assigned_2ebb9294: 'assigné',
+      created_d70b9e24: 'Créé',
+      newRequest_c648d399: 'Nouvelle demande',
+      open_2348f998: 'ouvert',
+      resolved_dc676b42: 'résolu',
+      status_920e413c: 'Statut',
+      subject_68971283: 'Sujet',
+      submitARequest_6b491c73: 'Envoyer une demande',
+      support_be91940b: 'Support',
+      viewAndManageYourSupport_1d84e6b3: "Afficher et gérer vos demandes d'assistance",
+      youHaveNoSupportRequestsYet_a9589eaf: "Vous n'avez pas encore de demande d'assistance.",
+    },
+    supportThreadStatusBadge: {
+      assigned_2ebb9294: 'assigné',
+      open_2348f998: 'ouvert',
+      resolved_dc676b42: 'résolu',
+    },
+  },
+}
+
+export default messages

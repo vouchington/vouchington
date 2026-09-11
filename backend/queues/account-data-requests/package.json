@@ -1,0 +1,20 @@
+{
+  "name": "@queues/account-data-requests",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/scheduled-job-manifest": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "glide-mq": "^0.15.5"
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: 'GitHub Issue'
+  short_description: 'Search, create, update, link, and relate GitHub issues (sub-issues, blocked-by)'
+  default_prompt: 'Use $github-issue to search existing GitHub issues before creating a follow-up issue.'

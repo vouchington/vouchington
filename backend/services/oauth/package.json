@@ -1,0 +1,48 @@
+{
+  "name": "@services/oauth",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
+    "@queues/find-your-friends": "workspace:^",
+    "@services/jwt-session": "workspace:^",
+    "@services/mfa": "workspace:^",
+    "@services/oauth-accounts": "workspace:^",
+    "@services/oauth-apple": "workspace:^",
+    "@services/oauth-facebook": "workspace:^",
+    "@services/oauth-github": "workspace:^",
+    "@services/oauth-google": "workspace:^",
+    "@services/oauth-linkedin": "workspace:^",
+    "@services/oauth-microsoft": "workspace:^",
+    "@services/oauth-x": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "http-errors": "^2.0.1",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

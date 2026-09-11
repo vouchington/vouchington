@@ -1,0 +1,21 @@
+{
+  "queues": [
+    {
+      "active": 1,
+      "completed": 128,
+      "failed": 2,
+      "name": "emails",
+      "paused": false,
+      "waiting": 0
+    },
+    {
+      "active": 0,
+      "completed": 42,
+      "failed": 0,
+      "name": "psql",
+      "paused": true,
+      "waiting": 0
+    }
+  ],
+  "total": 2
+}

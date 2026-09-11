@@ -1,0 +1,58 @@
+{
+  "name": "@voucha/tools",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@modules/wikipedia-api": "workspace:^",
+    "@services/crawl-chunks": "workspace:^",
+    "@services/crawls": "workspace:^",
+    "@services/customer-support": "workspace:^",
+    "@services/data-points": "workspace:^",
+    "@services/entity-fetch": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/individuals-households": "workspace:^",
+    "@services/openai-agents": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/prioritized-referral-links": "workspace:^",
+    "@services/recommended-topics": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/rss-feeds": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/trending-posts": "workspace:^",
+    "@services/trending-topics": "workspace:^",
+    "@services/user-financial-profiles": "workspace:^",
+    "@services/users": "workspace:^",
+    "@services/wikipedia-topic-recommendations": "workspace:^",
+    "@ts-shared/data-points": "workspace:^",
+    "@ts-shared/feed-capabilities": "workspace:^",
+    "@ts-shared/money": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1",
+    "undici": "^8.10.2"
+  },
+  "devDependencies": {
+    "@services/urls": "workspace:^",
+    "@services/user-referral-program-links": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

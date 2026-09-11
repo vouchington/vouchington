@@ -1,0 +1,39 @@
+id: queues-export-queue-only
+language: Tsx
+severity: error
+message: 'queues.mts may only export Queue or createQueue instances'
+files:
+  - 'backend/queues/*/queues.mts'
+rule:
+  any:
+    - pattern: 'export default $EXP'
+    - pattern: 'export function $NAME($$$) { $$$ }'
+    - pattern: 'export class $NAME { $$$ }'
+    - pattern: "export * from '$MOD'"
+    - pattern: 'export type $NAME = $TYPE'
+    - pattern: 'export interface $NAME { $$$ }'
+    - pattern: "export { $$$SPECS } from '$MOD'"
+    - pattern: 'export { $$$SPECS }'
+    - pattern: 'export let $NAME = $INIT'
+    - pattern: 'export var $NAME = $INIT'
+    - all:
+        - pattern: 'export const $NAME = $INIT'
+        - not:
+            any:
+              - pattern: 'export const $NAME = new Queue($$$)'
+              - pattern: 'export const $NAME = new Queue<$T>($$$)'
+              - pattern: 'export const $NAME = createQueue($$$)'
+              - pattern: 'export const $NAME = createQueue<$T>($$$)'
+examples:
+  - code: 'export function createWorker() {}'
+    isValid: false
+    file: 'backend/queues/email/queues.mts'
+  - code: 'export type MyType = string'
+    isValid: false
+    file: 'backend/queues/email/queues.mts'
+  - code: "export const emailQueue = createQueue('email')"
+    isValid: true
+    file: 'backend/queues/email/queues.mts'
+  - code: "const emailQueue = createQueue('email')"
+    isValid: true
+    file: 'backend/queues/email/queues.mts'

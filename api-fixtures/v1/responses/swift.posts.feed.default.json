@@ -1,0 +1,104 @@
+{
+  "communities": {
+    "community-1": {
+      "__entity_type": "community",
+      "allow_data_point_posts": false,
+      "allow_review_posts": false,
+      "archived_at": null,
+      "archived_by_id": null,
+      "banner_image_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "default_language": null,
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "community-1",
+      "lingua_rs_detected_language": null,
+      "list_type": null,
+      "markdown": "",
+      "member_invites_allowed_at": null,
+      "member_roster_visibility": "public",
+      "name": "Test Community",
+      "post_approval_required_at": null,
+      "profile_image_id": null,
+      "rules_markdown": null,
+      "slug": "test-community",
+      "trusted_at": null,
+      "updated_at": "2026-01-01T00:00:00Z",
+      "visibility": "public"
+    }
+  },
+  "election_votes": {
+    "p1": {
+      "__entity_type": "election_vote",
+      "choice": "like",
+      "created_at": "2026-01-01T00:00:00Z",
+      "entity_id": "p1",
+      "user_id": "user-1"
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "post_elections": {
+    "p1": {
+      "__entity_type": "post_election",
+      "id": "p1",
+      "votes_count_down": 1,
+      "votes_count_up": 4,
+      "votes_score_net": 3
+    }
+  },
+  "posts": {
+    "p1": {
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": null,
+      "clearance_reason": null,
+      "clearance_status": null,
+      "clearance_updated_at": null,
+      "community_id": "community-1",
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "html": null,
+      "id": "p1",
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": null,
+      "parent_id": null,
+      "post_type": "discussion",
+      "privacy": "public",
+      "root_id": null,
+      "slug": "fixture-post",
+      "spam_detection_created_at": null,
+      "spam_detection_flagged": null,
+      "spam_detection_results": null,
+      "spam_detection_score": null,
+      "title": "Fixture post",
+      "updated_by_id": null
+    }
+  },
+  "posts_metrics": {},
+  "results": [
+    {
+      "entity_id": "p1"
+    }
+  ],
+  "users": {
+    "user-1": {
+      "__entity_type": "user",
+      "created_at": "2026-01-01T00:00:00Z",
+      "id": "user-1",
+      "name": "Test User",
+      "profile_image_id": null,
+      "roles": [],
+      "updated_at": "2026-01-01T00:00:00Z",
+      "username": "testuser"
+    }
+  }
+}

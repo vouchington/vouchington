@@ -1,0 +1,32 @@
+{
+  "name": "@data-stores/valkey-glide-mq",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/analytics": "workspace:^",
+    "@data-stores/valkey-core": "workspace:^",
+    "@glidemq/speedkey": "^0.3.0",
+    "@modules/on-error": "workspace:^",
+    "glide-mq": "^0.15.5",
+    "valkyries": "^0.8.0"
+  }
+}

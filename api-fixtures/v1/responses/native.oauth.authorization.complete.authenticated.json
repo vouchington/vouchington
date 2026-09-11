@@ -1,0 +1,9 @@
+{
+  "user": {
+    "email_address": "tests+oauth-broker@voucha.ai",
+    "id": "user-1",
+    "profile_image_id": null,
+    "roles": ["user"],
+    "username": "testuser"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@workers/kagi-smallweb",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/kagi-smallweb": "workspace:^",
+    "@services/kagi-smallweb": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,1 @@
+import './friend-recommendations.mts'

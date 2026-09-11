@@ -1,0 +1,55 @@
+{
+  "name": "@services/dynamic-config-admin",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@services/agent-responses": "workspace:^",
+    "@services/ai-usage": "workspace:^",
+    "@services/ap-inbox-activities": "workspace:^",
+    "@services/api-egress-proxy": "workspace:^",
+    "@services/app-attestation": "workspace:^",
+    "@services/autotagger": "workspace:^",
+    "@services/bedrock-embeddings": "workspace:^",
+    "@services/bloom-filter-config": "workspace:^",
+    "@services/captcha": "workspace:^",
+    "@services/contribution-gating": "workspace:^",
+    "@services/dynamic-config-audit": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/feature-flags": "workspace:^",
+    "@services/kagi-smallweb": "workspace:^",
+    "@services/memberships": "workspace:^",
+    "@services/moderation": "workspace:^",
+    "@services/oauth": "workspace:^",
+    "@services/post-content-limits": "workspace:^",
+    "@services/recaptcha": "workspace:^",
+    "@services/request-client-info": "workspace:^",
+    "@services/route-rate-limits": "workspace:^",
+    "@services/rss-feeds": "workspace:^",
+    "@services/tag-limits": "workspace:^",
+    "@services/user-import-export": "workspace:^",
+    "@services/user-rate-limits": "workspace:^",
+    "@services/users": "workspace:^",
+    "@services/vote-weight": "workspace:^",
+    "@services/web-risk": "workspace:^",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

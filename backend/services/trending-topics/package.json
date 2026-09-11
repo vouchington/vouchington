@@ -1,0 +1,34 @@
+{
+  "name": "@services/trending-topics",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/search-utils": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@services/topics": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

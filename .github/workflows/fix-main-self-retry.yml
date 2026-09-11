@@ -1,0 +1,205 @@
+name: Fix Main Self Retry
+
+# Watches Automation Fix Main's own completed runs and reruns known-transient failures once,
+# through the same ci/transient-retry/ catalogue Fix Main applies to the workflows it monitors.
+# This workflow must never appear in fix-main.yml's on.workflow_run.workflows list (that would be
+# an unbounded run chain) and must never gain a push-on-main trigger (which would force it into
+# fix-main's own subscription list via the fix-main.dispatch.test.mts regression test). Nothing
+# watches this workflow back.
+
+on:
+  workflow_run:
+    workflows: [Automation Fix Main]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: fix-main-self-retry-${{ github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  retry:
+    name: Retry transient self-failure
+    if: >-
+      vars.HARNESS_DISPATCH_ENABLED == 'true' &&
+      vars.HARNESS_FIX_MAIN_ENABLED == 'true' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt < 3
+    runs-on: [self-hosted]
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      disposition: ${{ steps.disposition.outputs.disposition }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          install-scripts: 'false'
+          runner-lifecycle: persistent
+      - name: Revalidate source run
+        id: source-state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node ci/source-run-state.mts
+      - name: Decide transient retry
+        id: decide
+        if: steps.source-state.outputs.current == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: node ci/transient-retry/decide.mts
+      - name: Rerun targeted job on transient match
+        id: rerun-job
+        if: >-
+          steps.source-state.outputs.current == 'true' &&
+          steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Matched rule: ${{ steps.decide.outputs.matched_rule }}"
+          gh run rerun --repo "$GITHUB_REPOSITORY" --job "${{ steps.decide.outputs.rerun_job_id }}"
+      - name: Rerun failed jobs on transient match
+        id: rerun-failed-jobs
+        if: >-
+          steps.source-state.outputs.current == 'true' &&
+          steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          echo "Matched rule: ${{ steps.decide.outputs.matched_rule }}"
+          gh run rerun --repo "$GITHUB_REPOSITORY" --failed "$SOURCE_RUN_ID"
+      - name: Check original escalation
+        id: escalate-state
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          # Ground truth for "did a human already get notified for this Fix Main run", independent
+          # of anything decide.mts concludes here. Scoped to the attempt that just completed — the
+          # unscoped /jobs endpoint returns the latest attempt, which normally is the same thing,
+          # but attempt-scoping removes any doubt if a later attempt starts before this step runs.
+          conclusion="$(
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/attempts/$SOURCE_RUN_ATTEMPT/jobs?per_page=100" \
+              --jq '[.jobs[] | select(.name == "Escalate to human")][0].conclusion // "not-found"'
+          )"
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+      - name: Set disposition output
+        id: disposition
+        if: always()
+        env:
+          SOURCE_OUTCOME: ${{ steps.source-state.outcome }}
+          SOURCE_CURRENT: ${{ steps.source-state.outputs.current }}
+          DECISION: ${{ steps.decide.outputs.decision }}
+          TARGETED_RERUN_OUTCOME: ${{ steps.rerun-job.outcome }}
+          FAILED_JOBS_RERUN_OUTCOME: ${{ steps.rerun-failed-jobs.outcome }}
+          ESCALATE_STATE_OUTCOME: ${{ steps.escalate-state.outcome }}
+          ESCALATE_CONCLUSION: ${{ steps.escalate-state.outputs.conclusion }}
+        run: |
+          if [[ "$ESCALATE_STATE_OUTCOME" == "success" && "$ESCALATE_CONCLUSION" == "success" ]]; then
+            echo "disposition=handled" >> "$GITHUB_OUTPUT"
+          elif [[ "$SOURCE_OUTCOME" == "success" && "$SOURCE_CURRENT" == "false" ]]; then
+            echo "disposition=handled" >> "$GITHUB_OUTPUT"
+          elif [[ "$DECISION" == "rerun" &&
+                ( "$TARGETED_RERUN_OUTCOME" == "success" || "$FAILED_JOBS_RERUN_OUTCOME" == "success" ) ]]; then
+            echo "disposition=handled" >> "$GITHUB_OUTPUT"
+          else
+            echo "disposition=unhandled" >> "$GITHUB_OUTPUT"
+          fi
+
+  escalate-retry-failure:
+    name: Escalate unconfirmed self-retry
+    needs: [retry]
+    if: always() && needs.retry.result != 'skipped' && needs.retry.outputs.disposition != 'handled'
+    runs-on: [self-hosted]
+    timeout-minutes: 10
+    permissions:
+      issues: write
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    steps:
+      - name: Escalate to human — open or update issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIX_MAIN_RUN_ID: ${{ github.event.workflow_run.id }}
+          FIX_MAIN_RUN_URL: ${{ github.event.workflow_run.html_url }}
+          FIX_MAIN_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          set -euo pipefail
+
+          THIS_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Keyed on the Fix Main run id alone (not id+attempt): gh run rerun keeps the same run
+          # id across attempts, so every watcher invocation for the same underlying incident
+          # converges on one issue via the search-then-comment below instead of filing a new one
+          # each time this watcher itself has trouble.
+          TITLE="Fix Main self-retry incomplete: run $FIX_MAIN_RUN_ID — needs human"
+
+          EXISTING="$(gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --search "\"$TITLE\" in:title" \
+            --state open \
+            --json number \
+            -q '.[0].number' || true)"
+
+          BODY="$(cat <<EOF
+          ## Fix Main failure handling could not be confirmed
+
+          The watcher could not confirm any safe terminal outcome for the Fix Main failure (attempt $FIX_MAIN_RUN_ATTEMPT):
+          the original run did not have a confirmed human escalation, the source was not confirmed
+          superseded, and no rerun request was confirmed accepted.
+
+          **Fix Main run:** $FIX_MAIN_RUN_URL
+          **Watcher run (logs/artifact):** $THIS_RUN_URL
+
+          Please inspect the Fix Main run above and apply a fix manually.
+          EOF
+          )"
+
+          if [[ "$EXISTING" =~ ^[0-9]+$ ]]; then
+            echo "Commenting on existing issue #$EXISTING"
+            gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          else
+            echo "Opening new issue: $TITLE"
+            gh issue create \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --body "$BODY" \
+              --label "automation" \
+              --label "needs-human"
+          fi

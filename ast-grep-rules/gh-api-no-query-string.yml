@@ -1,0 +1,130 @@
+id: gh-api-no-query-string
+language: Tsx
+severity: error
+message: >-
+  Don't hand-build a query string in a `gh api` argument array. A `/`-bearing string or
+  template-literal argument that also carries a `?` looks like an endpoint path with a hand-built
+  query string, which is unquoted the moment it reaches a shell (see #10956 — an unquoted `&`
+  backgrounds the command, drops every parameter after it, and still exits 0), and even when the
+  array reaches `gh` directly via `execFile` (no shell involved, so that specific hazard doesn't
+  apply), an interpolated value can still silently inject an extra query parameter into the request
+  — nothing stops `${branch}` or similar from containing its own `&name=value`. Use structured flags
+  instead: `-X GET` (mandatory once any `-f`/`-F` is present, or `gh` defaults to POST) plus
+  `-F name=value` for numeric query values and `-f name=value` for string values — each becomes one
+  opaque parameter, so a stray `&`/`?` in the value can't be misread as a delimiter. Requiring a `/`
+  before the `?` keeps this rule off payload values (`-f 'body=Ready?'`) and jq's optional operator
+  (`.foo?`), neither of which is an endpoint.
+files:
+  - 'dev/**/*.mts'
+  - 'ci/**/*.mts'
+# Scoped to a literal string/template-literal endpoint argument: ast-grep has no data-flow analysis,
+# so it cannot tell whether an identifier or member-expression argument (e.g. `request.endpoint`)
+# holds a hand-built query string or an already-safe value. `ci/ci-job-runtime-audit.mts` passes such
+# an identifier through to a shell-free `execFile` call; its actual endpoint construction lives in the
+# external `vouchington-tooling` package, which this rule's `files:` scope — and any repo-local
+# static check — never reaches (PR #11006 review, thread PRRT_kwDOQSARn86foV0b).
+rule:
+  any:
+    # Direct `execFile('gh', ['api', ...])` / `runGh(['api', ...])` shape: the array literal itself
+    # opens with 'api'.
+    - all:
+        - pattern: '[$FLAG, $$$REST]'
+        - has:
+            stopBy: end
+            any:
+              - kind: string
+                regex: '/.*\?'
+              - kind: template_string
+                regex: '/.*\?'
+    # ci/transient-retry's shared `ghApi(args, options)` wrapper (ci/transient-retry/gh-api.mts)
+    # hoists the literal 'api' element inside the helper, so the caller's args array never starts
+    # with 'api' — match the call expression itself instead.
+    - all:
+        - pattern: 'ghApi($ARR, $$$GHREST)'
+        - has:
+            stopBy: end
+            any:
+              - kind: string
+                regex: '/.*\?'
+              - kind: template_string
+                regex: '/.*\?'
+constraints:
+  FLAG:
+    regex: '^[''"]api[''"]$'
+# No `.tsx` twin: every `gh api` call site in dev/**/ci/** is plain TypeScript, no JSX involved.
+examples:
+  - code: |
+      await execFileAsync('gh', ['api', '--paginate', '--slurp', `repos/${repo}/labels?per_page=100`])
+    isValid: false
+    file: 'dev/agent-issue-labels/ensure-labels.mts'
+  - code: |
+      await runGh(['api', `repos/${repo}/contents/${path}?ref=${ref}`, '-H', 'Accept: application/vnd.github.raw'])
+    isValid: false
+    file: 'dev/pr-description/package-json-source.mts'
+  - code: |
+      await execFileAsync('gh', [
+        'api',
+        '--paginate',
+        '--slurp',
+        '-X',
+        'GET',
+        `repos/${repo}/labels`,
+        '-F',
+        'per_page=100',
+      ])
+    isValid: true
+    file: 'dev/agent-issue-labels/ensure-labels.mts'
+  - code: |
+      await runGh([
+        'api',
+        '-X',
+        'GET',
+        `repos/${repo}/contents/${path}`,
+        '-f',
+        `ref=${ref}`,
+        '-H',
+        'Accept: application/vnd.github.raw',
+      ])
+    isValid: true
+    file: 'dev/pr-description/package-json-source.mts'
+  - code: |
+      await execFileAsync('gh', ['api', `repos/${repo}/compare/${base}...${head}`])
+    isValid: true
+    file: 'dev/pr-description/package-json-source.mts'
+  - code: |
+      await execFileAsync('gh', [
+        'api',
+        '-X',
+        'POST',
+        `repos/${repo}/issues/${number}/comments`,
+        '-f',
+        'body=Ready?',
+      ])
+    isValid: true
+    file: 'dev/agent-issue-labels/ensure-labels.mts'
+  - code: |
+      await execFileAsync('gh', ['api', `repos/${repo}/pulls/${number}`, '--jq', '.mergeable_state?'])
+    isValid: true
+    file: 'dev/agent-issue-labels/ensure-labels.mts'
+  - code: |
+      const result = await ghApi(
+        [`repos/${repository}/check-runs/${job.id}/annotations?per_page=100`, '--paginate', '--slurp'],
+        { execFile, maxBuffer: LOG_MAX_BUFFER_BYTES, sleep },
+      )
+    isValid: false
+    file: 'ci/transient-retry/run-context.mts'
+  - code: |
+      const result = await ghApi(
+        [
+          '-X',
+          'GET',
+          `repos/${repository}/check-runs/${job.id}/annotations`,
+          '-F',
+          'per_page=100',
+          '--paginate',
+          '--slurp',
+        ],
+        { execFile, maxBuffer: LOG_MAX_BUFFER_BYTES, sleep },
+      )
+    isValid: true
+    file: 'ci/transient-retry/run-context.mts'

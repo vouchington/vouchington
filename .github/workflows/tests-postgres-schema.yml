@@ -1,0 +1,183 @@
+name: PostgreSQL Schema Tests
+
+on:
+  workflow_call:
+    outputs:
+      vitest-ran:
+        description: 'Whether this invocation ran Vitest and produced a blob report'
+        value: ${{ jobs.postgres-schema-tests.outputs.vitest-ran }}
+      vitest-report-attempt:
+        description: 'Run attempt that produced this invocation'
+        value: ${{ jobs.postgres-schema-tests.outputs.vitest-report-attempt }}
+    inputs:
+      upload_vitest_blob_artifact:
+        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
+        required: false
+        type: boolean
+        default: false
+      full_suite:
+        description: 'Run the complete configured project instead of selected test files'
+        type: boolean
+        default: true
+      run_tests:
+        description: 'Run Vitest while retaining SQL and schema snapshot checks when false'
+        type: boolean
+        default: true
+      selected_test_files:
+        description: 'Space-delimited selected test files when full_suite is false'
+        type: string
+        default: ''
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: 'Run Vitest while retaining SQL and schema snapshot checks when false'
+        type: boolean
+        default: true
+      upload_vitest_blob_artifact:
+        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  NODE_ENV: test
+
+jobs:
+  postgres-schema-tests:
+    runs-on: [self-hosted, Linux, Docker, Tests]
+    timeout-minutes: 20
+    outputs:
+      vitest-ran: ${{ inputs.run_tests }}
+      vitest-report-attempt: ${{ github.run_attempt }}
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: '-c max_connections=300'
+        ports:
+          - 5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /var/lib/postgresql:rw,size=1g
+      valkey:
+        image: valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        ports:
+          - 6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /data:rw,size=64m
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          deepen: 'true'
+      - uses: ./.github/actions/load-runner-env
+        with:
+          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
+      - name: Set service connections
+        timeout-minutes: 1
+        run: |
+          postgres_url="postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres"
+          {
+            echo "DATABASE_URL=${postgres_url}"
+            echo "READ_DATABASE_URL=${postgres_url}"
+            echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}"
+          } >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup-backend
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Check PostgreSQL SQL safety
+        run: pnpm exec squawk backend/data-stores/psql/migrations/*.sql backend/data-stores/psql/config-driven/*.sql backend/data-stores/psql/views/*.sql
+        timeout-minutes: 2
+      - working-directory: backend
+        run: node data-stores/psql/migrate.mts
+        timeout-minutes: 3
+      - name: Run PostgreSQL schema tests
+        if: ${{ inputs.run_tests }}
+        env:
+          VITEST_CI_REPORTERS: run
+          VITEST_JUNIT_OUTPUT_FILE: postgres-schema-test-report.junit.xml
+          VITEST_BLOB_OUTPUT_FILE: .vitest-reports/postgres-schema.json
+          VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}
+        run: |
+          # VITEST_SELECTED_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
+          # encodeSelectedFiles). A quoted read loop plus a quoted array expansion
+          # preserve paths containing spaces or shell glob metacharacters, replacing the
+          # previous unquoted $VITEST_SELECTED_FILES word-splitting/glob-expansion. A
+          # blank-line guard (mirroring decodeSelectedFiles's blank filter) is required:
+          # `<<<` always appends a trailing newline, so an empty VITEST_SELECTED_FILES
+          # (the full-suite case) still yields one empty-string read, which must not
+          # become a stray positional arg. This avoids `mapfile` (bash 4.0+) since
+          # self-hosted runner shells are not guaranteed to be bash 4+.
+          FILES=()
+          while IFS= read -r file; do
+            if [ -n "$file" ]; then FILES+=("$file"); fi
+          done <<< "$VITEST_SELECTED_FILES"
+          VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity "${FILES[@]}"
+        timeout-minutes: 3
+      - name: Check PostgreSQL schema snapshot is up to date
+        if: ${{ !cancelled() }}
+        working-directory: backend
+        run: node data-stores/psql/schema-snapshot/generate.mts --check
+        timeout-minutes: 2
+      - name: Check for renamed PostgreSQL indexes
+        if: ${{ !cancelled() }}
+        working-directory: backend
+        env:
+          # Empty on a non-pull_request trigger (e.g. workflow_dispatch on main); the script's own
+          # `?.trim() || 'origin/main'` fallback handles that by comparing HEAD against itself, a
+          # no-op check rather than a broken one.
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node data-stores/psql/schema-snapshot/check-index-renames.mts
+        timeout-minutes: 1
+      - name: Upload postgres-schema vitest blob to GitHub (fallback)
+        id: vitest-blob-fallback-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-blob
+        with:
+          suite: postgres-schema
+      - name: Upload postgres-schema vitest blob to GitHub (fallback attempt 2)
+        id: vitest-blob-fallback-1-retry
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
+        timeout-minutes: 3
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-blob
+        with:
+          suite: postgres-schema
+          name-suffix: -retry
+      - name: Require a persisted postgres-schema vitest blob
+        id: vitest-blob-outcome-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        env:
+          FAMILY: vitest-blob
+          SUITE: postgres-schema
+          FIRST_OUTCOME: ${{ steps.vitest-blob-fallback-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.vitest-blob-fallback-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"

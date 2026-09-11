@@ -1,0 +1,18 @@
+{
+  "backfills": [
+    {
+      "description": "Backfill OpenAI moderation for posts missing results",
+      "id": "openai-moderation-posts",
+      "job_name": "backfill_posts",
+      "queue_name": "openai_moderation_omni_single",
+      "source_table": "posts"
+    },
+    {
+      "description": "Re-enqueue integrity checks for entities with pending mass-report campaigns",
+      "id": "backfill_report_integrity",
+      "job_name": "backfill_report_integrity",
+      "queue_name": "report_integrity",
+      "source_table": "moderation_reports"
+    }
+  ]
+}

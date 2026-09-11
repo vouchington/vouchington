@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>RSS Fixture Feed</title>
+    <item>
+      <link>https://example.com/rss-clean</link>
+      <guid>rss-clean-guid</guid>
+      <title>RSS Clean Item</title>
+      <content:encoded><![CDATA[
+        <div class="article-body">RSS keep</div>
+        <div class="share">RSS remove</div>
+      ]]></content:encoded>
+    </item>
+  </channel>
+</rss>

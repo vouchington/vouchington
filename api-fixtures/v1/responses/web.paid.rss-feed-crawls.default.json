@@ -1,0 +1,14 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "created_at": "2026-01-02T00:00:00Z",
+      "id": "crawl-1",
+      "response_code": 200
+    }
+  ]
+}

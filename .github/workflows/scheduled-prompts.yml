@@ -1,0 +1,153 @@
+name: Automation Scheduled Prompts
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+    - cron: '0 10 * * *'
+    - cron: '0 12 * * *'
+    - cron: '0 14 * * *'
+    - cron: '0 16 * * *'
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      prompt_file:
+        description: Optional docs/prompts/scheduled/*.md file to run
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.schedule || inputs.prompt_file || github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  select-prompt:
+    name: Select prompt
+    if: >-
+      vars.HARNESS_DISPATCH_ENABLED == 'true' &&
+      vars.HARNESS_SCHEDULED_ENABLED == 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      prompt_path: ${{ steps.select.outputs.prompt_path }}
+      prompt_name: ${{ steps.select.outputs.prompt_name }}
+      completion_mode: ${{ steps.select.outputs.completion_mode }}
+      existing_issue_maintenance: ${{ steps.select.outputs.existing_issue_maintenance }}
+      prompt: ${{ steps.render.outputs.prompt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          runner-lifecycle: persistent
+
+      - name: Select prompt file
+        id: select
+        env:
+          REQUESTED_PROMPT: ${{ inputs.prompt_file }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "$REQUESTED_PROMPT" ]]; then
+            if [[ "$REQUESTED_PROMPT" == /* || "$REQUESTED_PROMPT" == *".."* || "$REQUESTED_PROMPT" != docs/prompts/scheduled/*.md ]]; then
+              echo "::error::prompt_file must be a relative docs/prompts/scheduled/*.md path."
+              exit 1
+            fi
+            if [[ ! -f "$REQUESTED_PROMPT" ]]; then
+              echo "::error::Prompt file does not exist: $REQUESTED_PROMPT"
+              exit 1
+            fi
+            PROMPT_PATH="$REQUESTED_PROMPT"
+          else
+            shopt -s nullglob
+            PROMPTS=()
+            for prompt in docs/prompts/scheduled/*.md; do
+              [[ -f "$prompt" ]] && PROMPTS+=("$prompt")
+            done
+            shopt -u nullglob
+            PROMPT_COUNT="${#PROMPTS[@]}"
+            if [[ "$PROMPT_COUNT" -eq 0 ]]; then
+              echo "::error::No prompt files found under docs/prompts/scheduled."
+              exit 1
+            fi
+
+            PROMPT_INDEX="$(( (RUN_NUMBER - 1) % PROMPT_COUNT ))"
+            PROMPT_PATH="${PROMPTS[$PROMPT_INDEX]}"
+          fi
+
+          echo "Selected prompt: $PROMPT_PATH"
+          if grep -Fxq '<!-- harness-scheduled-completion: issue -->' "$PROMPT_PATH"; then
+            COMPLETION_MODE='issue'
+          else
+            COMPLETION_MODE='pr'
+          fi
+          if grep -Fxq '<!-- harness-scheduled-scope: existing-issues -->' "$PROMPT_PATH"; then
+            EXISTING_ISSUE_MAINTENANCE='true'
+          else
+            EXISTING_ISSUE_MAINTENANCE='false'
+          fi
+          {
+            echo "prompt_path=$PROMPT_PATH"
+            echo "prompt_name=$(basename "$PROMPT_PATH")"
+            echo "completion_mode=$COMPLETION_MODE"
+            echo "existing_issue_maintenance=$EXISTING_ISSUE_MAINTENANCE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Render prompt
+        id: render
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+        with:
+          template: >-
+            ${{ steps.select.outputs.completion_mode == 'issue' &&
+                'docs/prompts/automation/scheduled-issue.md' ||
+                'docs/prompts/automation/scheduled-prompt.md' }}
+          vars: |
+            PROMPT_PATH=${{ steps.select.outputs.prompt_path }}
+            PROMPT_NAME=${{ steps.select.outputs.prompt_name }}
+            RUN_URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          var-files: PROMPT_BODY=${{ steps.select.outputs.prompt_path }}
+
+  dispatch:
+    name: Harness dispatch
+    needs: [select-prompt]
+    if: always() && needs.select-prompt.result == 'success'
+    uses: ./.github/workflows/harness-dispatch.yml
+    permissions:
+      contents: read
+    secrets:
+      HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
+    with:
+      surface-gate: HARNESS_SCHEDULED_ENABLED
+      agent-ref: ${{ github.sha }}
+      expected-head-sha: ${{ github.sha }}
+      concurrency-id: filaments:scheduled:${{ needs.select-prompt.outputs.prompt_name }}
+      publish-contract: ${{ needs.select-prompt.outputs.completion_mode == 'pr' && 'scheduled' || 'none' }}
+      publish-base-ref: ${{ needs.select-prompt.outputs.completion_mode == 'pr' && 'main' || '' }}
+      publish-title-prefix: "${{ needs.select-prompt.outputs.completion_mode == 'pr' && format('Automation scheduled: {0}', needs.select-prompt.outputs.prompt_name) || '' }}"
+      publish-duplicate-key: "${{ needs.select-prompt.outputs.completion_mode == 'pr' && format('Automation scheduled: {0}', needs.select-prompt.outputs.prompt_name) || '' }}"
+      completion-mode: ${{ needs.select-prompt.outputs.completion_mode }}
+      existing-issue-maintenance: ${{ needs.select-prompt.outputs.existing_issue_maintenance == 'true' }}
+      source-run-id: ${{ github.run_id }}
+      pr-label: automation:scheduled
+      slack-source: |
+        *Source:* Scheduled automation prompt `${{ needs.select-prompt.outputs.prompt_path }}`
+        *Run:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      prompt: ${{ needs.select-prompt.outputs.prompt }}

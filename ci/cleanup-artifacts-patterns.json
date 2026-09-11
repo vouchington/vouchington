@@ -1,0 +1,29 @@
+{
+  "keep": ["ci-state-*", "next-static-*", "browser-port-diagnostics-*", "web-build-timings-*"],
+  "delete": [
+    "code-review-payload-*",
+    "vitest-blob-*",
+    "vitest-report-attempt-*",
+    "vitest-fork-diagnostics-*",
+    "coverage-*",
+    "playwright-otel-output-shard-*",
+    "playwright-test-results-shard-*",
+    "playwright-junit-*",
+    "playwright-credentialed-junit",
+    "playwright-test-plan",
+    "vitest-test-plan",
+    "ci-topology-impact",
+    "wrangler-logs-*",
+    "storybook-browser-debug-log",
+    "web-integration-artifacts",
+    "web-integration-shard-*",
+    "web-test-report-*",
+    "explain-analyze-results",
+    "gitleaks-report",
+    "trivy-*",
+    "codex-debug",
+    "codex-retrospective",
+    "codex-transcript",
+    "release-*"
+  ]
+}

@@ -1,0 +1,50 @@
+id: playwright-seed-advisory-lock
+language: Tsx
+severity: error
+message: 'seedPlaywrightTestData must acquire the playwright advisory lock before seedPlaywright* writes.'
+files:
+  - 'backend/scripts/seeds/playwright-test-data.mts'
+rule:
+  any:
+    - all:
+        - kind: expression_statement
+        - regex: 'await\s+seedPlaywright(?:CoreData|PostData|FeedData|Conversations|PublisherTypeTopics|RssFeedCategoryData|Users)\s*\('
+        - precedes:
+            kind: expression_statement
+            regex: 'pg_advisory_xact_lock\s*\(\s*hashtext\s*\('
+    - all:
+        - kind: expression_statement
+        - regex: 'await\s+seedPlaywright(?:CoreData|PostData|FeedData|Conversations|PublisherTypeTopics|RssFeedCategoryData|Users)\s*\('
+        - not:
+            inside:
+              kind: statement_block
+              has:
+                kind: expression_statement
+                regex: 'pg_advisory_xact_lock\s*\(\s*hashtext\s*\('
+examples:
+  - code: |
+      export async function seedPlaywrightTestData() {
+        await using transaction = await beginTransaction()
+        await seedPlaywrightUsers()
+        await transaction.commit()
+      }
+    isValid: false
+    file: 'backend/scripts/seeds/playwright-test-data.mts'
+  - code: |
+      export async function seedPlaywrightTestData() {
+        await using transaction = await beginTransaction()
+        await seedPlaywrightUsers()
+        await transaction("SELECT pg_advisory_xact_lock(hashtext('voucha:playwright-test-data'))")
+        await transaction.commit()
+      }
+    isValid: false
+    file: 'backend/scripts/seeds/playwright-test-data.mts'
+  - code: |
+      export async function seedPlaywrightTestData() {
+        await using transaction = await beginTransaction()
+        await transaction("SELECT pg_advisory_xact_lock(hashtext('voucha:playwright-test-data'))")
+        await seedPlaywrightUsers()
+        await transaction.commit()
+      }
+    isValid: true
+    file: 'backend/scripts/seeds/playwright-test-data.mts'

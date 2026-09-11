@@ -1,0 +1,191 @@
+import { pageInfo } from './data.mts'
+import { encodeCursor } from '@modules/pagination'
+import {
+  prioritizedReferralLink,
+  referralClickLog,
+  referralClickLogPending,
+  referralClickLogUser,
+  referralLink,
+  referralLinkFeedItem,
+  referralLinkFeedUser,
+  referralLinkUser,
+  referralProgram,
+  referralProgramTopic,
+} from './referral-data.mts'
+import type { ApiFixtureCase } from './types.mts'
+
+export const referralApiFixtureCases: ApiFixtureCase[] = [
+  {
+    id: 'web.topics.search.referral-programs.default',
+    method: 'GET',
+    path: '/api/v1/topics',
+    route: { routeTemplate: '/api/v1/topics' },
+    query: { q: 'test', topic_types: 'referral_program', limit: '10' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      results: [
+        {
+          __entity_type: 'topic',
+          id: referralProgramTopic.id,
+          name: referralProgramTopic.name,
+          slug: referralProgramTopic.slug,
+          topic_type: referralProgramTopic.topic_type,
+        },
+      ],
+      page_info: pageInfo,
+      topics: { [referralProgramTopic.id]: referralProgramTopic },
+      topic_elections: {},
+      election_votes: {},
+      topics_metrics: {},
+    },
+    consumers: ['web', 'swift-core', 'dotnet-core'],
+    migratedFrom: ['web/components/my/referral-links-manager/add-referral-link.tsx'],
+  },
+  {
+    id: 'web.referral-links.feed.default',
+    method: 'GET',
+    path: '/api/v1/feeds/referral_links/follow_users',
+    route: {
+      routeTemplate: '/api/v1/feeds/referral_links/:feed_type',
+      pathParams: { feed_type: 'follow_users' },
+    },
+    query: { limit: '25' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      results: [referralLinkFeedItem],
+      users: { [referralLinkFeedUser.id]: referralLinkFeedUser },
+      page_info: pageInfo,
+    },
+    consumers: ['web', 'swift-core', 'dotnet-core'],
+    migratedFrom: ['web/components/feed/__tests__/feed-referral-links-list-page.mock.test.tsx'],
+  },
+  {
+    id: 'web.referral-links.mine.default',
+    method: 'GET',
+    path: '/api/v1/referral-links',
+    route: { routeTemplate: '/api/v1/referral-links' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      results: [referralLink],
+      page_info: pageInfo,
+    },
+    responseSchemaKey: 'referral-links.mine',
+    consumers: ['web'],
+    migratedFrom: ['web/lib/api/client/referral-links.ts'],
+  },
+  {
+    id: 'native.referral-links.mine.default',
+    method: 'GET',
+    path: '/api/v1/referral-links',
+    route: { routeTemplate: '/api/v1/referral-links' },
+    query: { limit: '25' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      results: [referralLink],
+      page_info: pageInfo,
+    },
+    responseSchemaKey: 'referral-links.mine',
+    consumers: ['swift-core', 'dotnet-core'],
+    migratedFrom: ['web/lib/api/client/referral-links.ts'],
+  },
+  {
+    id: 'web.referral-clicks.mine.default',
+    method: 'GET',
+    path: '/api/v1/my/referral-clicks',
+    route: { routeTemplate: '/api/v1/my/referral-clicks' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      results: [
+        { __entity_type: 'referral_click_log', id: referralClickLog.id },
+        { __entity_type: 'referral_click_log', id: referralClickLogPending.id },
+      ],
+      clicks: {
+        [referralClickLog.id]: referralClickLog,
+        [referralClickLogPending.id]: referralClickLogPending,
+      },
+      users: { [referralClickLogUser.id]: referralClickLogUser },
+      page_info: {
+        has_next_page: false,
+        start_cursor: encodeCursor({ id: referralClickLog.id }),
+        end_cursor: null,
+      },
+    },
+    responseSchemaKey: 'referral-clicks.mine',
+    consumers: ['web'],
+    migratedFrom: ['web/components/my/referral-clicks-page.tsx'],
+  },
+  {
+    id: 'native.referral-clicks.mine.default',
+    method: 'GET',
+    path: '/api/v1/my/referral-clicks',
+    route: { routeTemplate: '/api/v1/my/referral-clicks' },
+    query: { limit: '25' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      results: [
+        { __entity_type: 'referral_click_log', id: referralClickLog.id },
+        { __entity_type: 'referral_click_log', id: referralClickLogPending.id },
+      ],
+      clicks: {
+        [referralClickLog.id]: referralClickLog,
+        [referralClickLogPending.id]: referralClickLogPending,
+      },
+      users: { [referralClickLogUser.id]: referralClickLogUser },
+      page_info: {
+        has_next_page: false,
+        start_cursor: encodeCursor({ id: referralClickLog.id }),
+        end_cursor: null,
+      },
+    },
+    responseSchemaKey: 'referral-clicks.mine',
+    consumers: ['swift-core', 'dotnet-core'],
+    migratedFrom: ['web/components/my/referral-clicks-page.tsx'],
+  },
+  {
+    id: 'web.trending-referral-programs.default',
+    method: 'GET',
+    path: '/api/v1/trending-referral-programs',
+    route: { routeTemplate: '/api/v1/trending-referral-programs' },
+    query: { limit: '10' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      referral_programs: [
+        {
+          id: referralProgram.id,
+          link_count: referralProgram.link_count,
+          trending_score: referralProgram.trending_score,
+        },
+      ],
+      page_info: pageInfo,
+    },
+    consumers: ['web', 'swift-core', 'dotnet-core'],
+    migratedFrom: ['web/lib/api/server/trending-referral-programs.ts'],
+  },
+  {
+    id: 'web.referral-links.prioritized.default',
+    method: 'GET',
+    path: `/api/v1/topics/${referralProgram.id}/prioritized-referral-links`,
+    route: {
+      routeTemplate: '/api/v1/topics/:topicId/prioritized-referral-links',
+      pathParams: { topicId: referralProgram.id },
+    },
+    query: { all: 'true' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      links: [prioritizedReferralLink],
+      users: { [referralLinkUser.id]: referralLinkUser },
+    },
+    consumers: ['web', 'swift-core', 'dotnet-core'],
+    migratedFrom: [
+      'web/components/referral-links/__tests__/referral-links-aside-content.mock.test.tsx',
+    ],
+  },
+]

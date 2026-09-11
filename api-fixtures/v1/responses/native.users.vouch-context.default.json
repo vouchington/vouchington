@@ -1,0 +1,17 @@
+{
+  "election_vote": {
+    "__entity_type": "election_vote",
+    "choice": "like",
+    "created_at": "2026-07-01T16:00:00Z",
+    "entity_id": "user-abc",
+    "user_id": "fixture-user"
+  },
+  "negative_by_following": {
+    "total": 0,
+    "users": []
+  },
+  "positive_by_following": {
+    "total": 0,
+    "users": []
+  }
+}

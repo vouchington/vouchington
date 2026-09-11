@@ -1,0 +1,76 @@
+#!/usr/bin/env node
+/**
+ * Checks that local dev servers are not already running before Playwright starts.
+ * Playwright manages its own servers; pre-existing servers cause conflicts.
+ */
+
+import { existsSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import net from 'node:net'
+import process from 'node:process'
+
+if (!existsSync('.env') && !process.env.CI) {
+  console.error('Error: .env file not found. Run ./dev/initialize web to set up this worktree.')
+  process.exit(1)
+}
+
+// Fail early if a worktree is using the main worktree's default ports
+execFileSync('./dev/check-worktree-ports', { stdio: 'inherit' })
+
+function parsePort(name, value) {
+  if (!value) return null
+  const n = parseInt(value, 10)
+  if (!Number.isFinite(n) || n < 1 || n > 65535) {
+    console.error(`Error: ${name}=${value} is not a valid port number (1–65535).`)
+    process.exit(1)
+  }
+  return n
+}
+
+const BACKEND_PORT = parsePort('PORT', process.env.PORT)
+const WEB_PORT = parsePort('NEXT_PORT', process.env.NEXT_PORT) ?? parsePort('WEB_PORT', process.env.WEB_PORT)
+const WORKER_PORT = parsePort('WORKER_PORT', process.env.WORKER_PORT ?? '8787')
+const IMAGE_LAMBDA_PORT = parsePort('IMAGE_LAMBDA_PORT', process.env.IMAGE_LAMBDA_PORT)
+
+function isPortInUse(port) {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ port, host: 'localhost' })
+    socket.once('connect', () => {
+      socket.destroy()
+      resolve(true)
+    })
+    socket.once('error', () => {
+      resolve(false)
+    })
+  })
+}
+
+const [backendInUse, webInUse, workerInUse, imageLambdaInUse] = await Promise.all([
+  BACKEND_PORT ? isPortInUse(BACKEND_PORT) : false,
+  WEB_PORT ? isPortInUse(WEB_PORT) : false,
+  isPortInUse(WORKER_PORT),
+  IMAGE_LAMBDA_PORT ? isPortInUse(IMAGE_LAMBDA_PORT) : false,
+])
+
+if (!backendInUse && !webInUse && !workerInUse && !imageLambdaInUse) {
+  process.exit(0)
+}
+
+if (backendInUse) {
+  console.error(`Error: backend server is already running on port ${BACKEND_PORT}.`)
+}
+if (webInUse) {
+  console.error(`Error: web server is already running on port ${WEB_PORT}.`)
+}
+if (workerInUse) {
+  console.error(`Error: cloudflare worker is already running on port ${WORKER_PORT}.`)
+}
+if (imageLambdaInUse) {
+  console.error(`Error: image lambda is already running on port ${IMAGE_LAMBDA_PORT}.`)
+}
+console.error(
+  '\nPlaywright starts its own servers. Shut them off before running Playwright tests:',
+)
+console.error('  ./dev/stop-services    # stop services for this worktree')
+console.error('  ./dev/status      # see what is running')
+process.exit(1)

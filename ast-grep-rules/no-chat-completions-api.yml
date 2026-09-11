@@ -1,0 +1,24 @@
+id: no-chat-completions-api
+language: Tsx
+severity: error
+message: 'Found ".chat.completions" — use the Responses API instead'
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+rule:
+  any:
+    - pattern: $OBJ.chat.completions
+    - pattern: "$OBJ.chat['completions']"
+    - pattern: "$OBJ['chat'].completions"
+examples:
+  - code: 'client.chat.completions.create({})'
+    isValid: false
+    file: 'backend/modules/openai/api.mts'
+  - code: 'const chat = { completions: 1 }'
+    isValid: true
+    file: 'backend/modules/openai/api.mts'
+  - code: 'client.responses.create({})'
+    isValid: true
+    file: 'backend/modules/openai/api.mts'

@@ -1,0 +1,60 @@
+{
+  "name": "@voucha/cloudflare-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker edge router for backend and web origins",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "../ts-shared/cache",
+    "../ts-shared/feed-capabilities",
+    "../ts-shared/languages",
+    "../ts-shared/request-client-info",
+    "../ts-shared/route-classification",
+    "../ts-shared/session-jwt",
+    "../ts-shared/utils"
+  ],
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/index.mts --bundle --outfile=dist/index.js --format=esm --target=esnext --platform=browser --conditions=worker,browser --external:node:async_hooks --external:cloudflare:workers --sourcemap",
+    "build:storybook-auth": "esbuild src/storybook-pages-auth.mts --bundle --format=esm --platform=browser --target=esnext --conditions=worker,browser",
+    "dev": "node scripts/wrangler/dev.mts",
+    "typecheck": "tsc --noEmit --incremental --project tsconfig.json",
+    "test:smoke": "./scripts/tests/smoke-test-cloudflare-worker.sh"
+  },
+  "dependencies": {
+    "@sentry/cloudflare": "10.71.0",
+    "@ts-shared/cache": "workspace:^",
+    "@ts-shared/feed-capabilities": "workspace:^",
+    "@ts-shared/languages": "workspace:^",
+    "@ts-shared/request-client-info": "workspace:^",
+    "@ts-shared/route-classification": "workspace:^",
+    "@ts-shared/session-jwt": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "isbot": "^5.2.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260907.1",
+    "@types/node": "^26.4.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "esbuild": "^0.28.2",
+    "vitest": "^5.0.0",
+    "wrangler": "^4.129.0"
+  },
+  "engines": {
+    "node": ">=24.16.0"
+  }
+}

@@ -1,0 +1,226 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+FORCE=false
+
+usage() {
+    cat <<'USAGE'
+Usage: ./dev/reset-worktree [--force]
+
+Resets a worktree to a clean state for the next agent task:
+  - Tears down only DB + Valkey + services proven to belong to this worktree
+    (preserves .env so port reuse works)
+  - Fetches origin/main
+  - Creates a new random branch, then hard-resets it to origin/main
+  - Removes worktree-local generated build and test output
+  - Runs ./dev/initialize monorepo so pnpm exec tools work immediately
+  - Clears the tmux window and pane title (if running inside tmux)
+
+Refuses if there are uncommitted or untracked changes; use --force to
+discard them. Run ./dev/initialize backend afterwards for DB/Valkey-backed
+tests, or ./dev/initialize web when the full stack is needed.
+
+Refuses to run on the main worktree (FORCE_MAIN_RESET=1 to override).
+Full clones under .grok/worktrees or $TMPDIR do not need the override.
+USAGE
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        --force|-f)
+            if $FORCE; then echo "Error: duplicate option: $arg" >&2; usage >&2; exit 2; fi
+            FORCE=true
+            ;;
+        --help|-h)
+            if [ "$#" -eq 1 ]; then usage; exit 0; fi
+            echo -e "${RED}Error: help cannot be combined with other arguments${NC}" >&2
+            usage >&2
+            exit 2
+            ;;
+        *)
+            echo -e "${RED}Error: unknown option: $arg${NC}" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+# shellcheck source=lib/refuse-on-main.sh
+source "$REPO_ROOT/dev/lib/refuse-on-main.sh"
+refuse_on_main "./dev/reset-worktree" "$REPO_ROOT"
+# shellcheck source=lib/worktree-resource-env.sh
+source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
+# shellcheck source=lib/reset-worktree-lock.sh
+source "$REPO_ROOT/dev/lib/reset-worktree-lock.sh"
+# shellcheck source=lib/git-index-lock.sh
+source "$REPO_ROOT/dev/lib/git-index-lock.sh"
+
+# Fail closed if another reset is already running for this worktree (#10849).
+# Acquired before the dirty-tree check so decide-and-mutate is one critical
+# section, and held through ./dev/initialize monorepo below via the EXIT trap.
+reset_worktree_lock_acquire "$REPO_ROOT" || exit 1
+release_reset_worktree_lock_and_exit() {
+    local status=$1
+    trap - EXIT INT TERM
+    reset_worktree_lock_release "$REPO_ROOT"
+    exit "$status"
+}
+trap 'release_reset_worktree_lock_and_exit $?' EXIT
+trap 'release_reset_worktree_lock_and_exit 130' INT
+trap 'release_reset_worktree_lock_and_exit 143' TERM
+
+# Refuse when the working tree is dirty unless --force
+if ! $FORCE; then
+    if ! git -C "$REPO_ROOT" diff-index --quiet HEAD -- 2>/dev/null; then
+        echo -e "${RED}Error: uncommitted changes detected.${NC}" >&2
+        echo "Commit, stash, or discard them first, or rerun with --force to discard." >&2
+        exit 1
+    fi
+    if [ -n "$(git -C "$REPO_ROOT" status --porcelain --untracked-files=normal 2>/dev/null)" ]; then
+        echo -e "${RED}Error: untracked files detected.${NC}" >&2
+        echo "Remove or commit them first, or rerun with --force to discard." >&2
+        exit 1
+    fi
+fi
+
+# Parse the worktree-specific git dir from $REPO_ROOT/.git without invoking git so
+# the test shim's fake-git binary is not required to handle rev-parse --git-dir.
+# In a worktree $REPO_ROOT/.git is a "gitdir: /absolute/path" pointer file; in a
+# plain checkout it is a directory.
+_git_ref="$REPO_ROOT/.git"
+if [ -f "$_git_ref" ]; then
+    _git_dir="$(sed 's/^gitdir: *//' "$_git_ref")"
+else
+    _git_dir="$_git_ref"
+fi
+
+# Refuse before tearing down anything if a live git process holds a non-empty
+# index.lock: the checkout below would fail with "Unable to create
+# .../index.lock: File exists" only after teardown and fetch already ran,
+# leaving DB/Valkey stopped and the branch unreset. Checking here, before any
+# mutation, keeps a refusal a true no-op.
+if [ -f "$_git_dir/index.lock" ] && [ -s "$_git_dir/index.lock" ]; then
+    echo -e "${RED}Error: $_git_dir/index.lock is non-empty -- a git process is mid-write.${NC}" >&2
+    echo "Wait for it to finish, then rerun ./dev/reset-worktree." >&2
+    exit 1
+fi
+# Clear a stale (0-byte) index.lock left by a crashed git operation, which would
+# otherwise fail the branch/reset below. Never removes a non-empty lock -- that
+# case was already handled above.
+clear_stale_index_lock "$_git_dir"
+
+echo -e "${BLUE}=== Reset Worktree ===${NC}\n"
+
+# Tear down services, DB, and Valkey container only when this worktree owns
+# them. The backend-level check is deliberately used here, not the stricter
+# web check: teardown removes DB + Valkey resources, which a backend-only
+# worktree owns just as much as a web-initialized one. Gating on the web
+# validator would skip teardown (and leak a Postgres DB + Docker container)
+# for every backend-only worktree.
+if worktree_resource_validate_backend_init "$REPO_ROOT"; then
+    echo -e "${YELLOW}Tearing down services, DB, and Valkey container...${NC}"
+    "$REPO_ROOT/dev/teardown" --yes
+    echo ""
+elif [ "${WORKTREE_RESOURCE_STATUS:-}" = "missing-valkey-port" ]; then
+    echo -e "${YELLOW}Valkey port tracking file (.valkey-port) missing — services already torn down; skipping${NC}\n"
+elif [ "${WORKTREE_RESOURCE_STATUS:-}" = "missing-env" ]; then
+    echo -e "${YELLOW}Worktree was never initialized — skipping teardown${NC}\n"
+else
+    echo -e "${YELLOW}Worktree resources are not initialized for this worktree; skipping teardown${NC}"
+    echo -e "${YELLOW}Run ./dev/initialize backend (or web) to create worktree-owned DB and Valkey resources.${NC}\n"
+fi
+
+# Fetch origin/main
+echo -e "${YELLOW}Fetching origin/main...${NC}"
+git -C "$REPO_ROOT" fetch origin main
+echo -e "${GREEN}✓ Fetched${NC}\n"
+
+# Create a new random branch, then reset it to origin/main.
+RANDOM_SLUG=$(openssl rand -hex 4)
+NEW_BRANCH="reset-${RANDOM_SLUG}"
+echo -e "${YELLOW}Creating branch '$NEW_BRANCH'...${NC}"
+
+if $FORCE; then
+    git -C "$REPO_ROOT" checkout -B "$NEW_BRANCH" --force
+    git -C "$REPO_ROOT" clean -fd
+else
+    git -C "$REPO_ROOT" checkout -B "$NEW_BRANCH"
+fi
+git -C "$REPO_ROOT" reset --hard origin/main
+echo -e "${GREEN}✓ Now on '$NEW_BRANCH' at origin/main${NC}\n"
+
+echo -e "${YELLOW}Removing generated build and test output...${NC}"
+
+# Explicit package build outputs and local test reports. Keep dependencies,
+# configuration, credentials, infrastructure state, and service resources.
+rm -rf \
+    "$REPO_ROOT/dist" \
+    "$REPO_ROOT/output" \
+    "$REPO_ROOT/storybook-static" \
+    "$REPO_ROOT/web/.next" \
+    "$REPO_ROOT/web/storybook-static" \
+    "$REPO_ROOT/cloudflare-worker/.wrangler" \
+    "$REPO_ROOT/cloudflare-worker/dist" \
+    "$REPO_ROOT/email-templates/dist" \
+    "$REPO_ROOT/lambdas/image-resize/dist" \
+    "$REPO_ROOT/coverage" \
+    "$REPO_ROOT/coverage-affected" \
+    "$REPO_ROOT/coverage-changed" \
+    "$REPO_ROOT/coverage-full" \
+    "$REPO_ROOT/coverage-html" \
+    "$REPO_ROOT/coverage-artifacts" \
+    "$REPO_ROOT/playwright-report" \
+    "$REPO_ROOT/test-results" \
+    "$REPO_ROOT/.playwright-snapshots" \
+    "$REPO_ROOT/playwright/screenshots" \
+    "$REPO_ROOT/test-report.junit.xml"
+
+# Worktree caches outside dependencies, plus only the direct disposable caches
+# inside each dependency tree. Never traverse or remove package contents.
+find "$REPO_ROOT" \
+    \( -path "$REPO_ROOT/.git" -o -name node_modules \) -prune -o \
+    -type d -name .cache -prune -exec rm -rf {} +
+find "$REPO_ROOT" -type d -name node_modules -prune \
+    -exec rm -rf '{}/.cache' '{}/.vite' '{}/.vitest' \;
+
+echo -e "${GREEN}✓ Removed generated output${NC}\n"
+
+rm -f "$REPO_ROOT/.initialized" \
+    "$REPO_ROOT/.local/cursor-session-id" \
+    "$REPO_ROOT/.local/grok-session-id"
+# Root Codex persistence survives an in-session reset; the next root session rotates it explicitly.
+
+echo -e "${YELLOW}Initializing monorepo tools...${NC}"
+"$REPO_ROOT/dev/initialize" monorepo
+echo ""
+
+# Clear tmux pane/window so the prior task label doesn't persist
+"$REPO_ROOT/dev/tmux-name" ""
+
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}✓ Worktree reset complete${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo ""
+echo -e "${BLUE}Branch:${NC}   $NEW_BRANCH (off origin/main)"
+echo -e "${BLUE}Worktree:${NC} $(basename "$REPO_ROOT")"
+echo ""
+echo -e "${BLUE}Notes for the next agent:${NC}"
+echo "  This worktree is a monorepo-initialized clean slate."
+echo "  pnpm exec tools are ready. The previous branch still exists"
+echo "  locally — the human can recover it with git checkout or git reflog."
+echo ""
+echo "  Run ./dev/initialize backend for DB/Valkey-backed tests, or"
+echo "  ./dev/initialize web only when the full stack is needed."
+echo "  .env is preserved so backend/web re-init reuses the same ports."
+echo "  Pick a meaningful branch name when starting new work; rename off"
+echo "  '$NEW_BRANCH' immediately."
+echo ""

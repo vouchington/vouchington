@@ -1,0 +1,13 @@
+{
+  "purchase_intent": {
+    "id": "00000000-0000-7000-8000-000000000803",
+    "launch": {
+      "app_account_token": "00000000-0000-7000-8000-000000000803",
+      "kind": "apple_app_store",
+      "product_id": "voucha.plus.monthly"
+    },
+    "product_id": "00000000-0000-7000-8000-000000000701",
+    "provider": "apple_app_store",
+    "replayed": false
+  }
+}

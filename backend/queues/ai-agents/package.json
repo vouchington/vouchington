@@ -1,0 +1,27 @@
+{
+  "name": "@queues/ai-agents",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/scheduled-job-manifest": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "glide-mq": "^0.15.5",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

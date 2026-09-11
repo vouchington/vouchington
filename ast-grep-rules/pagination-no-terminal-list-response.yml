@@ -1,0 +1,30 @@
+id: pagination-no-terminal-list-response
+language: Tsx
+severity: error
+message: 'Database-backed list routes must return real cursor page_info. Compile-time/static in-memory catalogs need no page_info; document them during remediation and return { results } without toListResponse().'
+files:
+  - 'backend/api/v1/**/*.mts'
+ignores:
+  - 'backend/api/v1/**/*.test.mts'
+  - 'backend/api/v1/**/__tests__/**'
+rule:
+  pattern: toListResponse($$$ARGS)
+examples:
+  - code: 'ctx.json(toListResponse(results))'
+    isValid: false
+    file: 'backend/api/v1/admin/landing-pages.mts'
+  - code: 'ctx.json({ ...toListResponse(results), users })'
+    isValid: false
+    file: 'backend/api/v1/users/collections.mts'
+  - code: 'ctx.json({ results, page_info })'
+    isValid: true
+    file: 'backend/api/v1/admin/landing-pages.mts'
+  - code: 'ctx.json({ results: consents })'
+    isValid: true
+    file: 'backend/api/v1/my/consents.mts'
+  - code: 'ctx.json(toListResponse(results))'
+    isValid: true
+    file: 'backend/api/v1/admin/landing-pages.test.mts'
+  - code: 'ctx.json(toListResponse(results))'
+    isValid: true
+    file: 'backend/api/v1/admin/landing-pages.mock.test.mts'

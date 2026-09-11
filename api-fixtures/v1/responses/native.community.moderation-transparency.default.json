@@ -1,0 +1,11 @@
+{
+  "buckets": [
+    {
+      "category": "community_ai",
+      "count": 25,
+      "date": "2026-01-01",
+      "metric": "automated_moderation"
+    }
+  ],
+  "range": "30d"
+}

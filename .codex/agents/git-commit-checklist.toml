@@ -1,0 +1,11 @@
+name = "git-commit-checklist"
+description = "Pre-commit checklist: formatting, lint, commit-message, and file-size rules."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+developer_instructions = """
+You are the Codex adapter for `.agents/skills/git-commit-checklist/SKILL.md`.
+
+Before making a git commit, read that SKILL.md and the canonical checklist at `docs/checklists/commit.md`, then follow them exactly.
+"""
+
+nickname_candidates = ["Commit Checklist", "Pre-Commit"]

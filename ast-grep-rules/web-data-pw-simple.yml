@@ -1,0 +1,99 @@
+id: web-data-pw-simple
+language: Tsx
+severity: error
+message: '`data-pw` must be statically guessable: use only `dataPw` as a prop name, do not call functions inside `data-pw`, and keep template IDs to one interpolation.'
+files:
+  - 'web/**/*.tsx'
+ignores:
+  - '**/*.test.tsx'
+  - '**/*.spec.tsx'
+  - '**/*.mock.test.tsx'
+  - '**/*.stories.tsx'
+  - 'web/storybook/**'
+rule:
+  any:
+    - all:
+        - kind: property_identifier
+        - regex: '^[A-Za-z_$][A-Za-z0-9_$]*DataPw$'
+    - all:
+        - kind: jsx_attribute
+        - has:
+            kind: property_identifier
+            regex: '^data-pw$'
+            stopBy: neighbor
+        - has:
+            kind: call_expression
+            stopBy: end
+    - all:
+        - kind: variable_declarator
+        - has:
+            kind: identifier
+            regex: '(^dataPw$|DataPw$|TestId$)'
+            stopBy: neighbor
+        - has:
+            kind: call_expression
+            stopBy: end
+    - all:
+        - kind: variable_declarator
+        - has:
+            kind: identifier
+            regex: '(^dataPw$|DataPw$|TestId$)'
+            stopBy: neighbor
+        - has:
+            kind: template_string
+            stopBy: end
+            has:
+              kind: template_substitution
+              stopBy: end
+              precedes:
+                stopBy: end
+                kind: template_substitution
+    - all:
+        - kind: template_substitution
+        - inside:
+            kind: jsx_attribute
+            stopBy: end
+            has:
+              kind: property_identifier
+              regex: '^data-pw$'
+              stopBy: neighbor
+        - precedes:
+            stopBy: end
+            kind: template_substitution
+examples:
+  - code: '<Button dataPw="save-button" />'
+    isValid: true
+    file: 'web/components/example.tsx'
+  - code: '<Button inputDataPw="topic-search" />'
+    isValid: false
+    file: 'web/components/example.tsx'
+  - code: '<div data-pw="topic-card" />'
+    isValid: true
+    file: 'web/components/example.tsx'
+  - code: '<div data-pw={dataPw} />'
+    isValid: true
+    file: 'web/components/example.tsx'
+  - code: '<div data-pw={props.dataPw} />'
+    isValid: true
+    file: 'web/components/example.tsx'
+  - code: '<div data-pw={`topic-detail-tab-${tab.name}`} />'
+    isValid: true
+    file: 'web/components/example.tsx'
+  - code: '<div data-pw={`topic-${topic.slug}-${topic.id}`} />'
+    isValid: false
+    file: 'web/components/example.tsx'
+  - code: '<div data-pw={`topic-${slugify(topic.name)}`} />'
+    isValid: false
+    file: 'web/components/example.tsx'
+  - code: '<div data-pw={`topic-${topic.name.toLowerCase()}`} />'
+    isValid: false
+    file: 'web/components/example.tsx'
+  - code: "const topicTestId = `topic-${topic.name.toLowerCase()}`\n;<div data-pw={topicTestId} />"
+    isValid: false
+    file: 'web/components/example.tsx'
+  - code: "const topicTestId = `topic-${topic.slug}-${topic.id}`\n;<div data-pw={topicTestId} />"
+    isValid: false
+    file: 'web/components/example.tsx'
+  - code: "const topicTestId = `topic-${topic.slug}`\n;<div data-pw={topicTestId} />"
+    isValid: true
+    file: 'web/components/example.tsx'

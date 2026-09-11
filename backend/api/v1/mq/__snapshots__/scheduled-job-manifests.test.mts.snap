@@ -1,0 +1,2804 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scheduled job manifest catalog > pins every runtime scheduler contract 1`] = `
+[
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Clean up expired data export files",
+        "id": "account-data-requests-cleanup",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "account-data-requests",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "account-data-requests-cleanup",
+    "template": {
+      "data": {},
+      "name": "processCleanupExpiredExports",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "account-data-request-recovery",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "account-data-requests",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "accountDataRequestRecovery",
+    "template": {
+      "data": {},
+      "name": "recoverExportRequests",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recover abandoned durable ActivityPub inbox envelopes",
+        "id": "activitypub-inbox-recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "activitypub-inbox",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "activitypub-inbox-recovery",
+    "template": {
+      "data": {},
+      "name": "recoverDeliveries",
+      "opts": {
+        "attempts": 5,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Delete expired durable ActivityPub inbox envelopes",
+        "id": "activitypub-inbox-cleanup",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "activitypub-inbox",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "activitypub-inbox-cleanup",
+    "template": {
+      "data": {},
+      "name": "cleanupExpiredDeliveries",
+      "opts": {
+        "attempts": 5,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 1,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue undispatched AI moderation judgements (crash recovery)",
+        "id": "reconcileAutoDispatchJudgements",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileAutoDispatchJudgements",
+    "template": {
+      "name": "reconcile-auto-dispatch-judgements",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Fail stale AI runtime generations after an interrupted worker",
+        "id": "reconcileRuntimeGenerations",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileRuntimeGenerations",
+    "template": {
+      "data": {},
+      "name": "reconcile-runtime-generations",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue member-created support drafts after post-commit enqueue failures",
+        "id": "reconcileMemberSupportAgentIntents",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileMemberSupportAgentIntents",
+    "template": {
+      "data": {},
+      "name": "reconcile-member-support-agent-intents",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Cancel/retrieve/record orphaned OpenAI background responses (crash recovery)",
+        "id": "reconcileBackgroundResponses",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileBackgroundResponses",
+    "template": {
+      "name": "reconcile-background-responses",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Poll Bedrock batch embeddings status",
+        "id": "poll_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "bedrock-embeddings-poll-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "bedrock-embeddings-batch",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "poll_dispatcher",
+    "template": {
+      "data": {},
+      "name": "poll_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Create new Bedrock batch embedding requests",
+        "id": "creation_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "bedrock-embeddings-batch",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "creation_dispatcher",
+    "template": {
+      "data": {},
+      "name": "creation_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Trigger creation_dispatcher when single embeddings backlog exceeds the backlog_threshold (default 1000, configurable via Dynamic Config)",
+        "id": "backlog_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "bedrock-embeddings-batch",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "backlog_dispatcher",
+    "template": {
+      "data": {},
+      "name": "backlog_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Stop and cancel Bedrock batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
+        "id": "stale_cleanup_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "bedrock-embeddings-batch",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "stale_cleanup_dispatcher",
+    "template": {
+      "data": {},
+      "name": "stale_cleanup_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "kind": "valkey-bloom-filter",
+        "rebuildInput": "url-blocklist",
+      },
+    ],
+    "queueName": "bloom-filters",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "0 3 * * 0",
+    },
+    "schedulerId": "rebuildUrlBlocklistBloomFilter",
+    "template": {
+      "data": {
+        "filter": "url-blocklist",
+      },
+      "name": "processRebuildBloomFilter",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "processRebuildBloomFilter__url-blocklist",
+          "mode": "simple",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "url-blocklist",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "kind": "valkey-bloom-filter",
+        "rebuildInput": "email-blocklist",
+      },
+    ],
+    "queueName": "bloom-filters",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "0 6 * * 0",
+    },
+    "schedulerId": "rebuildEmailBlocklistBloomFilter",
+    "template": {
+      "data": {
+        "filter": "email-blocklist",
+      },
+      "name": "processRebuildBloomFilter",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "processRebuildBloomFilter__email-blocklist",
+          "mode": "simple",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "email-blocklist",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "kind": "valkey-bloom-filter",
+        "rebuildInput": "embedding",
+      },
+    ],
+    "queueName": "bloom-filters",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "0 7 * * 0",
+    },
+    "schedulerId": "rebuildEmbeddingBloomFilter",
+    "template": {
+      "data": {},
+      "name": "processRebuildEmbeddingBloomFilter",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "bloom-filter__openai-text-embedding-3-small",
+          "mode": "simple",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "openai-text-embedding-3-small",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "kind": "valkey-bloom-filter",
+        "rebuildInput": "api-keys",
+      },
+    ],
+    "queueName": "bloom-filters",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "0 8 * * 0",
+    },
+    "schedulerId": "rebuildApiKeyBloomFilter",
+    "template": {
+      "data": {
+        "filter": "api-keys",
+      },
+      "name": "processRebuildBloomFilter",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "processRebuildBloomFilter__api-keys",
+          "mode": "simple",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "api-keys",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "bloom-filters-posts",
+        "kind": "backfill",
+      },
+      {
+        "kind": "valkey-bloom-filter",
+        "rebuildInput": "entity-cache",
+      },
+    ],
+    "queueName": "bloom-filters",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 4 * * 0",
+    },
+    "schedulerId": "backfillEntityCacheBloomFilter_posts",
+    "template": {
+      "data": {
+        "entityType": "posts",
+      },
+      "name": "processBackfillBloomFilter",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "processBackfillBloomFilter__posts",
+          "mode": "simple",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "entity-cache:posts",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "bloom-filters-topics",
+        "kind": "backfill",
+      },
+      {
+        "kind": "valkey-bloom-filter",
+        "rebuildInput": "entity-cache",
+      },
+    ],
+    "queueName": "bloom-filters",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "30 4 * * 0",
+    },
+    "schedulerId": "backfillEntityCacheBloomFilter_topics",
+    "template": {
+      "data": {
+        "entityType": "topics",
+      },
+      "name": "processBackfillBloomFilter",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "processBackfillBloomFilter__topics",
+          "mode": "simple",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "entity-cache:topics",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "bloom-filters-users",
+        "kind": "backfill",
+      },
+      {
+        "kind": "valkey-bloom-filter",
+        "rebuildInput": "entity-cache",
+      },
+    ],
+    "queueName": "bloom-filters",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 5 * * 0",
+    },
+    "schedulerId": "backfillEntityCacheBloomFilter_users",
+    "template": {
+      "data": {
+        "entityType": "users",
+      },
+      "name": "processBackfillBloomFilter",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "processBackfillBloomFilter__users",
+          "mode": "simple",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "entity-cache:users",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "bloom-filters-communities",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "bloom-filters",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "30 5 * * 0",
+    },
+    "schedulerId": "backfillEntityCacheBloomFilter_communities",
+    "template": {
+      "data": {
+        "entityType": "communities",
+      },
+      "name": "processBackfillBloomFilter",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "processBackfillBloomFilter__communities",
+          "mode": "simple",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "entity-cache:communities",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "bloom-filters-rss-feed-items",
+        "kind": "backfill",
+      },
+      {
+        "kind": "valkey-bloom-filter",
+        "rebuildInput": "entity-cache",
+      },
+    ],
+    "queueName": "bloom-filters",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 6 * * 0",
+    },
+    "schedulerId": "backfillEntityCacheBloomFilter_rss_feed_items",
+    "template": {
+      "data": {
+        "entityType": "rss_feed_items",
+      },
+      "name": "processBackfillBloomFilter",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "processBackfillBloomFilter__rss_feed_items",
+          "mode": "simple",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "entity-cache:rss_feed_items",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch HTML boilerplate removal",
+        "id": "boilerplate_removal_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 5 * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "crawl_html_boilerplate_removal",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 5 * * *",
+    },
+    "schedulerId": "boilerplate_removal_dispatcher",
+    "template": {
+      "data": {},
+      "name": "boilerplate_removal_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch hostname crawl jobs (daily)",
+        "id": "crawl_hostnames_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 2 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "crawl-hostnames-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "crawl_hostnames",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "0 2 * * *",
+    },
+    "schedulerId": "crawl_hostnames_dispatcher",
+    "template": {
+      "data": {},
+      "name": "crawl_hostnames_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch tier-1 hostname crawls (daily)",
+        "id": "crawl_tier1_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "30 2 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "crawl-tier1-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "crawl_hostnames",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "30 2 * * *",
+    },
+    "schedulerId": "crawl_tier1_dispatcher",
+    "template": {
+      "data": {},
+      "name": "crawl_tier1_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch tier-2 hostname crawls (weekly)",
+        "id": "crawl_tier2_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 3 * * 0",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "crawl-tier2-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "crawl_hostnames",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "0 3 * * 0",
+    },
+    "schedulerId": "crawl_tier2_dispatcher",
+    "template": {
+      "data": {},
+      "name": "crawl_tier2_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Refresh hostname crawler config (weekly)",
+        "id": "refresh_hostname_crawler_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 4 * * 1",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "crawl_hostnames",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "0 4 * * 1",
+    },
+    "schedulerId": "refresh_hostname_crawler_dispatcher",
+    "template": {
+      "data": {},
+      "name": "refresh_hostname_crawler_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Clean up old crawl data (daily)",
+        "id": "crawl_cleanup",
+        "kind": "scheduled-jobs",
+        "schedule": "30 3 * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "crawl_hostnames",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "30 3 * * *",
+    },
+    "schedulerId": "crawl_cleanup",
+    "template": {
+      "data": {},
+      "name": "crawl_cleanup",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch referral link crawling (weekly)",
+        "id": "crawl_referral_links_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 4 * * 0",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "crawl_referral_links",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 4 * * 0",
+    },
+    "schedulerId": "crawl_referral_links_dispatcher",
+    "template": {
+      "data": {},
+      "name": "crawl_referral_links_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch engagement onboarding emails",
+        "id": "dispatchEngagementEmails",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "emails",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "dispatchEngagementEmails",
+    "template": {
+      "data": {},
+      "name": "dispatchEngagementEmails",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch moderation summary emails",
+        "id": "dispatchCommunityModerationSummaryEmails",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "emails",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "dispatchCommunityModerationSummaryEmails",
+    "template": {
+      "data": {},
+      "name": "dispatchCommunityModerationSummaryEmails",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Drain durable post category finalizations",
+        "id": "reconcilePostCategoryFinalizations",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "entity-listeners",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "reconcilePostCategoryFinalizations",
+    "template": {
+      "data": {},
+      "name": "processReconcilePostCategoryFinalizations",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "entity-listeners:reconcile-post-category-finalizations",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "post-category-finalization-reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "entity-listener-reconciliation",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "entity-listeners",
+    "registration": "parallel",
+    "repeat": "[runtime repeat]",
+    "schedulerId": "entityListenerReconciliation",
+    "template": {
+      "data": {},
+      "name": "reconcileEntities",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch "find your friends" social matching",
+        "id": "dispatchFindYourFriends",
+        "kind": "scheduled-jobs",
+        "schedule": "0 3 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "find-your-friends-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "find-your-friends",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 3 * * *",
+    },
+    "schedulerId": "dispatchFindYourFriends",
+    "template": {
+      "data": {},
+      "name": "dispatchFindYourFriends",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Publish class-aggregated GlideMQ depth and staleness to CloudWatch",
+        "id": "publish-glidemq-stats",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "heartbeat",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "publish-glidemq-stats",
+    "template": {
+      "data": {},
+      "name": "publish-glidemq-stats",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Clean up abandoned image uploads",
+        "id": "cleanup-abandoned-uploads-schedule",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1h",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "images",
+    "registration": "parallel",
+    "repeat": {
+      "every": 3600000,
+    },
+    "schedulerId": "cleanup-abandoned-uploads-schedule",
+    "template": {
+      "data": {},
+      "name": "cleanup-abandoned-uploads",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Sync Kagi Small Web data",
+        "id": "kagi-smallweb-sync",
+        "kind": "scheduled-jobs",
+        "schedule": "0 5 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "kagi-smallweb-sync",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "kagi-smallweb",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 5 * * *",
+    },
+    "schedulerId": "kagi-smallweb-sync",
+    "template": {
+      "data": {},
+      "name": "sync",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 30000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending Apple App Store notifications",
+        "id": "appleNotificationRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "appleNotificationRecovery",
+    "template": {
+      "data": {},
+      "name": "recoverAppleNotifications",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Reconcile the Stripe membership catalog",
+        "id": "stripeCatalogReconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "stripeCatalogReconciliation",
+    "template": {
+      "data": {},
+      "name": "reconcileStripeMembershipCatalog",
+      "opts": {
+        "attempts": 5,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "stripe-catalog:voucha-web",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Expire elapsed administrator membership grants",
+        "id": "membershipGrantExpiry",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "membershipGrantExpiry",
+    "template": {
+      "data": {},
+      "name": "expireElapsedMemberships",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Deliver durable membership entitlement effects",
+        "id": "membershipEntitlementEffects",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "membershipEntitlementEffects",
+    "template": {
+      "data": {},
+      "name": "deliverMembershipEntitlementEffects",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Check membership renewals and send notifications",
+        "id": "renewalNotificationCheck",
+        "kind": "scheduled-jobs",
+        "schedule": "0 9 * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 9 * * *",
+    },
+    "schedulerId": "renewalNotificationCheck",
+    "template": {
+      "name": "processRenewalNotificationCheck",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending membership verification work",
+        "id": "membershipVerificationRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "membershipVerificationRecovery",
+    "template": {
+      "data": {},
+      "name": "recoverMembershipVerifications",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "stripe-webhook-recovery",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "stripeWebhookRecovery",
+    "template": {
+      "name": "recoverStripeWebhooks",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending browser-push intents after a worker or queue failure",
+        "id": "notification-push-intent-recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "notifications",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "notification-push-intent-recovery",
+    "template": {
+      "data": {},
+      "name": "processReconcileNotificationPushIntents",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch weekly community activity notifications",
+        "id": "community-activity-digest-weekly",
+        "kind": "scheduled-jobs",
+        "schedule": "0 9 * * 1",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "notifications",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 9 * * 1",
+    },
+    "schedulerId": "community-activity-digest-weekly",
+    "template": {
+      "data": {},
+      "name": "processCommunityActivityDigestScheduleTick",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "oauth-authorization-exchange-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "oauth-authorization-exchange",
+    "registration": "parallel",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "oauthAuthorizationExchangeDispatcher",
+    "template": {
+      "data": {},
+      "name": "dispatchOAuthAuthorizationExchanges",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Drain durable post publication reconciliation work",
+        "id": "reconcile-post-publication",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "post-publication",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "reconcile-post-publication",
+    "template": {
+      "data": {},
+      "name": "processReconcilePostPublication",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "post-publication:reconcile",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "publication-reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "jobType": "createPartitions",
+        "kind": "psql",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 0 1 * *",
+    },
+    "schedulerId": "create-partitions-monthly",
+    "template": {
+      "data": {},
+      "name": "createPartitions",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Refresh top-hashtag materialized view (hourly)",
+        "id": "refreshTopHashtags",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "refresh-top-hashtags",
+    "template": {
+      "data": {
+        "viewName": "mv_top_hashtags",
+      },
+      "name": "refreshMaterializedView",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "mv_refresh",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "jobType": "cleanupPartitions",
+        "kind": "psql",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 2 * * *",
+    },
+    "schedulerId": "cleanup-partitions-daily",
+    "template": {
+      "data": {},
+      "name": "cleanupPartitions",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Refresh RSS feed crawl-tier materialized view (nightly)",
+        "id": "refreshRssFeedCrawlTiers",
+        "kind": "scheduled-jobs",
+        "schedule": "0 1 * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 1 * * *",
+    },
+    "schedulerId": "refresh-rss-feed-crawl-tiers",
+    "template": {
+      "data": {
+        "viewName": "mv_rss_feed_crawl_tiers",
+      },
+      "name": "refreshMaterializedView",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "mv_refresh",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "production",
+    "operatorSurfaces": [
+      {
+        "description": "Enforce database and local analytics retention policies",
+        "id": "data-retention-cleanup-daily",
+        "kind": "scheduled-jobs",
+        "schedule": "0 4 * * * (prod only)",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 4 * * *",
+    },
+    "schedulerId": "data-retention-cleanup-daily",
+    "template": {
+      "data": {},
+      "name": "dataRetentionCleanup",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Reconcile denormalized post vote counters against the post_votes source of truth",
+        "id": "reconcile-vote-drift",
+        "kind": "scheduled-jobs",
+        "schedule": "0 6 * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 6 * * *",
+    },
+    "schedulerId": "reconcile-vote-drift",
+    "template": {
+      "data": {},
+      "name": "reconcileVoteDrift",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch RSS feed fetching",
+        "id": "dispatchRssFeeds",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "rss-feeds",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "dispatchRssFeeds",
+    "template": {
+      "data": {},
+      "name": "dispatchRssFeeds",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Drain durable RSS item category snapshots",
+        "id": "reconcileRssFeedItemCategorySnapshots",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "rss-feed-item-categories",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "reconcileRssFeedItemCategorySnapshots",
+    "template": {
+      "data": {},
+      "name": "processReconcileRssFeedItemCategorySnapshots",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "rss-feed-item-categories:reconcile-snapshots",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "snapshot-reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recover raw inbound support emails still present in S3",
+        "id": "ses-inbound-reconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "ses-inbound-reconciliation",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "ses_inbound",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "ses-inbound-reconciliation",
+    "template": {
+      "data": {},
+      "name": "reconcileInboundEmail",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "ses-inbound-reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Nightly sitemap backfill for the week",
+        "id": "sitemaps-backfill-processNightlyBackfillWeekDispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 7 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "sitemaps-nightly-week",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "sitemaps",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 7 * * *",
+    },
+    "schedulerId": "sitemaps-backfill-processNightlyBackfillWeekDispatcher",
+    "template": {
+      "name": "processNightlyBackfillWeekDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Weekly sitemap backfill for the month",
+        "id": "sitemaps-backfill-processWeeklyBackfillMonthDispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 7 * * 0",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "sitemaps-weekly-month",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "sitemaps",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 7 * * 0",
+    },
+    "schedulerId": "sitemaps-backfill-processWeeklyBackfillMonthDispatcher",
+    "template": {
+      "name": "processWeeklyBackfillMonthDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Monthly sitemap archive backfill",
+        "id": "sitemaps-backfill-processMonthlyBackfillArchiveDispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 7 1 * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "sitemaps-monthly-archive",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "sitemaps",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 7 1 * *",
+    },
+    "schedulerId": "sitemaps-backfill-processMonthlyBackfillArchiveDispatcher",
+    "template": {
+      "name": "processMonthlyBackfillArchiveDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Drain durable story post related URL projections",
+        "id": "reconcileStoryPostRelatedUrlProjections",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "story-post-related-url-projections",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "reconcileStoryPostRelatedUrlProjections",
+    "template": {
+      "data": {},
+      "name": "processReconcileStoryPostRelatedUrlProjections",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "story-post-related-url-projections:reconcile",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "story-post-related-url-projections",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Drain durable RSS category-mapping transitions for hashtag aliases",
+        "id": "reconcileTopicAliasCategoryMappings",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "topic-aliases",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "reconcileTopicAliasCategoryMappings",
+    "template": {
+      "data": {},
+      "name": "processReconcileTopicAliasCategoryMappings",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "topic-aliases:reconcile-category-mappings",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "category-mapping-reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Self-heal requested-but-not-completed Amex referral link unfurls (hourly)",
+        "id": "unfurl_referral_links_dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "unfurl_referral_links",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "unfurl_referral_links_dispatcher",
+    "template": {
+      "data": {},
+      "name": "unfurl_referral_links_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch URL/domain blacklist syncing (weekly)",
+        "id": "blacklistDispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 2 * * 0",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "urls-domains-blacklist",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 2 * * 0",
+    },
+    "schedulerId": "blacklistDispatcher",
+    "template": {
+      "data": {},
+      "name": "processBlacklistDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "user-deletion-recovery",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "user-deletions",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "userDeletionRecovery",
+    "template": {
+      "data": {},
+      "name": "recoverUserDeletions",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recalculate vote weights",
+        "id": "dailyVoteWeightRecalculation",
+        "kind": "scheduled-jobs",
+        "schedule": "0 4 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "vote-weight-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "vote-weight",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 4 * * *",
+    },
+    "schedulerId": "dailyVoteWeightRecalculation",
+    "template": {
+      "name": "processRecalculateVoteWeightDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch Wikipedia topic recommendations",
+        "id": "wikipedia-recommender-dispatch",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "wikipedia-recommender",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "wikipedia-recommender-dispatch",
+    "template": {
+      "data": {
+        "scheduled_at": "[runtime ISO timestamp]",
+      },
+      "name": "dispatch",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+]
+`;
+
+exports[`scheduled job manifest catalog > projects every scheduled API surface, including runtime generation recovery 1`] = `
+[
+  {
+    "description": "Recover abandoned durable ActivityPub inbox envelopes",
+    "id": "activitypub-inbox-recovery",
+    "job_name": "recoverDeliveries",
+    "queue_name": "activitypub-inbox",
+    "schedule": "every 5m",
+    "triggerName": "enqueueRecoverActivityPubInboxDeliveries",
+  },
+  {
+    "description": "Delete expired durable ActivityPub inbox envelopes",
+    "id": "activitypub-inbox-cleanup",
+    "job_name": "cleanupExpiredDeliveries",
+    "queue_name": "activitypub-inbox",
+    "schedule": "every 5m",
+    "triggerName": "enqueueCleanupExpiredActivityPubInboxDeliveries",
+  },
+  {
+    "description": "Recover raw inbound support emails still present in S3",
+    "id": "ses-inbound-reconciliation",
+    "job_name": "reconcileInboundEmail",
+    "queue_name": "ses_inbound",
+    "schedule": "every 5m",
+    "triggerName": "enqueueSesInboundReconcile",
+  },
+  {
+    "description": "Dispatch weekly community activity notifications",
+    "id": "community-activity-digest-weekly",
+    "job_name": "processCommunityActivityDigestScheduleTick",
+    "queue_name": "notifications",
+    "schedule": "0 9 * * 1",
+    "triggerName": "enqueueCommunityActivityDigestScheduleTick",
+  },
+  {
+    "description": "Re-enqueue pending browser-push intents after a worker or queue failure",
+    "id": "notification-push-intent-recovery",
+    "job_name": "processReconcileNotificationPushIntents",
+    "queue_name": "notifications",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileNotificationPushIntents",
+  },
+  {
+    "description": "Dispatch RSS feed fetching",
+    "id": "dispatchRssFeeds",
+    "job_name": "dispatchRssFeeds",
+    "queue_name": "rss-feeds",
+    "schedule": "* * * * *",
+    "triggerName": "enqueueDispatchRssFeeds",
+  },
+  {
+    "description": "Refresh RSS feed crawl-tier materialized view (nightly)",
+    "id": "refreshRssFeedCrawlTiers",
+    "job_name": "refreshMaterializedView",
+    "queue_name": "psql",
+    "schedule": "0 1 * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Refresh top-hashtag materialized view (hourly)",
+    "id": "refreshTopHashtags",
+    "job_name": "refreshMaterializedView",
+    "queue_name": "psql",
+    "schedule": "0 * * * *",
+    "triggerName": "enqueueRefreshTopHashtags",
+  },
+  {
+    "description": "Dispatch engagement onboarding emails",
+    "id": "dispatchEngagementEmails",
+    "job_name": "dispatchEngagementEmails",
+    "queue_name": "emails",
+    "schedule": "0 * * * *",
+    "triggerName": "enqueueDispatchEngagementEmails",
+  },
+  {
+    "description": "Dispatch moderation summary emails",
+    "id": "dispatchCommunityModerationSummaryEmails",
+    "job_name": "dispatchCommunityModerationSummaryEmails",
+    "queue_name": "emails",
+    "schedule": "* * * * *",
+    "triggerName": "enqueueDispatchCommunityModerationSummaryEmails",
+  },
+  {
+    "description": "Drain durable post category finalizations",
+    "id": "reconcilePostCategoryFinalizations",
+    "job_name": "processReconcilePostCategoryFinalizations",
+    "queue_name": "entity-listeners",
+    "schedule": "every 5m",
+    "triggerName": "enqueueReconcilePostCategoryFinalizations",
+  },
+  {
+    "description": "Dispatch Wikipedia topic recommendations",
+    "id": "wikipedia-recommender-dispatch",
+    "job_name": "dispatch",
+    "queue_name": "wikipedia-recommender",
+    "schedule": "0 * * * *",
+    "triggerName": "enqueueWikipediaRecommenderDispatch",
+  },
+  {
+    "description": "Clean up expired data export files",
+    "id": "account-data-requests-cleanup",
+    "job_name": "processCleanupExpiredExports",
+    "queue_name": "account-data-requests",
+    "schedule": "0 * * * *",
+    "triggerName": "enqueueCleanupExpiredExports",
+  },
+  {
+    "description": "Clean up abandoned image uploads",
+    "id": "cleanup-abandoned-uploads-schedule",
+    "job_name": "cleanup-abandoned-uploads",
+    "queue_name": "images",
+    "schedule": "every 1h",
+    "triggerName": "enqueueCleanupAbandonedUploads",
+  },
+  {
+    "description": "Recalculate vote weights",
+    "id": "dailyVoteWeightRecalculation",
+    "job_name": "processRecalculateVoteWeightDispatcher",
+    "queue_name": "vote-weight",
+    "schedule": "0 4 * * *",
+    "triggerName": "enqueueRecalculateVoteWeightDispatcher",
+  },
+  {
+    "description": "Enforce database and local analytics retention policies",
+    "id": "data-retention-cleanup-daily",
+    "job_name": "dataRetentionCleanup",
+    "queue_name": "psql",
+    "schedule": "0 4 * * * (prod only)",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Reconcile denormalized post vote counters against the post_votes source of truth",
+    "id": "reconcile-vote-drift",
+    "job_name": "reconcileVoteDrift",
+    "queue_name": "psql",
+    "schedule": "0 6 * * *",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Sync Kagi Small Web data",
+    "id": "kagi-smallweb-sync",
+    "job_name": "sync",
+    "queue_name": "kagi-smallweb",
+    "schedule": "0 5 * * *",
+    "triggerName": "enqueueKagiSmallWebSync",
+  },
+  {
+    "description": "Dispatch "find your friends" social matching",
+    "id": "dispatchFindYourFriends",
+    "job_name": "dispatchFindYourFriends",
+    "queue_name": "find-your-friends",
+    "schedule": "0 3 * * *",
+    "triggerName": "enqueueDispatchFindYourFriends",
+  },
+  {
+    "description": "Deliver durable membership entitlement effects",
+    "id": "membershipEntitlementEffects",
+    "job_name": "deliverMembershipEntitlementEffects",
+    "queue_name": "memberships",
+    "schedule": "every 1m",
+    "triggerName": "enqueueDeliverMembershipEntitlementEffects",
+  },
+  {
+    "description": "Expire elapsed administrator membership grants",
+    "id": "membershipGrantExpiry",
+    "job_name": "expireElapsedMemberships",
+    "queue_name": "memberships",
+    "schedule": "every 1m",
+    "triggerName": "enqueueExpireElapsedMemberships",
+  },
+  {
+    "description": "Re-enqueue pending Apple App Store notifications",
+    "id": "appleNotificationRecovery",
+    "job_name": "recoverAppleNotifications",
+    "queue_name": "memberships",
+    "schedule": "every 5m",
+    "triggerName": "enqueueRecoverAppleNotifications",
+  },
+  {
+    "description": "Re-enqueue pending membership verification work",
+    "id": "membershipVerificationRecovery",
+    "job_name": "recoverMembershipVerifications",
+    "queue_name": "memberships",
+    "schedule": "every 5m",
+    "triggerName": "enqueueRecoverMembershipVerifications",
+  },
+  {
+    "description": "Reconcile the Stripe membership catalog",
+    "id": "stripeCatalogReconciliation",
+    "job_name": "reconcileStripeMembershipCatalog",
+    "queue_name": "memberships",
+    "schedule": "every 5m",
+    "triggerName": "enqueueReconcileStripeMembershipCatalog",
+  },
+  {
+    "description": "Check membership renewals and send notifications",
+    "id": "renewalNotificationCheck",
+    "job_name": "processRenewalNotificationCheck",
+    "queue_name": "memberships",
+    "schedule": "0 9 * * *",
+    "triggerName": "enqueueRenewalNotificationCheck",
+  },
+  {
+    "description": "Dispatch URL/domain blacklist syncing (weekly)",
+    "id": "blacklistDispatcher",
+    "job_name": "processBlacklistDispatcher",
+    "queue_name": "urls-domains-blacklist",
+    "schedule": "0 2 * * 0",
+    "triggerName": "enqueueBlacklistDispatcher",
+  },
+  {
+    "description": "Drain durable RSS category-mapping transitions for hashtag aliases",
+    "id": "reconcileTopicAliasCategoryMappings",
+    "job_name": "processReconcileTopicAliasCategoryMappings",
+    "queue_name": "topic-aliases",
+    "schedule": "every 5m",
+    "triggerName": "enqueueReconcileTopicAliasCategoryMappings",
+  },
+  {
+    "description": "Drain durable RSS item category snapshots",
+    "id": "reconcileRssFeedItemCategorySnapshots",
+    "job_name": "processReconcileRssFeedItemCategorySnapshots",
+    "queue_name": "rss-feed-item-categories",
+    "schedule": "every 5m",
+    "triggerName": "enqueueReconcileRssFeedItemCategorySnapshots",
+  },
+  {
+    "description": "Drain durable post publication reconciliation work",
+    "id": "reconcile-post-publication",
+    "job_name": "processReconcilePostPublication",
+    "queue_name": "post-publication",
+    "schedule": "every 5m",
+    "triggerName": "enqueueReconcilePostPublication",
+  },
+  {
+    "description": "Drain durable story post related URL projections",
+    "id": "reconcileStoryPostRelatedUrlProjections",
+    "job_name": "processReconcileStoryPostRelatedUrlProjections",
+    "queue_name": "story-post-related-url-projections",
+    "schedule": "every 5m",
+    "triggerName": "enqueueReconcileStoryPostRelatedUrlProjections",
+  },
+  {
+    "description": "Re-enqueue undispatched AI moderation judgements (crash recovery)",
+    "id": "reconcileAutoDispatchJudgements",
+    "job_name": "reconcile-auto-dispatch-judgements",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileAutoDispatchJudgements",
+  },
+  {
+    "description": "Fail stale AI runtime generations after an interrupted worker",
+    "id": "reconcileRuntimeGenerations",
+    "job_name": "reconcile-runtime-generations",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileRuntimeGenerations",
+  },
+  {
+    "description": "Re-enqueue member-created support drafts after post-commit enqueue failures",
+    "id": "reconcileMemberSupportAgentIntents",
+    "job_name": "reconcile-member-support-agent-intents",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileMemberSupportAgentIntents",
+  },
+  {
+    "description": "Cancel/retrieve/record orphaned OpenAI background responses (crash recovery)",
+    "id": "reconcileBackgroundResponses",
+    "job_name": "reconcile-background-responses",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileBackgroundResponses",
+  },
+  {
+    "description": "Poll Bedrock batch embeddings status",
+    "id": "poll_dispatcher",
+    "job_name": "poll_dispatcher",
+    "queue_name": "bedrock-embeddings-batch",
+    "schedule": "* * * * *",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Create new Bedrock batch embedding requests",
+    "id": "creation_dispatcher",
+    "job_name": "creation_dispatcher",
+    "queue_name": "bedrock-embeddings-batch",
+    "schedule": "*/5 * * * *",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Trigger creation_dispatcher when single embeddings backlog exceeds the backlog_threshold (default 1000, configurable via Dynamic Config)",
+    "id": "backlog_dispatcher",
+    "job_name": "backlog_dispatcher",
+    "queue_name": "bedrock-embeddings-batch",
+    "schedule": "* * * * *",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Stop and cancel Bedrock batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
+    "id": "stale_cleanup_dispatcher",
+    "job_name": "stale_cleanup_dispatcher",
+    "queue_name": "bedrock-embeddings-batch",
+    "schedule": "0 * * * *",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Dispatch hostname crawl jobs (daily)",
+    "id": "crawl_hostnames_dispatcher",
+    "job_name": "crawl_hostnames_dispatcher",
+    "queue_name": "crawl_hostnames",
+    "schedule": "0 2 * * *",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Dispatch tier-1 hostname crawls (daily)",
+    "id": "crawl_tier1_dispatcher",
+    "job_name": "crawl_tier1_dispatcher",
+    "queue_name": "crawl_hostnames",
+    "schedule": "30 2 * * *",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Clean up old crawl data (daily)",
+    "id": "crawl_cleanup",
+    "job_name": "crawl_cleanup",
+    "queue_name": "crawl_hostnames",
+    "schedule": "30 3 * * *",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Dispatch HTML boilerplate removal",
+    "id": "boilerplate_removal_dispatcher",
+    "job_name": "boilerplate_removal_dispatcher",
+    "queue_name": "crawl_html_boilerplate_removal",
+    "schedule": "0 5 * * *",
+    "triggerName": "enqueueBoilerplateRemovalDispatcher",
+  },
+  {
+    "description": "Dispatch tier-2 hostname crawls (weekly)",
+    "id": "crawl_tier2_dispatcher",
+    "job_name": "crawl_tier2_dispatcher",
+    "queue_name": "crawl_hostnames",
+    "schedule": "0 3 * * 0",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Dispatch referral link crawling (weekly)",
+    "id": "crawl_referral_links_dispatcher",
+    "job_name": "crawl_referral_links_dispatcher",
+    "queue_name": "crawl_referral_links",
+    "schedule": "0 4 * * 0",
+    "triggerName": "enqueueCrawlReferralLinksDispatcher",
+  },
+  {
+    "description": "Refresh hostname crawler config (weekly)",
+    "id": "refresh_hostname_crawler_dispatcher",
+    "job_name": "refresh_hostname_crawler_dispatcher",
+    "queue_name": "crawl_hostnames",
+    "schedule": "0 4 * * 1",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Self-heal requested-but-not-completed Amex referral link unfurls (hourly)",
+    "id": "unfurl_referral_links_dispatcher",
+    "job_name": "unfurl_referral_links_dispatcher",
+    "queue_name": "unfurl_referral_links",
+    "schedule": "0 * * * *",
+    "triggerName": "enqueueUnfurlReferralLinksDispatcher",
+  },
+  {
+    "description": "Nightly sitemap backfill for the week",
+    "id": "sitemaps-backfill-processNightlyBackfillWeekDispatcher",
+    "job_name": "processNightlyBackfillWeekDispatcher",
+    "queue_name": "sitemaps",
+    "schedule": "0 7 * * *",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Weekly sitemap backfill for the month",
+    "id": "sitemaps-backfill-processWeeklyBackfillMonthDispatcher",
+    "job_name": "processWeeklyBackfillMonthDispatcher",
+    "queue_name": "sitemaps",
+    "schedule": "0 7 * * 0",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Monthly sitemap archive backfill",
+    "id": "sitemaps-backfill-processMonthlyBackfillArchiveDispatcher",
+    "job_name": "processMonthlyBackfillArchiveDispatcher",
+    "queue_name": "sitemaps",
+    "schedule": "0 7 1 * *",
+    "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Publish class-aggregated GlideMQ depth and staleness to CloudWatch",
+    "id": "publish-glidemq-stats",
+    "job_name": "publish-glidemq-stats",
+    "queue_name": "heartbeat",
+    "schedule": "every 5m",
+    "triggerName": "enqueueGlideMqStats",
+  },
+]
+`;

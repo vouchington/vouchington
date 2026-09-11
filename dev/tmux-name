@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() { echo "Usage: ./dev/tmux-name <name>"; }
+if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
+
+if [ "$#" -ne 1 ]; then
+  usage >&2
+  exit 2
+fi
+if [[ "$1" == -* ]]; then
+  echo "Error: unknown option: $1" >&2
+  usage >&2
+  exit 2
+fi
+
+name="$1"
+
+if [ -z "${TMUX_PANE:-}" ]; then
+  exit 0
+fi
+
+if ! command -v tmux >/dev/null 2>&1; then
+  echo "Error: tmux is not installed." >&2
+  exit 1
+fi
+
+window_id="$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}')"
+
+if [ -z "$name" ]; then
+  tmux set-window-option -t "$window_id" automatic-rename on
+else
+  tmux rename-window -t "$window_id" "$name"
+fi
+tmux select-pane -t "$TMUX_PANE" -T "$name"

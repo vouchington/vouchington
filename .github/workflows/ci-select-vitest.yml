@@ -1,0 +1,324 @@
+name: CI select-ci
+
+on:
+  workflow_call:
+    inputs:
+      detect-changes-outputs-skip-ci-producers:
+        required: true
+        type: string
+      detect-changes-outputs-docs-only:
+        required: true
+        type: string
+      detect-changes-outputs-has-vitest-full:
+        required: true
+        type: string
+      detect-changes-outputs-pr-labels-json:
+        required: true
+        type: string
+    outputs:
+      full-ci:
+        value: ${{ jobs.select-ci.outputs.full-ci }}
+      run-static-code-analysis:
+        value: ${{ jobs.select-ci.outputs.run-static-code-analysis }}
+      run-static-backend:
+        value: ${{ jobs.select-ci.outputs.run-static-backend }}
+      run-static-web:
+        value: ${{ jobs.select-ci.outputs.run-static-web }}
+      run-static-lambdas:
+        value: ${{ jobs.select-ci.outputs.run-static-lambdas }}
+      run-static-cloudflare-worker:
+        value: ${{ jobs.select-ci.outputs.run-static-cloudflare-worker }}
+      run-initialize-smoke-test:
+        value: ${{ jobs.select-ci.outputs.run-initialize-smoke-test }}
+      run-test-ts-shared:
+        value: ${{ jobs.select-ci.outputs.run-test-ts-shared }}
+      run-test-tooling:
+        value: ${{ jobs.select-ci.outputs.run-test-tooling }}
+      run-test-backend-modules:
+        value: ${{ jobs.select-ci.outputs.run-test-backend-modules }}
+      run-test-backend-unit:
+        value: ${{ jobs.select-ci.outputs.run-test-backend-unit }}
+      run-backend-smoke:
+        value: ${{ jobs.select-ci.outputs.run-backend-smoke }}
+      run-test-backend-credentialed:
+        value: ${{ jobs.select-ci.outputs.run-test-backend-credentialed }}
+      run-test-postgres-schema:
+        value: ${{ jobs.select-ci.outputs.run-test-postgres-schema }}
+      run-test-web:
+        value: ${{ jobs.select-ci.outputs.run-test-web }}
+      run-test-web-api:
+        value: ${{ jobs.select-ci.outputs.run-test-web-api }}
+      run-storybook:
+        value: ${{ jobs.select-ci.outputs.run-storybook }}
+      run-test-web-integration:
+        value: ${{ jobs.select-ci.outputs.run-test-web-integration }}
+      run-test-playwright:
+        value: ${{ jobs.select-ci.outputs.run-test-playwright }}
+      run-test-playwright-credentialed:
+        value: ${{ jobs.select-ci.outputs.run-test-playwright-credentialed }}
+      run-test-cloudflare-worker:
+        value: ${{ jobs.select-ci.outputs.run-test-cloudflare-worker }}
+      run-test-lambdas:
+        value: ${{ jobs.select-ci.outputs.run-test-lambdas }}
+      run-test-explain-analyze:
+        value: ${{ jobs.select-ci.outputs.run-test-explain-analyze }}
+      run-test-portability:
+        value: ${{ jobs.select-ci.outputs.run-test-portability }}
+      run-build-backend:
+        value: ${{ jobs.select-ci.outputs.run-build-backend }}
+      run-build-web:
+        value: ${{ jobs.select-ci.outputs.run-build-web }}
+      full-suite:
+        value: ${{ jobs.select-ci.outputs.full-suite }}
+      reason:
+        value: ${{ jobs.select-ci.outputs.reason }}
+      coverage-plan:
+        value: ${{ jobs.select-ci.outputs.coverage-plan }}
+      shard-total-test-web:
+        value: ${{ jobs.select-ci.outputs.shard-total-test-web }}
+      files-test-web:
+        value: ${{ jobs.select-ci.outputs.files-test-web }}
+      full-test-web:
+        value: ${{ jobs.select-ci.outputs.full-test-web }}
+      run-tests-test-web:
+        value: ${{ jobs.select-ci.outputs.run-tests-test-web }}
+      skip-test-web:
+        value: ${{ jobs.select-ci.outputs.skip-test-web }}
+      shard-total-test-web-api:
+        value: ${{ jobs.select-ci.outputs.shard-total-test-web-api }}
+      files-test-web-api:
+        value: ${{ jobs.select-ci.outputs.files-test-web-api }}
+      full-test-web-api:
+        value: ${{ jobs.select-ci.outputs.full-test-web-api }}
+      run-tests-test-web-api:
+        value: ${{ jobs.select-ci.outputs.run-tests-test-web-api }}
+      skip-test-web-api:
+        value: ${{ jobs.select-ci.outputs.skip-test-web-api }}
+      shard-total-test-backend-unit:
+        value: ${{ jobs.select-ci.outputs.shard-total-test-backend-unit }}
+      files-test-backend-unit:
+        value: ${{ jobs.select-ci.outputs.files-test-backend-unit }}
+      full-test-backend-unit:
+        value: ${{ jobs.select-ci.outputs.full-test-backend-unit }}
+      run-tests-test-backend-unit:
+        value: ${{ jobs.select-ci.outputs.run-tests-test-backend-unit }}
+      skip-test-backend-unit:
+        value: ${{ jobs.select-ci.outputs.skip-test-backend-unit }}
+      storybook-browser-files:
+        value: ${{ jobs.select-ci.outputs.storybook-browser-files }}
+      storybook-browser-mode:
+        value: ${{ jobs.select-ci.outputs.storybook-browser-mode }}
+      full-storybook:
+        value: ${{ jobs.select-ci.outputs.full-storybook }}
+      skip-test-ts-shared:
+        value: ${{ jobs.select-ci.outputs.skip-test-ts-shared }}
+      skip-test-tooling:
+        value: ${{ jobs.select-ci.outputs.skip-test-tooling }}
+      skip-test-backend-modules:
+        value: ${{ jobs.select-ci.outputs.skip-test-backend-modules }}
+      skip-test-backend-credentialed:
+        value: ${{ jobs.select-ci.outputs.skip-test-backend-credentialed }}
+      skip-test-postgres-schema:
+        value: ${{ jobs.select-ci.outputs.skip-test-postgres-schema }}
+      skip-test-web-integration:
+        value: ${{ jobs.select-ci.outputs.skip-test-web-integration }}
+      skip-test-cloudflare-worker:
+        value: ${{ jobs.select-ci.outputs.skip-test-cloudflare-worker }}
+      skip-test-lambdas:
+        value: ${{ jobs.select-ci.outputs.skip-test-lambdas }}
+      skip-test-portability:
+        value: ${{ jobs.select-ci.outputs.skip-test-portability }}
+      files-test-ts-shared:
+        value: ${{ jobs.select-ci.outputs.files-test-ts-shared }}
+      files-test-tooling:
+        value: ${{ jobs.select-ci.outputs.files-test-tooling }}
+      files-test-backend-modules:
+        value: ${{ jobs.select-ci.outputs.files-test-backend-modules }}
+      files-test-backend-credentialed:
+        value: ${{ jobs.select-ci.outputs.files-test-backend-credentialed }}
+      files-test-postgres-schema:
+        value: ${{ jobs.select-ci.outputs.files-test-postgres-schema }}
+      files-test-web-integration:
+        value: ${{ jobs.select-ci.outputs.files-test-web-integration }}
+      files-test-cloudflare-worker:
+        value: ${{ jobs.select-ci.outputs.files-test-cloudflare-worker }}
+      files-test-lambdas:
+        value: ${{ jobs.select-ci.outputs.files-test-lambdas }}
+      files-test-portability:
+        value: ${{ jobs.select-ci.outputs.files-test-portability }}
+      full-test-ts-shared:
+        value: ${{ jobs.select-ci.outputs.full-test-ts-shared }}
+      full-test-tooling:
+        value: ${{ jobs.select-ci.outputs.full-test-tooling }}
+      full-test-backend-modules:
+        value: ${{ jobs.select-ci.outputs.full-test-backend-modules }}
+      run-tests-test-backend-modules:
+        value: ${{ jobs.select-ci.outputs.run-tests-test-backend-modules }}
+      full-test-backend-credentialed:
+        value: ${{ jobs.select-ci.outputs.full-test-backend-credentialed }}
+      full-test-postgres-schema:
+        value: ${{ jobs.select-ci.outputs.full-test-postgres-schema }}
+      run-tests-test-postgres-schema:
+        value: ${{ jobs.select-ci.outputs.run-tests-test-postgres-schema }}
+      full-test-web-integration:
+        value: ${{ jobs.select-ci.outputs.full-test-web-integration }}
+      shard-total-test-web-integration:
+        value: ${{ jobs.select-ci.outputs.shard-total-test-web-integration }}
+      run-tests-test-web-integration:
+        value: ${{ jobs.select-ci.outputs.run-tests-test-web-integration }}
+      full-test-cloudflare-worker:
+        value: ${{ jobs.select-ci.outputs.full-test-cloudflare-worker }}
+      run-tests-test-cloudflare-worker:
+        value: ${{ jobs.select-ci.outputs.run-tests-test-cloudflare-worker }}
+      full-test-lambdas:
+        value: ${{ jobs.select-ci.outputs.full-test-lambdas }}
+      run-tests-test-lambdas:
+        value: ${{ jobs.select-ci.outputs.run-tests-test-lambdas }}
+      full-test-portability:
+        value: ${{ jobs.select-ci.outputs.full-test-portability }}
+permissions: {}
+
+jobs:
+  select-ci:
+    if: >-
+      !cancelled() &&
+      github.event_name == 'pull_request' &&
+      inputs.detect-changes-outputs-skip-ci-producers != 'true' &&
+      (inputs.detect-changes-outputs-docs-only != 'true' ||
+        inputs.detect-changes-outputs-has-vitest-full == 'true')
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      full-ci: ${{ steps.select.outputs.full-ci }}
+      run-static-code-analysis: ${{ steps.select.outputs.run-static-code-analysis }}
+      run-static-backend: ${{ steps.select.outputs.run-static-backend }}
+      run-static-web: ${{ steps.select.outputs.run-static-web }}
+      run-static-lambdas: ${{ steps.select.outputs.run-static-lambdas }}
+      run-static-cloudflare-worker: ${{ steps.select.outputs.run-static-cloudflare-worker }}
+      run-initialize-smoke-test: ${{ steps.select.outputs.run-initialize-smoke-test }}
+      run-test-ts-shared: ${{ steps.select.outputs.run-test-ts-shared }}
+      run-test-tooling: ${{ steps.select.outputs.run-test-tooling }}
+      run-test-backend-modules: ${{ steps.select.outputs.run-test-backend-modules }}
+      run-test-backend-unit: ${{ steps.select.outputs.run-test-backend-unit }}
+      run-backend-smoke: ${{ steps.select.outputs.run-backend-smoke }}
+      run-test-backend-credentialed: ${{ steps.select.outputs.run-test-backend-credentialed }}
+      run-test-postgres-schema: ${{ steps.select.outputs.run-test-postgres-schema }}
+      run-test-web: ${{ steps.select.outputs.run-test-web }}
+      run-test-web-api: ${{ steps.select.outputs.run-test-web-api }}
+      run-storybook: ${{ steps.select.outputs.run-storybook }}
+      run-test-web-integration: ${{ steps.select.outputs.run-test-web-integration }}
+      run-test-playwright: ${{ steps.select.outputs.run-test-playwright }}
+      run-test-playwright-credentialed: ${{ steps.select.outputs.run-test-playwright-credentialed }}
+      run-test-cloudflare-worker: ${{ steps.select.outputs.run-test-cloudflare-worker }}
+      run-test-lambdas: ${{ steps.select.outputs.run-test-lambdas }}
+      run-test-explain-analyze: ${{ steps.select.outputs.run-test-explain-analyze }}
+      run-test-portability: ${{ steps.select.outputs.run-test-portability }}
+      run-build-backend: ${{ steps.select.outputs.run-build-backend }}
+      run-build-web: ${{ steps.select.outputs.run-build-web }}
+      full-suite: ${{ steps.select.outputs.full-suite }}
+      reason: ${{ steps.select.outputs.reason }}
+      coverage-plan: ${{ steps.select.outputs.coverage-plan }}
+      shard-total-test-web: ${{ steps.select.outputs.shard-total-test-web }}
+      files-test-web: ${{ steps.select.outputs.files-test-web }}
+      full-test-web: ${{ steps.select.outputs.full-test-web }}
+      run-tests-test-web: ${{ steps.select.outputs.run-tests-test-web }}
+      skip-test-web: ${{ steps.select.outputs.skip-test-web }}
+      shard-total-test-web-api: ${{ steps.select.outputs.shard-total-test-web-api }}
+      files-test-web-api: ${{ steps.select.outputs.files-test-web-api }}
+      full-test-web-api: ${{ steps.select.outputs.full-test-web-api }}
+      run-tests-test-web-api: ${{ steps.select.outputs.run-tests-test-web-api }}
+      skip-test-web-api: ${{ steps.select.outputs.skip-test-web-api }}
+      shard-total-test-backend-unit: ${{ steps.select.outputs.shard-total-test-backend-unit }}
+      files-test-backend-unit: ${{ steps.select.outputs.files-test-backend-unit }}
+      full-test-backend-unit: ${{ steps.select.outputs.full-test-backend-unit }}
+      run-tests-test-backend-unit: ${{ steps.select.outputs.run-tests-test-backend-unit }}
+      skip-test-backend-unit: ${{ steps.select.outputs.skip-test-backend-unit }}
+      storybook-browser-files: ${{ steps.select.outputs.storybook-browser-files }}
+      storybook-browser-mode: ${{ steps.select.outputs.storybook-browser-mode }}
+      full-storybook: ${{ steps.select.outputs.full-storybook }}
+      skip-test-ts-shared: ${{ steps.select.outputs.skip-test-ts-shared }}
+      skip-test-tooling: ${{ steps.select.outputs.skip-test-tooling }}
+      skip-test-backend-modules: ${{ steps.select.outputs.skip-test-backend-modules }}
+      skip-test-backend-credentialed: ${{ steps.select.outputs.skip-test-backend-credentialed }}
+      skip-test-postgres-schema: ${{ steps.select.outputs.skip-test-postgres-schema }}
+      skip-test-web-integration: ${{ steps.select.outputs.skip-test-web-integration }}
+      skip-test-cloudflare-worker: ${{ steps.select.outputs.skip-test-cloudflare-worker }}
+      skip-test-lambdas: ${{ steps.select.outputs.skip-test-lambdas }}
+      skip-test-portability: ${{ steps.select.outputs.skip-test-portability }}
+      files-test-ts-shared: ${{ steps.select.outputs.files-test-ts-shared }}
+      files-test-tooling: ${{ steps.select.outputs.files-test-tooling }}
+      files-test-backend-modules: ${{ steps.select.outputs.files-test-backend-modules }}
+      files-test-backend-credentialed: ${{ steps.select.outputs.files-test-backend-credentialed }}
+      files-test-postgres-schema: ${{ steps.select.outputs.files-test-postgres-schema }}
+      files-test-web-integration: ${{ steps.select.outputs.files-test-web-integration }}
+      files-test-cloudflare-worker: ${{ steps.select.outputs.files-test-cloudflare-worker }}
+      files-test-lambdas: ${{ steps.select.outputs.files-test-lambdas }}
+      files-test-portability: ${{ steps.select.outputs.files-test-portability }}
+      full-test-ts-shared: ${{ steps.select.outputs.full-test-ts-shared }}
+      full-test-tooling: ${{ steps.select.outputs.full-test-tooling }}
+      full-test-backend-modules: ${{ steps.select.outputs.full-test-backend-modules }}
+      run-tests-test-backend-modules: ${{ steps.select.outputs.run-tests-test-backend-modules }}
+      full-test-backend-credentialed: ${{ steps.select.outputs.full-test-backend-credentialed }}
+      full-test-postgres-schema: ${{ steps.select.outputs.full-test-postgres-schema }}
+      run-tests-test-postgres-schema: ${{ steps.select.outputs.run-tests-test-postgres-schema }}
+      full-test-web-integration: ${{ steps.select.outputs.full-test-web-integration }}
+      shard-total-test-web-integration: ${{ steps.select.outputs.shard-total-test-web-integration }}
+      run-tests-test-web-integration: ${{ steps.select.outputs.run-tests-test-web-integration }}
+      full-test-cloudflare-worker: ${{ steps.select.outputs.full-test-cloudflare-worker }}
+      run-tests-test-cloudflare-worker: ${{ steps.select.outputs.run-tests-test-cloudflare-worker }}
+      full-test-lambdas: ${{ steps.select.outputs.full-test-lambdas }}
+      run-tests-test-lambdas: ${{ steps.select.outputs.run-tests-test-lambdas }}
+      full-test-portability: ${{ steps.select.outputs.full-test-portability }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        timeout-minutes: 3
+        with:
+          deepen: 'true'
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Select Vitest tests
+        id: select
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TOPOLOGY_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          TOPOLOGY_HEAD_SHA: ${{ github.sha }}
+          PR_LABELS: ${{ inputs.detect-changes-outputs-pr-labels-json || '[]' }}
+        run: node ci/vitest/ci-select.mts
+      - name: Upload Vitest test plan
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: vitest-test-plan
+          path: |
+            vitest-test-plan.json
+            vitest-test-plan.md
+          if-no-files-found: ignore
+          retention-days: 1
+      - name: Upload CI topology impact
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: ci-topology-impact
+          path: |
+            ci-topology-impact.json
+            ci-topology-impact.md
+          if-no-files-found: ignore
+          retention-days: 1

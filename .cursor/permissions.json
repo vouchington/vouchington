@@ -1,0 +1,26 @@
+{
+  "mcpAllowlist": [
+    "agent-blackboard:entry_append",
+    "agent-blackboard:entry_get",
+    "agent-blackboard:session_archive",
+    "agent-blackboard:session_create",
+    "agent-blackboard:session_ensure",
+    "agent-blackboard:session_patch",
+    "agent-blackboard:session_search",
+    "agent-blackboard:snapshot_export"
+  ],
+  "autoRun": {
+    "allow_instructions": [
+      "Allow pnpm, git, gh, rtk, node, cargo, docker, npx of known local tools, and ./dev/* scripts used in the Voucha local loop.",
+      "Allow git fetch origin, git rebase origin/main, and git push --force-with-lease after a rebase.",
+      "Allow node dev/pr-description.mts and node dev/plan-issue.mts."
+    ],
+    "block_instructions": [
+      "Every git push --force or git push -f without --force-with-lease should go through approval first.",
+      "Every git commit --amend should go through approval first.",
+      "Every command that bypasses git hooks with SKIP_PREPUSH, HUSKY=0, or --no-verify should go through approval first.",
+      "Every manual next dev or wrangler dev should go through approval first; use ./dev/initialize web then ./dev/tmux instead.",
+      "Every sudo command and every write under ~/.ssh or ~/.gitconfig should go through approval first."
+    ]
+  }
+}

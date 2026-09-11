@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+usage() { printf '%s\n' 'Usage: ./dev/benchmark-topic-metrics --label baseline|candidate'; }
+if [ "$#" -eq 1 ] && { [ "$1" = --help ] || [ "$1" = -h ]; }; then usage; exit 0; fi
+if [ "$#" -ne 2 ] || [ "$1" != --label ] || { [ "$2" != baseline ] && [ "$2" != candidate ]; }; then usage >&2; exit 2; fi
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+if [ -z "${DATABASE_URL:-}" ] && [ -f "$root/.env" ]; then
+  set -a
+  source "$root/.env"
+  set +a
+fi
+# shellcheck source=dev/lib/refuse-on-main.sh
+source "$root/dev/lib/refuse-on-main.sh"
+# shellcheck source=dev/lib/db-target.sh
+source "$root/dev/lib/db-target.sh"
+refuse_on_main "benchmark-topic-metrics" "$root"
+dev_db_target_resolve cleanup
+dev_db_target_is_local || { echo 'Error: local DATABASE_URL required; remote opt-ins are ignored.' >&2; exit 1; }
+source_db=${DEV_DB_TARGET_DB_NAME:?DATABASE_URL must include a database}
+benchmark_db="${source_db}_topic_metrics_${2}"
+[ "$benchmark_db" != "$source_db" ] || { echo 'Error: benchmark DB must be a sibling.' >&2; exit 1; }
+BENCHMARK_TOPIC_METRICS_SOURCE_DB="$source_db" BENCHMARK_TOPIC_METRICS_DB="$benchmark_db" BENCHMARK_TOPIC_METRICS_LABEL="$2" node "$root/backend/scripts/explain-analyze/benchmarks/topic-metrics/run.mts"

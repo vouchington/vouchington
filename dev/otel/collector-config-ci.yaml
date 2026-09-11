@@ -1,0 +1,43 @@
+# OTel Collector config for main-branch Playwright observability in CI.
+# The workflow mounts /otel-output and uploads these files to S3 after the run.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+  filter/drop_health:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["http.route"] == "/infra/ping"'
+
+exporters:
+  file/traces:
+    path: /otel-output/traces.json
+  file/logs:
+    path: /otel-output/logs.json
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, filter/drop_health]
+      exporters: [file/traces]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file/logs]

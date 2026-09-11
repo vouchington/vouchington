@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Classify the worktree against origin/main before a new planning or implementation task.
+# Called by Claude Code and Codex hooks at session start; stdout is injected as context.
+#
+# Emits hookSpecificOutput JSON when the base is ahead, behind, diverged, dirty, or
+# cannot be refreshed. Exits silently only when the clean worktree matches origin/main,
+# during compaction, or outside a git repository.
+#
+# Environment:
+#   CHECK_FRESH_BASE_SKIP_FETCH=1  Skip the git fetch (for offline tests).
+#
+# Known limitation: the `source: "compact"` bail-out relies on Claude Code's
+# SessionStart payload schema. Codex may not emit a matching `.source` field on
+# post-compaction restarts; in that case agents would receive an extra divergence
+# warning after compaction, which is harmless noise but not ideal.
+
+if [ -t 0 ]; then
+  PAYLOAD="{}"
+else
+  PAYLOAD="$(cat)"
+fi
+
+# Bail out silently if the payload signals a mid-session compaction restart —
+# those are not new tasks and the worktree state hasn't changed.
+SOURCE="$(printf '%s' "$PAYLOAD" | jq -r '.source // empty' 2>/dev/null || true)"
+if [ "$SOURCE" = "compact" ]; then
+  exit 0
+fi
+
+# Bail out silently when not inside a git repository.
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  exit 0
+fi
+
+emit_context() {
+  jq -n --arg m "$1" \
+    '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":$m}}'
+}
+
+FETCH_STATE="skipped"
+if [ -z "${CHECK_FRESH_BASE_SKIP_FETCH:-}" ]; then
+  FETCH_STATE="fresh"
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 8 git fetch origin +main:refs/remotes/origin/main --quiet 2>/dev/null || FETCH_STATE="failed"
+  elif command -v gtimeout >/dev/null 2>&1; then
+    gtimeout 8 git fetch origin +main:refs/remotes/origin/main --quiet 2>/dev/null || FETCH_STATE="failed"
+  else
+    git fetch origin +main:refs/remotes/origin/main --quiet 2>/dev/null || FETCH_STATE="failed"
+  fi
+fi
+
+BRANCH="$(git branch --show-current 2>/dev/null || true)"
+if [ -z "$BRANCH" ]; then
+  BRANCH="detached HEAD"
+fi
+
+if WORKTREE_STATUS="$(git status --porcelain --untracked-files=normal 2>/dev/null)"; then
+  if [ -n "$WORKTREE_STATUS" ]; then
+    TREE_STATE="dirty"
+  else
+    TREE_STATE="clean"
+  fi
+else
+  TREE_STATE="unknown"
+fi
+
+GUIDANCE="For a new task in Plan Mode, do not reset while planning. Treat \`origin/main\` as the source of truth and inspect relevant files from \`origin/main\` with \`git diff\` or \`git show\`; after the plan is accepted, run unforced \`./dev/reset-worktree\` before editing. For resumed work, preserve the current branch and rebase it onto \`origin/main\` after the plan is accepted. If the working tree is dirty or the task intent is ambiguous, ask whether this is new or resumed work. Never infer \`--force\`."
+
+if ! git rev-parse --verify --quiet refs/remotes/origin/main >/dev/null 2>&1; then
+  emit_context "⚠️  Worktree base check: branch \`${BRANCH}\`; working tree is ${TREE_STATE}; \`origin/main\` is unavailable, so freshness is unknown. Retry \`git fetch origin\` before relying on the current checkout. ${GUIDANCE}"
+  exit 0
+fi
+
+HEAD="$(git rev-parse HEAD 2>/dev/null || true)"
+BASE="$(git rev-parse refs/remotes/origin/main 2>/dev/null || true)"
+
+# A failed refresh means the cached equality is not sufficient evidence of freshness.
+if [ "$HEAD" = "$BASE" ] && [ "$TREE_STATE" = "clean" ] && [ "$FETCH_STATE" != "failed" ]; then
+  exit 0
+fi
+
+read -r BEHIND AHEAD < <(git rev-list --left-right --count "refs/remotes/origin/main...HEAD" 2>/dev/null || echo "? ?")
+
+if [ "$AHEAD" = "0" ] && [ "$BEHIND" = "0" ]; then
+  RELATION="matches"
+elif [ "$AHEAD" = "0" ] && [ "$BEHIND" != "?" ]; then
+  RELATION="is behind"
+elif [ "$BEHIND" = "0" ] && [ "$AHEAD" != "?" ]; then
+  RELATION="is ahead of"
+elif [ "$AHEAD" != "?" ] && [ "$BEHIND" != "?" ]; then
+  RELATION="has diverged from"
+else
+  RELATION="could not be compared with"
+fi
+
+FETCH_WARNING=""
+if [ "$FETCH_STATE" = "failed" ]; then
+  FETCH_WARNING=" The refresh of \`origin/main\` failed, so freshness is unknown. Retry \`git fetch origin\` before relying on this comparison."
+fi
+
+emit_context "⚠️  Worktree base check: branch \`${BRANCH}\` ${RELATION} \`origin/main\` (${AHEAD} ahead, ${BEHIND} behind); working tree is ${TREE_STATE}.${FETCH_WARNING} ${GUIDANCE}"

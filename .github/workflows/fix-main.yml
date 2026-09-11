@@ -1,0 +1,474 @@
+name: Automation Fix Main
+
+on:
+  workflow_run:
+    workflows:
+      - GitHub Actions Static Analysis
+      - Gitleaks
+      - Lint Links
+      - Portability Tests
+      - 'Main CI (backend)'
+      - 'Main CI (checks)'
+      - 'Main CI (cloudflare-worker)'
+      - 'Main CI (lambdas)'
+      - 'Main CI (storybook)'
+      - 'Main CI (web)'
+      - Static Code Analysis
+      - 'Sync Articles'
+      - 'Docs Publish'
+      - 'Dispatch completed deploy'
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: fix-main-${{ github.event.workflow_run.event }}-${{ github.event.workflow_run.workflow_id }}-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  triage-and-rerun:
+    name: Triage failure
+    if: >-
+      vars.HARNESS_DISPATCH_ENABLED == 'true' &&
+      vars.HARNESS_FIX_MAIN_ENABLED == 'true' &&
+      (
+        github.event.workflow_run.event == 'push' ||
+        (
+          github.event.workflow_run.event == 'workflow_run' &&
+          github.event.workflow_run.name == 'Dispatch completed deploy'
+        )
+      ) &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      contains(fromJSON('["failure", "timed_out", "cancelled"]'),
+               github.event.workflow_run.conclusion)
+    runs-on: [self-hosted]
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      should_dispatch: ${{ steps.triage.outputs.should_dispatch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          install-scripts: 'false'
+          runner-lifecycle: persistent
+      - name: Revalidate source run
+        id: source-state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node ci/source-run-state.mts
+      - name: Decide transient retry
+        id: decide
+        if: steps.source-state.outputs.current == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: node ci/transient-retry/decide.mts
+      - name: Rerun targeted job on transient match
+        if: >-
+          steps.source-state.outputs.current == 'true' &&
+          steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Matched rule: ${{ steps.decide.outputs.matched_rule }}"
+          gh run rerun --repo "$GITHUB_REPOSITORY" --job "${{ steps.decide.outputs.rerun_job_id }}"
+      - name: Rerun workflow on transient match
+        if: >-
+          steps.source-state.outputs.current == 'true' &&
+          steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          echo "Matched rule: ${{ steps.decide.outputs.matched_rule }}"
+          gh run rerun --repo "$GITHUB_REPOSITORY" "$WORKFLOW_RUN_ID"
+      - name: Set should_dispatch output
+        id: triage
+        env:
+          # Independent of HARNESS_DISPATCH_ENABLED (the job-level gate above,
+          # which also covers safe rerun steps): this
+          # second gate lets retries run with Harness dispatch to a new PR/issue
+          # kept off, or vice versa.
+          HARNESS_AGENT_DISPATCH_ENABLED: ${{ vars.HARNESS_AGENT_DISPATCH_ENABLED }}
+        run: |
+          if [[ "${{ steps.source-state.outputs.current }}" == "true" && "${{ steps.decide.outputs.decision }}" == "dispatch" && "$HARNESS_AGENT_DISPATCH_ENABLED" == "true" ]]; then
+            echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  related-candidates:
+    name: Find related open PRs or issues
+    needs: [triage-and-rerun]
+    if: needs.triage-and-rerun.outputs.should_dispatch == 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      related-candidates: ${{ steps.prompt-context.outputs.related-candidates }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          install-scripts: 'false'
+          runner-lifecycle: persistent
+      - uses: jonathanong/auto-harness/actions/harness-prompt-context@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+        id: prompt-context
+        with:
+          check-issues: 'true'
+          check-prs: 'true'
+          related-title-key: 'Automation fix: ${{ github.event.workflow_run.name }}'
+          related-extra-labels: ''
+          github-token: ${{ github.token }}
+
+  render-prompt:
+    name: Render automation prompt
+    needs: [triage-and-rerun, related-candidates]
+    if: >-
+      !cancelled() &&
+      needs.triage-and-rerun.outputs.should_dispatch == 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      prompt: ${{ steps.render.outputs.prompt }}
+      source-current: ${{ steps.source-state.outputs.current }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          install-scripts: 'false'
+          runner-lifecycle: persistent
+
+      - name: Revalidate source run
+        id: source-state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node ci/source-run-state.mts
+
+      - name: Render prompt
+        id: render
+        if: steps.source-state.outputs.current == 'true'
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+        with:
+          template: docs/prompts/automation/fix-main.md
+          vars: |
+            WORKFLOW_NAME=${{ github.event.workflow_run.name }}
+            RUN_URL=${{ github.event.workflow_run.html_url }}
+            RUN_ID=${{ github.event.workflow_run.id }}
+            COMMIT_SHA=${{ github.event.workflow_run.head_sha }}
+            RELATED_CANDIDATES=${{ needs.related-candidates.outputs.related-candidates || '[]' }}
+
+  dispatch:
+    name: Harness dispatch
+    needs: [triage-and-rerun, related-candidates, render-prompt]
+    if: >-
+      !cancelled() &&
+      needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
+      needs.render-prompt.result == 'success' &&
+      needs.render-prompt.outputs.source-current == 'true'
+    uses: ./.github/workflows/harness-dispatch.yml
+    permissions:
+      contents: read
+    secrets:
+      HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
+    with:
+      surface-gate: HARNESS_FIX_MAIN_ENABLED
+      agent-ref: ${{ github.event.workflow_run.head_sha }}
+      expected-head-sha: ${{ github.event.workflow_run.head_sha }}
+      concurrency-id: filaments:fix-main:${{ github.event.workflow_run.workflow_id }}:${{ github.event.workflow_run.head_sha }}
+      publish-contract: fix-main
+      publish-base-ref: main
+      publish-title-prefix: 'Automation fix: ${{ github.event.workflow_run.name }} @ ${{ github.event.workflow_run.head_sha }}'
+      publish-title-suffix: '(failing run #${{ github.event.workflow_run.id }})'
+      publish-duplicate-key: 'Automation fix: ${{ github.event.workflow_run.name }} @ ${{ github.event.workflow_run.head_sha }}'
+      publish-related-candidates: ${{ needs.related-candidates.outputs.related-candidates || '[]' }}
+      allow-duplicate-issue-completion: true
+      pr-label: automation:auto-fix
+      source-run-id: ${{ github.event.workflow_run.id }}
+      source-run-attempt: ${{ github.event.workflow_run.run_attempt }}
+      source-run-conclusion: ${{ github.event.workflow_run.conclusion }}
+      slack-source: |
+        *Source:* `${{ github.event.workflow_run.name }}` failed on `main`
+        *Failing run:* ${{ github.event.workflow_run.html_url }}
+        *Failing commit:* `${{ github.event.workflow_run.head_sha }}`
+      prompt: ${{ needs.render-prompt.outputs.prompt }}
+
+  classify-self-failure:
+    name: Classify self failure
+    needs: [triage-and-rerun, related-candidates, render-prompt, dispatch]
+    if: >-
+      always() &&
+      needs.triage-and-rerun.result == 'success' &&
+      needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
+      (
+        needs.related-candidates.result == 'failure' ||
+        needs.related-candidates.result == 'cancelled' ||
+        needs.render-prompt.result == 'failure' ||
+        needs.render-prompt.result == 'cancelled' ||
+        needs.dispatch.result == 'failure' ||
+        needs.dispatch.result == 'cancelled'
+      )
+    runs-on: [self-hosted]
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      retry_pending: ${{ steps.retry-pending.outputs.retry_pending }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          install-scripts: 'false'
+          runner-lifecycle: persistent
+      - name: Decide transient retry for this run
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          CONCLUSION: failure
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: node ci/transient-retry/decide.mts
+      - name: Set retry_pending output
+        id: retry-pending
+        env:
+          DECISION: ${{ steps.decide.outputs.decision }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          if [[ "$DECISION" == "rerun" && "$RUN_ATTEMPT" -lt 3 ]]; then
+            echo "retry_pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "retry_pending=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  escalate:
+    name: Escalate to human
+    needs: [triage-and-rerun, related-candidates, render-prompt, dispatch, classify-self-failure]
+    if: >-
+      always() &&
+      needs.triage-and-rerun.result == 'success' &&
+      needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
+      (
+        needs.render-prompt.result == 'failure' ||
+        needs.render-prompt.result == 'cancelled' ||
+        needs.dispatch.result == 'failure' ||
+        needs.dispatch.result == 'cancelled'
+      ) &&
+      needs.classify-self-failure.outputs.retry_pending != 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      issues: write
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    env:
+      FAILED_WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+      FAILED_RUN_URL: ${{ github.event.workflow_run.html_url }}
+      FAILED_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+      RENDER_PROMPT_RESULT: ${{ needs.render-prompt.result }}
+      DISPATCH_RESULT: ${{ needs.dispatch.result }}
+    steps:
+      - name: Revalidate source run
+        id: source-state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          fail_closed() {
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::error::$1"
+            exit 1
+          }
+          suppress_stale() {
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$1"
+            exit 0
+          }
+
+          # The age check happens inside jq (fromdateiso8601/now) rather than shell `date` arithmetic:
+          # `date -d`/`date -j` differ between GNU and BSD, and the self-hosted fleet includes macOS hosts.
+          # `fromdateiso8601` is resolved by gojq, the jq processor `gh` bundles for --jq, not the host's
+          # system jq — so no separate jq install/version floor applies. This whole step is generated from
+          # ci/source-run-guard-shell.mts, which interpolates MAX_SOURCE_RUN_AGE_MS from
+          # ci/source-run-assessment.mts, so the bound below cannot drift out of sync with the TS module.
+          # Freshness is measured from `run_started_at`, not `created_at`: `created_at` is fixed at the
+          # run's original creation and does not move on a manual re-run, while `run_started_at` resets to
+          # when the matching attempt actually started — using `created_at` would fail-closed-suppress a
+          # same-attempt re-run that completed seconds ago just because the run was first created over 48h
+          # earlier. A missing/malformed run_started_at makes fromdateiso8601 error, which lands here as a
+          # fetch failure (fail_closed), matching the module's malformed-response handling.
+          if ! source_state="$(
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" \
+              --jq '[.repository.full_name, .id, .run_attempt, .status, .conclusion,
+                     ((now - (.run_started_at | fromdateiso8601)) <= (172800))] | @tsv'
+          )"; then
+            fail_closed "Could not fetch source workflow run $SOURCE_RUN_ID"
+          fi
+
+          IFS=$'\t' read -r actual_repo actual_id actual_attempt actual_status actual_conclusion actual_fresh \
+            <<< "$source_state"
+
+          # Case-insensitive, portable comparison (no ${var,,}: the self-hosted fleet includes macOS hosts
+          # whose /bin/bash is 3.2, which predates bash 4's lowercase parameter expansion).
+          actual_repo_lower="$(printf '%s' "$actual_repo" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+          expected_repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+          if [[ "$actual_repo_lower" != "$expected_repo_lower" ]]; then
+            fail_closed "Source workflow run resolved to a different repository; refusing to act"
+          fi
+          if [[ "$actual_id" != "$SOURCE_RUN_ID" ]]; then
+            fail_closed "Source workflow run id changed; refusing to act on a different run"
+          fi
+          if [[ "$actual_attempt" != "$SOURCE_RUN_ATTEMPT" ||
+                "$actual_status" != "completed" ||
+                "$actual_conclusion" != "$SOURCE_RUN_CONCLUSION" ]]; then
+            suppress_stale "Source workflow run changed; skipping as superseded"
+          fi
+          if [[ "$actual_fresh" != "true" ]]; then
+            suppress_stale "Source workflow run is older than 48h; skipping as superseded"
+          fi
+
+          echo "current=true" >> "$GITHUB_OUTPUT"
+
+      - name: Escalate to human — open or update issue
+        if: steps.source-state.outputs.current == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          WORKFLOW_NAME="$FAILED_WORKFLOW_NAME"
+          RUN_URL="$FAILED_RUN_URL"
+          COMMIT_SHA="$FAILED_COMMIT_SHA"
+          SESSION_ID="${{ needs.dispatch.outputs.session-id }}"
+          THIS_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [[ "$RENDER_PROMPT_RESULT" == "failure" || "$RENDER_PROMPT_RESULT" == "cancelled" ]]; then
+            FAILED_JOB="render-prompt ($RENDER_PROMPT_RESULT)"
+          elif [[ "$DISPATCH_RESULT" == "failure" || "$DISPATCH_RESULT" == "cancelled" ]]; then
+            FAILED_JOB="dispatch ($DISPATCH_RESULT)"
+          else
+            FAILED_JOB="unknown (unexpected escalation trigger)"
+          fi
+
+          TITLE="Automation fix: $WORKFLOW_NAME @ $COMMIT_SHA — needs human"
+
+          EXISTING="$(gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --search "\"$TITLE\" in:title" \
+            --state open \
+            --json number \
+            -q '.[0].number' || true)"
+
+          SESSION_LINE=""
+          if [[ -n "$SESSION_ID" ]]; then
+            SESSION_LINE="**Harness session:** $SESSION_ID"$'\n'
+          fi
+
+          BODY="$(cat <<EOF
+          ## $WORKFLOW_NAME failed on main — auto-fix could not be dispatched
+
+          **Failing run:** $RUN_URL
+          **Failing commit:** $COMMIT_SHA
+          **Failed job:** $FAILED_JOB
+          ${SESSION_LINE}**Auto-fix run (logs/artifact):** $THIS_RUN_URL
+
+          Please investigate and apply a fix manually.
+          EOF
+          )"
+
+          if [[ "$EXISTING" =~ ^[0-9]+$ ]]; then
+            echo "Commenting on existing issue #$EXISTING"
+            gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          else
+            echo "Opening new issue: $TITLE"
+            gh issue create \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --body "$BODY" \
+              --label "automation" \
+              --label "needs-human"
+          fi

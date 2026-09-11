@@ -1,0 +1,23 @@
+{
+  "extends": "../backend/tsconfig.json",
+  "compilerOptions": {
+    "lib": ["es2025", "dom", "dom.iterable"],
+    // Leaf test suite: nothing imports playwright/**'s compiled output, so declaration
+    // emit is meaningless here — inheriting backend's declaration:true would still run
+    // declaration-emit diagnostics (e.g. TS4023 "cannot be named") under --noEmit.
+    "declaration": false,
+    "declarationMap": false,
+    "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
+    "types": ["node"],
+    "tsBuildInfoFile": "../node_modules/.cache/playwright-pnpm.tsbuildinfo"
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.mts",
+    "**/*.d.ts",
+    "../playwright.config.mts",
+    "../playwright.credentialed.config.mts",
+    "../backend/types/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", "../node_modules", "**/node_modules"]
+}

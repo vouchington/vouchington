@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"
+      xmlns:media="http://search.yahoo.com/mrss/"
+      xmlns="http://www.w3.org/2005/Atom">
+  <title>Test YouTube Channel</title>
+  <link rel="alternate" href="https://www.youtube.com/channel/UCtest"/>
+  <id>yt:channel:UCtest</id>
+  <yt:channelId>UCtest</yt:channelId>
+  <entry>
+    <id>yt:video:abc123def456</id>
+    <yt:videoId>abc123def456</yt:videoId>
+    <yt:channelId>UCtest</yt:channelId>
+    <title>Test Video One</title>
+    <link rel="alternate" href="https://www.youtube.com/watch?v=abc123def456"/>
+    <published>2024-01-01T10:00:00+00:00</published>
+    <updated>2024-01-01T10:30:00+00:00</updated>
+    <media:group>
+      <media:title>Test Video One</media:title>
+      <media:content url="https://www.youtube.com/v/abc123def456?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+      <media:thumbnail url="https://i4.ytimg.com/vi/abc123def456/hqdefault.jpg" width="480" height="360"/>
+      <media:description>A test YouTube video description.</media:description>
+      <media:community>
+        <media:starRating count="100" average="5.0" min="1" max="5"/>
+        <media:statistics views="1000"/>
+      </media:community>
+    </media:group>
+  </entry>
+  <entry>
+    <id>yt:video:xyz789uvw012</id>
+    <yt:videoId>xyz789uvw012</yt:videoId>
+    <yt:channelId>UCtest</yt:channelId>
+    <title>Test Video Two</title>
+    <link rel="alternate" href="https://www.youtube.com/watch?v=xyz789uvw012"/>
+    <published>2023-12-25T10:00:00+00:00</published>
+    <updated>2023-12-25T10:30:00+00:00</updated>
+    <media:group>
+      <media:title>Test Video Two</media:title>
+      <media:content url="https://www.youtube.com/v/xyz789uvw012?version=3" type="application/x-shockwave-flash" width="640" height="390"/>
+      <media:thumbnail url="https://i4.ytimg.com/vi/xyz789uvw012/hqdefault.jpg" width="480" height="360"/>
+      <media:description>Another test YouTube video description.</media:description>
+    </media:group>
+  </entry>
+</feed>

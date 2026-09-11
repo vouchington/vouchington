@@ -1,0 +1,27 @@
+{
+  "name": "@modules/worker-queue-inventory",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./worker-queue-policy": {
+      "types": "./worker-queue-policy.mts",
+      "import": "./worker-queue-policy.mts",
+      "default": "./worker-queue-policy.mts"
+    },
+    "./worker-queue-policy-cli": {
+      "types": "./worker-queue-policy-cli.mts",
+      "import": "./worker-queue-policy-cli.mts",
+      "default": "./worker-queue-policy-cli.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {}
+}

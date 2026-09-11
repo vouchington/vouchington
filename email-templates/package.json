@@ -1,0 +1,41 @@
+{
+  "name": "@email-templates/core",
+  "version": "1.0.0",
+  "private": true,
+  "description": "React Email templates for Voucha",
+  "license": "UNLICENSED",
+  "author": "",
+  "files": [
+    "dist",
+    "index.d.ts",
+    "types.mts"
+  ],
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "preview": "react-email dev --dir ."
+  },
+  "dependencies": {
+    "@ts-shared/money": "workspace:^"
+  },
+  "devDependencies": {
+    "@react-email/render": "^2.1.0",
+    "@ts-shared/languages": "workspace:^",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "esbuild": "^0.28.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-email": "^6.9.3",
+    "vitest": "^5.0.0"
+  }
+}

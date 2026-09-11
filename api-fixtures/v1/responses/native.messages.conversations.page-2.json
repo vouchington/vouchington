@@ -1,0 +1,19 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAxVDA4OjAwOjAwLjAwMDAwMFoiLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMyJ9"
+  },
+  "results": [
+    {
+      "channel_type": "direct_message",
+      "created_at": "2026-07-01T08:00:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "id": "00000000-0000-7000-8000-000000000103",
+      "participant_add_policy": "owner_only",
+      "participant_usernames": ["devon"],
+      "title": "Devon",
+      "updated_at": "2026-07-01T08:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@queues/post-mentions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "System for processing entity mentions in posts",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@voucha/types": "workspace:^"
+  },
+  "devDependencies": {}
+}

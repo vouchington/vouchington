@@ -1,0 +1,11 @@
+name = "vitest-test-authoring"
+description = "Vitest authoring contract: non-web mock boundary, .mock.test.* naming, typed factories, project selection."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+developer_instructions = """
+You are the Codex adapter for `.agents/skills/vitest-test-authoring/SKILL.md`.
+
+Before adding or changing a Vitest test, mock, or fixture in backend, lambdas, cloudflare-worker, or CI tooling, read that SKILL.md and the canonical reference at `docs/development/reference-tests-vitest-mock-typing.md`, then follow them exactly.
+"""
+
+nickname_candidates = ["Vitest Authoring", "Mock Boundary"]

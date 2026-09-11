@@ -1,0 +1,81 @@
+{
+  "bookmarks": {
+    "community-1": {
+      "follow": true,
+      "save": false
+    }
+  },
+  "communities": {
+    "community-1": {
+      "__entity_type": "community",
+      "allow_data_point_posts": false,
+      "allow_review_posts": false,
+      "archived_at": null,
+      "archived_by_id": null,
+      "banner_image_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "default_language": null,
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "community-1",
+      "lingua_rs_detected_language": null,
+      "list_type": null,
+      "markdown": "",
+      "member_invites_allowed_at": null,
+      "member_roster_visibility": "public",
+      "name": "Test Community",
+      "post_approval_required_at": null,
+      "profile_image_id": null,
+      "rules_markdown": null,
+      "slug": "test-community",
+      "trusted_at": null,
+      "updated_at": "2026-01-01T00:00:00Z",
+      "visibility": "public"
+    }
+  },
+  "community_memberships": {
+    "community-1": {
+      "__entity_type": "community_member",
+      "approved_by_id": null,
+      "community_id": "community-1",
+      "created_at": "2026-01-01T00:00:00Z",
+      "id": "community-member-1",
+      "removed_at": null,
+      "removed_by_id": null,
+      "role": "owner",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "user_id": "user-1"
+    }
+  },
+  "community_metrics": {
+    "community-1": {
+      "__entity_type": "community_metrics",
+      "id": "community-1",
+      "list_item_count": 0,
+      "member_count": 0,
+      "post_count": 0,
+      "proxy_follow_count": 0,
+      "proxy_mute_count": 0,
+      "virtual_subscription_count": 0
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "pending_application_community_ids": [],
+  "results": [
+    {
+      "__entity_type": "community",
+      "id": "community-1"
+    }
+  ],
+  "users": {
+    "user-1": {
+      "id": "user-1",
+      "username": "testuser"
+    }
+  }
+}

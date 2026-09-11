@@ -1,0 +1,398 @@
+name: Automation Shepherd
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: shepherd-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Validate /shepherd trigger
+    if: >-
+      vars.HARNESS_DISPATCH_ENABLED == 'true' &&
+      vars.HARNESS_SHEPHERD_ENABLED == 'true' &&
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '/shepherd') &&
+      contains(fromJSON('["OWNER","COLLABORATOR"]'),
+               github.event.comment.author_association)
+    runs-on: [self-hosted]
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+      pull-requests: write
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      should_dispatch: ${{ steps.gate.outputs.should_dispatch }}
+      pr_number: ${{ steps.gate.outputs.pr_number }}
+      pr_title: ${{ steps.gate.outputs.pr_title }}
+      pr_url: ${{ steps.gate.outputs.pr_url }}
+      pr_head_ref: ${{ steps.gate.outputs.pr_head_ref }}
+      pr_head_sha: ${{ steps.gate.outputs.pr_head_sha }}
+      checkpoint_comment_id: ${{ steps.checkpoint.outputs.checkpoint_comment_id }}
+      resume_session_id: ${{ steps.checkpoint.outputs.resume_session_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          clean: false
+          persist-credentials: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+
+      - name: Resolve PR and validate command
+        id: gate
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+
+          echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+
+          COMMAND="$(printf '%s' "$COMMENT_BODY" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+          if [[ "$COMMAND" != "/shepherd" ]]; then
+            echo "Ignoring non-standalone /shepherd comment."
+            exit 0
+          fi
+
+          PR_JSON="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
+          HEAD_REPO="$(echo "$PR_JSON" | jq -r '.head.repo.full_name')"
+          PR_TITLE="$(echo "$PR_JSON" | jq -r '.title')"
+          PR_URL="$(echo "$PR_JSON" | jq -r '.html_url')"
+          PR_HEAD_REF="$(echo "$PR_JSON" | jq -r '.head.ref')"
+          PR_HEAD_SHA="$(echo "$PR_JSON" | jq -r '.head.sha')"
+
+          if [[ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]]; then
+            gh issue comment "$PR_NUMBER" \
+              --repo "$GITHUB_REPOSITORY" \
+              --body "Cannot run \`/shepherd\` on fork PRs because automation may update the pull request branch."
+            echo "Skipping fork PR #$PR_NUMBER from $HEAD_REPO."
+            exit 0
+          fi
+
+          {
+            echo "pr_number=$PR_NUMBER"
+            echo "pr_url=$PR_URL"
+            echo "pr_head_ref=$PR_HEAD_REF"
+            echo "pr_head_sha=$PR_HEAD_SHA"
+          } >> "$GITHUB_OUTPUT"
+          printf '%s' "$PR_TITLE" | \
+            "$GITHUB_WORKSPACE/ci/write-github-multiline-output.sh" pr_title
+          echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare durable shepherd checkpoint
+        id: checkpoint
+        if: steps.gate.outputs.should_dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PR_HEAD_REF: ${{ steps.gate.outputs.pr_head_ref }}
+          PR_HEAD_SHA: ${{ steps.gate.outputs.pr_head_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          set -euo pipefail
+          CHECKPOINT_ACTOR="github-actions[bot]"
+          export CHECKPOINT_ACTOR PR_NUMBER="$ISSUE_NUMBER"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments?per_page=100" \
+            | jq -s 'add' > "$RUNNER_TEMP/pr-shepherd-comments.json"
+          if ! SELECTION="$(node ci/shepherd-checkpoint-cli.mts select \
+            "$RUNNER_TEMP/pr-shepherd-comments.json" \
+            2>"$RUNNER_TEMP/pr-shepherd-resume-error.txt")"; then
+            gh issue comment "$ISSUE_NUMBER" \
+              --repo "$GITHUB_REPOSITORY" \
+              --body "Cannot safely resume the previous Harness shepherd session because its local transcript failed checkpoint validation. [Inspect this workflow run]($RUN_URL), then retry after correcting or removing the corrupt local session."
+            cat "$RUNNER_TEMP/pr-shepherd-resume-error.txt" >&2
+            exit 1
+          fi
+          RESUME_SESSION_ID="$(printf '%s' "$SELECTION" | jq -r '.sessionId // empty')"
+          SESSION_START_SHA="$(printf '%s' "$SELECTION" | jq -r '.sessionStartSha // empty')"
+          RESUME_SOURCE_RUN_ID="$(printf '%s' "$SELECTION" | jq -r '.runId // empty')"
+          if [[ -z "$SESSION_START_SHA" ]]; then
+            SESSION_START_SHA="$PR_HEAD_SHA"
+          fi
+          CREATED_AT="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+          jq -n \
+            --arg marker "shepherd-checkpoint:v1" \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --argjson pr "$ISSUE_NUMBER" \
+            --argjson triggerCommentId "$TRIGGER_COMMENT_ID" \
+            --arg headRef "$PR_HEAD_REF" \
+            --arg startSha "$PR_HEAD_SHA" \
+            --arg sessionStartSha "$SESSION_START_SHA" \
+            --arg runId "${{ github.run_id }}" \
+            --arg runUrl "$RUN_URL" \
+            --arg actor "$CHECKPOINT_ACTOR" \
+            --arg sessionId "$RESUME_SESSION_ID" \
+            --arg resumeSourceRunId "$RESUME_SOURCE_RUN_ID" \
+            --arg status "queued" \
+            --arg createdAt "$CREATED_AT" \
+            --arg updatedAt "$CREATED_AT" \
+            '{marker: $marker, repository: $repository, pr: $pr,
+              triggerCommentId: $triggerCommentId, headRef: $headRef,
+              startSha: $startSha, sessionStartSha: $sessionStartSha, runId: $runId,
+              runUrl: $runUrl, actor: $actor, sessionId: $sessionId,
+              resumeSourceRunId: $resumeSourceRunId, status: $status,
+              createdAt: $createdAt, updatedAt: $updatedAt}' \
+            > "$RUNNER_TEMP/pr-shepherd-checkpoint.json"
+          BODY="$(node ci/shepherd-checkpoint-cli.mts render \
+            "$RUNNER_TEMP/pr-shepherd-checkpoint.json")"
+          COMMENT_JSON="$(gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments" \
+            -f body="$BODY")"
+          printf '%s' "$COMMENT_JSON" | jq -e \
+            '.user.login == "github-actions[bot]" and
+             .user.type == "Bot" and
+             .performed_via_github_app.slug == "github-actions"' > /dev/null
+          CHECKPOINT_COMMENT_ID="$(printf '%s' "$COMMENT_JSON" | jq -er '.id | select(type == "number" and . > 0)')"
+
+          echo "resume_session_id=$RESUME_SESSION_ID" >> "$GITHUB_OUTPUT"
+          echo "checkpoint_comment_id=$CHECKPOINT_COMMENT_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Acknowledge command with eyes reaction
+        if: steps.gate.outputs.should_dispatch == 'true'
+        env:
+          COMMENT_ID: ${{ github.event.comment.id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh api -X POST \
+            "/repos/${{ github.repository }}/issues/comments/${COMMENT_ID}/reactions" \
+            -f content=eyes; then
+            echo "::warning::Could not add eyes reaction to /shepherd comment. comment_id=${COMMENT_ID}."
+          fi
+
+  render-prompt:
+    name: Render automation prompt
+    needs: [gate]
+    if: needs.gate.outputs.should_dispatch == 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      prompt: ${{ steps.render.outputs.prompt }}
+      pr_shepherd_version: ${{ steps.pr-shepherd-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          runner-lifecycle: persistent
+
+      - name: Resolve trusted pr-shepherd version
+        id: pr-shepherd-version
+        run: |
+          set -euo pipefail
+          VERSION="$(pnpm exec pr-shepherd --version)"
+          echo "Trusted pr-shepherd version (from main): $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare prompt variables
+        env:
+          PR_TITLE: ${{ needs.gate.outputs.pr_title }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$PR_TITLE" > pr-title.txt
+
+      - name: Render prompt
+        id: render
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+        with:
+          template: docs/prompts/automation/shepherd.md
+          vars: |
+            PR_NUMBER=${{ needs.gate.outputs.pr_number }}
+            TRIGGER_COMMENT_ID=${{ github.event.comment.id }}
+            PR_URL=${{ needs.gate.outputs.pr_url }}
+            PR_HEAD_REF=${{ needs.gate.outputs.pr_head_ref }}
+            PR_HEAD_SHA=${{ needs.gate.outputs.pr_head_sha }}
+            PR_SHEPHERD_VERSION=${{ steps.pr-shepherd-version.outputs.version }}
+            REPOSITORY=${{ github.repository }}
+          var-files: PR_TITLE=pr-title.txt
+
+  dispatch:
+    name: Harness dispatch
+    needs: [gate, render-prompt]
+    if: needs.gate.outputs.should_dispatch == 'true'
+    uses: ./.github/workflows/harness-dispatch.yml
+    permissions:
+      contents: read
+    secrets:
+      HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
+    with:
+      surface-gate: HARNESS_SHEPHERD_ENABLED
+      agent-ref: refs/heads/${{ needs.gate.outputs.pr_head_ref }}
+      expected-head-sha: ${{ needs.gate.outputs.pr_head_sha }}
+      concurrency-id: filaments:shepherd:${{ needs.gate.outputs.pr_number }}
+      publish-contract: shepherd
+      pr-shepherd-version: ${{ needs.render-prompt.outputs.pr_shepherd_version }}
+      resume-session-id: ${{ needs.gate.outputs.resume_session_id }}
+      checkpoint-issue-number: ${{ needs.gate.outputs.pr_number }}
+      trigger-comment-id: ${{ github.event.comment.id }}
+      slack-source: |
+        *Source:* `/shepherd` on PR #${{ needs.gate.outputs.pr_number }}
+        *PR:* ${{ needs.gate.outputs.pr_url }}
+        *PR title:* ${{ needs.gate.outputs.pr_title }}
+      prompt: ${{ needs.render-prompt.outputs.prompt }}
+
+  checkpoint-dispatch:
+    name: Record immediate dispatch outcome on checkpoint
+    needs: [gate, dispatch]
+    if: >-
+      always() && needs.gate.result == 'success' &&
+      needs.gate.outputs.should_dispatch == 'true' &&
+      (needs.dispatch.result == 'success' || needs.dispatch.result == 'failure')
+    runs-on: [self-hosted]
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          clean: false
+          persist-credentials: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Revalidate and patch the exact checkpoint comment
+        env:
+          CHECKPOINT_ACTOR: github-actions[bot]
+          CHECKPOINT_COMMENT_ID: ${{ needs.gate.outputs.checkpoint_comment_id }}
+          CHECKPOINT_STATUS: ${{ needs.dispatch.result == 'success' && 'running' || 'failed' }}
+          GH_TOKEN: ${{ github.token }}
+          HARNESS_SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
+          HARNESS_SESSION_URL: ${{ needs.dispatch.outputs.session-url }}
+          PR_HEAD_REF: ${{ needs.gate.outputs.pr_head_ref }}
+          PR_HEAD_SHA: ${{ needs.gate.outputs.pr_head_sha }}
+          PR_NUMBER: ${{ needs.gate.outputs.pr_number }}
+          TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \
+            'select(.state == "open" and .head.repo.full_name == env.GITHUB_REPOSITORY and .head.ref == env.PR_HEAD_REF and .head.sha == env.PR_HEAD_SHA) | .number' \
+            | grep -qx "$PR_NUMBER"
+          gh api "repos/$GITHUB_REPOSITORY/issues/comments/$CHECKPOINT_COMMENT_ID" > "$RUNNER_TEMP/checkpoint-comment.json"
+          BODY="$(node ci/shepherd-checkpoint-cli.mts update "$RUNNER_TEMP/checkpoint-comment.json")"
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$CHECKPOINT_COMMENT_ID" -f body="$BODY" > /dev/null
+
+  escalate:
+    name: Comment failure on PR
+    needs: [gate, render-prompt, dispatch, checkpoint-dispatch]
+    if: >-
+      always() &&
+      needs.gate.result == 'success' &&
+      needs.gate.outputs.should_dispatch == 'true' &&
+      (
+        needs.render-prompt.result == 'failure' ||
+        needs.render-prompt.result == 'cancelled' ||
+        (needs.dispatch.result == 'failure' || needs.dispatch.result == 'cancelled') ||
+        (needs.checkpoint-dispatch.result == 'failure' || needs.checkpoint-dispatch.result == 'cancelled')
+      )
+    runs-on: [self-hosted]
+    timeout-minutes: 2
+    permissions:
+      issues: write
+      pull-requests: write
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_HEAD_REF: ${{ needs.gate.outputs.pr_head_ref }}
+      PR_HEAD_SHA: ${{ needs.gate.outputs.pr_head_sha }}
+      PR_NUMBER: ${{ needs.gate.outputs.pr_number }}
+      PR_URL: ${{ needs.gate.outputs.pr_url }}
+      SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
+      THIS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
+    steps:
+      - name: Comment failure on PR
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \
+            'select(.state == "open" and .head.repo.full_name == env.GITHUB_REPOSITORY and .head.ref == env.PR_HEAD_REF and .head.sha == env.PR_HEAD_SHA) | .number' \
+            | grep -qx "$PR_NUMBER"
+          COMMENT_JSON="$(gh api "repos/$GITHUB_REPOSITORY/issues/comments/$TRIGGER_COMMENT_ID")"
+          jq -e \
+            'select((.id | tostring) == env.TRIGGER_COMMENT_ID and
+              (.issue_url | endswith("/issues/" + env.PR_NUMBER)) and
+              (.author_association == "OWNER" or .author_association == "COLLABORATOR"))' \
+            <<< "$COMMENT_JSON" > /dev/null
+          COMMAND="$(jq -r '.body' <<< "$COMMENT_JSON" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+          if [[ "$COMMAND" != "/shepherd" ]]; then
+            echo "Suppressing failure comment because the triggering /shepherd command is no longer valid."
+            exit 0
+          fi
+
+          BODY="/shepherd run failed.
+
+          **PR:** $PR_URL
+          **Auto-shepherd run:** $THIS_RUN_URL"
+
+          if [[ -n "$SESSION_ID" ]]; then
+            BODY="$BODY
+          **Harness session:** $SESSION_ID"
+          fi
+
+          BODY="$BODY
+
+          Please investigate manually or re-comment \`/shepherd\` to retry."
+
+          gh issue comment "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body "$BODY"

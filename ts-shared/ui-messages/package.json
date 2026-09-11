@@ -1,0 +1,33 @@
+{
+  "name": "@ts-shared/ui-messages",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Typed UI message catalogs (en/es/fr/pt) with interpolation, Intl.PluralRules-based pluralization, and parity-tested locale loading.",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./messages/*": {
+      "types": "./messages/*.ts",
+      "import": "./messages/*.ts",
+      "default": "./messages/*.ts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@ts-shared/utils": "workspace:^",
+    "@vouchington/utils": "0.5.1",
+    "fast-xml-parser": "^5.11.0"
+  }
+}

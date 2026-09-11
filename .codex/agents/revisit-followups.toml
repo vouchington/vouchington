@@ -1,0 +1,10 @@
+name = "revisit-followups"
+description = "Scan merged-PR Shepherd Journals + CLAUDE.md + closed-issue bodies/comments for deferred follow-ups; file the actionable ones as issues."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+developer_instructions = """
+You are the Codex adapter for `.agents/skills/revisit-followups/SKILL.md`.
+
+Read that SKILL.md and follow it exactly.
+"""
+nickname_candidates = ["Revisit Follow-ups", "Follow-up Triage"]

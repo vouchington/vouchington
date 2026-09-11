@@ -1,0 +1,25 @@
+{
+  "contact": {
+    "__entity_type": "crm_contact",
+    "archived_at": null,
+    "assigned_to_id": null,
+    "contact_type": "influencer",
+    "contacted_at": null,
+    "converted_at": null,
+    "created_at": "2026-07-01T12:05:00Z",
+    "created_by_id": "00000000-0000-7000-8000-000000000001",
+    "email": "alice@example.test",
+    "follower_count": 250000,
+    "id": "00000000-0000-7000-8000-000000000584",
+    "metadata": null,
+    "name": "Alice Creator",
+    "notes": "Creator outreach contact",
+    "opted_out_at": null,
+    "phone": null,
+    "responded_at": null,
+    "source": "manual",
+    "updated_at": "2026-07-01T12:05:00Z",
+    "user_id": null,
+    "vertical": "credit_cards"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "@services/search-params",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "http-errors": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

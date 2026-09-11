@@ -1,0 +1,26 @@
+{
+  "name": "@workers/report-integrity",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/report-integrity": "workspace:^",
+    "@services/report-integrity": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@services/users": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

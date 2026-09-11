@@ -1,0 +1,93 @@
+name: Main CI (backend)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/main-backend.yml'
+      - '.github/workflows/tests-backend-unit.yml'
+      - '.github/workflows/checks-backend-smoke.yml'
+      - '.github/workflows/tests-backend-modules.yml'
+      - '.github/workflows/tests-backend-credentialed.yml'
+      - '.github/workflows/tests-postgres-schema.yml'
+      - '.github/worker-io-automation.env'
+      - '.github/workflows/checks-static.yml'
+      - '.github/actions/**'
+      - '.squawk.toml'
+      - '.trivyignore.yaml'
+      - 'api-fixtures/**'
+      - 'backend/**'
+      - 'email-templates/**'
+      - 'ts-shared/**'
+      - 'test-helpers/**'
+      - 'ci/prepare-trivy-db.sh'
+      - 'ci/allocate-browser-safe-ports.py'
+      - 'ci/package.json'
+      - 'ci/runner-port-policy.json'
+      - 'ci/runner-port-policy.mts'
+      - 'vitest.config.mts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+
+concurrency:
+  group: ${{ github.run_attempt == 1 && 'main-backend' || format('main-backend-retry-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test-backend-modules:
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
+    uses: ./.github/workflows/tests-backend-modules.yml
+    permissions:
+      actions: read
+      contents: read
+
+  test-backend-unit:
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
+    uses: ./.github/workflows/tests-backend-unit.yml
+    permissions:
+      actions: read
+      contents: read
+    secrets: inherit
+
+  backend-smoke:
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
+    uses: ./.github/workflows/checks-backend-smoke.yml
+    permissions:
+      actions: read
+      contents: read
+
+  test-backend-credentialed:
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
+    uses: ./.github/workflows/tests-backend-credentialed.yml
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    with:
+      trusted_secret_context: true
+    secrets: inherit
+
+  postgres-schema-tests:
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
+    uses: ./.github/workflows/tests-postgres-schema.yml
+    permissions:
+      actions: read
+      contents: read
+    secrets: inherit
+
+  static-checks:
+    uses: ./.github/workflows/checks-static.yml
+    with:
+      backend: true
+    permissions:
+      contents: read
+      actions: read

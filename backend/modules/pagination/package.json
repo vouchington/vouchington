@@ -1,0 +1,22 @@
+{
+  "name": "@modules/pagination",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": "./index.mts",
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@ts-shared/feed-capabilities": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "@vouchington/pagination": "0.0.0"
+  }
+}

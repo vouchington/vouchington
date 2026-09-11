@@ -1,0 +1,119 @@
+id: backend-persisted-user-random-username
+language: Tsx
+severity: error
+message: 'Wrap randomized usernames passed directly to persisted-user test factories in safeUsername(...).'
+files:
+  - 'backend/**/*.mts'
+  - 'integration-tests/web-api/**/*.mts'
+  - 'playwright/**/*.mts'
+rule:
+  all:
+    - kind: call_expression
+    - any:
+        - pattern: 'randomUUID()'
+        - pattern: 'crypto.randomUUID()'
+        - pattern: 'Math.random()'
+        - pattern: 'Date.now()'
+    - inside:
+        all:
+          - kind: pair
+          - any:
+              - pattern:
+                  context: '({ username: $VALUE })'
+                  selector: pair
+              - pattern:
+                  context: "({ 'username': $VALUE })"
+                  selector: pair
+              - pattern:
+                  context: '({ "username": $VALUE })'
+                  selector: pair
+          - inside:
+              kind: object
+              inside:
+                kind: arguments
+                inside:
+                  kind: call_expression
+                  regex: '^(?:createTestUser|createTestUserDirect|createUnonboardedTestUserDirect|createTestUserWithAge)\s*\('
+        stopBy: end
+    - not:
+        inside:
+          kind: call_expression
+          regex: '^safeUsername\s*\('
+          stopBy:
+            kind: pair
+examples:
+  - code: 'await createTestUser({ username: `user-${randomUUID()}` })'
+    isValid: false
+    file: 'backend/services/users/create.test.mts'
+  - code: 'await createTestUserDirect({ username: `user-${crypto.randomUUID()}` })'
+    isValid: false
+    file: 'backend/data-stores/psql/users.test.mts'
+  - code: 'await createUnonboardedTestUserDirect({ username: `user-${Math.random()}` })'
+    isValid: false
+    file: 'integration-tests/web-api/users.test.mts'
+  - code: 'await createTestUserWithAge(21, { username: `user-${Date.now()}`, enabled: true })'
+    isValid: false
+    file: 'playwright/tests/users.spec.mts'
+  - code: |
+      await createTestUserWithAge(
+        21,
+        { ...defaults, 'username': `user-${randomUUID()}`, enabled: true },
+        auditContext,
+      )
+    isValid: false
+    file: 'backend/services/users/age.test.mts'
+  - code: 'await createTestUser({ "username": randomUUID().slice(0, 12) })'
+    isValid: false
+    file: 'backend/services/users/create.test.mts'
+  - code: |
+      await createTestUser({
+        username: `${safeUsername(randomUUID())}-${Date.now()}`,
+      })
+    isValid: false
+    file: 'backend/services/users/create.test.mts'
+  - code: 'await createTestUser({ username: safeUsername(`user-${randomUUID()}`) })'
+    isValid: true
+    file: 'backend/services/users/create.test.mts'
+  - code: 'await createTestUserDirect({ username: safeUsername(crypto.randomUUID()) })'
+    isValid: true
+    file: 'backend/data-stores/psql/users.test.mts'
+  - code: 'await createUnonboardedTestUserDirect({ username: safeUsername(`user-${Math.random()}`) })'
+    isValid: true
+    file: 'integration-tests/web-api/users.test.mts'
+  - code: 'await createTestUserWithAge(21, { username: safeUsername(`user-${Date.now()}`) })'
+    isValid: true
+    file: 'playwright/tests/users.spec.mts'
+  - code: "await createTestUser({ username: 'deterministic-user' })"
+    isValid: true
+    file: 'backend/services/users/create.test.mts'
+  - code: |
+      const username = `user-${randomUUID()}`
+      await createTestUser({ username })
+    isValid: true
+    file: 'backend/services/users/create.test.mts'
+  - code: |
+      const createUser = createTestUser
+      await createUser({ username: `user-${randomUUID()}` })
+    isValid: true
+    file: 'backend/services/users/create.test.mts'
+  - code: 'await fixtures.createTestUser({ username: `user-${randomUUID()}` })'
+    isValid: true
+    file: 'backend/services/users/create.test.mts'
+  - code: 'await createTestUser({ username: helpers.safeUsername(`user-${randomUUID()}`) })'
+    isValid: false
+    file: 'backend/services/users/create.test.mts'
+  - code: 'await createTestUser({ ...optionsWithRandomUsername })'
+    isValid: true
+    file: 'backend/services/users/create.test.mts'
+  - code: 'await createTestUserWithId(randomUUID(), { username: `user-${Date.now()}` })'
+    isValid: true
+    file: 'backend/services/users/create.test.mts'
+  - code: 'const user = makeUser({ username: `user-${randomUUID()}` })'
+    isValid: true
+    file: 'backend/services/users/create.test.mts'
+  - code: 'await createTestUser({ username: `user-${randomUUID()}` })'
+    isValid: true
+    file: 'web/lib/users.test.ts'
+  - code: 'await createTestUser({ username: `user-${randomUUID()}` })'
+    isValid: true
+    file: 'backend/services/users/create.test.tsx'

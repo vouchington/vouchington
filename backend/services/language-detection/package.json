@@ -1,0 +1,29 @@
+{
+  "name": "@services/language-detection",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@ts-shared/languages": "workspace:^",
+    "lingua-rs": "^0.2.0",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@services/urls": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

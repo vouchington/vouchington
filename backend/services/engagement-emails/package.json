@@ -1,0 +1,36 @@
+{
+  "name": "@services/engagement-emails",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@email-templates/core": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/emails": "workspace:^",
+    "@services/recommended-rss-feeds": "workspace:^",
+    "@services/recommended-topics": "workspace:^",
+    "@services/rss-feeds": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/trending-referral-programs": "workspace:^",
+    "@services/users": "workspace:^",
+    "p-map": "7.0.7",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

@@ -1,0 +1,58 @@
+id: backend-no-direct-scheduler-upsert
+language: Tsx
+severity: error
+message: Define recurring jobs through @modules/scheduled-job-manifest instead of calling upsertJobScheduler directly.
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/modules/scheduled-job-manifest/runtime.mts'
+  - 'backend/modules/scheduled-job-manifest/types.mts'
+  - 'backend/**/*.test.mts'
+rule:
+  any:
+    - kind: property_identifier
+      regex: ^(upsertJobScheduler|getRepeatableJobs|removeJobScheduler)$
+    - kind: shorthand_property_identifier_pattern
+      regex: ^(upsertJobScheduler|getRepeatableJobs|removeJobScheduler)$
+    - pattern: $QUEUE['upsertJobScheduler']
+    - pattern: $QUEUE['getRepeatableJobs']
+    - pattern: $QUEUE['removeJobScheduler']
+examples:
+  - file: backend/queues/example/enqueues/schedules.mts
+    code: |
+      await queue.upsertJobScheduler('example', { every: 1000 }, template)
+    isValid: false
+  - file: backend/queues/example/enqueues/schedules.mts
+    code: |
+      await queue.removeJobScheduler('example')
+    isValid: false
+  - file: backend/queues/example/enqueues/schedules.mts
+    code: |
+      await queue.getRepeatableJobs()
+    isValid: false
+  - file: backend/queues/example/enqueues/schedules.mts
+    code: |
+      await upsertScheduledJobManifest(queue, scheduledJobManifest)
+    isValid: true
+  - file: backend/queues/example/enqueues/schedules.mts
+    code: |
+      await queue['upsertJobScheduler']('example', { every: 1000 }, template)
+    isValid: false
+  - file: backend/queues/example/enqueues/schedules.mts
+    code: |
+      const { upsertJobScheduler } = queue
+      await upsertJobScheduler('example', { every: 1000 }, template)
+    isValid: false
+  - file: backend/queues/example/enqueues/schedules.mts
+    code: |
+      const register = queue.upsertJobScheduler.bind(queue)
+      await register('example', { every: 1000 }, template)
+    isValid: false
+  - file: backend/modules/scheduled-job-manifest/runtime.mts
+    code: |
+      await queue.upsertJobScheduler(job.schedulerId, job.repeat, job.template)
+    isValid: true
+  - file: backend/workers/example/scheduler.test.mts
+    code: |
+      await queue.upsertJobScheduler('fixture', { every: 1000 }, template)
+    isValid: true

@@ -1,0 +1,233 @@
+{
+  "tools": [
+    {
+      "name": "compare_topics",
+      "description": "Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/topics/compare"
+        }
+      ]
+    },
+    {
+      "name": "get_my_profile",
+      "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses, and financial profile (credit score range, income range).",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/profile"
+        }
+      ]
+    },
+    {
+      "name": "get_recommended_topics",
+      "description": "Get personalized topic recommendations based on the current user's activity, including positive post choices, followed feeds, and views. Use this for questions like 'what cards should I look into?' or 'what topics might interest me?'. Returns topic IDs with recommendation scores. Use get_topic_details for full card information.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/recommended-topics"
+        }
+      ]
+    },
+    {
+      "name": "get_referral_links",
+      "description": "Get prioritized referral links for a topic. Ranks links by social connections: mutual follows, follows, referrers, positive-choice authors, then everyone else.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/topics/:id/prioritized-referral-links"
+        }
+      ]
+    },
+    {
+      "name": "get_topic_details",
+      "description": "Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/topics/:idOrSlug"
+        }
+      ]
+    },
+    {
+      "name": "get_topic_hierarchy",
+      "description": "Get the parent and/or child topics for a given topic. Useful for finding all cards issued by a bank (children of the bank topic), all tiers in a rewards program (children of the program topic), or discovering what organization issues a card (parents of the card topic).",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/topics/:idOrSlug"
+        }
+      ]
+    },
+    {
+      "name": "get_trending_posts",
+      "description": "Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/trending-posts"
+        }
+      ]
+    },
+    {
+      "name": "get_trending_topics",
+      "description": "Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering \"what credit cards are popular right now?\" or \"what topics are being discussed?\". Returns topic IDs with trending scores — use get_topic_details to get full card information.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/trending-topics"
+        }
+      ]
+    },
+    {
+      "name": "get_wikipedia_summary",
+      "description": "Gets detailed summary information for a Wikipedia article by title. Returns the full Wikipedia page data including description, extract, URL, and thumbnail. Use this after searching to get complete details about a specific article.",
+      "parameters": null,
+      "api": null
+    },
+    {
+      "name": "manage_my_cards",
+      "description": "Manage the current user's wallet cards. Use this to add, update, remove, or list cards.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/cards"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/my/cards"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/my/cards/:id"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/my/cards/:id"
+        }
+      ]
+    },
+    {
+      "name": "manage_my_point_valuations",
+      "description": "Manage the current user's rewards program point valuations — how much the user values each rewards program's points.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/rewards-program-point-valuations"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/my/rewards-program-point-valuations"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/my/rewards-program-point-valuations/:id"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/my/rewards-program-point-valuations/:id"
+        }
+      ]
+    },
+    {
+      "name": "manage_my_rewards_statuses",
+      "description": "Manage the current user's loyalty tier / rewards program statuses (e.g. Gold, Platinum).",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/rewards-program-statuses"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/my/rewards-program-statuses"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/my/rewards-program-statuses/:id"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/my/rewards-program-statuses/:id"
+        }
+      ]
+    },
+    {
+      "name": "manage_my_spending",
+      "description": "Manage the current user's spending by category.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/spending-categories"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/my/spending-categories"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/my/spending-categories/:id"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/my/spending-categories/:id"
+        }
+      ]
+    },
+    {
+      "name": "search_posts",
+      "description": "Search for posts using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/posts"
+        }
+      ]
+    },
+    {
+      "name": "search_topics",
+      "description": "Search topics using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/topics"
+        }
+      ]
+    },
+    {
+      "name": "search_wikipedia",
+      "description": "Searches Wikipedia for articles by title. Returns a list of matching Wikipedia pages with their titles and page IDs. Use this to find relevant Wikipedia articles based on keywords or topics mentioned in the content.",
+      "parameters": null,
+      "api": null
+    },
+    {
+      "name": "update_my_financial_profile",
+      "description": "Update the current user's financial profile used for personalized data point comparisons. Only provide fields you want to update — omitted fields are unchanged.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/my/financial-profile"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/my/financial-profile"
+        }
+      ]
+    }
+  ]
+}

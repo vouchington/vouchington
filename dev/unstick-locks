@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() { echo "Usage: ./dev/unstick-locks"; }
+if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
+if [ "$#" -ne 0 ]; then echo "Error: ./dev/unstick-locks does not accept arguments." >&2; usage >&2; exit 2; fi
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+# shellcheck source=lib/worktree-resource-env.sh
+source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
+# shellcheck source=lib/reset-worktree-lock.sh
+source "$REPO_ROOT/dev/lib/reset-worktree-lock.sh"
+
+# Resolve git paths against REPO_ROOT (the script's own location, via `pwd -P`
+# above), never against the caller's cwd -- this script is meant to be run to
+# recover a worktree that a stuck lock has made hard to `cd` into, and a bare
+# `git rev-parse` would silently report on whichever repo the caller happens
+# to be sitting in instead.
+if ! git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    echo -e "${RED}Error: Not inside a git repository${NC}" >&2
+    exit 1
+fi
+
+# --git-common-dir prints a path relative to whichever directory git resolved
+# it in; -C makes that REPO_ROOT rather than the caller's cwd, but the result
+# can still come back relative, so anchor it to REPO_ROOT if so.
+git_common_dir=$(git -C "$REPO_ROOT" rev-parse --git-common-dir)
+case "$git_common_dir" in
+    /*) : ;;
+    *) git_common_dir="$REPO_ROOT/$git_common_dir" ;;
+esac
+removed=0
+in_use=0
+
+if worktree_resource_clear_stale_operation_lock; then
+    if [ "$WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS" = removed ]; then
+        echo -e "${GREEN}Removed stale worktree resource operation lock.${NC}"
+        removed=$((removed + 1))
+    fi
+elif [ "$WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS" = active ]; then
+    echo -e "${YELLOW}Worktree resource operation lock is active — not removed.${NC}"
+    in_use=$((in_use + 1))
+else
+    echo -e "${YELLOW}Worktree resource operation lock is invalid — investigate before removing manually.${NC}"
+    in_use=$((in_use + 1))
+fi
+
+if reset_worktree_lock_clear_stale "$REPO_ROOT"; then
+    if [ "$RESET_WORKTREE_LOCK_CLEANUP_STATUS" = removed ]; then
+        echo -e "${GREEN}Removed stale reset-worktree lock.${NC}"
+        removed=$((removed + 1))
+    fi
+elif [ "$RESET_WORKTREE_LOCK_CLEANUP_STATUS" = active ]; then
+    echo -e "${YELLOW}reset-worktree lock is active — not removed.${NC}"
+    in_use=$((in_use + 1))
+else
+    echo -e "${YELLOW}reset-worktree lock is invalid — investigate before removing manually.${NC}"
+    in_use=$((in_use + 1))
+fi
+
+check_lock() {
+    local lock="$1"
+    [ -e "$lock" ] || return 0
+    if [ ! -s "$lock" ]; then
+        rm -f "$lock"
+        echo -e "${GREEN}Removed stale lock:${NC} $lock"
+        removed=$((removed + 1))
+    else
+        echo -e "${YELLOW}Non-empty lock (in-use or unknown process — not removed):${NC} $lock"
+        in_use=$((in_use + 1))
+    fi
+}
+
+# Main worktree's own lock
+check_lock "$git_common_dir/index.lock"
+
+# Per-worktree locks
+if [ -d "$git_common_dir/worktrees" ]; then
+    for lock in "$git_common_dir"/worktrees/*/index.lock; do
+        [ -e "$lock" ] || continue
+        check_lock "$lock"
+    done
+fi
+
+if [ "$removed" -eq 0 ] && [ "$in_use" -eq 0 ]; then
+    echo -e "${GREEN}No stale locks found.${NC}"
+elif [ "$removed" -gt 0 ] && [ "$in_use" -eq 0 ]; then
+    echo -e "${GREEN}Removed $removed stale lock(s).${NC}"
+elif [ "$removed" -gt 0 ]; then
+    echo -e "${GREEN}Removed $removed stale lock(s).${NC}"
+    echo -e "${YELLOW}$in_use lock(s) appear non-empty — investigate before removing manually.${NC}"
+    echo -e "${YELLOW}See docs/development/git-worktree-locks.md${NC}"
+else
+    echo -e "${YELLOW}$in_use lock(s) appear non-empty — investigate before removing manually.${NC}"
+    echo -e "${YELLOW}See docs/development/git-worktree-locks.md${NC}"
+fi

@@ -1,0 +1,37 @@
+{
+  "name": "@services/data-retention",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/analytics": "workspace:^",
+    "@data-stores/psql": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/contribution-gating": "workspace:^",
+    "@services/oauth": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/user-import-export": "workspace:^",
+    "@services/users": "workspace:^",
+    "sql-template-strings": "^2.2.2",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@services/oauth-accounts": "workspace:^",
+    "@services/user-deletions": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

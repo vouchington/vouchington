@@ -1,0 +1,36 @@
+{
+  "name": "@services/user-mod-notes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
+    "@services/user-rate-limits": "workspace:^",
+    "@services/users": "workspace:^",
+    "http-assert": "^1.5.0",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@services/communities": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

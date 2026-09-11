@@ -1,0 +1,44 @@
+{
+  "name": "@services/bookmarks",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-rate-limiter": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@queues/bloom-filters": "workspace:^",
+    "@queues/entity-metrics-cache-refresh": "workspace:^",
+    "@services/bloom-filter-config": "workspace:^",
+    "@services/contribution-gating": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/memberships": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@valkey/valkey-glide": "^2.5.2",
+    "@voucha/types": "workspace:^",
+    "http-assert": "^1.5.0"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

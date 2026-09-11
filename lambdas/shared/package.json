@@ -1,0 +1,37 @@
+{
+  "name": "@lambdas/shared",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "workspaces": [
+    "../../ts-shared/deploy-environment",
+    "../../ts-shared/utils"
+  ],
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@aws-sdk/client-ssm": "^3.1127.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
+    "@opentelemetry/sdk-trace-base": "^2.11.0",
+    "@sentry/aws-serverless": "10.71.0",
+    "@sentry/node": "10.71.0",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@ts-shared/utils": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "vitest": "^5.0.0"
+  }
+}

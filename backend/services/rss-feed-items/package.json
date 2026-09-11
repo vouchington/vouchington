@@ -1,0 +1,65 @@
+{
+  "name": "@services/rss-feed-items",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@jongleberry/vurst-html": "^0.4.3",
+    "@modules/feed-query-builders": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/rss-feed-cover-art": "workspace:^",
+    "@modules/search-utils": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
+    "@queues/bedrock-embeddings": "workspace:^",
+    "@queues/language-detection": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@queues/psql": "workspace:^",
+    "@queues/rss-feed-item-categories": "workspace:^",
+    "@queues/story-post-related-url-projections": "workspace:^",
+    "@services/bedrock-embeddings": "workspace:^",
+    "@services/crawls": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "@vouchington/embeds": "0.0.2",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1",
+    "pgvector": "^0.3.0",
+    "sql-template-strings": "^2.2.2",
+    "ssrf-guard": "^1.0.0",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@services/queue-monitoring": "workspace:^",
+    "@services/read-states": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

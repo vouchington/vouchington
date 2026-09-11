@@ -1,0 +1,44 @@
+id: web-no-raw-form-elements
+language: Tsx
+severity: error
+message: 'Use the UI component from web/components/ui/ instead of raw HTML form elements'
+files:
+  - 'web/**/*.tsx'
+ignores:
+  - 'web/components/ui/**'
+  - '**/*.test.tsx'
+  - '**/*.spec.tsx'
+  - '**/*.stories.tsx'
+rule:
+  any:
+    - pattern: '<button $$$>$$$</button>'
+    - pattern: '<button $$$>'
+    - pattern: '<input $$$>'
+    # Self-closing <input /> is a jsx_self_closing_element and does not match
+    # the `<input $$$>` jsx_opening_element pattern above. `$$$ATTRS` (triple
+    # dollar) is the correct named multi-meta-variable syntax in ast-grep 0.43+;
+    # it matches zero or more attribute nodes so it covers inputs with any number
+    # of attributes, including zero.
+    - pattern: '<input $$$ATTRS />'
+    - pattern: '<select $$$>$$$</select>'
+    - pattern: '<select $$$>'
+    - pattern: '<textarea $$$>$$$</textarea>'
+    - pattern: '<textarea $$$>'
+    - pattern: '<label $$$>$$$</label>'
+    - pattern: '<label $$$>'
+examples:
+  - code: '<button type="button">Click me</button>'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<input type="text" />'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<input type="hidden" name="topic_type" value="x" />'
+    isValid: false
+    file: 'web/app/page.tsx'
+  - code: '<Button>Click me</Button>'
+    isValid: true
+    file: 'web/app/page.tsx'
+  - code: '<input type="text" />'
+    isValid: true
+    file: 'web/components/ui/input.tsx'

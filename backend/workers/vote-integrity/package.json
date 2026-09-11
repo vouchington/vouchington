@@ -1,0 +1,22 @@
+{
+  "name": "@workers/vote-integrity",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/vote-integrity": "workspace:^",
+    "@services/vote-integrity": "workspace:^",
+    "glide-mq": "^0.15.5"
+  }
+}

@@ -1,0 +1,42 @@
+id: web-no-bare-next-image-import
+language: Tsx
+ignores:
+  - web/components/shared/proxied-image.tsx
+  - web/storybook/mocks/next-image.tsx
+severity: error
+message: >-
+  Direct `next/image` imports are banned. Use `ProxiedImage` from
+  `@/components/shared/proxied-image` so external image URLs are routed through
+  the /sideload/ proxy and asserted in dev/test.
+files:
+  - web/**/*.ts
+  - web/**/*.tsx
+rule:
+  all:
+    - kind: import_statement
+    - regex: "from\\s+['\"]next/image['\"]"
+examples:
+  - code: |
+      import Image from 'next/image'
+    isValid: false
+    file: 'web/components/shared/example.ts'
+  - code: |
+      import { ProxiedImage as Image } from '@/components/shared/proxied-image'
+    isValid: true
+    file: 'web/components/shared/example.ts'
+  - code: |
+      import Image from 'next/image'
+    isValid: false
+    file: web/components/shared/example.tsx
+  - code: |
+      import { ProxiedImage as Image } from '@/components/shared/proxied-image'
+    isValid: true
+    file: web/components/shared/example.tsx
+  - code: |
+      import NextImage from 'next/image'
+    isValid: true
+    file: web/components/shared/proxied-image.tsx
+  - code: |
+      import Image from 'next/image'
+    isValid: true
+    file: web/storybook/mocks/next-image.tsx

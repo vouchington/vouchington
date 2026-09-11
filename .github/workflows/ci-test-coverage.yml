@@ -1,0 +1,293 @@
+name: CI test coverage
+
+on:
+  workflow_call:
+    inputs:
+      detect-changes-outputs-skip-ci-producers:
+        required: true
+        type: string
+      detect-changes-outputs-skip-settled-producers:
+        required: true
+        type: string
+      detect-changes-outputs-docs-only:
+        required: true
+        type: string
+      detect-changes-outputs-has-vitest-full:
+        required: true
+        type: string
+      select-vitest-outputs-run-tests-test-web:
+        required: true
+        type: string
+      select-vitest-outputs-run-tests-test-web-api:
+        required: true
+        type: string
+      select-vitest-outputs-run-tests-test-backend-unit:
+        required: true
+        type: string
+      select-vitest-outputs-run-tests-test-backend-modules:
+        required: true
+        type: string
+      select-vitest-outputs-run-tests-test-cloudflare-worker:
+        required: true
+        type: string
+      select-vitest-outputs-run-tests-test-lambdas:
+        required: true
+        type: string
+      select-vitest-outputs-coverage-plan:
+        required: true
+        type: string
+      select-vitest-outputs-storybook-browser-mode:
+        required: true
+        type: string
+      test-ts-shared-result:
+        required: true
+        type: string
+      test-tooling-result:
+        required: true
+        type: string
+      test-backend-modules-result:
+        required: true
+        type: string
+      test-backend-unit-result:
+        required: true
+        type: string
+      test-backend-credentialed-result:
+        required: true
+        type: string
+      test-web-result:
+        required: true
+        type: string
+      test-web-api-result:
+        required: true
+        type: string
+      storybook-result:
+        required: true
+        type: string
+      test-web-integration-result:
+        required: true
+        type: string
+      test-cloudflare-worker-result:
+        required: true
+        type: string
+      test-lambdas-result:
+        required: true
+        type: string
+      test-portability-result:
+        required: true
+        type: string
+      detect-changes-result:
+        required: true
+        type: string
+    outputs:
+      vitest-report-expectations:
+        value: ${{ jobs.test-coverage.outputs.vitest-report-expectations }}
+
+permissions: {}
+
+jobs:
+  test-coverage:
+    name: Patch Coverage
+    outputs:
+      vitest-report-expectations: ${{ steps.vitest-report-expectation.outputs.context }}
+    if: >-
+      !cancelled() &&
+      inputs.detect-changes-outputs-skip-ci-producers != 'true' &&
+      inputs.detect-changes-outputs-skip-settled-producers != 'true' &&
+      (inputs.detect-changes-outputs-docs-only != 'true' ||
+        inputs.detect-changes-outputs-has-vitest-full == 'true')
+    runs-on: [self-hosted]
+    timeout-minutes: 14
+    # id-token is omitted: this job checks out and runs PR-controlled code.
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: '!cancelled()'
+        with:
+          clean: false
+          fetch-depth: 0
+      - name: Restore workspace cleaner
+        shell: bash
+        if: '!cancelled()'
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        if: '!cancelled()'
+        with:
+          deepen: 'true'
+      - uses: ./.github/actions/setup-node-pnpm
+        if: '!cancelled()'
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Download Vitest report attempt markers
+        if: '!cancelled()'
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: vitest-report-attempt-*
+          path: ./vitest-report-attempts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+      - name: Normalize retried Vitest report attempt directories
+        if: '!cancelled()'
+        run: node ci/normalize-retry-artifact-directories.mts ./vitest-report-attempts
+      - name: Resolve expected Vitest reports
+        id: vitest-report-expectation
+        if: '!cancelled()'
+        env:
+          RUN_WEB_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-web != 'false' }}
+          RUN_WEB_API_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-web-api != 'false' }}
+          RUN_BACKEND_UNIT_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-backend-unit != 'false' }}
+          RUN_BACKEND_MODULE_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-backend-modules != 'false' }}
+          RUN_CLOUDFLARE_WORKER_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-cloudflare-worker != 'false' }}
+          RUN_LAMBDA_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-lambdas != 'false' }}
+          COVERAGE_PLAN: ${{ inputs.select-vitest-outputs-coverage-plan }}
+          STORYBOOK_BROWSER_MODE: ${{ inputs.select-vitest-outputs-storybook-browser-mode || 'full' }}
+          VITEST_REPORT_ATTEMPTS_DIR: ./vitest-report-attempts
+          RESULTS: |-
+            {
+              "test-ts-shared": {"result": "${{ inputs.test-ts-shared-result }}"},
+              "test-tooling": {"result": "${{ inputs.test-tooling-result }}"},
+              "test-backend-modules": {"result": "${{ inputs.test-backend-modules-result }}"},
+              "test-backend-unit": {"result": "${{ inputs.test-backend-unit-result }}"},
+              "test-backend-credentialed": {"result": "${{ inputs.test-backend-credentialed-result }}"},
+              "test-web": {"result": "${{ inputs.test-web-result }}"},
+              "test-web-api": {"result": "${{ inputs.test-web-api-result }}"},
+              "storybook": {"result": "${{ inputs.storybook-result }}"},
+              "test-web-integration": {"result": "${{ inputs.test-web-integration-result }}"},
+              "test-cloudflare-worker": {"result": "${{ inputs.test-cloudflare-worker-result }}"},
+              "test-lambdas": {"result": "${{ inputs.test-lambdas-result }}"},
+              "test-portability": {"result": "${{ inputs.test-portability-result }}"}
+            }
+        run: |
+          coverage_plan="$COVERAGE_PLAN"
+          if [ -z "$coverage_plan" ]; then coverage_plan='{}'; fi
+          attempts=$(pnpm exec vouchington vitest-report-attempt read "$VITEST_REPORT_ATTEMPTS_DIR")
+          context=$(jq -cn \
+            --argjson attempt "$GITHUB_RUN_ATTEMPT" \
+            --argjson attempts "$attempts" \
+            --argjson results "$RESULTS" \
+            --argjson plan "$coverage_plan" \
+            --arg web "$RUN_WEB_TESTS" \
+            --arg web_api "$RUN_WEB_API_TESTS" \
+            --arg backend "$RUN_BACKEND_UNIT_TESTS" \
+            --arg modules "$RUN_BACKEND_MODULE_TESTS" \
+            --arg worker "$RUN_CLOUDFLARE_WORKER_TESTS" \
+            --arg lambdas "$RUN_LAMBDA_TESTS" \
+            --arg storybook "$STORYBOOK_BROWSER_MODE" \
+            --argjson backend_default 5 \
+            --argjson web_default 2 \
+            --argjson web_api_default 1 \
+            --argjson web_integration_default 1 '
+              def ran($job):
+                ($results[$job].result // "skipped") as $result |
+                $result == "success" or $result == "failure" or $result == "cancelled";
+              def minimum_attempt($job; $suite):
+                if $attempts[$suite] != null then $attempts[$suite]
+                elif ($results[$job].result == "failure" or $results[$job].result == "cancelled")
+                then $attempt
+                else error("successful Vitest producer has no attempt marker: \($suite)")
+                end;
+              def suite($job; $name):
+                {suite: $name, minimumAttempt: minimum_attempt($job; $name)};
+              def shards($job; $prefix; $fallback):
+                ($plan[$job].shards // $fallback) as $count |
+                [range(1; $count + 1) | suite($job; "\($prefix)\(.)")];
+              [
+                if ran("test-ts-shared") then suite("test-ts-shared"; "ts-shared") else empty end,
+                if ran("test-tooling") then suite("test-tooling"; "tooling") else empty end,
+                if ran("test-backend-modules") and $modules == "true" then suite("test-backend-modules"; "backend-modules") else empty end,
+                if ran("test-backend-unit") and $backend == "true" then shards("test-backend-unit"; "backend-shard-"; $backend_default)[] else empty end,
+                if ran("test-backend-credentialed") then suite("test-backend-credentialed"; "backend-credentialed") else empty end,
+                if ran("test-web") and $web == "true" then shards("test-web"; "web-shard-"; $web_default)[] else empty end,
+                if ran("test-web-api") and $web_api == "true" then shards("test-web-api"; "web-api-shard-"; $web_api_default)[] else empty end,
+                if ran("storybook") then suite("storybook"; "web-storybook") else empty end,
+                if ran("storybook") and $storybook != "empty" then suite("storybook"; "web-storybook-browser") else empty end,
+                if ran("test-web-integration") then shards("test-web-integration"; "web-integration-shard-"; $web_integration_default)[] else empty end,
+                if ran("test-cloudflare-worker") and $worker == "true" then suite("test-cloudflare-worker"; "cloudflare-worker") else empty end,
+                if ran("test-lambdas") and $lambdas == "true" then suite("test-lambdas"; "lambdas") else empty end,
+                if ran("test-portability") then suite("test-portability"; "portability-linux"), suite("test-portability"; "portability-macos") else empty end
+              ] | unique_by(.suite) | {
+                version: "vitest-report-expectations:v2",
+                attempt: $attempt,
+                suites: sort_by(.suite)
+              }
+            ')
+          echo "context=$context" >> "$GITHUB_OUTPUT"
+
+          failed=$(jq -r '
+            any(to_entries[];
+              .value.result == "failure" or .value.result == "cancelled"
+            )
+          ' <<< "$RESULTS")
+          if [ "$failed" = "true" ]; then
+            echo "::error::One or more Vitest producer jobs failed or were cancelled."
+            exit 1
+          fi
+
+      - name: Download coverage artifacts from GitHub (fallback)
+        id: coverage-consumer-fallback
+        if: "!cancelled() && github.event_name == 'pull_request'"
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./ci/download-optional-run-artifacts.sh --pattern 'coverage-*' --dir './coverage-fallback'
+      - name: Normalize retried coverage pair directories
+        if: "!cancelled() && github.event_name == 'pull_request'"
+        run: node ci/normalize-retry-artifact-directories.mts ./coverage-fallback
+      - name: Prepare coverage artifacts
+        id: prepare-coverage-artifacts
+        if: "!cancelled() && github.event_name == 'pull_request'"
+        env:
+          COVERAGE_FALLBACK_DIR: ./coverage-fallback
+          COVERAGE_ARTIFACTS_DIR: ./coverage-artifacts
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          STORYBOOK_BROWSER_MODE: ${{ inputs.select-vitest-outputs-storybook-browser-mode || 'full' }}
+          # Built from each job's `.result` directly instead of `toJSON(needs)`: that dumps every
+          # job's full outputs, including select-vitest's files-test-* lists, which can be large
+          # enough on big PRs that GitHub Actions fails to spawn this step's shell ("Argument list
+          # too long") before any script line (including a `jq del(...)` on $RESULTS) can run.
+          # select-vitest (must fail OPEN so producers still run the full suite; see
+          # ci/vitest/ci-select.mts) is omitted rather than included-then-deleted, for the same
+          # reason it was excluded before this change.
+          RESULTS: |-
+            {
+              "detect-changes": {"result": "${{ inputs.detect-changes-result }}"},
+              "test-ts-shared": {"result": "${{ inputs.test-ts-shared-result }}"},
+              "test-tooling": {"result": "${{ inputs.test-tooling-result }}"},
+              "test-backend-modules": {"result": "${{ inputs.test-backend-modules-result }}"},
+              "test-backend-unit": {"result": "${{ inputs.test-backend-unit-result }}"},
+              "test-backend-credentialed": {"result": "${{ inputs.test-backend-credentialed-result }}"},
+              "test-web": {"result": "${{ inputs.test-web-result }}"},
+              "test-web-api": {"result": "${{ inputs.test-web-api-result }}"},
+              "storybook": {"result": "${{ inputs.storybook-result }}"},
+              "test-web-integration": {"result": "${{ inputs.test-web-integration-result }}"},
+              "test-cloudflare-worker": {"result": "${{ inputs.test-cloudflare-worker-result }}"},
+              "test-lambdas": {"result": "${{ inputs.test-lambdas-result }}"},
+              "test-portability": {"result": "${{ inputs.test-portability-result }}"}
+            }
+        # Keep this gate before the current-run report and patch gate so
+        # missing/cancelled producers cannot masquerade as ordinary uncovered
+        # patch lines.
+        run: |
+          ./ci/check-needs-results.sh "coverage jobs"
+          node ci/prepare-coverage-artifacts.mts
+        timeout-minutes: 1
+      - name: Report current PR coverage and enforce patch coverage
+        if: "!cancelled() && github.event_name == 'pull_request' && steps.prepare-coverage-artifacts.outcome == 'success'"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERAGE_BASE: ${{ github.event.pull_request.base.sha }}
+          COVERAGE_HEAD: ${{ github.event.pull_request.head.sha }}
+          COVERAGE_PR: ${{ github.event.pull_request.number }}
+          COVERAGE_REPO: ${{ github.repository }}
+        # All interpolated values are GitHub-validated identifiers: base/head SHA (hex),
+        # pr.number (integer), and repository (owner/repo).
+        run: ./ci/coverage-artifacts.sh pr-check
+        timeout-minutes: 3

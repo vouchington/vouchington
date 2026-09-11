@@ -1,0 +1,24 @@
+{
+  "muted": {
+    "friend-1": false
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "user",
+      "display_account": {
+        "id": "friend-account-1",
+        "name": "Friendly User"
+      },
+      "id": "friend-1",
+      "markdown": null,
+      "profile_image_id": null,
+      "roles": [],
+      "username": "friend"
+    }
+  ]
+}

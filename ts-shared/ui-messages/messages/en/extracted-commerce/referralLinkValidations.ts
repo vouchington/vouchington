@@ -1,0 +1,73 @@
+const messages = {
+  referralLinkValidations: {
+    validationForm: {
+      create_4759498a: 'Create',
+      describeWhereTheUserCanFind_b0d03585:
+        'Describe where the user can find their referral link...',
+      eGChaseSapphire_1063fe9a: 'e.g. chase-sapphire',
+      failedToSaveValidation_5f2bde32: 'Failed to save validation',
+      saving_dc85af8f: 'Saving...',
+      slug_d15387ec: 'Slug',
+      update_c1c1009d: 'Update',
+      userHelpText_f4348908: 'User Help Text',
+      validationCreated_30231380: 'Validation created',
+      validationUpdated_81a195cb: 'Validation updated',
+    },
+    validationRuleForm: {
+      addRule_968c3cb8: 'Add Rule',
+      blockNonReferralUrl_f12acf0b: 'Block non-referral URL',
+      blockedReferralLinkUrl_0ce8a1f2: 'Blocked referral link URL',
+      cancel_19766ed6: 'Cancel',
+      eGReferChaseCom_355017cb: 'e.g. refer.chase.com',
+      eGRefer_46e0030b: 'e.g. /refer/%',
+      exampleUrlsOnePerLine_2541faba: 'Example URLs (one per line)',
+      failedToSaveRule_bf356f1f: 'Failed to save rule',
+      hostname_2db53355: 'Hostname',
+      httpsReferChaseComReferRef_f00f3e03:
+        'https://refer.chase.com/refer?ref=abc123 https://refer.chase.com/refer?ref=xyz456',
+      pathnameSqlLike_a234b007: 'Pathname (SQL LIKE)',
+      ruleCreated_1d0e14f1: 'Rule created',
+      ruleType_725b37e6: 'Rule Type',
+      ruleUpdated_cb3de6df: 'Rule updated',
+      saving_dc85af8f: 'Saving...',
+      shownWhenUrlFailsValidation_a110a593: 'Shown when URL fails validation...',
+      update_c1c1009d: 'Update',
+      userErrorText_08a2668f: 'User Error Text',
+      validReferralLinkUrl_e25aeb34: 'Valid referral link URL',
+    },
+    validationRuleRow: {
+      actionsForHostnamePathname_202a8deb: 'Actions for {hostname}{pathname}',
+    },
+    validationRulesTable: {
+      actions_ff8059dc: 'Actions',
+      addRule_968c3cb8: 'Add Rule',
+      blocked_18f2a094: 'Blocked',
+      cancel_19766ed6: 'Cancel',
+      deleteRule_369c63a8: 'Delete rule?',
+      deleteRuleDescription_7391f319: 'This permanently removes the selected validation rule.',
+      delete_e2d0a549: 'Delete',
+      edit_464c4ffd: 'Edit',
+      errorText_5a5f7659: 'Error Text',
+      exampleUrls_d31bbd04: 'Example URLs',
+      failedToDeleteRule_eae0494c: 'Failed to delete rule',
+      hostname_2db53355: 'Hostname',
+      invalid_96c34a07: 'Invalid',
+      noRulesYetAddOneAbove_7ee684a8: 'No rules yet. Add one above.',
+      pathname_d253dde0: 'Pathname',
+      ruleDeleted_92e561e3: 'Rule deleted',
+      rules_4228aeb0: 'Rules',
+      type_baaddf70: 'Type',
+      valid_f5162206: 'Valid',
+    },
+    validationsListTable: {
+      noValidationSetsFoundCreateOne_333198eb:
+        'No validation sets found. Create one to get started.',
+      referralLinkValidations_d32933eb: 'Referral Link Validations',
+      slug_d15387ec: 'Slug',
+      updated_3a5ecca1: 'Updated',
+      userHelpText_f4348908: 'User Help Text',
+    },
+  },
+}
+
+export default messages

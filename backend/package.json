@@ -1,0 +1,72 @@
+{
+  "name": "@voucha/backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "workspaces": [
+    "../ts-shared/cache",
+    "../ts-shared/data-points",
+    "../ts-shared/deploy-environment",
+    "../ts-shared/feed-capabilities",
+    "../ts-shared/feature-flags",
+    "../ts-shared/languages",
+    "../ts-shared/money",
+    "../ts-shared/request-client-info",
+    "../ts-shared/route-classification",
+    "../ts-shared/ses-inbound-contract",
+    "../ts-shared/session-jwt",
+    "../ts-shared/url-signing",
+    "../ts-shared/user-profile-collections",
+    "../ts-shared/utils",
+    "../ts-shared/utm",
+    "modules/*",
+    "services/*",
+    "data-stores/*",
+    "queues/*",
+    "workers/*",
+    "flows/*",
+    "agents/*",
+    "api",
+    "entrypoints/api",
+    "entrypoints/worker-cpu",
+    "entrypoints/worker-io",
+    "service-registrations",
+    "worker-runtime",
+    "config",
+    "test-helpers",
+    "types",
+    "scripts",
+    "tools",
+    "rss",
+    "md"
+  ],
+  "type": "module",
+  "scripts": {
+    "postinstall": "pnpm --dir ../email-templates run build",
+    "test:smoke": "./scripts/tests/smoke-test-server.sh && ./scripts/tests/smoke-test-worker.sh",
+    "test:smoke:docker": "./scripts/tests/smoke-test-docker.sh",
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:email-templates",
+    "typecheck:src": "tsc --noEmit --incremental",
+    "typecheck:email-templates": "tsc --noEmit --incremental --project ../email-templates/tsconfig.json",
+    "db:migrate": "node entrypoints/api/migrate.mts",
+    "db:clean": "bash ../dev/db-clean --db-only",
+    "db:snapshot:update": "node data-stores/psql/schema-snapshot/generate.mts",
+    "db:snapshot:check": "node data-stores/psql/schema-snapshot/generate.mts --check",
+    "db:check-index-renames": "node data-stores/psql/schema-snapshot/check-index-renames.mts",
+    "seed:playwright": "node scripts/seeds/playwright-test-data.mts",
+    "db:seed": "node scripts/seeds/dev-seed.mts"
+  },
+  "dependencies": {
+    "@data-stores/graceful-shutdown": "workspace:^",
+    "@voucha/api": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@typescript/native": "npm:typescript@^7.0.2"
+  },
+  "engines": {
+    "node": ">=24.16.0"
+  }
+}

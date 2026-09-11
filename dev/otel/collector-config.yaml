@@ -1,0 +1,61 @@
+# OTel Collector config — LOCAL mode (exports to Jaeger).
+#
+# AWS deploy swap (one block change):
+#   1. Replace this file with ADOT's recommended config.
+#   2. Add the awsxray exporter + aws_xray extension.
+#   3. Replace the Jaeger service pipeline with awsxray.
+#   See docs/development/opentelemetry.md for the exact ADOT config snippet.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+  # Drop internal/infra noise — keep app-level spans.
+  filter/drop_health:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["http.route"] == "/infra/ping"'
+
+exporters:
+  # ── LOCAL: forward traces to Jaeger all-in-one ──────────────────────────
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+  # LOCAL: keep OTLP logs visible in collector output. Playwright also writes
+  # each webServer process stdout/stderr to files for a raw-log fallback.
+  debug/logs:
+    verbosity: basic
+
+  # ── AWS (commented): swap in for the jaeger exporter at deploy time ─────
+  # awsxray:
+  #   region: us-west-2
+  #   # IAM: ECS task role needs xray:PutTraceSegments + xray:PutTelemetryRecords.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, filter/drop_health]
+      exporters: [otlp/jaeger]
+      # AWS swap: replace otlp/jaeger with awsxray above.
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug/logs]

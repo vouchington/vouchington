@@ -1,0 +1,9 @@
+{
+  "verification": {
+    "created_at": "2026-09-10T00:00:00.000Z",
+    "id": "00000000-0000-7000-8000-000000000808",
+    "provider": "apple_app_store",
+    "reason_code": "verified",
+    "status": "verified"
+  }
+}

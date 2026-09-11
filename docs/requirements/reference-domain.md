@@ -1,0 +1,10 @@
+# `domain`
+
+[Back to Entity × Action Matrix reference](reference-entity-action-matrix-table-b-entity-action-description.md#domain)
+
+| Action                                              | Predicate              | Description                                                                                                                                   | Endpoint                                       | Component                                          |
+| --------------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------- |
+| <a name="domain--upvote--downvote"></a>Trust choice | _(semantic sentiment)_ | Vouch (+2), Like (+1), Neutral (0), Dislike (-1), or Disavow (-2) a domain. Signed-out → `/login`.                                            | Election API (`PUT` choice / `DELETE` Clear)   | `web/components/votes/score-vote.tsx`              |
+| <a name="domain--mute"></a>Mute                     | `mute`                 | Hides content from this domain in the user's feed. Auth-only.                                                                                 | `PUT /api/v1/bookmarks/url_hostname/:id/mute`  | `web/components/shared/entity-bookmark-button.tsx` |
+| <a name="domain--block"></a>Block                   | `block`                | Blocks all content from this domain. Auth-only.                                                                                               | `PUT /api/v1/bookmarks/url_hostname/:id/block` | `web/components/shared/entity-bookmark-button.tsx` |
+| <a name="domain--report"></a>Report                 | n/a (moderation queue) | Submits a report with reason + optional note; creates a `moderation_reports` row for admin review. Auth-only. Placed in `DomainActionsAside`. | `POST /api/v1/reports`                         | `web/components/shared/report-menu-item.tsx`       |

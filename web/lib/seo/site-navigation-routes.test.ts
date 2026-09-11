@@ -1,0 +1,51 @@
+import { describe, expect, it } from 'vitest'
+import { shouldRenderSiteNavigationSchema } from './site-navigation-routes'
+
+describe('shouldRenderSiteNavigationSchema', () => {
+  it('matches indexable public routes', () => {
+    expect(shouldRenderSiteNavigationSchema('/')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/plans')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/reviews')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/review/amex-gold')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/card/amex-gold/reviews')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/compare/a-vs-b')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/communities/points-and-miles')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/domain/example.com')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/user/testuser')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/@testuser')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/@testuser/gear')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/channels')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/domains/compare')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/news-sources')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/podcast-episodes')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/podcasts')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/videos')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/web-search')).toBe(true)
+    // Non-hardcoded topic types
+    expect(shouldRenderSiteNavigationSchema('/topic/acme')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/bank-account/chase')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/bank-account/chase/reviews')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/source/bbc-news')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/source/bbc-news/posts')).toBe(true)
+    expect(shouldRenderSiteNavigationSchema('/source/bbc-news/latest')).toBe(true)
+  })
+
+  it('skips noindex, auth-only, and non-indexable public routes', () => {
+    expect(shouldRenderSiteNavigationSchema('/login')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/feed/news')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/my/profile')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/onboarding')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/admin')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/communities/create')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/communities/invite/abc123')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/user/testuser/reviews')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/card/amex-gold/followers')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/review/amex-gold/edit')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/topic/acme/discussions')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/topic/acme/followers')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/source/bbc-news/tags')).toBe(false)
+    // Invalid @-handle formats (digit-first, too short) must not emit schema
+    expect(shouldRenderSiteNavigationSchema('/@1bad/bonus')).toBe(false)
+    expect(shouldRenderSiteNavigationSchema('/@a')).toBe(false)
+  })
+})

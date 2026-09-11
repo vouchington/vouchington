@@ -1,0 +1,29 @@
+{
+  "name": "@modules/api-utils",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API utility functions",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@ts-shared/session-jwt": "workspace:^"
+  },
+  "devDependencies": {
+    "@jongleberry/api-server": "^2.1.0"
+  }
+}

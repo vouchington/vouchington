@@ -1,0 +1,87 @@
+{
+  "community_list_items": {
+    "list-item-topic": {
+      "__entity_type": "community_list_item",
+      "added_by_id": "user-1",
+      "community_id": "community-1",
+      "created_at": "2026-01-01T00:00:00Z",
+      "entity_id": "topic-1",
+      "id": "list-item-topic",
+      "item_type": "topic",
+      "order_index": 0
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "community_list_item",
+      "id": "list-item-topic"
+    }
+  ],
+  "topics": {
+    "topic-1": {
+      "__entity_type": "topic",
+      "aliases": [],
+      "allow_reviews": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "roles": [],
+        "username": "testuser"
+      },
+      "hero_image_id": null,
+      "homepage_url_id": null,
+      "hostname": null,
+      "hostname_id": null,
+      "id": "topic-1",
+      "lingua_rs_detected_language": null,
+      "logo_image_id": null,
+      "markdown": "",
+      "name": "Test Topic",
+      "noindex": false,
+      "referral_program_id": null,
+      "referral_program_slug": null,
+      "rewards_program_id": null,
+      "slug": "test-topic",
+      "topic_type": "topic",
+      "updated_by": {
+        "__entity_type": "user",
+        "id": "user-1",
+        "roles": [],
+        "username": "testuser"
+      }
+    }
+  },
+  "topics_metrics": {
+    "topic-1": {
+      "__entity_type": "topic_metrics",
+      "bookmarks": {
+        "follow": 0
+      },
+      "bookmarks__updated_at": "2026-01-01T00:00:00Z",
+      "count": {
+        "data-points": 0,
+        "discussions": 0,
+        "latest": 0,
+        "news": 0,
+        "reviews": 0
+      },
+      "id": "topic-1",
+      "ratings": {
+        "count": {
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0
+        }
+      },
+      "ratings__updated_at": "2026-01-01T00:00:00Z"
+    }
+  }
+}

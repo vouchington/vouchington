@@ -1,0 +1,33 @@
+name: With Host Package Manager Lock
+description: Run a trusted command while holding the shared host package-manager lock.
+
+inputs:
+  command:
+    description: Shell command to run while holding the host package-manager lock
+    required: true
+  working-directory:
+    description: Working directory for the locked command
+    default: '.'
+  timeout-seconds:
+    description: Maximum seconds to wait for the host package-manager lock
+    default: '300'
+
+runs:
+  using: composite
+  steps:
+    - name: Run command under host package-manager lock
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        LOCKED_COMMAND: ${{ inputs.command }}
+        HOST_LOCK_TIMEOUT_SECONDS: ${{ inputs.timeout-seconds }}
+      run: |
+        set -euo pipefail
+
+        command_file="$(mktemp "${RUNNER_TEMP:-/tmp}/host-package-manager-lock-command-XXXXXX")"
+        trap 'rm -f "$command_file"' EXIT
+        printf '%s\n' "$LOCKED_COMMAND" > "$command_file"
+        bash "$GITHUB_WORKSPACE/ci/with-host-lock.sh" \
+          --name host-package-manager \
+          --timeout-seconds "$HOST_LOCK_TIMEOUT_SECONDS" \
+          -- bash -euo pipefail -c 'source "$1"' with-host-package-manager-lock "$command_file"

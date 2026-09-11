@@ -1,0 +1,34 @@
+{
+  "name": "@services/email-classification",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@modules/aws": "workspace:^",
+    "@modules/gmail-smtp": "workspace:^",
+    "@queues/emails": "workspace:^",
+    "@services/crm-contacts": "workspace:^",
+    "@services/ses-bounce-events": "workspace:^",
+    "@services/users": "workspace:^"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

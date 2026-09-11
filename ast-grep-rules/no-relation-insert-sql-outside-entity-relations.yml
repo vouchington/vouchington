@@ -1,0 +1,45 @@
+id: no-relation-insert-sql-outside-entity-relations
+language: Tsx
+severity: error
+message: >-
+  Raw 'INSERT INTO relation__' SQL must only be written inside backend/services/entity-relations/.
+  Use upsertEntityRelation() or writeEntityRelations() instead — they maintain the bookmark
+  bloom filter automatically.
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/services/entity-relations/**'
+  - 'backend/scripts/seeds/**'
+  - 'backend/data-stores/psql/config-driven/**'
+  - 'backend/scripts/**'
+  - 'backend/test-helpers/**'
+  - 'backend/data-stores/psql/test-helpers/**'
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+rule:
+  any:
+    - all:
+        - pattern: sql`$$$`
+        - regex: '(?i)INSERT INTO relation__'
+    - all:
+        - kind: string
+        - regex: '(?i)INSERT INTO relation__'
+    - all:
+        - kind: template_string
+        - regex: '(?i)INSERT INTO relation__'
+examples:
+  - code: 'const q = sql`INSERT INTO relation__user__follow__rss_feed (subject_id) VALUES (${id})`'
+    isValid: false
+    file: 'backend/services/rss-feeds/create-source.mts'
+  - code: 'const q = `INSERT INTO relation__user__follow__rss_feed (subject_id) VALUES (${id})`'
+    isValid: false
+    file: 'backend/services/rss-feeds/create-source.mts'
+  - code: 'const q = sql`INSERT INTO relation__user__follow__rss_feed (subject_id) VALUES (${id})`'
+    isValid: true
+    file: 'backend/services/entity-relations/upsert.mts'
+  - code: 'const q = sql`INSERT INTO relation__user__follow__rss_feed (subject_id) VALUES (${id})`'
+    isValid: true
+    file: 'backend/test-helpers/entities/follows.mts'
+  - code: 'const q = `INSERT INTO relation__user__follow__rss_feed (subject_id) VALUES (${id})`'
+    isValid: true
+    file: 'backend/data-stores/psql/config-driven/foo.mts'

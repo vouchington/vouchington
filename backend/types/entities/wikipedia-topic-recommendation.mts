@@ -1,0 +1,6 @@
+// Relocated from @services/wikipedia-topic-recommendations/types.mts (pure type, no
+// service dependencies) so that backend/queues/ai-agents can reference it directly
+// without importing @services/wikipedia-topic-recommendations, which would otherwise
+// create an ai-agents -> wikipedia-topic-recommendations workspace cycle. Re-exported
+// from the original location for call-site stability.
+export type SourceEntityType = 'post'

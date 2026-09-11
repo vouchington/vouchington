@@ -1,0 +1,22 @@
+{
+  "$schema": "https://oxc.rs/schema/oxlintrc.json",
+  "extends": ["../../.oxlintrc.json"],
+  // "extends" does not inherit the root "plugins" array — keep this in exact sync with it. See
+  // static-code-analysis/README.md nested .oxlintrc.json section for why.
+  "plugins": ["react", "nextjs", "jsx-a11y", "react-perf", "vitest", "jest", "promise", "oxc"],
+  "rules": {
+    "no-mistakes/postgres-no-manual-transaction": [
+      "error",
+      {
+        "owners": [
+          "backend/data-stores/psql/explain-analyze.mts",
+          "backend/test-helpers/postgres-advisory-lock.mts",
+          "backend/test-helpers/crawl-urls-queue-lock.mts",
+          "backend/test-helpers/entities/moderation-transparency-date-reservation.mts"
+        ]
+      }
+    ],
+    "no-mistakes/postgres-no-unbounded-query-fanout": "error",
+    "no-await-in-loop": "off"
+  }
+}

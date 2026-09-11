@@ -1,0 +1,169 @@
+{
+  "election_votes": {
+    "episode-1": {
+      "__entity_type": "election_vote",
+      "choice": "like",
+      "created_at": "2026-01-01T00:00:00Z",
+      "entity_id": "episode-1",
+      "user_id": "user-1"
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "rss_feed_item",
+      "entity_id": "episode-1",
+      "id": "episode-1",
+      "published_at": "2026-01-01T00:00:00Z",
+      "story_id": null
+    }
+  ],
+  "rss_feed_item_elections": {
+    "episode-1": {
+      "__entity_type": "rss_feed_item_election",
+      "id": "episode-1",
+      "votes_count_down": 2,
+      "votes_count_up": 7,
+      "votes_score_net": 5
+    }
+  },
+  "rss_feed_item_embeds": {
+    "episode-1": {
+      "description": "A complete normalized video fixture",
+      "duration_seconds": 1830,
+      "embed_metadata": null,
+      "embed_oembed_resolved_at": null,
+      "embed_oembed_url": null,
+      "enclosure_type": "audio/mpeg",
+      "enclosure_url": "https://example.com/podcast-ep-1.mp3",
+      "markdown": null,
+      "media_type": "audio",
+      "meta_tags": null,
+      "player_height": null,
+      "player_url": null,
+      "player_width": null,
+      "provider_name": "YouTube",
+      "rss_feed_item_id": "episode-1",
+      "show_id": "feed-podcast-1",
+      "show_title": "Example Podcast Feed",
+      "show_topic_slug": "test-topic",
+      "show_topic_type": "topic",
+      "source_url": "https://example.com/podcast-ep-1",
+      "thumbnail_url": "https://images.example.com/sideload/episode-1-thumbnail.jpg?w=640",
+      "title": "Test Podcast Episode 1",
+      "video_id": null,
+      "video_platform": null
+    }
+  },
+  "rss_feed_item_thumbnail_url": {
+    "episode-1": "https://images.example.com/sideload/episode-1-thumbnail.jpg?w=400"
+  },
+  "rss_feed_items": {
+    "episode-1": {
+      "__entity_type": "rss_feed_item",
+      "categories": [
+        {
+          "category_text": "Travel",
+          "hashtag": null,
+          "id": "category-1",
+          "topic": {
+            "id": "topic-1",
+            "name": "Tech",
+            "slug": "tech",
+            "topic_type": "topic"
+          },
+          "votes_score_net": 3
+        }
+      ],
+      "data": {
+        "chapters_type": "application/json+chapters",
+        "chapters_url": "https://example.com/podcast-ep-1/chapters.json",
+        "contentSnippet": "A short podcast snippet",
+        "enclosure_length": 50000000,
+        "enclosure_type": "audio/mpeg",
+        "enclosure_url": "https://example.com/podcast-ep-1.mp3",
+        "guid": "episode-1",
+        "link": "https://example.com/podcast-ep-1",
+        "media_type": "audio",
+        "thumbnail_url": "https://images.example.com/sideload/episode-1-thumbnail.jpg?w=400",
+        "title": "Test Podcast Episode 1"
+      },
+      "id": "episode-1",
+      "lingua_rs_detected_language": null,
+      "media_content": {
+        "duration": 1830,
+        "medium": "audio",
+        "type": "audio/mpeg",
+        "url": "https://example.com/podcast-ep-1.mp3"
+      },
+      "media_type": "audio",
+      "published_at": "2026-01-01T00:00:00Z",
+      "rss_feed": {
+        "__entity_type": "rss_feed",
+        "feed_type": "podcast",
+        "id": "feed-podcast-1",
+        "is_discoverable": true,
+        "is_enabled": true,
+        "last_fetched_at": "2026-01-01T00:00:00Z",
+        "podcast_show": {
+          "cover_art_url": "https://images.example.com/sideload/show-podcast-1-cover.jpg?w=400",
+          "description": null,
+          "is_explicit": false,
+          "itunes_author": "Test Host",
+          "itunes_owner_name": "Test Network",
+          "itunes_type": "episodic"
+        },
+        "publisher_type": {
+          "id": "publisher-type-blog",
+          "name": "Blog",
+          "slug": "blog",
+          "topic_type": "publisher_type"
+        },
+        "title": "Example Podcast Feed",
+        "topic": {
+          "__entity_type": "topic",
+          "aliases": [],
+          "allow_reviews": true,
+          "created_at": "2026-01-01T00:00:00Z",
+          "created_by": {
+            "__entity_type": "user",
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          },
+          "hero_image_id": null,
+          "homepage_url_id": null,
+          "hostname": null,
+          "hostname_id": null,
+          "id": "topic-1",
+          "lingua_rs_detected_language": null,
+          "logo_image_id": null,
+          "markdown": "",
+          "name": "Test Topic",
+          "noindex": false,
+          "referral_program_id": null,
+          "referral_program_slug": null,
+          "rewards_program_id": null,
+          "slug": "test-topic",
+          "topic_type": "topic",
+          "updated_by": {
+            "__entity_type": "user",
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          }
+        }
+      },
+      "rss_feed_sources": [],
+      "url": {
+        "canonical_url_id": null,
+        "id": "url-episode-1",
+        "url": "https://example.com/podcast-ep-1"
+      }
+    }
+  }
+}

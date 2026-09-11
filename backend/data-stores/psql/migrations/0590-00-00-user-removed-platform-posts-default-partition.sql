@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS posts__default
+  PARTITION OF posts DEFAULT;

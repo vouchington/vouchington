@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case " ${NODE_OPTIONS:-} " in
+  *" --disable-warning=DEP0205 "*) ;;
+  *) export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--disable-warning=DEP0205" ;;
+esac
+
+exec "$@"

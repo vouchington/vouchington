@@ -1,0 +1,36 @@
+id: tool-limit-clamping
+language: Tsx
+severity: error
+message: 'Use clampToolLimit() or normalizeSearchToolArgs() from ./search-system.mts instead of inline Math.min() for limit clamping'
+files:
+  - 'backend/tools/**/*.mts'
+ignores:
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+rule:
+  all:
+    - pattern: 'Math.min($$$ARGS)'
+    - has:
+        # Stop at arrow_function boundaries to avoid false positives from nested
+        # callback parameters named `limit` (e.g. `Math.min(...items.map(limit => ...))`).
+        stopBy:
+          kind: arrow_function
+        any:
+          - pattern: 'limit'
+          - pattern: '$OBJ.limit'
+examples:
+  - code: 'const n = Math.min(limit, 100)'
+    isValid: false
+    file: 'backend/tools/search/run.mts'
+  - code: 'const n = Math.min(args.limit, 100)'
+    isValid: false
+    file: 'backend/tools/search/run.mts'
+  - code: 'const n = clampToolLimit(limit)'
+    isValid: true
+    file: 'backend/tools/search/run.mts'
+  - code: 'const n = Math.min(pageSize, 100)'
+    isValid: true
+    file: 'backend/tools/search/run.mts'
+  - code: 'const n = Math.min(...items.map(limit => limit.weight))'
+    isValid: true
+    file: 'backend/tools/search/run.mts'

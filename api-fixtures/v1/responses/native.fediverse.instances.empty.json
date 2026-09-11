@@ -1,0 +1,16 @@
+{
+  "bookmarks": {},
+  "election_votes": {},
+  "fediverse_instances": {},
+  "hostname_elections": {},
+  "markdown_to_html": {},
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [],
+  "topic_elections": {},
+  "topics": {},
+  "topics_metrics": {}
+}

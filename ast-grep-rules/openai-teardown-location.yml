@@ -1,0 +1,30 @@
+id: openai-teardown-location
+language: Tsx
+severity: error
+message: '`openai.responses.cancel()`/`openai.responses.retrieve()` are only allowed in backend/modules/openai-utils/background-response-teardown.mts. Use cancelOpenAIResponse()/retrieveOpenAIResponse() instead -- these are teardown-only seams (no polling, no waitUntilComplete).'
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/modules/openai-utils/background-response-teardown.mts'
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+rule:
+  any:
+    - pattern: '$OBJ.responses.cancel($$$)'
+    - pattern: '$OBJ.responses.retrieve($$$)'
+examples:
+  - code: 'openai.responses.cancel(responseId)'
+    isValid: false
+    file: 'backend/modules/other/handler.mts'
+  - code: 'openai.responses.retrieve(responseId)'
+    isValid: false
+    file: 'backend/agents/chat/run.mts'
+  - code: 'cancelOpenAIResponse(responseId)'
+    isValid: true
+    file: 'backend/agents/chat/run.mts'
+  - code: 'retrieveOpenAIResponse(responseId)'
+    isValid: true
+    file: 'backend/agents/chat/run.mts'
+  - code: 'openai.responses.cancel(responseId)'
+    isValid: true
+    file: 'backend/modules/openai-utils/background-response-teardown.mts'

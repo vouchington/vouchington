@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Test Podcast</title>
+    <link>https://podcast.example.com</link>
+    <description>A test podcast feed</description>
+    <itunes:image href="https://podcast.example.com/artwork.jpg"/>
+    <item>
+      <title>Episode 42: The Answer</title>
+      <link>https://podcast.example.com/episodes/42</link>
+      <guid isPermaLink="false">podcast-ep-42</guid>
+      <pubDate>Mon, 01 Jan 2024 10:00:00 +0000</pubDate>
+      <description>The meaning of life, the universe, and everything.</description>
+      <enclosure url="https://cdn.podcast.example.com/ep42.mp3" length="50000000" type="audio/mpeg"/>
+      <itunes:duration>45:30</itunes:duration>
+      <itunes:image href="https://podcast.example.com/episodes/42/art.jpg"/>
+      <itunes:episode>42</itunes:episode>
+    </item>
+    <item>
+      <title>Episode 41: Getting Started</title>
+      <link>https://podcast.example.com/episodes/41</link>
+      <guid isPermaLink="false">podcast-ep-41</guid>
+      <pubDate>Mon, 25 Dec 2023 10:00:00 +0000</pubDate>
+      <description>An introductory episode.</description>
+      <enclosure url="https://cdn.podcast.example.com/ep41.mp3" length="35000000" type="audio/mpeg"/>
+      <itunes:duration>32:15</itunes:duration>
+      <itunes:episode>41</itunes:episode>
+    </item>
+  </channel>
+</rss>

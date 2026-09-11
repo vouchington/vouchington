@@ -1,0 +1,48 @@
+{
+  "name": "@lambdas/image-resize",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "workspaces": [
+    "../../ts-shared/url-signing"
+  ],
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {
+    "test:smoke": "./scripts/tests/smoke-test-image-lambda.sh",
+    "typecheck": "tsc --noEmit --project ../tsconfig.json",
+    "build": "rm -rf dist && node esbuild.config.mts && pnpm run build:deps && node scripts/copy-og-fonts.mts && cd dist && zip -qr function.zip .",
+    "build:deps": "SHARP_VERSION=$(node -p \"require('./package.json').dependencies.sharp.replace(/^[\\^~]/, '')\") && mkdir -p dist && node -e \"require('node:fs').writeFileSync('dist/package.json', JSON.stringify({name:'image-resize-deps',private:true,version:'0.0.0'}))\" && cd dist && npm install --no-save --no-package-lock --os=linux --cpu=arm64 --libc=glibc sharp@$SHARP_VERSION"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@fontsource/inter": "^5.3.0",
+    "@lambdas/shared": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
+    "@vouchington/image-resize": "0.2.0",
+    "@vouchington/media": "0.2.0",
+    "satori": "^0.33.4",
+    "sharp": "^0.35.4",
+    "ssrf-guard": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.163",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "esbuild": "^0.28.2",
+    "vitest": "^5.0.0"
+  }
+}

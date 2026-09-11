@@ -1,0 +1,29 @@
+{
+  "buckets": [
+    {
+      "category": "spam",
+      "count": 25,
+      "date": "2026-01-01",
+      "metric": "reports"
+    },
+    {
+      "category": "accept",
+      "count": 25,
+      "date": "2026-01-01",
+      "metric": "appeals"
+    },
+    {
+      "category": "remove",
+      "count": 25,
+      "date": "2026-01-01",
+      "metric": "moderation_actions"
+    },
+    {
+      "category": "community_ai",
+      "count": 25,
+      "date": "2026-01-01",
+      "metric": "automated_moderation"
+    }
+  ],
+  "range": "30d"
+}

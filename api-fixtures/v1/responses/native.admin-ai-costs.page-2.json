@@ -1,0 +1,22 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJ0b3RhbF9jb3N0X21pY3JvdW5pdHMiOiIzMTQxNTkyNjUzNTg5NzkzIiwiaWQiOiIwMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDAxMDMifQ"
+  },
+  "results": [
+    {
+      "community_id": "00000000-0000-7000-8000-000000000103",
+      "community_slug": "gamma-community",
+      "request_count": 12,
+      "total_cost": {
+        "amount": "3141592653589793",
+        "currency": "usd",
+        "scale": 6
+      },
+      "total_input_tokens": 8589934592,
+      "total_output_tokens": 5368709120,
+      "unpriced_request_count": 0
+    }
+  ]
+}

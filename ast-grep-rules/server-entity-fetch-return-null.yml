@@ -1,0 +1,348 @@
+id: server-entity-fetch-return-null
+language: Tsx
+severity: error
+message: >-
+  This exported server-fetch helper's return type includes `null` (directly, in a top-level union,
+  or through a nullable `Promise<...>` wrapper), or its name matches the singular entity-getter
+  pattern (`get<Entity>`) fetching a template-literal path shaped like `/api/v1/<resource>/${id}`.
+  That means a missing entity is an expected outcome, not an error. Wrap the `serverApi.get(...)`
+  call in `returnNullForMissingEntity(...)` instead of a catch-all `.catch(() => null)` (or similar),
+  so every nullable entity fetch reports unexpected failures the same way and only treats a genuine
+  "not found" response as null.
+files:
+  - 'web/lib/api/server/**/*.ts'
+ignores:
+  - '**/*.test.ts'
+  - '**/*.spec.ts'
+  - '**/__tests__/**'
+utils:
+  # A direct null-ish type member: either the bare `null` keyword type, or a `literal_type` node
+  # wrapping it (tree-sitter wraps `null` in `literal_type` in most positions, e.g. as a union
+  # member).
+  null-member:
+    any:
+      - kind: 'null'
+      - all:
+          - kind: literal_type
+          - has:
+              stopBy: neighbor
+              kind: 'null'
+  # Matches a `type_annotation` node (the `return_type` field's value) only when its DIRECT type
+  # value -- or, if that direct value is `Promise<T>`, the T type argument -- is itself null-ish or
+  # a union type with a direct null-ish member. Deliberately does NOT descend into unrelated nested
+  # object/generic types (e.g. `Promise<{ page_info: { end_cursor: string | null } }>` must NOT
+  # match: that `null` is nested inside an unrelated object-type field, not the top-level or
+  # Promise-unwrapped-top-level union), mirroring the original `directTypeContainsNull` walker's
+  # union-member-only recursion.
+  nullish-return-type:
+    has:
+      stopBy: neighbor
+      any:
+        - matches: null-member
+        - all:
+            - kind: union_type
+            - has:
+                stopBy: neighbor
+                matches: null-member
+        - all:
+            - kind: generic_type
+            - has:
+                field: name
+                kind: type_identifier
+                regex: '^Promise$'
+            - has:
+                field: type_arguments
+                has:
+                  stopBy: neighbor
+                  any:
+                    - matches: null-member
+                    - all:
+                        - kind: union_type
+                        - has:
+                            stopBy: neighbor
+                            matches: null-member
+  # A `serverApi.get(...)`-shaped call with a template-literal argument (any position, not just the
+  # first) shaped like `/api/v1/<resource>/${id}`. The original `isTopLevelEntityPath(firstArg)`
+  # check was stricter -- it only inspected `arguments[0]` of a CONFIRMED `serverApi.get(...)` call.
+  # This still closes the real gap being fixed here: requiring the entity-shaped template to be an
+  # argument of an ACTUAL `serverApi.get(...)` call, rather than any template string found anywhere
+  # else in the function body (e.g. a logging call or unrelated constant with a similarly-shaped
+  # literal must NOT count as evidence this getter fetches an entity path).
+  entity-shaped-get-call:
+    all:
+      - kind: call_expression
+      - has:
+          field: function
+          kind: member_expression
+          all:
+            - has:
+                field: object
+                kind: identifier
+                regex: '^serverApi$'
+            - has:
+                field: property
+                kind: property_identifier
+                regex: '^get$'
+      - has:
+          field: arguments
+          has:
+            stopBy: neighbor
+            all:
+              - kind: template_string
+              - regex: '^`/api/v1/[^/]+/\$\{[^}]+\}`$'
+rule:
+  all:
+    - kind: call_expression
+    - has:
+        field: function
+        kind: member_expression
+        all:
+          - has:
+              field: object
+              kind: identifier
+              regex: '^serverApi$'
+          - has:
+              field: property
+              kind: property_identifier
+              regex: '^get$'
+    - not:
+        inside:
+          stopBy: end
+          kind: call_expression
+          has:
+            field: function
+            kind: identifier
+            regex: '^returnNullForMissingEntity$'
+    - inside:
+        stopBy: end
+        any:
+          # Shape 1: export (async) function getX(...) { ... }
+          - all:
+              - kind: function_declaration
+              - inside:
+                  stopBy: neighbor
+                  kind: export_statement
+              - any:
+                  - all:
+                      - has:
+                          field: name
+                          kind: identifier
+                          regex: '^get'
+                      - has:
+                          field: return_type
+                          kind: type_annotation
+                          matches: nullish-return-type
+                  - all:
+                      - has:
+                          field: name
+                          kind: identifier
+                          regex: '^get[A-Z][A-Za-z0-9]*$'
+                      - has:
+                          field: body
+                          stopBy: end
+                          has:
+                            stopBy: end
+                            matches: entity-shaped-get-call
+          # Shape 2: export const getX = cache(<function-like>)
+          - all:
+              - any:
+                  - kind: arrow_function
+                  - kind: function_expression
+              - inside:
+                  stopBy: neighbor
+                  kind: arguments
+                  inside:
+                    stopBy: neighbor
+                    kind: call_expression
+                    has:
+                      field: function
+                      kind: identifier
+                      regex: '^cache$'
+                    inside:
+                      stopBy: neighbor
+                      kind: variable_declarator
+                      inside:
+                        stopBy: end
+                        kind: export_statement
+              - any:
+                  - all:
+                      - inside:
+                          stopBy: end
+                          kind: variable_declarator
+                          has:
+                            field: name
+                            kind: identifier
+                            regex: '^get'
+                      - has:
+                          field: return_type
+                          kind: type_annotation
+                          matches: nullish-return-type
+                  - all:
+                      - inside:
+                          stopBy: end
+                          kind: variable_declarator
+                          has:
+                            field: name
+                            kind: identifier
+                            regex: '^get[A-Z][A-Za-z0-9]*$'
+                      - has:
+                          field: body
+                          stopBy: end
+                          has:
+                            stopBy: end
+                            matches: entity-shaped-get-call
+examples:
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+
+      export const getPost = cache(
+        async (id: string): Promise<PostResponseBody | null> => {
+          return serverApi.get<PostResponseBody>(`/api/v1/posts/${id}`).catch(() => null)
+        },
+      )
+    isValid: false
+    file: 'web/lib/api/server/posts-catchall.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+
+      export const getPost = cache(
+        async (id: string): Promise<PostResponseBody> => {
+          return serverApi.get<PostResponseBody>(`/api/v1/posts/${id}`)
+        },
+      )
+    isValid: false
+    file: 'web/lib/api/server/posts-missing-null-type.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+
+      export const getModerationAppeal = cache(
+        async (id: string): Promise<AppealResponseBody> => {
+          return serverApi.get<AppealResponseBody>(`/api/v1/appeals/${id}`)
+        },
+      )
+    isValid: false
+    file: 'web/lib/api/server/moderation-appeals.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+
+      export const getStatus = cache(
+        async (id: string): Promise<StatusResponseBody> => {
+          return serverApi.get<StatusResponseBody>(`/api/v1/statuses/${id}`)
+        },
+      )
+    isValid: false
+    file: 'web/lib/api/server/statuses.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+      import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
+
+      export const getPost = cache(
+        async (id: string): Promise<PostResponseBody | null> => {
+          await returnNullForMissingEntity(otherRequest())
+          return serverApi.get<PostResponseBody>(`/api/v1/posts/${id}`)
+        },
+      )
+    isValid: false
+    file: 'web/lib/api/server/posts-unrelated-wrap.ts'
+  - code: |
+      import { serverApi } from './instance'
+
+      export async function getPost(id: string): Promise<PostResponseBody | null> {
+        return serverApi.get<PostResponseBody>(`/api/v1/posts/${id}`).catch(() => null)
+      }
+    isValid: false
+    file: 'web/lib/api/server/posts-function-declaration.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+
+      export const getTopicRecommendation = cache(function getTopicRecommendation(
+        id: string,
+      ): Promise<PostResponseBody | null> {
+        return serverApi.get<PostResponseBody>(`/api/v1/topic-recommendations/${id}`).catch(() => null)
+      })
+    isValid: false
+    file: 'web/lib/api/server/topic-recommendations.ts'
+  - code: |
+      import { serverApi } from './instance'
+
+      export function getPostSync(id: string): PostResponseBody | null {
+        return serverApi.get<PostResponseBody>(`/api/v1/posts/${id}`).catch(() => null)
+      }
+    isValid: false
+    file: 'web/lib/api/server/posts-sync-union.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+      import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
+
+      export const getPost = cache(
+        async (id: string): Promise<PostResponseBody | null> => {
+          return returnNullForMissingEntity(
+            serverApi.get<PostResponseBody>(`/api/v1/posts/${id}`),
+          )
+        },
+      )
+    isValid: true
+    file: 'web/lib/api/server/posts-wrapped.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+
+      export const getPostFeed = cache(
+        async (feedType: string): Promise<PostsResponseBody> => {
+          return serverApi.get<PostsResponseBody>(`/api/v1/feeds/posts/${feedType}`)
+        },
+      )
+    isValid: true
+    file: 'web/lib/api/server/post-feeds.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+
+      export const getPosts = cache(async (): Promise<PostsResponseBody> => {
+        return serverApi.get<PostsResponseBody>('/api/v1/posts')
+      })
+    isValid: true
+    file: 'web/lib/api/server/posts-list.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+
+      export const getWidgetFeed = cache(
+        async (feedType: string): Promise<WidgetsResponseBody> => {
+          const unrelatedPath = `/api/v1/widgets/${feedType}`
+          return serverApi.get<WidgetsResponseBody>(`/api/v1/feeds/widgets/${feedType}`, {
+            headers: { 'X-Debug-Path': unrelatedPath },
+          })
+        },
+      )
+    isValid: true
+    file: 'web/lib/api/server/widget-feeds.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+
+      export const getPost = cache(
+        async (id: string): Promise<PostResponseBody | null> => {
+          return serverApi.get<PostResponseBody>(`/api/v1/posts/${id}`).catch(() => null)
+        },
+      )
+    isValid: true
+    file: 'backend/modules/posts/posts-out-of-scope.ts'
+  - code: |
+      import { cache } from 'react'
+      import { serverApi } from './instance'
+
+      export const getPost = cache(
+        async (id: string): Promise<PostResponseBody | null> => {
+          return serverApi.get<PostResponseBody>(`/api/v1/posts/${id}`).catch(() => null)
+        },
+      )
+    isValid: true
+    file: 'web/lib/api/server/posts.test.ts'

@@ -1,0 +1,138 @@
+name: Main CI (checks)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-artifacts.yml'
+      - 'ci/cleanup-artifacts-pattern-matcher.mjs'
+      - 'ci/cleanup-artifacts-patterns.json'
+      - 'ci/cleanup-run-artifacts.mjs'
+      - '.github/workflows/main-checks.yml'
+      - '.github/workflows/tests-tooling.yml'
+      - '.github/workflows/tests-ts-shared.yml'
+      - '.github/workflows/explain-analyze.yml'
+      - '.github/actions/**'
+      - '.github/workflows/**'
+      - '.github/workflows/**/*.test.mts'
+      - 'ci/**'
+      - 'dev/**'
+      - 'ts-shared/**'
+      - 'static-code-analysis/**'
+      - 'test-tooling/**'
+      - 'test-helpers/**'
+      - 'api-fixtures/package.json'
+      - 'backend/**'
+      - 'vitest.config.mts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '**/*.sh'
+      - 'CLAUDE.md'
+      - 'docs/prompts/**'
+      - '.agents/skills/**'
+
+concurrency:
+  group: main-checks
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  select-main-checks:
+    runs-on: [self-hosted]
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    outputs:
+      tooling: ${{ steps.filter.outputs.tooling }}
+      ts-shared: ${{ steps.filter.outputs.ts-shared }}
+      explain-analyze: ${{ steps.filter.outputs.explain-analyze }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          clean: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            tooling:
+              - '.github/workflows/main-checks.yml'
+              - '.github/workflows/tests-tooling.yml'
+              - '.github/workflows/tests-ts-shared.yml'
+              - '.github/workflows/explain-analyze.yml'
+              - '.github/actions/**'
+              - '.github/workflows/**'
+              - '.github/workflows/**/*.test.mts'
+              - 'ci/**'
+              - 'dev/**'
+              - 'ts-shared/**'
+              - 'static-code-analysis/**'
+              - 'test-tooling/**'
+              - 'api-fixtures/package.json'
+              - 'backend/**'
+              - 'vitest.config.mts'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '**/*.sh'
+              - 'CLAUDE.md'
+              - 'docs/prompts/**'
+              - '.agents/skills/**'
+            ts-shared:
+              - '.github/workflows/main-checks.yml'
+              - '.github/workflows/tests-ts-shared.yml'
+              - '.github/actions/**'
+              - 'ts-shared/**'
+              - 'vitest.config.mts'
+              - 'test-helpers/**'
+              - 'backend/test-helpers/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+            explain-analyze:
+              - '.github/workflows/main-checks.yml'
+              - '.github/workflows/explain-analyze.yml'
+              - '.github/actions/**'
+              - 'backend/data-stores/psql/**'
+              - 'backend/services/**'
+              - 'backend/scripts/explain-analyze/**'
+
+  tooling-tests:
+    needs: [select-main-checks]
+    if: ${{ !cancelled() && needs.select-main-checks.outputs.tooling != 'false' }}
+    uses: ./.github/workflows/tests-tooling.yml
+    permissions:
+      actions: read
+      contents: read
+    secrets: inherit
+
+  ts-shared-tests:
+    needs: [select-main-checks]
+    if: ${{ !cancelled() && needs.select-main-checks.outputs.ts-shared != 'false' }}
+    uses: ./.github/workflows/tests-ts-shared.yml
+    permissions:
+      actions: read
+      contents: read
+    secrets: inherit
+
+  explain-analyze:
+    needs: [select-main-checks]
+    if: ${{ !cancelled() && needs.select-main-checks.outputs.explain-analyze != 'false' }}
+    uses: ./.github/workflows/explain-analyze.yml
+    permissions:
+      actions: read
+      contents: read
+    secrets: inherit
+
+  cleanup-artifacts:
+    needs: [tooling-tests, ts-shared-tests, explain-analyze]
+    if: ${{ always() && !cancelled() && !failure() }}
+    uses: ./.github/workflows/cleanup-artifacts.yml
+    permissions:
+      actions: write
+      contents: read
+    with:
+      run_id: ${{ github.run_id }}

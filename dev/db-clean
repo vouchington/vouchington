@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() { echo "Usage: ./dev/db-clean [--db-only]"; }
+if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
+DB_ONLY=false
+for arg in "$@"; do
+    case "$arg" in
+        --db-only)
+            if $DB_ONLY; then echo "Error: duplicate option: $arg" >&2; usage >&2; exit 2; fi
+            DB_ONLY=true
+            ;;
+        *)
+            echo "Error: unknown or surplus option: $arg" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+
+# shellcheck source=lib/refuse-on-main.sh
+source "$REPO_ROOT/dev/lib/refuse-on-main.sh"
+refuse_on_main "./dev/db-clean" "$REPO_ROOT"
+
+# shellcheck source=lib/db-target.sh
+source "$REPO_ROOT/dev/lib/db-target.sh"
+# shellcheck source=lib/flush-valkey.sh
+source "$REPO_ROOT/dev/lib/flush-valkey.sh"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+if [ ! -f "$REPO_ROOT/.env" ]; then
+    echo -e "${RED}Error: .env not found. Run ./dev/initialize web first.${NC}"
+    exit 1
+fi
+
+set -a
+# shellcheck source=/dev/null
+source "$REPO_ROOT/.env"
+set +a
+
+if [ -z "${DATABASE_URL:-}" ]; then
+    echo -e "${RED}Error: DATABASE_URL is not set in .env.${NC}"
+    exit 1
+fi
+dev_db_target_resolve clean
+DB_NAME="$DEV_DB_TARGET_DB_NAME"
+if [ -z "$DB_NAME" ]; then
+    echo -e "${RED}Error: Could not extract database name from DATABASE_URL.${NC}"
+    exit 1
+fi
+# shellcheck source=lib/worktree-resource-env.sh
+source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
+refuse_shared_resources_on_disposable "./dev/db-clean" "$REPO_ROOT" "$DB_NAME" "${VALKEY_CONTAINER:-}"
+
+dev_db_target_export_pg_env
+if ! dev_db_target_local_or_allowed clean; then
+    echo -e "${RED}Error: Refusing to recreate non-local database $DB_NAME.${NC}"
+    echo "Set VOUCHA_ALLOW_NON_LOCAL_DB_CLEAN=1 to allow this explicitly."
+    exit 1
+fi
+
+if [[ "$DB_ONLY" != "true" ]]; then
+    echo -e "${YELLOW}Flushing Valkey (${VALKEY_CONTAINER:-})...${NC}"
+    flush_valkey
+    echo ""
+fi
+
+echo -e "${YELLOW}Dropping and recreating $DB_NAME...${NC}"
+dropdb --if-exists -- "$DB_NAME"
+createdb -- "$DB_NAME"
+echo -e "${GREEN}✓ $DB_NAME recreated${NC}"

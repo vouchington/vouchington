@@ -1,0 +1,35 @@
+{
+  "analytics": {
+    "conversion_funnel": {
+      "total_clicks": 4,
+      "total_signups": 2,
+      "total_visits": 12,
+      "visit_to_click_rate": 0.3333333333
+    },
+    "ctr": 0.3333333333,
+    "daily_stats": [
+      {
+        "clicks": 4,
+        "date": "2026-06-29",
+        "unique_visitors": 9,
+        "visits": 12
+      }
+    ],
+    "item_clicks": [
+      {
+        "click_count": 4,
+        "item_id": "landing-item-1",
+        "item_type": "link"
+      }
+    ],
+    "total_clicks": 4,
+    "total_visits": 12,
+    "unique_visitors": 9,
+    "utm_sources": [
+      {
+        "utm_source": "direct",
+        "visits": 12
+      }
+    ]
+  }
+}

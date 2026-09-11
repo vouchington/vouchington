@@ -1,0 +1,4 @@
+{"type":"response_item","payload":{"type":"message","role":"user","content":"synthetic request alpha"}}
+{"type":"response_item","payload":{"type":"message","role":"assistant","content":"synthetic reply alpha"}}
+{"type":"response_item","payload":{"type":"message","role":"user","content":"synthetic request beta"}}
+{"type":"response_item","payload":{"type":"message","role":"assistant","content":"synthetic reply beta"}}

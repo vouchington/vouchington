@@ -1,0 +1,38 @@
+{
+  "name": "@data-stores/psql",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/analytics": "workspace:^",
+    "@data-stores/graceful-shutdown": "workspace:^",
+    "@libpg-query/parser": "^18.0.0",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "@vouchington/postgres": "0.0.7",
+    "pg": "^8.23.0",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "vouchington-tooling": "^0.16.0"
+  }
+}

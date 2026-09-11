@@ -1,0 +1,40 @@
+{
+  "name": "@services/bluesky-follows",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@atproto/api": "^0.20.42",
+    "@data-stores/psql": "workspace:^",
+    "@modules/bluesky-oauth": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@queues/bluesky-follow-propagation": "workspace:^",
+    "@queues/entity-listeners": "workspace:^",
+    "@services/bluesky-accounts": "workspace:^",
+    "@services/user-deletions": "workspace:^",
+    "@services/users": "workspace:^",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

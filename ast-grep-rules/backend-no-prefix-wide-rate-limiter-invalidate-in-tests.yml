@@ -1,0 +1,195 @@
+# RateLimiter.invalidate() scans and unlinks an entire Valkey key prefix. Test cleanup must never
+# erase counters owned by concurrent forks. The scope-aware Oxlint rule owns RateLimiter
+# import/constructor provenance. This rule remains tied to known registries and deleted cleanup
+# wrappers: generic `$X.invalidate()` would incorrectly flag unrelated cache cleanup.
+id: backend-no-prefix-wide-rate-limiter-invalidate-in-tests
+language: Tsx
+severity: error
+message: "Do not use prefix-wide RateLimiter invalidation for test cleanup: it SCAN+UNLINKs concurrent forks' counters. Use a fresh identity when the test already owns one, or delete only the exact keys written by the test."
+files:
+  - 'backend/**/*.test.mts'
+  - 'backend/**/*.spec.mts'
+  - 'backend/**/__tests__/**/*.mts'
+  - 'backend/test-helpers/**/*.mts'
+  - 'backend/**/test-helpers/**/*.mts'
+  - 'backend/**/test-support.mts'
+  - 'backend/**/test-support/**/*.mts'
+  - 'backend/**/*.test-helpers.mts'
+  - 'backend/**/*-test-support.mts'
+  - 'backend/services/valkey-admin/flush.mts'
+  - 'integration-tests/**/*.mts'
+  - 'playwright/**/*.mts'
+ignores:
+  - 'backend/services/valkey-admin/flush.mts'
+  - 'playwright/global-setup.mts'
+rule:
+  any:
+    # Known RateLimiter instances and registry members. Do not broaden this to arbitrary receivers.
+    - kind: call_expression
+      regex: '^(?:rssRateLimiter|attributionRateLimiter|emailLoginVerifyRateLimiter|shortLimiter|dailyLimiter)(?:\.invalidate|\[[''"]invalidate[''"]\])\s*\('
+    - kind: call_expression
+      regex: '^(?:routeRateLimiters|rateLimiters|contributionActionLimiters)(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])(?:\.invalidate|\[[''"]invalidate[''"]\])\s*\('
+    # Registry-wide cleanup is commonly hidden in Promise.all(map(...)). Search the whole callback
+    # so async and statement-block callbacks cannot evade the guard.
+    - all:
+        - any:
+            - pattern: 'Object.values(routeRateLimiters).map($CALLBACK)'
+            - pattern: 'Object.values(routeRateLimiters).forEach($CALLBACK)'
+            - pattern: 'Object.values(rateLimiters).map($CALLBACK)'
+            - pattern: 'Object.values(rateLimiters).forEach($CALLBACK)'
+            - pattern: 'Object.values(contributionActionLimiters).map($CALLBACK)'
+            - pattern: 'Object.values(contributionActionLimiters).forEach($CALLBACK)'
+        - has:
+            stopBy: end
+            kind: call_expression
+            regex: '\.invalidate\s*\(|\[[''"]invalidate[''"]\]\s*\('
+    # Deleted wrappers remain named here so tests cannot recreate or keep calling the old hazard.
+    - kind: call_expression
+      regex: '^(?:(?:[A-Za-z_$][\w$]*\.)?(?:invalidateRssRateLimits|invalidateAttributionRateLimiter|invalidateEmailLoginVerifyRateLimiter|invalidateRateLimitCounters)|[A-Za-z_$][\w$]*\[[''"](?:invalidateRssRateLimits|invalidateAttributionRateLimiter|invalidateEmailLoginVerifyRateLimiter|invalidateRateLimitCounters)[''"]\])\s*\('
+examples:
+  # Preserve the route-rate-limiter threat corpus from the superseded rule.
+  - code: |
+      afterEach(async () => {
+        overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
+        await Promise.all(Object.values(routeRateLimiters).map(rl => rl.invalidate()))
+      })
+    isValid: false
+    file: 'backend/api/v1/sessions-authentication/__tests__/session.test.mts'
+  - code: |
+      afterEach(async () => {
+        await routeRateLimiters.sensitive.invalidate()
+      })
+    isValid: false
+    file: 'backend/api/v1/reports/__tests__/reports.rate-limit.test.mts'
+  - code: |
+      afterEach(async () => {
+        await deleteRouteRateLimitKeys(routeKey, { ip: '2001:db8::1' })
+      })
+    isValid: true
+    file: 'backend/services/route-rate-limits/check.test.mts'
+  # The two former near-misses are now violations.
+  - code: |
+      afterEach(async () => {
+        await invalidateRateLimitCounters('write')
+      })
+    isValid: false
+    file: 'backend/services/user-rate-limits/check.test.mts'
+  - code: |
+      afterEach(async () => {
+        await Promise.all(Object.values(rateLimiters).map(rl => rl.invalidate()))
+      })
+    isValid: false
+    file: 'backend/services/user-rate-limits/check.test.mts'
+  - code: 'await contributionActionLimiters[action]["invalidate"]()'
+    isValid: false
+    file: 'backend/services/contribution-gating/limits.test.mts'
+  # Async/block registry traversal must inspect the whole callback, including sibling statements.
+  - code: |
+      await Promise.all(
+        Object.values(contributionActionLimiters).map(async limiter => {
+          recordCleanupStart()
+          await limiter.invalidate()
+        }),
+      )
+    isValid: false
+    file: 'backend/services/contribution-gating/limits.test.mts'
+  - code: |
+      Object.values(routeRateLimiters).forEach(limiter => {
+        recordCleanupStart()
+        limiter['invalidate']()
+      })
+    isValid: false
+    file: 'playwright/tests/auth/login.spec.mts'
+  # Known instances and deleted wrapper calls across every protected path class.
+  - code: 'await rssRateLimiter.invalidate()'
+    isValid: false
+    file: 'backend/rss/posts.test.mts'
+  - code: 'await invalidateAttributionRateLimiter()'
+    isValid: false
+    file: 'backend/test-helpers/entities/attributions.mts'
+  - code: 'await invalidateRateLimitCounters()'
+    isValid: false
+    file: 'backend/api/test-helpers/server.mts'
+  - code: 'await helpers.invalidateEmailLoginVerifyRateLimiter()'
+    isValid: false
+    file: 'integration-tests/web/helpers/client.mts'
+  - code: "await helpers['invalidateRssRateLimits']()"
+    isValid: false
+    file: 'backend/services/rss-xml/test-support.mts'
+  - code: 'await rssRateLimiter.invalidate()'
+    isValid: false
+    file: 'backend/services/rss-xml/cleanup.test-helpers.mts'
+  - code: 'await rssRateLimiter.invalidate()'
+    isValid: false
+    file: 'backend/services/rss-xml/cleanup-test-support.mts'
+  # The only exceptions are deliberate repository-wide administrative cleanup.
+  - code: "await RateLimiter.invalidate('', rateLimiterValkeyClient)"
+    isValid: true
+    file: 'backend/services/valkey-admin/flush.mts'
+  - code: |
+      await Promise.all(Object.values(routeRateLimiters).map(rl => rl.invalidate()))
+    isValid: true
+    file: 'playwright/global-setup.mts'
+  # Exact deletion and unrelated cache invalidation remain valid.
+  - code: |
+      await deleteRouteRateLimitKeys(routeKey, identities)
+      await rateLimiter.delete(...ownedIds)
+    isValid: true
+    file: 'backend/services/route-rate-limits/test-support.mts'
+  - code: 'await cache.invalidate()'
+    isValid: true
+    file: 'backend/test-helpers/entities/email-addresses.mts'
+  - code: |
+      const exactDeleteLimiter = new RateLimiter({ prefix: 'owned', ttlSeconds: 60 })
+      const cache = new ValkeyCache({ prefix: 'owned-cache', ttlSeconds: 60 })
+      await exactDeleteLimiter.delete(...ownedIds)
+      await cache.invalidate()
+    isValid: true
+    file: 'backend/services/example/exact-rate-limiter-delete.test.mts'
+  - code: |
+      async function clearCachedPlans() {
+        const cache = new ValkeyCache({ prefix: 'plans', ttlSeconds: 60 })
+        await cache.invalidate()
+      }
+
+      async function deleteOwnedRateLimitKeys() {
+        const cache = new RateLimiter({ prefix: 'owned', ttlSeconds: 60 })
+        await cache.delete(...ownedIds)
+      }
+    isValid: true
+    file: 'backend/services/example/separate-lexical-scopes.test.mts'
+  - code: |
+      let target = new ValkeyCache({ prefix: 'cache', ttlSeconds: 60 })
+      await target.invalidate()
+      target = new RateLimiter({ prefix: 'later-rate-limit', ttlSeconds: 60 })
+      await target.delete(...ownedIds)
+    isValid: true
+    file: 'backend/services/example/invalidation-before-rate-limiter-assignment.test.mts'
+  - code: |
+      let target
+      beforeEach(() => {
+        target = new RateLimiter({ prefix: 'outer-rate-limit', ttlSeconds: 60 })
+      })
+      afterEach(async () => {
+        const target = new ValkeyCache({ prefix: 'local-cache', ttlSeconds: 60 })
+        await target.invalidate()
+      })
+    isValid: true
+    file: 'backend/services/example/lifecycle-cleanup-local-shadow.test.mts'
+  - code: |
+      let target
+      beforeEach(() => {
+        target = new RateLimiter({ prefix: 'outer-rate-limit', ttlSeconds: 60 })
+      })
+      afterEach(async target => {
+        await target.invalidate()
+      })
+    isValid: true
+    file: 'backend/services/example/lifecycle-cleanup-parameter-shadow.test.mts'
+  - code: "await ValkeyCache.invalidate('membership-plans')"
+    isValid: true
+    file: 'backend/services/memberships/plans.test.mts'
+  # The same invalid shape remains outside the guard in non-test production code.
+  - code: "await RateLimiter.invalidate('maintenance')"
+    isValid: true
+    file: 'backend/services/maintenance/cleanup.mts'

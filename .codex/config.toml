@@ -1,0 +1,137 @@
+# Codex reads this repo's checked-in CLAUDE.md files directly.
+project_doc_fallback_filenames = ["CLAUDE.md"]
+plan_mode_reasoning_effort = "xhigh"
+model_reasoning_effort = "medium"
+model = "gpt-5.6-sol"
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"
+
+[sandbox_workspace_write]
+network_access = true
+writable_roots = [
+  "~/.cargo",
+  "~/Library/pnpm",
+  "~/.local/share/pnpm",
+  "~/.pnpm-store",
+  "~/Library/Caches/no-mistakes",
+  "~/Library/Caches/pnpm",
+  "~/.pnpm-state",
+  "~/.cache/no-mistakes",
+  "~/.cache/pnpm",
+  "~/.local/state/pnpm",
+  "/var/folders",
+  "/private/var/folders",
+]
+
+[features]
+hooks = true
+
+[mcp_servers.agent-blackboard]
+command = "bash"
+args = ["-c", 'exec "$(git rev-parse --show-toplevel)/dev/blackboard-mcp"']
+env_vars = ["AGENT_BLACKBOARD_URL", "AGENT_BLACKBOARD_TOKEN"]
+
+[mcp_servers.agent-blackboard.tools.entry_append]
+approval_mode = "approve"
+
+[mcp_servers.agent-blackboard.tools.entry_get]
+approval_mode = "approve"
+
+[mcp_servers.agent-blackboard.tools.session_archive]
+approval_mode = "approve"
+
+[mcp_servers.agent-blackboard.tools.session_create]
+approval_mode = "approve"
+
+[mcp_servers.agent-blackboard.tools.session_ensure]
+approval_mode = "approve"
+
+[mcp_servers.agent-blackboard.tools.session_patch]
+approval_mode = "approve"
+
+[mcp_servers.agent-blackboard.tools.session_search]
+approval_mode = "approve"
+
+[mcp_servers.agent-blackboard.tools.snapshot_export]
+approval_mode = "approve"
+
+[[hooks.PreToolUse]]
+matcher = "Bash|Edit|Write|apply_patch"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/dev/codex-hooks/pre-tool-use.mts" codex'
+timeout = 30
+statusMessage = "Checking repository command policy"
+
+[[hooks.PermissionRequest]]
+
+[[hooks.PermissionRequest.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/dev/session-friction/record.mts" permission-request 2>/dev/null || true'
+timeout = 30
+statusMessage = "Recording permission request"
+
+[[hooks.SessionStart]]
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = '"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder" session-start'
+timeout = 10
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = '"$(git rev-parse --show-toplevel)/dev/check-fresh-base"'
+timeout = 12
+statusMessage = "Checking worktree base vs origin/main"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = '"$(git rev-parse --show-toplevel)/dev/check-web-init"'
+timeout = 10
+statusMessage = "Checking web stack initialization"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/dev/check-blackboard.mts"'
+timeout = 15
+statusMessage = "Checking agent-blackboard availability"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/dev/journal-checkpoint.mts" compact codex'
+timeout = 30
+statusMessage = "Journaling post-compaction checkpoint"
+
+[[hooks.UserPromptSubmit]]
+
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = '"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder" user-prompt'
+timeout = 10
+
+[[hooks.PostToolUse]]
+matcher = "ExitPlanMode|Bash"
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use-command.mts" codex 2>/dev/null || true'
+timeout = 30
+statusMessage = "Recording session checkpoints"
+
+[[hooks.PostToolUse]]
+matcher = "Edit|Write|apply_patch"
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = 'node "$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use.mts" 2>&1 || true'
+timeout = 30
+statusMessage = "Running post-edit checks"
+
+[[hooks.PreCompact]]
+
+[[hooks.PreCompact.hooks]]
+type = "command"
+command = '"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder" pre-compact'
+timeout = 10

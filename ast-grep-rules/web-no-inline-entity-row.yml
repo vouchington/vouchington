@@ -1,0 +1,310 @@
+id: web-no-inline-entity-row
+language: Tsx
+severity: error
+message: 'Use the canonical entity list-item component from docs/requirements/navigation/COMPONENTS.md#canonical-entity-list-item-components instead of rebuilding this entity row inline.'
+files:
+  - 'web/**/*.tsx'
+ignores:
+  - 'web/**/*.test.tsx'
+  - 'web/**/*.mock.test.tsx'
+  - 'web/**/*.stories.tsx'
+  # Canonical components and documented exceptions listed in COMPONENTS.md.
+  - 'web/components/sources/rss-feed-list-item.tsx'
+  - 'web/components/sources/source-list-item.tsx'
+  - 'web/components/sources/article-list-item.tsx'
+  - 'web/components/sources/video-list-item.tsx'
+  - 'web/components/podcasts/podcast-list-item.tsx'
+  - 'web/components/podcasts/podcast-show-card.tsx'
+  - 'web/components/users/user-list.tsx'
+  - 'web/components/users/user-link.tsx'
+  - 'web/components/communities/community-card.tsx'
+  - 'web/components/communities/community-member-row.tsx'
+  - 'web/components/communities/community-list-item-card.tsx'
+  - 'web/components/topics/topic-communities-aside-content.tsx'
+  - 'web/components/domains/hostname-list-item.tsx'
+  - 'web/app/(topics)/domains/compare/page.tsx'
+  - 'web/components/referral-links/referral-link-card.tsx'
+  - 'web/components/feed/referral-link-feed-card.tsx'
+  - 'web/components/notifications/notification-row.tsx'
+rule:
+  all:
+    - any:
+        - pattern: '<Card $$$>$$$</Card>'
+        - pattern: '<HoverableCard $$$>$$$</HoverableCard>'
+        - pattern: '<article $$$>$$$</article>'
+        - pattern: '<tr $$$>$$$</tr>'
+        - pattern: '<TableRow $$$>$$$</TableRow>'
+        # Conservative div shell coverage: catch canonical card/row class strings
+        # without treating every layout wrapper <div> as a list-item candidate.
+        - all:
+            - pattern: '<div $$$>$$$</div>'
+            - has:
+                stopBy: end
+                kind: jsx_attribute
+                all:
+                  - has:
+                      stopBy: neighbor
+                      kind: property_identifier
+                      regex: '^data-pw$'
+                  - has:
+                      stopBy: end
+                      kind: string_fragment
+                      regex: '^referral-link(-feed)?-card$'
+        - all:
+            - pattern: '<div $$$>$$$</div>'
+            - has:
+                stopBy: end
+                kind: string_fragment
+                regex: 'rounded-md border bg-card'
+        - all:
+            - pattern: '<div $$$>$$$</div>'
+            - has:
+                stopBy: end
+                kind: string_fragment
+                regex: 'border-b (p-4|px-3 py-3)'
+    - any:
+        - has:
+            stopBy: end
+            pattern: '<RssFeedActionSlot $$$ />'
+        - all:
+            - has:
+                stopBy: end
+                pattern: 'userHref($$$)'
+            - has:
+                stopBy: end
+                any:
+                  - pattern: '<UserAvatar $$$ />'
+                  - pattern: '<EntityBookmarkButton $$$ />'
+        - all:
+            - has:
+                stopBy: end
+                pattern: '<UserAvatar $$$ />'
+            - has:
+                stopBy: end
+                any:
+                  - pattern: '<Link $$$>$$$</Link>'
+                  - pattern: '<a $$$>$$$</a>'
+        - all:
+            - has:
+                stopBy: end
+                pattern: 'communityHref($$$)'
+            - has:
+                stopBy: end
+                any:
+                  - pattern: '<JoinButton $$$ />'
+                  - pattern: '<Badge $$$>Joined</Badge>'
+                  - all:
+                      - kind: property_identifier
+                      - regex: '^(member_count|post_count|list_item_count)$'
+        - all:
+            - has:
+                stopBy: end
+                pattern: 'domainHref($$$)'
+            - has:
+                stopBy: end
+                any:
+                  - pattern: '<DomainTrustBadge $$$ />'
+                  - pattern: '<HostnameVouchDisavowVote $$$ />'
+        - all:
+            # Key off the canonical referral data-pw marker so div-based
+            # ReferralLinkCard and Card-based ReferralLinkFeedCard copies are covered.
+            - has:
+                stopBy: end
+                kind: jsx_attribute
+                all:
+                  - has:
+                      stopBy: neighbor
+                      kind: property_identifier
+                      regex: '^data-pw$'
+                  - has:
+                      stopBy: end
+                      kind: string_fragment
+                      regex: '^referral-link(-feed)?-card$'
+            - has:
+                stopBy: end
+                any:
+                  - pattern: '<ExternalLink $$$>$$$</ExternalLink>'
+                  - pattern: 'reviewHref($$$)'
+        - has:
+            stopBy: end
+            pattern: '<NotificationIcon $$$ />'
+examples:
+  - code: |
+      import { Card } from '@/components/ui/card'
+      import { RssFeedActionSlot } from '@/components/sources/rss-feed-action-slot'
+      export function InlineSourceRow({ feed }) {
+        return <Card><h2>{feed.title}</h2><RssFeedActionSlot feed={feed} action={{ kind: 'follow' }} /></Card>
+      }
+    isValid: false
+    file: 'web/components/sources/inline-source-row.tsx'
+  - code: |
+      import Link from 'next/link'
+      import { Card } from '@/components/ui/card'
+      import { UserAvatar } from '@/components/shared/user-avatar'
+      import { userHref } from '@/lib/links/entity-href'
+      export function InlineUserRow({ user }) {
+        return <Card><Link href={userHref(user)}><UserAvatar profileImageId={user.profile_image_id} username={user.username} /></Link></Card>
+      }
+    isValid: false
+    file: 'web/components/users/inline-user-row.tsx'
+  - code: |
+      import Link from 'next/link'
+      import { communityHref } from '@/lib/links/entity-href'
+      import JoinButton from '@/components/communities/join-button'
+      export function InlineCommunityRow({ community }) {
+        return <article><Link href={communityHref(community)}>{community.name}</Link><JoinButton communitySlug={community.slug} visibility={community.visibility} /></article>
+      }
+    isValid: false
+    file: 'web/components/communities/inline-community-row.tsx'
+  - code: |
+      import Link from 'next/link'
+      import { HoverableCard } from '@/components/shared/hoverable-card'
+      import { communityHref } from '@/lib/links/entity-href'
+      import JoinButton from '@/components/communities/join-button'
+      export function InlineCommunityHoverCard({ community }) {
+        return <HoverableCard><Link href={communityHref(community)}>{community.name}</Link><JoinButton communitySlug={community.slug} visibility={community.visibility} /></HoverableCard>
+      }
+    isValid: false
+    file: 'web/components/communities/inline-community-hover-card.tsx'
+  - code: |
+      import Link from 'next/link'
+      import { DomainTrustBadge } from '@/components/domains/domain-trust-badge'
+      import { domainHref } from '@/lib/links/entity-href'
+      export function InlineDomainRow({ hostname }) {
+        return <article><Link href={domainHref(hostname)}>{hostname.hostname}</Link><DomainTrustBadge hostname={hostname.hostname} scoreNet={0} countUp={0} countDown={0} /></article>
+      }
+    isValid: false
+    file: 'web/components/domains/inline-domain-row.tsx'
+  - code: |
+      import Link from 'next/link'
+      import { DomainTrustBadge } from '@/components/domains/domain-trust-badge'
+      import { domainHref } from '@/lib/links/entity-href'
+      export function InlineDomainCard({ hostname }) {
+        return <div className='flex flex-col gap-4 rounded-md border bg-card p-4'><Link href={domainHref(hostname)}>{hostname.hostname}</Link><DomainTrustBadge hostname={hostname.hostname} scoreNet={0} countUp={0} countDown={0} /></div>
+      }
+    isValid: false
+    file: 'web/components/domains/inline-domain-card.tsx'
+  - code: |
+      import { ExternalLink } from '@/components/ui/external-link'
+      export function InlineReferralLinkRow({ link }) {
+        return <article data-pw='referral-link-card'><ExternalLink href={link.url}>{link.label}</ExternalLink></article>
+      }
+    isValid: false
+    file: 'web/components/referral-links/inline-referral-link-row.tsx'
+  - code: |
+      import { ExternalLink } from '@/components/ui/external-link'
+      export function InlineReferralLinkDivRow({ link }) {
+        return <div className='flex items-center justify-between rounded-md border bg-card p-4' data-pw='referral-link-card'><ExternalLink href={link.url}>{link.label}</ExternalLink></div>
+      }
+    isValid: false
+    file: 'web/components/referral-links/inline-referral-link-div-row.tsx'
+  - code: |
+      import { Card } from '@/components/ui/card'
+      import { ExternalLink } from '@/components/ui/external-link'
+      export function InlineReferralLinkFeedRow({ link }) {
+        return <Card data-pw='referral-link-feed-card'><ExternalLink href={link.url}>{link.label}</ExternalLink></Card>
+      }
+    isValid: false
+    file: 'web/components/referral-links/inline-referral-link-feed-row.tsx'
+  - code: |
+      import { ExternalLink } from '@/components/ui/external-link'
+      export function InlineReferralLinkRow({ link }) {
+        return <article data-pw={"referral-link-card"}><ExternalLink href={link.url}>{link.label}</ExternalLink></article>
+      }
+    isValid: false
+    file: 'web/components/referral-links/inline-referral-link-curly-row.tsx'
+  - code: |
+      import { NotificationIcon } from '@/components/notifications/notification-icon'
+      export function InlineNotificationRow({ notification }) {
+        return <article><NotificationIcon entityType={notification.entity_type} /><span>{notification.title}</span></article>
+      }
+    isValid: false
+    file: 'web/components/notifications/inline-notification-row.tsx'
+  - code: |
+      import { NotificationIcon } from '@/components/notifications/notification-icon'
+      export function InlineNotificationDivRow({ notification }) {
+        return <div className='flex items-start gap-3 border-b p-4 last:border-b-0'><NotificationIcon entityType={notification.entity_type} /><span>{notification.title}</span></div>
+      }
+    isValid: false
+    file: 'web/components/notifications/inline-notification-div-row.tsx'
+  - code: |
+      import { UserAvatar } from '@/components/shared/user-avatar'
+      import { userHref } from '@/lib/links/entity-href'
+      export function InlineUserTableRow({ user }) {
+        return <tr><td><a href={userHref(user)}><UserAvatar profileImageId={user.profile_image_id} username={user.username} /></a></td></tr>
+      }
+    isValid: false
+    file: 'web/components/users/inline-user-table-row.tsx'
+  - code: |
+      import Link from 'next/link'
+      import { Card } from '@/components/ui/card'
+      import { UserAvatar } from '@/components/shared/user-avatar'
+      import { userHref } from '@/lib/links/entity-href'
+      export function InlineHoistedUserRow({ user }) {
+        const href = userHref(user)
+        return <Card><Link href={href}><UserAvatar profileImageId={user.profile_image_id} username={user.username} /></Link></Card>
+      }
+    isValid: false
+    file: 'web/components/users/inline-hoisted-user-row.tsx'
+  - code: |
+      import Link from 'next/link'
+      import { TableRow } from '@/components/ui/table'
+      import { UserAvatar } from '@/components/shared/user-avatar'
+      import { userHref } from '@/lib/links/entity-href'
+      export function InlineUserShadcnTableRow({ user }) {
+        return <TableRow><td><Link href={userHref(user)}><UserAvatar profileImageId={user.profile_image_id} username={user.username} /></Link></td></TableRow>
+      }
+    isValid: false
+    file: 'web/components/users/inline-shadcn-table-row.tsx'
+  - code: |
+      import { RssFeedListItem } from '@/components/sources/rss-feed-list-item'
+      export function SourcesList({ feeds }) {
+        return <div>{feeds.map(feed => <RssFeedListItem key={feed.id} feed={feed} />)}</div>
+      }
+    isValid: true
+    file: 'web/app/news-sources/page.tsx'
+  - code: |
+      import { UserList } from '@/components/users/user-list'
+      export function UsersPage({ users }) {
+        return <UserList users={users} emptyTitle='No users' emptyDescription='No users found.' />
+      }
+    isValid: true
+    file: 'web/app/(user)/users/page.tsx'
+  - code: |
+      import Link from 'next/link'
+      import { UserAvatar } from '@/components/shared/user-avatar'
+      import { userHref } from '@/lib/links/entity-href'
+      export function UserLink({ user }) {
+        return <Link href={userHref(user)}><UserAvatar profileImageId={user.profile_image_id} username={user.username} /></Link>
+      }
+    isValid: true
+    file: 'web/components/users/user-link.tsx'
+  - code: |
+      import Link from 'next/link'
+      import { communityHref } from '@/lib/links/entity-href'
+      export function TopicCommunitiesAsideContent({ community }) {
+        return <div><Link href={communityHref(community)}>{community.name}</Link></div>
+      }
+    isValid: true
+    file: 'web/components/topics/topic-communities-aside-content.tsx'
+  - code: |
+      import { HostnameListItem } from '@/components/domains/hostname-list-item'
+      export function DomainList({ hostnames }) {
+        return hostnames.map(h => <HostnameListItem key={h} hostname={h} />)
+      }
+    isValid: true
+    file: 'web/app/(topics)/domains/page.tsx'
+  - code: |
+      import { ReferralLinkCard } from '@/components/referral-links/referral-link-card'
+      export function ReferralRow({ link, user }) {
+        return <ReferralLinkCard link={link} user={user} />
+      }
+    isValid: true
+    file: 'web/app/my/referral-links/page.tsx'
+  - code: |
+      import { NotificationRow } from '@/components/notifications/notification-row'
+      export function NotificationList({ items }) {
+        return items.map(n => <NotificationRow key={n.id} notification={n} />)
+      }
+    isValid: true
+    file: 'web/components/notifications/notification-list.tsx'

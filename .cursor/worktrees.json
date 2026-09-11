@@ -1,0 +1,3 @@
+{
+  "setup-worktree": ["./dev/initialize monorepo"]
+}

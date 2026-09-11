@@ -1,0 +1,44 @@
+name: Main CI (lambdas)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/main-lambdas.yml'
+      - '.github/workflows/tests-lambdas.yml'
+      - '.github/workflows/checks-static.yml'
+      - '.github/actions/**'
+      - 'ci/runner-port-policy.json'
+      - 'ci/runner-port-policy.mts'
+      - 'lambdas/**'
+      - 'ts-shared/url-signing/**'
+      - 'ts-shared/utils/**'
+      - 'vitest.config.mts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+
+concurrency:
+  group: main-lambdas
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  lambdas-tests:
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
+    permissions:
+      actions: read
+      contents: read
+    uses: ./.github/workflows/tests-lambdas.yml
+    secrets: inherit
+
+  static-checks:
+    uses: ./.github/workflows/checks-static.yml
+    with:
+      lambdas: true
+    permissions:
+      contents: read
+      actions: read

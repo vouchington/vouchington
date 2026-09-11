@@ -1,0 +1,101 @@
+id: pagination-no-legacy-api-cursor
+language: Tsx
+severity: error
+message: 'List APIs must use the opaque `after` cursor contract; migrate legacy `cursor` request parameters.'
+files:
+  - 'backend/api/v1/**/*.mts'
+ignores:
+  - 'backend/api/v1/**/*.test.mts'
+  - 'backend/api/v1/**/__tests__/**'
+rule:
+  any:
+    - pattern: $CTX.query.cursor
+    - pattern: query.cursor
+    - pattern: $CTX.query['cursor']
+    - pattern: query['cursor']
+    - pattern: '$CTX.query["cursor"]'
+    - pattern: 'query["cursor"]'
+    - pattern: 'const { query: { cursor } } = $ROUTE_CTX'
+    - pattern: 'const { query: { cursor: $ALIAS } } = $ROUTE_CTX'
+    - all:
+        - kind: variable_declarator
+        - has:
+            field: name
+            kind: object_pattern
+            regex: '(?:^|[{,]\s*)cursor(?:\s*:|\s*[,}])'
+        - has:
+            field: value
+            any:
+              - pattern: $CTX.query
+              - pattern: query
+    - all:
+        - kind: pair
+        - has:
+            kind: property_identifier
+            regex: '^paramName$'
+            stopBy: neighbor
+        - has:
+            kind: string
+            regex: '^[''"]cursor[''"]$'
+            stopBy: neighbor
+constraints:
+  ROUTE_CTX:
+    regex: '^ctx$'
+examples:
+  - code: "const cursor = typeof ctx.query.cursor === 'string' ? ctx.query.cursor : undefined"
+    isValid: false
+    file: 'backend/api/v1/reports/reports.mts'
+  - code: "const parser = createPaginationParser({ cursor: { type: 'simple', paramName: 'cursor' } })"
+    isValid: false
+    file: 'backend/api/v1/reports/reports-cursor.mts'
+  - code: 'const { cursor } = ctx.query'
+    isValid: false
+    file: 'backend/api/v1/reports/reports.mts'
+  - code: 'const { cursor: after } = query'
+    isValid: false
+    file: 'backend/api/v1/reports/reports.mts'
+  - code: 'const { query: { cursor } } = ctx'
+    isValid: false
+    file: 'backend/api/v1/reports/reports.mts'
+  - code: 'const { query: { cursor: after } } = ctx'
+    isValid: false
+    file: 'backend/api/v1/reports/reports.mts'
+  - code: 'const cursor = query.cursor'
+    isValid: false
+    file: 'backend/api/v1/reports/reports.mts'
+  - code: "const cursor = ctx.query['cursor']"
+    isValid: false
+    file: 'backend/api/v1/reports/reports.mts'
+  - code: 'const cursor = query["cursor"]'
+    isValid: false
+    file: 'backend/api/v1/reports/reports.mts'
+  - code: "const after = typeof ctx.query.after === 'string' ? ctx.query.after : undefined"
+    isValid: true
+    file: 'backend/api/v1/reports/reports.mts'
+  - code: "const cursor = typeof ctx.query.cursor === 'string' ? ctx.query.cursor : undefined"
+    isValid: true
+    file: 'backend/api/v1/reports/reports.test.mts'
+  - code: "const parser = createPaginationParser({ cursor: { type: 'simple', paramName: 'cursor' } })"
+    isValid: true
+    file: 'backend/modules/pagination/__tests__/parser.test.mts'
+  - code: 'const cursor = providerResponse.cursor'
+    isValid: true
+    file: 'backend/api/v1/fediverse/fediverse.mts'
+  - code: "const cursor = providerResponse['cursor']"
+    isValid: true
+    file: 'backend/api/v1/fediverse/fediverse.mts'
+  - code: 'const cursor = providerResponse["cursor"]'
+    isValid: true
+    file: 'backend/api/v1/fediverse/fediverse.mts'
+  - code: 'const { query: { cursor } } = providerResponse'
+    isValid: true
+    file: 'backend/api/v1/fediverse/fediverse.mts'
+  - code: "const cursor = ctx.query['cursor']"
+    isValid: true
+    file: 'backend/api/v1/reports/reports.test.mts'
+  - code: 'const { query: { cursor } } = ctx'
+    isValid: true
+    file: 'backend/api/v1/reports/reports.mock.test.mts'
+  - code: 'const { cursor } = query'
+    isValid: true
+    file: 'backend/services/search-params/parse-posts.mts'

@@ -1,0 +1,16 @@
+# Static-analysis projection only. GitHub does not execute workflows outside
+# .github/workflows; this gives no-mistakes the top-level CI file trigger and the
+# reusable detector's real external filter document in one analyzable descriptor.
+name: CI path coverage projection
+
+on:
+  pull_request:
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: .github/ci-path-filters.yml

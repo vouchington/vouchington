@@ -1,0 +1,25 @@
+id: no-roles-outside-services
+language: Tsx
+severity: error
+message: '.roles access not allowed outside backend/services/'
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/services/**'
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+rule:
+  any:
+    - pattern: $OBJ.roles
+    - pattern: "$OBJ['roles']"
+    - pattern: '$OBJ[`roles`]'
+examples:
+  - code: 'const r = user.roles'
+    isValid: false
+    file: 'backend/modules/auth/check.mts'
+  - code: 'const r = user.roles'
+    isValid: true
+    file: 'backend/services/auth/check.mts'
+  - code: 'const r = user.role'
+    isValid: true
+    file: 'backend/modules/auth/check.mts'

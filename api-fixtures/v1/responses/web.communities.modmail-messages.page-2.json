@@ -1,0 +1,19 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDYwMCJ9"
+  },
+  "results": [
+    {
+      "body_text": "Earlier modmail context.",
+      "conversation_id": "00000000-0000-7000-8000-000000000501",
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "deleted_at": null,
+      "id": "00000000-0000-7000-8000-000000000600",
+      "sender_username": "testuser",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  ]
+}

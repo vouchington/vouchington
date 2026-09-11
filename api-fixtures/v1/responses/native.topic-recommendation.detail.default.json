@@ -1,0 +1,89 @@
+{
+  "bookmarks": {
+    "recommendation-1": {
+      "save": true
+    }
+  },
+  "election_vote": {
+    "__entity_type": "election_vote",
+    "choice": "support",
+    "created_at": "2026-07-14T00:00:00Z",
+    "entity_id": "recommendation-1",
+    "user_id": "user-abc"
+  },
+  "html": "<p>Recommendation body</p>",
+  "post": {
+    "ai_summary_markdown": "",
+    "archived_at": null,
+    "archived_by_id": null,
+    "broadcast": "everyone",
+    "clearance_reason": null,
+    "clearance_status": "approved",
+    "clearance_updated_at": null,
+    "community_id": null,
+    "created_at": "2026-07-14T00:00:00Z",
+    "created_by_id": "user-abc",
+    "deleted_at": null,
+    "deleted_by_id": null,
+    "html": null,
+    "id": "recommendation-1",
+    "is_anonymous": false,
+    "locked_at": null,
+    "locked_by_id": null,
+    "markdown": "Recommendation body",
+    "parent_id": null,
+    "post_type": "topic_recommendation",
+    "privacy": "public",
+    "root_id": null,
+    "slug": null,
+    "spam_detection_created_at": null,
+    "spam_detection_flagged": null,
+    "spam_detection_results": null,
+    "spam_detection_score": null,
+    "title": "Native recommendation",
+    "topic_recommendation": {
+      "aliases": ["native topic"],
+      "approval_error_message": null,
+      "created_topic_id": null,
+      "created_topic_slug": null,
+      "example_referral_link": null,
+      "hostname": null,
+      "hostname_id": null,
+      "hostnames": [],
+      "landing_page_urls": [],
+      "post_id": "recommendation-1",
+      "rejection_reason": null,
+      "reviewed_at": null,
+      "reviewed_by_id": null,
+      "status": "pending",
+      "topic_markdown": "Recommendation body",
+      "topic_slug": "native-topic",
+      "topic_title": "Native Topic",
+      "topic_type": "topic",
+      "topic_wikipedia_pageid": null
+    },
+    "updated_at": "2026-07-14T00:00:00Z",
+    "updated_by_id": null
+  },
+  "post_election": {
+    "__entity_type": "post_election",
+    "id": "recommendation-1",
+    "votes_count_down": 0,
+    "votes_count_up": 1,
+    "votes_score_net": 1
+  },
+  "post_metrics": {
+    "__entity_type": "post_metrics",
+    "bookmarks": {
+      "follow": 0,
+      "save": 1
+    },
+    "count": {
+      "ancestors": 0,
+      "children": 0,
+      "descendants": 0
+    },
+    "id": "recommendation-1",
+    "updated_at": "2026-07-14T00:00:00Z"
+  }
+}

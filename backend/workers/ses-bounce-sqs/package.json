@@ -1,0 +1,28 @@
+{
+  "name": "@workers/ses-bounce-sqs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@backend/worker-runtime": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@services/ses-bounce-events": "workspace:^",
+    "http-assert": "^1.5.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-sqs": "^3.1127.0",
+    "@modules/aws": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

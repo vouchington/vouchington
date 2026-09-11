@@ -1,0 +1,47 @@
+{
+  "appeals": {
+    "accepted": 0,
+    "denied": 0,
+    "dismissed": 0,
+    "reduced": 0,
+    "success_rate": null,
+    "total_closed": 0
+  },
+  "automod_performance": {
+    "actions_over_time": [],
+    "auto_removes": 0,
+    "confidence_distribution": [],
+    "false_positive_count": 0,
+    "false_positive_rate": null,
+    "reviewed_count": 0,
+    "sources": [],
+    "total_actions": 0
+  },
+  "moderator_workload": {
+    "moderators": [],
+    "users": {}
+  },
+  "new_user_friction": {
+    "first_posts": 0,
+    "rejected_first_posts": 0,
+    "rejection_rate": null
+  },
+  "period_end": "2026-01-31T00:00:00Z",
+  "period_start": "2026-01-01T00:00:00Z",
+  "queue_volume": {
+    "clearance_actions_over_time": [],
+    "moderator_actions_over_time": [],
+    "pending_reports": 0,
+    "reports_over_time": [],
+    "total_reports": 0
+  },
+  "range": "30d",
+  "rule_violations": {
+    "reasons": [],
+    "reasons_over_time": []
+  },
+  "scope": {
+    "community_id": "community-1",
+    "type": "community"
+  }
+}

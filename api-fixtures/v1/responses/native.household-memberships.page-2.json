@@ -1,0 +1,21 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAxVDAwOjAwOjAwLjAwMDAwMFoiLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMiIsInNjb3BlIjoiaG91c2Vob2xkLW1lbWJlcnNoaXBzOjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMTp1cGRhdGVkX2F0LWRlc2MsaWQtZGVzYyJ9"
+  },
+  "results": [
+    {
+      "household_id": "00000000-0000-7000-8000-000000000101",
+      "id": "00000000-0000-7000-8000-000000000202",
+      "individual": {
+        "id": "00000000-0000-7000-8000-000000000302",
+        "updated_at": "2026-07-01T00:00:00Z",
+        "user_id": null,
+        "username": null
+      },
+      "relationship": "parent",
+      "updated_at": "2026-07-01T00:00:00Z"
+    }
+  ]
+}

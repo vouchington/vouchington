@@ -1,0 +1,198 @@
+{
+  "bookmarks": {},
+  "election_votes": {},
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "posts": {},
+  "posts_metrics": {},
+  "related_posts_by_url_id": {},
+  "results": [],
+  "rss_feed_item_elections": {},
+  "rss_feed_item_embeds": {},
+  "rss_feed_item_thumbnail_url": {},
+  "rss_feed_items": {
+    "item-1": {
+      "__entity_type": "rss_feed_item",
+      "categories": [
+        {
+          "category_text": "#Travel",
+          "hashtag": {
+            "display_token": "#Travel",
+            "id": "00000000-0000-7000-8000-000000000101",
+            "key": "travel",
+            "topic_id": "topic-1"
+          },
+          "id": "category-1",
+          "topic": {
+            "id": "topic-1",
+            "name": "Tech",
+            "slug": "tech",
+            "topic_type": "topic"
+          },
+          "votes_score_net": 3
+        }
+      ],
+      "data": {
+        "contentSnippet": "A short snippet",
+        "guid": "guid-1",
+        "link": "https://example.com/article",
+        "title": "Test Article"
+      },
+      "id": "item-1",
+      "lingua_rs_detected_language": null,
+      "media_type": "video",
+      "published_at": "2026-01-01T00:00:00Z",
+      "rss_feed": {
+        "__entity_type": "rss_feed",
+        "feed_type": "article",
+        "id": "feed-1",
+        "is_discoverable": true,
+        "is_enabled": true,
+        "last_fetched_at": "2026-01-01T00:00:00Z",
+        "podcast_show": null,
+        "publisher_type": {
+          "id": "publisher-type-blog",
+          "name": "Blog",
+          "slug": "blog",
+          "topic_type": "publisher_type"
+        },
+        "title": "Example Feed",
+        "topic": {
+          "__entity_type": "topic",
+          "aliases": [],
+          "allow_reviews": true,
+          "created_at": "2026-01-01T00:00:00Z",
+          "created_by": {
+            "__entity_type": "user",
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          },
+          "hero_image_id": null,
+          "homepage_url_id": null,
+          "hostname": null,
+          "hostname_id": null,
+          "id": "topic-1",
+          "lingua_rs_detected_language": null,
+          "logo_image_id": null,
+          "markdown": "",
+          "name": "Test Topic",
+          "noindex": false,
+          "referral_program_id": null,
+          "referral_program_slug": null,
+          "rewards_program_id": null,
+          "slug": "test-topic",
+          "topic_type": "topic",
+          "updated_by": {
+            "__entity_type": "user",
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          }
+        }
+      },
+      "rss_feed_sources": [],
+      "url": {
+        "canonical_url_id": null,
+        "id": "url-1",
+        "url": "https://example.com/article"
+      }
+    },
+    "item-peer": {
+      "__entity_type": "rss_feed_item",
+      "categories": [
+        {
+          "category_text": "#Travel",
+          "hashtag": {
+            "display_token": "#Travel",
+            "id": "00000000-0000-7000-8000-000000000101",
+            "key": "travel",
+            "topic_id": "topic-1"
+          },
+          "id": "category-1",
+          "topic": {
+            "id": "topic-1",
+            "name": "Tech",
+            "slug": "tech",
+            "topic_type": "topic"
+          },
+          "votes_score_net": 3
+        }
+      ],
+      "data": {
+        "contentSnippet": "A short snippet",
+        "guid": "item-peer",
+        "link": "https://example.com/article",
+        "title": "Related cluster article"
+      },
+      "id": "item-peer",
+      "lingua_rs_detected_language": null,
+      "media_type": "video",
+      "published_at": "2026-01-01T00:00:00Z",
+      "rss_feed": {
+        "__entity_type": "rss_feed",
+        "feed_type": "article",
+        "id": "feed-1",
+        "is_discoverable": true,
+        "is_enabled": true,
+        "last_fetched_at": "2026-01-01T00:00:00Z",
+        "podcast_show": null,
+        "publisher_type": {
+          "id": "publisher-type-blog",
+          "name": "Blog",
+          "slug": "blog",
+          "topic_type": "publisher_type"
+        },
+        "title": "Example Feed",
+        "topic": {
+          "__entity_type": "topic",
+          "aliases": [],
+          "allow_reviews": true,
+          "created_at": "2026-01-01T00:00:00Z",
+          "created_by": {
+            "__entity_type": "user",
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          },
+          "hero_image_id": null,
+          "homepage_url_id": null,
+          "hostname": null,
+          "hostname_id": null,
+          "id": "topic-1",
+          "lingua_rs_detected_language": null,
+          "logo_image_id": null,
+          "markdown": "",
+          "name": "Test Topic",
+          "noindex": false,
+          "referral_program_id": null,
+          "referral_program_slug": null,
+          "rewards_program_id": null,
+          "slug": "test-topic",
+          "topic_type": "topic",
+          "updated_by": {
+            "__entity_type": "user",
+            "id": "user-1",
+            "roles": [],
+            "username": "testuser"
+          }
+        }
+      },
+      "rss_feed_sources": [],
+      "url": {
+        "canonical_url_id": null,
+        "id": "url-peer-1",
+        "url": "https://example.com/related-cluster-article"
+      }
+    }
+  },
+  "stories": {},
+  "story_member_ids": {
+    "story-1": ["item-1", "item-peer"]
+  },
+  "story_post_ids": {},
+  "users": {}
+}

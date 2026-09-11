@@ -1,0 +1,245 @@
+name: Static Checks
+
+# Area-gated, non-Vitest gates (typecheck, dependency-cruiser, `next build`, smoke,
+# `wrangler --dry-run`) lifted out of the per-area Vitest workflows so they run on
+# the bare self-hosted fleet instead of the Ubicloud pool those workflows use for
+# sharded Vitest runs. This is a resource/cost reorganization for the lifted checks;
+# API fixture snapshot regeneration belongs to the static backend gate. See
+# docs/development/ci.md and .github/workflows/RUNNERS.md.
+
+on:
+  workflow_call:
+    inputs:
+      backend:
+        type: boolean
+        default: false
+      web:
+        type: boolean
+        default: false
+      lambdas:
+        type: boolean
+        default: false
+      cloudflare-worker:
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      backend:
+        type: boolean
+        default: true
+      web:
+        type: boolean
+        default: true
+      lambdas:
+        type: boolean
+        default: true
+      cloudflare-worker:
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  static-backend:
+    if: inputs.backend
+    runs-on: [self-hosted]
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-backend
+        id: setup-backend
+        timeout-minutes: 6
+        with:
+          runner-lifecycle: persistent
+      - name: Typecheck backend and email templates
+        shell: bash
+        run: pnpm exec tsc --noEmit --incremental --project backend/tsconfig.json && pnpm exec tsc --noEmit --project email-templates/tsconfig.json
+        timeout-minutes: 3
+      - name: Check backend dependencies
+        run: pnpm exec depcruise --config backend/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content backend ts-shared
+        timeout-minutes: 3
+      - name: Check API fixture snapshots are up to date
+        shell: bash
+        run: |
+          pnpm run api-fixtures:generate
+          git diff --exit-code -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses
+          untracked_generated_files="$(git ls-files --others --exclude-standard -- api-fixtures/v1/manifest.json api-fixtures/v1/schema-lock.json api-fixtures/v1/responses)"
+          if [ -n "$untracked_generated_files" ]; then
+            echo "::error::Generated API fixture files are untracked:"
+            printf '%s\n' "$untracked_generated_files"
+            exit 1
+          fi
+        timeout-minutes: 2
+
+  static-web:
+    if: inputs.web
+    # Pinned to Linux: it now shares the build-web-targets composite with the Playwright/web-
+    # integration consumers (all Linux self-hosted), so its output must match their platform key
+    # (#10990) rather than floating onto macOS overflow capacity.
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          extra-keep: 'web/.next/cache'
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Typecheck web
+        working-directory: web
+        timeout-minutes: 3
+        shell: bash
+        run: pnpm exec next typegen && pnpm exec tsc --noEmit --incremental
+        env:
+          NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: '1x00000000000000000000AA'
+          ALLOW_TURNSTILE_TEST_KEY: 'true'
+      - name: Next.js pages-router check
+        timeout-minutes: 1
+        run: |
+          if [ -d web/pages ] || [ -d web/src/pages ]; then
+            echo "::error::Pages Router directory found (Next.js pages router not allowed)"
+            exit 1
+          fi
+          echo "No pages router directory found"
+      - name: Check web dependencies
+        run: pnpm exec depcruise --config web/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content web
+        timeout-minutes: 3
+      - name: Configure static production build
+        # build-web-targets' own `run:` steps only inherit env exported via $GITHUB_ENV (or
+        # job/workflow-level env), not this step's own `env:` block, so the two build-time
+        # inputs it needs from us go through $GITHUB_ENV instead. NEXT_TEST_BUILD=0 forces the
+        # same minified, non-test build profile static-web has always produced --
+        # ci/setup-web-integration.mts otherwise defaults it to '1' for its Playwright/web-
+        # integration callers. IMAGE_ORIGIN matches the smoke-test step below.
+        #
+        # Not set here: NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY / ALLOW_TURNSTILE_TEST_KEY, unlike
+        # the retired `Build web` step. ci/setup-web-integration.mts's own `next build` invocation
+        # defaults both to the identical values, so this build's behavior is unchanged (#10990).
+        run: |
+          echo "IMAGE_ORIGIN=http://localhost:3100" >> "$GITHUB_ENV"
+          echo "NEXT_TEST_BUILD=0" >> "$GITHUB_ENV"
+        timeout-minutes: 1
+      - uses: ./.github/actions/build-web-targets
+        timeout-minutes: 13
+        with:
+          artifact-suffix: static-web
+          web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
+      - name: Smoke test web
+        run: ./web/scripts/tests/smoke-test-web.sh
+        timeout-minutes: 3
+        env:
+          IMAGE_ORIGIN: http://localhost:3100
+
+  static-lambdas:
+    if: inputs.lambdas
+    runs-on: [self-hosted]
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Typecheck lambdas
+        shell: bash
+        run: pnpm exec tsc --noEmit --project lambdas/tsconfig.json
+        timeout-minutes: 3
+      - name: Check lambda dependencies
+        run: pnpm exec depcruise --config lambdas/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content lambdas
+        timeout-minutes: 3
+      - name: Smoke test image lambda
+        run: ./lambdas/image-resize/scripts/tests/smoke-test-image-lambda.sh
+        timeout-minutes: 2
+        env:
+          # Same directory the "Diagnose browser port collision" composite action uploads
+          # as an artifact (see its OUTPUT_DIR), computed with the identical expression so
+          # the two never diverge. The smoke script nests a per-attempt subdirectory under
+          # it and passes it to lambdas/dev-server.mts's listenWithRetry, which captures
+          # bind-time collision evidence at the moment of EADDRINUSE, while the process
+          # holding the port is still alive — the post-hoc step below runs only after the
+          # dev server has already exited.
+          BROWSER_PORT_DIAGNOSTICS_DIR: ${{ runner.temp }}/browser-port-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+      - name: Capture image-lambda browser port diagnostics
+        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
+        continue-on-error: true
+        timeout-minutes: 2
+        uses: ./.github/actions/diagnose-browser-port-collision
+        with:
+          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
+          artifact-suffix: image-lambda
+
+  static-cloudflare:
+    if: inputs.cloudflare-worker
+    runs-on: [self-hosted]
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Typecheck Cloudflare Worker
+        shell: bash
+        run: pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json
+        timeout-minutes: 2
+      - name: Smoke test Cloudflare Worker runtime
+        working-directory: cloudflare-worker
+        run: |
+          printf '%s\n' 'CSP_BROWSER_UPLOAD_ORIGINS=["https://test-images.s3.us-west-2.amazonaws.com","https://test-images.s3.dualstack.us-west-2.amazonaws.com"]' > .dev.vars
+          ./scripts/tests/smoke-test-cloudflare-worker.sh
+        timeout-minutes: 2
+      - name: Capture Cloudflare Worker browser port diagnostics
+        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
+        continue-on-error: true
+        timeout-minutes: 2
+        uses: ./.github/actions/diagnose-browser-port-collision
+        with:
+          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
+          artifact-suffix: cloudflare-worker
+      - name: Validate Cloudflare Worker bundle
+        working-directory: cloudflare-worker
+        run: pnpm exec wrangler deploy --config wrangler.local.jsonc --dry-run --outdir "${RUNNER_TEMP}/cloudflare-worker-dry-run"
+        timeout-minutes: 2

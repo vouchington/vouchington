@@ -1,0 +1,20 @@
+{
+  "name": "@modules/scheduled-job-manifest",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@ts-shared/deploy-environment": "workspace:^",
+    "glide-mq": "^0.15.5"
+  }
+}

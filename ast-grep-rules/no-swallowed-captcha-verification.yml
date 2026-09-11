@@ -1,0 +1,220 @@
+id: no-swallowed-captcha-verification
+language: Tsx
+severity: error
+message: 'Do not swallow verifyCaptchaToken failures. CAPTCHA-protected contribution routes must let Turnstile rejection stop quota consumption.'
+files:
+  - 'backend/api/v1/**/*.mts'
+ignores:
+  - 'backend/api/v1/**/*.test.mts'
+  - 'backend/api/v1/**/*.mock.test.mts'
+  - 'backend/api/v1/**/__tests__/**'
+rule:
+  any:
+    - pattern: 'verifyCaptchaToken($$$).catch(() => $VALUE)'
+    # $ERR => $VALUE matches any arrow body. Exclude callbacks that contain a
+    # throw_statement anywhere inside them using `not: has: stopBy:end` so both
+    # single-statement (`err => { throw err }`) and multi-statement
+    # (`err => { log(err); throw err }`) re-throws are not flagged.
+    # We cannot use a global `constraints: VALUE: not: statement_block`
+    # because ast-grep evaluates constraints across ALL `any:` alternatives at
+    # the same code position, which blocks other patterns that don't bind $VALUE.
+    # Known limitation: `catch(err => { if (retryable) throw err; return undefined })`
+    # is a false negative — the callback has a throw_statement so this pattern
+    # skips it, but the non-retryable path still swallows the CAPTCHA failure.
+    # Detecting "all paths re-throw" requires CFG analysis beyond ast-grep.
+    - all:
+        - pattern: 'verifyCaptchaToken($$$).catch($ERR => $VALUE)'
+        - not:
+            has:
+              stopBy: end
+              kind: throw_statement
+    - pattern: 'verifyCaptchaToken($$$).then($OK, () => $VALUE)'
+    # Same known limitation applies: conditional throw in the rejection callback
+    # is a false negative (see comment above for the .catch() pattern).
+    # Additional known limitation: when the SUCCESS callback ($OK) contains a
+    # throw_statement (e.g. `.then(() => { throw err }, $ERR => undefined)`),
+    # the `not: has: throw_statement` evaluates across the whole `.then()` call,
+    # sees the throw in $OK, and skips the match — swallowing in the rejection
+    # callback goes unreported. Scoping the throw search to the rejection
+    # callback body alone requires CFG analysis beyond ast-grep pattern matching.
+    - all:
+        - pattern: 'verifyCaptchaToken($$$).then($OK, $ERR => $VALUE)'
+        - not:
+            has:
+              stopBy: end
+              kind: throw_statement
+    - pattern: '$CAPTCHA.verifyCaptchaToken($$$).catch(() => $VALUE)'
+    - all:
+        - pattern: '$CAPTCHA.verifyCaptchaToken($$$).catch($ERR => $VALUE)'
+        - not:
+            has:
+              stopBy: end
+              kind: throw_statement
+    - pattern: '$CAPTCHA.verifyCaptchaToken($$$).then($OK, () => $VALUE)'
+    # Same known limitations apply (conditional rethrow + success-callback throw)
+    # as for verifyCaptchaToken($$$).then($OK, $ERR => $VALUE) above.
+    - all:
+        - pattern: '$CAPTCHA.verifyCaptchaToken($$$).then($OK, $ERR => $VALUE)'
+        - not:
+            has:
+              stopBy: end
+              kind: throw_statement
+    # Any try-catch containing the captcha call where the catch never throws.
+    # Using has/stopBy:end to locate the captcha await anywhere in the try body
+    # covers multi-statement try blocks (e.g. pre-validation before the await).
+    # ES2019 optional-binding catch (`catch {}`) is covered by the second any: branch.
+    # Scoping not:has: to catch_clause prevents a throw in the try body from
+    # masking a swallowing catch.
+    # The `not: has: catch_clause has: captcha` condition scopes the match to
+    # cases where the captcha call is in the TRY body, not the catch body —
+    # `catch { await verifyCaptchaToken(...) }` propagates failure naturally.
+    - all:
+        - any:
+            - pattern: 'try { $$$ } catch ($$$) { $$$ }'
+            - pattern: 'try { $$$ } catch { $$$ }'
+        - has:
+            stopBy: end
+            any:
+              - pattern: 'await verifyCaptchaToken($$$)'
+              - pattern: 'await $CAPTCHA.verifyCaptchaToken($$$)'
+        - not:
+            has:
+              stopBy: end
+              kind: catch_clause
+              has:
+                stopBy: end
+                any:
+                  - pattern: 'await verifyCaptchaToken($$$)'
+                  - pattern: 'await $CAPTCHA.verifyCaptchaToken($$$)'
+        - not:
+            has:
+              stopBy: end
+              kind: catch_clause
+              has:
+                stopBy: end
+                kind: throw_statement
+    # Same as above but catches conditional-swallow: catch body has a return
+    # (possibly nested inside an `if`) so the error is not always re-thrown.
+    # Known limitation: `catch (e) { if (retryable) throw e; log(e) }` (no
+    # return, conditional throw only) is a false negative. The catch clause has a
+    # throw_statement so the first pattern skips it, and no return_statement so
+    # this pattern skips it too. Expressing "all paths re-throw" statically
+    # requires full CFG analysis beyond what ast-grep pattern-matching supports.
+    - all:
+        - any:
+            - pattern: 'try { $$$ } catch ($$$) { $$$ }'
+            - pattern: 'try { $$$ } catch { $$$ }'
+        - has:
+            stopBy: end
+            any:
+              - pattern: 'await verifyCaptchaToken($$$)'
+              - pattern: 'await $CAPTCHA.verifyCaptchaToken($$$)'
+        - not:
+            has:
+              stopBy: end
+              kind: catch_clause
+              has:
+                stopBy: end
+                any:
+                  - pattern: 'await verifyCaptchaToken($$$)'
+                  - pattern: 'await $CAPTCHA.verifyCaptchaToken($$$)'
+        - has:
+            stopBy: end
+            kind: catch_clause
+            has:
+              stopBy: end
+              kind: return_statement
+examples:
+  - code: 'await verifyCaptchaToken(token, ip).catch(() => undefined)'
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: 'await verifyCaptchaToken(token, ip).then(() => undefined, () => undefined)'
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: 'await Promise.all([verifyCaptchaToken(token, ip).catch(() => null)])'
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: 'await captcha.verifyCaptchaToken(token, ip).catch(error => undefined)'
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: 'await verifyCaptchaToken(token, ip).catch(() => null)'
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: 'await verifyCaptchaToken(token, ip).catch(error => { throw error })'
+    isValid: true
+    file: 'backend/api/v1/posts/create.mts'
+  - code: 'await verifyCaptchaToken(token, ip).then(ok, error => { throw error })'
+    isValid: true
+    file: 'backend/api/v1/posts/create.mts'
+  - code: 'await verifyCaptchaToken(token, ip).catch(() => undefined)'
+    isValid: true
+    file: 'backend/api/v1/posts/create.mock.test.mts'
+  - code: |
+      try {
+        await verifyCaptchaToken(token, ip)
+      } catch {}
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: |
+      try {
+        await verifyCaptchaToken(token, ip)
+      } catch (error) {
+        log(error)
+        return
+      }
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: |
+      try {
+        await verifyCaptchaToken(token, ip)
+      } catch (error) {
+        if (retryable) throw error
+        log(error)
+        return
+      }
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: 'await verifyCaptchaToken(token, ip).catch(error => { log(error); return undefined })'
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: 'await Promise.all([verifyCaptchaToken(token, ip).catch(() => null)])'
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: |
+      try {
+        await verifyCaptchaToken(token, ip)
+      } catch (error) {
+        if (skip) return
+        throw error
+      }
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: |
+      try {
+        const session = getSession()
+        await verifyCaptchaToken(token, ip)
+      } catch (error) {
+        log(error)
+      }
+    isValid: false
+    file: 'backend/api/v1/posts/create.mts'
+  - code: |
+      try {
+        await verifyCaptchaToken(token, ip)
+      } catch (error) {
+        log(error)
+        throw error
+      }
+    isValid: true
+    file: 'backend/api/v1/posts/create.mts'
+  - code: 'await verifyCaptchaToken(token, ip)'
+    isValid: true
+    file: 'backend/api/v1/posts/create.mts'
+  - code: |
+      try {
+        doSomething()
+      } catch {
+        await verifyCaptchaToken(token, ip)
+      }
+    isValid: true
+    file: 'backend/api/v1/posts/create.mts'

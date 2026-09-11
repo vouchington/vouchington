@@ -1,0 +1,112 @@
+{
+  "content_production": {
+    "clearance_approval_rate": 0.91,
+    "content_over_time": [
+      {
+        "count": 14,
+        "date": "2026-07-01"
+      },
+      {
+        "count": 18,
+        "date": "2026-07-02"
+      }
+    ],
+    "contributions_per_active_user": 1.4,
+    "posts_by_type": {
+      "comment": 70,
+      "data_point": 80,
+      "discussion": 150,
+      "review": 120,
+      "story": 10
+    },
+    "total_posts": 430
+  },
+  "engagement": {
+    "avg_follows_per_user": 3.2,
+    "comments_created": 320,
+    "comments_over_time": [
+      {
+        "count": 10,
+        "date": "2026-07-01"
+      },
+      {
+        "count": 15,
+        "date": "2026-07-02"
+      }
+    ],
+    "follows_created": 45,
+    "follows_over_time": [
+      {
+        "count": 1,
+        "date": "2026-07-01"
+      },
+      {
+        "count": 4,
+        "date": "2026-07-02"
+      }
+    ],
+    "votes_cast": 2100,
+    "votes_over_time": [
+      {
+        "count": 70,
+        "date": "2026-07-01"
+      },
+      {
+        "count": 82,
+        "date": "2026-07-02"
+      }
+    ]
+  },
+  "infrastructure": {
+    "ai_token_usage": 4800000,
+    "cache_hit_rate": 0.88,
+    "crawler_success_rate": 0.96,
+    "queue_throughput": 14200
+  },
+  "network_effects": {
+    "landing_page_visits": 1800,
+    "new_signups": 45,
+    "referral_coefficient": 2.4,
+    "signup_visit_ratio": 0.025,
+    "topic_coverage_rate": 0.38
+  },
+  "period_end": "2026-07-05T12:00:00.000Z",
+  "period_start": "2026-06-05T00:00:00.000Z",
+  "range": "30d",
+  "revenue": {
+    "active_memberships": 95,
+    "cancellations": 4,
+    "churn_rate": 0.04,
+    "downgrades": 2,
+    "memberships_by_tier": {
+      "plus": 60,
+      "premium": 30,
+      "pro": 5
+    },
+    "mrr_by_currency": [
+      {
+        "amount": "2850000000",
+        "currency": "usd",
+        "scale": 6
+      }
+    ],
+    "upgrades": 8
+  },
+  "user_growth": {
+    "dau": 240,
+    "dau_mau_ratio": 0.3,
+    "mau": 800,
+    "new_users": 85,
+    "signups_over_time": [
+      {
+        "count": 3,
+        "date": "2026-07-01"
+      },
+      {
+        "count": 7,
+        "date": "2026-07-02"
+      }
+    ],
+    "total_users": 1200
+  }
+}

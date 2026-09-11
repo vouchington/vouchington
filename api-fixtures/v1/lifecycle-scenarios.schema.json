@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voucha.test/api-fixtures/v1/lifecycle-scenarios.schema.json",
+  "title": "Voucha cross-client lifecycle scenarios",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "version", "scenarios", "claims"],
+  "properties": {
+    "$schema": { "const": "./lifecycle-scenarios.schema.json" },
+    "version": { "const": 1 },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/scenario" }
+    },
+    "claims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/claim" }
+    }
+  },
+  "$defs": {
+    "consumer": {
+      "enum": ["backend", "web", "swift", "dotnet"]
+    },
+    "family": {
+      "enum": [
+        "moderation-appeal-lifecycle",
+        "integrity-authoritative-read",
+        "integrity-ambiguous-reconciliation",
+        "forward-pagination",
+        "forward-pagination-cancellation",
+        "private-post-collection-backend",
+        "private-post-collection-browser"
+      ]
+    },
+    "jsonObject": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "requiredConsumers", "input", "expected"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "family": { "$ref": "#/$defs/family" },
+        "requiredConsumers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/consumer" }
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["preconditions", "action", "serverOutcome"],
+          "properties": {
+            "preconditions": { "$ref": "#/$defs/jsonObject" },
+            "action": { "$ref": "#/$defs/jsonObject" },
+            "serverOutcome": { "$ref": "#/$defs/jsonObject" }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["visibleState", "availableActions", "reconciliation", "cancellation"],
+          "properties": {
+            "visibleState": { "$ref": "#/$defs/jsonObject" },
+            "availableActions": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "reconciliation": { "$ref": "#/$defs/jsonObject" },
+            "cancellation": { "$ref": "#/$defs/jsonObject" }
+          }
+        },
+        "backendExpected": { "$ref": "#/$defs/backendObservation" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "requiredConsumers": {
+                "type": "array",
+                "contains": { "const": "backend" }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "backendExpected": { "$ref": "#/$defs/backendObservation" }
+            },
+            "required": ["backendExpected"]
+          }
+        }
+      ]
+    },
+    "backendObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["visibleState", "availableActions", "reconciliation", "cancellation"],
+      "properties": {
+        "visibleState": { "$ref": "#/$defs/jsonObject" },
+        "availableActions": { "type": "array", "maxItems": 0 },
+        "reconciliation": { "$ref": "#/$defs/jsonObject" },
+        "cancellation": { "$ref": "#/$defs/jsonObject" }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenarioId", "consumer", "adapter"],
+      "properties": {
+        "scenarioId": { "type": "string", "minLength": 1 },
+        "consumer": { "$ref": "#/$defs/consumer" },
+        "adapter": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+      }
+    }
+  }
+}

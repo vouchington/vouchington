@@ -1,0 +1,69 @@
+id: web-no-community-pending-post-href
+language: Tsx
+severity: error
+message: >-
+  raw community pending-post query contracts are banned; use
+  communityPendingPostsHref() from web/lib/links/entity-href.ts and follow
+  docs/requirements/navigation/ROUTES.md#route-relocation-audit
+files:
+  - web/**/*.ts
+  - web/**/*.mts
+  - playwright/**/*.mts
+  - web/**/*.tsx
+ignores:
+  - web/lib/links/entity-href.ts
+  - web/lib/links/__tests__/entity-href.test.ts
+rule:
+  any:
+    - all:
+        - kind: string
+        - regex: "communities/[^/]+/posts\\?(?:[^'\"]*&)?post=pending"
+    - all:
+        - kind: template_string
+        - regex: "communities/[^/]+/posts\\?(?:.*&)?post=pending"
+examples:
+  - code: "export const href = '/communities/rewards/posts?post=pending'"
+    isValid: false
+    file: 'web/components/posts/stale-pending-path.ts'
+  - code: "await page.goto('/communities/rewards/posts?post=pending')"
+    isValid: false
+    file: 'playwright/tests/communities/stale-pending-path.spec.mts'
+  - code: "export const href = '/communities/rewards/posts?from=modal&post=pending'"
+    isValid: false
+    file: 'web/components/posts/non-leading-pending-path.ts'
+  - code: "export const href = `/communities/rewards/posts?${obj['key']}&post=pending`"
+    isValid: false
+    file: 'web/components/posts/interpolated-pending-path.ts'
+  - code: 'export const href = communityPendingPostsHref(community)'
+    isValid: true
+    file: 'web/components/posts/pending-path.ts'
+  - code: "export const href = '/some-route?post=pending'"
+    isValid: true
+    file: 'web/components/posts/unrelated-path.ts'
+  - code: "export function communityPendingPostsHref() { return '/communities/rewards/posts?post=pending' }"
+    isValid: true
+    file: 'web/lib/links/entity-href.ts'
+  - code: "expect(communityPendingPostsHref({ slug: 'rewards' })).toBe('/communities/rewards/posts?post=pending')"
+    isValid: true
+    file: 'web/lib/links/__tests__/entity-href.test.ts'
+  - code: "const href = '/communities/rewards/posts?post=published'"
+    isValid: true
+    file: 'web/components/posts/published-path.ts'
+  - code: export const href = '/communities/rewards/posts?post=pending'
+    isValid: false
+    file: web/components/posts/stale-pending-path.tsx
+  - code: export const href = '/communities/rewards/posts?from=modal&post=pending'
+    isValid: false
+    file: web/components/posts/non-leading-pending-path.tsx
+  - code: export const href = `/communities/rewards/posts?${obj['key']}&post=pending`
+    isValid: false
+    file: web/components/posts/interpolated-pending-path.tsx
+  - code: export const href = communityPendingPostsHref(community)
+    isValid: true
+    file: web/components/posts/pending-path.tsx
+  - code: export const href = '/some-route?post=pending'
+    isValid: true
+    file: web/components/posts/unrelated-path.tsx
+  - code: const href = '/communities/rewards/posts?post=published'
+    isValid: true
+    file: web/components/posts/published-path.tsx

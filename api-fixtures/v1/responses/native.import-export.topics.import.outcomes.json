@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "entity_id": "70000000-0000-7000-8000-000000000005",
+      "input": "Travel",
+      "status": "followed"
+    },
+    {
+      "input": "Local News",
+      "recommendation_post_id": "70000000-0000-7000-8000-000000000006",
+      "status": "recommendation_created"
+    },
+    {
+      "entity_id": "70000000-0000-7000-8000-000000000005",
+      "input": "Travel",
+      "status": "already_following"
+    },
+    {
+      "error": "Could not derive a valid slug from name",
+      "input": "!!!",
+      "status": "error"
+    }
+  ]
+}

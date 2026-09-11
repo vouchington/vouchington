@@ -1,0 +1,60 @@
+const messages = {
+  postForm: {
+    advancedOptions: {
+      advanced_9f088dbe: 'Avanzado',
+      archivedPostsAreHiddenFromPublic_59245c46:
+        'Los posts archivados están ocultos en los listados públicos.',
+      onlyYouAndAdminsWillSee_ee1dabb3: 'Solo tú y los administradores verán el autor.',
+      postAnonymously_fa5c7ddd: 'Publicar anonimamente',
+      postStatus_5db4bfbc: 'Estado del post',
+    },
+    advancedOptionsFields: {
+      audience_545c0235: 'Audiencia',
+      autoDetect_89ebfb7a: 'Detección automática',
+      everyone_da2e5dc5: 'Todos',
+      followers_a145ab34: 'Seguidores',
+      language_a4fe6526: 'Idioma',
+      mutualFollowers_d9be0db7: 'Seguidores mutuos',
+      private_c63eb672: 'Privado',
+      public_591935b1: 'Pública',
+      selectAudience_e2815050: 'Seleccionar audiencia',
+      selectVisibility_50cfa8c8: 'Seleccionar visibilidad',
+      users_6b0cc904: 'Usuarios',
+      visibility_7448611d: 'Visibilidad',
+    },
+    communitySelect: {
+      community_bb501d78: 'Comunidad',
+      global_a258b30f: 'Global',
+      selectCommunity_9c425b58: 'Selecciona comunidad',
+    },
+    contentEditor: {
+      content_47bd2907: 'Contenido',
+      loadingPreview_c4cf2b2c: 'Cargando vista previa…',
+      nothingToPreviewYet_75f00def: 'Nada para ver en vista previa aún.',
+      preview_324b134f: 'Vista previa',
+      writeYourPost_310b0d37: 'Escribe tu post...',
+      write_3f00927a: 'Escribir',
+    },
+    formActions: {
+      cancel_19766ed6: 'Cancelar',
+      post_a5554622: 'Publicar',
+      saveChanges_35322b5b: 'Guardar Cambios',
+      saving_dc85af8f: 'Guardando...',
+    },
+    postSlugField: {
+      postSlug_dafba173: 'post-slug',
+      slugAdminOnly_6d879325: 'Slug (solo administrador)',
+    },
+    relatedUrls: {
+      relatedUrls_c4a80277: 'URLs Relacionadas',
+    },
+    titleField: {
+      giveYourPostATitle_52eb1ab8: 'Dale un título a tu post...',
+      titleAndContentCanNoLonger_6d8873c0:
+        'El título y el contenido ya no se pueden editar después de 1 día.',
+      titleOptional_8280fbd6: 'Título (opcional)',
+    },
+  },
+}
+
+export default messages

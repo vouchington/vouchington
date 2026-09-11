@@ -1,0 +1,3482 @@
+{
+  "native.topic-recommendation.detail.default": {
+    "post": {
+      "id": "recommendation-1",
+      "slug": null,
+      "post_type": "topic_recommendation",
+      "title": "Native recommendation",
+      "markdown": "Recommendation body",
+      "html": null,
+      "parent_id": null,
+      "root_id": null,
+      "created_by_id": "user-abc",
+      "created_at": "2026-07-14T00:00:00Z",
+      "broadcast": "everyone",
+      "privacy": "public",
+      "is_anonymous": false,
+      "community_id": null,
+      "clearance_status": "approved",
+      "updated_at": "2026-07-14T00:00:00Z",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "locked_at": null,
+      "locked_by_id": null,
+      "archived_at": null,
+      "archived_by_id": null,
+      "clearance_reason": null,
+      "clearance_updated_at": null,
+      "spam_detection_created_at": null,
+      "spam_detection_flagged": null,
+      "spam_detection_results": null,
+      "spam_detection_score": null,
+      "updated_by_id": null,
+      "ai_summary_markdown": "",
+      "topic_recommendation": {
+        "post_id": "recommendation-1",
+        "topic_title": "Native Topic",
+        "topic_slug": "native-topic",
+        "topic_markdown": "Recommendation body",
+        "aliases": ["native topic"],
+        "hostname_id": null,
+        "hostname": null,
+        "hostnames": [],
+        "topic_wikipedia_pageid": null,
+        "approval_error_message": null,
+        "status": "pending",
+        "reviewed_at": null,
+        "reviewed_by_id": null,
+        "rejection_reason": null,
+        "created_topic_id": null,
+        "created_topic_slug": null,
+        "topic_type": "topic",
+        "example_referral_link": null,
+        "landing_page_urls": []
+      }
+    },
+    "html": "<p>Recommendation body</p>",
+    "post_metrics": {
+      "__entity_type": "post_metrics",
+      "id": "recommendation-1",
+      "count": {
+        "descendants": 0,
+        "children": 0,
+        "ancestors": 0
+      },
+      "updated_at": "2026-07-14T00:00:00Z",
+      "bookmarks": {
+        "follow": 0,
+        "save": 1
+      }
+    },
+    "post_election": {
+      "__entity_type": "post_election",
+      "id": "recommendation-1",
+      "votes_score_net": 1,
+      "votes_count_up": 1,
+      "votes_count_down": 0
+    },
+    "bookmarks": {
+      "recommendation-1": {
+        "save": true
+      }
+    },
+    "election_vote": {
+      "__entity_type": "election_vote",
+      "entity_id": "recommendation-1",
+      "user_id": "user-abc",
+      "choice": "support",
+      "created_at": "2026-07-14T00:00:00Z"
+    }
+  },
+  "native.topic-recommendations.top-hashtags.default": {
+    "results": [],
+    "topics": {},
+    "page_info": {
+      "has_next_page": false,
+      "start_cursor": null,
+      "end_cursor": null
+    }
+  },
+  "web.topics.publisher-types.default": {
+    "publisher_types": [
+      {
+        "id": "publisher-type-mainstream-media",
+        "label": "Mainstream",
+        "slug": "mainstream-media"
+      },
+      {
+        "id": "publisher-type-public-media",
+        "label": "Public Media",
+        "slug": "public-media"
+      },
+      {
+        "id": "publisher-type-corporate-media",
+        "label": "Corporate",
+        "slug": "corporate-media"
+      },
+      {
+        "id": "publisher-type-blog",
+        "label": "Blog",
+        "slug": "blog"
+      },
+      {
+        "id": "publisher-type-aggregator",
+        "label": "Aggregator",
+        "slug": "aggregator"
+      },
+      {
+        "id": "publisher-type-forum",
+        "label": "Forum",
+        "slug": "forum"
+      },
+      {
+        "id": "publisher-type-ugc-platform",
+        "label": "UGC",
+        "slug": "ugc-platform"
+      },
+      {
+        "id": "publisher-type-review",
+        "label": "Review",
+        "slug": "review"
+      }
+    ]
+  },
+  "native.topics.user-tags.default": {
+    "user_tags": [
+      {
+        "id": "user-tag-bot",
+        "label": "Bot",
+        "slug": "bot"
+      },
+      {
+        "id": "user-tag-spammer",
+        "label": "Spammer",
+        "slug": "spammer"
+      }
+    ]
+  },
+  "native.entity-relations.post.category.topic.default": {
+    "election_votes": {
+      "relation-post-category-topic-1": {
+        "__entity_type": "election_vote",
+        "choice": "confirm",
+        "created_at": "2026-06-01T12:00:00Z",
+        "entity_id": "relation-post-category-topic-1",
+        "user_id": "fixture-user"
+      }
+    },
+    "entity_relation_elections": {
+      "relation-post-category-topic-1": {
+        "__entity_type": "entity_relation_election",
+        "id": "relation-post-category-topic-1",
+        "votes_count_down": 1,
+        "votes_count_up": 4,
+        "votes_score_net": 3
+      }
+    },
+    "entity_relations": {
+      "relation-post-category-topic-1": {
+        "created_at": "2026-06-01T12:00:00Z",
+        "created_by_id": "user-abc",
+        "id": "relation-post-category-topic-1",
+        "object_data": {
+          "id": "topic-1",
+          "name": "Finance",
+          "slug": "finance",
+          "topic_type": "topic"
+        },
+        "object_id": "topic-1",
+        "subject_id": "post-1",
+        "votes_count_down": 1,
+        "votes_count_up": 4,
+        "votes_score_net": 3,
+        "votes_score_sort": 3
+      }
+    },
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "__entity_type": "entity_relation",
+        "id": "relation-post-category-topic-1"
+      }
+    ]
+  },
+  "native.entity-relations.post.related.post.default": {
+    "election_votes": {
+      "relation-post-related-post-1": {
+        "__entity_type": "election_vote",
+        "choice": "confirm",
+        "created_at": "2026-06-01T12:00:00Z",
+        "entity_id": "relation-post-related-post-1",
+        "user_id": "fixture-user"
+      }
+    },
+    "entity_relation_elections": {
+      "relation-post-related-post-1": {
+        "__entity_type": "entity_relation_election",
+        "id": "relation-post-related-post-1",
+        "votes_count_down": 2,
+        "votes_count_up": 7,
+        "votes_score_net": 5
+      }
+    },
+    "entity_relations": {
+      "relation-post-related-post-1": {
+        "created_at": "2026-06-01T12:00:00Z",
+        "created_by_id": "user-abc",
+        "id": "relation-post-related-post-1",
+        "object_data": {
+          "id": "post-2",
+          "post_type": "discussion",
+          "slug": "related-post",
+          "title": "Related Post"
+        },
+        "object_id": "post-2",
+        "subject_id": "post-1",
+        "votes_count_down": 2,
+        "votes_count_up": 7,
+        "votes_score_net": 5,
+        "votes_score_sort": 5
+      }
+    },
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "__entity_type": "entity_relation",
+        "id": "relation-post-related-post-1"
+      }
+    ]
+  },
+  "native.entity-relations.post.related.url.default": {
+    "election_votes": {
+      "relation-post-related-url-1": {
+        "__entity_type": "election_vote",
+        "choice": "confirm",
+        "created_at": "2026-06-01T12:00:00Z",
+        "entity_id": "relation-post-related-url-1",
+        "user_id": "fixture-user"
+      }
+    },
+    "entity_relation_elections": {
+      "relation-post-related-url-1": {
+        "__entity_type": "entity_relation_election",
+        "id": "relation-post-related-url-1",
+        "votes_count_down": 1,
+        "votes_count_up": 5,
+        "votes_score_net": 4
+      }
+    },
+    "entity_relations": {
+      "relation-post-related-url-1": {
+        "created_at": "2026-06-01T12:00:00Z",
+        "created_by_id": "user-abc",
+        "id": "relation-post-related-url-1",
+        "object_data": {
+          "id": "url-1",
+          "latest_crawl": {
+            "image_url": "https://images.example.com/related-url.jpg",
+            "title": "Related URL"
+          },
+          "url": "https://example.com/related-url"
+        },
+        "object_id": "url-1",
+        "subject_id": "post-1",
+        "votes_count_down": 1,
+        "votes_count_up": 5,
+        "votes_score_net": 4,
+        "votes_score_sort": 4
+      }
+    },
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "__entity_type": "entity_relation",
+        "id": "relation-post-related-url-1"
+      }
+    ]
+  },
+  "native.entity-relations.topic.publisher-type.topic.default": {
+    "election_votes": {
+      "relation-topic-publisher-type-1": {
+        "__entity_type": "election_vote",
+        "choice": "confirm",
+        "created_at": "2026-06-01T12:00:00Z",
+        "entity_id": "relation-topic-publisher-type-1",
+        "user_id": "fixture-user"
+      }
+    },
+    "entity_relation_elections": {
+      "relation-topic-publisher-type-1": {
+        "__entity_type": "entity_relation_election",
+        "id": "relation-topic-publisher-type-1",
+        "votes_count_down": 1,
+        "votes_count_up": 6,
+        "votes_score_net": 5
+      }
+    },
+    "entity_relations": {
+      "relation-topic-publisher-type-1": {
+        "created_at": "2026-06-01T12:00:00Z",
+        "created_by_id": "user-abc",
+        "id": "relation-topic-publisher-type-1",
+        "object_data": {
+          "id": "publisher-type-blog",
+          "name": "Blog",
+          "slug": "blog",
+          "topic_type": "topic"
+        },
+        "object_id": "publisher-type-blog",
+        "subject_id": "topic-1",
+        "votes_count_down": 1,
+        "votes_count_up": 6,
+        "votes_score_net": 5,
+        "votes_score_sort": 5
+      }
+    },
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "__entity_type": "entity_relation",
+        "id": "relation-topic-publisher-type-1"
+      }
+    ]
+  },
+  "native.entity-relations.rss-feed-item.category.topic.default": {
+    "election_votes": {
+      "relation-rss-feed-item-category-topic-1": {
+        "__entity_type": "election_vote",
+        "choice": "confirm",
+        "created_at": "2026-06-01T12:00:00Z",
+        "entity_id": "relation-rss-feed-item-category-topic-1",
+        "user_id": "fixture-user"
+      }
+    },
+    "entity_relation_elections": {
+      "relation-rss-feed-item-category-topic-1": {
+        "__entity_type": "entity_relation_election",
+        "id": "relation-rss-feed-item-category-topic-1",
+        "votes_count_down": 0,
+        "votes_count_up": 3,
+        "votes_score_net": 3
+      }
+    },
+    "entity_relations": {
+      "relation-rss-feed-item-category-topic-1": {
+        "created_at": "2026-06-01T12:00:00Z",
+        "created_by_id": "user-abc",
+        "id": "relation-rss-feed-item-category-topic-1",
+        "object_data": {
+          "id": "topic-2",
+          "name": "Travel",
+          "slug": "travel",
+          "topic_type": "topic"
+        },
+        "object_id": "topic-2",
+        "subject_id": "item-1",
+        "votes_count_down": 0,
+        "votes_count_up": 3,
+        "votes_score_net": 3,
+        "votes_score_sort": 3
+      }
+    },
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "__entity_type": "entity_relation",
+        "id": "relation-rss-feed-item-category-topic-1"
+      }
+    ]
+  },
+  "native.entity-relations.post.category.topic.create.default": {
+    "relation": {
+      "created_at": "2026-06-01T12:00:00Z",
+      "created_by_id": "user-abc",
+      "id": "relation-post-category-topic-2",
+      "object_data": {
+        "id": "topic-2",
+        "name": "Travel",
+        "slug": "travel",
+        "topic_type": "topic"
+      },
+      "object_id": "topic-2",
+      "subject_id": "post-1",
+      "votes_count_down": 0,
+      "votes_count_up": 1,
+      "votes_score_net": 1,
+      "votes_score_sort": 1
+    }
+  },
+  "native.entity-relations.user.category.topic.default": {
+    "election_votes": {
+      "relation-user-category-topic-bot": {
+        "__entity_type": "election_vote",
+        "choice": "confirm",
+        "created_at": "2026-06-01T12:00:00Z",
+        "entity_id": "relation-user-category-topic-bot",
+        "user_id": "fixture-user"
+      }
+    },
+    "entity_relation_elections": {
+      "relation-user-category-topic-bot": {
+        "__entity_type": "entity_relation_election",
+        "id": "relation-user-category-topic-bot",
+        "votes_count_down": 1,
+        "votes_count_up": 4,
+        "votes_score_net": 3
+      }
+    },
+    "entity_relations": {
+      "relation-user-category-topic-bot": {
+        "created_at": "2026-06-01T12:00:00Z",
+        "created_by_id": "fixture-user",
+        "id": "relation-user-category-topic-bot",
+        "object_data": {
+          "id": "user-tag-bot",
+          "name": "Bot",
+          "slug": "bot",
+          "topic_type": "topic"
+        },
+        "object_id": "user-tag-bot",
+        "subject_id": "user-abc",
+        "votes_count_down": 1,
+        "votes_count_up": 4,
+        "votes_score_net": 3,
+        "votes_score_sort": 3
+      }
+    },
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "__entity_type": "entity_relation",
+        "id": "relation-user-category-topic-bot"
+      }
+    ]
+  },
+  "native.entity-relations.user.category.topic.create.default": {
+    "relation": {
+      "created_at": "2026-06-01T12:00:00Z",
+      "created_by_id": "fixture-user",
+      "id": "relation-user-category-topic-bot",
+      "object_data": {
+        "id": "user-tag-bot",
+        "name": "Bot",
+        "slug": "bot",
+        "topic_type": "topic"
+      },
+      "object_id": "user-tag-bot",
+      "subject_id": "user-abc",
+      "votes_count_down": 0,
+      "votes_count_up": 1,
+      "votes_score_net": 1,
+      "votes_score_sort": 1
+    }
+  },
+  "native.entity-relations.post.category.topic.vote.default": null,
+  "native.messages.conversations.default": {
+    "page_info": {
+      "end_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAxVDA5OjE1OjAwLjAwMDAwMFoiLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiJ9",
+      "has_next_page": true,
+      "start_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAxVDEwOjEwOjAwLjAwMDAwMFoiLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMSJ9"
+    },
+    "results": [
+      {
+        "channel_type": "direct_message",
+        "created_at": "2026-07-01T10:00:00Z",
+        "created_by_id": "00000000-0000-7000-8000-000000000001",
+        "id": "00000000-0000-7000-8000-000000000101",
+        "participant_add_policy": "all_members",
+        "participant_usernames": ["alice", "bob"],
+        "title": "Alice, Bob",
+        "updated_at": "2026-07-01T10:10:00Z"
+      },
+      {
+        "channel_type": "direct_message",
+        "created_at": "2026-07-01T09:00:00Z",
+        "created_by_id": "00000000-0000-7000-8000-000000000001",
+        "id": "00000000-0000-7000-8000-000000000102",
+        "participant_add_policy": "owner_only",
+        "participant_usernames": ["casey"],
+        "title": "Casey",
+        "updated_at": "2026-07-01T09:15:00Z"
+      }
+    ]
+  },
+  "native.messages.conversations.page-2": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAxVDA4OjAwOjAwLjAwMDAwMFoiLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMyJ9"
+    },
+    "results": [
+      {
+        "channel_type": "direct_message",
+        "created_at": "2026-07-01T08:00:00Z",
+        "created_by_id": "00000000-0000-7000-8000-000000000001",
+        "id": "00000000-0000-7000-8000-000000000103",
+        "participant_add_policy": "owner_only",
+        "participant_usernames": ["devon"],
+        "title": "Devon",
+        "updated_at": "2026-07-01T08:00:00Z"
+      }
+    ]
+  },
+  "native.messages.conversation.default": {
+    "conversation": {
+      "channel_type": "direct_message",
+      "created_at": "2026-07-01T10:00:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "id": "00000000-0000-7000-8000-000000000101",
+      "participant_add_policy": "all_members",
+      "title": "Alice, Bob",
+      "updated_at": "2026-07-01T10:10:00Z"
+    }
+  },
+  "native.messages.create.default": {
+    "conversation": {
+      "channel_type": "direct_message",
+      "created_at": "2026-07-01T10:00:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "id": "00000000-0000-7000-8000-000000000101",
+      "title": "",
+      "updated_at": "2026-07-01T10:10:00Z"
+    }
+  },
+  "native.messages.thread.default": {
+    "page_info": {
+      "end_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMSJ9",
+      "has_next_page": true,
+      "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMiJ9"
+    },
+    "results": [
+      {
+        "body_text": "Hello from Alice",
+        "conversation_id": "00000000-0000-7000-8000-000000000101",
+        "created_at": "2026-07-01T10:01:00Z",
+        "created_by_id": "00000000-0000-7000-8000-000000000002",
+        "deleted_at": null,
+        "id": "00000000-0000-7000-8000-000000000201",
+        "sender_username": "alice",
+        "updated_at": "2026-07-01T10:01:00Z"
+      },
+      {
+        "body_text": "Reply from fixture user",
+        "conversation_id": "00000000-0000-7000-8000-000000000101",
+        "created_at": "2026-07-01T10:02:00Z",
+        "created_by_id": "00000000-0000-7000-8000-000000000001",
+        "deleted_at": null,
+        "id": "00000000-0000-7000-8000-000000000202",
+        "sender_username": "fixtureuser",
+        "updated_at": "2026-07-01T10:02:00Z"
+      }
+    ]
+  },
+  "native.messages.thread.page-2": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMCJ9"
+    },
+    "results": [
+      {
+        "body_text": "Earlier context",
+        "conversation_id": "00000000-0000-7000-8000-000000000101",
+        "created_at": "2026-07-01T10:00:00Z",
+        "created_by_id": "00000000-0000-7000-8000-000000000002",
+        "deleted_at": null,
+        "id": "00000000-0000-7000-8000-000000000200",
+        "sender_username": "alice",
+        "updated_at": "2026-07-01T10:00:00Z"
+      }
+    ]
+  },
+  "native.messages.send.default": {
+    "message": {
+      "body_text": "Sent from native",
+      "conversation_id": "00000000-0000-7000-8000-000000000101",
+      "created_at": "2026-07-01T10:03:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "deleted_at": null,
+      "id": "00000000-0000-7000-8000-000000000203",
+      "updated_at": "2026-07-01T10:03:00Z"
+    }
+  },
+  "native.messages.participants.default": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "conversation_id": "00000000-0000-7000-8000-000000000101",
+        "created_at": "2026-07-01T10:00:00Z",
+        "id": "00000000-0000-7000-8000-000000000301",
+        "profile_image_id": null,
+        "removed_at": null,
+        "role": "owner",
+        "user_id": "00000000-0000-7000-8000-000000000001",
+        "username": "fixtureuser"
+      },
+      {
+        "conversation_id": "00000000-0000-7000-8000-000000000101",
+        "created_at": "2026-07-01T10:00:00Z",
+        "id": "00000000-0000-7000-8000-000000000302",
+        "profile_image_id": "image-alice",
+        "removed_at": null,
+        "role": "member",
+        "user_id": "00000000-0000-7000-8000-000000000002",
+        "username": "alice"
+      }
+    ]
+  },
+  "native.messages.participant-add.default": {
+    "participant": {
+      "conversation_id": "00000000-0000-7000-8000-000000000101",
+      "created_at": "2026-07-01T10:04:00Z",
+      "id": "00000000-0000-7000-8000-000000000303",
+      "profile_image_id": null,
+      "removed_at": null,
+      "role": "member",
+      "user_id": "00000000-0000-7000-8000-000000000003",
+      "username": "bob"
+    }
+  },
+  "native.messages.participant-remove.default": null,
+  "native.messages.policy.default": {
+    "participant_add_policy": "owner_only"
+  },
+  "native.messages.user-search.default": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "__entity_type": "user",
+        "display_account": {
+          "id": "00000000-0000-7000-8000-000000000003",
+          "name": "Bob Brown"
+        },
+        "id": "00000000-0000-7000-8000-000000000003",
+        "lingua_rs_detected_language": null,
+        "markdown": "Bio text for Bob",
+        "profile_image_id": null,
+        "roles": [],
+        "public_verified_name_display": null,
+        "use_display_name_from": "google",
+        "username": "bob",
+        "verification_status": null,
+        "verified_badge_visible": null,
+        "verified_display_name": null
+      },
+      {
+        "__entity_type": "user",
+        "id": "00000000-0000-7000-8000-000000000004",
+        "lingua_rs_detected_language": null,
+        "markdown": null,
+        "profile_image_id": "image-bonnie",
+        "roles": [],
+        "public_verified_name_display": null,
+        "use_display_name_from": "username",
+        "username": "bonnie",
+        "verification_status": null,
+        "verified_badge_visible": null,
+        "verified_display_name": null
+      }
+    ]
+  },
+  "native.memberships.plans.default": {
+    "benefit_catalog": {
+      "version": 1,
+      "groups": [
+        {
+          "id": "contribute",
+          "benefits": [
+            {
+              "id": "public_contribution_access",
+              "placements": ["card", "comparison"],
+              "values": {
+                "free": { "kind": "access", "access": "after_wait" },
+                "plus": { "kind": "access", "access": "immediate" },
+                "pro": { "kind": "access", "access": "immediate" }
+              }
+            },
+            {
+              "id": "contribution_capacity",
+              "placements": ["card", "comparison"],
+              "values": {
+                "free": { "kind": "level", "level": "standard" },
+                "plus": { "kind": "level", "level": "more" },
+                "pro": { "kind": "level", "level": "most" }
+              }
+            },
+            {
+              "id": "manual_topic_tags",
+              "placements": ["comparison"],
+              "values": {
+                "free": { "kind": "level", "level": "standard" },
+                "plus": { "kind": "level", "level": "more" },
+                "pro": { "kind": "level", "level": "most" }
+              }
+            },
+            {
+              "id": "automatic_post_topics",
+              "placements": ["card", "comparison"],
+              "values": {
+                "free": { "kind": "level", "level": "none" },
+                "plus": { "kind": "level", "level": "more" },
+                "pro": { "kind": "level", "level": "most" }
+              }
+            }
+          ]
+        },
+        {
+          "id": "research",
+          "benefits": [
+            {
+              "id": "research_agent_requests",
+              "placements": ["comparison"],
+              "values": {
+                "free": { "kind": "level", "level": "standard" },
+                "plus": { "kind": "level", "level": "more" },
+                "pro": { "kind": "level", "level": "most" }
+              }
+            },
+            {
+              "id": "api_allowance_boost",
+              "placements": ["comparison"],
+              "values": {
+                "free": { "kind": "level", "level": "standard" },
+                "plus": { "kind": "level", "level": "higher" },
+                "pro": { "kind": "level", "level": "higher" }
+              }
+            },
+            {
+              "id": "ugc_downvote_counts",
+              "placements": ["card", "comparison"],
+              "values": {
+                "free": { "kind": "availability", "included": false },
+                "plus": { "kind": "availability", "included": true },
+                "pro": { "kind": "availability", "included": true }
+              }
+            },
+            {
+              "id": "url_crawl_history",
+              "placements": ["comparison"],
+              "values": {
+                "free": { "kind": "availability", "included": false },
+                "plus": { "kind": "availability", "included": true },
+                "pro": { "kind": "availability", "included": true }
+              }
+            }
+          ]
+        },
+        {
+          "id": "communities",
+          "benefits": [
+            {
+              "id": "community_agent_rules",
+              "placements": ["card", "comparison"],
+              "values": {
+                "free": { "kind": "quantity", "quantity": 0 },
+                "plus": { "kind": "quantity", "quantity": 3 },
+                "pro": { "kind": "quantity", "quantity": 10 }
+              }
+            }
+          ]
+        },
+        {
+          "id": "support",
+          "benefits": [
+            {
+              "id": "support_service_level",
+              "placements": ["card", "comparison"],
+              "values": {
+                "free": { "kind": "level", "level": "standard" },
+                "plus": { "kind": "level", "level": "priority" },
+                "pro": { "kind": "level", "level": "highest_priority" }
+              }
+            }
+          ]
+        },
+        {
+          "id": "referrals",
+          "benefits": [
+            {
+              "id": "amex_card_link_expansion",
+              "placements": ["comparison"],
+              "values": {
+                "free": { "kind": "availability", "included": false },
+                "plus": { "kind": "availability", "included": true },
+                "pro": { "kind": "availability", "included": true }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "products": [
+      {
+        "id": "00000000-0000-7000-8000-000000000701",
+        "interval": "monthly",
+        "plan": "plus",
+        "providers": [
+          {
+            "application_id": "ai.voucha.ios",
+            "base_plan_id": null,
+            "environment": "test",
+            "offer_id": null,
+            "price": null,
+            "product_id": "voucha.plus.monthly",
+            "provider": "apple_app_store",
+            "sku_id": null
+          },
+          {
+            "application_id": "voucha-web",
+            "base_plan_id": null,
+            "environment": "test",
+            "offer_id": null,
+            "price": { "amount": 500, "currency": "usd" },
+            "product_id": "price_native_plus_monthly",
+            "provider": "stripe",
+            "sku_id": null
+          }
+        ]
+      },
+      {
+        "id": "00000000-0000-7000-8000-000000000702",
+        "interval": "monthly",
+        "plan": "pro",
+        "providers": [
+          {
+            "application_id": "ai.voucha.android",
+            "base_plan_id": "monthly",
+            "environment": "test",
+            "offer_id": null,
+            "price": null,
+            "product_id": "voucha.pro.monthly",
+            "provider": "google_play",
+            "sku_id": null
+          }
+        ]
+      },
+      {
+        "id": "00000000-0000-7000-8000-000000000703",
+        "interval": "yearly",
+        "plan": "pro",
+        "providers": [
+          {
+            "application_id": "Voucha",
+            "base_plan_id": null,
+            "environment": "test",
+            "offer_id": null,
+            "price": null,
+            "product_id": "9NBLGGH4V0Q1",
+            "provider": "microsoft_store",
+            "sku_id": "0010"
+          }
+        ]
+      }
+    ]
+  },
+  "native.memberships.me.default": {
+    "management": null,
+    "membership": null,
+    "pending": {
+      "financial_operations": [],
+      "grants": 0,
+      "switches": [],
+      "verifications": []
+    },
+    "sources": []
+  },
+  "native.memberships.me.lifecycle.default": {
+    "management": {
+      "destination": "apple_subscriptions",
+      "provider": "apple_app_store"
+    },
+    "membership": null,
+    "pending": {
+      "financial_operations": [
+        {
+          "id": "00000000-0000-7000-8000-000000000814",
+          "kind": "automatic_refund",
+          "provider": "stripe",
+          "status": "pending"
+        }
+      ],
+      "grants": 1,
+      "switches": [
+        {
+          "eligible_at": "2027-01-01T00:00:00.000Z",
+          "plan": "pro",
+          "provider": "apple_app_store",
+          "source_id": "00000000-0000-7000-8000-000000000812"
+        }
+      ],
+      "verifications": [
+        {
+          "id": "00000000-0000-7000-8000-000000000809",
+          "next_processing_at": null,
+          "provider": "google_play",
+          "reason_code": "competing_direct_source",
+          "status": "conflict"
+        },
+        {
+          "id": "00000000-0000-7000-8000-000000000810",
+          "next_processing_at": null,
+          "provider": "microsoft_store",
+          "reason_code": "wrong_account",
+          "status": "rejected"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "access_ends_at": "2027-01-01T00:00:00.000Z",
+        "auto_renews": false,
+        "effective_at": "2026-09-10T00:00:00.000Z",
+        "id": "00000000-0000-7000-8000-000000000813",
+        "is_effective": false,
+        "kind": "direct",
+        "plan": "plus",
+        "provider": "stripe",
+        "renewal": null,
+        "status": "revoked"
+      },
+      {
+        "access_ends_at": "2027-02-01T00:00:00.000Z",
+        "auto_renews": true,
+        "effective_at": "2027-01-01T00:00:00.000Z",
+        "id": "00000000-0000-7000-8000-000000000812",
+        "is_effective": false,
+        "kind": "direct",
+        "plan": "pro",
+        "provider": "apple_app_store",
+        "renewal": {
+          "effective_at": "2027-02-01T00:00:00.000Z",
+          "price": null,
+          "product_id": "00000000-0000-7000-8000-000000000701"
+        },
+        "status": "active"
+      }
+    ]
+  },
+  "native.memberships.purchase-intent.apple.default": {
+    "purchase_intent": {
+      "id": "00000000-0000-7000-8000-000000000803",
+      "launch": {
+        "app_account_token": "00000000-0000-7000-8000-000000000803",
+        "kind": "apple_app_store",
+        "product_id": "voucha.plus.monthly"
+      },
+      "product_id": "00000000-0000-7000-8000-000000000701",
+      "provider": "apple_app_store",
+      "replayed": false
+    }
+  },
+  "native.memberships.purchase-intent.google.default": {
+    "purchase_intent": {
+      "id": "00000000-0000-7000-8000-000000000804",
+      "launch": {
+        "base_plan_id": "monthly",
+        "kind": "google_play",
+        "obfuscated_account_id": "6f4b2c9d5e1a8b7c3d0f4a9e6c2b1d8f7a5c3e0b9d6f4a2c8e1b7d5f0a3c9e6b",
+        "offer_id": null,
+        "product_id": "voucha.plus.monthly"
+      },
+      "product_id": "00000000-0000-7000-8000-000000000701",
+      "provider": "google_play",
+      "replayed": false
+    }
+  },
+  "native.memberships.purchase-intent.microsoft.default": {
+    "purchase_intent": {
+      "id": "00000000-0000-7000-8000-000000000805",
+      "launch": {
+        "kind": "microsoft_store",
+        "product_id": "9NBLGGH4V0Q1",
+        "sku_id": "0010"
+      },
+      "product_id": "00000000-0000-7000-8000-000000000701",
+      "provider": "microsoft_store",
+      "replayed": false
+    }
+  },
+  "native.memberships.purchase-intent.stripe.default": {
+    "purchase_intent": {
+      "id": "00000000-0000-7000-8000-000000000806",
+      "launch": {
+        "checkout_url": "https://checkout.stripe.test/session",
+        "kind": "stripe_checkout"
+      },
+      "product_id": "00000000-0000-7000-8000-000000000701",
+      "provider": "stripe",
+      "replayed": false
+    }
+  },
+  "native.memberships.purchase-intent.conflict.default": {
+    "code": "CONFLICT",
+    "eligible_at": "2027-01-01T00:00:00.000Z",
+    "error": "Membership purchase is not eligible.",
+    "management": {
+      "destination": "billing_portal",
+      "provider": "stripe"
+    }
+  },
+  "native.memberships.verification.pending.default": {
+    "verification": {
+      "created_at": "2026-09-09T12:00:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000807",
+      "provider": "apple_app_store",
+      "reason_code": null,
+      "status": "pending"
+    }
+  },
+  "native.memberships.verification-status.pending.default": {
+    "verification": {
+      "created_at": "2026-09-09T12:00:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000807",
+      "provider": "apple_app_store",
+      "reason_code": null,
+      "status": "pending"
+    }
+  },
+  "native.memberships.verification-status.verified.default": {
+    "verification": {
+      "created_at": "2026-09-10T00:00:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000808",
+      "provider": "apple_app_store",
+      "reason_code": "verified",
+      "status": "verified"
+    }
+  },
+  "native.memberships.verification-status.conflict.default": {
+    "verification": {
+      "created_at": "2026-09-10T00:00:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000809",
+      "provider": "google_play",
+      "reason_code": "competing_direct_source",
+      "status": "conflict"
+    }
+  },
+  "native.memberships.verification-status.rejected.default": {
+    "verification": {
+      "created_at": "2026-09-10T00:00:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000810",
+      "provider": "microsoft_store",
+      "reason_code": "wrong_account",
+      "status": "rejected"
+    }
+  },
+  "native.memberships.grant.default": {
+    "membership": {
+      "id": "00000000-0000-7000-8000-000000000801"
+    },
+    "grant": {
+      "id": "00000000-0000-7000-8000-000000000802"
+    },
+    "queued": false
+  },
+  "native.crm.contacts.default": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "__entity_type": "crm_contact",
+        "archived_at": null,
+        "assigned_to_id": null,
+        "contact_type": "influencer",
+        "contacted_at": null,
+        "converted_at": null,
+        "created_at": "2026-07-01T12:00:00Z",
+        "created_by_id": "00000000-0000-7000-8000-000000000001",
+        "email": "alice@example.test",
+        "follower_count": 250000,
+        "id": "00000000-0000-7000-8000-000000000584",
+        "metadata": null,
+        "name": "Alice Creator",
+        "notes": "Creator outreach contact",
+        "opted_out_at": null,
+        "phone": null,
+        "responded_at": null,
+        "source": "manual",
+        "updated_at": "2026-07-01T12:00:00Z",
+        "user_id": null,
+        "vertical": "credit_cards"
+      }
+    ]
+  },
+  "native.crm.contact-detail.default": {
+    "contact": {
+      "__entity_type": "crm_contact",
+      "archived_at": null,
+      "assigned_to_id": null,
+      "contact_type": "influencer",
+      "contacted_at": null,
+      "converted_at": null,
+      "created_at": "2026-07-01T12:00:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "email": "alice@example.test",
+      "follower_count": 250000,
+      "id": "00000000-0000-7000-8000-000000000584",
+      "metadata": null,
+      "name": "Alice Creator",
+      "notes": "Creator outreach contact",
+      "opted_out_at": null,
+      "phone": null,
+      "responded_at": null,
+      "source": "manual",
+      "updated_at": "2026-07-01T12:00:00Z",
+      "user_id": null,
+      "vertical": "credit_cards"
+    },
+    "social_accounts": [
+      {
+        "__entity_type": "crm_contact_social_account",
+        "contact_id": "00000000-0000-7000-8000-000000000584",
+        "created_at": "2026-07-01T12:00:00Z",
+        "follower_count": 250000,
+        "follower_count_updated_at": "2026-07-01T11:45:00Z",
+        "handle": "@alicecreator",
+        "id": "00000000-0000-7000-8000-000000000591",
+        "platform": "instagram",
+        "profile_url": "https://www.instagram.com/alicecreator",
+        "updated_at": "2026-07-01T12:00:00Z"
+      }
+    ]
+  },
+  "native.crm.contact-create.default": {
+    "contact": {
+      "__entity_type": "crm_contact",
+      "archived_at": null,
+      "assigned_to_id": null,
+      "contact_type": "influencer",
+      "contacted_at": null,
+      "converted_at": null,
+      "created_at": "2026-07-01T12:05:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "email": "alice@example.test",
+      "follower_count": 250000,
+      "id": "00000000-0000-7000-8000-000000000584",
+      "metadata": null,
+      "name": "Alice Creator",
+      "notes": "Creator outreach contact",
+      "opted_out_at": null,
+      "phone": null,
+      "responded_at": null,
+      "source": "manual",
+      "updated_at": "2026-07-01T12:05:00Z",
+      "user_id": null,
+      "vertical": "credit_cards"
+    }
+  },
+  "native.crm.contact-update.default": {
+    "contact": {
+      "__entity_type": "crm_contact",
+      "archived_at": null,
+      "assigned_to_id": null,
+      "contact_type": "influencer",
+      "contacted_at": null,
+      "converted_at": null,
+      "created_at": "2026-07-01T12:00:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "email": "alice@example.test",
+      "follower_count": 255000,
+      "id": "00000000-0000-7000-8000-000000000584",
+      "metadata": null,
+      "name": "Alice Creator",
+      "notes": "Updated outreach notes",
+      "opted_out_at": null,
+      "phone": "+1-415-555-0100",
+      "responded_at": null,
+      "source": "manual",
+      "updated_at": "2026-07-01T12:10:00Z",
+      "user_id": null,
+      "vertical": "credit_cards"
+    }
+  },
+  "native.crm.contact-archive.default": null,
+  "native.crm.contact-emails.default": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "__entity_type": "crm_message",
+        "ai_generated_at": "2026-07-01T12:29:30Z",
+        "ai_prompt": "Write a warm intro",
+        "body_html": null,
+        "body_text": "Hi Alice, great to connect.",
+        "bounced_at": null,
+        "conversation_id": "00000000-0000-7000-8000-000000000700",
+        "created_at": "2026-07-01T12:30:00Z",
+        "delivered_at": null,
+        "direction": "outbound",
+        "discarded_at": null,
+        "email_provider": "ses",
+        "from_email": "admin@voucha.ai",
+        "id": "00000000-0000-7000-8000-000000000600",
+        "received_at": null,
+        "sent_at": "2026-07-01T12:30:00Z",
+        "sent_by_id": "00000000-0000-7000-8000-000000000001",
+        "ses_message_id": "ses-msg-0001",
+        "subject": "Warm intro",
+        "to_email": "alice@example.test",
+        "updated_at": "2026-07-01T12:30:00Z"
+      }
+    ]
+  },
+  "native.crm.contact-email-send.default": {
+    "message": {
+      "__entity_type": "crm_message",
+      "ai_generated_at": "2026-07-01T12:29:30Z",
+      "ai_prompt": "Write a warm intro",
+      "body_html": null,
+      "body_text": "Hi Alice, great to connect.",
+      "bounced_at": null,
+      "conversation_id": "00000000-0000-7000-8000-000000000700",
+      "created_at": "2026-07-01T12:30:00Z",
+      "delivered_at": null,
+      "direction": "outbound",
+      "discarded_at": null,
+      "email_provider": "ses",
+      "from_email": "admin@voucha.ai",
+      "id": "00000000-0000-7000-8000-000000000600",
+      "received_at": null,
+      "sent_at": "2026-07-01T12:30:00Z",
+      "sent_by_id": "00000000-0000-7000-8000-000000000001",
+      "ses_message_id": "ses-msg-0001",
+      "subject": "Warm intro",
+      "to_email": "alice@example.test",
+      "updated_at": "2026-07-01T12:30:00Z"
+    }
+  },
+  "native.crm.contact-notes.default": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": null
+    },
+    "results": [
+      {
+        "__entity_type": "crm_note",
+        "body": "Met at the conference",
+        "contact_id": "00000000-0000-7000-8000-000000000584",
+        "conversation_id": "00000000-0000-7000-8000-000000000700",
+        "created_at": "2026-07-01T12:31:00Z",
+        "created_by_id": "00000000-0000-7000-8000-000000000001",
+        "deleted_at": null,
+        "id": "00000000-0000-7000-8000-000000000901",
+        "updated_at": "2026-07-01T12:31:00Z"
+      }
+    ]
+  },
+  "native.crm.contact-note-create.default": {
+    "note": {
+      "__entity_type": "crm_note",
+      "body": "Met at the conference",
+      "contact_id": "00000000-0000-7000-8000-000000000584",
+      "conversation_id": "00000000-0000-7000-8000-000000000700",
+      "created_at": "2026-07-01T12:31:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "deleted_at": null,
+      "id": "00000000-0000-7000-8000-000000000901",
+      "updated_at": "2026-07-01T12:31:00Z"
+    }
+  },
+  "native.crm.contact-note-delete.default": null,
+  "native.crm.contact-link-user.default": {
+    "contact": {
+      "__entity_type": "crm_contact",
+      "archived_at": null,
+      "assigned_to_id": null,
+      "contact_type": "influencer",
+      "contacted_at": null,
+      "converted_at": null,
+      "created_at": "2026-07-01T12:00:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "email": "alice@example.test",
+      "follower_count": 250000,
+      "id": "00000000-0000-7000-8000-000000000584",
+      "metadata": null,
+      "name": "Alice Creator",
+      "notes": "Creator outreach contact",
+      "opted_out_at": null,
+      "phone": null,
+      "responded_at": null,
+      "source": "manual",
+      "updated_at": "2026-07-01T12:35:00Z",
+      "user_id": "00000000-0000-7000-8000-000000000001",
+      "vertical": "credit_cards"
+    }
+  },
+  "native.crm.contact-unlink-user.default": {
+    "contact": {
+      "__entity_type": "crm_contact",
+      "archived_at": null,
+      "assigned_to_id": null,
+      "contact_type": "influencer",
+      "contacted_at": null,
+      "converted_at": null,
+      "created_at": "2026-07-01T12:00:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "email": "alice@example.test",
+      "follower_count": 250000,
+      "id": "00000000-0000-7000-8000-000000000584",
+      "metadata": null,
+      "name": "Alice Creator",
+      "notes": "Creator outreach contact",
+      "opted_out_at": null,
+      "phone": null,
+      "responded_at": null,
+      "source": "manual",
+      "updated_at": "2026-07-01T12:40:00Z",
+      "user_id": null,
+      "vertical": "credit_cards"
+    }
+  },
+  "native.crm.contact-email-draft.default": {
+    "draft": {
+      "body_html": "<p>Hi Alice, it was great to see your recent creator work.</p>",
+      "body_text": "Hi Alice, it was great to see your recent creator work.",
+      "subject": "Warm intro"
+    }
+  },
+  "native.crm.import.success.default": {
+    "batch": {
+      "created_at": "2026-07-01T12:45:00Z",
+      "id": "00000000-0000-7000-8000-000000000b01",
+      "import_type": "crm_contact",
+      "total_rows": 1
+    },
+    "valid": true
+  },
+  "native.crm.import.validation.default": {
+    "valid": false,
+    "validation": {
+      "rows": [
+        {
+          "errors": ["follower_count must be a non-negative integer"],
+          "row_index": 0,
+          "valid": false
+        }
+      ],
+      "valid": false
+    }
+  },
+  "native.moderation.reports.default": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "has_previous_page": false,
+      "start_cursor": "eyJjbHVzdGVyIjpmYWxzZSwiaWQiOiIwMTlmNjU1OS02YjMxLTcxNzEtYjViMS1jY2Q5ZDcwMmM0NWUiLCJzb3J0Ijoic2V2ZXJpdHkiLCJzdGF0dXMiOiJwZW5kaW5nIiwic2NvcGUiOiJ7XCJhdWRpZW5jZVwiOlwic3RhZmZcIixcIm93bmVySWRcIjpudWxsfSIsInJlcG9ydF9jb3VudCI6Mywic2V2ZXJpdHlfcmFuayI6MX0"
+    },
+    "results": [
+      {
+        "admin_action_path": "/review/native-post",
+        "case_id": "case-1",
+        "created_at": "2026-06-01T12:00:00.000Z",
+        "entity_id": "post-1",
+        "entity_type": "post",
+        "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e",
+        "is_system_generated": false,
+        "judgement": {
+          "current_report_count": 3,
+          "internal_response": "Likely spam.",
+          "is_stale": false,
+          "judged_report_count": 3,
+          "public_response": "Thanks for the report.",
+          "recommended_action": "remove"
+        },
+        "note": "Looks automated.",
+        "post_moderation_context": null,
+        "reason": "spam",
+        "report_count": 3,
+        "reporter_user_id": "user-1",
+        "reporter_username": "alice",
+        "resolved_by_id": null,
+        "reviewed_at": null,
+        "status": "pending",
+        "target_available": true,
+        "target_is_restricted": false,
+        "target_label": "Native post",
+        "target_content": null,
+        "target_path": "/review/native-post",
+        "target_user_id": "user-2"
+      }
+    ]
+  },
+  "native.moderation.reports.clustered.default": {
+    "cluster_mode": "entity",
+    "results": [
+      {
+        "admin_action_path": "/review/post-1",
+        "entity_id": "00000000-0000-7000-8000-000000000101",
+        "entity_type": "post",
+        "first_reported_at": "2026-06-01T12:15:00.000Z",
+        "id": "post:00000000-0000-7000-8000-000000000101",
+        "indicators": {
+          "content_hash_duplicate": true,
+          "embeddings_similarity": false,
+          "velocity_spike": true
+        },
+        "last_reported_at": "2026-06-01T12:15:00.000Z",
+        "reason_breakdown": [
+          {
+            "count": 1,
+            "reason": "spam"
+          }
+        ],
+        "report_count": 1,
+        "reporter_count": 1,
+        "reports": [
+          {
+            "admin_action_path": "/review/post-1",
+            "case_id": "00000000-0000-7000-8200-000000000101",
+            "created_at": "2026-06-01T12:15:00.000Z",
+            "entity_id": "00000000-0000-7000-8000-000000000101",
+            "entity_type": "post",
+            "id": "00000000-0000-7000-8100-000000000101",
+            "is_system_generated": false,
+            "judgement": null,
+            "note": "Looks automated.",
+            "post_moderation_context": null,
+            "reason": "spam",
+            "report_count": 1,
+            "reporter_user_id": "00000000-0000-7000-8300-000000000101",
+            "reporter_username": "reporter1",
+            "resolved_by_id": null,
+            "reviewed_at": null,
+            "status": "pending",
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "post-1",
+            "target_content": null,
+            "target_path": "/review/post-1",
+            "target_user_id": "00000000-0000-7000-8400-000000000101"
+          }
+        ],
+        "target_available": true,
+        "target_is_restricted": false,
+        "target_label": "Native post 1",
+        "target_content": null,
+        "target_path": "/review/post-1",
+        "target_user_id": "00000000-0000-7000-8400-000000000101"
+      },
+      {
+        "admin_action_path": "/review/post-2",
+        "entity_id": "00000000-0000-7000-8000-000000000102",
+        "entity_type": "post",
+        "first_reported_at": "2026-06-01T12:10:00.000Z",
+        "id": "post:00000000-0000-7000-8000-000000000102",
+        "indicators": {
+          "content_hash_duplicate": true,
+          "embeddings_similarity": false,
+          "velocity_spike": false
+        },
+        "last_reported_at": "2026-06-01T12:10:00.000Z",
+        "reason_breakdown": [
+          {
+            "count": 1,
+            "reason": "spam"
+          }
+        ],
+        "report_count": 1,
+        "reporter_count": 1,
+        "reports": [
+          {
+            "admin_action_path": "/review/post-2",
+            "case_id": "00000000-0000-7000-8200-000000000102",
+            "created_at": "2026-06-01T12:10:00.000Z",
+            "entity_id": "00000000-0000-7000-8000-000000000102",
+            "entity_type": "post",
+            "id": "00000000-0000-7000-8100-000000000102",
+            "is_system_generated": false,
+            "judgement": null,
+            "note": "Looks automated.",
+            "post_moderation_context": null,
+            "reason": "spam",
+            "report_count": 1,
+            "reporter_user_id": "00000000-0000-7000-8300-000000000102",
+            "reporter_username": "reporter2",
+            "resolved_by_id": null,
+            "reviewed_at": null,
+            "status": "pending",
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "post-2",
+            "target_content": null,
+            "target_path": "/review/post-2",
+            "target_user_id": "00000000-0000-7000-8400-000000000101"
+          }
+        ],
+        "target_available": true,
+        "target_is_restricted": false,
+        "target_label": "Native post 2",
+        "target_content": null,
+        "target_path": "/review/post-2",
+        "target_user_id": "00000000-0000-7000-8400-000000000101"
+      },
+      {
+        "admin_action_path": "/review/user-suspect",
+        "entity_id": "00000000-0000-7000-8000-000000000201",
+        "entity_type": "user",
+        "first_reported_at": "2026-06-01T12:06:00.000Z",
+        "id": "user:00000000-0000-7000-8000-000000000201",
+        "indicators": {
+          "content_hash_duplicate": false,
+          "embeddings_similarity": false,
+          "velocity_spike": false
+        },
+        "last_reported_at": "2026-06-01T12:06:00.000Z",
+        "reason_breakdown": [
+          {
+            "count": 1,
+            "reason": "spam"
+          },
+          {
+            "count": 1,
+            "reason": "other"
+          }
+        ],
+        "report_count": 2,
+        "reporter_count": 2,
+        "reports": [
+          {
+            "admin_action_path": "/review/user-suspect",
+            "case_id": "00000000-0000-7000-8200-000000000201",
+            "created_at": "2026-06-01T12:06:00.000Z",
+            "entity_id": "00000000-0000-7000-8000-000000000201",
+            "entity_type": "user",
+            "id": "00000000-0000-7000-8100-000000000201",
+            "is_system_generated": false,
+            "judgement": null,
+            "note": "Looks automated.",
+            "post_moderation_context": null,
+            "reason": "spam",
+            "report_count": 2,
+            "reporter_user_id": "00000000-0000-7000-8300-000000000201",
+            "reporter_username": "alice",
+            "resolved_by_id": null,
+            "reviewed_at": null,
+            "status": "pending",
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "user-suspect",
+            "target_content": null,
+            "target_path": "/review/user-suspect",
+            "target_user_id": "00000000-0000-7000-8000-000000000201"
+          },
+          {
+            "admin_action_path": "/review/user-suspect",
+            "case_id": "00000000-0000-7000-8200-000000000202",
+            "community_ban_evasion": {
+              "community_id": "00000000-0000-7000-8500-000000000101",
+              "community_slug": "native-community",
+              "flagged_at": "2026-06-01T12:00:00.000Z",
+              "score": 0.93,
+              "source_user_id": "00000000-0000-7000-8600-000000000101",
+              "source_username": "previously-banned"
+            },
+            "created_at": "2026-06-01T12:06:00.000Z",
+            "entity_id": "00000000-0000-7000-8000-000000000201",
+            "entity_type": "user",
+            "id": "00000000-0000-7000-8100-000000000202",
+            "is_system_generated": true,
+            "judgement": null,
+            "note": "Suspected ban evasion",
+            "post_moderation_context": null,
+            "reason": "other",
+            "report_count": 2,
+            "reporter_user_id": "00000000-0000-7000-8300-000000000202",
+            "reporter_username": "ban-evasion",
+            "resolved_by_id": null,
+            "reviewed_at": null,
+            "status": "pending",
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "user-suspect",
+            "target_content": null,
+            "target_path": "/review/user-suspect",
+            "target_user_id": "00000000-0000-7000-8000-000000000201"
+          }
+        ],
+        "target_available": true,
+        "target_is_restricted": false,
+        "target_label": "Suspected user",
+        "target_content": null,
+        "target_path": "/review/user-suspect",
+        "target_user_id": "00000000-0000-7000-8000-000000000201"
+      },
+      {
+        "admin_action_path": "/review/post-3",
+        "entity_id": "00000000-0000-7000-8000-000000000103",
+        "entity_type": "post",
+        "first_reported_at": "2026-06-01T12:05:00.000Z",
+        "id": "post:00000000-0000-7000-8000-000000000103",
+        "indicators": {
+          "content_hash_duplicate": true,
+          "embeddings_similarity": false,
+          "velocity_spike": false
+        },
+        "last_reported_at": "2026-06-01T12:05:00.000Z",
+        "reason_breakdown": [
+          {
+            "count": 1,
+            "reason": "spam"
+          }
+        ],
+        "report_count": 1,
+        "reporter_count": 1,
+        "reports": [
+          {
+            "admin_action_path": "/review/post-3",
+            "case_id": "00000000-0000-7000-8200-000000000103",
+            "created_at": "2026-06-01T12:05:00.000Z",
+            "entity_id": "00000000-0000-7000-8000-000000000103",
+            "entity_type": "post",
+            "id": "00000000-0000-7000-8100-000000000103",
+            "is_system_generated": false,
+            "judgement": null,
+            "note": "Looks automated.",
+            "post_moderation_context": null,
+            "reason": "spam",
+            "report_count": 1,
+            "reporter_user_id": "00000000-0000-7000-8300-000000000103",
+            "reporter_username": "reporter3",
+            "resolved_by_id": null,
+            "reviewed_at": null,
+            "status": "pending",
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "post-3",
+            "target_content": null,
+            "target_path": "/review/post-3",
+            "target_user_id": "00000000-0000-7000-8400-000000000101"
+          }
+        ],
+        "target_available": true,
+        "target_is_restricted": false,
+        "target_label": "Native post 3",
+        "target_content": null,
+        "target_path": "/review/post-3",
+        "target_user_id": "00000000-0000-7000-8400-000000000101"
+      }
+    ],
+    "duplicate_clusters": [
+      {
+        "clusters": [
+          {
+            "admin_action_path": "/review/post-1",
+            "entity_id": "00000000-0000-7000-8000-000000000101",
+            "entity_type": "post",
+            "first_reported_at": "2026-06-01T12:15:00.000Z",
+            "id": "post:00000000-0000-7000-8000-000000000101",
+            "indicators": {
+              "content_hash_duplicate": true,
+              "embeddings_similarity": false,
+              "velocity_spike": true
+            },
+            "last_reported_at": "2026-06-01T12:15:00.000Z",
+            "reason_breakdown": [
+              {
+                "count": 1,
+                "reason": "spam"
+              }
+            ],
+            "report_count": 1,
+            "reporter_count": 1,
+            "reports": [
+              {
+                "admin_action_path": "/review/post-1",
+                "case_id": "00000000-0000-7000-8200-000000000101",
+                "created_at": "2026-06-01T12:15:00.000Z",
+                "entity_id": "00000000-0000-7000-8000-000000000101",
+                "entity_type": "post",
+                "id": "00000000-0000-7000-8100-000000000101",
+                "is_system_generated": false,
+                "judgement": null,
+                "note": "Looks automated.",
+                "post_moderation_context": null,
+                "reason": "spam",
+                "report_count": 1,
+                "reporter_user_id": "00000000-0000-7000-8300-000000000101",
+                "reporter_username": "reporter1",
+                "resolved_by_id": null,
+                "reviewed_at": null,
+                "status": "pending",
+                "target_available": true,
+                "target_is_restricted": false,
+                "target_label": "post-1",
+                "target_content": null,
+                "target_path": "/review/post-1",
+                "target_user_id": "00000000-0000-7000-8400-000000000101"
+              }
+            ],
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "Native post 1",
+            "target_content": null,
+            "target_path": "/review/post-1",
+            "target_user_id": "00000000-0000-7000-8400-000000000101"
+          },
+          {
+            "admin_action_path": "/review/post-2",
+            "entity_id": "00000000-0000-7000-8000-000000000102",
+            "entity_type": "post",
+            "first_reported_at": "2026-06-01T12:10:00.000Z",
+            "id": "post:00000000-0000-7000-8000-000000000102",
+            "indicators": {
+              "content_hash_duplicate": true,
+              "embeddings_similarity": false,
+              "velocity_spike": false
+            },
+            "last_reported_at": "2026-06-01T12:10:00.000Z",
+            "reason_breakdown": [
+              {
+                "count": 1,
+                "reason": "spam"
+              }
+            ],
+            "report_count": 1,
+            "reporter_count": 1,
+            "reports": [
+              {
+                "admin_action_path": "/review/post-2",
+                "case_id": "00000000-0000-7000-8200-000000000102",
+                "created_at": "2026-06-01T12:10:00.000Z",
+                "entity_id": "00000000-0000-7000-8000-000000000102",
+                "entity_type": "post",
+                "id": "00000000-0000-7000-8100-000000000102",
+                "is_system_generated": false,
+                "judgement": null,
+                "note": "Looks automated.",
+                "post_moderation_context": null,
+                "reason": "spam",
+                "report_count": 1,
+                "reporter_user_id": "00000000-0000-7000-8300-000000000102",
+                "reporter_username": "reporter2",
+                "resolved_by_id": null,
+                "reviewed_at": null,
+                "status": "pending",
+                "target_available": true,
+                "target_is_restricted": false,
+                "target_label": "post-2",
+                "target_content": null,
+                "target_path": "/review/post-2",
+                "target_user_id": "00000000-0000-7000-8400-000000000101"
+              }
+            ],
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "Native post 2",
+            "target_content": null,
+            "target_path": "/review/post-2",
+            "target_user_id": "00000000-0000-7000-8400-000000000101"
+          },
+          {
+            "admin_action_path": "/review/post-3",
+            "entity_id": "00000000-0000-7000-8000-000000000103",
+            "entity_type": "post",
+            "first_reported_at": "2026-06-01T12:05:00.000Z",
+            "id": "post:00000000-0000-7000-8000-000000000103",
+            "indicators": {
+              "content_hash_duplicate": true,
+              "embeddings_similarity": false,
+              "velocity_spike": false
+            },
+            "last_reported_at": "2026-06-01T12:05:00.000Z",
+            "reason_breakdown": [
+              {
+                "count": 1,
+                "reason": "spam"
+              }
+            ],
+            "report_count": 1,
+            "reporter_count": 1,
+            "reports": [
+              {
+                "admin_action_path": "/review/post-3",
+                "case_id": "00000000-0000-7000-8200-000000000103",
+                "created_at": "2026-06-01T12:05:00.000Z",
+                "entity_id": "00000000-0000-7000-8000-000000000103",
+                "entity_type": "post",
+                "id": "00000000-0000-7000-8100-000000000103",
+                "is_system_generated": false,
+                "judgement": null,
+                "note": "Looks automated.",
+                "post_moderation_context": null,
+                "reason": "spam",
+                "report_count": 1,
+                "reporter_user_id": "00000000-0000-7000-8300-000000000103",
+                "reporter_username": "reporter3",
+                "resolved_by_id": null,
+                "reviewed_at": null,
+                "status": "pending",
+                "target_available": true,
+                "target_is_restricted": false,
+                "target_label": "post-3",
+                "target_content": null,
+                "target_path": "/review/post-3",
+                "target_user_id": "00000000-0000-7000-8400-000000000101"
+              }
+            ],
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "Native post 3",
+            "target_content": null,
+            "target_path": "/review/post-3",
+            "target_user_id": "00000000-0000-7000-8400-000000000101"
+          }
+        ],
+        "first_reported_at": "2026-06-01T12:05:00.000Z",
+        "id": "content-hash:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "last_reported_at": "2026-06-01T12:15:00.000Z",
+        "post_count": 3,
+        "reason_breakdown": [
+          {
+            "count": 3,
+            "reason": "spam"
+          }
+        ],
+        "report_count": 3,
+        "signal": "content_hash_duplicate"
+      }
+    ],
+    "page_info": {
+      "end_cursor": "eyJjbHVzdGVyIjp0cnVlLCJjcmVhdGVkX2F0IjoiMjAyNi0wNi0wMVQxMjowNTowMC4wMDAwMDBaIiwiZW50aXR5X3R5cGUiOiJwb3N0IiwiaWQiOiIwMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDAxMDMiLCJzb3J0IjoiY3JlYXRlZF9hdF9kZXNjIiwic3RhdHVzIjoicGVuZGluZyIsInNjb3BlIjoie1wiYXVkaWVuY2VcIjpcInN0YWZmXCIsXCJvd25lcklkXCI6bnVsbH0ifQ",
+      "has_next_page": true,
+      "has_previous_page": false,
+      "start_cursor": "eyJjbHVzdGVyIjp0cnVlLCJjcmVhdGVkX2F0IjoiMjAyNi0wNi0wMVQxMjoxNTowMC4wMDAwMDBaIiwiZW50aXR5X3R5cGUiOiJwb3N0IiwiaWQiOiIwMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJzb3J0IjoiY3JlYXRlZF9hdF9kZXNjIiwic3RhdHVzIjoicGVuZGluZyIsInNjb3BlIjoie1wiYXVkaWVuY2VcIjpcInN0YWZmXCIsXCJvd25lcklkXCI6bnVsbH0ifQ"
+    }
+  },
+  "native.moderation.reports.clustered.page-2": {
+    "cluster_mode": "entity",
+    "results": [
+      {
+        "admin_action_path": "/review/native-fourth-post",
+        "entity_id": "00000000-0000-7000-8000-000000000104",
+        "entity_type": "post",
+        "first_reported_at": "2026-06-01T12:03:00.000Z",
+        "id": "post:00000000-0000-7000-8000-000000000104",
+        "indicators": {
+          "content_hash_duplicate": true,
+          "embeddings_similarity": false,
+          "velocity_spike": false
+        },
+        "last_reported_at": "2026-06-01T12:04:00.000Z",
+        "reason_breakdown": [
+          {
+            "count": 4,
+            "reason": "spam"
+          }
+        ],
+        "report_count": 4,
+        "reporter_count": 3,
+        "reports": [],
+        "target_available": true,
+        "target_is_restricted": false,
+        "target_label": "Native fourth post",
+        "target_content": null,
+        "target_path": "/review/native-fourth-post",
+        "target_user_id": "00000000-0000-7000-8400-000000000104"
+      },
+      {
+        "admin_action_path": "/review/native-fifth-post",
+        "entity_id": "00000000-0000-7000-8000-000000000105",
+        "entity_type": "post",
+        "first_reported_at": "2026-06-01T12:02:00.000Z",
+        "id": "post:00000000-0000-7000-8000-000000000105",
+        "indicators": {
+          "content_hash_duplicate": true,
+          "embeddings_similarity": false,
+          "velocity_spike": false
+        },
+        "last_reported_at": "2026-06-01T12:03:00.000Z",
+        "reason_breakdown": [
+          {
+            "count": 2,
+            "reason": "spam"
+          }
+        ],
+        "report_count": 2,
+        "reporter_count": 2,
+        "reports": [],
+        "target_available": true,
+        "target_is_restricted": false,
+        "target_label": "Native fifth post",
+        "target_content": null,
+        "target_path": "/review/native-fifth-post",
+        "target_user_id": "00000000-0000-7000-8400-000000000105"
+      },
+      {
+        "admin_action_path": "/review/native-sixth-post",
+        "entity_id": "00000000-0000-7000-8000-000000000106",
+        "entity_type": "post",
+        "first_reported_at": "2026-06-01T12:00:00.000Z",
+        "id": "post:00000000-0000-7000-8000-000000000106",
+        "indicators": {
+          "content_hash_duplicate": true,
+          "embeddings_similarity": false,
+          "velocity_spike": false
+        },
+        "last_reported_at": "2026-06-01T12:01:00.000Z",
+        "reason_breakdown": [
+          {
+            "count": 1,
+            "reason": "spam"
+          }
+        ],
+        "report_count": 1,
+        "reporter_count": 1,
+        "reports": [],
+        "target_available": true,
+        "target_is_restricted": false,
+        "target_label": "Native sixth post",
+        "target_content": null,
+        "target_path": "/review/native-sixth-post",
+        "target_user_id": "00000000-0000-7000-8400-000000000106"
+      }
+    ],
+    "duplicate_clusters": [
+      {
+        "clusters": [
+          {
+            "admin_action_path": "/review/native-sixth-post",
+            "entity_id": "00000000-0000-7000-8000-000000000106",
+            "entity_type": "post",
+            "first_reported_at": "2026-06-01T12:00:00.000Z",
+            "id": "post:00000000-0000-7000-8000-000000000106",
+            "indicators": {
+              "content_hash_duplicate": true,
+              "embeddings_similarity": false,
+              "velocity_spike": false
+            },
+            "last_reported_at": "2026-06-01T12:01:00.000Z",
+            "reason_breakdown": [
+              {
+                "count": 1,
+                "reason": "spam"
+              }
+            ],
+            "report_count": 1,
+            "reporter_count": 1,
+            "reports": [],
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "Native sixth post",
+            "target_content": null,
+            "target_path": "/review/native-sixth-post",
+            "target_user_id": "00000000-0000-7000-8400-000000000106"
+          },
+          {
+            "admin_action_path": "/review/native-fourth-post",
+            "entity_id": "00000000-0000-7000-8000-000000000104",
+            "entity_type": "post",
+            "first_reported_at": "2026-06-01T12:03:00.000Z",
+            "id": "post:00000000-0000-7000-8000-000000000104",
+            "indicators": {
+              "content_hash_duplicate": true,
+              "embeddings_similarity": false,
+              "velocity_spike": false
+            },
+            "last_reported_at": "2026-06-01T12:04:00.000Z",
+            "reason_breakdown": [
+              {
+                "count": 4,
+                "reason": "spam"
+              }
+            ],
+            "report_count": 4,
+            "reporter_count": 3,
+            "reports": [],
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "Native fourth post",
+            "target_content": null,
+            "target_path": "/review/native-fourth-post",
+            "target_user_id": "00000000-0000-7000-8400-000000000104"
+          },
+          {
+            "admin_action_path": "/review/native-fifth-post",
+            "entity_id": "00000000-0000-7000-8000-000000000105",
+            "entity_type": "post",
+            "first_reported_at": "2026-06-01T12:02:00.000Z",
+            "id": "post:00000000-0000-7000-8000-000000000105",
+            "indicators": {
+              "content_hash_duplicate": true,
+              "embeddings_similarity": false,
+              "velocity_spike": false
+            },
+            "last_reported_at": "2026-06-01T12:03:00.000Z",
+            "reason_breakdown": [
+              {
+                "count": 2,
+                "reason": "spam"
+              }
+            ],
+            "report_count": 2,
+            "reporter_count": 2,
+            "reports": [],
+            "target_available": true,
+            "target_is_restricted": false,
+            "target_label": "Native fifth post",
+            "target_content": null,
+            "target_path": "/review/native-fifth-post",
+            "target_user_id": "00000000-0000-7000-8400-000000000105"
+          }
+        ],
+        "first_reported_at": "2026-06-01T12:00:00.000Z",
+        "id": "content-hash:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "last_reported_at": "2026-06-01T12:04:00.000Z",
+        "post_count": 3,
+        "reason_breakdown": [
+          {
+            "count": 7,
+            "reason": "spam"
+          }
+        ],
+        "report_count": 7,
+        "signal": "content_hash_duplicate"
+      }
+    ],
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "has_previous_page": true,
+      "start_cursor": "eyJjbHVzdGVyIjp0cnVlLCJjcmVhdGVkX2F0IjoiMjAyNi0wNi0wMVQxMjowNDowMC4wMDAwMDBaIiwiZW50aXR5X3R5cGUiOiJwb3N0IiwiaWQiOiIwMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDAxMDQiLCJzb3J0IjoiY3JlYXRlZF9hdF9kZXNjIiwic3RhdHVzIjoicGVuZGluZyIsInNjb3BlIjoie1wiYXVkaWVuY2VcIjpcInN0YWZmXCIsXCJvd25lcklkXCI6bnVsbH0ifQ"
+    }
+  },
+  "native.moderation.appeals.page-2": {
+    "appeals": [
+      {
+        "ai_drafted_at": "2026-06-02T12:00:00.000Z",
+        "ai_internal_response": "The warning can remain in place.",
+        "ai_public_response": "We reviewed your appeal.",
+        "appeal_reason": "I would like another review.",
+        "appellant_id": "user-2",
+        "approved_at": null,
+        "approved_by_id": null,
+        "case_id": "case-2",
+        "community_ban_id": null,
+        "community_id": null,
+        "created_at": "2026-06-02T11:45:00.000Z",
+        "drafted_at": null,
+        "edited_at": null,
+        "edited_by_id": null,
+        "id": "00000000-0000-7000-8000-000000000101",
+        "internal_notes": null,
+        "is_overdue": false,
+        "latest_lifecycle_change_id": null,
+        "model": "gpt-test",
+        "post_id": null,
+        "post_removal_kind": null,
+        "public_response": null,
+        "recommended_action": "deny",
+        "resolution_action": null,
+        "resolved_at": null,
+        "resolved_by_id": null,
+        "sent_at": null,
+        "staff_context": {
+          "appellant": {
+            "id": "user-2",
+            "profile_image_id": null,
+            "username": "appealing-member",
+            "verified_display_name": null
+          },
+          "original_decision": {
+            "actor": {
+              "id": "admin-1",
+              "profile_image_id": null,
+              "username": "moderator",
+              "verified_display_name": null
+            },
+            "internal_reason": "Repeated spam links"
+          }
+        },
+        "status": "pending",
+        "target_context": {
+          "community": null,
+          "created_at": "2026-06-02T11:30:00.000Z",
+          "id": "warning-2",
+          "public_message": "Please stop posting repeated promotional links.",
+          "type": "warning"
+        },
+        "updated_at": "2026-06-02T12:00:00.000Z",
+        "user_suspension_id": null,
+        "user_warning_id": "warning-2"
+      }
+    ],
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMSIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnN0YWZmLWFsbDppZC1kZXNjIn0"
+    }
+  },
+  "native.moderation.appeals.update.default": {
+    "appeal": {
+      "ai_drafted_at": "2026-06-01T12:00:00.000Z",
+      "ai_internal_response": "Partial reduction recommended.",
+      "ai_public_response": "We reviewed your appeal.",
+      "appeal_reason": "Please review this again.",
+      "appellant_id": "user-1",
+      "approved_at": null,
+      "approved_by_id": null,
+      "case_id": "case-1",
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "drafted_at": "2026-06-01T12:05:00.000Z",
+      "edited_at": "2026-06-01T12:05:00.000Z",
+      "edited_by_id": "admin-1",
+      "id": "00000000-0000-7000-8000-000000000102",
+      "internal_notes": null,
+      "is_overdue": false,
+      "latest_lifecycle_change_id": "lifecycle-1",
+      "model": "gpt-test",
+      "post_id": "post-1",
+      "post_removal_kind": "platform",
+      "public_response": "We reviewed your appeal and reduced the action.",
+      "recommended_action": "reduce",
+      "resolution_action": null,
+      "resolved_at": null,
+      "resolved_by_id": null,
+      "sent_at": null,
+      "status": "pending",
+      "updated_at": "2026-06-01T12:05:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": null
+    }
+  },
+  "native.moderation.appeals.approval.default": {
+    "appeal": {
+      "ai_drafted_at": "2026-06-01T12:00:00.000Z",
+      "ai_internal_response": "Partial reduction recommended.",
+      "ai_public_response": "We reviewed your appeal.",
+      "appeal_reason": "Please review this again.",
+      "appellant_id": "user-1",
+      "approved_at": "2026-06-01T12:10:00.000Z",
+      "approved_by_id": "admin-1",
+      "case_id": "case-1",
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "drafted_at": "2026-06-01T12:05:00.000Z",
+      "edited_at": "2026-06-01T12:05:00.000Z",
+      "edited_by_id": "admin-1",
+      "id": "00000000-0000-7000-8000-000000000102",
+      "internal_notes": null,
+      "is_overdue": false,
+      "latest_lifecycle_change_id": "lifecycle-2",
+      "model": "gpt-test",
+      "post_id": "post-1",
+      "post_removal_kind": "platform",
+      "public_response": "We reviewed your appeal and reduced the action.",
+      "recommended_action": "reduce",
+      "resolution_action": null,
+      "resolved_at": null,
+      "resolved_by_id": null,
+      "sent_at": null,
+      "status": "pending",
+      "updated_at": "2026-06-01T12:10:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": null
+    }
+  },
+  "native.moderation.appeals.delivery.default": {
+    "appeal": {
+      "ai_drafted_at": "2026-06-01T12:00:00.000Z",
+      "ai_internal_response": "Partial reduction recommended.",
+      "ai_public_response": "We reviewed your appeal.",
+      "appeal_reason": "Please review this again.",
+      "appellant_id": "user-1",
+      "approved_at": "2026-06-01T12:10:00.000Z",
+      "approved_by_id": "admin-1",
+      "case_id": "case-1",
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "drafted_at": "2026-06-01T12:05:00.000Z",
+      "edited_at": "2026-06-01T12:05:00.000Z",
+      "edited_by_id": "admin-1",
+      "id": "00000000-0000-7000-8000-000000000102",
+      "internal_notes": null,
+      "is_overdue": false,
+      "latest_lifecycle_change_id": "lifecycle-3",
+      "model": "gpt-test",
+      "post_id": "post-1",
+      "post_removal_kind": "platform",
+      "public_response": "We reviewed your appeal and reduced the action.",
+      "recommended_action": "reduce",
+      "resolution_action": null,
+      "resolved_at": null,
+      "resolved_by_id": null,
+      "sent_at": "2026-06-01T12:15:00.000Z",
+      "status": "pending",
+      "updated_at": "2026-06-01T12:15:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": null
+    }
+  },
+  "native.moderation.appeals.resolution.accept": {
+    "appeal": {
+      "ai_drafted_at": "2026-06-01T12:00:00.000Z",
+      "ai_internal_response": "Partial reduction recommended.",
+      "ai_public_response": "We reviewed your appeal.",
+      "appeal_reason": "Please review this again.",
+      "appellant_id": "user-1",
+      "approved_at": "2026-06-01T12:10:00.000Z",
+      "approved_by_id": "admin-1",
+      "case_id": "case-1",
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "drafted_at": "2026-06-01T12:05:00.000Z",
+      "edited_at": "2026-06-01T12:05:00.000Z",
+      "edited_by_id": "admin-1",
+      "id": "00000000-0000-7000-8000-000000000102",
+      "internal_notes": null,
+      "is_overdue": false,
+      "latest_lifecycle_change_id": "lifecycle-4",
+      "model": "gpt-test",
+      "post_id": "post-1",
+      "post_removal_kind": "platform",
+      "public_response": "We reviewed your appeal and reduced the action.",
+      "recommended_action": "reduce",
+      "resolution_action": "accept",
+      "resolved_at": "2026-06-01T12:20:00.000Z",
+      "resolved_by_id": "admin-1",
+      "sent_at": "2026-06-01T12:15:00.000Z",
+      "status": "resolved",
+      "updated_at": "2026-06-01T12:20:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": null
+    }
+  },
+  "native.moderation.appeals.resolution.reduce": {
+    "appeal": {
+      "ai_drafted_at": "2026-06-01T12:00:00.000Z",
+      "ai_internal_response": "Partial reduction recommended.",
+      "ai_public_response": "We reviewed your appeal.",
+      "appeal_reason": "Please review this again.",
+      "appellant_id": "user-1",
+      "approved_at": "2026-06-01T12:10:00.000Z",
+      "approved_by_id": "admin-1",
+      "case_id": "case-1",
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "drafted_at": "2026-06-01T12:05:00.000Z",
+      "edited_at": "2026-06-01T12:05:00.000Z",
+      "edited_by_id": "admin-1",
+      "id": "00000000-0000-7000-8000-000000000102",
+      "internal_notes": null,
+      "is_overdue": false,
+      "latest_lifecycle_change_id": "lifecycle-4",
+      "model": "gpt-test",
+      "post_id": "post-1",
+      "post_removal_kind": "platform",
+      "public_response": "We reviewed your appeal and reduced the action.",
+      "recommended_action": "reduce",
+      "resolution_action": "reduce",
+      "resolved_at": "2026-06-01T12:20:00.000Z",
+      "resolved_by_id": "admin-1",
+      "sent_at": "2026-06-01T12:15:00.000Z",
+      "status": "resolved",
+      "updated_at": "2026-06-01T12:20:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": null
+    }
+  },
+  "native.moderation.appeals.resolution.deny": {
+    "appeal": {
+      "ai_drafted_at": "2026-06-01T12:00:00.000Z",
+      "ai_internal_response": "Partial reduction recommended.",
+      "ai_public_response": "We reviewed your appeal.",
+      "appeal_reason": "Please review this again.",
+      "appellant_id": "user-1",
+      "approved_at": "2026-06-01T12:10:00.000Z",
+      "approved_by_id": "admin-1",
+      "case_id": "case-1",
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "drafted_at": "2026-06-01T12:05:00.000Z",
+      "edited_at": "2026-06-01T12:05:00.000Z",
+      "edited_by_id": "admin-1",
+      "id": "00000000-0000-7000-8000-000000000102",
+      "internal_notes": null,
+      "is_overdue": false,
+      "latest_lifecycle_change_id": "lifecycle-4",
+      "model": "gpt-test",
+      "post_id": "post-1",
+      "post_removal_kind": "platform",
+      "public_response": "We reviewed your appeal and reduced the action.",
+      "recommended_action": "reduce",
+      "resolution_action": "deny",
+      "resolved_at": "2026-06-01T12:20:00.000Z",
+      "resolved_by_id": "admin-1",
+      "sent_at": "2026-06-01T12:15:00.000Z",
+      "status": "dismissed",
+      "updated_at": "2026-06-01T12:20:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": null
+    }
+  },
+  "native.moderation.appeals.resolution-drafts.default": {
+    "queued": true,
+    "rerun_by_id": "admin-1"
+  },
+  "native.moderation.report-judgement.default": {
+    "queued": true,
+    "rerun_by_id": "admin-1"
+  },
+  "native.moderation.appeals.default": {
+    "appeals": [
+      {
+        "ai_drafted_at": "2026-06-01T12:00:00.000Z",
+        "ai_internal_response": "Partial reduction recommended.",
+        "ai_public_response": "We reviewed your appeal.",
+        "appeal_reason": "Please review this again.",
+        "appellant_id": "user-1",
+        "approved_at": null,
+        "approved_by_id": null,
+        "case_id": "case-1",
+        "community_ban_id": null,
+        "community_id": null,
+        "created_at": "2026-06-01T11:45:00.000Z",
+        "drafted_at": null,
+        "edited_at": null,
+        "edited_by_id": null,
+        "id": "00000000-0000-7000-8000-000000000102",
+        "internal_notes": null,
+        "is_overdue": false,
+        "latest_lifecycle_change_id": null,
+        "model": "gpt-test",
+        "post_id": "post-1",
+        "post_removal_kind": "platform",
+        "public_response": null,
+        "recommended_action": "reduce",
+        "resolution_action": null,
+        "resolved_at": null,
+        "resolved_by_id": null,
+        "sent_at": null,
+        "staff_context": {
+          "appellant": {
+            "id": "user-1",
+            "profile_image_id": null,
+            "username": "appealing-reviewer",
+            "verified_display_name": null
+          },
+          "original_decision": {
+            "actor": {
+              "id": "admin-1",
+              "profile_image_id": null,
+              "username": "moderator",
+              "verified_display_name": null
+            },
+            "internal_reason": "The post did not meet the content policy."
+          }
+        },
+        "status": "pending",
+        "target_context": {
+          "community": null,
+          "decided_at": "2026-06-01T11:30:00.000Z",
+          "id": "post-1",
+          "kind": "platform",
+          "declared_language": null,
+          "lingua_rs_detected_language": "en",
+          "public_reason": "The post did not meet the content policy.",
+          "title": "A removed review",
+          "type": "post_removal"
+        },
+        "updated_at": "2026-06-01T12:00:00.000Z",
+        "user_suspension_id": null,
+        "user_warning_id": null
+      }
+    ],
+    "page_info": {
+      "end_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnN0YWZmLWFsbDppZC1kZXNjIn0",
+      "has_next_page": true,
+      "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnN0YWZmLWFsbDppZC1kZXNjIn0"
+    }
+  },
+  "native.moderation.disputes.default": {
+    "disputes": [
+      {
+        "claim_text": "Native review dispute",
+        "created_at": "2026-06-01T11:45:00.000Z",
+        "ai_drafted_at": null,
+        "ai_internal_response": null,
+        "ai_public_response": null,
+        "approved_at": null,
+        "approved_by_id": null,
+        "drafted_at": null,
+        "edited_at": null,
+        "edited_by_id": null,
+        "disputant_user_id": "user-1",
+        "id": "00000000-0000-7000-8000-000000000201",
+        "is_overdue": false,
+        "internal_notes": null,
+        "latest_lifecycle_change_id": null,
+        "model": null,
+        "post_id": "post-1",
+        "post_content": {
+          "text": "A disputed review",
+          "declared_language": null,
+          "lingua_rs_detected_language": null
+        },
+        "reason": "other",
+        "recommended_action": "remove",
+        "public_response": null,
+        "status": "pending",
+        "resolution_action": null,
+        "resolved_at": null,
+        "resolved_by_id": null,
+        "sent_at": null,
+        "staff_context": {
+          "disputant": {
+            "id": "user-1",
+            "profile_image_id": null,
+            "username": "native-claimant",
+            "verified_display_name": null
+          },
+          "review": {
+            "post": {
+              "created_at": "2026-05-31T12:00:00.000Z",
+              "created_by_id": "user-2",
+              "id": "post-1",
+              "markdown_preview": "The review being disputed.",
+              "declared_language": null,
+              "lingua_rs_detected_language": null,
+              "slug": "a-disputed-review",
+              "title": "A disputed review"
+            },
+            "rating": 1,
+            "topic": {
+              "id": "topic-1",
+              "name": "Native topic",
+              "slug": "native-topic",
+              "topic_type": "business"
+            }
+          }
+        },
+        "topic_id": "topic-1",
+        "updated_at": "2026-06-01T12:00:00.000Z"
+      }
+    ],
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMSIsInNjb3BlIjoiZGlzcHV0ZXM6cGVuZGluZzpzdGFmZjphbGw6aWQtZGVzYyJ9"
+    }
+  },
+  "native.moderation.review-queue.default": {
+    "page_info": {
+      "end_cursor": "eyJpZCI6IjAxOWU4MmYyLWEyYzAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMCJ9",
+      "has_next_page": true,
+      "start_cursor": "eyJpZCI6IjAxOWU4MzAwLTVlNjAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMCJ9"
+    },
+    "results": [
+      {
+        "clearance_status": "in_review",
+        "clearance_updated_at": "2026-06-01T12:15:00.000Z",
+        "created_at": "2026-06-01T11:45:00.000Z",
+        "created_by_id": null,
+        "id": "019e8300-5e60-7000-8000-000000000000",
+        "markdown_preview": "Anonymous comment waiting for administrator review.",
+        "media_context": {
+          "images": [],
+          "requires_reveal": false
+        },
+        "openai_omni_moderation_flagged": false,
+        "openai_omni_moderation_results": {
+          "categories": {}
+        },
+        "post_type": "comment",
+        "root_id": "review-root-post",
+        "root_post_type": "discussion",
+        "root_slug": "review-root-discussion",
+        "slug": "review-post-in-review",
+        "spam_detection_flagged": true,
+        "spam_detection_results": {
+          "signals": ["excessive_links"]
+        },
+        "spam_detection_score": 0.91,
+        "declared_language": null,
+        "lingua_rs_detected_language": null,
+        "title": "Comment in review"
+      },
+      {
+        "clearance_status": "rejected",
+        "clearance_updated_at": "2026-06-01T12:00:00.000Z",
+        "created_at": "2026-06-01T11:30:00.000Z",
+        "created_by_id": "review-author-rejected",
+        "id": "019e82f2-a2c0-7000-8000-000000000000",
+        "markdown_preview": "Post rejected by automated moderation.",
+        "media_context": {
+          "images": [
+            {
+              "caption": "Flagged attachment",
+              "image_id": "019e82f2-a2c0-7000-8000-000000000001",
+              "order_index": 0
+            }
+          ],
+          "requires_reveal": true
+        },
+        "openai_omni_moderation_flagged": true,
+        "openai_omni_moderation_results": {
+          "categories": {
+            "harassment": true
+          }
+        },
+        "post_type": "discussion",
+        "root_id": null,
+        "root_post_type": null,
+        "root_slug": null,
+        "slug": "review-post-rejected",
+        "spam_detection_flagged": false,
+        "spam_detection_results": {
+          "signals": []
+        },
+        "spam_detection_score": 0.12,
+        "declared_language": null,
+        "lingua_rs_detected_language": null,
+        "title": "Rejected review post"
+      }
+    ]
+  },
+  "native.moderation.review-queue.page-2": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "eyJpZCI6IjAxOWU3ZDc5LWUxMDAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMCJ9"
+    },
+    "results": [
+      {
+        "clearance_status": "rejected",
+        "clearance_updated_at": "2026-05-31T10:30:00.000Z",
+        "created_at": "2026-05-31T10:00:00.000Z",
+        "created_by_id": "review-author-page-2",
+        "id": "019e7d79-e100-7000-8000-000000000000",
+        "markdown_preview": "Older post on the second review queue page.",
+        "media_context": {
+          "images": [],
+          "requires_reveal": false
+        },
+        "openai_omni_moderation_flagged": false,
+        "openai_omni_moderation_results": {
+          "categories": {}
+        },
+        "post_type": "article",
+        "root_id": null,
+        "root_post_type": null,
+        "root_slug": null,
+        "slug": "review-post-page-2",
+        "spam_detection_flagged": true,
+        "spam_detection_results": {
+          "signals": ["repeated_content"]
+        },
+        "spam_detection_score": 0.78,
+        "declared_language": null,
+        "lingua_rs_detected_language": null,
+        "title": "Older rejected review post"
+      }
+    ]
+  },
+  "native.moderation.clearance.approved": {
+    "clearance_status": "approved"
+  },
+  "native.moderation.clearance.rejected": {
+    "clearance_status": "rejected"
+  },
+  "native.moderation.clearance.in-review": {
+    "clearance_status": "in_review"
+  },
+  "native.moderation.modlog.default": {
+    "moderator_actions": {
+      "action-1": {
+        "action_type": "remove",
+        "actor_id": "admin-1",
+        "community_id": null,
+        "created_at": "2026-06-01T12:00:00.000Z",
+        "id": "action-1",
+        "metadata": {},
+        "post_id": "post-1",
+        "reason": "Spam",
+        "reported_user_id": null,
+        "review_dispute_id": null
+      }
+    },
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "action-1"
+    },
+    "results": [
+      {
+        "__entity_type": "moderator_action",
+        "id": "action-1"
+      }
+    ],
+    "users": {
+      "admin-1": {
+        "id": "admin-1",
+        "profile_image_id": null,
+        "username": "admin"
+      }
+    }
+  },
+  "native.moderation.analytics.default": {
+    "appeals": {
+      "accepted": 1,
+      "denied": 1,
+      "dismissed": 1,
+      "reduced": 1,
+      "success_rate": 0.67,
+      "total_closed": 3
+    },
+    "automod_performance": {
+      "actions_over_time": [],
+      "auto_removes": 1,
+      "confidence_distribution": [
+        {
+          "bucket": "0.8-1.0",
+          "count": 2
+        }
+      ],
+      "false_positive_count": 1,
+      "false_positive_rate": 0.33,
+      "reviewed_count": 3,
+      "sources": [
+        {
+          "count": 2,
+          "source_type": "openai_omni"
+        }
+      ],
+      "total_actions": 4
+    },
+    "moderator_workload": {
+      "moderators": [
+        {
+          "actor_id": "admin-1",
+          "counts": {
+            "remove": 2,
+            "warn": 1
+          },
+          "total": 3,
+          "weekly_counts": []
+        }
+      ],
+      "users": {
+        "admin-1": {
+          "username": "admin"
+        }
+      }
+    },
+    "new_user_friction": {
+      "first_posts": 10,
+      "rejected_first_posts": 2,
+      "rejection_rate": 0.2
+    },
+    "period_end": "2026-07-01T00:00:00.000Z",
+    "period_start": "2026-06-01T00:00:00.000Z",
+    "queue_volume": {
+      "clearance_actions_over_time": [
+        {
+          "count": 1,
+          "date": "2026-06-01",
+          "type": "reject"
+        }
+      ],
+      "moderator_actions_over_time": [],
+      "pending_reports": 2,
+      "reports_over_time": [
+        {
+          "count": 3,
+          "date": "2026-06-01"
+        }
+      ],
+      "total_reports": 12
+    },
+    "range": "30d",
+    "rule_violations": {
+      "reasons": [
+        {
+          "count": 5,
+          "reason": "spam"
+        }
+      ],
+      "reasons_over_time": []
+    },
+    "scope": {
+      "type": "global"
+    }
+  },
+  "native.moderation.vote-integrity.default": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "vote-flag-1"
+    },
+    "results": [
+      {
+        "agent_moderation_id": null,
+        "created_at": "2026-06-01T12:00:00.000Z",
+        "details": {
+          "vote_count": 20
+        },
+        "entity_relation_id": null,
+        "flag_type": "velocity_spike",
+        "hostname_id": null,
+        "id": "vote-flag-1",
+        "post_id": "post-1",
+        "resolution": null,
+        "resolved_at": null,
+        "resolved_by_id": null,
+        "rss_feed_item_id": null,
+        "topic_id": null
+      },
+      {
+        "agent_moderation_id": null,
+        "created_at": "2026-05-31T12:00:00.000Z",
+        "details": {
+          "shared_ip_count": 8
+        },
+        "entity_relation_id": null,
+        "flag_type": "ip_correlation",
+        "hostname_id": null,
+        "id": "vote-flag-2",
+        "post_id": null,
+        "resolution": "dismissed",
+        "resolved_at": "2026-06-01T13:00:00.000Z",
+        "resolved_by_id": "admin-1",
+        "rss_feed_item_id": null,
+        "topic_id": "topic-1"
+      }
+    ]
+  },
+  "native.moderation.vote-integrity.pending": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "vote-flag-1"
+    },
+    "results": [
+      {
+        "agent_moderation_id": null,
+        "created_at": "2026-06-01T12:00:00.000Z",
+        "details": {
+          "vote_count": 20
+        },
+        "entity_relation_id": null,
+        "flag_type": "velocity_spike",
+        "hostname_id": null,
+        "id": "vote-flag-1",
+        "post_id": "post-1",
+        "resolution": null,
+        "resolved_at": null,
+        "resolved_by_id": null,
+        "rss_feed_item_id": null,
+        "topic_id": null
+      }
+    ]
+  },
+  "native.moderation.vote-integrity.resolved": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "vote-flag-2"
+    },
+    "results": [
+      {
+        "agent_moderation_id": null,
+        "created_at": "2026-05-31T12:00:00.000Z",
+        "details": {
+          "shared_ip_count": 8
+        },
+        "entity_relation_id": null,
+        "flag_type": "ip_correlation",
+        "hostname_id": null,
+        "id": "vote-flag-2",
+        "post_id": null,
+        "resolution": "dismissed",
+        "resolved_at": "2026-06-01T13:00:00.000Z",
+        "resolved_by_id": "admin-1",
+        "rss_feed_item_id": null,
+        "topic_id": "topic-1"
+      }
+    ]
+  },
+  "native.moderation.vote-integrity.resolution.dismissed": {
+    "flag": {
+      "agent_moderation_id": null,
+      "created_at": "2026-06-01T12:00:00.000Z",
+      "details": {
+        "vote_count": 20
+      },
+      "entity_relation_id": null,
+      "flag_type": "velocity_spike",
+      "hostname_id": null,
+      "id": "vote-flag-1",
+      "post_id": "post-1",
+      "resolution": "dismissed",
+      "resolved_at": "2026-06-01T13:00:00.000Z",
+      "resolved_by_id": "admin-1",
+      "rss_feed_item_id": null,
+      "topic_id": null
+    }
+  },
+  "native.moderation.vote-integrity.resolution.penalized": {
+    "flag": {
+      "agent_moderation_id": null,
+      "created_at": "2026-06-01T12:00:00.000Z",
+      "details": {
+        "vote_count": 20
+      },
+      "entity_relation_id": null,
+      "flag_type": "velocity_spike",
+      "hostname_id": null,
+      "id": "vote-flag-1",
+      "post_id": "post-1",
+      "resolution": "penalized",
+      "resolved_at": "2026-06-01T13:00:00.000Z",
+      "resolved_by_id": "admin-1",
+      "rss_feed_item_id": null,
+      "topic_id": null
+    }
+  },
+  "native.moderation.vote-integrity.resolution.suspended": {
+    "flag": {
+      "agent_moderation_id": null,
+      "created_at": "2026-06-01T12:00:00.000Z",
+      "details": {
+        "vote_count": 20
+      },
+      "entity_relation_id": null,
+      "flag_type": "velocity_spike",
+      "hostname_id": null,
+      "id": "vote-flag-1",
+      "post_id": "post-1",
+      "resolution": "suspended",
+      "resolved_at": "2026-06-01T13:00:00.000Z",
+      "resolved_by_id": "admin-1",
+      "rss_feed_item_id": null,
+      "topic_id": null
+    }
+  },
+  "native.moderation.vote-integrity.penalty": {
+    "penalized_user_count": 2
+  },
+  "native.moderation.report-integrity.default": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "report-flag-1"
+    },
+    "results": [
+      {
+        "created_at": "2026-06-01T12:00:00.000Z",
+        "details": {
+          "window_minutes": 30
+        },
+        "flag_type": "mass_report_suspected",
+        "hostname_id": null,
+        "id": "report-flag-1",
+        "new_account_reporter_pct": 0.6,
+        "post_id": "post-1",
+        "reported_user_id": null,
+        "reporter_count": 5,
+        "resolution": null,
+        "resolved_at": null,
+        "resolved_by_id": null,
+        "rss_feed_item_id": null
+      },
+      {
+        "created_at": "2026-05-31T12:00:00.000Z",
+        "details": {
+          "reporter_user_ids": ["reporter-3"],
+          "window_minutes": 30
+        },
+        "flag_type": "mass_report_suspected",
+        "hostname_id": null,
+        "id": "report-flag-2",
+        "new_account_reporter_pct": 0.2,
+        "post_id": null,
+        "reported_user_id": "user-1",
+        "reporter_count": 4,
+        "resolution": "dismissed",
+        "resolved_at": "2026-06-01T13:00:00.000Z",
+        "resolved_by_id": "admin-1",
+        "rss_feed_item_id": null
+      }
+    ]
+  },
+  "native.moderation.report-integrity.pending": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "report-flag-1"
+    },
+    "results": [
+      {
+        "created_at": "2026-06-01T12:00:00.000Z",
+        "details": {
+          "reporter_user_ids": ["reporter-1", "reporter-2"],
+          "window_minutes": 30
+        },
+        "flag_type": "mass_report_suspected",
+        "hostname_id": null,
+        "id": "report-flag-1",
+        "new_account_reporter_pct": 0.6,
+        "post_id": "post-1",
+        "reported_user_id": null,
+        "reporter_count": 5,
+        "resolution": null,
+        "resolved_at": null,
+        "resolved_by_id": null,
+        "rss_feed_item_id": null
+      }
+    ]
+  },
+  "native.moderation.report-integrity.resolved": {
+    "page_info": {
+      "end_cursor": null,
+      "has_next_page": false,
+      "start_cursor": "report-flag-2"
+    },
+    "results": [
+      {
+        "created_at": "2026-05-31T12:00:00.000Z",
+        "details": {
+          "reporter_user_ids": ["reporter-3"],
+          "window_minutes": 30
+        },
+        "flag_type": "mass_report_suspected",
+        "hostname_id": null,
+        "id": "report-flag-2",
+        "new_account_reporter_pct": 0.2,
+        "post_id": null,
+        "reported_user_id": "user-1",
+        "reporter_count": 4,
+        "resolution": "dismissed",
+        "resolved_at": "2026-06-01T13:00:00.000Z",
+        "resolved_by_id": "admin-1",
+        "rss_feed_item_id": null
+      }
+    ]
+  },
+  "native.moderation.report-integrity.resolution.dismissed": {
+    "flag": {
+      "created_at": "2026-06-01T12:00:00.000Z",
+      "details": {
+        "reporter_user_ids": ["reporter-1", "reporter-2"],
+        "window_minutes": 30
+      },
+      "flag_type": "mass_report_suspected",
+      "hostname_id": null,
+      "id": "report-flag-1",
+      "new_account_reporter_pct": 0.6,
+      "post_id": "post-1",
+      "reported_user_id": null,
+      "reporter_count": 5,
+      "resolution": "dismissed",
+      "resolved_at": "2026-06-01T13:00:00.000Z",
+      "resolved_by_id": "admin-1",
+      "rss_feed_item_id": null
+    }
+  },
+  "native.moderation.report-integrity.penalty": {
+    "flag": {
+      "created_at": "2026-06-01T12:00:00.000Z",
+      "details": {
+        "reporter_user_ids": ["reporter-1", "reporter-2"],
+        "window_minutes": 30
+      },
+      "flag_type": "mass_report_suspected",
+      "hostname_id": null,
+      "id": "report-flag-1",
+      "new_account_reporter_pct": 0.6,
+      "post_id": "post-1",
+      "reported_user_id": null,
+      "reporter_count": 5,
+      "resolution": "penalized",
+      "resolved_at": "2026-06-01T13:00:00.000Z",
+      "resolved_by_id": "admin-1",
+      "rss_feed_item_id": null
+    },
+    "penalized_user_count": 2,
+    "penalties": [
+      {
+        "id": "report-penalty-1",
+        "user_id": "reporter-1"
+      },
+      {
+        "id": "report-penalty-2",
+        "user_id": "reporter-2"
+      }
+    ]
+  },
+  "web.admin.article-syncs.trigger.default": {
+    "jobId": "job-1"
+  },
+  "web.admin.article-syncs.status.active": {
+    "status": "active"
+  },
+  "web.admin.mq.stats.default": {
+    "stats": {
+      "queueCount": 2,
+      "totalActive": 1,
+      "totalCompleted": 170,
+      "totalFailed": 2,
+      "totalWaiting": 0
+    }
+  },
+  "web.admin.mq.queues.default": {
+    "queues": [
+      {
+        "active": 1,
+        "completed": 128,
+        "failed": 2,
+        "name": "emails",
+        "paused": false,
+        "waiting": 0
+      },
+      {
+        "active": 0,
+        "completed": 42,
+        "failed": 0,
+        "name": "psql",
+        "paused": true,
+        "waiting": 0
+      }
+    ],
+    "total": 2
+  },
+  "web.admin.mq.queues.pause.default": {
+    "success": true
+  },
+  "web.admin.mq.queues.resume.default": {
+    "success": true
+  },
+  "web.admin.mq.scheduled-jobs.default": {
+    "jobs": [
+      {
+        "description": "Sync Kagi Small Web data",
+        "id": "kagi-smallweb-sync",
+        "job_name": "sync",
+        "queue_name": "kagi-smallweb",
+        "schedule": "0 5 * * *"
+      },
+      {
+        "description": "Refresh RSS feed crawl-tier materialized view",
+        "id": "refreshRssFeedCrawlTiers",
+        "job_name": "refreshMaterializedView",
+        "queue_name": "psql",
+        "schedule": "0 4 * * *"
+      }
+    ]
+  },
+  "web.admin.mq.scheduled-jobs.trigger.default": {
+    "success": true
+  },
+  "web.admin.mq.backfills.default": {
+    "backfills": [
+      {
+        "description": "Backfill OpenAI moderation for posts missing results",
+        "id": "openai-moderation-posts",
+        "job_name": "backfill_posts",
+        "queue_name": "openai_moderation_omni_single",
+        "source_table": "posts"
+      },
+      {
+        "description": "Re-enqueue integrity checks for entities with pending mass-report campaigns",
+        "id": "backfill_report_integrity",
+        "job_name": "backfill_report_integrity",
+        "queue_name": "report_integrity",
+        "source_table": "moderation_reports"
+      }
+    ]
+  },
+  "web.admin.mq.backfills.trigger.default": {
+    "success": true
+  },
+  "web.admin.psql.migrations.default": {
+    "applied": ["0000-00-00-core-functions-sites.sql", "0010-00-00-users-auth-oauth.sql"],
+    "pending": ["0030-00-00-user-security-mfa-api-keys.sql", "0040-00-00-images.sql"],
+    "total": 65
+  },
+  "web.admin.psql.partitions.default": {
+    "tables": [
+      {
+        "name": "posts",
+        "partition_count": 2,
+        "partitions": [
+          {
+            "name": "posts_2026_06",
+            "size_bytes": 523776000
+          },
+          {
+            "name": "posts_2026_07",
+            "size_bytes": 463878321
+          }
+        ],
+        "total_size_bytes": 987654321
+      },
+      {
+        "name": "rss_feed_items",
+        "partition_count": 1,
+        "partitions": [
+          {
+            "name": "rss_feed_items_2026_07",
+            "size_bytes": 12345678
+          }
+        ],
+        "total_size_bytes": 12345678
+      }
+    ]
+  },
+  "web.admin.psql.jobs.default": {
+    "success": true
+  },
+  "web.admin.valkey.bloom-filters.rebuild.default": {
+    "filter": "entity-cache",
+    "success": true
+  },
+  "web.admin.valkey.cache-groups.default": {
+    "groups": [
+      {
+        "name": "posts",
+        "prefixes": ["posts", "posts_lookup", "post_metrics", "post_elections"]
+      },
+      {
+        "name": "urls",
+        "prefixes": ["urls", "urls_lookup", "url_hostnames", "hostname_elections"]
+      },
+      {
+        "name": "elections",
+        "prefixes": ["entity_relation_elections", "agent_moderation_elections"]
+      }
+    ]
+  },
+  "web.admin.valkey.caches.clear.default": {
+    "group": "posts",
+    "success": true
+  },
+  "web.admin.valkey.flush.default": {
+    "concern": "blooms",
+    "keysRemoved": 12
+  },
+  "native.feature-flags.default": {
+    "flags": {
+      "memberships": false,
+      "chat": false,
+      "combinedSearch": false,
+      "support": false,
+      "fediverse": false
+    },
+    "overrides": {}
+  },
+  "native.captcha-config.default": {
+    "always_approve": false
+  },
+  "native.dynamic-config.namespaces.developer": {
+    "namespaces": [
+      {
+        "namespace": "feature-flags",
+        "label": "Feature Flags",
+        "description": "Runtime feature toggles with optional browser-local overrides.",
+        "field_count": 5,
+        "can_view": true,
+        "can_update": true
+      },
+      {
+        "namespace": "recaptcha-config",
+        "label": "reCAPTCHA",
+        "description": "Runtime reCAPTCHA Enterprise assessment and blocking controls.",
+        "field_count": 3,
+        "can_view": true,
+        "can_update": false
+      }
+    ]
+  },
+  "native.dynamic-config.namespace.typed": {
+    "namespace": {
+      "namespace": "recaptcha-config",
+      "label": "reCAPTCHA",
+      "description": "Runtime reCAPTCHA Enterprise assessment and blocking controls.",
+      "field_count": 3,
+      "can_view": true,
+      "can_update": false,
+      "config": {
+        "enabled": true,
+        "blocking_enabled": false,
+        "block_threshold": 0.5
+      },
+      "fields": [
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "value": true,
+          "default_value": true,
+          "description": "Call reCAPTCHA Enterprise assessment APIs for eligible requests."
+        },
+        {
+          "name": "blocking_enabled",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Reject low-score requests instead of logging only."
+        },
+        {
+          "name": "block_threshold",
+          "type": "number",
+          "value": 0.5,
+          "default_value": 0.5,
+          "description": "Minimum acceptable reCAPTCHA Enterprise score.",
+          "min_value": 0,
+          "max_value": 1
+        }
+      ]
+    }
+  },
+  "native.dynamic-config.namespace.string": {
+    "namespace": {
+      "namespace": "app-attestation-config",
+      "label": "App Attestation",
+      "description": "Apple App Attest verification controls for the iOS app.",
+      "field_count": 4,
+      "can_view": true,
+      "can_update": false,
+      "config": {
+        "enabled": false,
+        "require_attestation_for_bypass": false,
+        "allow_development_attestation": false,
+        "request_signing_mode": "off"
+      },
+      "fields": [
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Enable Apple App Attest verification endpoints."
+        },
+        {
+          "name": "require_attestation_for_bypass",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Require a verified App Attest assertion to bypass Turnstile on gated endpoints. When false, attestation is accepted but not required."
+        },
+        {
+          "name": "allow_development_attestation",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Accept attestations created in the DCAppAttestService development environment (debug/TestFlight builds). Disable in production."
+        },
+        {
+          "name": "request_signing_mode",
+          "type": "string",
+          "value": "off",
+          "default_value": null,
+          "description": "Per-request ECDSA signing mode for attested iOS devices. 'off' = disabled; 'observe' = verify and log failures but do not block; 'enforce' = reject requests with invalid or missing signatures."
+        }
+      ]
+    }
+  },
+  "native.dynamic-config.namespace.integer": {
+    "namespace": {
+      "namespace": "post-content-limits-config",
+      "label": "Post Content Limits",
+      "description": "Limits for topic IDs and review ratings in post payloads.",
+      "field_count": 2,
+      "can_view": true,
+      "can_update": false,
+      "config": {
+        "data_point_topic_ids_max_items": 5,
+        "review_topic_ratings_max_items": 5
+      },
+      "fields": [
+        {
+          "name": "data_point_topic_ids_max_items",
+          "type": "number",
+          "value": 5,
+          "default_value": 5,
+          "description": "Maximum topic IDs allowed in one data point payload.",
+          "min_value": 1,
+          "max_value": 100,
+          "integer": true
+        },
+        {
+          "name": "review_topic_ratings_max_items",
+          "type": "number",
+          "value": 5,
+          "default_value": 5,
+          "description": "Maximum review topic ratings allowed in one review payload.",
+          "min_value": 2,
+          "max_value_exemption": "The effective ceiling is bounded by the configured contribution payload size.",
+          "integer": true
+        }
+      ]
+    }
+  },
+  "native.dynamic-config.update.changed": {
+    "namespace": {
+      "namespace": "feature-flags",
+      "label": "Feature Flags",
+      "description": "Runtime feature toggles with optional browser-local overrides.",
+      "field_count": 5,
+      "can_view": true,
+      "can_update": true,
+      "config": {
+        "memberships": false,
+        "chat": false,
+        "combinedSearch": false,
+        "support": false,
+        "fediverse": true
+      },
+      "fields": [
+        {
+          "name": "memberships",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Membership purchase and plan-management flows."
+        },
+        {
+          "name": "chat",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Chat entry points and conversation features."
+        },
+        {
+          "name": "combinedSearch",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Route command-search dialog through a single /api/v1/search endpoint instead of five parallel entity endpoints."
+        },
+        {
+          "name": "support",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Support chat entry point in the chat sidebar."
+        },
+        {
+          "name": "fediverse",
+          "type": "boolean",
+          "value": true,
+          "default_value": false,
+          "description": "Fediverse navigation, command-search tab, and PeerTube discovery affordances."
+        }
+      ]
+    },
+    "changed": true
+  },
+  "native.dynamic-config.update.no-op": {
+    "namespace": {
+      "namespace": "feature-flags",
+      "label": "Feature Flags",
+      "description": "Runtime feature toggles with optional browser-local overrides.",
+      "field_count": 5,
+      "can_view": true,
+      "can_update": true,
+      "config": {
+        "memberships": false,
+        "chat": false,
+        "combinedSearch": false,
+        "support": false,
+        "fediverse": false
+      },
+      "fields": [
+        {
+          "name": "memberships",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Membership purchase and plan-management flows."
+        },
+        {
+          "name": "chat",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Chat entry points and conversation features."
+        },
+        {
+          "name": "combinedSearch",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Route command-search dialog through a single /api/v1/search endpoint instead of five parallel entity endpoints."
+        },
+        {
+          "name": "support",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Support chat entry point in the chat sidebar."
+        },
+        {
+          "name": "fediverse",
+          "type": "boolean",
+          "value": false,
+          "default_value": false,
+          "description": "Fediverse navigation, command-search tab, and PeerTube discovery affordances."
+        }
+      ]
+    },
+    "changed": false
+  },
+  "native.dynamic-config.history.default": {
+    "history": [
+      {
+        "id": "0198a356-c5c0-7000-8000-000000000001",
+        "namespace": "feature-flags",
+        "changed_by": {
+          "id": "0198a356-c5c0-7000-8000-000000000002",
+          "username": "qa-developer"
+        },
+        "previous_fields": { "fediverse": false },
+        "next_fields": { "fediverse": true },
+        "changed_fields": { "fediverse": { "previous": false, "next": true } },
+        "created_at": "2026-07-14T12:00:00.000Z"
+      }
+    ]
+  }
+}

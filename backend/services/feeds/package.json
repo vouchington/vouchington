@@ -1,0 +1,45 @@
+{
+  "name": "@services/feeds",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/feed-query-builders": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/search-utils": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/follower-distributions": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/user-referral-program-links": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/feed-capabilities": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@services/rss-feeds": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

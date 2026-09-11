@@ -1,0 +1,296 @@
+{
+  "benefit_catalog": {
+    "groups": [
+      {
+        "benefits": [
+          {
+            "id": "public_contribution_access",
+            "placements": ["card", "comparison"],
+            "values": {
+              "free": {
+                "access": "after_wait",
+                "kind": "access"
+              },
+              "plus": {
+                "access": "immediate",
+                "kind": "access"
+              },
+              "pro": {
+                "access": "immediate",
+                "kind": "access"
+              }
+            }
+          },
+          {
+            "id": "contribution_capacity",
+            "placements": ["card", "comparison"],
+            "values": {
+              "free": {
+                "kind": "level",
+                "level": "standard"
+              },
+              "plus": {
+                "kind": "level",
+                "level": "more"
+              },
+              "pro": {
+                "kind": "level",
+                "level": "most"
+              }
+            }
+          },
+          {
+            "id": "manual_topic_tags",
+            "placements": ["comparison"],
+            "values": {
+              "free": {
+                "kind": "level",
+                "level": "standard"
+              },
+              "plus": {
+                "kind": "level",
+                "level": "more"
+              },
+              "pro": {
+                "kind": "level",
+                "level": "most"
+              }
+            }
+          },
+          {
+            "id": "automatic_post_topics",
+            "placements": ["card", "comparison"],
+            "values": {
+              "free": {
+                "kind": "level",
+                "level": "none"
+              },
+              "plus": {
+                "kind": "level",
+                "level": "more"
+              },
+              "pro": {
+                "kind": "level",
+                "level": "most"
+              }
+            }
+          }
+        ],
+        "id": "contribute"
+      },
+      {
+        "benefits": [
+          {
+            "id": "research_agent_requests",
+            "placements": ["comparison"],
+            "values": {
+              "free": {
+                "kind": "level",
+                "level": "standard"
+              },
+              "plus": {
+                "kind": "level",
+                "level": "more"
+              },
+              "pro": {
+                "kind": "level",
+                "level": "most"
+              }
+            }
+          },
+          {
+            "id": "api_allowance_boost",
+            "placements": ["comparison"],
+            "values": {
+              "free": {
+                "kind": "level",
+                "level": "standard"
+              },
+              "plus": {
+                "kind": "level",
+                "level": "higher"
+              },
+              "pro": {
+                "kind": "level",
+                "level": "higher"
+              }
+            }
+          },
+          {
+            "id": "ugc_downvote_counts",
+            "placements": ["card", "comparison"],
+            "values": {
+              "free": {
+                "included": false,
+                "kind": "availability"
+              },
+              "plus": {
+                "included": true,
+                "kind": "availability"
+              },
+              "pro": {
+                "included": true,
+                "kind": "availability"
+              }
+            }
+          },
+          {
+            "id": "url_crawl_history",
+            "placements": ["comparison"],
+            "values": {
+              "free": {
+                "included": false,
+                "kind": "availability"
+              },
+              "plus": {
+                "included": true,
+                "kind": "availability"
+              },
+              "pro": {
+                "included": true,
+                "kind": "availability"
+              }
+            }
+          }
+        ],
+        "id": "research"
+      },
+      {
+        "benefits": [
+          {
+            "id": "community_agent_rules",
+            "placements": ["card", "comparison"],
+            "values": {
+              "free": {
+                "kind": "quantity",
+                "quantity": 0
+              },
+              "plus": {
+                "kind": "quantity",
+                "quantity": 3
+              },
+              "pro": {
+                "kind": "quantity",
+                "quantity": 10
+              }
+            }
+          }
+        ],
+        "id": "communities"
+      },
+      {
+        "benefits": [
+          {
+            "id": "support_service_level",
+            "placements": ["card", "comparison"],
+            "values": {
+              "free": {
+                "kind": "level",
+                "level": "standard"
+              },
+              "plus": {
+                "kind": "level",
+                "level": "priority"
+              },
+              "pro": {
+                "kind": "level",
+                "level": "highest_priority"
+              }
+            }
+          }
+        ],
+        "id": "support"
+      },
+      {
+        "benefits": [
+          {
+            "id": "amex_card_link_expansion",
+            "placements": ["comparison"],
+            "values": {
+              "free": {
+                "included": false,
+                "kind": "availability"
+              },
+              "plus": {
+                "included": true,
+                "kind": "availability"
+              },
+              "pro": {
+                "included": true,
+                "kind": "availability"
+              }
+            }
+          }
+        ],
+        "id": "referrals"
+      }
+    ],
+    "version": 1
+  },
+  "products": [
+    {
+      "id": "00000000-0000-7000-8000-000000000701",
+      "interval": "monthly",
+      "plan": "plus",
+      "providers": [
+        {
+          "application_id": "ai.voucha.ios",
+          "base_plan_id": null,
+          "environment": "test",
+          "offer_id": null,
+          "price": null,
+          "product_id": "voucha.plus.monthly",
+          "provider": "apple_app_store",
+          "sku_id": null
+        },
+        {
+          "application_id": "voucha-web",
+          "base_plan_id": null,
+          "environment": "test",
+          "offer_id": null,
+          "price": {
+            "amount": 500,
+            "currency": "usd"
+          },
+          "product_id": "price_native_plus_monthly",
+          "provider": "stripe",
+          "sku_id": null
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000000702",
+      "interval": "monthly",
+      "plan": "pro",
+      "providers": [
+        {
+          "application_id": "ai.voucha.android",
+          "base_plan_id": "monthly",
+          "environment": "test",
+          "offer_id": null,
+          "price": null,
+          "product_id": "voucha.pro.monthly",
+          "provider": "google_play",
+          "sku_id": null
+        }
+      ]
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000000703",
+      "interval": "yearly",
+      "plan": "pro",
+      "providers": [
+        {
+          "application_id": "Voucha",
+          "base_plan_id": null,
+          "environment": "test",
+          "offer_id": null,
+          "price": null,
+          "product_id": "9NBLGGH4V0Q1",
+          "provider": "microsoft_store",
+          "sku_id": "0010"
+        }
+      ]
+    }
+  ]
+}

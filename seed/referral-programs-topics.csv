@@ -1,0 +1,283 @@
+name,slug,topic_type,aliases,parent_slugs,extensions,rss_feed_url,rss_feed_title,notes,referral_validation_slug,referral_user_help_text,referral_hostname,referral_pathname,referral_example_url,referral_company_slug
+Referral Programs,referral-programs,topic,Refer-a-Friend Programs|Referral Codes,,,,,,,,,,,
+Robinhood,robinhood,topic,,referral-programs,,,,,,,,,,
+Cash App,cash-app,topic,CashApp,referral-programs,,,,,,,,,,
+Block,block,topic,Square Inc,,,,,,,,,,,
+Coinbase,coinbase,topic,,referral-programs,,,,,,,,,,
+Chime,chime,topic,,referral-programs,,,,,,,,,,
+Webull,webull,topic,,referral-programs,,,,,,,,,,
+Acorns,acorns,topic,,referral-programs,,,,,,,,,,
+SoFi,sofi,topic,Social Finance,referral-programs,,,,,,,,,,
+PayPal,paypal,topic,,referral-programs,,,,,,,,,,
+Venmo,venmo,topic,,paypal|referral-programs,,,,,,,,,,
+Stash,stash,topic,Stash Invest,referral-programs,,,,,,,,,,
+Wealthfront,wealthfront,topic,,referral-programs,,,,,,,,,,
+Public,public-investing,topic,Public.com,referral-programs,,,,,,,,,,
+M1 Finance,m1-finance,topic,M1,referral-programs,,,,,,,,,,
+Aspiration,aspiration,topic,,referral-programs,,,,,,,,,,
+Monarch Money,monarch-money,topic,,referral-programs,,,,,,,,,,
+Privacy.com,privacy-com,topic,Privacy,referral-programs,,,,,,,,,,
+Empower,empower,topic,Empower Personal Dashboard,referral-programs,,,,,,,,,,
+Strike,strike,topic,,referral-programs,,,,,,,,,,
+Earnest,earnest,topic,,referral-programs,,,,,,,,,,
+Novo,novo,topic,Novo Banking,referral-programs,,,,,,,,,,
+Betterment,betterment,topic,,referral-programs,,,,,,,,,,
+Wise,wise,topic,TransferWise,referral-programs,,,,,,,,,,
+Swagbucks,swagbucks,topic,,referral-programs,,,,,,,,,,
+Rakuten,rakuten,topic,Ebates,referral-programs,,,,,,,,,,
+Honey,honey,topic,PayPal Honey|Joinhoney,paypal|referral-programs,,,,,,,,,,
+Ibotta,ibotta,topic,,referral-programs,,,,,,,,,,
+Fetch Rewards,fetch-rewards,topic,Fetch,referral-programs,,,,,,,,,,
+Mercari,mercari,topic,,referral-programs,,,,,,,,,,
+GetUpside,getupside,topic,Upside,referral-programs,,,,,,,,,,
+Dosh,dosh,topic,,referral-programs,,,,,,,,,,
+TopCashback,topcashback,topic,,referral-programs,,,,,,,,,,
+Poshmark,poshmark,topic,,referral-programs,,,,,,,,,,
+Drop,drop-app,topic,Earn with Drop,referral-programs,,,,,,,,,,
+Capital One Shopping,capital-one-shopping,topic,,capital-one|referral-programs,,,,,,,,,,
+Fluz,fluz,topic,,referral-programs,,,,,,,,,,
+Thrive Market,thrive-market,topic,,referral-programs,,,,,,,,,,
+Groupon,groupon,topic,,referral-programs,,,,,,,,,,
+Stitch Fix,stitch-fix,topic,,referral-programs,,,,,,,,,,
+Whatnot,whatnot,topic,,referral-programs,,,,,,,,,,
+Fiverr,fiverr,topic,,referral-programs,,,,,,,,,,
+Uber,uber,topic,,referral-programs,,,,,,,,,,
+Lyft,lyft,topic,,referral-programs,,,,,,,,,,
+DoorDash,doordash,topic,,referral-programs,,,,,,,,,,
+Instacart,instacart,topic,,referral-programs,,,,,,,,,,
+Grubhub,grubhub,topic,,referral-programs,,,,,,,,,,
+Postmates,postmates,topic,,uber|referral-programs,,,,,,,,,,
+Gopuff,gopuff,topic,,referral-programs,,,,,,,,,,
+Shipt,shipt,topic,,referral-programs,,,,,,,,,,
+Factor,factor,topic,Factor 75|Factor Meals,referral-programs,,,,,,,,,,
+Hungryroot,hungryroot,topic,,referral-programs,,,,,,,,,,
+Tovala,tovala,topic,,referral-programs,,,,,,,,,,
+Sweetgreen,sweetgreen,topic,,referral-programs,,,,,,,,,,
+Freshly,freshly,topic,,referral-programs,,,,,,,,,,
+Airbnb,airbnb,topic,,referral-programs,,,,,,,,,,
+Turo,turo,topic,,referral-programs,,,,,,,,,,
+Hipcamp,hipcamp,topic,,referral-programs,,,,,,,,,,
+Lime,lime,topic,,referral-programs,,,,,,,,,,
+Bird,bird,topic,Bird Rides,referral-programs,,,,,,,,,,
+Hotel Tonight,hotel-tonight,topic,HotelTonight,referral-programs,,,,,,,,,,
+T-Mobile,t-mobile,topic,TMobile,referral-programs,,,,,,,,,,
+Mint Mobile,mint-mobile,topic,,referral-programs,,,,,,,,,,
+Visible,visible,topic,,referral-programs,,,,,,,,,,
+Google Fi,google-fi,topic,GoogleFi|Project Fi,referral-programs,,,,,,,,,,
+Airalo,airalo,topic,,referral-programs,,,,,,,,,,
+Dropbox,dropbox,topic,,referral-programs,,,,,,,,,,
+Notion,notion,topic,,referral-programs,,,,,,,,,,
+Canva,canva,topic,,referral-programs,,,,,,,,,,
+Airtable,airtable,topic,,referral-programs,,,,,,,,,,
+Evernote,evernote,topic,,referral-programs,,,,,,,,,,
+Dashlane,dashlane,topic,,referral-programs,,,,,,,,,,
+Todoist,todoist,topic,,referral-programs,,,,,,,,,,
+Backblaze,backblaze,topic,,referral-programs,,,,,,,,,,
+Gusto,gusto,topic,,referral-programs,,,,,,,,,,
+Square,square,topic,,block|referral-programs,,,,,,,,,,
+Toast,toast,topic,Toast POS,referral-programs,,,,,,,,,,
+Duolingo,duolingo,topic,,referral-programs,,,,,,,,,,
+Coursera,coursera,topic,,referral-programs,,,,,,,,,,
+Skillshare,skillshare,topic,,referral-programs,,,,,,,,,,
+Morning Brew,morning-brew,topic,MorningBrew,referral-programs,,,,,,,,,,
+Peloton,peloton,topic,,referral-programs,,,,,,,,,,
+ClassPass,classpass,topic,,referral-programs,,,,,,,,,,
+Whoop,whoop,topic,,referral-programs,,,,,,,,,,
+Rover,rover,topic,Rover.com,referral-programs,,,,,,,,,,
+Binance.US,binance-us,topic,Binance US,referral-programs,,,,,,,,,,
+Crypto.com,crypto-com,topic,CryptoCom,referral-programs,,,,,,,,,,
+Kraken,kraken,topic,Kraken Exchange,referral-programs,,,,,,,,,,
+Gemini Exchange,gemini-exchange,topic,Gemini Crypto,referral-programs,,,,,,,,,,
+Honeygain,honeygain,topic,,referral-programs,,,,,,,,,,
+Dollar Shave Club,dollar-shave-club,topic,DSC,referral-programs,,,,,,,,,,
+Sam's Club,sams-club,topic,,referral-programs,,,,,,,,,,
+Casper,casper,topic,Casper Mattress,referral-programs,,,,,,,,,,
+Bombas,bombas,topic,,referral-programs,,,,,,,,,,
+Eight Sleep,eight-sleep,topic,EightSleep,referral-programs,,,,,,,,,,
+Purple,purple-mattress,topic,Purple Mattress,referral-programs,,,,,,,,,,
+Brooklinen,brooklinen,topic,,referral-programs,,,,,,,,,,
+Away,away,topic,Away Travel,referral-programs,,,,,,,,,,
+Quip,quip,topic,Quip Toothbrush,referral-programs,,,,,,,,,,
+Everlane,everlane,topic,,referral-programs,,,,,,,,,,
+Vuori,vuori,topic,,referral-programs,,,,,,,,,,
+Bonobos,bonobos,topic,,referral-programs,,,,,,,,,,
+Rent the Runway,rent-the-runway,topic,RTR,referral-programs,,,,,,,,,,
+Italic,italic,topic,,referral-programs,,,,,,,,,,
+Bespoke Post,bespoke-post,topic,,referral-programs,,,,,,,,,,
+Hulu,hulu,topic,,referral-programs,,,,,,,,,,
+FuboTV,fubotv,topic,Fubo,referral-programs,,,,,,,,,,
+Vimeo,vimeo,topic,,referral-programs,,,,,,,,,,
+Planet Fitness,planet-fitness,topic,,referral-programs,,,,,,,,,,
+23andMe,23andme,topic,,referral-programs,,,,,,,,,,
+Ohmconnect,ohmconnect,topic,,referral-programs,,,,,,,,,,
+Zola,zola,topic,,referral-programs,,,,,,,,,,
+Minted,minted,topic,,referral-programs,,,,,,,,,,
+Ritual,ritual,topic,,referral-programs,,,,,,,,,,
+Slice,slice,topic,Slice Pizza,referral-programs,,,,,,,,,,
+Crumbl Cookies,crumbl-cookies,topic,Crumbl,referral-programs,,,,,,,,,,
+HelloFresh,hellofresh,topic,Hello Fresh,referral-programs,,,,,,,,,,
+Blue Apron,blue-apron,topic,,referral-programs,,,,,,,,,,
+NordVPN,nordvpn,topic,Nord VPN,referral-programs,,,,,,,,,,
+1Password,1password,topic,One Password,referral-programs,,,,,,,,,,
+Calm,calm,topic,Calm App,referral-programs,,,,,,,,,,
+Headspace,headspace,topic,,referral-programs,,,,,,,,,,
+Noom,noom,topic,,referral-programs,,,,,,,,,,
+StockX,stockx,topic,Stock X,referral-programs,,,,,,,,,,
+US Mobile,us-mobile,topic,USMobile,referral-programs,,,,,,,,,,
+Superhuman,superhuman,topic,Superhuman Email,referral-programs,,,,,,,,,,
+Raycast,raycast,topic,,referral-programs,,,,,,,,,,
+Robinhood Referral Program,robinhood-referral-program,referral_program,,robinhood,,,,,robinhood_referral,Share your Robinhood referral link from the app,join.robinhood.com,/%,https://join.robinhood.com/abc123,robinhood
+Cash App Referral Program,cash-app-referral-program,referral_program,,cash-app,,,,,cash_app_referral,Share your Cash App referral code or $cashtag,cash.app,/app/%,https://cash.app/app/ABCDEFG,cash-app
+Coinbase Referral Program,coinbase-referral-program,referral_program,,coinbase,,,,,coinbase_referral,Share your Coinbase referral link,coinbase.com,/join/%,https://coinbase.com/join/abc123,coinbase
+Chime Referral Program,chime-referral-program,referral_program,,chime,,,,,chime_referral,Share your Chime referral link from the app,chime.com,/r/%,https://chime.com/r/abc123,chime
+Webull Referral Program,webull-referral-program,referral_program,,webull,,,,,webull_referral,Share your Webull referral link,webull.com,/invite/%,https://webull.com/invite/abc123,webull
+Acorns Referral Program,acorns-referral-program,referral_program,,acorns,,,,,acorns_referral,Share your Acorns referral link from the app,share.acorns.com,/%,https://share.acorns.com/abc123,acorns
+SoFi Referral Program,sofi-referral-program,referral_program,,sofi,,,,,sofi_referral,Share your SoFi referral link,sofi.com,/share/invest/%,https://sofi.com/share/invest/abc123,sofi
+PayPal Referral Program,paypal-referral-program,referral_program,,paypal,,,,,paypal_referral,Share your PayPal referral link,paypal.com,/webapps/mpp/invite/%,https://paypal.com/webapps/mpp/invite/abc123,paypal
+Venmo Referral Program,venmo-referral-program,referral_program,,venmo,,,,,venmo_referral,Share your Venmo referral link from the app,venmo.com,/invite/%,https://venmo.com/invite/abc123,venmo
+Stash Referral Program,stash-referral-program,referral_program,,stash,,,,,stash_referral,Share your Stash referral link,get.stash.com,/%,https://get.stash.com/abc123,stash
+Wealthfront Referral Program,wealthfront-referral-program,referral_program,,wealthfront,,,,,wealthfront_referral,Share your Wealthfront referral link,wlthfr.nt,/%,https://wlthfr.nt/abc123,wealthfront
+Public Referral Program,public-referral-program,referral_program,,public-investing,,,,,public_referral,Share your Public referral link,share.public.com,/%,https://share.public.com/abc123,public-investing
+M1 Finance Referral Program,m1-finance-referral-program,referral_program,,m1-finance,,,,,m1_finance_referral,Share your M1 Finance referral link,m1.com,/invite/%,https://m1.com/invite/abc123,m1-finance
+Aspiration Referral Program,aspiration-referral-program,referral_program,,aspiration,,,,,aspiration_referral,Share your Aspiration referral link,aspiration.com,/invite/%,https://aspiration.com/invite/abc123,aspiration
+Monarch Money Referral Program,monarch-money-referral-program,referral_program,,monarch-money,,,,,monarch_money_referral,Share your Monarch Money referral link,monarchmoney.com,/referral/%,https://monarchmoney.com/referral/abc123,monarch-money
+Privacy.com Referral Program,privacy-com-referral-program,referral_program,,privacy-com,,,,,privacy_com_referral,Share your Privacy.com referral link,privacy.com,/join/%,https://privacy.com/join/abc123,privacy-com
+Empower Referral Program,empower-referral-program,referral_program,,empower,,,,,empower_referral,Share your Empower referral link,empower.com,/referral/%,https://empower.com/referral/abc123,empower
+Strike Referral Program,strike-referral-program,referral_program,,strike,,,,,strike_referral,Share your Strike referral link,strike.me,/en/dl/invite/%,https://strike.me/en/dl/invite/abc123,strike
+Earnest Referral Program,earnest-referral-program,referral_program,,earnest,,,,,earnest_referral,Share your Earnest referral link,earnest.com,/invite/%,https://earnest.com/invite/abc123,earnest
+Novo Referral Program,novo-referral-program,referral_program,,novo,,,,,novo_referral,Share your Novo referral link,novo.co,/r/%,https://novo.co/r/abc123,novo
+Betterment Referral Program,betterment-referral-program,referral_program,,betterment,,,,,betterment_referral,Share your Betterment referral link,betterment.com,/invite/%,https://betterment.com/invite/abc123,betterment
+Wise Referral Program,wise-referral-program,referral_program,,wise,,,,,wise_referral,Share your Wise referral link,wise.com,/invite/%,https://wise.com/invite/abc123,wise
+Chase Referral Program,chase-referral-program,referral_program,,chase,,,,,chase_referral,Share your Chase referral link from the app or website,chase.com,/refer/%,https://chase.com/refer/abc123,chase
+Amex Referral Program,amex-referral-program,referral_program,,american-express,,,,,amex_referral,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/all-cards%,https://www.americanexpress.com/en-us/referral/all-cards?ref=abc123,american-express
+Amex Gold Card Referral Program,amex-referral-personal-gold,referral_program,,american-express,,,,,amex_personal_gold,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/gold-card%,https://www.americanexpress.com/en-us/referral/personal/gold-card?ref=abc123,american-express
+Amex Platinum Card Referral Program,amex-referral-personal-platinum,referral_program,,american-express,,,,,amex_personal_platinum,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/platinum-card%,https://www.americanexpress.com/en-us/referral/personal/platinum-card?ref=abc123,american-express
+Amex Blue Cash Preferred Card Referral Program,amex-referral-personal-blue-cash-preferred,referral_program,,american-express,,,,,amex_personal_blue_cash_preferred,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/blue-cash-preferred-credit-card%,https://www.americanexpress.com/en-us/referral/personal/blue-cash-preferred-credit-card?ref=abc123,american-express
+Amex Blue Cash Everyday Card Referral Program,amex-referral-personal-blue-cash-everyday,referral_program,,american-express,,,,,amex_personal_blue_cash_everyday,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/blue-cash-everyday-credit-card%,https://www.americanexpress.com/en-us/referral/personal/blue-cash-everyday-credit-card?ref=abc123,american-express
+Amex Hilton Honors Surpass Card Referral Program,amex-referral-personal-hilton-honors-surpass,referral_program,,american-express,,,,,amex_personal_hilton_honors_surpass,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/hilton-honors-surpass-credit-card%,https://www.americanexpress.com/en-us/referral/personal/hilton-honors-surpass-credit-card?ref=abc123,american-express
+Amex Delta SkyMiles Gold Card Referral Program,amex-referral-personal-delta-skymiles-gold,referral_program,,american-express,,,,,amex_personal_delta_skymiles_gold,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/delta-skymiles-gold-american-express-card%,https://www.americanexpress.com/en-us/referral/personal/delta-skymiles-gold-american-express-card?ref=abc123,american-express
+Amex Hilton Honors Card Referral Program,amex-referral-personal-hilton-honors,referral_program,,american-express,,,,,amex_personal_hilton_honors,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/hilton-honors-credit-card%,https://www.americanexpress.com/en-us/referral/personal/hilton-honors-credit-card?ref=abc123,american-express
+Amex Delta SkyMiles Blue Card Referral Program,amex-referral-personal-delta-skymiles-blue,referral_program,,american-express,,,,,amex_personal_delta_skymiles_blue,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/delta-skymiles-blue-american-express-card%,https://www.americanexpress.com/en-us/referral/personal/delta-skymiles-blue-american-express-card?ref=abc123,american-express
+Amex Delta SkyMiles Reserve Card Referral Program,amex-referral-personal-delta-skymiles-reserve,referral_program,,american-express,,,,,amex_personal_delta_skymiles_reserve,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/delta-skymiles-reserve-american-express-card%,https://www.americanexpress.com/en-us/referral/personal/delta-skymiles-reserve-american-express-card?ref=abc123,american-express
+Amex Marriott Bonvoy Bevy Card Referral Program,amex-referral-personal-marriott-bonvoy-bevy,referral_program,,american-express,,,,,amex_personal_marriott_bonvoy_bevy,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/marriott-bonvoy-bevy-card%,https://www.americanexpress.com/en-us/referral/personal/marriott-bonvoy-bevy-card?ref=abc123,american-express
+Amex Marriott Bonvoy Brilliant Card Referral Program,amex-referral-personal-marriott-bonvoy-brilliant,referral_program,,american-express,,,,,amex_personal_marriott_bonvoy_brilliant,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/marriott-bonvoy-brilliant-card%,https://www.americanexpress.com/en-us/referral/personal/marriott-bonvoy-brilliant-card?ref=abc123,american-express
+Amex Delta SkyMiles Platinum Card Referral Program,amex-referral-personal-delta-skymiles-platinum,referral_program,,american-express,,,,,amex_personal_delta_skymiles_platinum,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/delta-skymiles-platinum-american-express-card%,https://www.americanexpress.com/en-us/referral/personal/delta-skymiles-platinum-american-express-card?ref=abc123,american-express
+Amex Hilton Honors Aspire Card Referral Program,amex-referral-personal-hilton-honors-aspire,referral_program,,american-express,,,,,amex_personal_hilton_honors_aspire,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/hilton-honors-aspire-credit-card%,https://www.americanexpress.com/en-us/referral/personal/hilton-honors-aspire-credit-card?ref=abc123,american-express
+Amex Green Card Referral Program,amex-referral-personal-green,referral_program,,american-express,,,,,amex_personal_green,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/personal/american-express-green-card%,https://www.americanexpress.com/en-us/referral/personal/american-express-green-card?ref=abc123,american-express
+Amex Business Gold Card Referral Program,amex-referral-business-gold,referral_program,,american-express,,,,,amex_business_gold,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/business/businessgold-card%,https://www.americanexpress.com/en-us/referral/business/businessgold-card?ref=abc123,american-express
+Amex Blue Business Plus Card Referral Program,amex-referral-business-blue-business-plus,referral_program,,american-express,,,,,amex_business_blue_business_plus,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/business/bluebusinessplus-credit-card%,https://www.americanexpress.com/en-us/referral/business/bluebusinessplus-credit-card?ref=abc123,american-express
+Amex Business Platinum Card Referral Program,amex-referral-business-platinum,referral_program,,american-express,,,,,amex_business_platinum,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/business/business-platinum-charge-card%,https://www.americanexpress.com/en-us/referral/business/business-platinum-charge-card?ref=abc123,american-express
+Amex Marriott Bonvoy Business Card Referral Program,amex-referral-business-marriott-bonvoy,referral_program,,american-express,,,,,amex_business_marriott_bonvoy,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/business/marriott-bonvoy-business-american-express-card%,https://www.americanexpress.com/en-us/referral/business/marriott-bonvoy-business-american-express-card?ref=abc123,american-express
+Amex Business Green Rewards Card Referral Program,amex-referral-business-green-rewards,referral_program,,american-express,,,,,amex_business_green_rewards,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/business/business-green-rewards-charge-card%,https://www.americanexpress.com/en-us/referral/business/business-green-rewards-charge-card?ref=abc123,american-express
+Amex Delta SkyMiles Gold Business Card Referral Program,amex-referral-business-delta-skymiles-gold,referral_program,,american-express,,,,,amex_business_delta_skymiles_gold,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/business/delta-skymiles-gold%,https://www.americanexpress.com/en-us/referral/business/delta-skymiles-gold?ref=abc123,american-express
+Amex Delta SkyMiles Reserve Business Card Referral Program,amex-referral-business-delta-skymiles-reserve,referral_program,,american-express,,,,,amex_business_delta_skymiles_reserve,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/business/delta-skymiles-reserve%,https://www.americanexpress.com/en-us/referral/business/delta-skymiles-reserve?ref=abc123,american-express
+Amex Delta SkyMiles Platinum Business Card Referral Program,amex-referral-business-delta-skymiles-platinum,referral_program,,american-express,,,,,amex_business_delta_skymiles_platinum,Share your Amex referral link from your card account,*.americanexpress.com,/en-us/referral/business/delta-skymiles-platinum%,https://www.americanexpress.com/en-us/referral/business/delta-skymiles-platinum?ref=abc123,american-express
+Capital One Referral Program,capital-one-referral-program,referral_program,,capital-one,,,,,capital_one_referral,Share your Capital One referral link,capital.one,/refer/%,https://capital.one/refer/abc123,capital-one
+Discover Referral Program,discover-referral-program,referral_program,,discover,,,,,discover_referral,Share your Discover referral link,discover.com,/refer/%,https://discover.com/refer/abc123,discover
+Ally Referral Program,ally-referral-program,referral_program,,ally,,,,,ally_referral,Share your Ally referral link,ally.com,/referral/%,https://ally.com/referral/abc123,ally
+Swagbucks Referral Program,swagbucks-referral-program,referral_program,,swagbucks,,,,,swagbucks_referral,Share your Swagbucks referral link,swagbucks.com,/refer/%,https://swagbucks.com/refer/abc123,swagbucks
+Rakuten Referral Program,rakuten-referral-program,referral_program,,rakuten,,,,,rakuten_referral,Share your Rakuten referral link,rakuten.com,/r/%,https://rakuten.com/r/abc123,rakuten
+Honey Referral Program,honey-referral-program,referral_program,,honey,,,,,honey_referral,Share your Honey/PayPal Honey referral link,joinhoney.com,/ref/%,https://joinhoney.com/ref/abc123,honey
+Ibotta Referral Program,ibotta-referral-program,referral_program,,ibotta,,,,,ibotta_referral,Share your Ibotta referral code from the app,ibotta.com,/register/%,https://ibotta.com/register/abc123,ibotta
+Fetch Rewards Referral Program,fetch-rewards-referral-program,referral_program,,fetch-rewards,,,,,fetch_rewards_referral,Share your Fetch Rewards referral code from the app,fetchrewards.com,/invite/%,https://fetchrewards.com/invite/abc123,fetch-rewards
+Mercari Referral Program,mercari-referral-program,referral_program,,mercari,,,,,mercari_referral,Share your Mercari referral link,merc.li,/%,https://merc.li/abc123,mercari
+GetUpside Referral Program,getupside-referral-program,referral_program,,getupside,,,,,getupside_referral,Share your GetUpside/Upside referral code,upside.app.link,/%,https://upside.app.link/abc123,getupside
+Dosh Referral Program,dosh-referral-program,referral_program,,dosh,,,,,dosh_referral,Share your Dosh referral link,link.dosh.com,/refer/%,https://link.dosh.com/refer/abc123,dosh
+TopCashback Referral Program,topcashback-referral-program,referral_program,,topcashback,,,,,topcashback_referral,Share your TopCashback referral link,topcashback.com,/ref/%,https://topcashback.com/ref/abc123,topcashback
+Poshmark Referral Program,poshmark-referral-program,referral_program,,poshmark,,,,,poshmark_referral,Share your Poshmark referral code from the app,poshmark.com,/invite/%,https://poshmark.com/invite/abc123,poshmark
+Drop Referral Program,drop-referral-program,referral_program,,drop-app,,,,,drop_referral,Share your Drop referral link,drop.com,/invite/%,https://drop.com/invite/abc123,drop-app
+Capital One Shopping Referral Program,capital-one-shopping-referral-program,referral_program,,capital-one-shopping,,,,,capital_one_shopping_referral,Share your Capital One Shopping referral link,capitaloneshopping.com,/invite/%,https://capitaloneshopping.com/invite/abc123,capital-one-shopping
+Fluz Referral Program,fluz-referral-program,referral_program,,fluz,,,,,fluz_referral,Share your Fluz referral link,joinfluz.com,/r/%,https://joinfluz.com/r/abc123,fluz
+Thrive Market Referral Program,thrive-market-referral-program,referral_program,,thrive-market,,,,,thrive_market_referral,Share your Thrive Market referral link,thrivemarket.com,/invite/%,https://thrivemarket.com/invite/abc123,thrive-market
+Groupon Referral Program,groupon-referral-program,referral_program,,groupon,,,,,groupon_referral,Share your Groupon referral link,groupon.com,/refer/%,https://groupon.com/refer/abc123,groupon
+Stitch Fix Referral Program,stitch-fix-referral-program,referral_program,,stitch-fix,,,,,stitch_fix_referral,Share your Stitch Fix referral link,stitchfix.com,/invite/%,https://stitchfix.com/invite/abc123,stitch-fix
+Whatnot Referral Program,whatnot-referral-program,referral_program,,whatnot,,,,,whatnot_referral,Share your Whatnot referral link,whatnot.com,/invite/%,https://whatnot.com/invite/abc123,whatnot
+Fiverr Referral Program,fiverr-referral-program,referral_program,,fiverr,,,,,fiverr_referral,Share your Fiverr referral link,fiverr.com,/s/%,https://fiverr.com/s/abc123,fiverr
+Uber Referral Program,uber-referral-program,referral_program,,uber,,,,,uber_referral,Share your Uber referral code from the app,uber.com,/invite/%,https://uber.com/invite/abc123,uber
+Uber Eats Referral Program,uber-eats-referral-program,referral_program,,uber,,,,,uber_eats_referral,Share your Uber Eats referral code from the app,ubereats.com,/%,https://ubereats.com/feed?promoCode=abc123,uber
+Lyft Referral Program,lyft-referral-program,referral_program,,lyft,,,,,lyft_referral,Share your Lyft referral code from the app,lyft.com,/invite/%,https://lyft.com/invite/abc123,lyft
+DoorDash Referral Program,doordash-referral-program,referral_program,,doordash,,,,,doordash_referral,Share your DoorDash referral link from the app,drd.sh,/%,https://drd.sh/abc123,doordash
+Instacart Referral Program,instacart-referral-program,referral_program,,instacart,,,,,instacart_referral,Share your Instacart referral link,inst.cr,/%,https://inst.cr/t/abc123,instacart
+Grubhub Referral Program,grubhub-referral-program,referral_program,,grubhub,,,,,grubhub_referral,Share your Grubhub referral link from the app,grubhub.com,/referral/%,https://grubhub.com/referral/abc123,grubhub
+Postmates Referral Program,postmates-referral-program,referral_program,,postmates,,,,,postmates_referral,Share your Postmates referral code from the app,pmts.co,/%,https://pmts.co/abc123,postmates
+Gopuff Referral Program,gopuff-referral-program,referral_program,,gopuff,,,,,gopuff_referral,Share your Gopuff referral code from the app,gopuff.com,/invite/%,https://gopuff.com/invite/abc123,gopuff
+Shipt Referral Program,shipt-referral-program,referral_program,,shipt,,,,,shipt_referral,Share your Shipt referral link,shipt.com,/invite/%,https://shipt.com/invite/abc123,shipt
+Factor Referral Program,factor-referral-program,referral_program,,factor,,,,,factor_referral,Share your Factor referral link,factor75.com,/invite/%,https://factor75.com/invite/abc123,factor
+Hungryroot Referral Program,hungryroot-referral-program,referral_program,,hungryroot,,,,,hungryroot_referral,Share your Hungryroot referral link,hungryroot.com,/r/%,https://hungryroot.com/r/abc123,hungryroot
+Tovala Referral Program,tovala-referral-program,referral_program,,tovala,,,,,tovala_referral,Share your Tovala referral link,tovala.com,/invite/%,https://tovala.com/invite/abc123,tovala
+Sweetgreen Referral Program,sweetgreen-referral-program,referral_program,,sweetgreen,,,,,sweetgreen_referral,Share your Sweetgreen referral link from the app,order.sweetgreen.com,/invite/%,https://order.sweetgreen.com/invite/abc123,sweetgreen
+Airbnb Referral Program,airbnb-referral-program,referral_program,,airbnb,,,,,airbnb_referral,Share your Airbnb referral link,airbnb.com,/c/%,https://airbnb.com/c/abc123,airbnb
+Tesla Referral Program,tesla-referral-program,referral_program,,tesla,,,,,tesla_referral,Share your Tesla referral link,ts.la,/%,https://ts.la/abc123,tesla
+Turo Referral Program,turo-referral-program,referral_program,,turo,,,,,turo_referral,Share your Turo referral link,turo.com,/invite/%,https://turo.com/invite/abc123,turo
+Hipcamp Referral Program,hipcamp-referral-program,referral_program,,hipcamp,,,,,hipcamp_referral,Share your Hipcamp referral link,hipcamp.com,/r/%,https://hipcamp.com/r/abc123,hipcamp
+Lime Referral Program,lime-referral-program,referral_program,,lime,,,,,lime_referral,Share your Lime referral code from the app,li.me,/%,https://li.me/abc123,lime
+Bird Referral Program,bird-referral-program,referral_program,,bird,,,,,bird_referral,Share your Bird referral code from the app,bdee.co,/%,https://bdee.co/abc123,bird
+Hotel Tonight Referral Program,hotel-tonight-referral-program,referral_program,,hotel-tonight,,,,,hotel_tonight_referral,Share your HotelTonight referral link,hoteltonight.com,/invite/%,https://hoteltonight.com/invite/abc123,hotel-tonight
+T-Mobile Referral Program,t-mobile-referral-program,referral_program,,t-mobile,,,,,t_mobile_referral,Share your T-Mobile referral link,t-mobile.com,/referral/%,https://t-mobile.com/referral/abc123,t-mobile
+Mint Mobile Referral Program,mint-mobile-referral-program,referral_program,,mint-mobile,,,,,mint_mobile_referral,Share your Mint Mobile referral link,mintmobile.com,/refer/%,https://mintmobile.com/refer/abc123,mint-mobile
+Visible Referral Program,visible-referral-program,referral_program,,visible,,,,,visible_referral,Share your Visible referral link,visible.com,/get/%,https://visible.com/get/abc123,visible
+Google Fi Referral Program,google-fi-referral-program,referral_program,,google-fi,,,,,google_fi_referral,Share your Google Fi referral link,fi.google.com,/about/referral/%,https://fi.google.com/about/referral/abc123,google-fi
+Airalo Referral Program,airalo-referral-program,referral_program,,airalo,,,,,airalo_referral,Share your Airalo referral code,ref.airalo.com,/%,https://ref.airalo.com/abc123,airalo
+Dropbox Referral Program,dropbox-referral-program,referral_program,,dropbox,,,,,dropbox_referral,Share your Dropbox referral link,dropbox.com,/referrals/%,https://dropbox.com/referrals/abc123,dropbox
+Notion Referral Program,notion-referral-program,referral_program,,notion,,,,,notion_referral,Share your Notion referral link,notion.so,/r/%,https://notion.so/r/abc123,notion
+Canva Referral Program,canva-referral-program,referral_program,,canva,,,,,canva_referral,Share your Canva referral link,canva.com,/join/%,https://canva.com/join/abc123,canva
+Airtable Referral Program,airtable-referral-program,referral_program,,airtable,,,,,airtable_referral,Share your Airtable referral link,airtable.com,/invite/%,https://airtable.com/invite/abc123,airtable
+DigitalOcean Referral Program,digitalocean-referral-program,referral_program,,digitalocean,,,,,digitalocean_referral,Share your DigitalOcean referral link,m.do.co,/%,https://m.do.co/c/abc123,digitalocean
+Evernote Referral Program,evernote-referral-program,referral_program,,evernote,,,,,evernote_referral,Share your Evernote referral link,evernote.com,/referral/%,https://evernote.com/referral/abc123,evernote
+Dashlane Referral Program,dashlane-referral-program,referral_program,,dashlane,,,,,dashlane_referral,Share your Dashlane referral link,dashlane.com,/invite/%,https://dashlane.com/invite/abc123,dashlane
+Todoist Referral Program,todoist-referral-program,referral_program,,todoist,,,,,todoist_referral,Share your Todoist referral link,todoist.com,/r/%,https://todoist.com/r/abc123,todoist
+Backblaze Referral Program,backblaze-referral-program,referral_program,,backblaze,,,,,backblaze_referral,Share your Backblaze referral link,backblaze.com,/r/%,https://backblaze.com/r/abc123,backblaze
+Gusto Referral Program,gusto-referral-program,referral_program,,gusto,,,,,gusto_referral,Share your Gusto referral link,gusto.com,/r/%,https://gusto.com/r/abc123,gusto
+Square Referral Program,square-referral-program,referral_program,,square,,,,,square_referral,Share your Square referral link,squareup.com,/invite/%,https://squareup.com/invite/abc123,square
+Toast Referral Program,toast-referral-program,referral_program,,toast,,,,,toast_referral,Share your Toast referral link,pos.toasttab.com,/refer/%,https://pos.toasttab.com/refer/abc123,toast
+Duolingo Referral Program,duolingo-referral-program,referral_program,,duolingo,,,,,duolingo_referral,Share your Duolingo referral link from the app,invite.duolingo.com,/%,https://invite.duolingo.com/abc123,duolingo
+Coursera Referral Program,coursera-referral-program,referral_program,,coursera,,,,,coursera_referral,Share your Coursera referral link,coursera.org,/invite/%,https://coursera.org/invite/abc123,coursera
+Skillshare Referral Program,skillshare-referral-program,referral_program,,skillshare,,,,,skillshare_referral,Share your Skillshare referral link,skillshare.com,/r/%,https://skillshare.com/r/abc123,skillshare
+Morning Brew Referral Program,morning-brew-referral-program,referral_program,,morning-brew,,,,,morning_brew_referral,Share your Morning Brew referral link,morningbrew.com,/daily/r/%,https://morningbrew.com/daily/r/abc123,morning-brew
+Peloton Referral Program,peloton-referral-program,referral_program,,peloton,,,,,peloton_referral,Share your Peloton referral link,onepeloton.com,/invite/%,https://onepeloton.com/invite/abc123,peloton
+ClassPass Referral Program,classpass-referral-program,referral_program,,classpass,,,,,classpass_referral,Share your ClassPass referral link,classpass.com,/refer/%,https://classpass.com/refer/abc123,classpass
+Whoop Referral Program,whoop-referral-program,referral_program,,whoop,,,,,whoop_referral,Share your Whoop referral link,join.whoop.com,/%,https://join.whoop.com/abc123,whoop
+Rover Referral Program,rover-referral-program,referral_program,,rover,,,,,rover_referral,Share your Rover referral link,rover.com,/refer/%,https://rover.com/refer/abc123,rover
+Binance.US Referral Program,binance-us-referral-program,referral_program,,binance-us,,,,,binance_us_referral,Share your Binance.US referral link,accounts.binance.us,/register,https://accounts.binance.us/register?ref=abc123,binance-us
+Crypto.com Referral Program,crypto-com-referral-program,referral_program,,crypto-com,,,,,crypto_com_referral,Share your Crypto.com referral link,crypto.com,/app/%,https://crypto.com/app/abc123,crypto-com
+Kraken Referral Program,kraken-referral-program,referral_program,,kraken,,,,,kraken_referral,Share your Kraken referral link,kraken.com,/sign-up,https://kraken.com/sign-up?ref=abc123,kraken
+Gemini Exchange Referral Program,gemini-exchange-referral-program,referral_program,,gemini-exchange,,,,,gemini_exchange_referral,Share your Gemini referral link,gemini.com,/share/%,https://gemini.com/share/abc123,gemini-exchange
+Honeygain Referral Program,honeygain-referral-program,referral_program,,honeygain,,,,,honeygain_referral,Share your Honeygain referral link,r.honeygain.me,/%,https://r.honeygain.me/abc123,honeygain
+Dollar Shave Club Referral Program,dollar-shave-club-referral-program,referral_program,,dollar-shave-club,,,,,dollar_shave_club_referral,Share your Dollar Shave Club referral link,dollarshaveclub.com,/refer/%,https://dollarshaveclub.com/refer/abc123,dollar-shave-club
+Sam's Club Referral Program,sams-club-referral-program,referral_program,,sams-club,,,,,sams_club_referral,Share your Sam's Club referral link,samsclub.com,/refer/%,https://samsclub.com/refer/abc123,sams-club
+Casper Referral Program,casper-referral-program,referral_program,,casper,,,,,casper_referral,Share your Casper referral link,casper.com,/referral/%,https://casper.com/referral/abc123,casper
+Bombas Referral Program,bombas-referral-program,referral_program,,bombas,,,,,bombas_referral,Share your Bombas referral link,bombas.com,/refer/%,https://bombas.com/refer/abc123,bombas
+Eight Sleep Referral Program,eight-sleep-referral-program,referral_program,,eight-sleep,,,,,eight_sleep_referral,Share your Eight Sleep referral link,eightsleep.com,/refer/%,https://eightsleep.com/refer/abc123,eight-sleep
+Purple Referral Program,purple-mattress-referral-program,referral_program,,purple-mattress,,,,,purple_referral,Share your Purple referral link,purple.com,/refer/%,https://purple.com/refer/abc123,purple-mattress
+Brooklinen Referral Program,brooklinen-referral-program,referral_program,,brooklinen,,,,,brooklinen_referral,Share your Brooklinen referral link,brooklinen.com,/refer/%,https://brooklinen.com/refer/abc123,brooklinen
+Away Referral Program,away-referral-program,referral_program,,away,,,,,away_referral,Share your Away referral link,awaytravel.com,/referral/%,https://awaytravel.com/referral/abc123,away
+Quip Referral Program,quip-referral-program,referral_program,,quip,,,,,quip_referral,Share your Quip referral link,getquip.com,/referral/%,https://getquip.com/referral/abc123,quip
+Everlane Referral Program,everlane-referral-program,referral_program,,everlane,,,,,everlane_referral,Share your Everlane referral link,everlane.com,/r/%,https://everlane.com/r/abc123,everlane
+Vuori Referral Program,vuori-referral-program,referral_program,,vuori,,,,,vuori_referral,Share your Vuori referral link,vuori.com,/r/%,https://vuori.com/r/abc123,vuori
+Bonobos Referral Program,bonobos-referral-program,referral_program,,bonobos,,,,,bonobos_referral,Share your Bonobos referral link,bonobos.com,/invite/%,https://bonobos.com/invite/abc123,bonobos
+Rent the Runway Referral Program,rent-the-runway-referral-program,referral_program,,rent-the-runway,,,,,rent_the_runway_referral,Share your Rent the Runway referral link,renttherunway.com,/invite/%,https://renttherunway.com/invite/abc123,rent-the-runway
+Italic Referral Program,italic-referral-program,referral_program,,italic,,,,,italic_referral,Share your Italic referral link,italic.com,/r/%,https://italic.com/r/abc123,italic
+Bespoke Post Referral Program,bespoke-post-referral-program,referral_program,,bespoke-post,,,,,bespoke_post_referral,Share your Bespoke Post referral link,bespokepost.com,/r/%,https://bespokepost.com/r/abc123,bespoke-post
+Hulu Referral Program,hulu-referral-program,referral_program,,hulu,,,,,hulu_referral,Share your Hulu referral link,hulu.com,/referral/%,https://hulu.com/referral/abc123,hulu
+Planet Fitness Referral Program,planet-fitness-referral-program,referral_program,,planet-fitness,,,,,planet_fitness_referral,Share your Planet Fitness referral link,planetfitness.com,/referrals/%,https://planetfitness.com/referrals/abc123,planet-fitness
+23andMe Referral Program,23andme-referral-program,referral_program,,23andme,,,,,twenty3andme_referral,Share your 23andMe referral link,23andme.com,/invite/%,https://23andme.com/invite/abc123,23andme
+Ohmconnect Referral Program,ohmconnect-referral-program,referral_program,,ohmconnect,,,,,ohmconnect_referral,Share your OhmConnect referral link,ohm.co,/%,https://ohm.co/abc123,ohmconnect
+Zola Referral Program,zola-referral-program,referral_program,,zola,,,,,zola_referral,Share your Zola referral link,zola.com,/invite/%,https://zola.com/invite/abc123,zola
+Ritual Referral Program,ritual-referral-program,referral_program,,ritual,,,,,ritual_referral,Share your Ritual referral link,ritual.com,/refer/%,https://ritual.com/refer/abc123,ritual
+Crumbl Cookies Referral Program,crumbl-cookies-referral-program,referral_program,,crumbl-cookies,,,,,crumbl_referral,Share your Crumbl referral link from the app,crumblcookies.com,/invite/%,https://crumblcookies.com/invite/abc123,crumbl-cookies
+Claude Referral Program,claude-referral-program,referral_program,,claude-ai,,,,,claude_referral,Share your Claude referral link,claude.ai,/referral/%,https://claude.ai/referral/abc123,claude-ai
+Cursor Referral Program,cursor-referral-program,referral_program,,cursor-ai,,,,,cursor_referral,Share your Cursor referral link,cursor.com,/referral/%,https://cursor.com/referral/abc123,cursor-ai
+Perplexity Referral Program,perplexity-referral-program,referral_program,,perplexity,,,,,perplexity_referral,Share your Perplexity referral link,perplexity.ai,/referral/%,https://perplexity.ai/referral/abc123,perplexity
+HelloFresh Referral Program,hellofresh-referral-program,referral_program,,hellofresh,,,,,hellofresh_referral,Share your HelloFresh referral link,hellofresh.com,/pages/share/%,https://hellofresh.com/pages/share/abc123,hellofresh
+Blue Apron Referral Program,blue-apron-referral-program,referral_program,,blue-apron,,,,,blue_apron_referral,Share your Blue Apron referral link,blueapron.com,/invite/%,https://blueapron.com/invite/abc123,blue-apron
+NordVPN Referral Program,nordvpn-referral-program,referral_program,,nordvpn,,,,,nordvpn_referral,Share your NordVPN referral link,ref.nordvpn.com,/%,https://ref.nordvpn.com/abc123,nordvpn
+1Password Referral Program,1password-referral-program,referral_program,,1password,,,,,one_password_referral,Share your 1Password referral link,1password.com,/referral/%,https://1password.com/referral/abc123,1password
+Calm Referral Program,calm-referral-program,referral_program,,calm,,,,,calm_referral,Share your Calm referral link,calm.com,/referral/%,https://calm.com/referral/abc123,calm
+Headspace Referral Program,headspace-referral-program,referral_program,,headspace,,,,,headspace_referral,Share your Headspace referral link,headspace.com,/invite/%,https://headspace.com/invite/abc123,headspace
+Noom Referral Program,noom-referral-program,referral_program,,noom,,,,,noom_referral,Share your Noom referral link,noom.com,/referral/%,https://noom.com/referral/abc123,noom
+StockX Referral Program,stockx-referral-program,referral_program,,stockx,,,,,stockx_referral,Share your StockX referral link,stockx.com,/referral/%,https://stockx.com/referral/abc123,stockx
+US Mobile Referral Program,us-mobile-referral-program,referral_program,,us-mobile,,,,,us_mobile_referral,Share your US Mobile referral link,usmobile.com,/referral/%,https://usmobile.com/referral/abc123,us-mobile
+Superhuman Referral Program,superhuman-referral-program,referral_program,,superhuman,,,,,superhuman_referral,Share your Superhuman referral link,superhuman.com,/refer/%,https://superhuman.com/refer/abc123,superhuman
+Raycast Referral Program,raycast-referral-program,referral_program,,raycast,,,,,raycast_referral,Share your Raycast referral link,raycast.com,/referral/%,https://raycast.com/referral/abc123,raycast
+Warp Referral Program,warp-referral-program,referral_program,,warp-terminal,,,,,warp_referral,Share your Warp referral link,app.warp.dev,/referral/%,https://app.warp.dev/referral/abc123,warp-terminal
+Walmart+ Referral Program,walmart-plus-referral-program,referral_program,,referral-programs,,,,,walmart_plus_referral,Share your Walmart+ referral link,walmart.com,/plus/refer/%,https://walmart.com/plus/refer/abc123,

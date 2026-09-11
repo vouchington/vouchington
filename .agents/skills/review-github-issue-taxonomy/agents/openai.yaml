@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Review GitHub Issue Taxonomy'
+  short_description: 'Audit labels, milestones, and labeler coverage'
+  default_prompt: 'Use $review-github-issue-taxonomy to recommend GitHub issue taxonomy improvements.'

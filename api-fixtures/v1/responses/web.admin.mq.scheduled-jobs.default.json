@@ -1,0 +1,18 @@
+{
+  "jobs": [
+    {
+      "description": "Sync Kagi Small Web data",
+      "id": "kagi-smallweb-sync",
+      "job_name": "sync",
+      "queue_name": "kagi-smallweb",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "description": "Refresh RSS feed crawl-tier materialized view",
+      "id": "refreshRssFeedCrawlTiers",
+      "job_name": "refreshMaterializedView",
+      "queue_name": "psql",
+      "schedule": "0 4 * * *"
+    }
+  ]
+}

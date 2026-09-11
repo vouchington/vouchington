@@ -1,0 +1,14 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAyVDAwOjAwOjAwLjAwMDAwMFoiLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMSIsInNjb3BlIjoiaG91c2Vob2xkczowMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDAwMDE6YWNjZXNzPWFsbDp1cGRhdGVkX2F0LWRlc2MsaWQtZGVzYyJ9"
+  },
+  "results": [
+    {
+      "id": "00000000-0000-7000-8000-000000000101",
+      "owner_id": "00000000-0000-7000-8000-000000000001",
+      "updated_at": "2026-07-02T00:00:00Z"
+    }
+  ]
+}

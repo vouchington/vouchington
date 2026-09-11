@@ -1,0 +1,20 @@
+{
+  "namespaces": [
+    {
+      "can_update": true,
+      "can_view": true,
+      "description": "Runtime feature toggles with optional browser-local overrides.",
+      "field_count": 5,
+      "label": "Feature Flags",
+      "namespace": "feature-flags"
+    },
+    {
+      "can_update": false,
+      "can_view": true,
+      "description": "Runtime reCAPTCHA Enterprise assessment and blocking controls.",
+      "field_count": 3,
+      "label": "reCAPTCHA",
+      "namespace": "recaptcha-config"
+    }
+  ]
+}

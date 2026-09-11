@@ -1,0 +1,105 @@
+name: CI ready dedupe
+
+on:
+  workflow_call:
+    outputs:
+      skip-ci-producers:
+        value: ${{ jobs.ready-dedupe.outputs.skip-ci-producers }}
+      skip-expensive-jobs:
+        value: ${{ jobs.ready-dedupe.outputs.skip-expensive-jobs }}
+      skip-settled-producers:
+        value: ${{ jobs.ready-dedupe.outputs.skip-settled-producers }}
+      pr-labels-json:
+        value: ${{ jobs.ready-dedupe.outputs.pr-labels-json }}
+      has-playwright-full:
+        value: ${{ jobs.ready-dedupe.outputs.has-playwright-full }}
+      has-vitest-full:
+        value: ${{ jobs.ready-dedupe.outputs.has-vitest-full }}
+
+permissions: {}
+
+jobs:
+  ready-dedupe:
+    runs-on: [self-hosted]
+    timeout-minutes: 1
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      skip-ci-producers: ${{ steps.ready-dedupe.outputs.skip-ci-producers }}
+      skip-expensive-jobs: ${{ steps.ready-dedupe.outputs.skip-expensive-jobs }}
+      skip-settled-producers: ${{ steps.ready-dedupe.outputs.skip-settled-producers }}
+      pr-labels-json: ${{ steps.ready-dedupe.outputs.pr-labels-json }}
+      has-playwright-full: ${{ steps.ready-dedupe.outputs.has-playwright-full }}
+      has-vitest-full: ${{ steps.ready-dedupe.outputs.has-vitest-full }}
+      reused-run-id: ${{ steps.ready-dedupe.outputs.reused-run-id }}
+      reused-producers-json: ${{ steps.ready-dedupe.outputs.reused-producers-json }}
+    steps:
+      - name: Detect duplicate ready_for_review CI
+        id: ready-dedupe
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TESTED_SHA: ${{ github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW_JOB: ${{ toJson(job) }}
+        run: |
+          set -euo pipefail
+          script_path='ci/ready-dedupe.sh'
+          script_file=$(mktemp "${RUNNER_TEMP:?RUNNER_TEMP is required}/ready-dedupe.XXXXXX")
+          trap 'rm -f "$script_file"' EXIT
+          workflow_repository=$(jq -r '.workflow_repository // empty' <<< "$WORKFLOW_JOB")
+          workflow_sha=$(jq -r '.workflow_sha // empty' <<< "$WORKFLOW_JOB")
+          if [ -z "$workflow_repository" ] || [ -z "$workflow_sha" ]; then
+            echo '::error::The reusable workflow revision is unavailable.' >&2
+            exit 1
+          fi
+          gh api --method GET \
+            --header 'Accept: application/vnd.github.raw+json' \
+            "repos/$workflow_repository/contents/$script_path?ref=$workflow_sha" \
+            > "$script_file"
+          if [ ! -s "$script_file" ]; then
+            echo '::error::The ready-dedupe implementation is empty.' >&2
+            exit 1
+          fi
+          bash "$script_file"
+
+  report-reused-producers:
+    needs: ready-dedupe
+    if: ${{ needs.ready-dedupe.outputs.reused-producers-json != '[]' }}
+    name: ${{ matrix.producer }} reused
+    runs-on: [self-hosted]
+    timeout-minutes: 1
+    continue-on-error: true
+    permissions: {}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        producer: ${{ fromJSON(needs.ready-dedupe.outputs.reused-producers-json) }}
+    env:
+      BASH_ENV: /dev/null
+    steps:
+      - name: Summarize reused result
+        timeout-minutes: 1
+        continue-on-error: true
+        env:
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PRODUCER: ${{ matrix.producer }}
+          REUSED_RUN_ID: ${{ needs.ready-dedupe.outputs.reused-run-id }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$REUSED_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo '::warning::The reused CI run ID was invalid; no prior-run link was written.'
+            exit 0
+          fi
+          reused_run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$REUSED_RUN_ID"
+          {
+            printf '## %s reused\n\n' "$PRODUCER"
+            echo "This result was reused from a successful [draft CI run]($reused_run_url) for the same head and tested merge SHA."
+          } >> "$GITHUB_STEP_SUMMARY"

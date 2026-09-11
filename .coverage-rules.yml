@@ -1,0 +1,79 @@
+# Patch-coverage rules applied to every pull request.
+# First matching glob (top-to-bottom) wins per file.
+# Files not matched by any rule are informational only and never fail the build.
+# Order matters: place more-specific globs above broader ones.
+#
+# `scope` activates coverage-check's missing-coverage detection: a changed file under a
+# positive-threshold rule that has no LCOV record at all (not merely low coverage) is reported as
+# missing rather than silently skipped. `include` matches the same file extensions the default
+# (unscoped) Vitest coverage config instruments — see coverageConfigForScope(undefined) in
+# test-helpers/vitest-config/coverage-config.mts, which backs every suite covering a
+# positive-threshold path here (backend, web, web/lib/api, ts-shared, cloudflare-worker, lambdas).
+# `ignored` mirrors that same config's `exclude` array, pruned to entries that can actually match a
+# positive-threshold path below (a config/type/test/fixture file `coverage.all=true` never
+# instruments) and are not already covered by an existing patch_coverage_min: 0 rule.
+# ci/coverage-rules-scope.test.mts asserts this list never drifts looser than coverage-config.mts's
+# `exclude` array for any reachable path; see docs/development/reference-ci-coverage-gates.md.
+scope:
+  version: 1
+  analyzer: javascript
+  include:
+    - '**/*.{mts,ts,tsx}'
+  ignored:
+    - 'backend/dev.mts'
+    - 'web/instrumentation.ts'
+    - 'web/next.config.ts'
+    - 'web/*.config.ts'
+    - '**/esbuild.config.mts'
+    - 'lambdas/image-resize/scripts/copy-og-fonts.mts'
+    - '**/.wrangler/**'
+    - '**/.next/**'
+    - '**/test-helpers/**'
+    - '**/fixtures/**'
+    - '**/__snapshots__/**'
+    - 'web/storybook/**/*.stories.{ts,tsx}'
+    - 'web/storybook/entities/entity-fixtures.ts'
+    - 'web/storybook/entities/entity-story-frame.tsx'
+    - 'web/storybook/entities/storybook-providers.tsx'
+    - '**/*.d.mts'
+    - '**/*.d.ts'
+    - '**/*.{test,spec}.{mts,ts,tsx}'
+rules:
+  - paths: 'cloudflare-worker/**'
+    patch_coverage_min: 100
+  - paths: 'lambdas/**'
+    patch_coverage_min: 100
+  - paths: 'email-templates/**'
+    patch_coverage_min: 100
+  - paths: 'static-code-analysis/**'
+    patch_coverage_min: 0
+  - paths: 'ts-shared/**'
+    patch_coverage_min: 100
+  - paths: 'web/lib/api/client/test-helpers/**'
+    patch_coverage_min: 0
+  - paths: 'web/lib/api/test-helpers/**'
+    patch_coverage_min: 0
+  - paths: 'web/lib/api/**'
+    patch_coverage_min: 100
+  - paths: 'backend/scripts/**'
+    patch_coverage_min: 0
+  - paths: 'backend/test-helpers/**'
+    patch_coverage_min: 0
+  - paths: 'backend/**/test-helpers/**'
+    patch_coverage_min: 0
+  - paths: 'backend/**'
+    patch_coverage_min: 95
+  - paths: 'web/test-helpers/components/**/*test-helpers.tsx'
+    patch_coverage_min: 0
+  - paths: 'web/storybook/test-helpers/**'
+    patch_coverage_min: 0
+  - paths: 'web/storybook/__tests__/component-story-coverage.test.ts'
+    patch_coverage_min: 0
+  - paths: 'web/storybook/__tests__/design-system-stories.snapshot.test.tsx'
+    patch_coverage_min: 0
+  - paths: 'web/storybook/__tests__/design-system-stories.*.json'
+    patch_coverage_min: 0
+  - paths: 'web/storybook/mocks/**'
+    patch_coverage_min: 0
+  - paths: 'web/**'
+    patch_coverage_min: 80

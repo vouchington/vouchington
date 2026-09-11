@@ -1,0 +1,43 @@
+{
+  "name": "@services/passkeys",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-rate-limiter": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@queues/vote-weight": "workspace:^",
+    "@services/jwt-session": "workspace:^",
+    "@simplewebauthn/server": "^14.0.1",
+    "@valkey/valkey-glide": "^2.5.2",
+    "@voucha/types": "workspace:^",
+    "@vouchington/auth": "0.1.0",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

@@ -1,0 +1,47 @@
+id: web-test-no-ad-hoc-search-params-mock
+language: Tsx
+severity: error
+message: "Don't hand-mock useSearchParams in vi.mock factories. Use createNavMock() from @/test-helpers/next-navigation-mock instead."
+files:
+  - 'web/**/*.test.tsx'
+ignores:
+  - 'web/test-helpers/**'
+rule:
+  any:
+    # Arrow-function or vi.fn() value: useSearchParams: () => ... | useSearchParams: vi.fn()
+    - all:
+        - kind: pair
+        - has:
+            kind: property_identifier
+            regex: '^useSearchParams$'
+    # Fallback for vi.mock calls whose body is a regex match only (e.g. useSearchParams: vi.fn(...))
+    - all:
+        - kind: call_expression
+        - regex: "vi\\.mock\\('next/navigation'"
+        - regex: 'useSearchParams: vi\.fn'
+examples:
+  - code: |
+      vi.mock('next/navigation', () => ({
+        useRouter: () => ({ push: mockPush }),
+        useSearchParams: () => mockSearchParams,
+      }))
+    isValid: false
+    file: 'web/components/shared/__tests__/list-filters.mock.test.tsx'
+  - code: |
+      vi.mock('next/navigation', () => ({
+        useSearchParams: () => new URLSearchParams('rss_item=item-3'),
+        usePathname: () => '/news',
+      }))
+    isValid: false
+    file: 'web/components/rss-feed-items/__tests__/shell.mock.test.tsx'
+  - code: |
+      vi.mock('next/navigation', () => ({
+        useSearchParams: vi.fn<VitestLooseMock>(),
+      }))
+    isValid: false
+    file: 'web/components/__tests__/referral-cta-aside.mock.test.tsx'
+  - code: |
+      const mockNav = createNavMock()
+      vi.mock('next/navigation', () => mockNav.module)
+    isValid: true
+    file: 'web/components/shared/__tests__/list-filters.mock.test.tsx'

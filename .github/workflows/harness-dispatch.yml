@@ -1,0 +1,172 @@
+name: Harness Dispatch
+
+on:
+  workflow_call:
+    inputs:
+      prompt: { type: string, required: true }
+      agent-ref: { type: string, required: true }
+      expected-head-sha: { type: string, required: true }
+      concurrency-id: { type: string, required: true }
+      slack-source: { type: string, required: false, default: '' }
+      completion-mode: { type: string, required: false, default: pr }
+      publish-contract: { type: string, required: false, default: none }
+      publish-base-ref: { type: string, required: false, default: '' }
+      publish-target-pr-number: { type: string, required: false, default: '' }
+      publish-title-prefix: { type: string, required: false, default: '' }
+      publish-title-suffix: { type: string, required: false, default: '' }
+      publish-duplicate-key: { type: string, required: false, default: '' }
+      publish-related-candidates: { type: string, required: false, default: '[]' }
+      existing-issue-maintenance: { type: boolean, required: false, default: false }
+      issue-number: { type: string, required: false, default: '' }
+      trigger-comment-id: { type: string, required: false, default: '' }
+      allow-duplicate-issue-completion: { type: boolean, required: false, default: false }
+      pr-label: { type: string, required: false, default: '' }
+      pr-shepherd-version: { type: string, required: false, default: '' }
+      resume-session-id: { type: string, required: false, default: '' }
+      checkpoint-issue-number: { type: string, required: false, default: '' }
+      source-run-id: { type: string, required: false, default: '' }
+      source-run-attempt: { type: string, required: false, default: '' }
+      source-run-conclusion: { type: string, required: false, default: '' }
+      surface-gate: { type: string, required: true }
+    secrets:
+      HARNESS_API_KEY:
+        required: true
+        description: 'Repository secret explicitly forwarded by each caller; auto-harness env remains branch-policy only'
+    outputs:
+      session-id:
+        value: ${{ jobs.dispatch.outputs.session-id }}
+      session-url:
+        value: ${{ jobs.dispatch.outputs.session-url }}
+      created:
+        value: ${{ jobs.dispatch.outputs.created }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harness-dispatch-${{ inputs.concurrency-id }}
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    name: Dispatch Auto Harness session
+    # Relabeling dispatch from the single-host `Codex` runner to the general
+    # `[self-hosted]` fleet (19 hosts) removed an accidental implicit global
+    # cap of 1 concurrent dispatch: the per-surface `concurrency:` groups
+    # below are each keyed independently (by issue/SHA/singleton/
+    # concurrency-id) and never composed into a fleet-wide bound. Restoring
+    # that cap of 1 is done natively: every admission point across all 7
+    # harness workflows (dispatch, gate, render-prompt, escalate, etc. — 21
+    # in total) shares this same fixed `concurrency.group` literal, so at
+    # most one runs fleet-wide at any moment and the rest FIFO-queue. No
+    # lane computation, extra job, or composite action is needed — a prior
+    # attempt at deduplicating per-job lane math into a composite action
+    # (issue #10411) was reverted because composite actions require
+    # `actions/checkout`, which these deliberately checkout-free admission
+    # points don't all have; a single shared literal sidesteps that
+    # entirely since there's no computation left to extract.
+    if: >-
+      github.ref == 'refs/heads/main' && github.run_attempt == 1 &&
+      vars.HARNESS_DISPATCH_ENABLED == 'true' &&
+      ((inputs.surface-gate == 'HARNESS_FIX_DEPENDABOT_ENABLED' && vars.HARNESS_FIX_DEPENDABOT_ENABLED == 'true') ||
+      (inputs.surface-gate == 'HARNESS_FIX_ISSUE_ENABLED' && vars.HARNESS_FIX_ISSUE_ENABLED == 'true') ||
+      (inputs.surface-gate == 'HARNESS_FIX_MAIN_ENABLED' && vars.HARNESS_FIX_MAIN_ENABLED == 'true' && vars.HARNESS_AGENT_DISPATCH_ENABLED == 'true') ||
+      (inputs.surface-gate == 'HARNESS_PLAN_ENABLED' && vars.HARNESS_PLAN_ENABLED == 'true') ||
+      (inputs.surface-gate == 'HARNESS_SCHEDULED_ENABLED' && vars.HARNESS_SCHEDULED_ENABLED == 'true') ||
+      (inputs.surface-gate == 'HARNESS_SHEPHERD_ENABLED' && vars.HARNESS_SHEPHERD_ENABLED == 'true'))
+    # GitHub, not branch-controlled workflow YAML, enforces that only main can
+    # start this credential-bearing job. See the auto-harness Environment branch policy.
+    environment: auto-harness
+    runs-on: [self-hosted]
+    timeout-minutes: 8
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: this group holds one running + one pending job, and
+      # coalescing would silently replace (drop) a third distinct request instead of queuing
+      # it. This fleet-wide admission group intentionally differs from latest-pending build
+      # debounce locks.
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      session-id: ${{ steps.dispatch.outputs.session-id }}
+      session-url: ${{ steps.dispatch.outputs.session-url }}
+      created: ${{ steps.dispatch.outputs.created }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          clean: false
+          persist-credentials: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          preserve-node-modules: 'false'
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Dispatch session
+        id: dispatch
+        env:
+          AGENT_REF: ${{ inputs.agent-ref }}
+          ALLOW_DUPLICATE_ISSUE_COMPLETION: ${{ inputs.allow-duplicate-issue-completion }}
+          CHECKPOINT_ISSUE_NUMBER: ${{ inputs.checkpoint-issue-number }}
+          COMPLETION_MODE: ${{ inputs.completion-mode }}
+          EXISTING_ISSUE_MAINTENANCE: ${{ inputs.existing-issue-maintenance }}
+          EXPECTED_HEAD_SHA: ${{ inputs.expected-head-sha }}
+          HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
+          HARNESS_CONCURRENCY_ID: ${{ inputs.concurrency-id }}
+          HARNESS_DISPATCH_ENABLED: 'true'
+          # Mirrors HARNESS_TARGET/HARNESS_TARGET_PLAN below: a /plan fallback must stay
+          # plan-locked too, or a fallback resolves the wrong permission mode for its surface.
+          # Same rollout-ordering hazard as HARNESS_TARGET_PLAN: provision HARNESS_FALLBACKS_PLAN
+          # before repointing HARNESS_FALLBACKS to an auto-permission fallback Command.
+          HARNESS_FALLBACKS: ${{ inputs.surface-gate == 'HARNESS_PLAN_ENABLED' && vars.HARNESS_FALLBACKS_PLAN || vars.HARNESS_FALLBACKS }}
+          HARNESS_PRIORITY: '20'
+          HARNESS_PROMPT: ${{ inputs.prompt }}
+          HARNESS_QUEUE_TTL_SECONDS: '3600'
+          # The host daemon's worktree pool is a plain clone: a branch ref like
+          # `refs/heads/<pr-branch>` only ever exists under `refs/remotes/origin/*` there, so
+          # checkout fails with "fatal: Needed a single revision" for any branch but the one
+          # already checked out locally. The SHA always resolves. AGENT_REF (above) still carries
+          # the branch name into session metadata for display.
+          HARNESS_REF: ${{ inputs.expected-head-sha }}
+          HARNESS_REPOSITORY_ID: ${{ vars.HARNESS_REPOSITORY_ID }}
+          HARNESS_REQUIRED_LABELS: '[]'
+          HARNESS_RESUME_SESSION_ID: ${{ inputs.resume-session-id }}
+          # /plan never mutates code and stays on the plan-locked, Opus-reasoning command;
+          # every other surface uses the auto-permission, Sonnet command. HARNESS_TARGET_PLAN
+          # falls back to HARNESS_TARGET when unset (vars.* is '' for a missing variable, which
+          # is falsy), so this is safe to merge before the variable exists. Plan mode still
+          # permits the one `gh issue comment` docs/prompts/automation/plan.md requires:
+          # .claude/settings.json's `Bash(gh issue *)` allow-list entry bypasses the plan-mode
+          # confirmation gate for that command pattern specifically, confirmed by a live /plan
+          # canary against issue #10272 (2026-08-27) that posted its `## Plan` comment under this
+          # same Command.
+          HARNESS_TARGET: ${{ inputs.surface-gate == 'HARNESS_PLAN_ENABLED' && vars.HARNESS_TARGET_PLAN || vars.HARNESS_TARGET }}
+          HARNESS_TIMEOUT: '6300'
+          HARNESS_URL: ${{ vars.HARNESS_URL }}
+          ISSUE_NUMBER: ${{ inputs.issue-number }}
+          TRIGGER_COMMENT_ID: ${{ inputs.trigger-comment-id }}
+          PR_LABEL: ${{ inputs.pr-label }}
+          PR_SHEPHERD_VERSION: ${{ inputs.pr-shepherd-version }}
+          PUBLISH_BASE_REF: ${{ inputs.publish-base-ref }}
+          PUBLISH_CONTRACT: ${{ inputs.publish-contract }}
+          PUBLISH_DUPLICATE_KEY: ${{ inputs.publish-duplicate-key }}
+          PUBLISH_RELATED_CANDIDATES: ${{ inputs.publish-related-candidates }}
+          PUBLISH_TARGET_PR_NUMBER: ${{ inputs.publish-target-pr-number }}
+          PUBLISH_TITLE_PREFIX: ${{ inputs.publish-title-prefix }}
+          PUBLISH_TITLE_SUFFIX: ${{ inputs.publish-title-suffix }}
+          SLACK_SOURCE: ${{ inputs.slack-source }}
+          SOURCE_RUN_ATTEMPT: ${{ inputs.source-run-attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ inputs.source-run-conclusion }}
+          SOURCE_RUN_ID: ${{ inputs.source-run-id }}
+        run: |
+          set -euo pipefail
+          export HARNESS_METADATA
+          HARNESS_METADATA="$(node ci/harness-session-dispatch-metadata.mts)"
+          node ci/harness-session-dispatch.mts

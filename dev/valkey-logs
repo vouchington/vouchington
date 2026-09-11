@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() { echo "Usage: ./dev/valkey-logs"; }
+if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
+if [ "$#" -ne 0 ]; then echo "Error: ./dev/valkey-logs does not accept arguments." >&2; usage >&2; exit 2; fi
+
+# Colors
+RED='\033[0;31m'
+NC='\033[0m'
+
+# Load environment
+if [ ! -f .env ]; then
+    echo -e "${RED}Error: .env not found. Run ./dev/initialize web first.${NC}"
+    exit 1
+fi
+
+VALKEY_CONTAINER="$(
+    source .env >/dev/null
+    printf '%s' "${VALKEY_CONTAINER:-}"
+)"
+
+if [ -z "${VALKEY_CONTAINER:-}" ]; then
+    echo -e "${RED}Error: VALKEY_CONTAINER is not set in .env.${NC}"
+    exit 1
+fi
+
+docker_valkey() {
+    env -i \
+        DOCKER_CERT_PATH="${DOCKER_CERT_PATH:-}" \
+        DOCKER_CONFIG="${DOCKER_CONFIG:-}" \
+        DOCKER_CONTEXT="${DOCKER_CONTEXT:-}" \
+        DOCKER_HOST="${DOCKER_HOST:-}" \
+        DOCKER_TLS_VERIFY="${DOCKER_TLS_VERIFY:-}" \
+        HOME="${HOME:-}" \
+        PATH="${PATH:-/usr/bin:/bin}" \
+        SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-}" \
+        docker "$@"
+}
+
+# Create temp file for Valkey logs
+VALKEY_LOG="${TMPDIR:-/tmp}/voucha-valkey-${VALKEY_CONTAINER}.log"
+
+# Ensure Valkey container is reachable
+if ! docker_valkey exec "$VALKEY_CONTAINER" valkey-cli PING >/dev/null 2>&1; then
+    echo -e "${RED}Error: Unable to connect to Valkey container $VALKEY_CONTAINER.${NC}"
+    echo "Make sure the container is running (docker start $VALKEY_CONTAINER)."
+    exit 1
+fi
+
+# Start Valkey MONITOR in the background
+docker_valkey exec "$VALKEY_CONTAINER" valkey-cli MONITOR > "$VALKEY_LOG" 2>&1 &
+MONITOR_PID=$!
+TAIL_PID=
+
+cleanup() {
+    kill "$MONITOR_PID" 2>/dev/null || true
+    if [ -n "$TAIL_PID" ]; then
+        kill "$TAIL_PID" 2>/dev/null || true
+    fi
+    rm -f "$VALKEY_LOG"
+}
+
+# Verify that the monitor process started successfully
+sleep 0.5
+if ! kill -0 "$MONITOR_PID" 2>/dev/null; then
+    echo -e "${RED}Error: Failed to start valkey-cli MONITOR on $VALKEY_CONTAINER.${NC}"
+    if [ -s "$VALKEY_LOG" ]; then
+        echo "Output:"
+        cat "$VALKEY_LOG"
+    fi
+    exit 1
+fi
+
+# Cleanup on exit
+trap cleanup EXIT
+trap 'cleanup; exit 130' INT TERM
+
+echo "Tailing Valkey commands (container: $VALKEY_CONTAINER)..."
+echo "Source: valkey-cli MONITOR"
+echo ""
+echo "Press Ctrl+C to stop"
+echo ""
+
+# Tail Valkey monitor
+tail -f "$VALKEY_LOG" 2>/dev/null &
+TAIL_PID=$!
+
+# Keep script running
+wait

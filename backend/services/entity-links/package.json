@@ -1,0 +1,32 @@
+{
+  "name": "@services/entity-links",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Service for parsing and resolving entity mentions (@user, #topic, !post) in text",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@modules/utils": "workspace:^",
+    "@services/entity-fetch": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "@voucha/types": "workspace:^"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,42 @@
+id: web-test-no-bare-lucide-mock
+language: Tsx
+severity: error
+message: >-
+  Bare partial mock of 'lucide-react' drops unmocked icon exports (PR #6077). Use
+  mockLucideReact() from @/test-helpers/lucide-icons so unmocked icons keep their
+  real implementations.
+files:
+  - 'web/**/*.test.tsx'
+ignores:
+  - 'web/test-helpers/**'
+rule:
+  all:
+    - kind: call_expression
+    - regex: "vi\\.mock\\(['\"`]lucide-react['\"`]\\s*[,)]"
+    - not:
+        has:
+          kind: identifier
+          regex: '^(importOriginal|importActual|mockLucideReact)$'
+          stopBy: end
+examples:
+  - code: |
+      vi.mock('lucide-react', () => ({
+        Loader2: () => null,
+      }))
+    isValid: false
+    file: 'web/components/shared/__tests__/hide-button.mock.test.tsx'
+  - code: |
+      vi.mock('lucide-react', () =>
+        mockLucideReact({
+          Loader2: () => null,
+        }),
+      )
+    isValid: true
+    file: 'web/components/shared/__tests__/hide-button.mock.test.tsx'
+  - code: |
+      vi.mock('lucide-react', async importOriginal => ({
+        ...(await importOriginal()),
+        Loader2: () => null,
+      }))
+    isValid: true
+    file: 'web/components/shared/__tests__/hide-button.mock.test.tsx'

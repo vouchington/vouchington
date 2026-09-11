@@ -1,0 +1,41 @@
+{
+  "name": "@services/referral-link-unfurl",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/membership-helpers": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/unfurl-referral-links": "workspace:^",
+    "@services/browser-crawl": "workspace:^",
+    "@services/memberships": "workspace:^",
+    "@services/referral-program-link-validations": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/user-referral-program-links": "workspace:^",
+    "@services/users": "workspace:^",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

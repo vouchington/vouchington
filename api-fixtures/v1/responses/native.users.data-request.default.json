@@ -1,0 +1,7 @@
+{
+  "created_at": "2026-07-01T16:00:00Z",
+  "download_url": "https://exports.example.test/user-abc/export.zip",
+  "expires_at": "2027-07-08T16:04:00Z",
+  "id": "data-request-abc",
+  "status": "ready"
+}

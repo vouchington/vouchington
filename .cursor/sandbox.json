@@ -1,0 +1,21 @@
+{
+  "type": "workspace_readwrite",
+  "enableSharedBuildCache": true,
+  "networkPolicy": {
+    "default": "allow"
+  },
+  "additionalReadwritePaths": [
+    "~/.cargo",
+    "~/Library/pnpm",
+    "~/.local/share/pnpm",
+    "~/.pnpm-store",
+    "~/Library/Caches/no-mistakes",
+    "~/Library/Caches/pnpm",
+    "~/.pnpm-state",
+    "~/.cache/no-mistakes",
+    "~/.cache/pnpm",
+    "~/.local/state/pnpm",
+    "/var/folders",
+    "/private/var/folders"
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "@services/valkey-admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-core": "workspace:^",
+    "@data-stores/valkey-rate-limiter": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@services/users": "workspace:^",
+    "@valkey/valkey-glide": "^2.5.2",
+    "http-errors": "^2.0.1",
+    "valkyries": "^0.8.0"
+  },
+  "devDependencies": {
+    "@services/entity-cache": "workspace:^",
+    "@types/http-errors": "^2.0.5"
+  }
+}

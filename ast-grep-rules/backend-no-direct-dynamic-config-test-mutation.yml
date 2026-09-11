@@ -1,0 +1,35 @@
+id: backend-no-direct-dynamic-config-test-mutation
+language: Tsx
+severity: error
+message: 'Do not mutate DynamicConfig singleton state directly in backend tests; use overrideDynamicConfigFieldsForTest() or snapshotDynamicConfigFieldsForTest().'
+files:
+  - 'backend/**/*.test.mts'
+  - 'backend/**/__tests__/**/*.mts'
+ignores:
+  - 'backend/test-helpers/dynamic-config.test.mts'
+rule:
+  any:
+    - pattern: $CONFIG.setField($$$)
+    - pattern: $CONFIG.setFields($$$)
+    - pattern: $CONFIG.fields.set($$$)
+    - pattern: $CONFIG.fields.delete($$$)
+    - pattern: $CONFIG.fields.clear()
+constraints:
+  CONFIG:
+    regex: '[Cc]onfig$'
+examples:
+  - code: 'routeRateLimitConfig.setFields({ enabled: true })'
+    isValid: false
+    file: 'backend/api/v1/reports/__tests__/reports.rate-limit.test.mts'
+  - code: "bloomFilterConfig.fields.set('bookmarkBloomFilterEnabled', true)"
+    isValid: false
+    file: 'backend/workers/bloom-filters/__tests__/bloom-filter.basic.generated.test.mts'
+  - code: 'overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: true })'
+    isValid: true
+    file: 'backend/api/v1/reports/__tests__/reports.rate-limit.test.mts'
+  - code: "cache.fields.set('label', 'changed independently')"
+    isValid: true
+    file: 'backend/services/cache/cache.test.mts'
+  - code: "config.fields.set('label', 'changed independently')"
+    isValid: true
+    file: 'backend/test-helpers/dynamic-config.test.mts'

@@ -1,0 +1,61 @@
+name: Allocate Ports
+description: >
+  Allocates free Fetch-safe TCP ports using the shared browser-safe port
+  allocator plus lsof verification. Fails immediately if a selected port is
+  already in use. Emits each port as a named output (port1..port4) and a
+  space-separated 'ports' output.
+
+inputs:
+  count:
+    description: 'Number of ports to allocate (1-4)'
+    default: '1'
+
+outputs:
+  ports:
+    description: 'Space-separated list of allocated port numbers'
+    value: ${{ steps.allocate.outputs.ports }}
+  port1:
+    description: 'First allocated port'
+    value: ${{ steps.allocate.outputs.port1 }}
+  port2:
+    description: 'Second allocated port'
+    value: ${{ steps.allocate.outputs.port2 }}
+  port3:
+    description: 'Third allocated port'
+    value: ${{ steps.allocate.outputs.port3 }}
+  port4:
+    description: 'Fourth allocated port'
+    value: ${{ steps.allocate.outputs.port4 }}
+
+runs:
+  using: composite
+  steps:
+    - name: Allocate ports
+      id: allocate
+      shell: bash
+      env:
+        PORT_COUNT: ${{ inputs.count }}
+      run: |
+        set -euo pipefail
+
+        # Validate count is an integer in [1,4]
+        if ! [[ "$PORT_COUNT" =~ ^[0-9]+$ ]] || [ "$PORT_COUNT" -lt 1 ] || [ "$PORT_COUNT" -gt 4 ]; then
+          echo "::error::allocate-ports: count must be an integer between 1 and 4 (got '${PORT_COUNT}')"
+          exit 1
+        fi
+
+        PORTS=$(python3 ci/allocate-browser-safe-ports.py "$PORT_COUNT")
+        echo "ports=$PORTS" >> "$GITHUB_OUTPUT"
+        echo "BROWSER_ALLOCATED_PORTS=$PORTS" >> "$GITHUB_ENV"
+        for p in $PORTS; do
+          if lsof -ti:"$p" >/dev/null 2>&1; then
+            echo "::error::Port $p is already in use after allocation; deterministic allocation will not retry"
+            exit 1
+          fi
+        done
+
+        i=1
+        for p in $PORTS; do
+          echo "port${i}=${p}" >> "$GITHUB_OUTPUT"
+          i=$((i + 1))
+        done

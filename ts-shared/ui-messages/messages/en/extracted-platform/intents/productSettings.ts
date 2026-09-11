@@ -1,0 +1,35 @@
+const messages = {
+  intents: {
+    productSettings: {
+      aboutMe_0bf7f38a: 'About Me',
+      accountStatus_dafb01ab: 'Account Status',
+      account_7e1b0d56: 'Account',
+      advanced_9f088dbe: 'Advanced',
+      apiKeys_c08f17eb: 'API Keys',
+      appeals_03e8c5a5: 'Appeals',
+      bans_4d5469c7: 'Bans',
+      cards_a52fcbbc: 'Cards',
+      display_34e108c0: 'Display',
+      disputes_110fa2bb: 'Disputes',
+      household_a1c6c97f: 'Household',
+      idVerification_ae349f8e: 'ID Verification',
+      identity_999f23fc: 'Identity',
+      language_a4fe6526: 'Language',
+      membership_9feceb93: 'Membership',
+      moderation_126d4415: 'Moderation',
+      news_69752f23: 'News',
+      pointValues_1a2d98de: 'Point Values',
+      preferences_66962f72: 'Preferences',
+      privacy_54a57c31: 'Privacy',
+      profile_d696a35b: 'Profile',
+      removedPosts_2473d1ec: 'Removed Posts',
+      settings_74a883a0: 'Settings',
+      spending_c2c7ae2a: 'Spending',
+      statuses_b5c3b907: 'Statuses',
+      warnings_0e04cd10: 'Warnings',
+      yourData_0fdcada4: 'Your Data',
+    },
+  },
+}
+
+export default messages

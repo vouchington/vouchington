@@ -1,0 +1,47 @@
+{
+  "name": "@services/moderation-reports",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@queues/report-integrity": "workspace:^",
+    "@services/moderation-cases": "workspace:^",
+    "@services/moderation-training": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
+    "@services/notifications": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@vouchington/utils": "0.5.1",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^",
+    "@voucha/types": "workspace:^"
+  }
+}

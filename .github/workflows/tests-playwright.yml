@@ -1,0 +1,433 @@
+name: Playwright Tests
+
+on:
+  workflow_call:
+    inputs:
+      event-name:
+        description: Triggering workflow event name (pull_request triggers affected-test selection)
+        type: string
+        required: false
+        default: ''
+      pr-labels:
+        description: JSON array of PR label names
+        type: string
+        required: false
+        default: '[]'
+      shard_total_override:
+        description: Override the computed Playwright shard total
+        type: string
+        required: false
+        default: ''
+      otel_enabled:
+        description: 'Whether Playwright web servers should export OTel traces/logs for main CI observability'
+        type: boolean
+        required: false
+        default: false
+  workflow_dispatch:
+    inputs:
+      otel_enabled:
+        description: 'Export OTel traces/logs for this manual run (default off; see PLAYWRIGHT_OTEL_ENABLED for the main CI default)'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  # Serialize Playwright workflow runs for the same PR/ref without serializing shards.
+  group: playwright-tests-${{ github.event.pull_request.number || github.ref || github.sha }}
+  cancel-in-progress: ${{ inputs.event-name == 'pull_request' }}
+
+jobs:
+  select:
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      skip: ${{ steps.select.outputs.skip }}
+      full-suite: ${{ steps.select.outputs.full-suite }}
+      files: ${{ steps.select.outputs.files }}
+      shard-total: ${{ steps.shards.outputs.total }}
+      shard-matrix: ${{ steps.shards.outputs.matrix }}
+      reason: ${{ steps.select.outputs.reason }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        timeout-minutes: 3
+        with:
+          deepen: 'true'
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Select Playwright tests
+        id: select
+        env:
+          EVENT_NAME: ${{ inputs.event-name }}
+          PR_LABELS: ${{ inputs.pr-labels }}
+          SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override }}
+        run: node ci/playwright/ci-select.mts
+      - name: Build shard matrix
+        id: shards
+        if: steps.select.outputs.skip != 'true'
+        timeout-minutes: 1
+        run: |
+          total="${{ steps.select.outputs.shard-total }}"
+          if ! [[ "$total" =~ ^([1-9][0-9]{0,2})$ ]] || [ "$total" -gt 256 ]; then
+            echo "::error::shard-total must be an integer from 1 through 256, got: '$total'"
+            exit 1
+          fi
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+          echo "matrix=[$(seq -s, 1 "$total")]" >> "$GITHUB_OUTPUT"
+      - name: Upload Playwright test plan
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: playwright-test-plan
+          path: |
+            playwright-test-plan.json
+            playwright-test-plan.md
+          if-no-files-found: ignore
+          retention-days: 1
+
+  playwright-tests:
+    needs: [select]
+    if: needs.select.outputs.skip != 'true'
+    runs-on: [self-hosted, Linux, Docker, Playwright]
+    timeout-minutes: 35
+    permissions:
+      actions: read
+      contents: read
+    env:
+      NODE_ENV: test
+      API_KEY_CHECKSUM_SECRET: this is a fake Playwright CI API key checksum secret
+      VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake Playwright CI OTP HMAC secret
+      VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-playwright-ci-key:raw32:this fake test key is not secret
+      NEXT_PUBLIC_ASSET_PREFIX: http://localhost
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.select.outputs.shard-matrix) }}
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: '-c max_connections=300'
+        ports:
+          - 5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /var/lib/postgresql:rw,size=1g
+      valkey:
+        image: valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        ports:
+          - 6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /data:rw,size=64m
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          extra-keep: 'web/.next/cache'
+      - name: Set service ports
+        timeout-minutes: 1
+        run: |
+          echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
+          echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
+      - name: Reap orphaned OTel collectors
+        timeout-minutes: 1
+        run: |
+          set -uo pipefail
+          # Containers created by the current workflow carry both labels. Keep this
+          # primary cleanup path while older collectors without labels may still be
+          # present on long-lived runners during the migration.
+          docker ps -aq --no-trunc \
+            --filter "label=com.voucha.ci.component=playwright-otel" \
+            --filter "label=com.voucha.ci.workspace=$GITHUB_WORKSPACE" | \
+            while IFS= read -r container_id; do
+              [ -z "$container_id" ] || docker rm -f "$container_id" || true
+            done
+          # A legacy collector did not have ownership labels. Reap it only after a
+          # single fresh inspect proves its exact numeric name, pinned collector
+          # image, and read-only config mount all belong to this workspace.
+          export OTEL_CONFIG_SOURCE="$GITHUB_WORKSPACE/dev/otel/collector-config-ci.yaml"
+          docker ps -aq --no-trunc --filter 'name=^/voucha-otel-' | \
+            while IFS= read -r container_id; do
+              [ -z "$container_id" ] && continue
+              if docker inspect "$container_id" | python3 -c "$(cat <<'PY'
+          import json
+          import os
+          import re
+          import sys
+
+          containers = json.load(sys.stdin)
+          container = containers[0] if len(containers) == 1 else {}
+          is_owned_legacy_collector = (
+              len(containers) == 1
+              and re.fullmatch(r"/voucha-otel-[0-9]+-[0-9]+-[0-9]+", container.get("Name", ""))
+              is not None
+              and container.get("Config", {}).get("Image")
+              == "otel/opentelemetry-collector-contrib:0.153.0"
+              and any(
+                  mount.get("Type") == "bind"
+                  and mount.get("Source") == os.environ["OTEL_CONFIG_SOURCE"]
+                  and mount.get("Destination") == "/etc/otelcol-contrib/config.yaml"
+                  and mount.get("RW") is False
+                  for mount in container.get("Mounts", [])
+              )
+          )
+          sys.exit(not is_owned_legacy_collector)
+          PY
+          )"; then
+                docker rm -f "$container_id" || true
+              fi
+            done
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+      - name: Activate pnpm via corepack
+        timeout-minutes: 2
+        run: bash "$GITHUB_WORKSPACE/ci/activate-pnpm.sh"
+      - name: pnpm install
+        timeout-minutes: 5
+        run: |
+          bash "$GITHUB_WORKSPACE/ci/pnpm-install.sh" \
+            --runner-lifecycle persistent \
+            --install-scripts true \
+            --command-timeout-seconds 0
+      - name: Allocate ports
+        timeout-minutes: 1
+        run: |
+          # Hold every allocated port until its consumer binds. Print-and-exit
+          # leaves a minutes-long gap through setup/build that other host
+          # processes can occupy (issue #9270).
+          set -euo pipefail
+          HOLD_DIR="${RUNNER_TEMP}/voucha-port-hold"
+          mkdir -p "$HOLD_DIR/release"
+          PORTS=$(python3 ci/allocate-browser-safe-ports.py 6 --hold --hold-dir "$HOLD_DIR" --workspace "$GITHUB_WORKSPACE")
+          read -r PORT NEXT_PORT IMAGE_LAMBDA_PORT WORKER_PORT OTEL_HTTP_PORT OTEL_GRPC_PORT <<< "$PORTS"
+          if [ -z "$PORT" ] || [ -z "$NEXT_PORT" ] || [ -z "$IMAGE_LAMBDA_PORT" ] || [ -z "$WORKER_PORT" ] || [ -z "$OTEL_HTTP_PORT" ] || [ -z "$OTEL_GRPC_PORT" ]; then
+            echo "::error::Failed to allocate ports"
+            exit 1
+          fi
+          echo "BROWSER_ALLOCATED_PORTS=$PORT $NEXT_PORT $IMAGE_LAMBDA_PORT $WORKER_PORT $OTEL_HTTP_PORT $OTEL_GRPC_PORT" >> "$GITHUB_ENV"
+          echo "PORT_HOLD_DIR=$HOLD_DIR" >> "$GITHUB_ENV"
+          python3 ci/allocate-browser-safe-ports.py --check --hold-dir "$HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
+          {
+            echo "PORT=$PORT"
+            echo "NEXT_PORT=$NEXT_PORT"
+            echo "IMAGE_LAMBDA_PORT=$IMAGE_LAMBDA_PORT"
+            echo "WORKER_PORT=$WORKER_PORT"
+            echo "OTEL_HTTP_PORT=$OTEL_HTTP_PORT"
+            echo "OTEL_GRPC_PORT=$OTEL_GRPC_PORT"
+            echo "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:$OTEL_HTTP_PORT"
+          } >> "$GITHUB_ENV"
+      - name: Start OTel collector
+        if: inputs.otel_enabled
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          echo "Starting OTel collector"
+          mkdir -p "$RUNNER_TEMP/otel-output"
+          chmod 0777 "$RUNNER_TEMP/otel-output"
+          COLLECTOR_NAME="voucha-otel-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.shard }}"
+          docker rm "$COLLECTOR_NAME" >/dev/null 2>&1 || true
+          # These deterministic ports come from the same six-port runner allocation as the
+          # app servers, so Docker cannot choose an unbound app port for the collector.
+          python3 ci/allocate-browser-safe-ports.py --release "$OTEL_HTTP_PORT" --hold-dir "$PORT_HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
+          python3 ci/allocate-browser-safe-ports.py --release "$OTEL_GRPC_PORT" --hold-dir "$PORT_HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
+          docker run -d --name "$COLLECTOR_NAME" \
+            --label "com.voucha.ci.component=playwright-otel" \
+            --label "com.voucha.ci.workspace=$GITHUB_WORKSPACE" \
+            -p "127.0.0.1:$OTEL_HTTP_PORT:4318" \
+            -p "127.0.0.1:$OTEL_GRPC_PORT:4317" \
+            -v "$PWD/dev/otel/collector-config-ci.yaml:/etc/otelcol-contrib/config.yaml:ro" \
+            -v "$RUNNER_TEMP/otel-output:/otel-output" \
+            otel/opentelemetry-collector-contrib:0.153.0
+          sleep 2
+          if [ "$(docker inspect -f '{{.State.Running}}' "$COLLECTOR_NAME")" != "true" ]; then
+            docker logs "$COLLECTOR_NAME" || true
+            exit 1
+          fi
+      - name: Confirm port holder
+        timeout-minutes: 1
+        run: python3 ci/allocate-browser-safe-ports.py --check --hold-dir "$PORT_HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
+      - uses: ./.github/actions/load-runner-env
+        with:
+          PLAYWRIGHT_MAX_WORKERS: ${{ vars.PLAYWRIGHT_MAX_WORKERS }}
+      - name: Set image origin
+        run: echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup-backend
+        id: setup-backend
+        timeout-minutes: 8
+        with:
+          runner-lifecycle: persistent
+      - uses: ./.github/actions/setup-playwright
+        timeout-minutes: 10
+      - name: Create cloudflare worker dev vars
+        timeout-minutes: 1
+        run: |
+          CF_WORKER_SECRET=$(openssl rand -hex 32)
+          {
+            echo "BACKEND_ORIGIN=http://localhost:$PORT"
+            echo "WEB_ORIGIN=http://localhost:$NEXT_PORT"
+            echo "CSP_ASSET_ORIGIN=http://localhost"
+            echo 'CSP_BROWSER_UPLOAD_ORIGINS=["https://test-images.s3.us-west-2.amazonaws.com","https://test-images.s3.dualstack.us-west-2.amazonaws.com"]'
+            echo "CF_WORKER_SECRET=$CF_WORKER_SECRET"
+          } > cloudflare-worker/.dev.vars
+          echo "CF_WORKER_SECRET=$CF_WORKER_SECRET" >> "$GITHUB_ENV"
+      - name: Run database migrations
+        working-directory: backend
+        run: node data-stores/psql/migrate.mts
+        timeout-minutes: 3
+      - uses: ./.github/actions/build-web-targets
+        timeout-minutes: 13
+        with:
+          artifact-suffix: playwright-${{ matrix.shard }}
+          web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
+      - name: Run Playwright tests
+        # 10-minute hard-ceiling baseline (matches the vitest jobs' watchdog) plus a ~30s/shard
+        # build-time buffer specific to Playwright's per-shard Next.js build/browser warm-up
+        # variance, rounded up to a whole minute since GitHub Actions timeout-minutes literals
+        # in this repo stay integral.
+        timeout-minutes: 11
+        env:
+          GIT_COMMIT: ${{ github.sha }}
+          NEXT_PUBLIC_GIT_COMMIT: ${{ github.sha }}
+          OTEL_ENABLED: ${{ inputs.otel_enabled && '1' || '' }}
+          OTEL_EXPORTER_OTLP_PROTOCOL: ${{ inputs.otel_enabled && 'http/protobuf' || '' }}
+          OTEL_LOGS_EXPORTER: ${{ inputs.otel_enabled && 'otlp' || '' }}
+          OTEL_TRACES_SAMPLER: ${{ inputs.otel_enabled && 'parentbased_always_on' || '' }}
+          CI_SHARD: ${{ matrix.shard }}/${{ needs.select.outputs.shard-total }}
+          CI_PROJECT: playwright
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-report.junit.xml
+          PW_FULL_SUITE: ${{ needs.select.outputs.full-suite }}
+          PW_FILES: ${{ needs.select.outputs.files }}
+          # Same directory the "Diagnose browser port collision" composite action uploads
+          # as an artifact (see its OUTPUT_DIR), computed with the identical expression so
+          # the two never diverge. This flows to lambdas/dev-server.mts's listenWithRetry
+          # (via playwright/config/shared-config.mts's webServer env) so it can capture
+          # bind-time collision evidence at the moment of EADDRINUSE, when the process
+          # holding the port is still alive — the post-hoc step below runs only after
+          # Playwright has already torn down its webServer process group.
+          BROWSER_PORT_DIAGNOSTICS_DIR: ${{ runner.temp }}/browser-port-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+        run: |
+          set -euo pipefail
+          SHARD_ARG="--shard=${{ matrix.shard }}/${{ needs.select.outputs.shard-total }}"
+          if [[ "$PW_FULL_SUITE" == "true" || -z "$PW_FILES" ]]; then
+            pnpm exec ./ci/with-node-test-options playwright test "$SHARD_ARG"
+          else
+            # PW_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
+            # encodeSelectedFiles). A quoted read loop plus a quoted array expansion
+            # preserve paths containing spaces or shell glob metacharacters, replacing
+            # the previous unquoted $PW_FILES word-splitting/glob-expansion. This avoids
+            # `mapfile` (bash 4.0+) since self-hosted runner shells are not guaranteed to
+            # be bash 4+.
+            FILES=()
+            while IFS= read -r file; do
+              if [ -n "$file" ]; then FILES+=("$file"); fi
+            done <<< "$PW_FILES"
+            pnpm exec ./ci/with-node-test-options playwright test "${FILES[@]}" "$SHARD_ARG"
+          fi
+      - name: Stop port holder
+        if: ${{ always() }}
+        timeout-minutes: 1
+        continue-on-error: true
+        run: |
+          if [ -n "${PORT_HOLD_DIR:-}" ]; then
+            python3 ci/allocate-browser-safe-ports.py --stop --hold-dir "$PORT_HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
+          fi
+      - name: Diagnose browser port collision
+        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
+        continue-on-error: true
+        timeout-minutes: 2
+        uses: ./.github/actions/diagnose-browser-port-collision
+        with:
+          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
+          artifact-suffix: playwright-${{ matrix.shard }}
+      - name: Stop OTel collector
+        if: ${{ always() && inputs.otel_enabled }}
+        timeout-minutes: 1
+        continue-on-error: true
+        run: |
+          docker stop --time 10 "voucha-otel-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.shard }}" || true
+          docker rm "voucha-otel-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.shard }}" || true
+      - name: Upload OTel debug artifact
+        if: ${{ always() && inputs.otel_enabled }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: playwright-otel-output-shard-${{ matrix.shard }}
+          path: |
+            ${{ runner.temp }}/otel-output
+            ${{ runner.temp }}/playwright-web-server-logs
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: warn
+      - name: Upload JUnit test results
+        if: failure()
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: playwright-junit-shard-${{ matrix.shard }}
+          path: test-report.junit.xml
+          retention-days: 1
+          if-no-files-found: ignore
+      - name: Upload Playwright test-results (traces, screenshots, videos)
+        if: failure()
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: playwright-test-results-shard-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 1
+          if-no-files-found: ignore
+      - name: Upload wrangler logs
+        if: failure()
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: wrangler-logs-${{ matrix.shard }}
+          path: ${{ runner.temp }}/wrangler-logs/
+          retention-days: 1
+          if-no-files-found: ignore

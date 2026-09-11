@@ -1,0 +1,48 @@
+{
+  "name": "@services/bedrock-embeddings-batch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@aws-sdk/client-bedrock": "^3.1127.0",
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@data-stores/psql": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
+    "@services/bedrock-embeddings": "workspace:^",
+    "@services/communities": "workspace:^",
+    "@services/crawl-chunks": "workspace:^",
+    "@services/images": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "pg-copy-streams": "^7.0.0",
+    "undici": "^8.10.2"
+  },
+  "devDependencies": {
+    "@queues/ban-evasion": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@types/pg-copy-streams": "^1.2.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

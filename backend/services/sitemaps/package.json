@@ -1,0 +1,36 @@
+{
+  "name": "@services/sitemaps",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sitemap service utilities",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@modules/feed-query-builders": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "p-map": "7.0.7",
+    "sql-template-strings": "^2.2.2"
+  }
+}

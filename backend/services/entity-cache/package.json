@@ -1,0 +1,43 @@
+{
+  "name": "@services/entity-cache",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/bloom-filters": "workspace:^",
+    "@queues/cache-purge": "workspace:^",
+    "@services/batch-lookup": "workspace:^",
+    "@services/bloom-filter-config": "workspace:^",
+    "@ts-shared/cache": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "http-errors": "^2.0.1",
+    "undici": "^8.10.2",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

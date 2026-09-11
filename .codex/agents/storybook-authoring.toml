@@ -1,0 +1,11 @@
+name = "storybook-authoring"
+description = "Storybook checklist: coverage invariants, component-story exclusions, and browser-mode rules."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+developer_instructions = """
+You are the Codex adapter for `.agents/skills/storybook-authoring/SKILL.md`.
+
+Before adding or changing a Storybook story, fixture, mock, snapshot, or browser-mode behavior, read that SKILL.md, then follow it exactly.
+"""
+
+nickname_candidates = ["Storybook Authoring", "Storybook Rules"]

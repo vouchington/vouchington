@@ -1,0 +1,79 @@
+id: routes-export-register-fn
+language: Tsx
+severity: error
+message: 'Exports are not allowed in route files'
+files:
+  - 'backend/api/**/*.mts'
+  - 'backend/sitemaps/**/*.mts'
+ignores:
+  - '**/index.mts'
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+  - '**/types.mts'
+  - '**/configs.mts'
+  - '**/app.mts'
+  - '**/route-factory.mts'
+  - '**/shared.mts'
+  - '**/*-helpers.mts'
+  - '**/*-types.mts'
+  - '**/*-response.mts'
+  - '**/*-replay.mts'
+  - '**/*-route-config.mts'
+  - '**/response-types/**'
+  # App-assembly context extensions and test support — not route modules.
+  - 'backend/api/context/**'
+  - 'backend/api/test-helpers/**'
+  # List specific top-level api files explicitly: the glob 'backend/api/*.mts'
+  # cannot be used because ast-grep's glob '*' matches path separators, which
+  # would inadvertently ignore all nested route files too.
+  - 'backend/api/queues.mts'
+  - 'backend/api/election-vote-handler.mts'
+  - 'backend/api/app-origin-guard.mts'
+  # Pre-existing exports in helper/registry files that do not act as route
+  # modules. Tracked for future cleanup; do not add new exports to these files.
+  # Note: only the specific helper files are listed (not the whole mq/ dir) so
+  # that new route modules added to backend/api/v1/mq/ remain guarded.
+  - 'backend/api/v1/mq/scheduled-job-manifests.mts'
+  - 'backend/api/v1/mq/scheduled-jobs-registry.mts'
+  - 'backend/api/v1/mq/backfills-core.mts'
+  - 'backend/api/v1/mq/backfills-existing-dispatchers.mts'
+  - 'backend/api/v1/mq/backfills-existing-dispatchers-core.mts'
+  - 'backend/api/v1/mq/backfills-existing-dispatchers-recurring.mts'
+  - 'backend/api/v1/mq/backfills-registry.mts'
+  - 'backend/api/v1/posts/get-route-access-post.mts'
+  - 'backend/api/v1/posts/admin-moderation-data.mts'
+  - 'backend/api/v1/communities/list-query.mts'
+  - 'backend/api/v1/reports/reports-cursor.mts'
+rule:
+  any:
+    - pattern: 'export default $EXP'
+    - pattern: 'export const $NAME = $INIT'
+    - pattern: 'export let $NAME = $INIT'
+    - pattern: 'export function $NAME($$$) { $$$ }'
+    - pattern: 'export class $NAME { $$$ }'
+    - pattern: 'export { $$$SPECS }'
+    - pattern: "export * from '$MOD'"
+    - pattern: 'export type $NAME = $TYPE'
+    - pattern: 'export interface $NAME { $$$ }'
+examples:
+  - code: 'export const handler = () => {}'
+    isValid: false
+    file: 'backend/api/v1/users/get.mts'
+  - code: 'export function getUser() {}'
+    isValid: false
+    file: 'backend/api/v1/users/get.mts'
+  - code: "app.get('/users', handler)"
+    isValid: true
+    file: 'backend/api/v1/users/get.mts'
+  - code: 'export const handler = () => {}'
+    isValid: true
+    file: 'backend/api/users/index.mts'
+  - code: 'export const handler = () => {}'
+    isValid: true
+    file: 'backend/api/v1/users/shared.mts'
+  - code: 'export const createRequest = () => {}'
+    isValid: true
+    file: 'backend/api/test-helpers/server.mts'
+  - code: 'export const SCHEDULED_JOB_MANIFESTS = []'
+    isValid: true
+    file: 'backend/api/v1/mq/scheduled-job-manifests.mts'

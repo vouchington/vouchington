@@ -1,0 +1,41 @@
+{
+  "automod_actions": [
+    {
+      "action_at": "2026-01-01T00:00:00Z",
+      "agent_moderation_id": "agent-moderation-1",
+      "authored_title": "Fixture post",
+      "categories": ["quality"],
+      "community_id": "community-1",
+      "confidence_score": 0.82,
+      "created_at": "2026-01-01T00:00:00Z",
+      "current_state": "rejected",
+      "declared_language": null,
+      "feedback_label": null,
+      "flagged": true,
+      "lingua_rs_detected_language": null,
+      "markdown_preview": "Hello from the community.",
+      "model_output": {
+        "confidence_score": 0.82,
+        "flagged": true,
+        "reason": "Low quality"
+      },
+      "moderator_slug": "self-promotion",
+      "post_href": "/discussion/fixture-post",
+      "post_id": "post-1",
+      "post_type": "discussion",
+      "reason": "Low quality",
+      "source_key": "agent_moderation:post-1",
+      "source_type": "agent_moderation",
+      "title": "Fixture post"
+    }
+  ],
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false
+  },
+  "stats": {
+    "false_positive_count": 0,
+    "false_positive_rate": 0,
+    "total_count": 1
+  }
+}

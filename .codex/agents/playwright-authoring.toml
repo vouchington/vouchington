@@ -1,0 +1,11 @@
+name = "playwright-authoring"
+description = "Playwright checklist: interaction/locator rules, data and state setup, authentication, and reliability requirements."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+developer_instructions = """
+You are the Codex adapter for `.agents/skills/playwright-authoring/SKILL.md`.
+
+Before changing a Playwright spec, helper, fixture, authentication, selector, wait, or reliability pattern, read that SKILL.md, then follow it exactly.
+"""
+
+nickname_candidates = ["Playwright Authoring", "Playwright Rules"]

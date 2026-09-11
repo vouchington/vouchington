@@ -1,0 +1,266 @@
+id: backend-no-globalthis-fetch
+language: Tsx
+severity: error
+message: 'Backend fetch calls must import fetch from undici and pass an approved external or provider dispatcher'
+files:
+  - 'backend/**/*.ts'
+  - 'backend/**/*.mts'
+  - 'backend/**/*.cts'
+rule:
+  any:
+    - pattern: globalThis.fetch
+    - pattern: global.fetch
+    - all:
+        - kind: call_expression
+        - pattern: fetch($$$ARGS)
+        - not:
+            any:
+              - pattern: 'fetch($URL, { dispatcher: getExternalRequestDispatcher() })'
+              - pattern: 'fetch($URL, { dispatcher: getLongRunningExternalRequestDispatcher() })'
+              - pattern: 'fetch($URL, { dispatcher: getProviderRequestDispatcher($PROVIDER) })'
+              - pattern: fetch($URL, { dispatcher })
+              - pattern: 'fetch($URL, { dispatcher: getExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: 'fetch($URL, { dispatcher: getLongRunningExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: 'fetch($URL, { dispatcher: getProviderRequestDispatcher($PROVIDER), $$$AFTER })'
+              - pattern: fetch($URL, { dispatcher, $$$AFTER })
+              - pattern: 'fetch($URL, { $$$BEFORE, dispatcher: getExternalRequestDispatcher() })'
+              - pattern: 'fetch($URL, { $$$BEFORE, dispatcher: getLongRunningExternalRequestDispatcher() })'
+              - pattern: 'fetch($URL, { $$$BEFORE, dispatcher: getProviderRequestDispatcher($PROVIDER) })'
+              - pattern: fetch($URL, { $$$BEFORE, dispatcher })
+              - pattern: 'fetch($URL, { $$$BEFORE, dispatcher: getExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: 'fetch($URL, { $$$BEFORE, dispatcher: getLongRunningExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: 'fetch($URL, { $$$BEFORE, dispatcher: getProviderRequestDispatcher($PROVIDER), $$$AFTER })'
+              - pattern: fetch($URL, { $$$BEFORE, dispatcher, $$$AFTER })
+    - all:
+        - kind: call_expression
+        - pattern: fetch($$$ARGS)
+        - not:
+            inside:
+              kind: program
+              stopBy: end
+              has:
+                kind: import_statement
+                regex: >-
+                  import\s*\{\s*fetch\s*\}\s*from .undici.
+                stopBy: end
+    - all:
+        - kind: call_expression
+        - pattern: $UNDICI.fetch($$$ARGS)
+        - inside:
+            kind: program
+            stopBy: end
+            has:
+              kind: import_statement
+              any:
+                - pattern: import * as $UNDICI from 'undici'
+                - pattern: import $UNDICI from 'undici'
+              stopBy: end
+        - not:
+            any:
+              - pattern: '$UNDICI.fetch($URL, { dispatcher: getExternalRequestDispatcher() })'
+              - pattern: '$UNDICI.fetch($URL, { dispatcher: getLongRunningExternalRequestDispatcher() })'
+              - pattern: '$UNDICI.fetch($URL, { dispatcher: getProviderRequestDispatcher($PROVIDER) })'
+              - pattern: $UNDICI.fetch($URL, { dispatcher })
+              - pattern: '$UNDICI.fetch($URL, { dispatcher: getExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: '$UNDICI.fetch($URL, { dispatcher: getLongRunningExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: '$UNDICI.fetch($URL, { dispatcher: getProviderRequestDispatcher($PROVIDER), $$$AFTER })'
+              - pattern: $UNDICI.fetch($URL, { dispatcher, $$$AFTER })
+              - pattern: '$UNDICI.fetch($URL, { $$$BEFORE, dispatcher: getExternalRequestDispatcher() })'
+              - pattern: '$UNDICI.fetch($URL, { $$$BEFORE, dispatcher: getLongRunningExternalRequestDispatcher() })'
+              - pattern: '$UNDICI.fetch($URL, { $$$BEFORE, dispatcher: getProviderRequestDispatcher($PROVIDER) })'
+              - pattern: $UNDICI.fetch($URL, { $$$BEFORE, dispatcher })
+              - pattern: '$UNDICI.fetch($URL, { $$$BEFORE, dispatcher: getExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: '$UNDICI.fetch($URL, { $$$BEFORE, dispatcher: getLongRunningExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: '$UNDICI.fetch($URL, { $$$BEFORE, dispatcher: getProviderRequestDispatcher($PROVIDER), $$$AFTER })'
+              - pattern: $UNDICI.fetch($URL, { $$$BEFORE, dispatcher, $$$AFTER })
+    - all:
+        - kind: call_expression
+        - pattern: $FETCH($$$ARGS)
+        - inside:
+            kind: program
+            stopBy: end
+            has:
+              kind: import_statement
+              any:
+                - pattern: import { fetch as $FETCH } from 'undici'
+                - pattern: import { fetch as $FETCH, $AFTER } from 'undici'
+                - pattern: import { $BEFORE, fetch as $FETCH } from 'undici'
+                - pattern: import { $BEFORE, fetch as $FETCH, $AFTER } from 'undici'
+              stopBy: end
+        - not:
+            any:
+              - pattern: '$FETCH($URL, { dispatcher: getExternalRequestDispatcher() })'
+              - pattern: '$FETCH($URL, { dispatcher: getLongRunningExternalRequestDispatcher() })'
+              - pattern: '$FETCH($URL, { dispatcher: getProviderRequestDispatcher($PROVIDER) })'
+              - pattern: $FETCH($URL, { dispatcher })
+              - pattern: '$FETCH($URL, { dispatcher: getExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: '$FETCH($URL, { dispatcher: getLongRunningExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: '$FETCH($URL, { dispatcher: getProviderRequestDispatcher($PROVIDER), $$$AFTER })'
+              - pattern: $FETCH($URL, { dispatcher, $$$AFTER })
+              - pattern: '$FETCH($URL, { $$$BEFORE, dispatcher: getExternalRequestDispatcher() })'
+              - pattern: '$FETCH($URL, { $$$BEFORE, dispatcher: getLongRunningExternalRequestDispatcher() })'
+              - pattern: '$FETCH($URL, { $$$BEFORE, dispatcher: getProviderRequestDispatcher($PROVIDER) })'
+              - pattern: $FETCH($URL, { $$$BEFORE, dispatcher })
+              - pattern: '$FETCH($URL, { $$$BEFORE, dispatcher: getExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: '$FETCH($URL, { $$$BEFORE, dispatcher: getLongRunningExternalRequestDispatcher(), $$$AFTER })'
+              - pattern: '$FETCH($URL, { $$$BEFORE, dispatcher: getProviderRequestDispatcher($PROVIDER), $$$AFTER })'
+              - pattern: $FETCH($URL, { $$$BEFORE, dispatcher, $$$AFTER })
+examples:
+  - code: 'const response = await globalThis.fetch(url)'
+    isValid: false
+    file: 'backend/services/oauth-apple/index.mts'
+  - code: 'const response = await global.fetch(url)'
+    isValid: false
+    file: 'backend/services/oauth-github/index.mts'
+  - code: |-
+      import { fetch } from 'undici'
+      const response = await fetch(url, { method: 'GET' })
+    isValid: false
+    file: 'backend/scripts/validate-seed-rss-feeds/probe.mts'
+  - code: |-
+      const response = await fetch(url, { method: 'GET' })
+    isValid: false
+    file: 'backend/scripts/validate-seed-rss-feeds/probe.mts'
+  - code: |-
+      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      const response = await fetch(url, { dispatcher: getExternalRequestDispatcher() })
+    isValid: false
+    file: 'backend/services/web-risk/check.mts'
+  - code: |-
+      import { fetch as undiciFetch } from 'undici'
+      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      const response = await fetch(url, { dispatcher: getExternalRequestDispatcher() })
+    isValid: false
+    file: 'backend/agents/chat/anthropic-stream.mts'
+  - code: |-
+      import { fetch } from 'undici'
+      import { Agent } from 'undici'
+      const response = await fetch(url, { dispatcher: new Agent() })
+    isValid: false
+    file: 'backend/services/web-risk/check.mts'
+  - code: |-
+      import undici from 'undici'
+      const response = await undici.fetch(url, { method: 'GET' })
+    isValid: false
+    file: 'backend/modules/utils/http.mts'
+  - code: |-
+      import * as undici from 'undici'
+      const response = await undici.fetch(url, { method: 'GET' })
+    isValid: false
+    file: 'backend/services/urls-domains-blacklist-sync/sync.mts'
+  - code: |-
+      import { fetch as undiciFetch } from 'undici'
+      const response = await undiciFetch(url, { method: 'GET' })
+    isValid: false
+    file: 'backend/agents/chat/anthropic-stream.mts'
+  - code: |-
+      import { fetch as httpFetch } from 'undici'
+      const response = await httpFetch(url, { method: 'GET' })
+    isValid: false
+    file: 'backend/agents/chat/anthropic-stream.mts'
+  - code: |-
+      import { fetch as httpFetch, Response } from 'undici'
+      const response = await httpFetch(url, { method: 'GET' })
+    isValid: false
+    file: 'backend/agents/chat/anthropic-stream.mts'
+  - code: |-
+      import { fetch } from 'undici'
+      const response = await fetch(url, { method: 'GET' }, { dispatcher: getExternalRequestDispatcher() })
+    isValid: false
+    file: 'backend/services/web-risk/check.mts'
+  - code: |-
+      import * as http from 'undici'
+      const response = await http.fetch(url, { method: 'GET' })
+    isValid: false
+    file: 'backend/services/urls-domains-blacklist-sync/sync.mts'
+  - code: |-
+      import * as http from 'undici'
+      const response = await http.fetch(url, { dispatcher: new Agent() })
+    isValid: false
+    file: 'backend/modules/utils/http.mts'
+  - code: |-
+      import { fetch as httpFetch } from 'undici'
+      const response = await httpFetch(url, { dispatcher: new Agent() })
+    isValid: false
+    file: 'backend/agents/chat/anthropic-stream.mts'
+  - code: |-
+      import { fetch } from 'undici'
+      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      const response = await fetch(url, { dispatcher: getExternalRequestDispatcher() })
+    isValid: true
+    file: 'backend/services/web-risk/check.mts'
+  - code: |-
+      import { fetch } from 'undici'
+      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      const response = await fetch(url, { dispatcher })
+    isValid: true
+    file: 'backend/services/web-risk/check.mts'
+  - code: |-
+      import undici from 'undici'
+      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      const dispatcher = getExternalRequestDispatcher()
+      const response = await undici.fetch(url, { dispatcher, headers })
+    isValid: true
+    file: 'backend/modules/utils/http.mts'
+  - code: |-
+      import * as http from 'undici'
+      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      const response = await http.fetch(url, { headers, dispatcher: getExternalRequestDispatcher() })
+    isValid: true
+    file: 'backend/modules/utils/http.mts'
+  - code: |-
+      import { fetch as undiciFetch } from 'undici'
+      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      export async function streamAnthropicChat(params: { fetch?: typeof undiciFetch }) {
+        const requestFetch = params.fetch ?? undiciFetch
+        return await requestFetch(url, { dispatcher: getExternalRequestDispatcher() })
+      }
+    isValid: true
+    file: 'backend/agents/chat/anthropic-stream.mts'
+  - code: |-
+      import { fetch as undiciFetch } from 'undici'
+      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      const response = await undiciFetch(url, { dispatcher: getExternalRequestDispatcher() })
+    isValid: true
+    file: 'backend/agents/chat/anthropic-stream.mts'
+  - code: |-
+      import { fetch as httpFetch } from 'undici'
+      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      const response = await httpFetch(url, { headers, dispatcher: getExternalRequestDispatcher() })
+    isValid: true
+    file: 'backend/agents/chat/anthropic-stream.mts'
+  - code: |-
+      import { Response, fetch as httpFetch } from 'undici'
+      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      const response = await httpFetch(url, { headers, dispatcher: getExternalRequestDispatcher() })
+    isValid: true
+    file: 'backend/agents/chat/anthropic-stream.mts'
+  - code: |-
+      import { fetch as undiciFetch } from 'undici'
+      import { getLongRunningExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      const response = await undiciFetch(url, {
+        method: 'POST',
+        dispatcher: getLongRunningExternalRequestDispatcher(),
+        headers,
+      })
+    isValid: true
+    file: 'backend/agents/chat/anthropic-stream.mts'
+  - code: |-
+      import { fetch as undiciFetch } from 'undici'
+      function createExternalFetch(getDispatcher: () => Dispatcher): ExternalFetch {
+        return (input, init) => {
+          const dispatcher = getDispatcher()
+          return undiciFetch(input, { ...init, dispatcher })
+        }
+      }
+    isValid: true
+    file: 'backend/modules/utils/http-dispatchers.mts'
+  - code: |-
+      import { fetch } from 'undici'
+      import { getProviderRequestDispatcher } from '@modules/api-egress-proxy'
+      const response = await fetch(url, {
+        method: 'GET',
+        dispatcher: getProviderRequestDispatcher('fediverse_search_enabled'),
+      })
+    isValid: true
+    file: 'backend/services/fediverse-search/adapters/mastodon.mts'

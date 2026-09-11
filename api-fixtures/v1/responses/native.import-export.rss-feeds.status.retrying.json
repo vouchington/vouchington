@@ -1,0 +1,24 @@
+{
+  "import": {
+    "completed_at": null,
+    "completed_rows": 0,
+    "created_at": "2026-07-14T12:00:00.000Z",
+    "failed_rows": 0,
+    "id": "70000000-0000-7000-8000-000000000001",
+    "pending_rows": 2,
+    "total_rows": 2
+  },
+  "rows": [
+    {
+      "error": "Temporary source fetch failure. Retrying.",
+      "id": "70000000-0000-7000-8000-000000000002",
+      "input": "https://example.test/feed.xml",
+      "status": "pending"
+    },
+    {
+      "id": "70000000-0000-7000-8000-000000000003",
+      "input": "https://invalid.example.test/feed.xml",
+      "status": "pending"
+    }
+  ]
+}

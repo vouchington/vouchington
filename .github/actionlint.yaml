@@ -1,0 +1,10 @@
+self-hosted-runner:
+  labels:
+    - CPU
+    - Docker
+    - macOS
+    - Playwright
+    - Tests
+    - ubicloud-standard-2
+    - ubicloud-standard-4-arm
+    - ubicloud-standard-8-arm

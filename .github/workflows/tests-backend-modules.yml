@@ -1,0 +1,213 @@
+name: Backend Module Tests
+
+on:
+  workflow_call:
+    inputs:
+      publish_coverage:
+        description: 'Whether to publish LCOV for a same-run PR coverage consumer'
+        required: false
+        type: boolean
+        default: false
+      upload_vitest_blob_artifact:
+        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
+        required: false
+        type: boolean
+        default: false
+      full_suite:
+        description: 'Run the complete configured projects instead of selected test files'
+        type: boolean
+        default: true
+      run_tests:
+        description: 'Run Vitest; false skips the test run with no other checks retained'
+        type: boolean
+        default: true
+      selected_test_files:
+        description: 'Space-delimited selected test files when full_suite is false'
+        type: string
+        default: ''
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: 'Run Vitest; false skips the test run with no other checks retained'
+        type: boolean
+        default: true
+      upload_vitest_blob_artifact:
+        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  NODE_ENV: test
+
+jobs:
+  backend-modules:
+    runs-on: [self-hosted, Linux, Docker, Tests]
+    timeout-minutes: 22
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+          fetch-depth: ${{ inputs.publish_coverage && 0 || 1 }}
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          deepen: ${{ inputs.publish_coverage && 'true' || 'false' }}
+      - uses: ./.github/actions/load-runner-env
+        with:
+          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
+      - uses: ./.github/actions/setup-backend
+        id: setup-backend
+        timeout-minutes: 6
+        with:
+          runner-lifecycle: persistent
+      - name: Run backend module tests
+        if: ${{ inputs.run_tests }}
+        env:
+          VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}
+          GIT_COMMIT: ${{ github.sha }}
+          IMAGE_ORIGIN: http://127.0.0.1:3100
+          CI_PROJECT: backend-modules
+          VITEST_CI_REPORTERS: run
+          VITEST_JUNIT_OUTPUT_FILE: backend-modules-test-report.junit.xml
+          VITEST_BLOB_OUTPUT_FILE: .vitest-reports/backend-modules.json
+          VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
+        run: |
+          # VITEST_SELECTED_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
+          # encodeSelectedFiles). A quoted read loop plus a quoted array expansion
+          # preserve paths containing spaces or shell glob metacharacters, replacing the
+          # previous unquoted $VITEST_SELECTED_FILES word-splitting/glob-expansion. A
+          # blank-line guard (mirroring decodeSelectedFiles's blank filter) is required:
+          # `<<<` always appends a trailing newline, so an empty VITEST_SELECTED_FILES
+          # (the full-suite case) still yields one empty-string read, which must not
+          # become a stray positional arg. This avoids `mapfile` (bash 4.0+) since
+          # self-hosted runner shells are not guaranteed to be bash 4+.
+          FILES=()
+          while IFS= read -r file; do
+            if [ -n "$file" ]; then FILES+=("$file"); fi
+          done <<< "$VITEST_SELECTED_FILES"
+          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend-modules --project backend-no-data-mocks --project backend-test-helpers --project backend-contract-program --project backend-email-templates "${FILES[@]}"
+        timeout-minutes: 10
+      - name: Host pressure diagnostics
+        if: failure()
+        continue-on-error: true
+        timeout-minutes: 1
+        run: ./ci/host-pressure-diagnostics.sh
+      - name: Vitest fork diagnostic report summary
+        if: failure()
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          VITEST_FORK_DIAGNOSTIC_DIR: .vitest-reports/fork-diagnostics
+        run: node ci/vitest-diagnostic-report-summary.mts
+      - if: failure()
+        continue-on-error: true
+        timeout-minutes: 1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: vitest-fork-diagnostics-backend-modules
+          path: .vitest-reports/fork-diagnostics
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: ignore
+      - name: Stamp backend-modules coverage provenance
+        id: coverage-stamp-1
+        timeout-minutes: 1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage }}
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node ci/coverage-manifest.mts patch "backend-modules" "$(node -p "JSON.parse(require('node:fs').readFileSync('node_modules/vitest/package.json','utf8')).version")"
+      - name: Upload backend-modules vitest blob to GitHub (fallback)
+        id: vitest-blob-fallback-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-blob
+        with:
+          suite: backend-modules
+      - name: Upload backend-modules vitest blob to GitHub (fallback attempt 2)
+        id: vitest-blob-fallback-1-retry
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
+        timeout-minutes: 3
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-blob
+        with:
+          suite: backend-modules
+          name-suffix: -retry
+      - name: Require a persisted backend-modules vitest blob
+        id: vitest-blob-outcome-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        env:
+          FAMILY: vitest-blob
+          SUITE: backend-modules
+          FIRST_OUTCOME: ${{ steps.vitest-blob-fallback-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.vitest-blob-fallback-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Persist backend-modules Vitest report attempt (attempt 1)
+        id: vitest-report-attempt-1
+        if: ${{ always() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-report-attempt
+        with:
+          suite: backend-modules
+      - name: Persist backend-modules Vitest report attempt (attempt 2)
+        id: vitest-report-attempt-1-retry
+        if: ${{ always() && inputs.run_tests && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-1.outcome == 'failure' }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: ./.github/actions/upload-vitest-report-attempt
+        with:
+          suite: backend-modules
+          name-suffix: -retry
+      - name: Assert backend-modules Vitest report attempt persisted
+        id: vitest-report-attempt-1-outcome
+        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        timeout-minutes: 1
+        env:
+          FAMILY: vitest-report-attempt
+          SUITE: backend-modules
+          FIRST_OUTCOME: ${{ steps.vitest-report-attempt-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.vitest-report-attempt-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload backend-modules coverage pair to GitHub (fallback attempt 1)
+        id: coverage-fallback-1-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-coverage-pair
+        with:
+          suite: backend-modules
+      - name: Upload backend-modules coverage pair to GitHub (fallback attempt 2)
+        id: coverage-fallback-2-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-coverage-pair
+        with:
+          suite: backend-modules
+          name-suffix: -retry
+      - name: Require a persisted backend-modules coverage pair
+        id: coverage-outcome-1
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        timeout-minutes: 1
+        env:
+          FAMILY: coverage-pair
+          SUITE: backend-modules
+          FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"

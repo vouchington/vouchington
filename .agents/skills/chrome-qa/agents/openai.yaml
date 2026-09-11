@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Chrome QA'
+  short_description: 'Browser QA of the Voucha local stack with persona switching'
+  default_prompt: 'Use $chrome-qa to walk key user flows in the Voucha local browser with persona login via OTP deep-link.'

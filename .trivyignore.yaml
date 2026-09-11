@@ -1,0 +1,6 @@
+# Trivy vulnerability ignore file. Future entries must use exact deb/apk/rpm package purls, state
+# `Not exploitable: <evidence>. Cleanup: https://github.com/jonathanong/filaments/issues/<N>`, and
+# expire within 30 days.
+# See: https://trivy.dev/docs/latest/configuration/filtering/#trivyignoreyaml
+
+vulnerabilities: []

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Fails if running in a worktree that still has the main worktree's fixed entrypoint ports.
+# Usage: ./dev/check-worktree-ports
+# Called by dev/playwright-server-check and available for other scripts.
+
+GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
+
+# Main worktree uses fixed entrypoint ports intentionally
+if [ "$GIT_DIR" = ".git" ]; then
+  exit 0
+fi
+
+WORKER_PORT=${WORKER_PORT:-8787}
+
+errors=()
+[ "$WORKER_PORT" = "8787" ] && errors+=("WORKER_PORT=8787")
+
+if [ ${#errors[@]} -gt 0 ]; then
+  echo "Error: worktree is using main worktree's fixed entrypoint ports: ${errors[*]}" >&2
+  echo "This worktree was not properly initialized. Run:" >&2
+  echo "  ./dev/initialize" >&2
+  exit 1
+fi

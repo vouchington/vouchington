@@ -1,0 +1,121 @@
+name: EXPLAIN ANALYZE
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  explain-analyze:
+    runs-on: [self-hosted, Linux, Docker]
+    timeout-minutes: 10
+    env:
+      S3_BUCKET_IMAGES: test-images
+      S3_BUCKET_IMAGE_UPLOADS: test-image-uploads
+      S3_BUCKET_SITEMAPS: test-sitemaps
+      S3_BUCKET_RENDERS: test-renders
+      S3_BUCKET_ASSETS: test-assets
+      S3_BUCKET_CRAWLS: test-crawls
+      S3_BUCKET_USER_EXPORTS: test-user-exports
+      S3_BUCKET_QUARANTINE: test-quarantine
+      S3_BUCKET_BEDROCK_BATCH: test-bedrock-batch
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          # work_mem is intentionally undeclared everywhere else in this repo — Aurora Serverless
+          # v2 (production) auto-tunes it from live ACU capacity, so there is no fixed production
+          # value to mirror. This gate is the one place that needs a *fixed* value: it asserts a
+          # zero-tolerance disk-spill/temp-I/O baseline, and until now it ran against Postgres's
+          # stock 4MB default instead of a value this harness chose. Pinning work_mem removes that
+          # one undeclared input; it does not claim to control every input that decides
+          # spill-vs-no-spill (seed-data volume and planner statistics still vary run to run). 32MB
+          # is picked from real evidence, not target-fit to make the gate pass: the actual failing
+          # run (workflow run 33651571167) recorded getPostFeedIds:heavy* external-merge disk sorts
+          # of 4504-5688kB — 32MB is ~6x that observed worst case, enough margin for seed-data
+          # growth, while staying trivially safe against max_connections=300 (work_mem is per
+          # sort/hash node, not per connection, and this harness runs scenarios serially through a
+          # small pool). Raising work_mem reduces spill pressure for a given plan, but it also feeds
+          # the planner's cost model, so it is possible in principle for a higher work_mem to make a
+          # different plan cheaper; a new resource-pressure fingerprint after this change would be a
+          # real finding to investigate, not assumed impossible.
+          #
+          # explain-analyze.mts also issues `SET LOCAL work_mem` per capture (EXPLAIN_WORK_MEM),
+          # before PREPARE, so planning and execution agree even for a forced generic plan. This
+          # server-level default still matters: it covers db:migrate, explain:seed, and any
+          # planning outside the capture transaction, which the per-capture SET LOCAL does not
+          # reach. Keep the two values equal — see #11081.
+          POSTGRES_INITDB_ARGS: '-c max_connections=300 -c work_mem=32MB'
+        ports:
+          - 5432
+        # The complete evidence corpus occupies about 600MB, with PostgreSQL retaining another
+        # roughly 400MB of WAL. Keep workflow-local headroom for schema and fixture growth.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /var/lib/postgresql:rw,size=2g
+      valkey:
+        image: valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        ports:
+          - 6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /data:rw,size=64m
+
+    steps:
+      - name: Set service ports
+        timeout-minutes: 1
+        run: |
+          echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
+          echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-backend
+        id: setup-backend
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - working-directory: backend
+        run: node data-stores/psql/migrate.mts
+        timeout-minutes: 3
+      - name: Seed development data
+        run: node backend/scripts/seeds/dev-seed.mts
+        timeout-minutes: 3
+      - run: node backend/scripts/explain-analyze/seed.mts
+        timeout-minutes: 3
+      - run: node backend/scripts/explain-analyze/run.mts
+        timeout-minutes: 10
+        env:
+          EXPLAIN_PLAN_CACHE_MODE: compare
+      - name: Enforce plan gates and write job summary
+        timeout-minutes: 2
+        run: node backend/scripts/explain-analyze/analyze.mts >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload EXPLAIN ANALYZE results
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: explain-analyze-results
+          path: backend/scripts/explain-analyze/output/
+          retention-days: 1

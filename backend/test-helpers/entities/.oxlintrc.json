@@ -1,0 +1,44 @@
+{
+  "$schema": "https://oxc.rs/schema/oxlintrc.json",
+  "extends": ["../../../.oxlintrc.json"],
+  // "extends" does not inherit the parent's "plugins" array (verified empirically: omitting this
+  // causes oxlint to fall back to its own default plugin set instead, which flags unrelated
+  // pre-existing code across this entire directory under rules the root config never enables).
+  // Keep this in exact sync with the root .oxlintrc.json "plugins" array.
+  "plugins": ["react", "nextjs", "jsx-a11y", "react-perf", "vitest", "jest", "promise", "oxc"],
+  // Root overrides do not correctly re-match paths once a directory has its own .oxlintrc.json,
+  // because their globs are evaluated relative to this config's directory. Keep the backend
+  // transaction guards and test-helper relaxations value-equal with their root overrides.
+  "rules": {
+    "no-mistakes/postgres-no-manual-transaction": [
+      "error",
+      {
+        "owners": [
+          "backend/data-stores/psql/explain-analyze.mts",
+          "backend/test-helpers/postgres-advisory-lock.mts",
+          "backend/test-helpers/crawl-urls-queue-lock.mts",
+          "backend/test-helpers/entities/moderation-transparency-date-reservation.mts"
+        ]
+      }
+    ],
+    "no-mistakes/postgres-no-unbounded-query-fanout": "error",
+    "no-void": "off",
+    "no-await-in-loop": "off",
+    "react/jsx-no-target-blank": "off",
+    "nextjs/no-html-link-for-pages": "off"
+  },
+  "overrides": [
+    {
+      // oxc/no-barrel-file inline suppressions don't take effect here: the rule anchors its
+      // diagnostic to offset 0 of the file, which sits at or before any oxlint-disable comment's
+      // own span, so oxlint reports both the violation and an "unused disable directive" error at
+      // once (verified empirically). This is a deliberate single import point for test-only entity
+      // factory helpers; splitting it would force every test file to import from 30+ individual
+      // modules for no behavioral benefit (this module is never bundled for production).
+      "files": ["index.mts"],
+      "rules": {
+        "oxc/no-barrel-file": "off"
+      }
+    }
+  ]
+}

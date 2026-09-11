@@ -1,0 +1,197 @@
+{
+  "cluster_mode": "entity",
+  "duplicate_clusters": [
+    {
+      "clusters": [
+        {
+          "admin_action_path": "/review/native-sixth-post",
+          "entity_id": "00000000-0000-7000-8000-000000000106",
+          "entity_type": "post",
+          "first_reported_at": "2026-06-01T12:00:00.000Z",
+          "id": "post:00000000-0000-7000-8000-000000000106",
+          "indicators": {
+            "content_hash_duplicate": true,
+            "embeddings_similarity": false,
+            "velocity_spike": false
+          },
+          "last_reported_at": "2026-06-01T12:01:00.000Z",
+          "reason_breakdown": [
+            {
+              "count": 1,
+              "reason": "spam"
+            }
+          ],
+          "report_count": 1,
+          "reporter_count": 1,
+          "reports": [],
+          "target_available": true,
+          "target_content": null,
+          "target_is_restricted": false,
+          "target_label": "Native sixth post",
+          "target_path": "/review/native-sixth-post",
+          "target_user_id": "00000000-0000-7000-8400-000000000106"
+        },
+        {
+          "admin_action_path": "/review/native-fourth-post",
+          "entity_id": "00000000-0000-7000-8000-000000000104",
+          "entity_type": "post",
+          "first_reported_at": "2026-06-01T12:03:00.000Z",
+          "id": "post:00000000-0000-7000-8000-000000000104",
+          "indicators": {
+            "content_hash_duplicate": true,
+            "embeddings_similarity": false,
+            "velocity_spike": false
+          },
+          "last_reported_at": "2026-06-01T12:04:00.000Z",
+          "reason_breakdown": [
+            {
+              "count": 4,
+              "reason": "spam"
+            }
+          ],
+          "report_count": 4,
+          "reporter_count": 3,
+          "reports": [],
+          "target_available": true,
+          "target_content": null,
+          "target_is_restricted": false,
+          "target_label": "Native fourth post",
+          "target_path": "/review/native-fourth-post",
+          "target_user_id": "00000000-0000-7000-8400-000000000104"
+        },
+        {
+          "admin_action_path": "/review/native-fifth-post",
+          "entity_id": "00000000-0000-7000-8000-000000000105",
+          "entity_type": "post",
+          "first_reported_at": "2026-06-01T12:02:00.000Z",
+          "id": "post:00000000-0000-7000-8000-000000000105",
+          "indicators": {
+            "content_hash_duplicate": true,
+            "embeddings_similarity": false,
+            "velocity_spike": false
+          },
+          "last_reported_at": "2026-06-01T12:03:00.000Z",
+          "reason_breakdown": [
+            {
+              "count": 2,
+              "reason": "spam"
+            }
+          ],
+          "report_count": 2,
+          "reporter_count": 2,
+          "reports": [],
+          "target_available": true,
+          "target_content": null,
+          "target_is_restricted": false,
+          "target_label": "Native fifth post",
+          "target_path": "/review/native-fifth-post",
+          "target_user_id": "00000000-0000-7000-8400-000000000105"
+        }
+      ],
+      "first_reported_at": "2026-06-01T12:00:00.000Z",
+      "id": "content-hash:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "last_reported_at": "2026-06-01T12:04:00.000Z",
+      "post_count": 3,
+      "reason_breakdown": [
+        {
+          "count": 7,
+          "reason": "spam"
+        }
+      ],
+      "report_count": 7,
+      "signal": "content_hash_duplicate"
+    }
+  ],
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "has_previous_page": true,
+    "start_cursor": "eyJjbHVzdGVyIjp0cnVlLCJjcmVhdGVkX2F0IjoiMjAyNi0wNi0wMVQxMjowNDowMC4wMDAwMDBaIiwiZW50aXR5X3R5cGUiOiJwb3N0IiwiaWQiOiIwMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDAxMDQiLCJzb3J0IjoiY3JlYXRlZF9hdF9kZXNjIiwic3RhdHVzIjoicGVuZGluZyIsInNjb3BlIjoie1wiYXVkaWVuY2VcIjpcInN0YWZmXCIsXCJvd25lcklkXCI6bnVsbH0ifQ"
+  },
+  "results": [
+    {
+      "admin_action_path": "/review/native-fourth-post",
+      "entity_id": "00000000-0000-7000-8000-000000000104",
+      "entity_type": "post",
+      "first_reported_at": "2026-06-01T12:03:00.000Z",
+      "id": "post:00000000-0000-7000-8000-000000000104",
+      "indicators": {
+        "content_hash_duplicate": true,
+        "embeddings_similarity": false,
+        "velocity_spike": false
+      },
+      "last_reported_at": "2026-06-01T12:04:00.000Z",
+      "reason_breakdown": [
+        {
+          "count": 4,
+          "reason": "spam"
+        }
+      ],
+      "report_count": 4,
+      "reporter_count": 3,
+      "reports": [],
+      "target_available": true,
+      "target_content": null,
+      "target_is_restricted": false,
+      "target_label": "Native fourth post",
+      "target_path": "/review/native-fourth-post",
+      "target_user_id": "00000000-0000-7000-8400-000000000104"
+    },
+    {
+      "admin_action_path": "/review/native-fifth-post",
+      "entity_id": "00000000-0000-7000-8000-000000000105",
+      "entity_type": "post",
+      "first_reported_at": "2026-06-01T12:02:00.000Z",
+      "id": "post:00000000-0000-7000-8000-000000000105",
+      "indicators": {
+        "content_hash_duplicate": true,
+        "embeddings_similarity": false,
+        "velocity_spike": false
+      },
+      "last_reported_at": "2026-06-01T12:03:00.000Z",
+      "reason_breakdown": [
+        {
+          "count": 2,
+          "reason": "spam"
+        }
+      ],
+      "report_count": 2,
+      "reporter_count": 2,
+      "reports": [],
+      "target_available": true,
+      "target_content": null,
+      "target_is_restricted": false,
+      "target_label": "Native fifth post",
+      "target_path": "/review/native-fifth-post",
+      "target_user_id": "00000000-0000-7000-8400-000000000105"
+    },
+    {
+      "admin_action_path": "/review/native-sixth-post",
+      "entity_id": "00000000-0000-7000-8000-000000000106",
+      "entity_type": "post",
+      "first_reported_at": "2026-06-01T12:00:00.000Z",
+      "id": "post:00000000-0000-7000-8000-000000000106",
+      "indicators": {
+        "content_hash_duplicate": true,
+        "embeddings_similarity": false,
+        "velocity_spike": false
+      },
+      "last_reported_at": "2026-06-01T12:01:00.000Z",
+      "reason_breakdown": [
+        {
+          "count": 1,
+          "reason": "spam"
+        }
+      ],
+      "report_count": 1,
+      "reporter_count": 1,
+      "reports": [],
+      "target_available": true,
+      "target_content": null,
+      "target_is_restricted": false,
+      "target_label": "Native sixth post",
+      "target_path": "/review/native-sixth-post",
+      "target_user_id": "00000000-0000-7000-8400-000000000106"
+    }
+  ]
+}

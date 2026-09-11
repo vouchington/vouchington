@@ -1,0 +1,36 @@
+{
+  "entries": [
+    {
+      "admin_action_path": null,
+      "case_id": "case-1",
+      "community_ban_evasion": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "entity_id": "post-1",
+      "entity_type": "post",
+      "id": "queue-1",
+      "is_system_generated": false,
+      "judgement": null,
+      "note": null,
+      "post_moderation_context": null,
+      "queue_source": "report",
+      "reason": "spam",
+      "report_count": 1,
+      "reporter_user_id": "user-1",
+      "reporter_username": null,
+      "resolved_by_id": null,
+      "reviewed_at": null,
+      "status": "pending",
+      "target_available": true,
+      "target_content": null,
+      "target_label": "Fixture post",
+      "target_path": "/discussion/fixture-post",
+      "target_user_id": null
+    }
+  ],
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "viewer_tier": "moderator"
+}

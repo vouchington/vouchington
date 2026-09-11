@@ -1,0 +1,29 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "00000000-0000-7000-8000-000000000713"
+  },
+  "results": [
+    {
+      "approved_at": null,
+      "approved_by_id": null,
+      "body_html": "<p>I cannot access my account.</p>",
+      "body_text": "I cannot access my account.",
+      "created_at": "2026-07-01T12:11:00.000Z",
+      "created_by_id": null,
+      "direction": "inbound",
+      "drafted_at": null,
+      "edited_at": null,
+      "edited_by_id": null,
+      "email_from": "traveler@example.test",
+      "email_message_id": "fixture-message@example.test",
+      "email_subject": "Account access help",
+      "email_to": "support@voucha.ai",
+      "id": "00000000-0000-7000-8000-000000000713",
+      "sent_at": null,
+      "support_thread_id": "00000000-0000-7000-8000-000000000712",
+      "updated_at": "2026-07-01T12:11:00.000Z"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@services/activitypub-delivery",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/activitypub-uris": "workspace:^",
+    "@modules/http-signatures": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/remote-actors": "workspace:^",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2",
+    "ssrf-guard": "^1.0.0",
+    "undici": "^8.10.2"
+  },
+  "devDependencies": {
+    "@services/entity-relations": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^",
+    "uuid": "^14.0.2"
+  }
+}

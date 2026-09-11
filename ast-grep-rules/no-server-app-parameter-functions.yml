@@ -1,0 +1,102 @@
+id: no-server-app-parameter-functions
+language: Tsx
+severity: error
+message: 'Functions in backend/entrypoints/api/ must not accept (app: Application) parameter; register routes inline instead'
+files:
+  - 'backend/entrypoints/api/**/*.mts'
+ignores:
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+rule:
+  any:
+    - pattern: 'function $NAME(app: Application) { $$$ }'
+    - pattern: 'function $NAME(app: Application): $RET { $$$ }'
+    - pattern: 'function $NAME(app: Application, $$$) { $$$ }'
+    - pattern: 'function $NAME(app: Application, $$$): $RET { $$$ }'
+    # app: Application at non-first position
+    - pattern: 'function $NAME($$$, app: Application) { $$$ }'
+    - pattern: 'function $NAME($$$, app: Application): $RET { $$$ }'
+    - pattern: 'function $NAME($$$, app: Application, $$$) { $$$ }'
+    - pattern: 'function $NAME($$$, app: Application, $$$): $RET { $$$ }'
+    # async function variants
+    - pattern: 'async function $NAME(app: Application) { $$$ }'
+    - pattern: 'async function $NAME(app: Application): $RET { $$$ }'
+    - pattern: 'async function $NAME(app: Application, $$$) { $$$ }'
+    - pattern: 'async function $NAME(app: Application, $$$): $RET { $$$ }'
+    - pattern: 'async function $NAME($$$, app: Application) { $$$ }'
+    - pattern: 'async function $NAME($$$, app: Application): $RET { $$$ }'
+    - pattern: 'async function $NAME($$$, app: Application, $$$) { $$$ }'
+    - pattern: 'async function $NAME($$$, app: Application, $$$): $RET { $$$ }'
+    - pattern: '(app: Application) => $BODY'
+    - pattern: '(app: Application): $RET => $BODY'
+    - pattern: '(app: Application, $$$) => $BODY'
+    - pattern: '(app: Application, $$$): $RET => $BODY'
+    # app: Application at non-first position
+    - pattern: '($$$, app: Application) => $BODY'
+    - pattern: '($$$, app: Application): $RET => $BODY'
+    - pattern: '($$$, app: Application, $$$) => $BODY'
+    - pattern: '($$$, app: Application, $$$): $RET => $BODY'
+    # async arrow function variants
+    - pattern: 'async (app: Application) => $BODY'
+    - pattern: 'async (app: Application): $RET => $BODY'
+    - pattern: 'async (app: Application, $$$) => $BODY'
+    - pattern: 'async (app: Application, $$$): $RET => $BODY'
+    - pattern: 'async ($$$, app: Application) => $BODY'
+    - pattern: 'async ($$$, app: Application): $RET => $BODY'
+    - pattern: 'async ($$$, app: Application, $$$) => $BODY'
+    - pattern: 'async ($$$, app: Application, $$$): $RET => $BODY'
+    # anonymous function expression variants (function keyword, no $NAME)
+    - pattern: 'function(app: Application) { $$$ }'
+    - pattern: 'function(app: Application): $RET { $$$ }'
+    - pattern: 'function(app: Application, $$$) { $$$ }'
+    - pattern: 'function(app: Application, $$$): $RET { $$$ }'
+    - pattern: 'function($$$, app: Application) { $$$ }'
+    - pattern: 'function($$$, app: Application): $RET { $$$ }'
+    - pattern: 'function($$$, app: Application, $$$) { $$$ }'
+    - pattern: 'function($$$, app: Application, $$$): $RET { $$$ }'
+    - pattern: 'async function(app: Application) { $$$ }'
+    - pattern: 'async function(app: Application): $RET { $$$ }'
+    - pattern: 'async function(app: Application, $$$) { $$$ }'
+    - pattern: 'async function(app: Application, $$$): $RET { $$$ }'
+    - pattern: 'async function($$$, app: Application) { $$$ }'
+    - pattern: 'async function($$$, app: Application): $RET { $$$ }'
+    - pattern: 'async function($$$, app: Application, $$$) { $$$ }'
+    - pattern: 'async function($$$, app: Application, $$$): $RET { $$$ }'
+examples:
+  - code: "function registerRoutes(app: Application) { app.get('/'); }"
+    isValid: false
+    file: 'backend/entrypoints/api/routes.mts'
+  - code: 'const setup = (app: Application) => { app.use(mw) }'
+    isValid: false
+    file: 'backend/entrypoints/api/setup.mts'
+  - code: "function registerRoutes(ctx: Context, app: Application) { app.get('/'); }"
+    isValid: false
+    file: 'backend/entrypoints/api/routes.mts'
+  - code: 'const setup = (ctx: Context, app: Application) => { app.use(mw) }'
+    isValid: false
+    file: 'backend/entrypoints/api/setup.mts'
+  - code: 'async function registerRoutes(app: Application) { await app.ready() }'
+    isValid: false
+    file: 'backend/entrypoints/api/routes.mts'
+  - code: 'const setup = async (app: Application) => { await app.use(mw) }'
+    isValid: false
+    file: 'backend/entrypoints/api/setup.mts'
+  - code: "function getHandler() { return (req, res) => res.send('ok') }"
+    isValid: true
+    file: 'backend/entrypoints/api/routes.mts'
+  - code: 'const setup = function(app: Application) { app.use(mw) }'
+    isValid: false
+    file: 'backend/entrypoints/api/setup.mts'
+  - code: 'const setup = async function(app: Application) { await app.use(mw) }'
+    isValid: false
+    file: 'backend/entrypoints/api/setup.mts'
+  # return-type annotation variants — patterns must catch these even with explicit return types
+  - code: "function registerRoutes(app: Application): void { app.get('/'); }"
+    isValid: false
+    file: 'backend/entrypoints/api/routes.mts'
+  - code: 'const setup = (app: Application): Promise<void> => { app.use(mw) }'
+    isValid: false
+    file: 'backend/entrypoints/api/setup.mts'
+  - code: 'const setup = async (app: Application): Promise<void> => { await app.use(mw) }'
+    isValid: false
+    file: 'backend/entrypoints/api/setup.mts'

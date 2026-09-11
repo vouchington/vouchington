@@ -1,0 +1,14 @@
+{
+  "user_tags": [
+    {
+      "id": "user-tag-bot",
+      "label": "Bot",
+      "slug": "bot"
+    },
+    {
+      "id": "user-tag-spammer",
+      "label": "Spammer",
+      "slug": "spammer"
+    }
+  ]
+}

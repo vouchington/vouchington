@@ -1,0 +1,24 @@
+name: Sync Articles
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'articles/**'
+      - 'backend/services/articles/**'
+      - '.github/workflows/sync-articles.yml'
+
+permissions: {}
+
+concurrency:
+  group: sync-articles-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  complete:
+    runs-on: [self-hosted]
+    timeout-minutes: 1
+    permissions: {}
+    steps:
+      - run: 'true'

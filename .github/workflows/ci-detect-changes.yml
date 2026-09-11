@@ -1,0 +1,211 @@
+name: CI detect changes
+
+on:
+  workflow_call:
+    inputs:
+      skip-ci-producers:
+        required: true
+        type: string
+      skip-expensive-jobs:
+        required: true
+        type: string
+      skip-settled-producers:
+        required: true
+        type: string
+      pr-labels-json:
+        required: true
+        type: string
+      has-playwright-full:
+        required: true
+        type: string
+      has-vitest-full:
+        required: true
+        type: string
+    outputs:
+      backend:
+        value: ${{ jobs.detect-changes.outputs.backend }}
+      backend-credentialed:
+        value: ${{ jobs.detect-changes.outputs.backend-credentialed }}
+      web:
+        value: ${{ jobs.detect-changes.outputs.web }}
+      storybook:
+        value: ${{ jobs.detect-changes.outputs.storybook }}
+      playwright:
+        value: ${{ jobs.detect-changes.outputs.playwright }}
+      web-integration:
+        value: ${{ jobs.detect-changes.outputs.web-integration }}
+      postgres-schema:
+        value: ${{ jobs.detect-changes.outputs.postgres-schema }}
+      ts-shared:
+        value: ${{ jobs.detect-changes.outputs.ts-shared }}
+      workflow-action-changes:
+        value: ${{ jobs.detect-changes.outputs.workflow-action-changes }}
+      tooling:
+        value: ${{ jobs.detect-changes.outputs.tooling }}
+      cloudflare-worker:
+        value: ${{ jobs.detect-changes.outputs.cloudflare-worker }}
+      lambdas:
+        value: ${{ jobs.detect-changes.outputs.lambdas }}
+      explain-analyze:
+        value: ${{ jobs.detect-changes.outputs.explain-analyze }}
+      build-backend:
+        value: ${{ jobs.detect-changes.outputs.build-backend }}
+      build-backend-infra:
+        value: ${{ jobs.detect-changes.outputs.build-backend-infra }}
+      build-web:
+        value: ${{ jobs.detect-changes.outputs.build-web }}
+      build-web-infra:
+        value: ${{ jobs.detect-changes.outputs.build-web-infra }}
+      shell-scripts:
+        value: ${{ jobs.detect-changes.outputs.shell-scripts }}
+      portability:
+        value: ${{ jobs.detect-changes.outputs.portability }}
+      playwright-credentialed:
+        value: ${{ jobs.detect-changes.outputs.playwright-credentialed }}
+      docs-only:
+        value: ${{ jobs.detect-changes.outputs.docs-only }}
+      skip-ci-producers:
+        value: ${{ jobs.detect-changes.outputs.skip-ci-producers }}
+      skip-expensive-jobs:
+        value: ${{ jobs.detect-changes.outputs.skip-expensive-jobs }}
+      skip-settled-producers:
+        value: ${{ jobs.detect-changes.outputs.skip-settled-producers }}
+      pr-labels-json:
+        value: ${{ jobs.detect-changes.outputs.pr-labels-json }}
+      has-playwright-full:
+        value: ${{ jobs.detect-changes.outputs.has-playwright-full }}
+      has-vitest-full:
+        value: ${{ jobs.detect-changes.outputs.has-vitest-full }}
+      trusted-secret-context:
+        value: ${{ jobs.detect-changes.outputs.trusted-secret-context }}
+      dependency-bot-test-context:
+        value: ${{ jobs.detect-changes.outputs.dependency-bot-test-context }}
+
+permissions: {}
+
+jobs:
+  detect-changes:
+    runs-on: [self-hosted]
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      backend-credentialed: ${{ steps.filter.outputs.backend-credentialed }}
+      web: ${{ steps.refine-runtime-web.outputs.web }}
+      storybook: ${{ steps.refine-runtime-web.outputs.storybook }}
+      playwright: ${{ steps.refine-runtime-web.outputs.playwright }}
+      web-integration: ${{ steps.refine-runtime-web.outputs.web-integration }}
+      postgres-schema: ${{ steps.filter.outputs.postgres-schema }}
+      ts-shared: ${{ steps.filter.outputs.ts-shared }}
+      workflow-action-changes: ${{ steps.filter.outputs.workflow-action-changes }}
+      tooling: ${{ steps.filter.outputs.tooling }}
+      cloudflare-worker: ${{ steps.filter.outputs.cloudflare-worker }}
+      lambdas: ${{ steps.filter.outputs.lambdas }}
+      explain-analyze: ${{ steps.filter.outputs.explain-analyze }}
+      build-backend: ${{ steps.refine-runtime-web.outputs.build-backend }}
+      build-backend-infra: ${{ steps.filter.outputs.build-backend-infra }}
+      build-web: ${{ steps.refine-runtime-web.outputs.build-web }}
+      build-web-infra: ${{ steps.filter.outputs.build-web-infra }}
+      shell-scripts: ${{ steps.filter.outputs.shell-scripts }}
+      portability: ${{ steps.filter.outputs.portability }}
+      playwright-credentialed: ${{ steps.filter.outputs.playwright-credentialed }}
+      docs-only: ${{ steps.docs-check.outputs.docs-only }}
+      skip-ci-producers: ${{ steps.ready-dedupe-forward.outputs.skip-ci-producers }}
+      skip-expensive-jobs: ${{ steps.ready-dedupe-forward.outputs.skip-expensive-jobs }}
+      skip-settled-producers: ${{ steps.ready-dedupe-forward.outputs.skip-settled-producers }}
+      pr-labels-json: ${{ steps.ready-dedupe-forward.outputs.pr-labels-json }}
+      has-playwright-full: ${{ steps.ready-dedupe-forward.outputs.has-playwright-full }}
+      has-vitest-full: ${{ steps.ready-dedupe-forward.outputs.has-vitest-full }}
+      trusted-secret-context: ${{ steps.trusted-context.outputs.trusted }}
+      dependency-bot-test-context: ${{ steps.trusted-context.outputs.dependency-bot-test }}
+    steps:
+      - name: Forward CI producer skip decision
+        id: ready-dedupe-forward
+        env:
+          SKIP_CI_PRODUCERS: ${{ inputs.skip-ci-producers }}
+          SKIP_EXPENSIVE_JOBS: ${{ inputs.skip-expensive-jobs }}
+          SKIP_SETTLED_PRODUCERS: ${{ inputs.skip-settled-producers }}
+          PR_LABELS_JSON: ${{ inputs.pr-labels-json }}
+          HAS_PLAYWRIGHT_FULL: ${{ inputs.has-playwright-full }}
+          HAS_VITEST_FULL: ${{ inputs.has-vitest-full }}
+        run: |
+          {
+            echo "skip-ci-producers=$SKIP_CI_PRODUCERS"
+            echo "skip-expensive-jobs=$SKIP_EXPENSIVE_JOBS"
+            echo "skip-settled-producers=$SKIP_SETTLED_PRODUCERS"
+            echo "pr-labels-json=$PR_LABELS_JSON"
+            echo "has-playwright-full=$HAS_PLAYWRIGHT_FULL"
+            echo "has-vitest-full=$HAS_VITEST_FULL"
+          } >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          deepen: 'true'
+      - name: Check for docs-only changes
+        id: docs-check
+        run: |
+          if [ -n "$PR_BASE" ]; then
+            CHANGED=$(git diff --name-only "$PR_BASE"..."$HEAD")
+          else
+            CHANGED=$(git diff --name-only "$HEAD"~1 "$HEAD" 2>/dev/null || git ls-tree -r --name-only "$HEAD")
+          fi
+          NON_DOCS=$(echo "$CHANGED" | grep -vE '\.mdx?$' || true)
+          TEST_FIXTURE_DOCS=$(echo "$CHANGED" | grep -E '^(\.github/workflows/(README|VITEST|CLAUDE|RUNNERS|WORKFLOWS|AUTHORING|reference-step-timeouts|reference-runner-types|reference-artifact-rerun-safety|reference-runner-fleet-capacity|reference-aws-codebuild-service-quotas-and-concurrency|reference-harness-automation-accepted-risk|reference-self-hosted-runner-caching|reference-self-hosted-runner-secret-isolation|reference-self-hosted-runner-secret-isolation-accepted-residuals-7572|reference-fixed-branch-automation-prs|reference-fix-main-dependency-policy|reference-workflow-automation-map|reference-core-ci|reference-vitest|reference-playwright-and-storybook|reference-deploy-and-release|reference-harness-automation|reference-workflow-change-preflight|reference-maintenance-security-and-utilities)\.md|\.agents/skills/.+\.mdx?|CLAUDE\.md|docs/development/(ci|reference-ci-classifying-transient-infrastructure-failures|reference-ci-ci-job-conditions|reference-ci-ci-job-timeout-budgets|reference-ci-test-workflows|reference-ci-standalone-workflow-checks|dependency-updates|first-party-dependencies|reference-dependency-updates-(first-party-release-gate-exemptions|frozen-install-policy|supply-chain-policy))\.md|docs/checklists/github-actions\.md|docs/prompts/.+\.mdx?|dev/(README|reference-bedrock-embeddings-local|reference-command-catalog)\.md|backend/README\.md|backend/agents/(CLAUDE|README|reference-tests)\.md|backend/data-stores/psql/(reference-migrations-views-and-config-driven|schema-snapshot/README)\.md|docs/overview/architecture/agent-tools/.+|docs/overview/infrastructure/reference-deployment-ci-cd-flow\.md)$' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "docs-only=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$NON_DOCS" ] && [ -z "$TEST_FIXTURE_DOCS" ]; then
+            echo "docs-only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs-only=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.sha }}
+      - name: Check for trusted secret context
+        id: trusted-context
+        run: |
+          trusted=true
+          dependency_bot_test=false
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            trusted=false
+            if [ "$HEAD_REPO" = "$BASE_REPO" ]; then
+              case "$ACTOR" in
+                "dependabot[bot]"|"renovate[bot]")
+                  dependency_bot_test=true
+                  ;;
+                *)
+                  trusted=true
+                  ;;
+              esac
+            fi
+          fi
+
+          {
+            echo "trusted=$trusted"
+            echo "dependency-bot-test=$dependency_bot_test"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.event.pull_request.user.login || github.actor }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          BASE_REPO: ${{ github.repository }}
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: .github/ci-path-filters.yml
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: refine-runtime-web
+        with:
+          predicate-quantifier: every
+          filters: .github/ci-runtime-path-filters.yml

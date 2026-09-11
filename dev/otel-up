@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Start the local OTel collector + Jaeger stack (opt-in, for local trace testing).
+# Stop with:  ./dev/otel-down
+# Jaeger UI:  http://localhost:16686
+set -euo pipefail
+
+usage() { echo "Usage: ./dev/otel-up"; }
+if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
+if [ "$#" -ne 0 ]; then echo "Error: ./dev/otel-up does not accept arguments." >&2; usage >&2; exit 2; fi
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+docker compose -f "$REPO_ROOT/dev/otel/compose.yaml" up -d
+
+echo ""
+echo "OTel stack started."
+echo "  Collector OTLP HTTP: http://localhost:4318"
+echo "  Jaeger UI:           http://localhost:16686"
+echo ""
+echo "Enable tracing in your local services:"
+echo "  export OTEL_ENABLED=1"
+echo "  export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318"
+echo "  export OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf"
+echo "  export OTEL_TRACES_SAMPLER=parentbased_always_on"
+echo ""
+echo "Then restart services: ./dev/tmux"

@@ -1,0 +1,64 @@
+id: codex-hooks-runner-temp-root
+language: Tsx
+severity: error
+message: 'Codex hook tests must create fixture roots through test-temp-root.mts so CI uses RUNNER_TEMP when available.'
+files:
+  - 'dev/codex-hooks-tests/**/*.mts'
+rule:
+  any:
+    - pattern: mkdtemp(join(tmpdir(), $$$))
+    - pattern: mkdtempSync(join(tmpdir(), $$$))
+    - pattern: mkdtemp(join($OS.tmpdir(), $$$))
+    - pattern: mkdtempSync(join($OS.tmpdir(), $$$))
+    - pattern: mkdtemp($PATH.join(tmpdir(), $$$))
+    - pattern: mkdtempSync($PATH.join(tmpdir(), $$$))
+    - pattern: mkdtemp($PATH.join($OS.tmpdir(), $$$))
+    - pattern: mkdtempSync($PATH.join($OS.tmpdir(), $$$))
+examples:
+  - code: |
+      import { mkdtemp } from 'node:fs/promises'
+      import { tmpdir } from 'node:os'
+      import { join } from 'node:path'
+      const dir = await mkdtemp(join(tmpdir(), 'voucha-pr-body-'))
+    isValid: false
+    file: 'dev/codex-hooks-tests/codex-hook-plan-issue-policy.test.mts'
+  - code: |
+      import { mkdtempSync } from 'node:fs'
+      import { tmpdir } from 'node:os'
+      import { join } from 'node:path'
+      const dir = mkdtempSync(join(tmpdir(), 'max-lines-'))
+    isValid: false
+    file: 'dev/codex-hooks-tests/codex-hook-post-tool-use.test.mts'
+  - code: |
+      import { mkdtemp } from 'node:fs/promises'
+      import os from 'node:os'
+      import { join } from 'node:path'
+      const dir = await mkdtemp(join(os.tmpdir(), 'voucha-pr-body-'))
+    isValid: false
+    file: 'dev/codex-hooks-tests/codex-hook-plan-issue-policy.test.mts'
+  - code: |
+      import { mkdtemp } from 'node:fs/promises'
+      import { tmpdir } from 'node:os'
+      import * as path from 'node:path'
+      const dir = await mkdtemp(path.join(tmpdir(), 'voucha-pr-body-'))
+    isValid: false
+    file: 'dev/codex-hooks-tests/codex-hook-plan-issue-policy.test.mts'
+  - code: |
+      import { mkdtempSync } from 'node:fs'
+      import * as os from 'node:os'
+      import * as path from 'node:path'
+      const dir = mkdtempSync(path.join(os.tmpdir(), 'max-lines-'))
+    isValid: false
+    file: 'dev/codex-hooks-tests/codex-hook-post-tool-use.test.mts'
+  - code: |
+      import { makeTestTempDir } from './test-temp-root.mts'
+      const dir = await makeTestTempDir('voucha-pr-body-')
+    isValid: true
+    file: 'dev/codex-hooks-tests/codex-hook-plan-issue-policy.test.mts'
+  - code: |
+      import { mkdtemp } from 'node:fs/promises'
+      import { tmpdir } from 'node:os'
+      import { join } from 'node:path'
+      const dir = await mkdtemp(join(tmpdir(), 'other-test-'))
+    isValid: true
+    file: 'dev/other-tests/example.test.mts'

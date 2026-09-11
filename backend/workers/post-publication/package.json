@@ -1,0 +1,32 @@
+{
+  "name": "@workers/post-publication",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/entity-metrics-cache-refresh": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@queues/post-publication": "workspace:^",
+    "@queues/psql": "workspace:^",
+    "@queues/sitemaps": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/topics": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

@@ -1,0 +1,277 @@
+import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
+
+// PW_FILES selection-decode behavior (runPlaywrightPnpmArgs et al.) lives in the
+// co-located tests-playwright.part-2.test.mts, split out to stay under the oxlint max-lines cap.
+const workflow = readFileSync('.github/workflows/tests-playwright.yml', 'utf8')
+const playwrightConfigHelpers = readFileSync('playwright/config/config-helpers.mts', 'utf8')
+const playwrightSharedConfig = readFileSync('playwright/config/shared-config.mts', 'utf8')
+const playwrightInstallScript = readFileSync('ci/playwright-install-ubicloud-browsers.sh', 'utf8')
+const browserSafePortsScript = readFileSync('ci/allocate-browser-safe-ports.py', 'utf8')
+const require = createRequire(import.meta.url)
+const playwrightCoreRoot = dirname(require.resolve('playwright-core'))
+const registryPath = ['lib/server/registry/index.js', 'lib/coreBundle.js']
+  .map(path => join(playwrightCoreRoot, path))
+  .find(path => existsSync(path))
+if (!registryPath) {
+  throw new Error('Could not find Playwright registry source')
+}
+const registrySource = readFileSync(registryPath, 'utf8')
+
+function expectedLinuxArm64Path(browserName: string): string {
+  const blockPattern = new RegExp(
+    `"${browserName}":\\s*\\{[^}]*"linux-arm64":\\s*\\[([^\\]]+)\\]`,
+    's',
+  )
+  const blockMatch = registrySource.match(blockPattern)
+  expect(blockMatch).not.toBeNull()
+  const segments = blockMatch![1].split(',').flatMap(part => {
+    const trimmed = part.trim().replace(/^"|"$/g, '')
+    return trimmed ? [trimmed] : []
+  })
+  return segments.join('/')
+}
+
+function workflowJobSection(body: string, jobName: string): string {
+  const match = body.match(
+    new RegExp(`\\n {2}${jobName}:[\\s\\S]*?(?=\\n {2}[a-zA-Z0-9_-]+:\\n|$)`),
+  )
+  expect(match).not.toBeNull()
+  return match![0]
+}
+
+describe('tests-playwright.yml', () => {
+  it('runs the selector on bare self-hosted so planning does not occupy the Playwright pool', () => {
+    expect(workflowJobSection(workflow, 'select')).toContain('runs-on: [self-hosted]\n')
+    expect(workflowJobSection(workflow, 'playwright-tests')).toContain(
+      'runs-on: [self-hosted, Linux, Docker, Playwright]',
+    )
+  })
+
+  it('accepts an optional shard-total override and transports it to the selector', () => {
+    expect(workflow).toContain(`shard_total_override:
+        description: Override the computed Playwright shard total
+        type: string
+        required: false
+        default: ''`)
+    expect(workflow).toContain('SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override }}')
+    expect(workflow).not.toContain('PLAYWRIGHT_FILES_PER_SHARD')
+    expect(workflow).not.toContain('PLAYWRIGHT_TEST_SHARDS')
+  })
+
+  it('rejects shard totals outside the GitHub matrix range', () => {
+    const shardMatrixStep = workflow.match(
+      /- name: Build shard matrix[\s\S]*?(?=\n {6}- name:|\n {2}[a-zA-Z0-9_-]+:\n|$)/,
+    )
+
+    expect(shardMatrixStep).not.toBeNull()
+    expect(shardMatrixStep![0]).toContain('^([1-9][0-9]{0,2})$')
+    expect(shardMatrixStep![0]).toContain('[ "$total" -gt 256 ]')
+    expect(shardMatrixStep![0]).toContain('shard-total must be an integer from 1 through 256')
+  })
+
+  it('keeps PR calls dynamic and preserves the shard execution contract', () => {
+    const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+    const prCall = workflowJobSection(ciWorkflow, 'test-playwright')
+    const shardJob = workflowJobSection(workflow, 'playwright-tests')
+
+    expect(prCall).toContain('uses: ./.github/workflows/tests-playwright.yml')
+    expect(prCall).not.toContain('shard_total_override:')
+    expect(shardJob).toContain('uses: ./.github/actions/build-web-targets')
+    expect(shardJob).toContain('PLAYWRIGHT_MAX_WORKERS: ${{ vars.PLAYWRIGHT_MAX_WORKERS }}')
+    expect(shardJob).toContain('OTEL_ENABLED:')
+    expect(shardJob).toContain('PW_FILES: ${{ needs.select.outputs.files }}')
+    expect(shardJob).toContain('playwright test "${FILES[@]}" "$SHARD_ARG"')
+    expect(workflow).toContain('needs.select.outputs.shard-matrix')
+  })
+
+  it('serializes Playwright workflow runs without serializing matrix shards', () => {
+    const shardJobMatch = workflow.match(
+      /\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/,
+    )
+
+    expect(shardJobMatch).not.toBeNull()
+    expect(workflow).toContain(
+      'group: playwright-tests-${{ github.event.pull_request.number || github.ref || github.sha }}',
+    )
+    expect(workflow).toContain("cancel-in-progress: ${{ inputs.event-name == 'pull_request' }}")
+    expect(shardJobMatch![0]).not.toContain('\n    concurrency:')
+  })
+
+  it('uses checkout before clean-workspace so fetch auth is owned by the composite action', () => {
+    const shardJobStart = workflow.indexOf('  playwright-tests:')
+    const checkoutOffset = workflow.slice(shardJobStart).search(/uses: actions\/checkout@/)
+    const shardCheckout = checkoutOffset === -1 ? -1 : shardJobStart + checkoutOffset
+    const cleanWorkspace = workflow.indexOf(
+      'uses: ./.github/actions/clean-workspace',
+      shardJobStart,
+    )
+
+    expect(shardJobStart).toBeGreaterThan(-1)
+    expect(shardCheckout).toBeGreaterThan(-1)
+    expect(cleanWorkspace).toBeGreaterThan(shardCheckout)
+    expect(workflow.slice(shardCheckout, cleanWorkspace)).toContain('uses: actions/checkout@')
+  })
+
+  it('builds web targets in each shard instead of restoring a shared artifact', () => {
+    expect(workflow).not.toContain('web-targets-artifact-name')
+    expect(workflow).not.toContain('restore-web-targets')
+    expect(workflow).not.toMatch(/\n {2}build-web-targets:\n/)
+    expect(workflow).toContain('uses: ./.github/actions/build-web-targets')
+    expect(workflow).toContain('runner-lifecycle: persistent')
+  })
+
+  it('extracts chromium and chromium-headless-shell to the same paths Playwright resolves on linux-arm64', () => {
+    // The custom curl + system unzip path supports Ubicloud ARM64 callers.
+    // Its sanity check must match Playwright's own EXECUTABLE_PATHS for linux-arm64
+    // — when these drift, browsers download successfully but `playwright test` fails
+    // to find them.
+    const chromiumExe = expectedLinuxArm64Path('chromium')
+    const headlessShellExe = expectedLinuxArm64Path('chromium-headless-shell')
+
+    const packagedInstall = readFileSync(
+      'node_modules/vouchington-tooling/scripts/gha/install-playwright-chromium-arm64.sh',
+      'utf8',
+    )
+    expect(playwrightInstallScript).toContain('install-playwright-chromium-arm64')
+    expect(packagedInstall).toContain(`chromium) exe="$dir/${chromiumExe}" ;;`)
+    expect(packagedInstall).toContain(`chromium-headless-shell) exe="$dir/${headlessShellExe}" ;;`)
+  })
+
+  it('retries partial browser downloads on Ubicloud', () => {
+    expect(playwrightInstallScript).toContain('exec-vouchington-gha.sh')
+    expect(
+      readFileSync(
+        'node_modules/vouchington-tooling/scripts/gha/install-playwright-chromium-arm64.sh',
+        'utf8',
+      ),
+    ).toContain('ci_download_to "${mirror}/${rev}/${archive}" "$tmp" --retry 3 --retry-all-errors')
+  })
+
+  it('exports IMAGE_ORIGIN from the allocated image lambda port', () => {
+    const loadRunnerEnv = workflow.indexOf('uses: ./.github/actions/load-runner-env')
+    const imageOrigin = workflow.indexOf(
+      'echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"',
+    )
+
+    expect(workflow).toContain(
+      'echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"',
+    )
+    expect(imageOrigin).toBeGreaterThan(loadRunnerEnv)
+  })
+
+  it('lets Wrangler allocate the inspector port in CI', () => {
+    expect(workflow).not.toContain('INSPECTOR_PORT')
+    expect(workflow).toContain('python3 ci/allocate-browser-safe-ports.py 6')
+    expect(playwrightSharedConfig).toContain('node cloudflare-worker/scripts/wrangler/start.mts')
+  })
+
+  it('supplies synthetic browser-upload origins to the uncredentialed Worker', () => {
+    expect(workflow).toContain(
+      'CSP_BROWSER_UPLOAD_ORIGINS=["https://test-images.s3.us-west-2.amazonaws.com","https://test-images.s3.dualstack.us-west-2.amazonaws.com"]',
+    )
+  })
+
+  it('uses a fixed logical asset origin so web builds remain independent of shard ports', () => {
+    const shardJob = workflowJobSection(workflow, 'playwright-tests')
+
+    expect(shardJob).toMatch(/NEXT_PUBLIC_ASSET_PREFIX: http:\/\/localhost(\s|$)/)
+    expect(shardJob).toMatch(/echo "CSP_ASSET_ORIGIN=http:\/\/localhost"(\s|$)/)
+    expect(shardJob).not.toContain('NEXT_PUBLIC_ASSET_PREFIX=http://localhost:$NEXT_PORT')
+    expect(shardJob).not.toContain('CSP_ASSET_ORIGIN=http://localhost:$NEXT_PORT')
+  })
+
+  it('does not allocate Chromium-restricted ports for browser-facing servers', () => {
+    expect(workflow).toContain('python3 ci/allocate-browser-safe-ports.py 6')
+    expect(browserSafePortsScript).toContain('packaged.with_name("fetch-forbidden-ports.json")')
+    expect(browserSafePortsScript).not.toContain('--forbidden-ports')
+    expect(FETCH_FORBIDDEN_PORTS).toEqual(expect.arrayContaining([4045, 6667, 10_080]))
+  })
+
+  it('installs JavaScript dependencies before allocating ports', () => {
+    const activate = workflow.indexOf('- name: Activate pnpm via corepack')
+    const install = workflow.indexOf('- name: pnpm install')
+    const allocate = workflow.indexOf('- name: Allocate ports')
+    expect(activate).toBeGreaterThan(-1)
+    expect(install).toBeGreaterThan(activate)
+    expect(allocate).toBeGreaterThan(install)
+    const installStep = workflow.slice(install, allocate)
+    expect(installStep).toContain('ci/pnpm-install.sh')
+    expect(installStep).toContain('--runner-lifecycle persistent')
+    expect(installStep).toContain('--command-timeout-seconds 0')
+  })
+
+  it('holds Playwright ports until each consumer binds', () => {
+    const allocationStep = workflow.slice(
+      workflow.indexOf('- name: Allocate ports'),
+      workflow.indexOf('- name: Start OTel collector'),
+    )
+    const confirmStep = workflow.slice(
+      workflow.indexOf('- name: Confirm port holder'),
+      workflow.indexOf('- uses: ./.github/actions/load-runner-env'),
+    )
+
+    expect(
+      allocationStep.match(/python3 ci\/allocate-browser-safe-ports\.py 6 --hold/g),
+    ).toHaveLength(1)
+    expect(allocationStep).toContain('PORT_HOLD_DIR=$HOLD_DIR')
+    expect(allocationStep).toContain('--check --hold-dir "$HOLD_DIR"')
+    expect(allocationStep).not.toContain('lsof -ti:"$p"')
+    expect(allocationStep).not.toContain('deterministic allocation will not retry')
+    expect(allocationStep).not.toContain('re-randomizing')
+    expect(confirmStep).toContain('--check --hold-dir "$PORT_HOLD_DIR"')
+    expect(workflow).toContain('name: Stop port holder')
+    expect(workflow).toContain('if: ${{ always() }}')
+    expect(playwrightSharedConfig).toContain('withHeldPortRelease(')
+    expect(readFileSync('playwright/config/web-server-command.mts', 'utf8')).toContain(
+      'allocate-browser-safe-ports.py',
+    )
+  })
+
+  it('does not upload Playwright HTML report artifacts', () => {
+    expect(workflow).not.toContain('playwright-report')
+    expect(readFileSync('playwright/config/web-server-command.mts', 'utf8')).toContain(
+      "return ci\n    ? [\n        ['github'],",
+    )
+    expect(readFileSync('playwright/config/web-server-command.mts', 'utf8')).toContain(
+      ": [['html', { open: 'never' }]]",
+    )
+  })
+
+  it('uploads the selected no-mistakes Playwright plan for PR diagnostics', () => {
+    const uploadIndex = workflow.indexOf('name: Upload Playwright test plan')
+    const matrixIndex = workflow.indexOf('name: Build shard matrix')
+
+    expect(workflow).toContain('name: Upload Playwright test plan')
+    expect(workflow).toContain('name: playwright-test-plan')
+    expect(workflow).toContain('playwright-test-plan.json')
+    expect(workflow).toContain('playwright-test-plan.md')
+    expect(workflow).toContain('if-no-files-found: ignore')
+    expect(workflow).toContain('retention-days: 1')
+    expect(uploadIndex).toBeGreaterThan(matrixIndex)
+    expect(workflow.slice(uploadIndex, uploadIndex + 200)).toContain('if: ${{ !cancelled() }}')
+  })
+
+  it('does not cache Playwright browsers or Next.js build via actions/cache', () => {
+    expect(workflow).not.toContain('Save Playwright browsers')
+    expect(workflow).not.toContain('Restore Playwright browsers')
+    expect(workflow).not.toMatch(/path:\s*\n\s+~\/.cache\/ms-playwright/)
+    // Next.js build cache persists on disk via clean-workspace extra-keep;
+    // no actions/cache round-trip is needed on self-hosted runners.
+    expect(workflow).not.toContain('Restore Next.js build cache')
+    expect(workflow).not.toContain('Save Next.js build cache')
+    expect(workflow).not.toContain('next-build-cache-v4')
+  })
+
+  it('preserves quoted NODE_OPTIONS entries when adding server flags', () => {
+    expect(playwrightConfigHelpers).toContain('new RegExp')
+    expect(playwrightConfigHelpers).not.toContain('split(/\\s+/)')
+  })
+
+  it('fails fast-ish in CI after a few Playwright failures', () => {
+    expect(playwrightSharedConfig).toContain('maxFailures: CI ? 3 : undefined')
+  })
+})

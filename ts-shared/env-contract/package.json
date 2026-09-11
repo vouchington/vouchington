@@ -1,0 +1,26 @@
+{
+  "name": "@ts-shared/env-contract",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Typed environment-variable contract metadata shared by repo tooling",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@vouchington/utils": "0.5.1"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "disputes": [
+    {
+      "ai_drafted_at": null,
+      "ai_internal_response": null,
+      "ai_public_response": null,
+      "approved_at": null,
+      "approved_by_id": null,
+      "claim_text": "Native review dispute",
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "disputant_user_id": "user-1",
+      "drafted_at": null,
+      "edited_at": null,
+      "edited_by_id": null,
+      "id": "00000000-0000-7000-8000-000000000201",
+      "internal_notes": null,
+      "is_overdue": false,
+      "latest_lifecycle_change_id": null,
+      "model": null,
+      "post_content": {
+        "declared_language": null,
+        "lingua_rs_detected_language": null,
+        "text": "A disputed review"
+      },
+      "post_id": "post-1",
+      "public_response": null,
+      "reason": "other",
+      "recommended_action": "remove",
+      "resolution_action": null,
+      "resolved_at": null,
+      "resolved_by_id": null,
+      "sent_at": null,
+      "staff_context": {
+        "disputant": {
+          "id": "user-1",
+          "profile_image_id": null,
+          "username": "native-claimant",
+          "verified_display_name": null
+        },
+        "review": {
+          "post": {
+            "created_at": "2026-05-31T12:00:00.000Z",
+            "created_by_id": "user-2",
+            "declared_language": null,
+            "id": "post-1",
+            "lingua_rs_detected_language": null,
+            "markdown_preview": "The review being disputed.",
+            "slug": "a-disputed-review",
+            "title": "A disputed review"
+          },
+          "rating": 1,
+          "topic": {
+            "id": "topic-1",
+            "name": "Native topic",
+            "slug": "native-topic",
+            "topic_type": "business"
+          }
+        }
+      },
+      "status": "pending",
+      "topic_id": "topic-1",
+      "updated_at": "2026-06-01T12:00:00.000Z"
+    }
+  ],
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMSIsInNjb3BlIjoiZGlzcHV0ZXM6cGVuZGluZzpzdGFmZjphbGw6aWQtZGVzYyJ9"
+  }
+}

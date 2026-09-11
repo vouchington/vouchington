@@ -1,0 +1,168 @@
+name: pnpm Dedupe (Weekly)
+
+# Runs pnpm dedupe on the shared workspace lockfile. Branch is fixed and
+# force-pushed so subsequent runs update the same PR rather than piling up.
+
+on:
+  schedule:
+    - cron: '0 12 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pnpm-dedupe
+  cancel-in-progress: false
+
+jobs:
+  dedupe:
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 0
+          clean: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          deepen: 'true'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+      - name: Activate pnpm via corepack
+        run: |
+          set -euo pipefail
+          required_node="$(tr -d '[:space:]' < "$GITHUB_WORKSPACE/.nvmrc")"
+          case "$(node --version 2>/dev/null)" in
+            v"${required_node}".*) ;;
+            *)
+              case "$(uname -m)" in
+                aarch64|arm64) arch=arm64 ;;
+                x86_64) arch=x64 ;;
+                *) echo "::error::manual Node ${required_node} fallback: unsupported arch $(uname -m)"; exit 1 ;;
+              esac
+              case "$(uname -s)" in
+                Linux) os=linux; tarext=tar.xz ;;
+                Darwin) os=darwin; tarext=tar.gz ;;
+                *) echo "::error::manual Node ${required_node} fallback: unsupported OS $(uname -s)"; exit 1 ;;
+              esac
+              source "$GITHUB_WORKSPACE/ci/curl-to.sh"
+              if [ -n "${RUNNER_TEMP:-}" ]; then
+                dest="${RUNNER_TEMP}/manual-node-${required_node}"
+              else
+                # RUNNER_TEMP is guaranteed set in GitHub Actions; this branch is for
+                # local execution only. Use a fresh random directory to avoid a
+                # predictable path that a concurrent process could pre-populate.
+                dest="$(mktemp -d)/manual-node-${required_node}"
+              fi
+              mkdir -p "$dest"
+              shasums="${dest}/SHASUMS256.txt"
+              ci_download_to "https://nodejs.org/dist/latest-v${required_node}.x/SHASUMS256.txt" "$shasums" --retry 3 --max-time 30
+              tarname="$(grep -E "node-v${required_node}\.[0-9]+\.[0-9]+-${os}-${arch}\.${tarext}$" "$shasums" | head -n 1 | awk '{print $2}' || true)"
+              if [ -z "$tarname" ]; then
+                echo "::error::manual Node ${required_node} fallback: no ${os}-${arch} tarball in SHASUMS256.txt"; exit 1
+              fi
+              ver="${tarname#node-v}"; _sfx="${os}-${arch}.${tarext}"; ver="${ver%-"${_sfx}"}"
+              extracted="${dest}/node-v${ver}-${os}-${arch}"
+              ci_download_to "https://nodejs.org/dist/v${ver}/${tarname}" "${dest}/${tarname}" --retry 3 --max-time 120
+              if command -v sha256sum >/dev/null 2>&1; then
+                ( cd "$dest" && grep " ${tarname}$" SHASUMS256.txt | sha256sum -c - )
+              else
+                ( cd "$dest" && grep " ${tarname}$" SHASUMS256.txt | shasum -a 256 -c - )
+              fi
+              tar -xf "${dest}/${tarname}" -C "$dest"
+              tc_bin="${extracted}/bin"
+              echo "::warning::manual Node ${required_node} download triggered; setup-node PATH prepend missing (used ${tc_bin})"
+              echo "$tc_bin" >> "$GITHUB_PATH"
+              export PATH="$tc_bin:$PATH"
+              ;;
+          esac
+          echo "node: $(which node) $(node --version)"
+          case "$(node --version)" in
+            v26.*) ;;
+            *) echo "::error::Node 26 is required but $(node --version) is active; check the actions/setup-node step"; exit 1 ;;
+          esac
+          pm="$(node -p "require('./package.json').packageManager")"
+          pnpm_version="${pm#pnpm@}"
+          mkdir -p "$HOME/.local/bin"
+          node_bin="$(dirname "$(which node)")"
+          if [ -x "${node_bin}/corepack" ]; then
+            "${node_bin}/corepack" enable --install-directory "$HOME/.local/bin"
+            "${node_bin}/corepack" prepare "pnpm@${pnpm_version}" --activate
+          else
+            npm install --global --prefix "$HOME/.local" "pnpm@${pnpm_version}"
+          fi
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: bash ci/pnpm-install.sh --runner-lifecycle ephemeral-full --install-scripts true
+
+      - name: Run pnpm dedupe
+        timeout-minutes: 3
+        run: pnpm dedupe
+
+      - name: Detect lockfile changes
+        id: diff
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No dedupe changes"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- pnpm-lock.yaml
+          fi
+
+      - if: steps.diff.outputs.changed == 'true'
+        name: Commit and push
+        env:
+          BRANCH: chore/pnpm-dedupe
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
+        run: |
+          git checkout -B "$BRANCH"
+          git add -- pnpm-lock.yaml
+          git -c core.hooksPath=/dev/null commit -m "chore(deps): pnpm dedupe"
+          # Inject the token via GIT_CONFIG_* env vars — keeps it out of argv (/proc/PID/cmdline is
+          # world-readable; /proc/PID/environ is owner-only).  Token is never written to .git/config.
+          TOKEN_B64="$(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
+          GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.extraheader GIT_CONFIG_VALUE_0="AUTHORIZATION: Basic $TOKEN_B64" git -c core.hooksPath=/dev/null push --force-with-lease origin "$BRANCH"
+
+      - if: steps.diff.outputs.changed == 'true'
+        name: Open PR if missing
+        env:
+          GH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
+          BRANCH: chore/pnpm-dedupe
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          # Filter by headRepositoryOwner.login so a fork PR with the same branch name is
+          # never matched. gh pr list --head does not support "owner:branch" syntax; we use
+          # --head "$BRANCH" and rely on the jq select to verify ownership.
+          if gh pr list --state open --head "$BRANCH" \
+              --json number,headRepositoryOwner,headRefName \
+              --jq "map(select(.headRepositoryOwner.login == \"$OWNER\" and .headRefName == \"$BRANCH\")) | .[0].number" \
+              2>/dev/null | grep -qE '^[0-9]+$'; then
+            echo "PR already open for $BRANCH; force-push updated it in place"
+            exit 0
+          fi
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore(deps): pnpm dedupe" \
+            --label github_actions \
+            --body "Automated weekly \`pnpm dedupe\` for the shared workspace lockfile.
+
+          Created by \`.github/workflows/pnpm-dedupe.yml\` on its Sunday schedule. The branch is force-pushed on subsequent runs, so re-review only when the diff changes."

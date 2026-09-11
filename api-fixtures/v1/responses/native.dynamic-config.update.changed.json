@@ -1,0 +1,55 @@
+{
+  "changed": true,
+  "namespace": {
+    "can_update": true,
+    "can_view": true,
+    "config": {
+      "chat": false,
+      "combinedSearch": false,
+      "fediverse": true,
+      "memberships": false,
+      "support": false
+    },
+    "description": "Runtime feature toggles with optional browser-local overrides.",
+    "field_count": 5,
+    "fields": [
+      {
+        "default_value": false,
+        "description": "Membership purchase and plan-management flows.",
+        "name": "memberships",
+        "type": "boolean",
+        "value": false
+      },
+      {
+        "default_value": false,
+        "description": "Chat entry points and conversation features.",
+        "name": "chat",
+        "type": "boolean",
+        "value": false
+      },
+      {
+        "default_value": false,
+        "description": "Route command-search dialog through a single /api/v1/search endpoint instead of five parallel entity endpoints.",
+        "name": "combinedSearch",
+        "type": "boolean",
+        "value": false
+      },
+      {
+        "default_value": false,
+        "description": "Support chat entry point in the chat sidebar.",
+        "name": "support",
+        "type": "boolean",
+        "value": false
+      },
+      {
+        "default_value": false,
+        "description": "Fediverse navigation, command-search tab, and PeerTube discovery affordances.",
+        "name": "fediverse",
+        "type": "boolean",
+        "value": true
+      }
+    ],
+    "label": "Feature Flags",
+    "namespace": "feature-flags"
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "election_votes": {
+    "item-1": {
+      "__entity_type": "election_vote",
+      "choice": "like",
+      "created_at": "2026-01-01T00:00:00Z",
+      "entity_id": "item-1",
+      "user_id": "user-1"
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "id": "item-1",
+      "story_id": "story-1"
+    }
+  ],
+  "rss_feed_item_elections": {
+    "item-1": {
+      "__entity_type": "rss_feed_item_election",
+      "id": "item-1",
+      "votes_count_down": 2,
+      "votes_count_up": 7,
+      "votes_score_net": 5
+    }
+  },
+  "rss_feed_items": {
+    "item-1": {
+      "categories": [
+        {
+          "category_text": "#Travel",
+          "hashtag": {
+            "display_token": "#Travel",
+            "id": "00000000-0000-7000-8000-000000000101",
+            "key": "travel",
+            "topic_id": "topic-1"
+          },
+          "id": "category-1",
+          "topic": {
+            "id": "topic-1",
+            "name": "Tech",
+            "slug": "tech",
+            "topic_type": "topic"
+          },
+          "votes_score_net": 3
+        }
+      ],
+      "content": null,
+      "creator": null,
+      "description": "A short snippet",
+      "id": "item-1",
+      "link": "https://example.com/article",
+      "media_content": {
+        "duration": null,
+        "medium": "video",
+        "type": "video/mp4",
+        "url": "https://example.com/video.mp4"
+      },
+      "published_at": "2026-01-01T00:00:00Z",
+      "rss_feed_id": "feed-1",
+      "title": "Test Article"
+    },
+    "item-peer": {
+      "categories": [
+        {
+          "category_text": "#Travel",
+          "hashtag": {
+            "display_token": "#Travel",
+            "id": "00000000-0000-7000-8000-000000000101",
+            "key": "travel",
+            "topic_id": "topic-1"
+          },
+          "id": "category-1",
+          "topic": {
+            "id": "topic-1",
+            "name": "Tech",
+            "slug": "tech",
+            "topic_type": "topic"
+          },
+          "votes_score_net": 3
+        }
+      ],
+      "content": null,
+      "creator": null,
+      "description": "A short snippet",
+      "id": "item-peer",
+      "link": "https://example.com/related-cluster-article",
+      "media_content": {
+        "duration": null,
+        "medium": "video",
+        "type": "video/mp4",
+        "url": "https://example.com/video.mp4"
+      },
+      "published_at": "2026-01-01T00:00:00Z",
+      "rss_feed_id": "feed-1",
+      "title": "Related cluster article"
+    }
+  },
+  "story_member_ids": {
+    "story-1": ["item-1", "item-peer"]
+  },
+  "story_post_ids": {}
+}

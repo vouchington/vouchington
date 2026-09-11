@@ -1,0 +1,61 @@
+const messages = {
+  lib: {
+    bookmarkRouteConfigDataMedia: {
+      channelsYouFollow_7a5a2362: 'Canales que sigues',
+      channelsYouHaveMuted_a470ab49: 'Canales que has silenciado',
+      channelsYouHaveRecentlyViewed_8c27b313: 'Canales que has visto recientemente',
+      channels_4c8906cf: 'Canales',
+      importExportChannels_8ab0e50a: 'Importar/Exportar Canales',
+      importExportNewsSources_bf1ec4ca: 'Importar/Exportar Fuentes de Noticias',
+      importExportPodcasts_6aff6305: 'Importar/Exportar Pódcasts',
+      importOrExportYourChannelSubscriptions_2e7f0565:
+        'Importa o exporta tus suscripciones de canales',
+      importOrExportYourNewsSource_46539da0:
+        'Importa o exporta tus suscripciones de fuentes de noticias',
+      importOrExportYourPodcastSubscriptions_14f18be9:
+        'Importa o exporta tus suscripciones de pódcasts',
+      myChannels_dfb3e0e5: 'Mis Canales',
+      myHiddenNewsItems_d1be0cae: 'Mis Elementos de Noticias Ocultos',
+      myHiddenPodcastEpisodes_4938f738: 'Mis Episodios de Pódcast Ocultos',
+      myHiddenVideos_e3804598: 'Mis Videos Ocultos',
+      myMutedChannels_dba96b01: 'Mis Canales Silenciados',
+      myMutedNewsSources_c0713b2d: 'Mis Fuentes de Noticias Silenciadas',
+      myMutedPodcasts_fdd2fd17: 'Mis Pódcasts Silenciados',
+      myNewsSources_742a7817: 'Mis Fuentes de Noticias',
+      myPodcasts_fe24ed2c: 'Mis Pódcasts',
+      myRecentlyViewedChannels_3db64369: 'Mis Canales Vistos Recientemente',
+      myRecentlyViewedNewsItems_053c9c2f: 'Mis Elementos de Noticias Vistos Recientemente',
+      myRecentlyViewedNewsSources_a4f90827: 'Mis Fuentes de Noticias Vistas Recientemente',
+      myRecentlyViewedPodcastEpisodes_976f0d1a: 'Mis Episodios de Pódcast Vistos Recientemente',
+      myRecentlyViewedPodcasts_afd29776: 'Mis Pódcasts Vistos Recientemente',
+      myRecentlyViewedVideos_db1973e4: 'Mis Videos Vistos Recientemente',
+      mySavedNewsItems_1b3ddcea: 'Mis Elementos de Noticias Guardados',
+      mySavedPodcastEpisodes_59c33551: 'Mis Episodios de Pódcast Guardados',
+      mySavedVideos_f9d9ef77: 'Mis Videos Guardados',
+      newsArticlesYouHaveHidden_9ffb8ef2: 'Artículos de noticias que has ocultado',
+      newsArticlesYouHaveRecentlyViewed_815a5862:
+        'Artículos de noticias que has visto recientemente',
+      newsArticlesYouHaveSaved_3e01d39d: 'Artículos de noticias que has guardado',
+      newsSourcesYouFollow_6db7a7fb: 'Fuentes de noticias que sigues',
+      newsSourcesYouHaveMuted_a08ebdbe: 'Fuentes de noticias que has silenciado',
+      newsSourcesYouHaveRecentlyViewed_43ae27d0: 'Fuentes de noticias que has visto recientemente',
+      newsSources_238ad263: 'Fuentes de Noticias',
+      news_69752f23: 'Noticias',
+      podcastEpisodesYouHaveHidden_44879b87: 'Episodios de pódcast que has ocultado',
+      podcastEpisodesYouHaveRecentlyViewed_6d6b5e43:
+        'Episodios de pódcast que has visto recientemente',
+      podcastEpisodesYouHaveSaved_df68754c: 'Episodios de pódcast que has guardado',
+      podcastEpisodes_093bc80f: 'Episodios de Pódcast',
+      podcastsYouFollow_3f8e7225: 'Pódcasts que sigues',
+      podcastsYouHaveMuted_ce02261d: 'Pódcasts que has silenciado',
+      podcastsYouHaveRecentlyViewed_e921ae52: 'Pódcasts que has visto recientemente',
+      podcasts_6ac749b3: 'Pódcasts',
+      videosYouHaveHidden_81d16c0b: 'Videos que has ocultado',
+      videosYouHaveRecentlyViewed_69935b66: 'Videos que has visto recientemente',
+      videosYouHaveSaved_a6bf3347: 'Videos que has guardado',
+      videos_c9a96394: 'Videos',
+    },
+  },
+}
+
+export default messages

@@ -1,0 +1,10 @@
+---
+globals:
+  redis:
+    any: true
+  cjson:
+    any: true
+  KEYS:
+    any: true
+  ARGV:
+    any: true

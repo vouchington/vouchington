@@ -1,0 +1,50 @@
+name: Setup Playwright
+description: >
+  Install Playwright browsers. On self-hosted runners, browsers persist in
+  ~/.cache/ms-playwright between runs so caching is not needed. Pass
+  ubicloud: 'true' on ARM64 ubicloud runners to bypass Node-based
+  extract-zip and use system curl + unzip instead — required on ARM64 ubicloud
+  runners where yauzl extraction of the ~150MB Chromium zip times out.
+  Probes host dependencies first. Only drift repair uses the shared host lock
+  to serialize package-manager operations across concurrent jobs sharing the
+  same OS user.
+
+inputs:
+  ubicloud:
+    description: 'Use curl + system unzip instead of playwright install to bypass slow ARM64 Node extraction (use true for ubicloud ARM64 runners; not for x64)'
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Install Playwright browsers (ubicloud curl+unzip)
+      if: inputs.ubicloud == 'true' && runner.arch == 'ARM64'
+      shell: bash
+      # Bypass playwright install's Node-based extract-zip on arm64.
+      # extract-zip + yauzl is single-threaded and CPU-bound; on ubicloud ARM64
+      # it grinds through Chromium's ~150MB / thousands of files and times out.
+      # System unzip finishes the same archive in ~10s.
+      run: ./ci/playwright-install-ubicloud-browsers.sh
+
+    - name: Install Playwright browsers
+      if: inputs.ubicloud != 'true' || runner.arch != 'ARM64'
+      shell: bash
+      run: |
+        set -euo pipefail
+        if pnpm exec playwright install-deps --dry-run chromium > /dev/null 2>&1; then
+          :
+        else
+          bash "$GITHUB_WORKSPACE/ci/wait-for-apt-locks.sh"
+          host_lock_timeout_seconds=300
+          # Storybook currently gives this action a 5m step budget; keep enough
+          # room for dependency repair after the 120s apt preflight. Host-lock
+          # contention is less common there, so it gets the tighter 60s budget.
+          if [ "${GITHUB_JOB:-}" = "storybook" ] || [ "${GITHUB_WORKFLOW:-}" = "Storybook" ]; then
+            host_lock_timeout_seconds=60
+          fi
+          bash "$GITHUB_WORKSPACE/ci/with-host-lock.sh" \
+            --name host-package-manager \
+            --timeout-seconds "$host_lock_timeout_seconds" \
+            -- bash -c 'pnpm exec playwright install-deps --dry-run chromium || pnpm exec playwright install-deps chromium'
+        fi
+        pnpm exec playwright install chromium

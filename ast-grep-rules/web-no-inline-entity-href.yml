@@ -1,0 +1,52 @@
+id: web-no-inline-entity-href
+language: Tsx
+severity: error
+message: 'Use canonical entity href helpers from @/lib/links/entity-href or @/lib/post-helpers instead of hand-built entity URL templates.'
+files:
+  - 'web/**/*.tsx'
+ignores:
+  - 'web/**/*.test.tsx'
+  - 'web/**/*.mock.test.tsx'
+  - 'web/**/*.stories.tsx'
+rule:
+  any:
+    - all:
+        - kind: template_string
+        - inside:
+            kind: jsx_expression
+        - not:
+            inside:
+              kind: jsx_attribute
+              regex: '^basePath='
+        - regex: '^`/(?:@|agent/|article/|bank-account/|blog-post/|card/|chat/|compare/|crm/|crawler/|data-point/|discussion/|domain/|messages/|my/landing-page/|referral-program/|referral-programs/|review/|rewards-program/|rewards-program-status/|source/|story/|support/|topic/|topic-claims/|topic-recommendations/|url/|user/)'
+    - all:
+        - kind: template_string
+        - inside:
+            kind: jsx_expression
+        - not:
+            inside:
+              kind: jsx_attribute
+              regex: '^basePath='
+        - regex: '^`/\$\{\s*(?:getPostTypePath|getPostSlugFromType|getTopicTypeSlug)\s*\('
+examples:
+  - code: 'export function Link() { return <a href={`/user/${user.id}`} /> }'
+    isValid: false
+    file: 'web/components/user-link.tsx'
+  - code: 'export function Link() { return <a href={`/@${username}`} /> }'
+    isValid: false
+    file: 'web/components/user-link.tsx'
+  - code: 'export function Link() { return <a href={`/chat/${thread.id}`} /> }'
+    isValid: false
+    file: 'web/components/chat-link.tsx'
+  - code: 'export function Link() { return <a href={`/${ getPostTypePath(type)}/${id}`} /> }'
+    isValid: false
+    file: 'web/components/post-link.tsx'
+  - code: 'export function Link() { const href = entityHref(entity); return <a href={href} /> }'
+    isValid: true
+    file: 'web/components/user-link.tsx'
+  - code: 'export function Link() { const href = `/help/${slug}`; return <a href={href} /> }'
+    isValid: true
+    file: 'web/components/help-link.tsx'
+  - code: 'export function Link() { console.log(`/user/${user.id}`); return null }'
+    isValid: true
+    file: 'web/components/user-link.tsx'

@@ -1,0 +1,11 @@
+{
+  "management": null,
+  "membership": null,
+  "pending": {
+    "financial_operations": [],
+    "grants": 0,
+    "switches": [],
+    "verifications": []
+  },
+  "sources": []
+}

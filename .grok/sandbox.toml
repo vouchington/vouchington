@@ -1,0 +1,28 @@
+# Codex-equivalent OS sandbox for local Grok.
+# Built-in `workspace` already writes CWD + ~/.grok + temp dirs.
+# These extra roots match `.codex/config.toml` [sandbox_workspace_write].writable_roots.
+#
+# Grok project config cannot set a default profile. Launch with:
+#   grok --sandbox workspace-write
+#   GROK_SANDBOX=workspace-write
+#
+# This is not Claude's OS-sandbox bypass list. Prefixes stay sandboxed, like Codex.
+
+[profiles.workspace-write]
+extends = "workspace"
+read_write = [
+  "~/.cargo",
+  "~/Library/pnpm",
+  "~/.local/share/pnpm",
+  "~/.pnpm-store",
+  # no-mistakes lock and pnpm cache/state (#9814)
+  "~/Library/Caches/no-mistakes",
+  "~/Library/Caches/pnpm",
+  "~/.pnpm-state",
+  "~/.cache/no-mistakes",
+  "~/.cache/pnpm",
+  "~/.local/state/pnpm",
+  "/var/folders",
+  # Same macOS mount as /var/folders; both strings match Codex verbatim.
+  "/private/var/folders",
+]

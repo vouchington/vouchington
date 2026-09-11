@@ -1,0 +1,34 @@
+{
+  "name": "@services/search",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Combined omnisearch service — fans out across entity verticals and returns a unified lightweight result.",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@modules/utils": "workspace:^",
+    "@services/bookmarks": "workspace:^",
+    "@services/communities": "workspace:^",
+    "@services/entity-fetch": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@services/users": "workspace:^"
+  }
+}

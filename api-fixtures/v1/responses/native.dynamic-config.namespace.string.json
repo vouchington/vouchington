@@ -1,0 +1,46 @@
+{
+  "namespace": {
+    "can_update": false,
+    "can_view": true,
+    "config": {
+      "allow_development_attestation": false,
+      "enabled": false,
+      "request_signing_mode": "off",
+      "require_attestation_for_bypass": false
+    },
+    "description": "Apple App Attest verification controls for the iOS app.",
+    "field_count": 4,
+    "fields": [
+      {
+        "default_value": false,
+        "description": "Enable Apple App Attest verification endpoints.",
+        "name": "enabled",
+        "type": "boolean",
+        "value": false
+      },
+      {
+        "default_value": false,
+        "description": "Require a verified App Attest assertion to bypass Turnstile on gated endpoints. When false, attestation is accepted but not required.",
+        "name": "require_attestation_for_bypass",
+        "type": "boolean",
+        "value": false
+      },
+      {
+        "default_value": false,
+        "description": "Accept attestations created in the DCAppAttestService development environment (debug/TestFlight builds). Disable in production.",
+        "name": "allow_development_attestation",
+        "type": "boolean",
+        "value": false
+      },
+      {
+        "default_value": null,
+        "description": "Per-request ECDSA signing mode for attested iOS devices. 'off' = disabled; 'observe' = verify and log failures but do not block; 'enforce' = reject requests with invalid or missing signatures.",
+        "name": "request_signing_mode",
+        "type": "string",
+        "value": "off"
+      }
+    ],
+    "label": "App Attestation",
+    "namespace": "app-attestation-config"
+  }
+}

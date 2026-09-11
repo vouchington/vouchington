@@ -1,0 +1,33 @@
+name: Setup Backend
+description: >
+  Sets up Node.js from .nvmrc, installs the full workspace on a persistent
+  runner, and builds email templates. The caller must run actions/checkout
+  before invoking this action.
+
+inputs:
+  runner-lifecycle:
+    description: 'Must be persistent; all setup-backend callers preserve node_modules'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      with:
+        node-version-file: '.nvmrc'
+        package-manager-cache: false
+    - name: Activate pnpm via corepack
+      shell: bash
+      run: bash "$GITHUB_WORKSPACE/ci/activate-pnpm.sh"
+    - name: Install dependencies
+      shell: bash
+      env:
+        RUNNER_LIFECYCLE: ${{ inputs.runner-lifecycle }}
+      run: bash "$GITHUB_WORKSPACE/ci/setup-backend-install.sh" "$RUNNER_LIFECYCLE"
+    - name: Build email-templates
+      # clean-workspace wipes email-templates/dist while preserving node_modules.
+      # Build explicitly so the backend can resolve @email-templates/core even
+      # when generated output was absent before install.
+      shell: bash
+      working-directory: email-templates
+      run: pnpm run build

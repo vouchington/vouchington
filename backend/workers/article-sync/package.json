@@ -1,0 +1,25 @@
+{
+  "name": "@workers/article-sync",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@data-stores/valkey-pubsub": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@queues/article-sync": "workspace:^",
+    "@services/articles": "workspace:^",
+    "@services/users": "workspace:^",
+    "glide-mq": "^0.15.5"
+  }
+}

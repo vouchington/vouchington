@@ -1,0 +1,5 @@
+{"type":"event_msg","payload":{"type":"user_message","message":"synthetic legacy request"}}
+{"type":"event_msg","payload":{"type":"agent_message","message":"synthetic legacy reply"}}
+{"type":"response_item","payload":{"type":"message","role":"user","content":"synthetic current request"}}
+{"type":"response_item","payload":{"type":"message","role":"assistant","content":"synthetic current reply"}}
+{"type":"response_item","payload":{"type":"message","role":"system","content":"synthetic system detail"}}

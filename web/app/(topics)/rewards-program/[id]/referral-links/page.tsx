@@ -1,0 +1,5 @@
+import { createTopicReferralLinksPage } from '@/lib/routes/topic-referral-factories'
+export const dynamic = 'force-dynamic'
+const { generateMetadata, default: Page } = createTopicReferralLinksPage('rewards-program')
+export { generateMetadata }
+export default Page

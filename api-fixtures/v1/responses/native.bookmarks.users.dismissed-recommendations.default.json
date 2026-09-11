@@ -1,0 +1,15 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "user",
+      "id": "user-2",
+      "roles": [],
+      "username": "user-2"
+    }
+  ]
+}

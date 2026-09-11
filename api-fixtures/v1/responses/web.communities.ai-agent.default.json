@@ -1,0 +1,18 @@
+{
+  "community_ai_agent": {
+    "agent_id": "agent-1",
+    "always_on": false,
+    "enabled": true,
+    "enabled_at": "2026-01-01T00:00:00Z",
+    "enabled_by_id": "user-1",
+    "entitlement": {
+      "allowed": true,
+      "reason": null
+    },
+    "label_topic_slugs": [],
+    "on_flag_action": "none",
+    "slug": "self-promotion",
+    "system_user_id": "system-user-1",
+    "system_username": "community_agent"
+  }
+}

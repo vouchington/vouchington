@@ -1,0 +1,181 @@
+import type { NativeConsumerManifestEntry } from './types.mts'
+
+/** Canonical native consumer claims, kept in code-point key order. */
+export const NATIVE_CONSUMER_MANIFEST_CLAIMS_19 = [
+  { key: 'native.swift.routeFamilyDirectory.profileTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.recommendationsSummary', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.recommendationsTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.referralsSummary', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.referralsTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.sourcesSummary', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.sourcesTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.topicAdministrationSummary', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.topicAdministrationTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.topicsSummary', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.topicsTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.unmapped', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.comparisonComparisonCompareDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.comparisonComparisonCompareTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.comparisonComparisonMetricsDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.comparisonComparisonMetricsTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.fediverseFediverseInstancesFediverseInstancesDescription',
+    consumers: ['swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.fediverseFediverseInstancesFediverseInstancesTitle',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.fediverseFediverseInstancesInstanceTopicsDescription',
+    consumers: ['swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.fediverseFediverseInstancesInstanceTopicsTitle',
+    consumers: ['swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.fediverseFediverseSearchFediverseSearchDescription',
+    consumers: ['swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.fediverseFediverseSearchFediverseSearchTitle',
+    consumers: ['swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.fediverseFediverseSearchPeertubeDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.fediverseFediverseSearchPeertubeTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.libraryBookmarksBookmarkFiltersDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.libraryBookmarksBookmarkFiltersTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryBookmarksBookmarksDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryBookmarksBookmarksTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.libraryLandingPagesLandingPagesDescription',
+    consumers: ['swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.libraryLandingPagesLandingPagesTitle',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.libraryLandingPagesPublicRoutesDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.libraryLandingPagesPublicRoutesTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryListsCommunitiesDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryListsCommunitiesTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryListsListsDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryListsListsTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryPlansMembershipDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryPlansMembershipTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryPlansPlansDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryPlansPlansTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.libraryReferralsReferralActivityDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.libraryReferralsReferralActivityTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryReferralsReferralsDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.libraryReferralsReferralsTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainAccountSettingsAccountDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainAccountSettingsAccountTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainAccountSettingsSecurityDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.mainAccountSettingsSecurityTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainAdvancedSettingsAdvancedDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.mainAdvancedSettingsAdvancedTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainAdvancedSettingsLandingPagesDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.mainAdvancedSettingsLandingPagesTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainChatChatDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainChatChatTitle', consumers: ['dotnet', 'swift'] },
+  { key: 'native.swift.routeMetadata.mainChatNewChatDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainChatNewChatTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainCommunitiesBrowseCommunitiesDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.mainCommunitiesBrowseCommunitiesTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainCommunitiesBrowseMembershipsDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.mainCommunitiesBrowseMembershipsTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainCommunityDetailCommunityDetailDescription',
+    consumers: ['swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.mainCommunityDetailCommunityDetailTitle',
+    consumers: ['swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.mainCommunityDetailCommunityFeedsDescription',
+    consumers: ['swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.mainCommunityDetailCommunityFeedsTitle',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.mainDomainDetailCompareDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainDomainDetailCompareTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainDomainDetailDomainDetailDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.mainDomainDetailDomainDetailTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainDomainsBrowseDomainsDescription', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainDomainsBrowseDomainsTitle',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.mainDomainsBrowseSavedDomainsDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.mainDomainsBrowseSavedDomainsTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainFeedNewsNewsFeedDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainFeedNewsNewsFeedTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainFeedNewsYourFeedDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainFeedNewsYourFeedTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainFeedPodcastsPodcastFeedDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.mainFeedPodcastsPodcastFeedTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainFeedPodcastsPodcastSourcesDescription',
+    consumers: ['swift'],
+  },
+  { key: 'native.swift.routeMetadata.mainFeedPodcastsPodcastSourcesTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainFeedPostsFiltersDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainFeedPostsFiltersTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainFeedPostsPostFeedDescription', consumers: ['swift'] },
+  { key: 'native.swift.routeMetadata.mainFeedPostsPostFeedTitle', consumers: ['swift'] },
+  {
+    key: 'native.swift.routeMetadata.mainFeedReferralLinksMutualReferralsDescription',
+    consumers: ['swift'],
+  },
+  {
+    key: 'native.swift.routeMetadata.mainFeedReferralLinksMutualReferralsTitle',
+    consumers: ['swift'],
+  },
+] as const satisfies readonly NativeConsumerManifestEntry[]

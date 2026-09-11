@@ -1,0 +1,85 @@
+{
+  "hostname_elections": {},
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "rss_feed",
+      "etag": null,
+      "feed_type": "article",
+      "home_page_url": null,
+      "hostname": null,
+      "id": "feed-2",
+      "is_discoverable": true,
+      "is_enabled": true,
+      "last_fetched_at": "2026-01-01T00:00:00Z",
+      "last_modified_at": null,
+      "podcast_show": null,
+      "publisher_type": {
+        "id": "publisher-type-blog",
+        "name": "Blog",
+        "slug": "blog",
+        "topic_type": "publisher_type"
+      },
+      "rss_feed_url": {
+        "__entity_type": "url",
+        "canonical_url_id": null,
+        "hostname": {
+          "__entity_type": "hostname",
+          "blocked": false,
+          "crawlable": true,
+          "hostname": "example.com",
+          "id": "feed-hostname-1",
+          "link_rel_follow": true,
+          "skip_web_risk": false,
+          "topic_id": null,
+          "votes_count_down": 0,
+          "votes_count_up": 0,
+          "votes_score_net": 0
+        },
+        "id": "feed-2-url",
+        "pathname": "/feed.xml",
+        "search_params": {},
+        "url": "https://example.com/feed.xml"
+      },
+      "title": "Example Feed",
+      "topic": {
+        "__entity_type": "topic",
+        "aliases": [],
+        "allow_reviews": true,
+        "created_at": "2026-01-01T00:00:00Z",
+        "created_by": {
+          "__entity_type": "user",
+          "id": "user-1",
+          "roles": [],
+          "username": "testuser"
+        },
+        "hero_image_id": null,
+        "homepage_url_id": null,
+        "hostname": null,
+        "hostname_id": null,
+        "id": "topic-1",
+        "lingua_rs_detected_language": null,
+        "logo_image_id": null,
+        "markdown": "",
+        "name": "Test Topic",
+        "noindex": false,
+        "referral_program_id": null,
+        "referral_program_slug": null,
+        "rewards_program_id": null,
+        "slug": "test-topic",
+        "topic_type": "topic",
+        "updated_by": {
+          "__entity_type": "user",
+          "id": "user-1",
+          "roles": [],
+          "username": "testuser"
+        }
+      }
+    }
+  ],
+  "topic_elections": {}
+}

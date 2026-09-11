@@ -1,0 +1,93 @@
+# NOTE: This is a prevention guard, not a cleanup gate. `S3ImagesClient` (backend/modules/aws/s3.mts)
+# is `new Proxy({} as S3Client, { get })` with no `getPrototypeOf` trap, so `S3ImagesClient instanceof
+# S3Client` is `false`. AWS SDK v3 paginators are built by `createPaginator()` in `@smithy/core`, whose
+# dispatch loop does `if (config.client instanceof S3Client) { ... } else throw new Error(...)` before
+# every page request — so any `paginate*` call against the proxy throws in production. Production code
+# already avoids this via explicit `send(new ListObjectsV2Command(...))` continuation loops. Zero
+# current `ast-grep scan` hits is therefore expected and correct; the rule's ability to fire is proven by the
+# `isValid: false` examples below, not by live scan hits.
+id: no-aws-s3-paginator
+language: Tsx
+severity: error
+message: >-
+  Do not use `@aws-sdk/client-s3` paginators (`paginate*`) in backend code. `S3ImagesClient` is a lazy
+  Proxy that fails `instanceof S3Client`, which is exactly what paginator dispatch checks before every
+  page request — so this throws "Invalid client, expected instance of S3Client" at runtime. Use an
+  explicit `S3ImagesClient.send(new ListObjectsV2Command(...))` continuation loop instead.
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/modules/aws/s3-proxy-contract.test.mts'
+rule:
+  any:
+    - all:
+        - kind: import_specifier
+        - regex: '^paginate[A-Z]'
+        - inside:
+            kind: import_statement
+            stopBy: end
+            regex: '@aws-sdk/client-s3'
+    - all:
+        - kind: call_expression
+        - has:
+            field: function
+            kind: identifier
+            regex: '^paginate[A-Z]'
+    - all:
+        - kind: call_expression
+        - has:
+            field: function
+            kind: member_expression
+            has:
+              field: property
+              regex: '^paginate[A-Z]'
+examples:
+  - code: |-
+      import { paginateListObjectsV2 } from '@aws-sdk/client-s3'
+
+      async function listAllRenders(prefix: string) {
+        const pages = paginateListObjectsV2({ client: S3ImagesClient }, { Bucket: S3Buckets.renders, Prefix: prefix })
+        for await (const page of pages) {
+          console.log(page.Contents)
+        }
+      }
+    isValid: false
+    file: 'backend/services/images/s3.mts'
+  - code: |-
+      import * as S3 from '@aws-sdk/client-s3'
+
+      async function listAllRenders(prefix: string) {
+        for await (const page of S3.paginateListObjectsV2({ client: S3ImagesClient }, { Bucket: S3Buckets.renders, Prefix: prefix })) {
+          console.log(page.Contents)
+        }
+      }
+    isValid: false
+    file: 'backend/services/images/s3.mts'
+  - code: |-
+      import { ListObjectsV2Command } from '@aws-sdk/client-s3'
+
+      export async function deleteImageRenders(s3Key: string): Promise<void> {
+        const list = await S3ImagesClient.send(
+          new ListObjectsV2Command({ Bucket: S3Buckets.renders, Prefix: `${s3Key}--` }),
+        )
+        const objects = list.Contents?.filter(obj => obj.Key != null) ?? []
+      }
+    isValid: true
+    file: 'backend/services/images/s3.mts'
+  - code: |-
+      function paginate(items: string[], cursor: string | undefined): string[] {
+        return cursor ? items.filter(item => item > cursor) : items
+      }
+    isValid: true
+    file: 'backend/modules/pagination/example.mts'
+  - code: |-
+      import { S3Client, paginateListObjectsV2 } from '@aws-sdk/client-s3'
+      import { describe, expect, it } from 'vitest'
+      import { S3ImagesClient } from './s3.mts'
+
+      it('rejects AWS SDK paginators', async () => {
+        const paginator = paginateListObjectsV2({ client: S3ImagesClient }, { Bucket: 'b' })
+        await expect(paginator.next()).rejects.toThrow(/Invalid client/)
+      })
+    isValid: true
+    file: 'backend/modules/aws/s3-proxy-contract.test.mts'

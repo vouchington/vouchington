@@ -1,0 +1,7 @@
+import './agent-prompts-routes/communities-by-idorslug-agent-prompts-by-promptid-allocations-delete.mts'
+import './agent-prompts-routes/communities-by-idorslug-agent-prompts-by-promptid-allocations-post.mts'
+import './agent-prompts-routes/communities-by-idorslug-agent-prompts-by-promptid-get.mts'
+import './agent-prompts-routes/communities-by-idorslug-agent-prompts-by-promptid-test-runs-post.mts'
+import './agent-prompts-routes/communities-by-idorslug-agent-prompts-get.mts'
+import './agent-prompts-routes/communities-by-idorslug-agent-prompts-history-get.mts'
+import './agent-prompts-routes/communities-by-idorslug-agent-prompts-post.mts'

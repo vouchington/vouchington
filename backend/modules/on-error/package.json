@@ -1,0 +1,35 @@
+{
+  "name": "@modules/on-error",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@modules/request-client-info": "workspace:^",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
+    "@opentelemetry/sdk-trace-base": "^2.11.0",
+    "@sentry/node": "10.71.0",
+    "@ts-shared/utils": "workspace:^",
+    "http-errors": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5"
+  }
+}

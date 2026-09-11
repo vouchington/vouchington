@@ -1,0 +1,32 @@
+{
+  "name": "@workers/crawl-referral-links",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/crawl-browser": "workspace:^",
+    "@queues/crawl-referral-links": "workspace:^",
+    "@services/crawler-referral-links": "workspace:^",
+    "@services/crawlers": "workspace:^",
+    "@services/crawls": "workspace:^",
+    "@services/urls": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

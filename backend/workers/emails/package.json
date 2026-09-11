@@ -1,0 +1,38 @@
+{
+  "name": "@workers/emails",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@email-templates/core": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@modules/gmail-smtp": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/emails": "workspace:^",
+    "@services/communities": "workspace:^",
+    "@services/contribution-gating": "workspace:^",
+    "@services/crm-contacts": "workspace:^",
+    "@services/email-classification": "workspace:^",
+    "@services/engagement-emails": "workspace:^",
+    "@services/users": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "page_info": {
+    "end_cursor": "eyJpZCI6InVzZXItMSIsInNjb3BlIjoie1wicmVzb3VyY2VcIjpcIm15LWZyaWVuZC1yZWNvbW1lbmRhdGlvbnNcIixcIm93bmVyX2lkXCI6XCJmaXh0dXJlLXVzZXJcIixcIm9yZGVyXCI6XCJpZC1hc2NcIn0ifQ",
+    "has_next_page": true,
+    "start_cursor": "eyJpZCI6InVzZXItMSIsInNjb3BlIjoie1wicmVzb3VyY2VcIjpcIm15LWZyaWVuZC1yZWNvbW1lbmRhdGlvbnNcIixcIm93bmVyX2lkXCI6XCJmaXh0dXJlLXVzZXJcIixcIm9yZGVyXCI6XCJpZC1hc2NcIn0ifQ"
+  },
+  "results": [
+    {
+      "__entity_type": "user",
+      "id": "user-1",
+      "provider": "github",
+      "provider_friend_name": "Fixture Friend"
+    }
+  ],
+  "users": {
+    "user-1": {
+      "__entity_type": "user",
+      "id": "user-1",
+      "profile_image_id": null,
+      "roles": [],
+      "username": "testuser"
+    }
+  }
+}

@@ -1,0 +1,79 @@
+id: no-durable-random-uuidv4
+language: Tsx
+severity: error
+message: >-
+  Durable app-owned IDs in these creation paths must use UUIDv7. randomUUID()/v4() are reserved
+  for temporary markers, tokens, and other opaque non-durable values.
+files:
+  - backend/services/bedrock-embeddings-batch/orchestrator/create.mts
+  - backend/services/admin-imports/seed-csvs.mts
+  - backend/api/v1/posts/posts-routes/posts-create-post.mts
+  - backend/api/v1/communities/posts-honeypot-response.mts
+rule:
+  any:
+    - all:
+        - kind: import_statement
+        - regex: '\bv4\b'
+        - regex: 'from [''"]uuid[''"]'
+    - all:
+        - kind: import_statement
+        - regex: '\brandomUUID\b'
+        - regex: 'from [''"](node:)?crypto[''"]'
+    - pattern: randomUUID($$$)
+    - pattern: crypto.randomUUID($$$)
+    - pattern: v4($$$)
+    - all:
+        - kind: call_expression
+        - regex: '\.\s*v4\s*\('
+    - all:
+        - kind: call_expression
+        - regex: '\.\s*randomUUID\s*\('
+examples:
+  - code: |
+      import { v4 } from 'uuid'
+
+      const batchId = v4()
+    isValid: false
+    file: 'backend/services/bedrock-embeddings-batch/orchestrator/create.mts'
+  - code: |
+      import * as uuid from 'uuid'
+
+      const batchId = uuid.v4()
+    isValid: false
+    file: 'backend/services/bedrock-embeddings-batch/orchestrator/create.mts'
+  - code: |
+      import { randomUUID } from 'node:crypto'
+
+      const batchId = randomUUID()
+    isValid: false
+    file: 'backend/services/bedrock-embeddings-batch/orchestrator/create.mts'
+  - code: |
+      import { randomUUID as makeId } from 'node:crypto'
+
+      const batchId = makeId()
+    isValid: false
+    file: 'backend/services/bedrock-embeddings-batch/orchestrator/create.mts'
+  - code: |
+      import { randomUUID as makeId } from 'crypto'
+
+      const batchId = makeId()
+    isValid: false
+    file: 'backend/services/bedrock-embeddings-batch/orchestrator/create.mts'
+  - code: |
+      import * as nodeCrypto from 'node:crypto'
+
+      const batchId = nodeCrypto.randomUUID()
+    isValid: false
+    file: 'backend/services/bedrock-embeddings-batch/orchestrator/create.mts'
+  - code: |
+      import { mintUUIDv7 } from '@modules/utils/ids'
+
+      const batchId = mintUUIDv7()
+    isValid: true
+    file: 'backend/services/bedrock-embeddings-batch/orchestrator/create.mts'
+  - code: |
+      import { randomUUID } from 'node:crypto'
+
+      const tempTable = `temp_batch_entities_${randomUUID().replaceAll('-', '')}`
+    isValid: true
+    file: 'backend/services/bedrock-embeddings-batch/orchestrator/save.mts'

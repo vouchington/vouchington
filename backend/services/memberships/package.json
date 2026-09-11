@@ -1,0 +1,52 @@
+{
+  "name": "@services/memberships",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./apple": {
+      "types": "./apple/index.mts",
+      "import": "./apple/index.mts",
+      "default": "./apple/index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@apple/app-store-server-library": "^3.1.0",
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@modules/membership-helpers": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/stripe": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
+    "@queues/memberships": "workspace:^",
+    "@queues/unfurl-referral-links": "workspace:^",
+    "@queues/vote-weight": "workspace:^",
+    "@ts-shared/money": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "@vouchington/memberships": "0.2.0",
+    "@vouchington/utils": "0.5.1",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

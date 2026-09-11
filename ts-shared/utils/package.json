@@ -1,0 +1,28 @@
+{
+  "name": "@ts-shared/utils",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@vouchington/html-utils": "0.1.1",
+    "@vouchington/phone-validation": "0.0.0",
+    "@vouchington/utils": "0.5.1"
+  }
+}

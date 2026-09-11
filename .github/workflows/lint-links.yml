@@ -1,0 +1,67 @@
+name: Lint Links
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint-links:
+    runs-on: [self-hosted]
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - uses: ./.github/actions/setup-lychee
+        timeout-minutes: 3
+
+      - name: Verify link exclusions
+        timeout-minutes: 1
+        shell: bash
+        run: |
+          actual="$(
+            printf '%s\n' \
+              'https://github.com/vouchington/vouchington-machines' \
+              'https://github.com/vouchington/vouchington-machines/tree/main' \
+              'https://github.com/vouchington/vouchington-machines?tab=readme' \
+              'https://github.com/vouchington/vouchington-machines#readme' \
+              'https://host' \
+              'https://host/ap/users/:userId#main-key' \
+              'https://github.com/vouchington/vouchington-machines-evil/pull/5' \
+              'https://hostname/ap/users/1' \
+              'https://github.com/openai/openai-node' \
+              | lychee --dump --cache=false --config lychee.toml - \
+              | sort
+          )"
+          expected="$(
+            printf '%s\n' \
+              'https://github.com/openai/openai-node' \
+              'https://github.com/vouchington/vouchington-machines-evil/pull/5' \
+              'https://hostname/ap/users/1' \
+              | sort
+          )"
+          test "$actual" = "$expected"
+
+      - name: Check links
+        timeout-minutes: 5
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./ci/lint-links.sh

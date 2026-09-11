@@ -1,0 +1,41 @@
+{
+  "name": "@services/post-clearance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
+    "@queues/psql": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/moderation-training": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
+    "@services/notifications": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

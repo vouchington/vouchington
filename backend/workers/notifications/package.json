@@ -1,0 +1,39 @@
+{
+  "name": "@workers/notifications",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./workers.mts",
+      "import": "./workers.mts",
+      "default": "./workers.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/notifications": "workspace:^",
+    "@services/notifications-push": "workspace:^",
+    "@services/users": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@services/modmail": "workspace:^",
+    "@types/web-push": "^3.6.4",
+    "@voucha/test-helpers": "workspace:^",
+    "web-push": "^3.6.7"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "@services/community-agent-prompts",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/membership-helpers": "workspace:^",
+    "@services/agents": "workspace:^",
+    "@services/communities": "workspace:^",
+    "@services/community-agent-prompt-audit": "workspace:^",
+    "@services/memberships": "workspace:^",
+    "@services/moderation": "workspace:^",
+    "@services/users": "workspace:^",
+    "http-assert": "^1.5.0",
+    "sql-template-strings": "^2.2.2",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

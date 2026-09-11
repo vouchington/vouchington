@@ -1,0 +1,42 @@
+export const communityListItemTypeCatalog = Object.freeze({
+  topic: {
+    apiPathSegment: 'topics',
+    webPathSegment: 'topics',
+    requestBodyIdField: 'topic_id',
+    label: 'Topic',
+    labelPlural: 'Topics',
+    searchLabel: 'topics',
+  },
+  rss_feed: {
+    apiPathSegment: 'rss-feeds',
+    webPathSegment: 'feeds',
+    requestBodyIdField: 'rss_feed_id',
+    label: 'Source',
+    labelPlural: 'Sources',
+    searchLabel: 'sources',
+  },
+  post: {
+    apiPathSegment: 'posts',
+    webPathSegment: 'posts',
+    requestBodyIdField: 'post_id',
+    label: 'Post',
+    labelPlural: 'Posts',
+    searchLabel: 'posts',
+  },
+  url_hostname: {
+    apiPathSegment: 'domains',
+    webPathSegment: 'domains',
+    requestBodyIdField: 'url_hostname_id',
+    label: 'Domain',
+    labelPlural: 'Domains',
+    searchLabel: 'domains',
+  },
+  url: {
+    apiPathSegment: 'urls',
+    webPathSegment: 'urls',
+    requestBodyIdField: 'url_id',
+    label: 'URL',
+    labelPlural: 'URLs',
+    searchLabel: 'URLs',
+  },
+})

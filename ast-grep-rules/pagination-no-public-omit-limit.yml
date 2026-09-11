@@ -1,0 +1,44 @@
+id: pagination-no-public-omit-limit
+language: Tsx
+severity: error
+message: 'Public list request parsers must not expose omitLimit; keep every client-requested list bounded.'
+files:
+  - 'backend/services/search-params/**/*.mts'
+ignores:
+  - 'backend/services/search-params/**/*.test.mts'
+  - 'backend/services/search-params/**/__tests__/**'
+rule:
+  any:
+    - pattern: $QUERY.omitLimit
+    - all:
+        - kind: variable_declarator
+        - has:
+            field: name
+            kind: object_pattern
+            regex: '(?:^|[{,]\s*)omitLimit(?:\s*:|\s*[,}])'
+        - has:
+            field: value
+            kind: identifier
+            regex: '^(?:query|params|searchParams)$'
+examples:
+  - code: 'const omitLimit = parseBooleanish(query.omitLimit)'
+    isValid: false
+    file: 'backend/services/search-params/parse-posts.mts'
+  - code: 'const { omitLimit } = query'
+    isValid: false
+    file: 'backend/services/search-params/parse-posts.mts'
+  - code: 'const { omitLimit: unbounded } = query'
+    isValid: false
+    file: 'backend/services/search-params/parse-topics.mts'
+  - code: 'const limit = parseInteger(query.limit)'
+    isValid: true
+    file: 'backend/services/search-params/parse-posts.mts'
+  - code: 'const omitLimit = parseBooleanish(query.omitLimit)'
+    isValid: true
+    file: 'backend/services/search-params/__tests__/parse-posts.test.mts'
+  - code: 'const options = { omitLimit: true }'
+    isValid: true
+    file: 'backend/services/posts/search/get-facets.mts'
+  - code: 'const { omitLimit } = options'
+    isValid: true
+    file: 'backend/services/posts/search/get-facets.mts'

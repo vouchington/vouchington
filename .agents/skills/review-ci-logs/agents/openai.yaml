@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Review CI Logs'
+  short_description: 'Audit CI failures and log noise safely'
+  default_prompt: 'Use $review-ci-logs to audit recent CI failures and verbose logs, then recommend one diagnostics-preserving fix.'

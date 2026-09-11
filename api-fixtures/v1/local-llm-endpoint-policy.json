@@ -1,0 +1,250 @@
+{
+  "$schema": "./local-llm-endpoint-policy.schema.json",
+  "version": 1,
+  "hostPolicyRows": [
+    {
+      "id": "loopback-ipv4",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://127.0.0.1:11434/v1",
+      "verdict": "allowed",
+      "notes": "IPv4 loopback is always allowed cleartext."
+    },
+    {
+      "id": "rfc1918-10-private",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://10.0.0.8:1234/v1",
+      "verdict": "allowed",
+      "notes": "RFC1918 10.0.0.0/8 is allowed cleartext."
+    },
+    {
+      "id": "rfc1918-172-private",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://172.16.0.8:1234/v1",
+      "verdict": "allowed",
+      "notes": "RFC1918 172.16.0.0/12 is allowed cleartext."
+    },
+    {
+      "id": "rfc1918-192-private",
+      "requiredConsumers": ["dotnet-core", "swift-core", "swift-android"],
+      "endpoint": "http://192.168.1.20:1234/v1",
+      "verdict": "allowed",
+      "notes": "RFC1918 192.168.0.0/16 is allowed cleartext. Also the Android LAN-host regression case."
+    },
+    {
+      "id": "link-local-ipv4",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://169.254.1.8:1234/v1",
+      "verdict": "allowed",
+      "notes": "IPv4 link-local 169.254.0.0/16 is allowed cleartext."
+    },
+    {
+      "id": "loopback-ipv6",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://[::1]:11434/v1",
+      "verdict": "allowed",
+      "notes": "IPv6 loopback is always allowed cleartext."
+    },
+    {
+      "id": "ula-ipv6",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://[fc00::8]:11434/v1",
+      "verdict": "allowed",
+      "notes": "IPv6 unique local address fc00::/7 is allowed cleartext."
+    },
+    {
+      "id": "link-local-ipv6",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://[fe80::8]:11434/v1",
+      "verdict": "allowed",
+      "notes": "IPv6 link-local fe80::/10 is allowed cleartext."
+    },
+    {
+      "id": "dot-local-hostname",
+      "requiredConsumers": ["dotnet-core", "swift-core", "swift-android"],
+      "endpoint": "http://model-box.local:11434/v1",
+      "verdict": "allowed",
+      "notes": "mDNS-style .local names are allowed cleartext."
+    },
+    {
+      "id": "single-label-hostname",
+      "requiredConsumers": ["dotnet-core", "swift-core", "swift-android"],
+      "endpoint": "http://model-box:11434/v1",
+      "verdict": "allowed",
+      "notes": "Single-label DNS names (no dot) are allowed cleartext; they cannot resolve on the public internet."
+    },
+    {
+      "id": "localhost-name",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://localhost:11434/v1",
+      "verdict": "allowed",
+      "notes": "The literal name 'localhost' is allowed cleartext."
+    },
+    {
+      "id": "cgnat-100-64-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://100.64.0.1:11434/v1",
+      "verdict": "rejected",
+      "notes": "RFC 6598 100.64.0.0/10 is shared address space, not a private LAN (#9474). HTTP is rejected on every native client. IPv6 ULA, including Tailscale fd7a:115c:a1e0::/48, remains allowed."
+    },
+    {
+      "id": "cgnat-100-128-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://100.128.0.1:11434/v1",
+      "verdict": "rejected",
+      "notes": "100.128.0.1 is ordinary public IPv4 outside 100.64.0.0/10 and must not receive cleartext."
+    },
+    {
+      "id": "public-ipv4-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://8.8.8.8/v1",
+      "verdict": "rejected",
+      "notes": "Public IPv4 addresses must not receive cleartext traffic."
+    },
+    {
+      "id": "public-ipv6-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://[2001:4860:4860::8888]:11434/v1",
+      "verdict": "rejected",
+      "notes": "Public IPv6 literals must not receive cleartext traffic (the bug fixed by #9332)."
+    },
+    {
+      "id": "public-hostname-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core", "swift-android"],
+      "endpoint": "http://models.example.test/v1",
+      "verdict": "rejected",
+      "notes": "Multi-label public hostnames must not receive cleartext traffic."
+    },
+    {
+      "id": "zone-id-private-looking-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://[fe80::1%eth0]:11434/v1",
+      "verdict": "rejected",
+      "notes": "Raw (non-percent-encoded) IPv6 zone IDs are rejected unconditionally, even on an otherwise-private range: the scope is ambiguous outside its originating interface. .NET's Uri.Host silently discards the zone ID; detection instead uses Uri.IdnHost, the one accessor that still carries it."
+    },
+    {
+      "id": "zone-id-percent-encoded-private-looking-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://[fe80::1%25eth0]:11434/v1",
+      "verdict": "rejected",
+      "notes": "RFC 6874 percent-encoded IPv6 zone IDs are rejected unconditionally too, matching Swift's blanket guard. Previously allowed by .NET (host reduced to the bare private literal after Uri stripped the zone ID)."
+    },
+    {
+      "id": "zone-id-public-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://[2001:4860:4860::8888%25eth0]:11434/v1",
+      "verdict": "rejected",
+      "notes": "A zone ID on an already-public IPv6 literal stays rejected."
+    },
+    {
+      "id": "ipv4-mapped-loopback-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://[::ffff:127.0.0.1]:11434/v1",
+      "verdict": "rejected",
+      "notes": "IPv4-mapped IPv6 literals (::ffff:a.b.c.d) are rejected outright, even when the mapped address is loopback. Previously allowed by .NET via IPAddress.IsLoopback's IPv4-mapped special case; Swift already rejected every ::ffff:... form."
+    },
+    {
+      "id": "ipv4-mapped-private-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://[::ffff:192.168.1.1]:11434/v1",
+      "verdict": "rejected",
+      "notes": "IPv4-mapped IPv6 literals are rejected outright even when the mapped address is a private range. Already correctly rejected on both platforms; kept as a regression pin."
+    },
+    {
+      "id": "ipv4-mapped-public-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "http://[::ffff:8.8.8.8]:11434/v1",
+      "verdict": "rejected",
+      "notes": "IPv4-mapped IPv6 literals are rejected outright even when the mapped address is public."
+    },
+    {
+      "id": "non-http-scheme-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "ftp://localhost:11434/v1",
+      "verdict": "rejected",
+      "notes": "Only http and https schemes are accepted."
+    },
+    {
+      "id": "malformed-url-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "not a url",
+      "verdict": "rejected",
+      "notes": "Unparsable endpoint text is rejected."
+    },
+    {
+      "id": "userinfo-present-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "https://user:pass@models.example.test/v1",
+      "verdict": "rejected",
+      "notes": "Embedded userinfo is rejected regardless of scheme."
+    },
+    {
+      "id": "query-present-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "https://models.example.test/v1?api_key=secret",
+      "verdict": "rejected",
+      "notes": "A query string is rejected regardless of scheme (it could leak a credential into logs)."
+    },
+    {
+      "id": "fragment-present-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "https://models.example.test/v1#section",
+      "verdict": "rejected",
+      "notes": "A fragment is rejected regardless of scheme."
+    },
+    {
+      "id": "https-public-host-allowed",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "https://models.example.test/v1",
+      "verdict": "allowed",
+      "notes": "The cleartext-only host restriction does not apply to https: any host is allowed once traffic is encrypted."
+    },
+    {
+      "id": "https-cgnat-100-64-allowed",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "https://100.64.0.1:11434/v1",
+      "verdict": "allowed",
+      "notes": "HTTPS skips the cleartext host gate even on RFC 6598 100.64.0.0/10 (#9474). A later special-case that rejected CGNAT on TLS would fail this row."
+    },
+    {
+      "id": "https-zone-id-rejected",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "endpoint": "https://[fe80::1%25eth0]:11434/v1",
+      "verdict": "rejected",
+      "notes": "Unlike the cleartext-host restriction (which https is exempt from), the zone-ID guard applies regardless of scheme. A zone ID is only meaningful on its originating interface, and allowing it through under https would make the canonical Origin diverge between platforms: .NET's Uri.Host silently drops a zone ID while Swift's URL.host retains it percent-decoded, so the two clients would disagree on the credential-scoping origin for the same endpoint."
+    }
+  ],
+  "originPairs": [
+    {
+      "id": "https-default-vs-explicit-port",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "variantA": "https://models.example.test/v1",
+      "variantB": "https://models.example.test:443/v1",
+      "expectedOrigin": "https://models.example.test:443",
+      "notes": "Implicit and explicit default HTTPS ports must canonicalize identically so credential invalidation on endpoint change is consistent across clients."
+    },
+    {
+      "id": "http-default-vs-explicit-port",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "variantA": "http://localhost/v1",
+      "variantB": "http://localhost:80/v1",
+      "expectedOrigin": "http://localhost:80",
+      "notes": "Implicit and explicit default HTTP ports must canonicalize identically."
+    },
+    {
+      "id": "ipv6-default-vs-explicit-port-http",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "variantA": "http://[fc00::8]/v1",
+      "variantB": "http://[fc00::8]:80/v1",
+      "expectedOrigin": "http://[fc00::8]:80",
+      "notes": "IPv6 hosts must be bracketed in the canonical origin string: an unbracketed 'scheme://host:port' form is ambiguous because the host itself contains colons."
+    },
+    {
+      "id": "ipv6-default-vs-explicit-port-https",
+      "requiredConsumers": ["dotnet-core", "swift-core"],
+      "variantA": "https://[fc00::8]/v1",
+      "variantB": "https://[fc00::8]:443/v1",
+      "expectedOrigin": "https://[fc00::8]:443",
+      "notes": "Same IPv6 bracket-canonicalization requirement over https."
+    }
+  ]
+}

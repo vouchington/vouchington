@@ -1,0 +1,43 @@
+{
+  "name": "@agents/story-clustering",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@agents/_shared": "workspace:^",
+    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/on-error": "workspace:^",
+    "@modules/openai-utils": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "openai": "^7.10.0",
+    "p-map": "7.0.7"
+  },
+  "devDependencies": {
+    "@services/rss-feeds": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

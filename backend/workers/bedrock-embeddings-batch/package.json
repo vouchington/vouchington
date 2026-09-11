@@ -1,0 +1,32 @@
+{
+  "name": "@workers/bedrock-embeddings-batch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@queues/bedrock-embeddings": "workspace:^",
+    "@queues/bedrock-embeddings-batch": "workspace:^",
+    "@services/bedrock-embeddings": "workspace:^",
+    "@services/bedrock-embeddings-batch": "workspace:^",
+    "@services/queue-monitoring": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@modules/aws": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "@services/crawler-html",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "@services/crawl-embeds": "workspace:^",
+    "@services/crawlers": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "@vouchington/crawler-html": "0.0.1",
+    "@vouchington/embeds": "0.0.2",
+    "ssrf-guard": "^1.0.0"
+  },
+  "devDependencies": {
+    "undici": "^8.10.2"
+  }
+}

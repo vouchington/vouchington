@@ -1,0 +1,20 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDc0MyIsInNjb3BlIjoibXktcmV3YXJkcy1wcm9ncmFtLXN0YXR1c2VzOjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDc0MDppZC1hc2MifQ"
+  },
+  "results": [
+    {
+      "id": "00000000-0000-7000-8000-000000000743",
+      "rewards_program_status": {
+        "id": "00000000-0000-7000-8000-000000000753",
+        "name": "Diamond",
+        "slug": "diamond"
+      },
+      "rewards_program_status_id": "00000000-0000-7000-8000-000000000753",
+      "since": null,
+      "until": null
+    }
+  ]
+}

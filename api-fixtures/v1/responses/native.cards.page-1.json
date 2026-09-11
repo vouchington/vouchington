@@ -1,0 +1,55 @@
+{
+  "page_info": {
+    "end_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDcwMiIsInNjb3BlIjoibXktY2FyZHM6MDAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwNzAwOmlkLWFzYyJ9",
+    "has_next_page": true,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDcwMSIsInNjb3BlIjoibXktY2FyZHM6MDAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwNzAwOmlkLWFzYyJ9"
+  },
+  "results": [
+    {
+      "authorized_user_of_card": {
+        "card": {
+          "id": "00000000-0000-7000-8000-000000000711",
+          "name": "Sapphire Reserve",
+          "slug": "sapphire-reserve"
+        },
+        "closed_on": null,
+        "id": "00000000-0000-7000-8000-000000000703",
+        "opened_on": "2021-04-15"
+      },
+      "authorized_user_of_id": "00000000-0000-7000-8000-000000000703",
+      "card": {
+        "id": "00000000-0000-7000-8000-000000000712",
+        "name": "Freedom Unlimited",
+        "slug": "freedom-unlimited"
+      },
+      "card_id": "00000000-0000-7000-8000-000000000712",
+      "closed_on": null,
+      "credit_limit": {
+        "amount": 0,
+        "currency": "usd"
+      },
+      "id": "00000000-0000-7000-8000-000000000701",
+      "is_authorized_user": true,
+      "note": "Authorized-user account",
+      "opened_on": "2024-01-20",
+      "received_sign_up_bonus_on": null
+    },
+    {
+      "authorized_user_of_card": null,
+      "authorized_user_of_id": null,
+      "card": {
+        "id": "00000000-0000-7000-8000-000000000713",
+        "name": "Everyday Cash",
+        "slug": "everyday-cash"
+      },
+      "card_id": "00000000-0000-7000-8000-000000000713",
+      "closed_on": "2025-12-31",
+      "credit_limit": null,
+      "id": "00000000-0000-7000-8000-000000000702",
+      "is_authorized_user": false,
+      "note": null,
+      "opened_on": null,
+      "received_sign_up_bonus_on": null
+    }
+  ]
+}

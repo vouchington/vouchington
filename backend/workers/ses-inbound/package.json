@@ -1,0 +1,30 @@
+{
+  "name": "@workers/ses-inbound",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
+    "@queues/ses-inbound": "workspace:^",
+    "@services/customer-support": "workspace:^",
+    "@ts-shared/ses-inbound-contract": "workspace:^",
+    "glide-mq": "^0.15.5",
+    "mailparser": "^3.9.22"
+  },
+  "devDependencies": {
+    "@types/mailparser": "^3.4.6"
+  }
+}

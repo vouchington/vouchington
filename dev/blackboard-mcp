@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Registered as the "agent-blackboard" MCP server in .mcp.json and .codex/config.toml. Resolve the
+# root-installed package from this script's location so startup does not depend on the caller's cwd.
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+CLI_PATH="${REPO_ROOT}/node_modules/.bin/agent-blackboard"
+
+if [ ! -x "${CLI_PATH}" ]; then
+  echo "Error: agent-blackboard CLI not found at ${CLI_PATH}; run pnpm install from the Filaments root" >&2
+  exit 1
+fi
+
+exec "${CLI_PATH}" mcp

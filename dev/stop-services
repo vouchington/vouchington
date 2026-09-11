@@ -1,0 +1,340 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+STOP_VALKEY=true
+
+usage() {
+    cat <<'USAGE'
+Usage: ./dev/stop-services [--keep-valkey]
+
+Stops local dev services for the current worktree only.
+
+Options:
+  --keep-valkey   Stop Node/tmux services but leave the Valkey container running
+  --help          Show this help
+USAGE
+}
+
+if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
+    usage
+    exit 0
+fi
+
+for arg in "$@"; do
+    case "$arg" in
+        --keep-valkey)
+            if ! $STOP_VALKEY; then echo "Error: duplicate option: $arg" >&2; usage >&2; exit 2; fi
+            STOP_VALKEY=false
+            ;;
+        --help|-h)
+            echo "Error: help cannot be combined with other arguments" >&2
+            usage >&2
+            exit 2
+            ;;
+        *)
+            echo -e "${RED}Error: unknown option: $arg${NC}" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+# shellcheck source=lib/worktree-resource-env.sh
+source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
+
+if [ -f "$REPO_ROOT/.env" ]; then
+    if ! worktree_resource_load_current_env "$REPO_ROOT"; then
+        echo -e "${YELLOW}Warning: .env does not match this worktree; ignoring all saved service configuration (ports, database URL, Valkey container).${NC}" >&2
+    fi
+else
+    worktree_resource_clear_env
+fi
+
+find_pids_on_port() {
+    local port=$1
+
+    if [ -z "$port" ]; then
+        return 0
+    fi
+
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -Pi :"$port" -sTCP:LISTEN -t 2>/dev/null || true
+    elif command -v ss >/dev/null 2>&1; then
+        ss -tlnp "sport = :$port" 2>/dev/null | grep -o 'pid=[0-9]*' | grep -o '[0-9]*$' || true
+    else
+        echo -e "${YELLOW}Warning: Neither lsof nor ss found. Cannot detect processes on port $port.${NC}" >&2
+    fi
+}
+
+process_cwd_matches_repo() {
+    local pid=$1
+    local cwd
+    local repo_physical
+
+    if command -v lsof >/dev/null 2>&1; then
+        cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -n1)
+    elif [ -e "/proc/$pid/cwd" ]; then
+        cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null || true)
+    else
+        return 1
+    fi
+
+    [ -n "$cwd" ] || return 1
+    repo_physical=$(cd "$REPO_ROOT" && pwd -P)
+
+    case "$cwd" in
+        "$REPO_ROOT"|"$REPO_ROOT"/*|"$repo_physical"|"$repo_physical"/*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+find_pids_for_entrypoint() {
+    local entrypoint=$1
+    local pid
+    local command
+
+    if ! command -v ps >/dev/null 2>&1; then
+        echo -e "${YELLOW}Warning: ps not found. Cannot detect $entrypoint processes.${NC}" >&2
+        return 0
+    fi
+
+    while read -r pid command; do
+        [ -n "$pid" ] || continue
+
+        case "$command" in
+            node\ *|*/node\ *) ;;
+            *) continue ;;
+        esac
+
+        case "$command" in
+            *"$REPO_ROOT/$entrypoint"*)
+                printf '%s\n' "$pid"
+                ;;
+            *"$entrypoint"*)
+                if process_cwd_matches_repo "$pid"; then
+                    printf '%s\n' "$pid"
+                fi
+                ;;
+        esac
+    done < <(ps -eo pid=,command= 2>/dev/null || true)
+}
+
+pid_is_running() {
+    local pid=$1
+    kill -0 "$pid" 2>/dev/null
+}
+
+stop_pids() {
+    local label=$1
+    shift
+    local pids=("$@")
+    local pid
+    local running=()
+    local still_running=()
+
+    for pid in "${pids[@]+"${pids[@]}"}"; do
+        if pid_is_running "$pid"; then
+            running+=("$pid")
+        fi
+    done
+
+    if [ "${#running[@]}" -eq 0 ]; then
+        echo "  No $label processes running"
+        return 0
+    fi
+
+    echo "  Stopping $label process(es): ${running[*]}"
+    kill "${running[@]}" 2>/dev/null || true
+
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        still_running=()
+        for pid in "${running[@]+"${running[@]}"}"; do
+            if pid_is_running "$pid"; then
+                still_running+=("$pid")
+            fi
+        done
+
+        if [ "${#still_running[@]}" -eq 0 ]; then
+            echo -e "${GREEN}  ✓ Stopped $label${NC}"
+            return 0
+        fi
+
+        sleep 0.2
+    done
+
+    echo -e "${YELLOW}  Force-stopping $label process(es): ${still_running[*]}${NC}"
+    kill -KILL "${still_running[@]}" 2>/dev/null || true
+    echo -e "${GREEN}  ✓ Stopped $label${NC}"
+}
+
+stop_port() {
+    local label=$1
+    local port=$2
+    local pids=()
+    local repo_pids=()
+    local pid
+
+    if [ -z "$port" ]; then
+        return 0
+    fi
+
+    echo -e "${YELLOW}Checking $label on port $port...${NC}"
+    while IFS= read -r pid; do
+        [ -n "$pid" ] && pids+=("$pid")
+    done < <(find_pids_on_port "$port")
+
+    for pid in "${pids[@]+"${pids[@]}"}"; do
+        if process_cwd_matches_repo "$pid"; then
+            repo_pids+=("$pid")
+        else
+            echo -e "${YELLOW}  Skipping PID $pid on port $port; cwd is outside this repo or could not be verified${NC}"
+        fi
+    done
+
+    stop_pids "$label" "${repo_pids[@]+"${repo_pids[@]}"}"
+    echo ""
+}
+
+stop_entrypoint() {
+    local label=$1
+    local entrypoint=$2
+    local pids=()
+    local pid
+
+    echo -e "${YELLOW}Checking $label entrypoint $entrypoint...${NC}"
+    while IFS= read -r pid; do
+        [ -n "$pid" ] && pids+=("$pid")
+    done < <(find_pids_for_entrypoint "$entrypoint")
+
+    stop_pids "$label" "${pids[@]+"${pids[@]}"}"
+    echo ""
+}
+
+tmux_window_exists() {
+    local session=$1
+    local window=$2
+    local name
+
+    while IFS= read -r name; do
+        if [ "$name" = "$window" ]; then
+            return 0
+        fi
+    done < <(tmux list-windows -t "$session" -F '#{window_name}' 2>/dev/null || true)
+
+    return 1
+}
+
+tmux_session_name() {
+    printf 'voucha-%s' "$(basename "$REPO_ROOT")"
+}
+
+current_tmux_target() {
+    if [ -z "${TMUX:-}" ]; then
+        return 0
+    fi
+
+    tmux display-message -p '#S:#W' 2>/dev/null || true
+}
+
+stop_tmux_services() {
+    local session
+    local windows=(nextjs backend workers-io worker-cpu cloudflare lambdas)
+    local window
+    local target
+    local current_target
+    local sent=false
+
+    session=$(tmux_session_name)
+
+    if ! command -v tmux >/dev/null 2>&1; then
+        echo "tmux not found; skipping tmux service windows"
+        echo ""
+        return 0
+    fi
+
+    if ! tmux has-session -t "$session" 2>/dev/null; then
+        echo "No tmux session for this worktree ($session)"
+        echo ""
+        return 0
+    fi
+
+    current_target=$(current_tmux_target)
+
+    echo -e "${YELLOW}Stopping tmux service windows in $session...${NC}"
+    for window in "${windows[@]}"; do
+        target="$session:$window"
+        if tmux_window_exists "$session" "$window"; then
+            if [ "$current_target" = "$target" ]; then
+                echo "  Skipping current tmux window $window"
+                continue
+            fi
+
+            if tmux send-keys -t "$target" C-c; then
+                sent=true
+                echo "  Sent Ctrl-C to $window"
+            else
+                echo -e "${YELLOW}  Could not send Ctrl-C to $window; continuing${NC}"
+            fi
+        fi
+    done
+
+    if ! $sent; then
+        echo "  No service windows found"
+    fi
+    echo ""
+}
+
+stop_valkey_container() {
+    if ! $STOP_VALKEY; then
+        echo -e "${YELLOW}Keeping Valkey running (--keep-valkey)${NC}"
+        echo ""
+        return 0
+    fi
+
+    if [ -z "${VALKEY_CONTAINER:-}" ]; then
+        echo "Valkey container not configured"
+        echo ""
+        return 0
+    fi
+
+    if ! command -v docker >/dev/null 2>&1; then
+        echo -e "${YELLOW}Warning: docker not found. Cannot stop $VALKEY_CONTAINER.${NC}" >&2
+        echo ""
+        return 0
+    fi
+
+    echo -e "${YELLOW}Stopping Valkey container $VALKEY_CONTAINER...${NC}"
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$VALKEY_CONTAINER"; then
+        docker stop "$VALKEY_CONTAINER" >/dev/null 2>&1 \
+            && echo -e "${GREEN}  ✓ Stopped Valkey${NC}" \
+            || echo -e "${YELLOW}  Could not stop Valkey container${NC}"
+    else
+        echo "  Valkey container is not running"
+    fi
+    echo ""
+}
+
+echo -e "${BLUE}=== Stopping Worktree Services ===${NC}\n"
+
+stop_tmux_services
+
+stop_port "backend" "${PORT:-}"
+stop_port "Next.js" "${NEXT_PORT:-${WEB_PORT:-}}"
+stop_port "CF Worker" "${WORKER_PORT:-}"
+stop_port "image lambda" "${IMAGE_LAMBDA_PORT:-}"
+stop_port "workerd inspector" "${INSPECTOR_PORT:-}"
+stop_entrypoint "backend workers-io" "backend/entrypoints/worker-io/serve.mts"
+stop_entrypoint "backend worker-cpu" "backend/entrypoints/worker-cpu/serve.mts"
+
+stop_valkey_container
+
+echo -e "${GREEN}✓ Service stop complete${NC}"

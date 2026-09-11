@@ -1,0 +1,115 @@
+name: Dispatch completed deploy
+
+on:
+  workflow_run:
+    workflows:
+      - Docs Publish
+      - Main CI (backend)
+      - Main CI (cloudflare-worker)
+      - Main CI (lambdas)
+      - Main CI (storybook)
+      - Main CI (web)
+      - Sync Articles
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: dispatch-completed-deploy-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == github.event.repository.default_branch
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    steps:
+      - name: Check route deployment intent
+        id: intent
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_WORKFLOW_PATH: ${{ github.event.workflow_run.path }}
+        run: |
+          set -euo pipefail
+          should_dispatch=true
+          if [ "$SOURCE_WORKFLOW_PATH" = .github/workflows/main-web.yml ]; then
+            successful_intent_jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs?filter=all&per_page=100" \
+              --jq '[.jobs[] | select(.name == "web-deploy-intent" and .conclusion == "success")] | length')
+            if [ "$successful_intent_jobs" = 0 ]; then should_dispatch=false; fi
+          fi
+          echo "should_dispatch=$should_dispatch" >> "$GITHUB_OUTPUT"
+      - name: Map completed source workflow
+        id: source
+        if: steps.intent.outputs.should_dispatch == 'true'
+        env:
+          SOURCE_WORKFLOW_PATH: ${{ github.event.workflow_run.path }}
+        run: |
+          case "$SOURCE_WORKFLOW_PATH" in
+            .github/workflows/docs-publish.yml)
+              echo 'source_workflow=docs-publish' >> "$GITHUB_OUTPUT"
+              echo 'event_type=filaments-publish-docs-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/main-backend.yml)
+              echo 'source_workflow=main-backend' >> "$GITHUB_OUTPUT"
+              echo 'event_type=filaments-deploy-backend-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/main-cloudflare-worker.yml)
+              echo 'source_workflow=main-cloudflare-worker' >> "$GITHUB_OUTPUT"
+              echo 'event_type=filaments-deploy-cloudflare-worker-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/main-lambdas.yml)
+              echo 'source_workflow=main-lambdas' >> "$GITHUB_OUTPUT"
+              echo 'event_type=filaments-deploy-lambdas-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/main-storybook.yml)
+              echo 'source_workflow=main-storybook' >> "$GITHUB_OUTPUT"
+              echo 'event_type=filaments-publish-storybook-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/main-web.yml)
+              echo 'source_workflow=main-web' >> "$GITHUB_OUTPUT"
+              echo 'event_type=filaments-deploy-web-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            .github/workflows/sync-articles.yml)
+              echo 'source_workflow=sync-articles' >> "$GITHUB_OUTPUT"
+              echo 'event_type=filaments-publish-articles-v2' >> "$GITHUB_OUTPUT"
+              ;;
+            *) echo '::error::Unexpected source workflow path.'; exit 1 ;;
+          esac
+      - name: Mint vouchington-infra dispatch token
+        id: app-token
+        if: steps.intent.outputs.should_dispatch == 'true'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.VOUCHINGTON_INFRA_APP_ID }}
+          private-key: ${{ secrets.VOUCHINGTON_INFRA_APP_PRIVATE_KEY }}
+          owner: vouchington
+          repositories: vouchington-infra
+          permission-contents: write
+      - name: Dispatch source revision to vouchington-infra
+        if: steps.intent.outputs.should_dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SOURCE_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          SOURCE_REVISION: ${{ github.event.workflow_run.head_sha }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_WORKFLOW: ${{ steps.source.outputs.source_workflow }}
+          DISPATCH_EVENT_TYPE: ${{ steps.source.outputs.event_type }}
+        run: |
+          set -euo pipefail
+          jq --compact-output --null-input \
+            --arg source_repository "$SOURCE_REPOSITORY" \
+            --arg source_revision "$SOURCE_REVISION" \
+            --arg source_workflow "$SOURCE_WORKFLOW" \
+            --arg source_run_id "$SOURCE_RUN_ID" \
+            --arg source_run_attempt "$SOURCE_RUN_ATTEMPT" \
+            --arg event_type "$DISPATCH_EVENT_TYPE" \
+            '{event_type: $event_type, client_payload: {source_repository: $source_repository, source_revision: $source_revision, source_workflow: $source_workflow, source_run_id: $source_run_id, source_run_attempt: $source_run_attempt}}' |
+            gh api --method POST repos/vouchington/vouchington-infra/dispatches --input -

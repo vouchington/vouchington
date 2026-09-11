@@ -1,0 +1,66 @@
+{
+  "appeals": [
+    {
+      "ai_drafted_at": "2026-06-02T12:00:00.000Z",
+      "ai_internal_response": "The warning can remain in place.",
+      "ai_public_response": "We reviewed your appeal.",
+      "appeal_reason": "I would like another review.",
+      "appellant_id": "user-2",
+      "approved_at": null,
+      "approved_by_id": null,
+      "case_id": "case-2",
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-02T11:45:00.000Z",
+      "drafted_at": null,
+      "edited_at": null,
+      "edited_by_id": null,
+      "id": "00000000-0000-7000-8000-000000000101",
+      "internal_notes": null,
+      "is_overdue": false,
+      "latest_lifecycle_change_id": null,
+      "model": "gpt-test",
+      "post_id": null,
+      "post_removal_kind": null,
+      "public_response": null,
+      "recommended_action": "deny",
+      "resolution_action": null,
+      "resolved_at": null,
+      "resolved_by_id": null,
+      "sent_at": null,
+      "staff_context": {
+        "appellant": {
+          "id": "user-2",
+          "profile_image_id": null,
+          "username": "appealing-member",
+          "verified_display_name": null
+        },
+        "original_decision": {
+          "actor": {
+            "id": "admin-1",
+            "profile_image_id": null,
+            "username": "moderator",
+            "verified_display_name": null
+          },
+          "internal_reason": "Repeated spam links"
+        }
+      },
+      "status": "pending",
+      "target_context": {
+        "community": null,
+        "created_at": "2026-06-02T11:30:00.000Z",
+        "id": "warning-2",
+        "public_message": "Please stop posting repeated promotional links.",
+        "type": "warning"
+      },
+      "updated_at": "2026-06-02T12:00:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": "warning-2"
+    }
+  ],
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMSIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnN0YWZmLWFsbDppZC1kZXNjIn0"
+  }
+}

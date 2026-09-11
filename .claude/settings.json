@@ -1,0 +1,558 @@
+{
+  "env": {
+    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1"
+  },
+  "enabledMcpjsonServers": ["agent-blackboard"],
+  "permissions": {
+    "allow": [
+      "Bash(pnpm exec pr-shepherd *)",
+      "Bash(pnpm exec tsc *)",
+      "Bash(pnpm exec vitest *)",
+      "Bash(pnpm exec playwright *)",
+      "Bash(pnpm exec oxlint *)",
+      "Bash(pnpm exec oxfmt *)",
+      "Bash(pnpm exec no-mistakes *)",
+      "Bash(pnpm exec agent-blackboard snapshot partition *)",
+      "Bash(pnpm exec agent-blackboard snapshot cleanup *)",
+      "Bash(./ci/lint-links.sh *)",
+      "Bash(pnpm exec selene *)",
+      "Bash(pnpm exec knip *)",
+      "Bash(pnpm exec syncpack *)",
+      "Bash(npx pr-shepherd *)",
+      "Bash(pr-shepherd *)",
+      "Bash(npx vitest *)",
+      "Bash(npx oxlint *)",
+      "Bash(npx oxfmt *)",
+      "Bash(npx no-mistakes *)",
+      "Bash(no-mistakes)",
+      "Bash(no-mistakes *)",
+      "Bash(./dev/initialize)",
+      "Bash(./dev/initialize *)",
+      "Bash(./dev/tmux)",
+      "Bash(./dev/tmux *)",
+      "Bash(./dev/tmux-name)",
+      "Bash(./dev/tmux-name *)",
+      "Bash(./dev/tmux-agent-reminder)",
+      "Bash(./dev/tmux-agent-reminder *)",
+      "Bash(./dev/stop-services)",
+      "Bash(./dev/stop-services *)",
+      "Bash(./dev/status)",
+      "Bash(./dev/status *)",
+      "Bash(./dev/retrospective-facts)",
+      "Bash(./dev/retrospective-facts *)",
+      "Bash(node dev/blackboard-journal.mts)",
+      "Bash(node dev/blackboard-journal.mts *)",
+      "Bash(node dev/retrospective-save.mts)",
+      "Bash(node dev/retrospective-save.mts *)",
+      "Bash(node dev/pr-description.mts)",
+      "Bash(node dev/pr-description.mts *)",
+      "Bash(node dev/plan-issue.mts)",
+      "Bash(node dev/plan-issue.mts *)",
+      "Bash(./dev/reset)",
+      "Bash(./dev/reset *)",
+      "Bash(./dev/reset-worktree)",
+      "Bash(./dev/reset-worktree *)",
+      "Bash(./dev/teardown)",
+      "Bash(./dev/teardown *)",
+      "Bash(./dev/cleanup)",
+      "Bash(./dev/cleanup *)",
+      "Bash(./dev/unstick-locks)",
+      "Bash(./dev/unstick-locks *)",
+      "Bash(./dev/valkey-logs)",
+      "Bash(./dev/valkey-logs *)",
+      "Bash(./dev/logs)",
+      "Bash(./dev/logs *)",
+      "Bash(cargo tree *)",
+      "Bash(cargo search *)",
+      "Bash(cargo check *)",
+      "Bash(cargo build *)",
+      "Bash(cargo test *)",
+      "Bash(cargo clippy *)",
+      "Bash(cargo fmt *)",
+      "Bash(cargo doc *)",
+      "Bash(cargo bench *)",
+      "Bash(rustfmt *)",
+      "Bash(git log *)",
+      "Bash(git fetch *)",
+      "Bash(git show *)",
+      "Bash(git merge-base *)",
+      "Bash(git diff *)",
+      "Bash(git status *)",
+      "Bash(git branch *)",
+      "Bash(git rev-parse *)",
+      "Bash(git rev-list *)",
+      "Bash(gh issue *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(rg *)",
+      "Bash(fd *)",
+      "Bash(pnpm exec ast-grep *)",
+      "Bash(rga *)",
+      "Bash(tokei *)",
+      "Bash(scc *)",
+      "Bash(ls *)",
+      "Bash(wc *)",
+      "Bash(cat *)",
+      "Bash(sort *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(cut *)",
+      "Bash(tr *)",
+      "Bash(uniq *)",
+      "Bash(diff *)",
+      "Bash(basename *)",
+      "Bash(dirname *)",
+      "Bash(realpath *)",
+      "Bash(file *)",
+      "Bash(stat *)",
+      "Bash(du *)",
+      "Bash(tree *)",
+      "Bash(echo *)",
+      "Bash(printf *)",
+      "Bash(which *)",
+      "Bash(jq *)",
+      "Bash(mkdir *)",
+      "Bash(touch *)",
+      "Bash(actionlint *)",
+      "Bash(ps aux)",
+      "Bash(ps aux *)",
+      "Bash(tmux list-windows *)",
+      "Bash(tmux has-session *)",
+      "Bash(tmux capture-pane *)",
+      "Bash(tmux display-message *)",
+      "Bash(aws sts get-caller-identity *)",
+      "Bash(aws configure list-profiles *)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:registry.npmjs.org)",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:developer.mozilla.org)",
+      "WebFetch(domain:nodejs.org)",
+      "WebFetch(domain:doc.rust-lang.org)",
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:crates.io)",
+      "WebFetch(domain:index.crates.io)",
+      "WebFetch(domain:static.crates.io)",
+      "WebFetch(domain:static.rust-lang.org)",
+      "WebFetch(domain:nextjs.org)",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "WebFetch(domain:postgresql.org)",
+      "WebFetch(domain:docs.aws.amazon.com)",
+      "WebFetch(domain:valkey.io)",
+      "mcp__github__get_job_logs",
+      "mcp__agent-blackboard__entry_append",
+      "mcp__agent-blackboard__entry_get",
+      "mcp__agent-blackboard__session_archive",
+      "mcp__agent-blackboard__session_create",
+      "mcp__agent-blackboard__session_ensure",
+      "mcp__agent-blackboard__session_patch",
+      "mcp__agent-blackboard__session_search",
+      "mcp__agent-blackboard__snapshot_export",
+      "Grep(*)",
+      "Glob(*)",
+      "Read(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Bash(gh pr comment *)",
+      "Bash(gh pr ready *)",
+      "Bash(gh pr edit *)",
+      "Bash(gh pr create --draft *)",
+      "Bash(git checkout -b *)",
+      "Bash(git rebase --continue)",
+      "Bash(git rebase --abort)",
+      "Bash(aws ecs describe-services *)",
+      "Bash(aws ecs describe-task-definition *)",
+      "Bash(aws ecs describe-tasks *)",
+      "Bash(aws ecs list-services *)",
+      "Bash(aws ecs list-tasks *)",
+      "Bash(aws ecs list-clusters *)",
+      "Bash(aws logs get-log-events *)",
+      "Bash(aws logs filter-log-events *)",
+      "Bash(aws logs tail *)",
+      "Bash(aws cloudtrail lookup-events *)",
+      "Bash(aws ec2 describe-security-groups *)",
+      "Bash(aws ec2 describe-security-group-rules *)",
+      "Bash(aws ec2 describe-vpc-endpoints *)",
+      "Bash(aws sqs get-queue-url *)",
+      "Bash(aws sqs get-queue-attributes *)",
+      "Bash(unzip -l *)",
+      "Bash(unzip -p *)",
+      "Bash(docker info *)",
+      "mcp__plugin_sentry_sentry__search_events",
+      "mcp__plugin_sentry_sentry__search_issues",
+      "mcp__plugin_sentry_sentry__get_sentry_resource",
+      "mcp__plugin_sentry_sentry__find_projects",
+      "mcp__claude-in-chrome__read_console_messages",
+      "mcp__claude-in-chrome__read_page",
+      "mcp__claude-in-chrome__get_page_text"
+    ],
+    "deny": [
+      "Bash(chmod 777 *)",
+      "Bash(cp * ~/.ssh)",
+      "Bash(cp * ~/.ssh/)",
+      "Bash(cp * ~/.ssh/*)",
+      "Bash(curl *|bash*)",
+      "Bash(curl *|sh*)",
+      "Bash(dd *)",
+      "Bash(git * --strategy-option ours*)",
+      "Bash(git * --strategy-option theirs*)",
+      "Bash(git * --strategy-option=ours*)",
+      "Bash(git * --strategy-option=theirs*)",
+      "Bash(git * -X ours*)",
+      "Bash(git * -X theirs*)",
+      "Bash(git * -Xours*)",
+      "Bash(git * -Xtheirs*)",
+      "Bash(git checkout * --ours*)",
+      "Bash(git checkout * --theirs*)",
+      "Bash(git checkout --ours*)",
+      "Bash(git checkout --theirs*)",
+      "Bash(git commit * --amend *)",
+      "Bash(git commit * --amend)",
+      "Bash(git commit --amend *)",
+      "Bash(git commit --amend)",
+      "Bash(git pull * --rebase*)",
+      "Bash(git pull * -r*)",
+      "Bash(git pull --rebase*)",
+      "Bash(git pull -r*)",
+      "Bash(git push * +*)",
+      "Bash(git push * --force *)",
+      "Bash(git push * --force)",
+      "Bash(git push * -f *)",
+      "Bash(git push * -f)",
+      "Bash(git push +*)",
+      "Bash(git push --force *)",
+      "Bash(*git push --force)",
+      "Bash(git push -f *)",
+      "Bash(git push -f)",
+      "Bash(mkfs *)",
+      "Bash(mv * ~/.ssh)",
+      "Bash(mv * ~/.ssh/)",
+      "Bash(mv * ~/.ssh/*)",
+      "Bash(rm --recursive --force /*)",
+      "Bash(rm -f -r /*)",
+      "Bash(rm -fr *)",
+      "Bash(rm -fr /*)",
+      "Bash(rm -r -f /*)",
+      "Bash(rm -rf *)",
+      "Bash(rm -rf .)",
+      "Bash(rm -rf ./)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf ~/)",
+      "Bash(sudo *)",
+      "Bash(wget *|bash*)",
+      "Bash(wget *|sh*)",
+      "Edit(~/.aws/**)",
+      "Edit(~/.bashrc)",
+      "Edit(~/.git-credentials)",
+      "Edit(~/.gitconfig)",
+      "Edit(~/.gnupg/**)",
+      "Edit(~/.ssh/**)",
+      "Edit(~/.zshrc)",
+      "Read(~/.aws/**)",
+      "Read(~/.azure/**)",
+      "Read(~/.claude/.credentials.json)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.docker/config.json)",
+      "Read(~/.gem/credentials)",
+      "Read(~/.git-credentials)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.npm/**)",
+      "Read(~/.npmrc)",
+      "Read(~/.pypirc)",
+      "Read(~/.ssh/**)",
+      "Read(~/Library/Keychains/**)",
+      "Bash(aws configure export-credentials *)",
+      "Bash(aws configure export-credentials)",
+      "Bash(git stash)",
+      "Bash(git stash pop*)"
+    ],
+    "defaultMode": "plan"
+  },
+  "model": "opusplan",
+  "effortLevel": "xhigh",
+  "advisorModel": "opus",
+  "statusLine": {
+    "type": "command",
+    "command": "b=$(git branch --show-current 2>/dev/null); p=$(gh pr view --json number,isDraft 2>/dev/null | jq -r '\"PR #\" + (.number | tostring) + (if .isDraft then \" (draft)\" else \"\" end)' 2>/dev/null); d=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' '); [ \"$d\" = \"0\" ] && d=\"\"; echo \"${b:-detached}${p:+ · $p}${d:+ · dirty:$d}\""
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/dev/codex-hooks/persist-grok-session-id.mts\""
+          },
+          {
+            "type": "command",
+            "command": "b=$(git branch --show-current 2>/dev/null); echo \"Branch: ${b:-detached}\"; echo \"Status:\"; git status --short 2>/dev/null | head -20; echo; echo \"Recent commits:\"; git log --oneline -3 2>/dev/null; echo; gh pr view --json number,title,isDraft 2>/dev/null | jq -r '\"PR: #\" + (.number | tostring) + \" \" + .title + \" (\" + (if .isDraft then \"draft\" else \"ready\" end) + \")\"' 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder\" session-start"
+          },
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/dev/check-fresh-base\""
+          },
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/dev/check-web-init\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/dev/check-blackboard.mts\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/dev/journal-checkpoint.mts\" compact claude"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|run_terminal_command|search_replace",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/dev/codex-hooks/pre-tool-use.mts\" claude",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|search_replace",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.ts|*.tsx|*.mts|*.mjs|*.js|*.jsx) pnpm exec oxlint --type-aware --fix --quiet \"$f\" 2>/dev/null || true ;; esac"
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.ts|*.tsx|*.mts|*.mjs|*.js|*.jsx) pnpm exec oxlint --type-aware \"$f\" 2>&1 || true ;; esac"
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.ts|*.tsx|*.mts|*.mjs|*.js|*.jsx) pnpm exec oxfmt \"$f\" 2>/dev/null || true ;; esac"
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.ts|*.tsx|*.mts) repo_root=\"$(git rev-parse --show-toplevel)\"; rel=\"${f#\"$repo_root\"/}\"; case \"$rel\" in backend/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project backend/tsconfig.json 2>/dev/null ;; email-templates/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project email-templates/tsconfig.json 2>/dev/null ;; web/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project web/tsconfig.json 2>/dev/null ;; cloudflare-worker/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project cloudflare-worker/tsconfig.json 2>/dev/null ;; lambdas/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project lambdas/tsconfig.json 2>/dev/null ;; ts-shared/*) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project ts-shared/tsconfig.json 2>/dev/null ;; *) cd \"$repo_root\" && pnpm exec tsc --noEmit --incremental --project tsconfig.json 2>/dev/null ;; esac || true ;; esac"
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); repo_root=\"$(git rev-parse --show-toplevel)\"; case \"$f\" in *.md) [ -n \"$f\" ] && path=\"$f\" && case \"$path\" in \"$repo_root\"/*) path=\"${path#\"$repo_root\"/}\";; esac && (cd \"$repo_root\" && \"$repo_root/ci/lint-links.sh\" --offline \"$path\" 2>/dev/null) || true ;; esac"
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.rs) rustfmt \"$f\" 2>/dev/null || true ;; esac"
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r \".tool_input.file_path // .toolInput.file_path // .toolInput.filePath // .toolInput.path // empty\" 2>/dev/null); case \"$f\" in *.lua) selene --config selene.toml \"$f\" 2>/dev/null || true ;; esac"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use.mts\" 2>&1 || true"
+          }
+        ]
+      },
+      {
+        "matcher": "ExitPlanMode|Bash|run_terminal_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use-command.mts\" claude 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder\" user-prompt"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder\" pre-compact"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "vouchington-workflow@vouchington": true,
+    "vouchington-testing@vouchington": true,
+    "vouchington-database@vouchington": true,
+    "security-triage@vouchington": true,
+    "pr-shepherd@jonathanong": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "lua-lsp@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "sentry@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "vouchington": {
+      "source": {
+        "source": "github",
+        "repo": "vouchington/vouchington-tooling"
+      }
+    },
+    "jonathanong": {
+      "source": {
+        "source": "github",
+        "repo": "jonathanong/pr-shepherd"
+      }
+    }
+  },
+  "sandbox": {
+    "enabled": true,
+    "excludedCommands": [
+      "docker *",
+      "gh *",
+      "git *",
+      "pnpm exec *",
+      "pnpm run *",
+      "pnpm --dir *",
+      "pnpm install",
+      "pnpm install *",
+      "pnpm test",
+      "pnpm test *",
+      "npx pr-shepherd *",
+      "pr-shepherd *",
+      "npx vitest *",
+      "npx oxlint *",
+      "npx oxfmt *",
+      "npx no-mistakes *",
+      "no-mistakes",
+      "no-mistakes *",
+      "./dev/tmux-name",
+      "./dev/tmux-name *",
+      "./dev/tmux-agent-reminder",
+      "./dev/tmux-agent-reminder *",
+      "./dev/initialize",
+      "./dev/initialize *",
+      "./dev/tmux",
+      "./dev/tmux *",
+      "./dev/stop-services",
+      "./dev/stop-services *",
+      "./dev/status",
+      "./dev/status *",
+      "./dev/retrospective-facts",
+      "./dev/retrospective-facts *",
+      "node dev/blackboard-journal.mts",
+      "node dev/blackboard-journal.mts *",
+      "node dev/retrospective-save.mts",
+      "node dev/retrospective-save.mts *",
+      "node dev/check-blackboard.mts",
+      "node dev/check-blackboard.mts *",
+      "node dev/codex-hooks/persist-grok-session-id.mts",
+      "node dev/codex-hooks/persist-grok-session-id.mts *",
+      "node dev/journal-checkpoint.mts",
+      "node dev/journal-checkpoint.mts *",
+      "node dev/codex-hooks/post-tool-use-command.mts",
+      "node dev/codex-hooks/post-tool-use-command.mts *",
+      "node dev/pr-description.mts",
+      "node dev/pr-description.mts *",
+      "node dev/plan-issue.mts",
+      "node dev/plan-issue.mts *",
+      "./dev/reset",
+      "./dev/reset *",
+      "./dev/reset-worktree",
+      "./dev/reset-worktree *",
+      "./dev/teardown",
+      "./dev/teardown *",
+      "./dev/cleanup",
+      "./dev/cleanup *",
+      "./dev/unstick-locks",
+      "./dev/unstick-locks *",
+      "./dev/valkey-logs",
+      "./dev/valkey-logs *",
+      "./dev/logs",
+      "./dev/logs *",
+      "ps aux",
+      "ps aux *"
+    ],
+    "filesystem": {
+      "allowWrite": [
+        "/tmp",
+        ".pnpm-store",
+        "~/.local/share/pnpm",
+        "~/.local/share/pnpm/store",
+        "~/Library/pnpm",
+        "~/Library/pnpm/store",
+        "~/.pnpm-store",
+        "/var/folders",
+        "/private/var/folders",
+        ".git/worktrees",
+        "~/.cargo",
+        "~/Library/Caches/no-mistakes",
+        "~/Library/Caches/pnpm",
+        "~/.pnpm-state",
+        "~/.cache/no-mistakes",
+        "~/.cache/pnpm",
+        "~/.local/state/pnpm"
+      ]
+    },
+    "failIfUnavailable": true,
+    "credentials": {
+      "envVars": [
+        {
+          "name": "AGENT_BLACKBOARD_ADMIN_CREDENTIALS",
+          "mode": "deny"
+        },
+        {
+          "name": "AGENT_BLACKBOARD_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "CLAUDE_CODE_OAUTH_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "CLOUDSDK_PROXY_PASSWORD",
+          "mode": "deny"
+        },
+        {
+          "name": "CODEX_FIX_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "GH_SESSION_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "GITHUB_PERSONAL_ACCESS_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "SENTRY_AUTH_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "SONAR_TOKEN",
+          "mode": "deny"
+        }
+      ]
+    }
+  }
+}

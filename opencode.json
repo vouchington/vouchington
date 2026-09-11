@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
+  "mcp": {
+    "agent-blackboard": {
+      "type": "local",
+      "command": ["bash", "-c", "exec \"$(git rev-parse --show-toplevel)/dev/blackboard-mcp\""],
+      "enabled": true
+    }
+  },
+  "permission": {
+    "agent-blackboard_entry_append": "allow",
+    "agent-blackboard_entry_get": "allow",
+    "agent-blackboard_session_archive": "allow",
+    "agent-blackboard_session_create": "allow",
+    "agent-blackboard_session_ensure": "allow",
+    "agent-blackboard_session_patch": "allow",
+    "agent-blackboard_session_search": "allow",
+    "agent-blackboard_snapshot_export": "allow"
+  }
+}

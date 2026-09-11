@@ -1,0 +1,22 @@
+{
+  "name": "local-cloudflare-worker",
+  "main": "src/index.mts",
+  "compatibility_date": "2026-02-11",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Local development only. Deployed Worker topology, bindings, routes, and
+  // provider identifiers are owned by vouchington/vouchington-infra.
+  "cache": { "enabled": true },
+  "exports": {
+    "default": { "type": "worker", "cache": { "enabled": false } },
+    "CachedOrigin": { "type": "worker", "cache": { "enabled": true } },
+  },
+  "vars": {
+    "BACKEND_ORIGIN": "http://localhost:2900",
+    "WEB_ORIGIN": "http://localhost:3000",
+    "SITEMAP_CACHE_TTL_SECONDS": "86400",
+    "BOT_CACHE_TTL_SECONDS": "86400",
+    "ANON_CACHE_TTL_SECONDS": "30",
+    "CACHED_STATIC_PATHS": "/favicon.ico,/robots.txt",
+  },
+}

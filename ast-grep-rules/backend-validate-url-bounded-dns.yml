@@ -1,0 +1,152 @@
+id: backend-validate-url-bounded-dns
+language: Tsx
+severity: error
+message: >-
+  Dependency-injected validateUrl() has no DNS/SSRF resolution timeout unless a `signal` or
+  `timeoutMs` option is passed — pass `{ timeoutMs: <5000-or-your-file's-DNS-timeout-constant> }` or
+  forward a caller AbortSignal (see backend/services/crawls/crawl-url/safety.mts and #10833). Direct
+  ssrf-guard/node imports are enforced by no-mistakes/require-options-on-imported-call in Oxlint.
+files:
+  - 'backend/**/*.ts'
+  - 'backend/**/*.mts'
+  - 'backend/**/*.cts'
+  - 'lambdas/**/*.ts'
+  - 'lambdas/**/*.mts'
+  - 'lambdas/**/*.cts'
+rule:
+  all:
+    - kind: call_expression
+    - has:
+        field: function
+        all:
+          - any:
+              - kind: member_expression
+              - kind: subscript_expression
+          - has:
+              field: object
+              kind: identifier
+              regex: '^(deps|dependencies)$'
+          - any:
+              - has:
+                  field: property
+                  kind: property_identifier
+                  regex: '^validateUrl$'
+              - has:
+                  field: index
+                  all:
+                    - kind: string
+                    - has:
+                        kind: string_fragment
+                        regex: '^validateUrl$'
+    - any:
+        - has:
+            field: arguments
+            pattern:
+              context: $CALL($URL)
+              selector: arguments
+        - has:
+            field: arguments
+            pattern:
+              context: $CALL($URL, {})
+              selector: arguments
+examples:
+  - code: |-
+      resolvedAddresses = await deps.validateUrl(actorUri)
+    isValid: false
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const resolvedAddresses = await deps.validateUrl(url)
+    isValid: false
+    file: 'backend/services/topic-claims/domain-verification-well-known.mts'
+  - code: |-
+      resolvedAddresses = await deps.validateUrl(input.inboxUrl)
+    isValid: false
+    file: 'backend/services/activitypub-delivery/deliver-activity.mts'
+  - code: |-
+      const addresses = await deps.validateUrl(url, {})
+    isValid: false
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const addresses = await deps.validateUrl?.(url)
+    isValid: false
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const addresses = await deps?.validateUrl(url, {})
+    isValid: false
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const addresses = await deps?.validateUrl?.(url)
+    isValid: false
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const addresses = await deps['validateUrl']?.(url, {})
+    isValid: false
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const addresses = await deps?.['validateUrl'](url)
+    isValid: false
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const addresses = await dependencies?.['validateUrl']?.(url, {})
+    isValid: false
+    file: 'backend/services/crawls/crawl-url/safety.mts'
+  - code: |-
+      resolvedAddresses = await deps.validateUrl(actorUri, { timeoutMs: DNS_TIMEOUT_MS })
+    isValid: true
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const resolvedAddresses = await deps.validateUrl(url, { timeoutMs: DNS_TIMEOUT_MS })
+    isValid: true
+    file: 'backend/services/topic-claims/domain-verification-well-known.mts'
+  - code: |-
+      resolvedAddresses = await deps.validateUrl(input.inboxUrl, { timeoutMs: DNS_TIMEOUT_MS })
+    isValid: true
+    file: 'backend/services/activitypub-delivery/deliver-activity.mts'
+  - code: |-
+      const addresses = await deps.validateUrl?.(url, { timeoutMs: DNS_TIMEOUT_MS })
+    isValid: true
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const addresses = await deps?.validateUrl(url, { signal })
+    isValid: true
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const addresses = await deps?.validateUrl?.(url, { timeoutMs: DNS_TIMEOUT_MS })
+    isValid: true
+    file: 'backend/services/remote-actors/fetch-remote-actor-document.mts'
+  - code: |-
+      const addresses = await dependencies['validateUrl'](url, { timeoutMs: DNS_TIMEOUT_MS })
+    isValid: true
+    file: 'backend/services/crawls/crawl-url/safety.mts'
+  - code: |-
+      const addresses = await dependencies['validateUrl']?.(url, { signal })
+    isValid: true
+    file: 'backend/services/crawls/crawl-url/safety.mts'
+  - code: |-
+      const addresses = await dependencies?.['validateUrl'](url, { timeoutMs: DNS_TIMEOUT_MS })
+    isValid: true
+    file: 'backend/services/crawls/crawl-url/safety.mts'
+  - code: |-
+      const addresses = await dependencies?.['validateUrl']?.(url, { signal })
+    isValid: true
+    file: 'backend/services/crawls/crawl-url/safety.mts'
+  - code: |-
+      await dependencies.validateUrl(url.toString(), { signal: signal ?? undefined, timeoutMs: DNS_TIMEOUT_MS })
+    isValid: true
+    file: 'backend/services/crawl-embeds/embed-resolver.mts'
+  - code: |-
+      return await dependencies.validateUrl(url, { timeoutMs })
+    isValid: true
+    file: 'backend/services/crawls/crawl-url/safety.mts'
+  - code: |-
+      const addresses = await injected.validateUrl(url)
+    isValid: true
+    file: 'backend/services/crawl-embeds/embed-resolver.mts'
+  - code: |-
+      const addresses = await ssrfGuard.validateUrl(url)
+    isValid: true
+    file: 'backend/services/crawl-embeds/embed-resolver.mts'
+  - code: |-
+      const addresses = await validateUrl(url)
+    isValid: true
+    file: 'backend/services/crawl-embeds/embed-resolver.mts'

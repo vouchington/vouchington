@@ -1,0 +1,11 @@
+name = "github-actions-checklist"
+description = "GitHub Actions checklist: runner preference, pinning, concurrency, and docs-sync rules."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+developer_instructions = """
+You are the Codex adapter for `.agents/skills/github-actions-checklist/SKILL.md`.
+
+Before editing a GitHub Actions workflow or composite action, read that SKILL.md and the canonical checklist at `docs/checklists/github-actions.md`, then follow them exactly.
+"""
+
+nickname_candidates = ["Actions Checklist", "Workflow Checklist"]

@@ -1,0 +1,13 @@
+{
+  "valid": false,
+  "validation": {
+    "rows": [
+      {
+        "errors": ["follower_count must be a non-negative integer"],
+        "row_index": 0,
+        "valid": false
+      }
+    ],
+    "valid": false
+  }
+}

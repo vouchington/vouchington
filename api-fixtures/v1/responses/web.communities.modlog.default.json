@@ -1,0 +1,41 @@
+{
+  "moderator_actions": {
+    "modlog-1": {
+      "action_type": "approve",
+      "actor_id": "user-1",
+      "community_application_id": null,
+      "community_id": "community-1",
+      "created_at": "2026-01-01T00:00:00Z",
+      "id": "modlog-1",
+      "metadata": {},
+      "post_id": "post-1",
+      "reason": "Looks good.",
+      "report_id": null,
+      "review_dispute_id": null,
+      "target_user_id": null
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "moderator_action",
+      "id": "modlog-1"
+    }
+  ],
+  "users": {
+    "user-1": {
+      "__entity_type": "user",
+      "created_at": "2026-01-01T00:00:00Z",
+      "id": "user-1",
+      "name": "Test User",
+      "profile_image_id": null,
+      "roles": [],
+      "updated_at": "2026-01-01T00:00:00Z",
+      "username": "testuser"
+    }
+  }
+}

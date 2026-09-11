@@ -1,0 +1,12 @@
+{
+  "landing_page": {
+    "created_at": "2026-06-28T10:00:00Z",
+    "id": "landing-page-1",
+    "is_default": true,
+    "slug": "updated-links",
+    "subtitle": null,
+    "title": "Updated Links",
+    "updated_at": "2026-06-30T10:00:00Z",
+    "user_id": "user-abc"
+  }
+}

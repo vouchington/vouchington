@@ -1,0 +1,31 @@
+{
+  "name": "@workers/openai-moderation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/openai-utils": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@queues/openai-moderation": "workspace:^",
+    "@services/openai-moderation": "workspace:^",
+    "@services/post-clearance": "workspace:^",
+    "@services/posts": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@services/availability",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@modules/utils": "workspace:^",
+    "@services/communities": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "http-assert": "^1.5.0"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

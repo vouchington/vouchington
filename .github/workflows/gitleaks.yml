@@ -1,0 +1,108 @@
+name: Gitleaks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  gitleaks:
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          deepen: 'true'
+
+      - name: Determine Gitleaks scan range
+        id: gitleaks_scan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            MERGE_BASE=$(git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")
+            LOG_OPTS="${MERGE_BASE}..${PR_HEAD_SHA}"
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            LOG_OPTS="--all"
+          elif [[ "$PUSH_BEFORE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            LOG_OPTS="--all"
+          else
+            LOG_OPTS="${PUSH_BEFORE_SHA}..${HEAD_SHA}"
+          fi
+          echo "log-opts=$LOG_OPTS" >> "$GITHUB_OUTPUT"
+
+      - name: Install gitleaks
+        timeout-minutes: 2
+        env:
+          # renovate: datasource=github-releases depName=gitleaks/gitleaks extractVersion=^v(?<version>.*)$
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          # Install into a per-job RUNNER_TEMP dir (cleared between jobs by the runner),
+          # never persistent $HOME/.local/bin — a prior PR-controlled job on this
+          # self-hosted runner must not be able to leave a poisoned binary behind for
+          # this trusted job's version-skip check below to re-execute. See RUNNERS.md
+          # § Self-Hosted Runner Secret Isolation.
+          : "${RUNNER_TEMP:?RUNNER_TEMP must be set by GitHub Actions}"
+          case "$(uname -s)-$(uname -m)" in
+            Darwin-arm64) PLATFORM=darwin_arm64 ;;
+            Darwin-x86_64) PLATFORM=darwin_x64 ;;
+            Linux-aarch64|Linux-arm64) PLATFORM=linux_arm64 ;;
+            Linux-x86_64) PLATFORM=linux_x64 ;;
+            *)
+              echo "Unsupported platform: $(uname -s)-$(uname -m)" >&2
+              exit 1
+              ;;
+          esac
+          export PLATFORM
+          bash "$GITHUB_WORKSPACE/ci/install-github-release.sh" \
+            --repo gitleaks/gitleaks \
+            --version "$GITLEAKS_VERSION" \
+            --asset 'gitleaks_{version}_{platform}.tar.gz' \
+            --bin gitleaks \
+            --tag-prefix v \
+            --checksums-asset 'gitleaks_{version}_checksums.txt' \
+            --version-flag version \
+            --bin-dir "$RUNNER_TEMP/bin" \
+            --strip-components 0
+
+      - name: Scan git history
+        run: >-
+          gitleaks git
+          --config .gitleaks.toml
+          --log-opts "${{ steps.gitleaks_scan.outputs.log-opts }}"
+          --redact=100
+          --report-format=json
+          --report-path=gitleaks-report.json
+          .
+
+      - name: Upload redacted gitleaks report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          overwrite: true
+          name: gitleaks-report
+          path: gitleaks-report.json
+          if-no-files-found: ignore
+          retention-days: 1

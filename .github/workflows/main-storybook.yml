@@ -1,0 +1,46 @@
+name: Main CI (storybook)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-artifacts.yml'
+      - 'ci/cleanup-artifacts-pattern-matcher.mjs'
+      - 'ci/cleanup-artifacts-patterns.json'
+      - 'ci/cleanup-run-artifacts.mjs'
+      - '.github/workflows/main-storybook.yml'
+      - '.github/workflows/storybook.yml'
+      - '.github/actions/**'
+      - 'ci/run-storybook-browser-tests.mts'
+      - 'ci/storybook-browser-runner*.mts'
+      - 'ci/storybook-pages*.mts'
+      - 'ci/with-host-lock.sh'
+      - 'ci/with-build-lock.sh'
+      - 'ci/host-pressure-diagnostics.sh'
+      - 'cloudflare-worker/package.json'
+      - 'cloudflare-worker/src/basic-auth-credentials.mts'
+      - 'cloudflare-worker/src/storybook-pages-auth.mts'
+      - 'cloudflare-worker/src/timing-safe-credential-match.mts'
+      - 'web/**'
+      - 'vitest.config.mts'
+      - 'test-helpers/vitest-config/environment.mts'
+      - 'test-helpers/vitest-config/storybook-browser-project.mts'
+      - 'test-helpers/vitest-config/web-projects.mts'
+      - 'pnpm-lock.yaml'
+
+concurrency:
+  group: main-storybook
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  storybook-build:
+    uses: ./.github/workflows/storybook.yml
+    permissions:
+      actions: read
+      contents: read
+    with:
+      cancel_in_progress: false
+      checkout_ref: ${{ github.sha }}

@@ -1,0 +1,29 @@
+name: Setup lychee
+description: Install the pinned lychee binary with checksum verification.
+runs:
+  using: composite
+  steps:
+    - name: Install lychee
+      shell: bash
+      env:
+        # renovate: datasource=github-releases depName=lycheeverse/lychee extractVersion=^lychee-v(?<version>.*)$
+        LYCHEE_VERSION: 0.24.2
+      run: |
+        set -euo pipefail
+        # Install into a per-job RUNNER_TEMP dir (cleared between jobs by the runner),
+        # never persistent $HOME/.local/bin — a prior PR-controlled job on this
+        # self-hosted runner must not be able to leave a poisoned binary behind for
+        # this trusted job's version-skip check below to re-execute. See RUNNERS.md
+        # § Self-Hosted Runner Secret Isolation.
+        LYCHEE_BIN_DIR="${RUNNER_TEMP:-$HOME/.local}/bin"
+        # Add to PATH before the version-skip check below, not just after a
+        # fresh install — the skip branch exits early and must still expose
+        # the verified temp binary to the lint-links step that follows.
+        echo "$LYCHEE_BIN_DIR" >> "$GITHUB_PATH"
+        bash "$GITHUB_WORKSPACE/ci/install-github-release.sh" \
+          --repo lycheeverse/lychee \
+          --version "$LYCHEE_VERSION" \
+          --asset 'lychee-{platform}.tar.gz' \
+          --bin lychee \
+          --tag-prefix 'lychee-v' \
+          --bin-dir "$LYCHEE_BIN_DIR"

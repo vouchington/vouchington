@@ -1,0 +1,14 @@
+#!/bin/sh
+[ "${GITHUB_ACTIONS:-}" = "true" ] && exit 0
+# Keep node_modules in sync after a branch switch that changes manifests (issue #10009).
+# $3=1 is a branch checkout; $3=0 is a file checkout and must not install.
+[ "$3" = "1" ] || exit 0
+[ -n "$1" ] && [ -n "$2" ] || exit 0
+case "$1" in 0000000000000000000000000000000000000000) exit 0;; esac
+case "$2" in 0000000000000000000000000000000000000000) exit 0;; esac
+if git diff --name-only "$1" "$2" 2>/dev/null \
+  | grep -Eq '(^|/)(pnpm-lock\.yaml|package\.json|pnpm-workspace\.yaml)$'; then
+  echo "post-checkout: dependency manifest changed during branch switch — running pnpm install"
+  command -v pnpm >/dev/null 2>&1 || { printf 'post-checkout: pnpm not on PATH — skipping install\n' >&2; exit 0; }
+  pnpm install --silent || printf 'post-checkout: WARNING — pnpm install failed (exit %s). Run it manually.\n' "$?" >&2
+fi

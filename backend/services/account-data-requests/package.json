@@ -1,0 +1,38 @@
+{
+  "name": "@services/account-data-requests",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@aws-sdk/s3-request-presigner": "^3.1127.0",
+    "@data-stores/psql": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "csv-stringify": "^6.8.3",
+    "sql-template-strings": "^2.2.2",
+    "yazl": "^3.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@types/yauzl": "^3.4.0",
+    "@types/yazl": "^3.3.1",
+    "@voucha/test-helpers": "workspace:^",
+    "yauzl": "^3.4.0"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "clicks": {
+    "referral-click-1": {
+      "__entity_type": "referral_click_log",
+      "created_at": "2026-03-01T11:55:00Z",
+      "id": "referral-click-1",
+      "landing_url": "https://voucha.ai/@alice",
+      "signed_up_at": "2026-03-01T12:00:00Z",
+      "user_id": "user-2"
+    },
+    "referral-click-2": {
+      "__entity_type": "referral_click_log",
+      "created_at": "2026-03-02T09:00:00Z",
+      "id": "referral-click-2",
+      "landing_url": "https://voucha.ai/@alice/cards",
+      "signed_up_at": null,
+      "user_id": null
+    }
+  },
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6InJlZmVycmFsLWNsaWNrLTEifQ"
+  },
+  "results": [
+    {
+      "__entity_type": "referral_click_log",
+      "id": "referral-click-1"
+    },
+    {
+      "__entity_type": "referral_click_log",
+      "id": "referral-click-2"
+    }
+  ],
+  "users": {
+    "user-2": {
+      "__entity_type": "user",
+      "id": "user-2",
+      "profile_image_id": null,
+      "roles": [],
+      "username": "newmember"
+    }
+  }
+}

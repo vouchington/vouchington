@@ -1,0 +1,132 @@
+import type { ApiFixtureCase } from './types.mts'
+
+const timestamp = '2026-07-06T12:00:00.000Z'
+const pageInfo = {
+  has_next_page: true,
+  start_cursor: 'fixture-start-cursor',
+  end_cursor: 'fixture-end-cursor',
+}
+const clientConsumers = ['web', 'swift-core', 'swift-ui', 'dotnet-core'] as const
+
+export const nativeAccountPaginationApiFixtureCases: ApiFixtureCase[] = [
+  {
+    id: 'native.my.api-keys.paginated',
+    method: 'GET',
+    path: '/api/v1/my/api-keys',
+    query: { limit: '1', after: 'fixture-owner-scoped-api-key-cursor' },
+    route: { routeTemplate: '/api/v1/my/api-keys' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      results: [
+        {
+          id: '00000000-0000-7000-8000-000000000401',
+          user_id: '00000000-0000-7000-8000-000000000001',
+          prefix: 'voucha_rss_',
+          type: 'rss',
+          label: 'Feed reader',
+          permissions: ['rss-feeds:read'],
+          created_at: timestamp,
+          last_used_at: null,
+          revoked_at: null,
+          updated_at: timestamp,
+        },
+      ],
+      page_info: pageInfo,
+    },
+    consumers: [...clientConsumers],
+    migratedFrom: ['backend/api/v1/my/api-keys.test.mts'],
+  },
+  {
+    id: 'native.my.push-subscriptions.paginated',
+    method: 'GET',
+    path: '/api/v1/my/notifications/push-subscriptions',
+    query: { limit: '1', after: 'fixture-owner-scoped-push-cursor' },
+    route: { routeTemplate: '/api/v1/my/notifications/push-subscriptions' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      results: [
+        {
+          __entity_type: 'web_push_subscription',
+          id: '00000000-0000-7000-8000-000000000501',
+          user_id: '00000000-0000-7000-8000-000000000001',
+          endpoint: 'https://push.example/subscription',
+          p256dh: 'fixture-p256dh',
+          auth: 'fixture-auth',
+          expiration_time_ms: null,
+          user_agent: 'Voucha fixture',
+          last_success_at: null,
+          last_failure_at: null,
+          created_at: timestamp,
+          updated_at: timestamp,
+        },
+      ],
+      page_info: pageInfo,
+    },
+    consumers: [...clientConsumers],
+    migratedFrom: ['backend/api/v1/my/notifications.test.mts'],
+  },
+  {
+    id: 'native.community.pending-reports.paginated',
+    method: 'GET',
+    path: '/api/v1/communities/fixture-community/reports/pending',
+    query: {
+      limit: '1',
+      sort: 'created_at_desc',
+      after: 'fixture-community-role-and-sort-scoped-report-cursor',
+    },
+    route: {
+      routeTemplate: '/api/v1/communities/:idOrSlug/reports/pending',
+      pathParams: { idOrSlug: 'fixture-community' },
+    },
+    auth: 'fixture-admin',
+    status: 200,
+    body: {
+      reports: [
+        {
+          id: '00000000-0000-7000-8000-000000000601',
+          case_id: '00000000-0000-7000-8000-000000000602',
+          entity_type: 'post',
+          entity_id: '00000000-0000-7000-8000-000000000603',
+          target_content: null,
+          target_label: 'Fixture report target',
+          target_path: '/discussion/fixture-report-target',
+          reason: 'spam',
+          status: 'pending',
+          report_count: 3,
+          created_at: timestamp,
+          reviewed_at: null,
+          target_user_id: '00000000-0000-7000-8000-000000000604',
+          reporter_user_id: '00000000-0000-7000-8000-000000000605',
+          reporter_username: 'fixture-reporter',
+          note: 'Fixture moderator note',
+          resolved_by_id: null,
+          admin_action_path: '/admin/posts/00000000-0000-7000-8000-000000000603',
+          target_available: true,
+          judgement: null,
+          community_ban_evasion: null,
+          claim: {
+            id: '00000000-0000-7000-8000-000000000608',
+            community_id: '00000000-0000-7000-8000-000000000609',
+            report_id: '00000000-0000-7000-8000-000000000601',
+            post_id: '00000000-0000-7000-8000-000000000603',
+            claimed_by_id: '00000000-0000-7000-8000-000000000610',
+            claimed_at: '2026-07-06T12:30:00.000Z',
+            released_at: null,
+          },
+          escalated_at: '2026-07-06T12:45:00.000Z',
+          escalated_by_id: '00000000-0000-7000-8000-000000000611',
+        },
+      ],
+      page_info: {
+        has_next_page: false,
+        has_previous_page: true,
+        start_cursor: 'fixture-community-role-and-sort-scoped-report-start-cursor',
+        end_cursor: null,
+      },
+    },
+    consumers: [...clientConsumers],
+    migratedFrom: ['backend/api/v1/communities/reports.test.mts'],
+  },
+]

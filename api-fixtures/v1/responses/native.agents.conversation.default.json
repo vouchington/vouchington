@@ -1,0 +1,49 @@
+{
+  "conversation": {
+    "channel_type": "agent",
+    "created_at": "2026-07-01T10:00:00Z",
+    "created_by_id": null,
+    "deleted_at": null,
+    "deleted_by_id": null,
+    "id": "00000000-0000-7000-8000-000000000101",
+    "last_response_id": "00000000-0000-7000-8000-000000000202",
+    "title": "Fixture agent conversation",
+    "updated_at": "2026-07-01T10:02:00Z",
+    "updated_by_id": null
+  },
+  "page_info": {
+    "end_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMSIsInNjb3BlIjoie1wiYWdlbnRJZFwiOlwiMDAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwMzAyXCIsXCJjb252ZXJzYXRpb25JZFwiOlwiMDAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwMTAxXCIsXCJvcmRlclwiOlwiaWQtZGVzY1wifSJ9",
+    "has_next_page": true,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMiIsInNjb3BlIjoie1wiYWdlbnRJZFwiOlwiMDAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwMzAyXCIsXCJjb252ZXJzYXRpb25JZFwiOlwiMDAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwMTAxXCIsXCJvcmRlclwiOlwiaWQtZGVzY1wifSJ9"
+  },
+  "results": [
+    {
+      "content": {
+        "content": "Hello",
+        "role": "user"
+      },
+      "conversation_id": "00000000-0000-7000-8000-000000000101",
+      "created_at": "2026-07-01T10:01:00Z",
+      "created_by_id": null,
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "00000000-0000-7000-8000-000000000201",
+      "updated_at": "2026-07-01T10:01:00Z",
+      "updated_by_id": null
+    },
+    {
+      "content": {
+        "content": "Hi",
+        "role": "assistant"
+      },
+      "conversation_id": "00000000-0000-7000-8000-000000000101",
+      "created_at": "2026-07-01T10:02:00Z",
+      "created_by_id": "00000000-0000-7000-8000-000000000001",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "id": "00000000-0000-7000-8000-000000000202",
+      "updated_at": "2026-07-01T10:02:00Z",
+      "updated_by_id": null
+    }
+  ]
+}

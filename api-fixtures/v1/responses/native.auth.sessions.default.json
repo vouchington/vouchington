@@ -1,0 +1,31 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "created_at": "2026-07-06T12:00:00.000Z",
+      "device_id": "0193f16e-19f1-7f32-bd1c-30d79ea27564",
+      "device_name": "Mac",
+      "expires_at": "2026-07-08T12:15:00.000Z",
+      "id": "0193f16e-0fd0-7c16-9d28-e340b9f3b36d",
+      "ip_address": "203.0.113.10",
+      "is_current": true,
+      "last_seen_at": "2026-07-06T12:15:00.000Z",
+      "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15"
+    },
+    {
+      "created_at": "2026-07-05T18:30:00.000Z",
+      "device_id": "0193f16e-2d8c-7659-8bb8-8b516d0d6f1c",
+      "device_name": "iPhone",
+      "expires_at": "2026-08-05T11:45:00.000Z",
+      "id": "0193f16e-24ab-78fb-8f68-c9b2f99d864f",
+      "ip_address": null,
+      "is_current": false,
+      "last_seen_at": "2026-07-06T11:45:00.000Z",
+      "user_agent": "Voucha/1 CFNetwork/1568.100.1 Darwin/24.0.0"
+    }
+  ]
+}

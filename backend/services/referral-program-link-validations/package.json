@@ -1,0 +1,37 @@
+{
+  "name": "@services/referral-program-link-validations",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/users": "workspace:^",
+    "@services/vote-integrity": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-assert": "^1.5.0",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

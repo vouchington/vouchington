@@ -1,0 +1,71 @@
+{
+  "name": "@services/users",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-rate-limiter": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@modules/stripe": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/bloom-filters": "workspace:^",
+    "@queues/emails": "workspace:^",
+    "@queues/entity-listeners": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@queues/psql": "workspace:^",
+    "@queues/user-deletions": "workspace:^",
+    "@queues/vote-weight": "workspace:^",
+    "@services/account-data-requests": "workspace:^",
+    "@services/attribution": "workspace:^",
+    "@services/batch-lookup": "workspace:^",
+    "@services/email-address-validator": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/jwt-session": "workspace:^",
+    "@services/mfa": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
+    "@services/oauth-accounts": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/recently-viewed": "workspace:^",
+    "@services/user-consents": "workspace:^",
+    "@services/user-deletions": "workspace:^",
+    "@ts-shared/languages": "workspace:^",
+    "@ts-shared/user-profile-collections": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1",
+    "pg": "^8.23.0",
+    "sql-template-strings": "^2.2.2",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@modules/csv": "workspace:^",
+    "@services/bluesky-accounts": "workspace:^",
+    "@services/lists": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

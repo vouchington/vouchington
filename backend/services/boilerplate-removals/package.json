@@ -1,0 +1,37 @@
+{
+  "name": "@services/boilerplate-removals",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@jongleberry/vurst-html": "^0.4.3",
+    "@modules/utils": "workspace:^",
+    "@services/crawls": "workspace:^",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@services/crawlers": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

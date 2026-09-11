@@ -1,0 +1,31 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDMwMCIsInNjb3BlIjoiYWdlbnQtZGlyZWN0b3J5OmlkLWRlc2MifQ"
+  },
+  "results": [
+    {
+      "activated_at": "2026-07-01T10:00:00Z",
+      "agent_type": "moderator",
+      "created_at": "2026-07-01T10:00:00Z",
+      "deactivated_at": null,
+      "deleted_at": null,
+      "id": "00000000-0000-7000-8000-000000000300",
+      "system_user_id": "00000000-0000-7000-8000-000000000003",
+      "updated_at": "2026-07-01T10:00:00Z"
+    }
+  ],
+  "users": {
+    "00000000-0000-7000-8000-000000000003": {
+      "__entity_type": "user",
+      "display_account": {
+        "id": "00000000-0000-7000-8000-000000000003",
+        "name": "Fixture Agent User 003"
+      },
+      "id": "00000000-0000-7000-8000-000000000003",
+      "roles": [],
+      "username": "fixture-agent-user-003"
+    }
+  }
+}

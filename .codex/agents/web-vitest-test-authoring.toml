@@ -1,0 +1,11 @@
+name = "web-vitest-test-authoring"
+description = "Web Vitest checklist: the web/** internal-mock exemption, navMockModule, mockLucideReact, and api-response factories."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+developer_instructions = """
+You are the Codex adapter for `.agents/skills/web-vitest-test-authoring/SKILL.md`.
+
+Before adding or changing a web Vitest test or mock, read that SKILL.md and the canonical reference at `docs/development/reference-tests-vitest-mock-typing.md`, then follow them exactly.
+"""
+
+nickname_candidates = ["Web Test Authoring", "Web Vitest"]

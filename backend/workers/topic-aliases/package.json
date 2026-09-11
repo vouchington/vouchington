@@ -1,0 +1,30 @@
+{
+  "name": "@workers/topic-aliases",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/rss-feed-item-categories": "workspace:^",
+    "@queues/topic-aliases": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/rss-feeds": "workspace:^",
+    "@services/topics": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

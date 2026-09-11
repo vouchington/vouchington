@@ -1,0 +1,25 @@
+{
+  "stats": [
+    {
+      "actor_id": "user-1",
+      "counts": {
+        "approve": 2,
+        "remove": 1
+      },
+      "total": 3
+    }
+  ],
+  "users": {
+    "user-1": {
+      "__entity_type": "user",
+      "created_at": "2026-01-01T00:00:00Z",
+      "id": "user-1",
+      "name": "Test User",
+      "profile_image_id": null,
+      "roles": [],
+      "updated_at": "2026-01-01T00:00:00Z",
+      "username": "testuser"
+    }
+  },
+  "window": 30
+}

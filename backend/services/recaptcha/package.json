@@ -1,0 +1,35 @@
+{
+  "name": "@services/recaptcha",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/valkey": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/users": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@valkey/valkey-glide": "^2.5.2",
+    "@voucha/config": "workspace:^",
+    "http-errors": "^2.0.1",
+    "undici": "^8.10.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

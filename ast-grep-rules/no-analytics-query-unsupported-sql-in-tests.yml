@@ -1,0 +1,231 @@
+id: no-analytics-query-unsupported-sql-in-tests
+language: Tsx
+severity: error
+message: 'Analytics query tests must use the unaliased query import and keep SQL compatible with the DuckDB-less JSONL fallback: use equality filters joined by AND, then sort/filter/limit in JS.'
+files:
+  - 'backend/**/*.test.mts'
+rule:
+  any:
+    - all:
+        - kind: call_expression
+        - regex: '^\s*(?:await\s+)?query(?:<[\s\S]*>)?\s*\('
+        - has:
+            stopBy: end
+            any:
+              - kind: template_string
+                regex: '(?i)\b(?:SELECT|WITH)\b'
+              - kind: string
+                regex: '(?i)\b(?:SELECT|WITH)\b'
+        - any:
+            - has:
+                stopBy: end
+                any:
+                  - kind: template_string
+                    regex: '(?i)\b(?:(?:COUNT|SUM|AVG|MIN|MAX)\s*\(|GROUP\s+BY|ORDER\s+BY|LIMIT|WITH|IN\s*\()'
+                  - kind: string
+                    regex: '(?i)\b(?:(?:COUNT|SUM|AVG|MIN|MAX)\s*\(|GROUP\s+BY|ORDER\s+BY|LIMIT|WITH|IN\s*\()'
+            - not:
+                has:
+                  stopBy: end
+                  any:
+                    - kind: template_string
+                      regex: '^`\s*(?i:\bSELECT\b)\s+\*\s+(?i:\bFROM\b)\s+"?[a-z_][a-z0-9_]*"?\s+(?i:\bWHERE\b)\s+"?[a-z_][a-z0-9_]*"?\s*=\s*(?:''(?:''''|[^''])*''|0|[1-9]\d*|true|false)(?:\s+(?i:\bAND\b)\s+"?[a-z_][a-z0-9_]*"?\s*=\s*(?:''(?:''''|[^''])*''|0|[1-9]\d*|true|false))*\s*`$'
+                    - kind: string
+                      regex: '^[''"]\s*(?i:\bSELECT\b)\s+\*\s+(?i:\bFROM\b)\s+"?[a-z_][a-z0-9_]*"?\s+(?i:\bWHERE\b)\s+"?[a-z_][a-z0-9_]*"?\s*=\s*(?:''(?:''''|[^''])*''|0|[1-9]\d*|true|false)(?:\s+(?i:\bAND\b)\s+"?[a-z_][a-z0-9_]*"?\s*=\s*(?:''(?:''''|[^''])*''|0|[1-9]\d*|true|false))*\s*[''"]$'
+        - inside:
+            kind: program
+            stopBy: end
+            has:
+              kind: import_statement
+              regex: 'import\s*\{[\s\S]*?\bquery\b(?:\s+as\s+[A-Za-z_$][\w$]*)?[\s\S]*?\}\s*from [''"]@data-stores/analytics/query[''"]'
+              stopBy: end
+    - all:
+        - kind: import_statement
+        - regex: 'import\s*\{[\s\S]*?\bquery\s+as\s+[A-Za-z_$][\w$]*[\s\S]*?\}\s*from [''"]@data-stores/analytics/query[''"]'
+    - all:
+        - kind: import_statement
+        - regex: 'import\s+\*\s+as\s+[A-Za-z_$][\w$]*\s+from [''"]@data-stores/analytics/query[''"]'
+examples:
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `select * from pg_pool_stats where waiting = '1' order by event_time`,
+      )
+    isValid: false
+    file: 'backend/data-stores/psql/pool-stats-sampler.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM pg_pool_stats WHERE waiting = ${sentinel} ORDER BY event_time`,
+      )
+    isValid: false
+    file: 'backend/data-stores/psql/pool-stats-sampler.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs WHERE event IN ('active', 'completed')`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query(
+        (`SELECT * FROM queue_jobs
+          WHERE event = 'completed'
+          ORDER BY duration_ms`),
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `select count(*) as n from web_click where page_id = '${pageId}'`,
+      )
+    isValid: false
+    file: 'backend/api/v1/landing-pages/clicks.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `WITH recent_clicks AS (SELECT * FROM web_click WHERE page_id = '${pageId}') SELECT * FROM recent_clicks`,
+      )
+    isValid: false
+    file: 'backend/services/landing-page-analytics/record-click.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>('SELECT 1')
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs WHERE duration_ms > 0`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs WHERE duration_ms = 1.0`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs WHERE queue = 'default' OR event = 'completed'`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const event = 'completed'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs WHERE event = ${event}`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT target_id AS item_id FROM web_click WHERE target_id = 'x'`,
+      )
+    isValid: false
+    file: 'backend/services/landing-page-analytics/record-click.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs WHERE event = 'completed' UNION ALL SELECT * FROM queue_jobs WHERE event = 'failed'`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM QUEUE_JOBS WHERE EVENT = 'completed'`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM crawler_requests WHERE success = TRUE`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/crawler.test.mts'
+  - code: |-
+      import { query as analyticsQuery } from '@data-stores/analytics/query'
+      const rows = await analyticsQuery<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs WHERE event = 'completed' ORDER BY duration_ms`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query as analytics } from '@data-stores/analytics/query'
+      const rows = await analytics<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs ORDER BY event`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import * as analytics from '@data-stores/analytics/query'
+      const rows = await analytics.query<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs ORDER BY event`,
+      )
+    isValid: false
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM pg_pool_stats WHERE waiting = '1'`,
+      )
+      rows.sort((a, b) => String(a.pool).localeCompare(String(b.pool)))
+    isValid: true
+    file: 'backend/data-stores/psql/pool-stats-sampler.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM queue_jobs WHERE queue = 'default' AND event = 'completed'`,
+      )
+    isValid: true
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM crawler_requests WHERE domain = '${domain}' AND crawler_type = 'rss'`,
+      )
+    isValid: true
+    file: 'backend/services/crawler-rss/index.redirect.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      const rows = await query<Record<string, unknown>>(
+        `select * from queue_jobs where queue = 'default' and event = 'completed'`,
+      )
+    isValid: true
+    file: 'backend/services/analytics/queue.test.mts'
+  - code: |-
+      import { read } from '@data-stores/psql'
+      const { rows } = await read<{ id: string }>(
+        `SELECT id FROM users WHERE id = ANY($1) ORDER BY created_at`,
+        [ids],
+      )
+    isValid: true
+    file: 'backend/data-stores/psql/views/__tests__/rss-feed-crawl-tiers.test.mts'
+  - code: |-
+      import { query } from '@data-stores/analytics/query'
+      await expect(client.query('SELECT value FROM test_values ORDER BY value')).resolves.toBeDefined()
+    isValid: true
+    file: 'backend/data-stores/psql/query-telemetry.test.mts'
+  - code: |-
+      import { query } from '../query.mts'
+      const rows = await query<{ item_id: string }>(
+        `SELECT target_id AS item_id FROM web_click ORDER BY click_count DESC`,
+      )
+    isValid: true
+    file: 'backend/data-stores/analytics/__tests__/analytics.part-2.test.mts'

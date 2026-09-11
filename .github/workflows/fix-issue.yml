@@ -1,0 +1,337 @@
+name: Automation Fix Issue
+
+# Triggered when an authorized user comments /fix on any issue.
+# Dispatches Auto Harness to investigate the issue, implement a fix, and open a PR.
+# If the Harness agent finds the fix ambiguous, it posts the options as a comment on the
+# source issue and opens a draft PR, then exits — a human reviews before merging.
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: fix-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Validate /fix trigger
+    if: >-
+      vars.HARNESS_DISPATCH_ENABLED == 'true' &&
+      vars.HARNESS_FIX_ISSUE_ENABLED == 'true' &&
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, '/fix') &&
+      contains(fromJSON('["OWNER","COLLABORATOR"]'),
+               github.event.comment.author_association)
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      accepted: ${{ steps.extract-fix.outputs.accepted }}
+      fix_request: ${{ steps.extract-fix.outputs.fix_request }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          clean: false
+          persist-credentials: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - name: Extract /fix request
+        id: extract-fix
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          set -euo pipefail
+
+          escape_command() {
+            local value="$1"
+            value="${value//'%'/'%25'}"
+            value="${value//$'\r'/'%0D'}"
+            value="${value//$'\n'/'%0A'}"
+            printf '%s' "$value"
+          }
+
+          COMMENT_BODY_FILE="$(mktemp)"
+          REQUEST_FILE="$(mktemp)"
+          FOUND_FILE="$(mktemp)"
+          printf '%s' "$COMMENT_BODY" > "$COMMENT_BODY_FILE"
+          echo "accepted=false" >> "$GITHUB_OUTPUT"
+
+          COMMAND="$(head -n 1 "$COMMENT_BODY_FILE" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+          if [[ "$COMMAND" != "/fix" ]]; then
+            echo "Ignoring comment whose first line is not the standalone /fix command."
+            exit 0
+          fi
+
+          awk -v found_file="$FOUND_FILE" '
+            BEGIN { found = 0 }
+            {
+              if (found) {
+                print
+                next
+              }
+
+              search = $0
+              offset = 0
+              while ((pos = index(search, "/fix")) > 0) {
+                absolute = offset + pos
+                before = substr($0, 1, absolute - 1)
+                after = substr($0, absolute + length("/fix"))
+                if (before ~ /(^|[[:space:]])$/ && after ~ /^($|[[:space:]])/) {
+                  sub(/^[[:space:]]+/, "", after)
+                  if (after != "") print after
+                  found = 1
+                  next
+                }
+                offset += pos + length("/fix") - 1
+                search = substr($0, offset + 1)
+              }
+            }
+            END {
+              if (found) {
+                print "found" > found_file
+              }
+            }
+          ' "$COMMENT_BODY_FILE" > "$REQUEST_FILE"
+
+          if [[ ! -s "$FOUND_FILE" ]]; then
+            COMMENT_LENGTH="$(wc -c < "$COMMENT_BODY_FILE" | tr -d '[:space:]')"
+            PREVIEW="$(tr '\r\n' '  ' < "$COMMENT_BODY_FILE" | cut -c 1-160)"
+            echo "::error::Unable to extract exact /fix command from issue comment. comment_id=$COMMENT_ID comment_length=$COMMENT_LENGTH preview=$(escape_command "$PREVIEW")"
+            {
+              echo "## /fix extraction failed"
+              echo
+              echo "- Comment id: $COMMENT_ID"
+              echo "- Comment length: $COMMENT_LENGTH"
+              echo "- Preview: \`$PREVIEW\`"
+              echo
+              echo "The comment matched the workflow gate but did not contain an exact \`/fix\` command token."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          "$GITHUB_WORKSPACE/ci/write-github-multiline-output.sh" fix_request < "$REQUEST_FILE"
+          echo "accepted=true" >> "$GITHUB_OUTPUT"
+
+      - name: Acknowledge with eyes reaction and run link
+        if: steps.extract-fix.outputs.accepted == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          if ! gh api -X POST \
+            "/repos/${{ github.repository }}/issues/comments/${COMMENT_ID}/reactions" \
+            -f content=eyes; then
+            echo "::warning::Could not add eyes reaction to /fix comment. comment_id=${COMMENT_ID}. Continuing so Harness dispatch can run."
+            {
+              echo "## /fix acknowledgement warning"
+              echo
+              echo "- Comment id: ${COMMENT_ID}"
+              echo
+              echo "GitHub rejected the optional eyes reaction. The workflow will continue to Harness dispatch."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [[ "$RUN_ATTEMPT" == "1" ]] && ! gh issue comment "$ISSUE_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body "👀 [View the automation workflow run]($RUN_URL)."; then
+            echo "::warning::Could not post workflow run link for /fix. issue_number=${ISSUE_NUMBER}. Continuing so Harness dispatch can run."
+          fi
+
+  render-prompt:
+    name: Render automation prompt
+    needs: [gate]
+    if: needs.gate.outputs.accepted == 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      prompt: ${{ steps.render.outputs.prompt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          runner-lifecycle: persistent
+
+      - name: Capture trusted issue context
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          MAX_COMMENT_CHARS=2000
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" > issue.json
+          comment_count="$(jq -er '.comments' issue.json)"
+          : > issue-comments.ndjson
+          if (( comment_count > 0 )); then
+            last_page="$(((comment_count + 99) / 100))"
+            first_page="$((last_page > 1 ? last_page - 1 : 1))"
+            for ((page = first_page; page <= last_page; page++)); do
+              gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments?per_page=100&page=$page" |
+                jq -c --argjson maxChars "$MAX_COMMENT_CHARS" \
+                  '.[] | {id, author: .user.login,
+                    body: (.body // "" | .[0:$maxChars]), bodyTruncated: ((.body // "" | length) > $maxChars),
+                    created_at, updated_at}' >> issue-comments.ndjson
+            done
+          fi
+          jq -s 'sort_by(.created_at) | .[-100:]' issue-comments.ndjson > issue-comments.json
+          jq --slurpfile comments issue-comments.json --argjson commentCount "$comment_count" \
+            --argjson maxCommentChars "$MAX_COMMENT_CHARS" '{
+            body, labels: [.labels[].name], comments: $comments[0],
+            commentSnapshot: {total: $commentCount, included: ($comments[0] | length),
+              capped: ($commentCount > 100), maxCommentChars: $maxCommentChars}
+          }' issue.json > issue-context.json
+
+      - name: Prepare prompt variables
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          REQUEST_BODY: ${{ needs.gate.outputs.fix_request }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$ISSUE_TITLE" > issue-title.txt
+          printf '%s' "$REQUEST_BODY" > request-body.txt
+
+      - name: Render prompt
+        id: render
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+        with:
+          template: docs/prompts/automation/fix-issue.md
+          vars: |
+            ISSUE_NUMBER=${{ github.event.issue.number }}
+            ISSUE_URL=${{ github.event.issue.html_url }}
+            TRIGGER_COMMENT_ID=${{ github.event.comment.id }}
+          var-files: |
+            ISSUE_TITLE=issue-title.txt
+            REQUEST_BODY=request-body.txt
+            ISSUE_CONTEXT=issue-context.json
+
+  dispatch:
+    name: Harness dispatch
+    needs: [gate, render-prompt]
+    if: needs.gate.outputs.accepted == 'true'
+    uses: ./.github/workflows/harness-dispatch.yml
+    permissions:
+      contents: read
+    secrets:
+      HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
+    with:
+      surface-gate: HARNESS_FIX_ISSUE_ENABLED
+      agent-ref: ${{ github.sha }}
+      expected-head-sha: ${{ github.sha }}
+      concurrency-id: filaments:fix:${{ github.event.issue.number }}
+      publish-contract: fix-issue
+      publish-base-ref: main
+      publish-title-suffix: '(fixes #${{ github.event.issue.number }})'
+      publish-duplicate-key: 'fixes #${{ github.event.issue.number }}'
+      pr-label: automation:auto-fix
+      issue-number: ${{ github.event.issue.number }}
+      trigger-comment-id: ${{ github.event.comment.id }}
+      slack-source: |
+        *Source:* `/fix` on issue #${{ github.event.issue.number }}
+        *Issue:* ${{ github.event.issue.html_url }}
+        *Issue title:* ${{ github.event.issue.title }}
+      prompt: ${{ needs.render-prompt.outputs.prompt }}
+
+  escalate:
+    name: Comment failure on issue
+    needs: [gate, render-prompt, dispatch]
+    if: >-
+      always() &&
+      needs.gate.result == 'success' &&
+      needs.gate.outputs.accepted == 'true' &&
+      (
+        needs.render-prompt.result == 'failure' ||
+        needs.render-prompt.result == 'cancelled' ||
+        (needs.dispatch.result == 'failure' || needs.dispatch.result == 'cancelled')
+      )
+    runs-on: [self-hosted]
+    timeout-minutes: 2
+    permissions:
+      issues: write
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
+    steps:
+      - name: Comment failure on source issue
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" --jq \
+            'select(.state == "open") | .number' | grep -qx "$ISSUE_NUMBER"
+          COMMENT_JSON="$(gh api "repos/$GITHUB_REPOSITORY/issues/comments/$TRIGGER_COMMENT_ID")"
+          jq -e \
+            'select((.id | tostring) == env.TRIGGER_COMMENT_ID and
+              (.issue_url | endswith("/issues/" + env.ISSUE_NUMBER)) and
+              (.author_association == "OWNER" or .author_association == "COLLABORATOR"))' \
+            <<< "$COMMENT_JSON" > /dev/null
+          COMMAND="$(jq -r '.body | split("\n")[0]' <<< "$COMMENT_JSON" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+          if [[ "$COMMAND" != "/fix" ]]; then
+            echo "Suppressing failure comment because the triggering /fix command is no longer valid."
+            exit 0
+          fi
+
+          SESSION_ID="${{ needs.dispatch.outputs.session-id }}"
+          THIS_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          BODY="/fix run failed — auto-fix could not complete.
+
+          **Auto-fix run:** $THIS_RUN_URL"
+
+          if [[ -n "$SESSION_ID" ]]; then
+            BODY="$BODY
+          **Harness session:** $SESSION_ID"
+          fi
+
+          BODY="$BODY
+
+          Please investigate manually or re-comment \`/fix\` to retry."
+
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body "$BODY"

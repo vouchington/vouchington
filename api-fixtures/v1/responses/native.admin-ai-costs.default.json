@@ -1,0 +1,35 @@
+{
+  "page_info": {
+    "end_cursor": "eyJ0b3RhbF9jb3N0X21pY3JvdW5pdHMiOiI5MDA3MTk5MjU0NzQwOTkzMTIzNDU2NzgiLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiJ9",
+    "has_next_page": true,
+    "start_cursor": "eyJ0b3RhbF9jb3N0X21pY3JvdW5pdHMiOiIxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1IiwiaWQiOiIwMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDAxMDEifQ"
+  },
+  "results": [
+    {
+      "community_id": "00000000-0000-7000-8000-000000000101",
+      "community_slug": "alpha-community",
+      "request_count": 987654,
+      "total_cost": {
+        "amount": "1234567890123456789012345",
+        "currency": "usd",
+        "scale": 6
+      },
+      "total_input_tokens": 9876543210,
+      "total_output_tokens": 7654321098,
+      "unpriced_request_count": 42
+    },
+    {
+      "community_id": "00000000-0000-7000-8000-000000000102",
+      "community_slug": "beta-community",
+      "request_count": 123456,
+      "total_cost": {
+        "amount": "900719925474099312345678",
+        "currency": "usd",
+        "scale": 6
+      },
+      "total_input_tokens": 4294967296,
+      "total_output_tokens": 3221225472,
+      "unpriced_request_count": 7
+    }
+  ]
+}

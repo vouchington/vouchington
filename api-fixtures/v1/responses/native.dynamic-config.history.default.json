@@ -1,0 +1,25 @@
+{
+  "history": [
+    {
+      "changed_by": {
+        "id": "0198a356-c5c0-7000-8000-000000000002",
+        "username": "qa-developer"
+      },
+      "changed_fields": {
+        "fediverse": {
+          "next": true,
+          "previous": false
+        }
+      },
+      "created_at": "2026-07-14T12:00:00.000Z",
+      "id": "0198a356-c5c0-7000-8000-000000000001",
+      "namespace": "feature-flags",
+      "next_fields": {
+        "fediverse": true
+      },
+      "previous_fields": {
+        "fediverse": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "name": "@workers/bedrock-embeddings",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
+    "@queues/bedrock-embeddings": "workspace:^",
+    "@services/bedrock-embeddings": "workspace:^",
+    "@services/communities": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/topics": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@services/rss-feeds": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

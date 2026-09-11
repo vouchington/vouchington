@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+cd "$REPO_ROOT"
+
+if [ "$#" -eq 1 ] && { [ "$1" = "--help" ] || [ "$1" = "-h" ]; }; then
+    cat <<'USAGE'
+Usage: ./dev/retrospective-facts (--pr <number> and/or --branch <name> | --no-pr) [--repo <owner/name>] [--raw]
+
+Print retrospective fact fields using origin/main after fetching it.
+At least one of --pr, --branch, or --no-pr is required; never infer PR or branch from the current checkout.
+--repo requires --pr and cannot be combined with --branch or --no-pr.
+Use --raw to append the underlying command outputs for copy-paste evidence.
+USAGE
+    exit 0
+fi
+
+exec "$REPO_ROOT/node_modules/.bin/vouchington" retrospective-facts "$@"

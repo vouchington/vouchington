@@ -1,0 +1,54 @@
+{
+  "extends": "../backend/tsconfig.json",
+  "compilerOptions": {
+    // Leaf tooling directory: nothing imports test-helpers/**'s compiled output, so
+    // declaration emit is meaningless here — see playwright/tsconfig.json for why this
+    // must be overridden rather than left inherited from backend.
+    "declaration": false,
+    "declarationMap": false,
+    "typeRoots": ["../node_modules/@types"],
+    "types": ["node"],
+    "tsBuildInfoFile": "../node_modules/.cache/test-helpers-pnpm.tsbuildinfo",
+    // test-helpers is not a pnpm workspace member, so these backend/ts-shared specifiers have no
+    // node_modules symlink here. Compile-time-only resolution, mirroring web/tsconfig.json's
+    // @ts-shared/<pkg> precedent — see docs/development/reference-tests-linters-and-static-analysis.md.
+    "paths": {
+      "@voucha/scripts/seed": ["../backend/scripts/seed/index.mts"],
+      "@services/bedrock-embeddings": ["../backend/services/bedrock-embeddings/index.mts"],
+      "@services/urls-domains-blacklist": ["../backend/services/urls-domains-blacklist/index.mts"],
+      "@services/dynamic-config-admin": ["../backend/services/dynamic-config-admin/index.mts"],
+      "@voucha/api/queues": ["../backend/api/queues.mts"],
+      "@data-stores/graceful-shutdown": ["../backend/data-stores/graceful-shutdown/index.mts"],
+      "@data-stores/psql/pool-metrics": ["../backend/data-stores/psql/pool-metrics.mts"],
+      "@workers/bloom-filters/workers": ["../backend/workers/bloom-filters/workers.mts"],
+      "@workers/topic-ratings/workers": ["../backend/workers/topic-ratings/workers.mts"],
+      "@workers/elections/workers": ["../backend/workers/elections/workers.mts"],
+      "@workers/entity-listeners/workers": ["../backend/workers/entity-listeners/workers.mts"],
+      "@workers/entity-metrics-cache-refresh/workers": [
+        "../backend/workers/entity-metrics-cache-refresh/workers.mts"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.mts",
+    "**/*.d.ts",
+    "../vitest.config.mts",
+    "../backend/types/**/*.d.ts"
+  ],
+  "exclude": [
+    "../node_modules",
+    "**/node_modules",
+    // Content-free redirect shim (see its own header comment): its sole purpose is to exist at
+    // this exact repo-root path so no-mistakes' static analyzer can resolve
+    // web-storybook-browser's setupFiles literal to a real file; Vitest never executes this copy.
+    // Its one-line `import '../web/.storybook/vitest.setup.ts'` pulls a real ESM/top-level-await
+    // Vite/browser runtime file into this program, which classifies it as CommonJS (no
+    // package.json `"type": "module"` scopes web/.storybook under nodenext) and reports false
+    // TS1295/TS1309 mode-mismatch errors. That file is genuinely typechecked under its actual
+    // bundler-mode runtime via web/tsconfig.json (0 errors) — excluding this redirect-only shim
+    // does not remove real coverage, and no-mistakes parses this file's source directly, so its
+    // traceability is unaffected by tsc exclusion.
+    "vitest.setup.storybook-browser-guard.mts"
+  ]
+}

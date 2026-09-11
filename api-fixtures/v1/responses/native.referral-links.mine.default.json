@@ -1,0 +1,33 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "activated_at": "2026-01-01T00:00:00Z",
+      "consecutive_crawl_failures": 0,
+      "created_at": "2026-01-01T00:00:00Z",
+      "deactivated_at": null,
+      "deleted_at": null,
+      "id": "referral-link-1",
+      "label": "My test card link",
+      "last_crawl_failure_at": null,
+      "last_crawl_id": null,
+      "last_crawl_success_at": null,
+      "parent_link_id": null,
+      "referral_program_id": "referral-program-1",
+      "referral_program_name": "Test Card",
+      "referral_program_slug": "test-card",
+      "unfurl_completed_at": null,
+      "unfurl_failed_at": null,
+      "unfurl_last_error": null,
+      "unfurl_requested_at": null,
+      "updated_at": "2026-01-01T00:00:00Z",
+      "url": "https://example.com/apply/test-card",
+      "url_id": "url-referral-1",
+      "user_id": "user-1"
+    }
+  ]
+}

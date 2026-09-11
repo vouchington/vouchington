@@ -1,0 +1,8 @@
+{
+  "exposure": {
+    "cooldown_ends_at": null,
+    "count": 1,
+    "in_cooldown": false,
+    "threshold": 10
+  }
+}

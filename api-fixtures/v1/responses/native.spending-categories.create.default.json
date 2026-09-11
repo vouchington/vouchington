@@ -1,0 +1,19 @@
+{
+  "spending_category": {
+    "amount": {
+      "amount": 42550,
+      "currency": "usd"
+    },
+    "can_manage": true,
+    "id": "00000000-0000-7000-8000-000000000742",
+    "note": "Family groceries",
+    "owner_type": "individual",
+    "spending_category": {
+      "id": "00000000-0000-7000-8000-000000000741",
+      "name": "Groceries",
+      "slug": "groceries"
+    },
+    "spending_category_id": "00000000-0000-7000-8000-000000000741",
+    "spending_frequency": "monthly"
+  }
+}

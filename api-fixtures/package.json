@@ -1,0 +1,10 @@
+{
+  "name": "@voucha/api-fixtures",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./v1/lifecycle-scenarios.json": "./v1/lifecycle-scenarios.json"
+  }
+}

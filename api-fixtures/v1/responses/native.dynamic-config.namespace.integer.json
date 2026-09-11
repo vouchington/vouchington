@@ -1,0 +1,36 @@
+{
+  "namespace": {
+    "can_update": false,
+    "can_view": true,
+    "config": {
+      "data_point_topic_ids_max_items": 5,
+      "review_topic_ratings_max_items": 5
+    },
+    "description": "Limits for topic IDs and review ratings in post payloads.",
+    "field_count": 2,
+    "fields": [
+      {
+        "default_value": 5,
+        "description": "Maximum topic IDs allowed in one data point payload.",
+        "integer": true,
+        "max_value": 100,
+        "min_value": 1,
+        "name": "data_point_topic_ids_max_items",
+        "type": "number",
+        "value": 5
+      },
+      {
+        "default_value": 5,
+        "description": "Maximum review topic ratings allowed in one review payload.",
+        "integer": true,
+        "max_value_exemption": "The effective ceiling is bounded by the configured contribution payload size.",
+        "min_value": 2,
+        "name": "review_topic_ratings_max_items",
+        "type": "number",
+        "value": 5
+      }
+    ],
+    "label": "Post Content Limits",
+    "namespace": "post-content-limits-config"
+  }
+}

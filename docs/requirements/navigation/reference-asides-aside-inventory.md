@@ -1,0 +1,46 @@
+# Asides reference
+
+[Back to Asides](ASIDES.md)
+
+## Aside Inventory
+
+**RSC column legend:** `yes` = async server component (uses `await`, fetches its own data); `no` = synchronous component that receives data via props (may be a server component or client component — check for `'use client'` at the file level).
+
+| Component                     | File Path                                                    | Auth                | RSC | Dismissible                       | Accordion | KPI Target   | Notes                                         |
+| ----------------------------- | ------------------------------------------------------------ | ------------------- | --- | --------------------------------- | --------- | ------------ | --------------------------------------------- |
+| TopicDescriptionAside         | `web/components/topics/topic-description-aside.tsx`          | any                 | no  | no                                | no        | discovery    |                                               |
+| AsideAccordion                | `web/components/asides/aside-accordion.tsx`                  | —                   | no  | —                                 | —         | wrapper      |                                               |
+| DismissibleAside              | `web/components/asides/dismissible-aside.tsx`                | —                   | no  | —                                 | —         | wrapper      |                                               |
+| AsideSkeleton                 | `web/components/asides/aside-skeleton.tsx`                   | —                   | no  | —                                 | —         | loading      |                                               |
+| SequentialAsideSuspense       | `web/components/asides/sequential-aside-suspense.tsx`        | —                   | no  | —                                 | —         | wrapper      |                                               |
+| TrendingTopicsAside           | `web/components/asides/trending-topics-aside.tsx`            | any                 | yes | no                                | no        | engagement   |                                               |
+| ConnectSocialAside            | `web/components/asides/connect-social-aside.tsx`             | logged-in           | yes | yes (`aside-connect-social`)      | no        | trust depth  |                                               |
+| UpgradeMembershipAside        | `web/components/asides/upgrade-membership-aside.tsx`         | logged-in, free     | yes | yes (`aside-upgrade-membership`)  | no        | monetization |                                               |
+| CreateFirstPostAside          | `web/components/asides/create-first-post-aside.tsx`          | logged-in           | yes | yes (`aside-create-first-post`)   | no        | contribution | activity-gated: hides once posted             |
+| FollowTopicsAside             | `web/components/asides/follow-topics-aside.tsx`              | logged-in           | yes | yes (`aside-follow-topics`)       | no        | engagement   | activity-gated: hides once following a topic  |
+| ContributeCtaAside            | `web/components/asides/contribute-cta-aside.tsx`             | logged-in           | yes | no                                | no        | contribution |                                               |
+| PopularCommunitiesAside       | `web/components/asides/popular-communities-aside.tsx`        | any                 | yes | no                                | yes       | engagement   |                                               |
+| AboutVouchaAside              | `web/components/asides/about-voucha-aside.tsx`               | any                 | no  | no                                | yes       | education    |                                               |
+| AsideFooter                   | `web/components/aside-footer.tsx`                            | any                 | no  | no                                | no        | navigation   |                                               |
+| ReferralCtaAside              | `web/components/referral-cta-aside.tsx`                      | logged-out, param   | no  | yes                               | no        | signups      |                                               |
+| PostFollowContext             | `web/components/posts/post-follow-context.tsx`               | any                 | yes | no                                | no        | engagement   |                                               |
+| Post Author Card (inline)     | `web/app/(topics)/[topicType]/[id]/page.tsx`                 | any                 | no  | no                                | no        | trust        |                                               |
+| PostRelatedPostsAside         | `web/components/tags/post-related-posts-aside.tsx`           | any                 | yes | no                                | no        | engagement   |                                               |
+| PostRelatedTopicsAside        | `web/components/tags/post-related-topics-aside.tsx`          | any                 | yes | no                                | no        | engagement   |                                               |
+| PostRelatedUrlsAside          | `web/components/tags/post-related-urls-aside.tsx`            | any                 | yes | no                                | no        | engagement   |                                               |
+| PostReviewReferralLinksAside  | `web/components/posts/post-review-referral-links-aside.tsx`  | any                 | yes | no                                | no        | monetization |                                               |
+| RssFeedItemRelatedTopicsAside | `web/components/tags/rss-feed-item-related-topics-aside.tsx` | any                 | yes | no                                | no        | engagement   |                                               |
+| TopicFaqPostsAside            | `web/components/tags/topic-faq-posts-aside.tsx`              | any                 | yes | no                                | yes       | engagement   |                                               |
+| TopicRelatedTopicsAside       | `web/components/tags/topic-related-topics-aside.tsx`         | any                 | yes | no                                | no        | engagement   |                                               |
+| TopicCommunitiesAside         | `web/components/topics/topic-communities-aside.tsx`          | any                 | yes | no                                | no        | engagement   |                                               |
+| ReferralLinksAside            | `web/components/referral-links/referral-links-aside.tsx`     | any                 | yes | no                                | no        | monetization |                                               |
+| TopicAdminAside               | `web/components/admin/topic-admin-aside.tsx`                 | admin               | yes | no                                | no        | content mgmt |                                               |
+| TopicActionsAside             | `web/components/topics/topic-actions-aside.tsx`              | any                 | no  | no                                | no        | engagement   |                                               |
+| UserActionsAside              | `web/components/users/user-actions-aside.tsx`                | logged-in, not self | no  | no                                | no        | moderation   |                                               |
+| UserVouchElectionCard         | `web/components/users/user-vouch-election-card.tsx`          | logged-in, not self | no  | no                                | no        | trust        |                                               |
+| UserVouchFollowContext        | `web/components/users/user-vouch-follow-context.tsx`         | logged-in, not self | yes | no                                | no        | trust        |                                               |
+| UserTagsAside                 | `web/components/users/user-tags-aside.tsx`                   | logged-in, not self | yes | no                                | no        | moderation   | net-positive tags; modal manages all allowed  |
+| CommunityAboutAside (inline)  | `web/app/(communities)/communities/[slug]/layout.tsx`        | any                 | no  | no                                | no        | engagement   |                                               |
+| FindPeopleAside               | `web/components/asides/find-people-aside.tsx`                | logged-in           | yes | yes (`aside-find-people`)         | no        | engagement   | activity-gated: hides once following a user   |
+| CreateLandingPageAside        | `web/components/asides/create-landing-page-aside.tsx`        | logged-in           | yes | yes (`aside-create-landing-page`) | no        | growth       | activity-gated: hides once has landing page   |
+| DiscoverCommunitiesAside      | `web/components/asides/discover-communities-aside.tsx`       | logged-in           | yes | no                                | no        | engagement   | activity-gated: hides once joined a community |

@@ -1,0 +1,37 @@
+{
+  "name": "@workers/crawl-browser",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@jongleberry/vurst-html": "^0.4.3",
+    "@modules/on-error": "workspace:^",
+    "@queues/crawl-browser": "workspace:^",
+    "@services/browser-crawl": "workspace:^",
+    "@services/crawler-referral-links": "workspace:^",
+    "@services/crawlers": "workspace:^",
+    "@services/crawls": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/urls-domains-robots": "workspace:^",
+    "@voucha/config": "workspace:^",
+    "glide-mq": "^0.15.5",
+    "ssrf-guard": "^1.0.0"
+  },
+  "devDependencies": {
+    "@services/user-referral-program-links": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

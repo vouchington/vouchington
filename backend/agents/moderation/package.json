@@ -1,0 +1,42 @@
+{
+  "name": "@agents/moderation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@agents/_shared": "workspace:^",
+    "@agents/politics-averse": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/openai-utils": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/moderation": "workspace:^",
+    "@services/moderators": "workspace:^",
+    "@services/post-clearance": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/users": "workspace:^",
+    "openai": "^7.10.0",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@services/topics": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

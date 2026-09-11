@@ -1,0 +1,29 @@
+{
+  "name": "@modules/rss-feed-cover-art",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@modules/utils": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
+    "@voucha/types": "workspace:^"
+  },
+  "devDependencies": {}
+}

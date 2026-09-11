@@ -1,0 +1,33 @@
+{
+  "name": "@services/topic-claims",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/users": "workspace:^",
+    "@vouchington/domain-verification": "0.0.0",
+    "http-assert": "^1.5.0",
+    "sql-template-strings": "^2.2.2",
+    "ssrf-guard": "^1.0.0"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

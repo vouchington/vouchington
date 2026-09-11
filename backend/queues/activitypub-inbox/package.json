@@ -1,0 +1,27 @@
+{
+  "name": "@queues/activitypub-inbox",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Durable inbound ActivityPub verification and dispatch queue",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/activitypub-inbox-storage-policy": "workspace:^",
+    "@modules/scheduled-job-manifest": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

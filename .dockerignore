@@ -1,0 +1,65 @@
+# Single authoritative dockerignore for the monorepo. Used by both
+# `backend/Dockerfile` and `web/Dockerfile`, with build context set to
+# the repo root in `.github/workflows/build-backend.yml` and
+# `.github/workflows/build-web.yml`. Do not add per-workspace
+# `.dockerignore` files; BuildKit's `<dockerfile>.dockerignore`
+# precedence makes parallel rules silently override this file and
+# diverge over time.
+
+**
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!api-fixtures/
+!api-fixtures/**
+!ci/
+!ci/package.json
+!backend/
+!backend/**
+!backend/types/
+!backend/types/**/
+!backend/types/**
+!email-templates/
+!email-templates/**
+!static-code-analysis/
+!static-code-analysis/docker-deploy/
+!static-code-analysis/docker-deploy/**
+!ts-shared/
+!ts-shared/**
+!web/
+!web/**
+**/node_modules
+**/node_modules/**
+**/*.md
+**/*.mdx
+**/*.test.mts
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.mts
+**/*.spec.ts
+**/*.spec.tsx
+**/*.stories.ts
+**/*.stories.tsx
+**/__tests__
+**/__tests__/**
+**/test-helpers/**
+!backend/test-helpers/package.json
+backend/scripts/tests
+backend/scripts/tests/**
+web/scripts/tests
+web/scripts/tests/**
+web/.storybook
+web/.storybook/**
+web/storybook
+web/storybook/**
+**/dist
+**/dist/**
+**/.next
+**/.next/**
+**/.turbo
+**/.turbo/**
+**/coverage
+**/coverage/**
+**/.env
+**/.env.*
+!**/.env.example

@@ -1,0 +1,26 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "id": "referral-link-1",
+      "label": "My test card link",
+      "referral_program_id": "referral-program-1",
+      "referral_program_name": "Test Card",
+      "referral_program_slug": "test-card",
+      "url": "https://example.com/apply/test-card",
+      "user_id": "user-1"
+    }
+  ],
+  "users": {
+    "user-1": {
+      "display_name": "Test User",
+      "id": "user-1",
+      "profile_image_id": null,
+      "username": "testuser"
+    }
+  }
+}

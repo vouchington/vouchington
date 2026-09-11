@@ -1,0 +1,27 @@
+id: no-rust-mocking
+language: Tsx
+severity: error
+message: 'Direct mocking of Rust/native addon packages is not allowed; use the test helper API instead.'
+files:
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+  - '**/*.test.ts'
+  - '**/*.spec.ts'
+rule:
+  pattern: vi.mock($MODULE)
+constraints:
+  MODULE:
+    regex: '^[''"](@voucha/rust-napi-|@jongleberry/vurst-)'
+examples:
+  - code: "vi.mock('@voucha/rust-napi-crypto')"
+    isValid: false
+    file: 'backend/modules/auth/auth.test.mts'
+  - code: "vi.mock('@jongleberry/vurst-html')"
+    isValid: false
+    file: 'backend/modules/render/render.test.mts'
+  - code: "vi.mock('./my-module')"
+    isValid: true
+    file: 'backend/modules/auth/auth.test.mts'
+  - code: "vi.mock('@data-stores/psql')"
+    isValid: true
+    file: 'backend/modules/auth/auth.test.mts'

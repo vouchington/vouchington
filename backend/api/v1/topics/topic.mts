@@ -1,0 +1,6 @@
+import './topic-routes/topic-detail-route.mts'
+import './topic-routes/follow-context-route.mts'
+import './topic-routes/financial-topic-routes.mts'
+import './topic-routes/referral-program-link-validations-routes.mts'
+import './topic-routes/topic-vote-routes.mts'
+import './topic-routes/retailer-routes.mts'

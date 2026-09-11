@@ -1,0 +1,34 @@
+{
+  "name": "@workers/crawl-boilerplate-removal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@jongleberry/vurst-html": "^0.4.3",
+    "@modules/queue-config": "workspace:^",
+    "@queues/crawl-boilerplate-removal": "workspace:^",
+    "@services/boilerplate-removals": "workspace:^",
+    "@services/crawlers": "workspace:^",
+    "@services/crawls": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@modules/aws": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

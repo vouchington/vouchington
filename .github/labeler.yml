@@ -1,0 +1,128 @@
+backend:
+  - changed-files:
+      - any-glob-to-any-file: 'backend/**'
+
+mq:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'backend/queues/**'
+          - 'backend/workers/**'
+          - 'backend/flows/**'
+          - 'backend/entrypoints/worker-cpu/**'
+          - 'backend/entrypoints/worker-io/**'
+          - 'backend/worker-runtime/**'
+
+data-stores:
+  - changed-files:
+      - any-glob-to-any-file: 'backend/data-stores/**'
+
+web:
+  - changed-files:
+      - any-glob-to-any-file: 'web/**'
+
+agents:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/CLAUDE.md'
+          - '.agents/**'
+          - '.claude/**'
+          - '.codex/**'
+          - '.grok/**'
+          - '.cursor/**'
+          - '.opencode/**'
+          - '.pr-shepherd/**'
+          - '**/SKILL.md'
+
+github_actions:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - '.github/actions/**'
+          - '.github/actionlint.yaml'
+          - '.github/zizmor.yml'
+          - '.github/dependabot.yml'
+          - '.github/labeler.yml'
+
+cloudflare_worker:
+  - changed-files:
+      - any-glob-to-any-file: 'cloudflare-worker/**'
+
+lambdas:
+  - changed-files:
+      - any-glob-to-any-file: 'lambdas/**'
+
+tooling:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'ci/**'
+          - 'dev/**'
+          - 'static-code-analysis/**'
+          - '.husky/**'
+          - 'ast-grep-rules/**'
+
+testing:
+  - changed-files:
+      - any-glob-to-any-file: 'test-helpers/**'
+
+ts-shared:
+  - changed-files:
+      - any-glob-to-any-file: 'ts-shared/**'
+
+email:
+  - changed-files:
+      - any-glob-to-any-file: 'email-templates/**'
+
+client-parity:
+  - changed-files:
+      - any-glob-to-any-file: 'api-fixtures/**'
+
+content:
+  - changed-files:
+      - any-glob-to-any-file: 'articles/**'
+
+reliability:
+  - changed-files:
+      - any-glob-to-any-file: 'monitors/**'
+
+docker:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/Dockerfile'
+          - '**/*.Dockerfile'
+          - '**/*.dockerfile'
+          - '**/.dockerignore'
+          - '**/docker-compose*.yml'
+          - '**/docker-compose*.yaml'
+          - '**/compose*.yml'
+          - '**/compose*.yaml'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/package.json'
+          - 'pnpm-lock.yaml'
+          - 'pnpm-workspace.yaml'
+          - 'renovate.json'
+          - '.github/dependabot.yml'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: 'docs/**'
+
+seed:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'seed/**'
+          - 'backend/scripts/seeds/**'
+          - 'backend/data-stores/psql/config-driven/**/*seed*'
+          - 'backend/scripts/seed/**'
+          - 'backend/scripts/**/*seed*'
+          - 'backend/services/admin-imports/*seed*'
+
+tests:playwright:
+  - changed-files:
+      - any-glob-to-any-file: 'playwright/**'
+
+tests:integration:
+  - changed-files:
+      - any-glob-to-any-file: 'integration-tests/**'

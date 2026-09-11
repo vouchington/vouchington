@@ -1,0 +1,23 @@
+{
+  "name": "@workers/psql",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/psql": "workspace:^",
+    "@services/data-retention": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "glide-mq": "^0.15.5"
+  }
+}

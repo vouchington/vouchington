@@ -1,0 +1,25 @@
+{
+  "name": "@workers/rss-feed-item-categories",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/rss-feed-item-categories": "workspace:^",
+    "@services/rss-feed-items": "workspace:^",
+    "@services/rss-feeds": "workspace:^",
+    "glide-mq": "^0.15.5"
+  }
+}

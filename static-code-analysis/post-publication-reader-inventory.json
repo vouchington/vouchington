@@ -1,0 +1,296 @@
+{
+  "version": 1,
+  "canonical_builder": "backend/modules/feed-query-builders/post-publication-eligibility.mts",
+  "implemented": [
+    {
+      "path": "backend/services/posts/check-privacy-access-batch.mts",
+      "classification": "direct-sql"
+    },
+    { "path": "backend/services/posts/direct-access-filter.mts", "classification": "direct-sql" },
+    {
+      "path": "backend/services/posts/get-visible-collection-rows.mts",
+      "classification": "direct-sql"
+    },
+    {
+      "path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
+      "classification": "direct-boundary"
+    },
+    {
+      "path": "backend/api/v1/posts/post-routes/comment-ancestors-route.mts",
+      "classification": "direct-boundary"
+    },
+    {
+      "path": "backend/api/v1/posts/post-routes/clearance-route.mts",
+      "classification": "descendants-boundary"
+    },
+    {
+      "path": "backend/api/v1/posts/posts-routes/posts-get.mts",
+      "classification": "public-boundary"
+    },
+    {
+      "path": "backend/api/v1/trending-posts/trending-posts.mts",
+      "classification": "public-boundary"
+    },
+    {
+      "path": "backend/services/comments/descendant-ids.mts",
+      "classification": "direct-sql"
+    },
+    { "path": "backend/md/posts.mts", "classification": "public-boundary" },
+    { "path": "backend/services/rss-xml/posts-feed.mts", "classification": "public-boundary" },
+    { "path": "backend/services/posts/public-ids.mts", "classification": "public-sql" },
+    { "path": "backend/services/posts/metrics.mts", "classification": "public-sql" },
+    { "path": "backend/services/posts/metrics-batch.mts", "classification": "public-sql" },
+    {
+      "path": "backend/services/search/omnisearch-content-verticals.mts",
+      "classification": "public-boundary"
+    },
+    {
+      "path": "backend/services/stories/get-post-stories.mts",
+      "classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/platform-stats/get-platform-stats.mts",
+      "classification": "public-view"
+    },
+    {
+      "path": "backend/services/users/metrics-batch-sql.mts",
+      "classification": "public-view"
+    },
+    {
+      "path": "backend/services/my/landing-pages/resolve-items.mts",
+      "classification": "public-view"
+    },
+    {
+      "path": "backend/services/my/landing-pages/candidates.mts",
+      "classification": "public-view"
+    },
+    {
+      "path": "backend/services/communities/list-items/get.mts",
+      "classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/api/v1/communities/news.mts",
+      "classification": "story-posts-boundary"
+    },
+    {
+      "path": "backend/api/v1/feeds/index-routes/feeds-rss-feed-items-by-feed-type-get.mts",
+      "classification": "story-posts-boundary"
+    },
+    {
+      "path": "backend/api/v1/rss-feed-items/rss-feed-items.mts",
+      "classification": "story-posts-boundary"
+    },
+    {
+      "path": "backend/services/feeds/posts/get-ids/eligible-posts-cte.mts",
+      "classification": "viewer-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/get-posts-by-url-ids.mts",
+      "classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/communities/publications/approved-posts.mts",
+      "classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/communities/publications/pinned.mts",
+      "classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/trending-posts/get-trending-posts.mts",
+      "classification": "public-sql"
+    },
+    { "path": "backend/services/data-points/search.mts", "classification": "public-sql" },
+    { "path": "backend/services/data-points/insights.mts", "classification": "public-sql" },
+    { "path": "backend/services/sitemaps/daily-queries.mts", "classification": "public-sql" },
+    {
+      "path": "backend/services/sitemaps/family-landing-pages-query.mts",
+      "classification": "public-sql"
+    },
+    {
+      "path": "backend/services/rss-feed-items/search-filters.mts",
+      "classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/prioritized-referral-links/get-prioritized.mts",
+      "classification": "public-sql"
+    },
+    {
+      "path": "backend/services/posts/tools/semantic.mts",
+      "classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/feeds/rss-feed-items/query-utils.mts",
+      "classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/topics/metrics.mts",
+      "classification": "viewer-discovery-sql"
+    },
+    {
+      "path": "backend/services/topics/ratings.mts",
+      "classification": "public-view"
+    }
+  ],
+  "pr2_baseline": [],
+  "classified_exceptions": [
+    {
+      "path": "backend/services/comments/query-builder.mts",
+      "classification": "raw-hydrator",
+      "reason": "The explain-only query builder has no public serializer; comment routes batch-filter candidates before output.",
+      "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
+      "owner_classification": "direct-boundary"
+    },
+    {
+      "path": "backend/services/comments/ancestor-ids.mts",
+      "classification": "raw-hydrator",
+      "reason": "Entity-listener ancestry lookup is a worker primitive, while the public ancestors route batch-filters every hydrated post.",
+      "owner_path": "backend/api/v1/posts/post-routes/comment-ancestors-route.mts",
+      "owner_classification": "direct-boundary"
+    },
+    {
+      "path": "backend/services/comments/ancestors.mts",
+      "classification": "raw-hydrator",
+      "reason": "The public ancestors route validates every returned ancestor with canViewPostsBatch before serialization.",
+      "owner_path": "backend/api/v1/posts/post-routes/comment-ancestors-route.mts",
+      "owner_classification": "direct-boundary"
+    },
+    {
+      "path": "backend/services/comments/ancestor-page.mts",
+      "classification": "raw-hydrator",
+      "reason": "The bounded ancestor reader returns candidates to the public ancestors route, which re-fetches and validates every page member with canViewPostsBatch before serialization.",
+      "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
+      "owner_classification": "direct-boundary"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/order-and-limit.mts",
+      "classification": "raw-hydrator",
+      "reason": "Search fragment; base-filters owns public eligibility composition for the assembled query.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/pagination-filters.mts",
+      "classification": "raw-hydrator",
+      "reason": "Search fragment; base-filters owns public eligibility composition for the assembled query.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/search-filters.mts",
+      "classification": "raw-hydrator",
+      "reason": "Search fragment; base-filters owns public eligibility composition for the assembled query.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/select-and-joins.mts",
+      "classification": "raw-hydrator",
+      "reason": "Search fragment; base-filters owns public eligibility composition for the assembled query.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/topic-filters.mts",
+      "classification": "raw-hydrator",
+      "reason": "Search fragment; base-filters owns public eligibility composition for the assembled query.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/posts/search/query-builder/where-clause.mts",
+      "classification": "raw-hydrator",
+      "reason": "Search assembler delegates its public predicate to base-filters.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/communities/publications/get.mts",
+      "classification": "staff-reader",
+      "reason": "Community publication administration reader.",
+      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/communities/publications/add.mts",
+      "classification": "mutation",
+      "reason": "Community publication mutation.",
+      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/rss-feed-items/story-publication-change.mts",
+      "classification": "mutation",
+      "reason": "Mutation-boundary scope resolver that records durable story publication work and never serializes post rows.",
+      "owner_path": "backend/api/v1/rss-feed-items/rss-feed-items.mts",
+      "owner_classification": "story-posts-boundary"
+    },
+    {
+      "path": "backend/services/rss-feed-items/story-post-related-url-projections.mts",
+      "classification": "mutation",
+      "reason": "RSS URL revision mutation restarts durable related-URL projection work for existing story posts and never serializes post rows.",
+      "owner_path": "backend/api/v1/rss-feed-items/rss-feed-items.mts",
+      "owner_classification": "story-posts-boundary"
+    },
+    {
+      "path": "backend/services/communities/publications/list-user-removed-query.mts",
+      "classification": "private-reader",
+      "reason": "Viewer-specific removed-publication history.",
+      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/communities/publications/moderation-queue-review-sql.mts",
+      "classification": "staff-reader",
+      "reason": "Moderator queue reader.",
+      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/communities/publications/search-filters.mts",
+      "classification": "staff-reader",
+      "reason": "Moderator publication search filter.",
+      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/data-stores/psql/views/2026-08-26-top-hashtags.sql",
+      "classification": "projection-owner",
+      "reason": "Materialized public aggregate whose SQL mirrors candidate/root discovery gates; dedicated top-hashtag eligibility, root-visibility, and community suites verify equivalence. System-created story posts are excluded by the non-system creator provenance gate.",
+      "owner_path": "backend/data-stores/psql/views/2025-01-18-public-post-eligibility.sql",
+      "owner_classification": "projection-owner"
+    },
+    {
+      "path": "backend/data-stores/psql/views/2025-01-18-public-post-eligibility.sql",
+      "classification": "projection-owner",
+      "reason": "Planner-visible SQL projection equivalent to the TypeScript public predicate for SQL views and prepared aggregate readers; the persisted eligibility matrix compares both owners.",
+      "owner_path": "backend/modules/feed-query-builders/post-publication-eligibility.mts",
+      "owner_classification": "canonical-builder"
+    },
+    {
+      "path": "backend/data-stores/psql/views/2025-01-19-topic-metrics.sql",
+      "classification": "projection-owner",
+      "reason": "Public topic aggregate composes view_public_post_eligibility for every post count.",
+      "owner_path": "backend/data-stores/psql/views/2025-01-18-public-post-eligibility.sql",
+      "owner_classification": "projection-owner"
+    },
+    {
+      "path": "backend/data-stores/psql/views/2026-04-03-community-metrics.sql",
+      "classification": "projection-owner",
+      "reason": "Public community post counts compose view_public_post_eligibility and approved community review state.",
+      "owner_path": "backend/data-stores/psql/views/2025-01-18-public-post-eligibility.sql",
+      "owner_classification": "projection-owner"
+    },
+    {
+      "path": "backend/services/topics/tools/by-post-embedding.mts",
+      "classification": "private-reader",
+      "reason": "Internal autotagger input reads the post embedding for similarity classification and never serializes post rows to a public surface.",
+      "owner_path": "backend/modules/feed-query-builders/post-publication-eligibility.mts",
+      "owner_classification": "canonical-builder"
+    }
+  ]
+}

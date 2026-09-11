@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "name": "Local News",
+      "slug": "local-news",
+      "topic_type": "topic"
+    },
+    {
+      "name": "Travel",
+      "slug": "travel",
+      "topic_type": "topic"
+    }
+  ]
+}

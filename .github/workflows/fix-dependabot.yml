@@ -1,0 +1,535 @@
+name: Automation Fix Dependabot
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+concurrency:
+  # The latest CI completion for a Dependabot branch is authoritative. GitHub coalesces pending
+  # events for the branch; exact-head revalidation suppresses any older run that already started.
+  group: fix-dependabot-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  triage-and-rerun:
+    name: Triage Dependabot PR failure
+    if: >-
+      vars.HARNESS_DISPATCH_ENABLED == 'true' &&
+      vars.HARNESS_FIX_DEPENDABOT_ENABLED == 'true' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/') &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+      contains(fromJSON('["failure", "timed_out", "cancelled"]'),
+               github.event.workflow_run.conclusion)
+    runs-on: [self-hosted]
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+      pull-requests: read
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      should_dispatch: ${{ steps.triage.outputs.should_dispatch }}
+      pr_number: ${{ steps.triage.outputs.pr_number }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          runner-lifecycle: persistent
+      - name: Revalidate source run
+        id: source-state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node ci/source-run-state.mts
+      - name: Decide transient retry
+        id: decide
+        if: steps.source-state.outputs.current == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: node ci/transient-retry/decide.mts
+      - name: Rerun targeted job on transient match
+        if: >-
+          steps.source-state.outputs.current == 'true' &&
+          steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          MATCHED_RULE: ${{ steps.decide.outputs.matched_rule }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          RERUN_JOB_ID: ${{ steps.decide.outputs.rerun_job_id }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          echo "Matched rule: $MATCHED_RULE"
+          node ci/revalidate-dependabot-rerun.mts
+      - name: Rerun workflow on transient match
+        if: >-
+          steps.source-state.outputs.current == 'true' &&
+          steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          MATCHED_RULE: ${{ steps.decide.outputs.matched_rule }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          echo "Matched rule: $MATCHED_RULE"
+          node ci/revalidate-dependabot-rerun.mts
+      - name: Triage and conditionally rerun
+        id: triage
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_STATE_CURRENT: ${{ steps.source-state.outputs.current }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          TRANSIENT_DECISION: ${{ steps.decide.outputs.decision }}
+          MATCHED_RULE: ${{ steps.decide.outputs.matched_rule }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          HTML_URL: ${{ github.event.workflow_run.html_url }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          echo "Upstream workflow: $WORKFLOW_NAME"
+          echo "Conclusion:        $CONCLUSION"
+          echo "Run attempt:       $RUN_ATTEMPT"
+          echo "Run URL:           $HTML_URL"
+          echo "Dependabot branch: $HEAD_BRANCH"
+          echo "PR number:         ${PR_NUMBER:-<not found>}"
+
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+          if [[ "$SOURCE_STATE_CURRENT" != "true" ]]; then
+            echo "::notice::Source workflow run is stale; skipping transient classification and Auto Harness dispatch."
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ -z "$PR_NUMBER" ]]; then
+            echo "::warning::Workflow run payload did not include a pull request number; skipping automation."
+            echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          should_dispatch=false
+
+          if [[ "$TRANSIENT_DECISION" == "rerun" ]]; then
+            echo "Transient retry rule matched: $MATCHED_RULE — rerun already requested."
+          elif [[ "$TRANSIENT_DECISION" == "ignore" ]]; then
+            echo "Transient retry rule chose ignore; skipping automation."
+          elif [[ "$CONCLUSION" == "timed_out" || "$CONCLUSION" == "cancelled" ]]; then
+            if [[ "$RUN_ATTEMPT" -eq 1 ]]; then
+              echo "Uncatalogued $CONCLUSION on attempt 1 — rerunning once."
+              node ci/revalidate-dependabot-rerun.mts
+              echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            else
+              echo "Already retried (attempt $RUN_ATTEMPT) and still $CONCLUSION — dispatching Auto Harness."
+              should_dispatch=true
+            fi
+          else
+            echo "Hard failure — dispatching Auto Harness."
+            should_dispatch=true
+          fi
+
+          if [[ "$should_dispatch" == "true" ]]; then
+            # The dispatch job intentionally checks out the live dependabot/* branch tip, not
+            # the commit this event actually tested. Re-validate the PR is still at the SHA this
+            # event fired for, so a stale
+            # event superseded by a Dependabot rebase can't dispatch Auto Harness with a prompt
+            # describing an already-moot failure. Compare the live headRefOid to the triggering SHA.
+            CURRENT_HEAD_SHA="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq '.headRefOid')"
+            if [[ "$CURRENT_HEAD_SHA" != "$EVENT_HEAD_SHA" ]]; then
+              echo "Skipping automation: PR #$PR_NUMBER moved from $EVENT_HEAD_SHA to $CURRENT_HEAD_SHA since this CI run started (Dependabot rebase). The rebased tip's own CI run will trigger its own triage if it still fails."
+              should_dispatch=false
+            fi
+          fi
+
+          echo "should_dispatch=$should_dispatch" >> "$GITHUB_OUTPUT"
+
+  check-duplicates:
+    name: Check for existing automation commits on Dependabot branch
+    needs: [triage-and-rerun]
+    if: >-
+      needs.triage-and-rerun.outputs.should_dispatch == 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      skip: ${{ steps.loop-breaker.outputs.skip }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          runner-lifecycle: persistent
+      - uses: jonathanong/auto-harness/actions/harness-prompt-context@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+        id: loop-breaker
+        with:
+          topic-key: ${{ needs.triage-and-rerun.outputs.pr_number }}
+          search-mode: pr-commits
+          github-token: ${{ github.token }}
+
+  render-prompt:
+    name: Render automation prompt
+    needs: [triage-and-rerun, check-duplicates]
+    if: >-
+      needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
+      needs.check-duplicates.outputs.skip != 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      prompt: ${{ steps.render.outputs.prompt }}
+      source-current: ${{ steps.source-state.outputs.current }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          runner-lifecycle: persistent
+
+      - name: Revalidate source run
+        id: source-state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node ci/source-run-state.mts
+
+      - name: Render prompt
+        id: render
+        if: steps.source-state.outputs.current == 'true'
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+        with:
+          template: docs/prompts/automation/fix-dependabot.md
+          vars: |
+            WORKFLOW_NAME=${{ github.event.workflow_run.name }}
+            PR_NUMBER=${{ needs.triage-and-rerun.outputs.pr_number }}
+            PR_URL=${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.triage-and-rerun.outputs.pr_number }}
+            HEAD_BRANCH=${{ github.event.workflow_run.head_branch }}
+            RUN_URL=${{ github.event.workflow_run.html_url }}
+            RUN_ID=${{ github.event.workflow_run.id }}
+            COMMIT_SHA=${{ github.event.workflow_run.head_sha }}
+
+  revalidate-dispatch:
+    name: Revalidate Dependabot PR immediately before dispatch
+    needs: [triage-and-rerun, check-duplicates, render-prompt]
+    if: >-
+      needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
+      needs.check-duplicates.outputs.skip != 'true'
+    runs-on: [self-hosted]
+    timeout-minutes: 2
+    permissions:
+      actions: read
+      pull-requests: read
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      queue: max
+      cancel-in-progress: false
+    outputs:
+      current: ${{ steps.pr.outputs.current }}
+    steps:
+      - name: Revalidate source run
+        id: source-state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          fail_closed() {
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::error::$1"
+            exit 1
+          }
+          suppress_stale() {
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$1"
+            exit 0
+          }
+
+          # The age check happens inside jq (fromdateiso8601/now) rather than shell `date` arithmetic:
+          # `date -d`/`date -j` differ between GNU and BSD, and the self-hosted fleet includes macOS hosts.
+          # `fromdateiso8601` is resolved by gojq, the jq processor `gh` bundles for --jq, not the host's
+          # system jq — so no separate jq install/version floor applies. This whole step is generated from
+          # ci/source-run-guard-shell.mts, which interpolates MAX_SOURCE_RUN_AGE_MS from
+          # ci/source-run-assessment.mts, so the bound below cannot drift out of sync with the TS module.
+          # Freshness is measured from `run_started_at`, not `created_at`: `created_at` is fixed at the
+          # run's original creation and does not move on a manual re-run, while `run_started_at` resets to
+          # when the matching attempt actually started — using `created_at` would fail-closed-suppress a
+          # same-attempt re-run that completed seconds ago just because the run was first created over 48h
+          # earlier. A missing/malformed run_started_at makes fromdateiso8601 error, which lands here as a
+          # fetch failure (fail_closed), matching the module's malformed-response handling.
+          if ! source_state="$(
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" \
+              --jq '[.repository.full_name, .id, .run_attempt, .status, .conclusion,
+                     ((now - (.run_started_at | fromdateiso8601)) <= (172800))] | @tsv'
+          )"; then
+            fail_closed "Could not fetch source workflow run $SOURCE_RUN_ID"
+          fi
+
+          IFS=$'\t' read -r actual_repo actual_id actual_attempt actual_status actual_conclusion actual_fresh \
+            <<< "$source_state"
+
+          # Case-insensitive, portable comparison (no ${var,,}: the self-hosted fleet includes macOS hosts
+          # whose /bin/bash is 3.2, which predates bash 4's lowercase parameter expansion).
+          actual_repo_lower="$(printf '%s' "$actual_repo" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+          expected_repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+          if [[ "$actual_repo_lower" != "$expected_repo_lower" ]]; then
+            fail_closed "Source workflow run resolved to a different repository; refusing to act"
+          fi
+          if [[ "$actual_id" != "$SOURCE_RUN_ID" ]]; then
+            fail_closed "Source workflow run id changed; refusing to act on a different run"
+          fi
+          if [[ "$actual_attempt" != "$SOURCE_RUN_ATTEMPT" ||
+                "$actual_status" != "completed" ||
+                "$actual_conclusion" != "$SOURCE_RUN_CONCLUSION" ]]; then
+            suppress_stale "Source workflow run changed; skipping as superseded"
+          fi
+          if [[ "$actual_fresh" != "true" ]]; then
+            suppress_stale "Source workflow run is older than 48h; skipping as superseded"
+          fi
+
+          echo "current=true" >> "$GITHUB_OUTPUT"
+      - name: Require the exact open Dependabot head
+        id: pr
+        if: steps.source-state.outputs.current == 'true'
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.triage-and-rerun.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \
+            'select(.state == "open" and .user.login == "dependabot[bot]" and .head.ref == env.HEAD_BRANCH and .head.sha == env.EVENT_HEAD_SHA) | .head.sha' \
+            | grep -qx "$EVENT_HEAD_SHA"
+          echo 'current=true' >> "$GITHUB_OUTPUT"
+
+  dispatch:
+    name: Harness dispatch
+    needs: [triage-and-rerun, check-duplicates, render-prompt, revalidate-dispatch]
+    if: >-
+      needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
+      needs.render-prompt.outputs.source-current == 'true' &&
+      needs.revalidate-dispatch.outputs.current == 'true' &&
+      needs.check-duplicates.outputs.skip != 'true'
+    uses: ./.github/workflows/harness-dispatch.yml
+    permissions:
+      contents: read
+    secrets:
+      HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
+    with:
+      surface-gate: HARNESS_FIX_DEPENDABOT_ENABLED
+      # Dependabot rebases its branch every time main moves. The Harness session therefore uses the live
+      # dependabot/* tip after the triage job's stale-event check.
+      agent-ref: ${{ github.event.workflow_run.head_branch }}
+      expected-head-sha: ${{ github.event.workflow_run.head_sha }}
+      concurrency-id: filaments:dependabot:${{ needs.triage-and-rerun.outputs.pr_number }}:${{ github.event.workflow_run.head_sha }}
+      publish-contract: dependabot
+      publish-target-pr-number: ${{ needs.triage-and-rerun.outputs.pr_number }}
+      source-run-id: ${{ github.event.workflow_run.id }}
+      source-run-attempt: ${{ github.event.workflow_run.run_attempt }}
+      source-run-conclusion: ${{ github.event.workflow_run.conclusion }}
+      slack-source: |
+        *Source:* Dependabot PR #${{ needs.triage-and-rerun.outputs.pr_number }} failed CI
+        *Dependabot PR:* ${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.triage-and-rerun.outputs.pr_number }}
+        *Failing run:* ${{ github.event.workflow_run.html_url }}
+        *Failing commit:* `${{ github.event.workflow_run.head_sha }}`
+      prompt: ${{ needs.render-prompt.outputs.prompt }}
+
+  escalate:
+    name: Comment failure on Dependabot PR
+    needs: [triage-and-rerun, check-duplicates, render-prompt, revalidate-dispatch, dispatch]
+    if: >-
+      always() &&
+      needs.triage-and-rerun.result == 'success' &&
+      needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
+      needs.check-duplicates.result != 'skipped' &&
+      (
+        needs.check-duplicates.result == 'failure' ||
+        needs.check-duplicates.result == 'cancelled' ||
+        needs.render-prompt.result == 'failure' ||
+        needs.render-prompt.result == 'cancelled' ||
+        needs.revalidate-dispatch.result == 'failure' ||
+        needs.revalidate-dispatch.result == 'cancelled' ||
+        (
+          (needs.dispatch.result == 'failure' || needs.dispatch.result == 'cancelled')
+        )
+      )
+    runs-on: [self-hosted]
+    timeout-minutes: 2
+    permissions:
+      actions: read
+      pull-requests: write
+    concurrency:
+      group: harness-dispatch-fleet-admission
+      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
+      # See harness-dispatch.yml's dispatch job for the full rationale.
+      queue: max
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      FAILING_RUN_URL: ${{ github.event.workflow_run.html_url }}
+      PR_NUMBER: ${{ needs.triage-and-rerun.outputs.pr_number }}
+      SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
+      THIS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Revalidate source run
+        id: source-state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          fail_closed() {
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::error::$1"
+            exit 1
+          }
+          suppress_stale() {
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$1"
+            exit 0
+          }
+
+          # The age check happens inside jq (fromdateiso8601/now) rather than shell `date` arithmetic:
+          # `date -d`/`date -j` differ between GNU and BSD, and the self-hosted fleet includes macOS hosts.
+          # `fromdateiso8601` is resolved by gojq, the jq processor `gh` bundles for --jq, not the host's
+          # system jq — so no separate jq install/version floor applies. This whole step is generated from
+          # ci/source-run-guard-shell.mts, which interpolates MAX_SOURCE_RUN_AGE_MS from
+          # ci/source-run-assessment.mts, so the bound below cannot drift out of sync with the TS module.
+          # Freshness is measured from `run_started_at`, not `created_at`: `created_at` is fixed at the
+          # run's original creation and does not move on a manual re-run, while `run_started_at` resets to
+          # when the matching attempt actually started — using `created_at` would fail-closed-suppress a
+          # same-attempt re-run that completed seconds ago just because the run was first created over 48h
+          # earlier. A missing/malformed run_started_at makes fromdateiso8601 error, which lands here as a
+          # fetch failure (fail_closed), matching the module's malformed-response handling.
+          if ! source_state="$(
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" \
+              --jq '[.repository.full_name, .id, .run_attempt, .status, .conclusion,
+                     ((now - (.run_started_at | fromdateiso8601)) <= (172800))] | @tsv'
+          )"; then
+            fail_closed "Could not fetch source workflow run $SOURCE_RUN_ID"
+          fi
+
+          IFS=$'\t' read -r actual_repo actual_id actual_attempt actual_status actual_conclusion actual_fresh \
+            <<< "$source_state"
+
+          # Case-insensitive, portable comparison (no ${var,,}: the self-hosted fleet includes macOS hosts
+          # whose /bin/bash is 3.2, which predates bash 4's lowercase parameter expansion).
+          actual_repo_lower="$(printf '%s' "$actual_repo" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+          expected_repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+          if [[ "$actual_repo_lower" != "$expected_repo_lower" ]]; then
+            fail_closed "Source workflow run resolved to a different repository; refusing to act"
+          fi
+          if [[ "$actual_id" != "$SOURCE_RUN_ID" ]]; then
+            fail_closed "Source workflow run id changed; refusing to act on a different run"
+          fi
+          if [[ "$actual_attempt" != "$SOURCE_RUN_ATTEMPT" ||
+                "$actual_status" != "completed" ||
+                "$actual_conclusion" != "$SOURCE_RUN_CONCLUSION" ]]; then
+            suppress_stale "Source workflow run changed; skipping as superseded"
+          fi
+          if [[ "$actual_fresh" != "true" ]]; then
+            suppress_stale "Source workflow run is older than 48h; skipping as superseded"
+          fi
+
+          echo "current=true" >> "$GITHUB_OUTPUT"
+      - name: Comment failure on Dependabot PR
+        if: steps.source-state.outputs.current == 'true'
+        run: |
+          set -euo pipefail
+          if ! gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \
+            'select(.state == "open" and .user.login == "dependabot[bot]" and .head.ref == env.HEAD_BRANCH and .head.sha == env.EVENT_HEAD_SHA) | .head.sha' \
+            | grep -qx "$EVENT_HEAD_SHA"; then
+            echo "Suppressing failure comment because the Dependabot PR is no longer the validated source head."
+            exit 0
+          fi
+
+          BODY="Dependabot auto-fix could not complete.
+
+          **Failing run:** $FAILING_RUN_URL
+          **Auto-fix run:** $THIS_RUN_URL"
+
+          if [[ -n "$SESSION_ID" ]]; then
+            BODY="$BODY
+          **Harness session:** $SESSION_ID"
+          fi
+
+          BODY="$BODY
+
+          Please investigate manually or rerun the failing checks after pushing a fix."
+
+          gh pr comment "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body "$BODY"

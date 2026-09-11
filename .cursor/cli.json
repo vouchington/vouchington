@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(pnpm)",
+      "Shell(git)",
+      "Shell(gh)",
+      "Shell(rtk)",
+      "Shell(node)",
+      "Shell(cargo)",
+      "Shell(docker)",
+      "Shell(npx)",
+      "Shell(pr-shepherd)",
+      "Shell(no-mistakes)",
+      "Shell(rustfmt)",
+      "Shell(selene)",
+      "Shell(tmux)",
+      "Shell(mise)",
+      "Shell(corepack)",
+      "Shell(jq)",
+      "Mcp(agent-blackboard:entry_append)",
+      "Mcp(agent-blackboard:entry_get)",
+      "Mcp(agent-blackboard:session_archive)",
+      "Mcp(agent-blackboard:session_create)",
+      "Mcp(agent-blackboard:session_ensure)",
+      "Mcp(agent-blackboard:session_patch)",
+      "Mcp(agent-blackboard:session_search)",
+      "Mcp(agent-blackboard:snapshot_export)"
+    ],
+    "deny": [
+      "Shell(sudo)",
+      "Read(~/.ssh/**)",
+      "Write(~/.ssh/**)",
+      "Write(~/.gitconfig)",
+      "Read(~/.git-credentials)",
+      "Write(~/.git-credentials)",
+      "Read(~/.aws/**)",
+      "Write(~/.aws/**)",
+      "Read(~/.config/gh/**)"
+    ]
+  }
+}

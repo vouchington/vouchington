@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+  echo "Error: ./dev/config-inventory must run from inside the repository worktree." >&2
+  exit 1
+}
+
+exec node "$repo_root/static-code-analysis/config-inventory/cli.mts" --repo-root "$repo_root" "$@"

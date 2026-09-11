@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "agent-blackboard": {
+      "command": "bash",
+      "args": ["-c", "exec \"$(git rev-parse --show-toplevel)/dev/blackboard-mcp\""],
+      "env": {
+        "AGENT_BLACKBOARD_URL": "${env:AGENT_BLACKBOARD_URL}",
+        "AGENT_BLACKBOARD_TOKEN": "${env:AGENT_BLACKBOARD_TOKEN}"
+      }
+    }
+  }
+}

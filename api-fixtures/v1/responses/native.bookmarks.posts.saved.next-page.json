@@ -1,0 +1,45 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "__entity_type": "post",
+      "ai_summary_markdown": "",
+      "approved_at": null,
+      "archived_at": null,
+      "archived_by_id": null,
+      "broadcast": "everyone",
+      "clearance_reason": null,
+      "clearance_status": "pending",
+      "clearance_updated_at": null,
+      "community_id": null,
+      "created_at": "2026-01-01T00:00:00Z",
+      "created_by_id": "user-1",
+      "deleted_at": null,
+      "deleted_by_id": null,
+      "html": "",
+      "id": "post-3",
+      "in_review_at": null,
+      "is_anonymous": false,
+      "locked_at": null,
+      "locked_by_id": null,
+      "markdown": "",
+      "parent_id": null,
+      "post_type": "discussion",
+      "privacy": "public",
+      "rejected_at": null,
+      "root_id": null,
+      "slug": "fixture-post-3",
+      "spam_detection_created_at": null,
+      "spam_detection_flagged": null,
+      "spam_detection_results": null,
+      "spam_detection_score": null,
+      "title": "Saved post post-3",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "updated_by_id": null
+    }
+  ]
+}

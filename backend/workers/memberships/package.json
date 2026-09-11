@@ -1,0 +1,39 @@
+{
+  "name": "@workers/memberships",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@email-templates/core": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/stripe": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/memberships": "workspace:^",
+    "@services/contribution-gating": "workspace:^",
+    "@services/email-classification": "workspace:^",
+    "@services/memberships": "workspace:^",
+    "@services/stripe": "workspace:^",
+    "@services/stripe-webhook-processing": "workspace:^",
+    "@services/users": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@apple/app-store-server-library": "^3.1.0",
+    "@types/node": "^26.4.0",
+    "@voucha/test-helpers": "workspace:^",
+    "stripe": "^22.6.1"
+  }
+}

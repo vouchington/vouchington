@@ -1,0 +1,28 @@
+id: agent-response-location
+language: Tsx
+severity: error
+message: 'This agentic API call must be inside backend/agents/'
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/agents/**'
+  - 'backend/modules/openai-utils/**'
+  - '**/*.test.mts'
+  - '**/*.spec.mts'
+rule:
+  any:
+    - pattern: 'createOpenAIResponse($$$)'
+    - pattern: '$OBJ.responses.create($$$)'
+examples:
+  - code: "createOpenAIResponse({ model: 'gpt-4o' })"
+    isValid: false
+    file: 'backend/modules/other/handler.mts'
+  - code: "client.responses.create({ model: 'gpt-4o' })"
+    isValid: false
+    file: 'backend/modules/other/handler.mts'
+  - code: "createOpenAIResponse({ model: 'gpt-4o' })"
+    isValid: true
+    file: 'backend/agents/my-agent/run.mts'
+  - code: 'callSomeOtherFunction()'
+    isValid: true
+    file: 'backend/modules/other/handler.mts'

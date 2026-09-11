@@ -1,0 +1,1050 @@
+{
+  "$schema": "./lifecycle-scenarios.schema.json",
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "moderation-appeal-draft-enables-approval",
+      "family": "moderation-appeal-lifecycle",
+      "requiredConsumers": ["backend", "web", "swift", "dotnet"],
+      "input": {
+        "preconditions": {
+          "status": "pending",
+          "approvedAt": null,
+          "sentAt": null,
+          "viewerRole": "administrator"
+        },
+        "action": { "type": "rerun" },
+        "serverOutcome": {
+          "status": "pending",
+          "approvedAt": null,
+          "sentAt": null,
+          "latestLifecycleChangeChanged": true
+        }
+      },
+      "expected": {
+        "visibleState": { "status": "pending", "latestLifecycleChangeChanged": true },
+        "availableActions": ["rerun", "approve"],
+        "reconciliation": { "strategy": "server-response" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": { "status": "pending", "latestLifecycleChangeChanged": true },
+        "availableActions": [],
+        "reconciliation": { "strategy": "server-response" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "moderation-appeal-approval-enables-delivery",
+      "family": "moderation-appeal-lifecycle",
+      "requiredConsumers": ["backend", "web", "swift", "dotnet"],
+      "input": {
+        "preconditions": {
+          "status": "pending",
+          "approvedAt": null,
+          "sentAt": null,
+          "viewerRole": "administrator"
+        },
+        "action": { "type": "approve" },
+        "serverOutcome": {
+          "status": "pending",
+          "approvedAt": "2026-01-02T00:00:00.000Z",
+          "sentAt": null,
+          "latestLifecycleChangeChanged": true
+        }
+      },
+      "expected": {
+        "visibleState": {
+          "status": "pending",
+          "approved": true,
+          "sent": false,
+          "latestLifecycleChangeChanged": true
+        },
+        "availableActions": ["send"],
+        "reconciliation": { "strategy": "server-response" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": {
+          "status": "pending",
+          "approved": true,
+          "sent": false,
+          "latestLifecycleChangeChanged": true
+        },
+        "availableActions": [],
+        "reconciliation": { "strategy": "server-response" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "moderation-appeal-delivery-enables-resolution",
+      "family": "moderation-appeal-lifecycle",
+      "requiredConsumers": ["backend", "web", "swift", "dotnet"],
+      "input": {
+        "preconditions": {
+          "status": "pending",
+          "approvedAt": "2026-01-02T00:00:00.000Z",
+          "sentAt": null,
+          "viewerRole": "administrator"
+        },
+        "action": { "type": "send" },
+        "serverOutcome": {
+          "status": "pending",
+          "approvedAt": "2026-01-02T00:00:00.000Z",
+          "sentAt": "2026-01-03T00:00:00.000Z",
+          "latestLifecycleChangeChanged": true
+        }
+      },
+      "expected": {
+        "visibleState": {
+          "status": "pending",
+          "approved": true,
+          "sent": true,
+          "latestLifecycleChangeChanged": true
+        },
+        "availableActions": ["accept", "reduce", "deny"],
+        "reconciliation": { "strategy": "server-response" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": {
+          "status": "pending",
+          "approved": true,
+          "sent": true,
+          "latestLifecycleChangeChanged": true
+        },
+        "availableActions": [],
+        "reconciliation": { "strategy": "server-response" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "moderation-appeal-resolution-finalizes-state",
+      "family": "moderation-appeal-lifecycle",
+      "requiredConsumers": ["backend", "web", "swift", "dotnet"],
+      "input": {
+        "preconditions": {
+          "status": "pending",
+          "approvedAt": "2026-01-02T00:00:00.000Z",
+          "sentAt": "2026-01-03T00:00:00.000Z",
+          "viewerRole": "administrator"
+        },
+        "action": { "type": "deny" },
+        "serverOutcome": {
+          "status": "dismissed",
+          "resolutionAction": "deny",
+          "latestLifecycleChangeChanged": true
+        }
+      },
+      "expected": {
+        "visibleState": {
+          "status": "dismissed",
+          "resolutionAction": "deny",
+          "latestLifecycleChangeChanged": true
+        },
+        "availableActions": [],
+        "reconciliation": { "strategy": "server-response" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": {
+          "status": "dismissed",
+          "resolutionAction": "deny",
+          "latestLifecycleChangeChanged": true
+        },
+        "availableActions": [],
+        "reconciliation": { "strategy": "server-response" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "moderation-appeal-suspension-moderator-cannot-accept",
+      "family": "moderation-appeal-lifecycle",
+      "requiredConsumers": ["backend", "web", "swift", "dotnet"],
+      "input": {
+        "preconditions": {
+          "status": "pending",
+          "appealType": "suspension",
+          "approvedAt": "2026-01-02T00:00:00.000Z",
+          "sentAt": "2026-01-03T00:00:00.000Z",
+          "viewerRole": "moderator"
+        },
+        "action": { "type": "inspect-actions" },
+        "serverOutcome": { "status": "pending" }
+      },
+      "expected": {
+        "visibleState": { "status": "pending", "viewerRole": "moderator" },
+        "availableActions": ["reduce", "deny"],
+        "reconciliation": { "strategy": "not-applicable" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": { "status": "pending", "viewerRole": "moderator" },
+        "availableActions": [],
+        "reconciliation": { "strategy": "not-applicable" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "moderation-appeal-suspension-administrator-can-accept",
+      "family": "moderation-appeal-lifecycle",
+      "requiredConsumers": ["backend", "web", "swift", "dotnet"],
+      "input": {
+        "preconditions": {
+          "status": "pending",
+          "appealType": "suspension",
+          "approvedAt": "2026-01-02T00:00:00.000Z",
+          "sentAt": "2026-01-03T00:00:00.000Z",
+          "viewerRole": "administrator"
+        },
+        "action": { "type": "inspect-actions" },
+        "serverOutcome": { "status": "pending" }
+      },
+      "expected": {
+        "visibleState": { "status": "pending", "viewerRole": "administrator" },
+        "availableActions": ["accept", "reduce", "deny"],
+        "reconciliation": { "strategy": "not-applicable" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": { "status": "pending", "viewerRole": "administrator" },
+        "availableActions": [],
+        "reconciliation": { "strategy": "not-applicable" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-report-resolution-exact-read-authoritative",
+      "family": "integrity-authoritative-read",
+      "requiredConsumers": ["backend"],
+      "input": {
+        "preconditions": { "reportStatus": "pending" },
+        "action": { "type": "resolve-report" },
+        "serverOutcome": { "exactReadStatus": "resolved" }
+      },
+      "expected": {
+        "visibleState": { "reportStatus": "resolved" },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "authority": "primary" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": { "reportStatus": "resolved" },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "authority": "primary" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-report-penalty-exact-read-authoritative",
+      "family": "integrity-authoritative-read",
+      "requiredConsumers": ["backend"],
+      "input": {
+        "preconditions": { "penaltyCount": 0 },
+        "action": { "type": "apply-report-penalty" },
+        "serverOutcome": { "exactReadPenaltyCount": 1 }
+      },
+      "expected": {
+        "visibleState": { "penaltyApplied": true },
+        "availableActions": ["revoke"],
+        "reconciliation": { "strategy": "exact-read", "authority": "primary" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": { "penaltyApplied": true },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "authority": "primary" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-vote-penalty-exact-read-authoritative",
+      "family": "integrity-authoritative-read",
+      "requiredConsumers": ["backend"],
+      "input": {
+        "preconditions": { "penaltyCount": 0 },
+        "action": { "type": "apply-vote-penalty" },
+        "serverOutcome": { "exactReadPenaltyCount": 1 }
+      },
+      "expected": {
+        "visibleState": { "penaltyApplied": true },
+        "availableActions": ["revoke"],
+        "reconciliation": { "strategy": "exact-read", "authority": "primary" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": { "penaltyApplied": true },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "authority": "primary" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-report-penalty-revocation-exact-read-authoritative",
+      "family": "integrity-authoritative-read",
+      "requiredConsumers": ["backend"],
+      "input": {
+        "preconditions": { "penaltyId": "penalty-1", "revokedAt": null },
+        "action": { "type": "revoke-report-penalty" },
+        "serverOutcome": { "exactReadRevoked": true }
+      },
+      "expected": {
+        "visibleState": { "revoked": true },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "authority": "primary" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": { "revoked": true },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "authority": "primary" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-vote-penalty-revocation-exact-read-authoritative",
+      "family": "integrity-authoritative-read",
+      "requiredConsumers": ["backend"],
+      "input": {
+        "preconditions": { "penaltyId": "penalty-2", "revokedAt": null },
+        "action": { "type": "revoke-vote-penalty" },
+        "serverOutcome": { "exactReadRevoked": true }
+      },
+      "expected": {
+        "visibleState": { "revoked": true },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "authority": "primary" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": { "revoked": true },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "authority": "primary" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-report-resolution-ambiguous-committed",
+      "family": "integrity-ambiguous-reconciliation",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "reportStatus": "pending" },
+        "action": { "type": "resolve-report" },
+        "serverOutcome": { "mutation": "ambiguous", "exactReadStatus": "resolved" }
+      },
+      "expected": {
+        "visibleState": { "reportStatus": "resolved", "error": null },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "committed": true },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-report-penalty-ambiguous-committed",
+      "family": "integrity-ambiguous-reconciliation",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "penaltyCount": 0 },
+        "action": { "type": "apply-report-penalty" },
+        "serverOutcome": { "mutation": "ambiguous", "exactReadPenaltyCount": 1 }
+      },
+      "expected": {
+        "visibleState": { "penaltyApplied": true, "error": null },
+        "availableActions": ["revoke"],
+        "reconciliation": { "strategy": "exact-read", "committed": true },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-report-penalty-ambiguous-still-pending",
+      "family": "integrity-ambiguous-reconciliation",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "penaltyCount": 0 },
+        "action": { "type": "apply-report-penalty" },
+        "serverOutcome": { "mutation": "ambiguous", "exactReadPenaltyCount": 0 }
+      },
+      "expected": {
+        "visibleState": { "penaltyApplied": false, "error": "mutation-outcome-unknown" },
+        "availableActions": ["apply-penalty"],
+        "reconciliation": { "strategy": "exact-read", "committed": false },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-vote-penalty-ambiguous-new-row",
+      "family": "integrity-ambiguous-reconciliation",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "baselinePenaltyIds": ["penalty-old"] },
+        "action": { "type": "apply-vote-penalty" },
+        "serverOutcome": {
+          "mutation": "ambiguous",
+          "exactReadPenaltyIds": ["penalty-new", "penalty-old"]
+        }
+      },
+      "expected": {
+        "visibleState": { "penaltyApplied": true, "error": null },
+        "availableActions": ["revoke"],
+        "reconciliation": { "strategy": "exact-read", "comparison": "new-row" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-vote-penalty-ambiguous-unchanged-baseline",
+      "family": "integrity-ambiguous-reconciliation",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "baselinePenaltyIds": ["penalty-old"] },
+        "action": { "type": "apply-vote-penalty" },
+        "serverOutcome": { "mutation": "ambiguous", "exactReadPenaltyIds": ["penalty-old"] }
+      },
+      "expected": {
+        "visibleState": { "penaltyApplied": false, "error": "mutation-outcome-unknown" },
+        "availableActions": ["apply-penalty"],
+        "reconciliation": { "strategy": "exact-read", "comparison": "unchanged-baseline" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-report-penalty-revoke-ambiguous-committed",
+      "family": "integrity-ambiguous-reconciliation",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "penaltyId": "penalty-1", "revoked": false },
+        "action": { "type": "revoke-report-penalty" },
+        "serverOutcome": { "mutation": "ambiguous", "exactReadRevoked": true }
+      },
+      "expected": {
+        "visibleState": { "revoked": true, "error": null },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "committed": true },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-vote-penalty-revoke-ambiguous-committed",
+      "family": "integrity-ambiguous-reconciliation",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "penaltyId": "penalty-2", "revoked": false },
+        "action": { "type": "revoke-vote-penalty" },
+        "serverOutcome": { "mutation": "ambiguous", "exactReadRevoked": true }
+      },
+      "expected": {
+        "visibleState": { "revoked": true, "error": null },
+        "availableActions": [],
+        "reconciliation": { "strategy": "exact-read", "committed": true },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "integrity-reconciliation-exact-read-failure-fails-closed",
+      "family": "integrity-ambiguous-reconciliation",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "reportStatus": "pending" },
+        "action": { "type": "resolve-report" },
+        "serverOutcome": { "mutation": "ambiguous", "exactRead": "failed" }
+      },
+      "expected": {
+        "visibleState": { "reportStatus": "pending", "error": "mutation-outcome-unknown" },
+        "availableActions": ["retry"],
+        "reconciliation": { "strategy": "fail-closed" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "forward-pagination-appends-deduplicates-and-advances-cursor",
+      "family": "forward-pagination",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "itemIds": ["one", "two"], "nextCursor": "cursor-2" },
+        "action": { "type": "load-more" },
+        "serverOutcome": { "itemIds": ["two", "three"], "nextCursor": "cursor-3" }
+      },
+      "expected": {
+        "visibleState": { "itemIds": ["one", "two", "three"], "nextCursor": "cursor-3" },
+        "availableActions": ["load-more"],
+        "reconciliation": { "strategy": "deduplicate-by-id" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "forward-pagination-allows-one-request-in-flight",
+      "family": "forward-pagination",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "itemIds": ["one"], "nextCursor": "cursor-2" },
+        "action": { "type": "load-more-twice" },
+        "serverOutcome": { "requestsStarted": 1 }
+      },
+      "expected": {
+        "visibleState": { "requestsStarted": 1, "loading": true },
+        "availableActions": [],
+        "reconciliation": { "strategy": "single-flight" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "forward-pagination-ignores-stale-success-after-reset",
+      "family": "forward-pagination",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "itemIds": ["old"], "nextCursor": "old-cursor" },
+        "action": { "type": "reset-during-load" },
+        "serverOutcome": {
+          "staleItemIds": ["stale"],
+          "resetItemIds": ["fresh"],
+          "nextCursor": "fresh-cursor"
+        }
+      },
+      "expected": {
+        "visibleState": { "itemIds": ["fresh"], "nextCursor": "fresh-cursor", "error": null },
+        "availableActions": ["load-more"],
+        "reconciliation": { "strategy": "discard-stale-generation" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "forward-pagination-ignores-stale-failure-after-reset",
+      "family": "forward-pagination",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "itemIds": ["old"], "nextCursor": "old-cursor" },
+        "action": { "type": "reset-during-load" },
+        "serverOutcome": {
+          "staleError": "network",
+          "resetItemIds": ["fresh"],
+          "nextCursor": "fresh-cursor"
+        }
+      },
+      "expected": {
+        "visibleState": { "itemIds": ["fresh"], "nextCursor": "fresh-cursor", "error": null },
+        "availableActions": ["load-more"],
+        "reconciliation": { "strategy": "discard-stale-generation" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "forward-pagination-failure-preserves-items-and-retries-cursor",
+      "family": "forward-pagination",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "itemIds": ["one", "two"], "nextCursor": "cursor-2" },
+        "action": { "type": "load-more" },
+        "serverOutcome": { "error": "network" }
+      },
+      "expected": {
+        "visibleState": { "itemIds": ["one", "two"], "nextCursor": "cursor-2", "error": "network" },
+        "availableActions": ["retry"],
+        "reconciliation": { "strategy": "preserve-and-retry" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "forward-pagination-removal-preserves-continuation",
+      "family": "forward-pagination",
+      "requiredConsumers": ["web", "swift", "dotnet"],
+      "input": {
+        "preconditions": { "itemIds": ["one", "two", "three"], "nextCursor": "cursor-4" },
+        "action": { "type": "remove", "itemId": "two" },
+        "serverOutcome": { "removed": true }
+      },
+      "expected": {
+        "visibleState": { "itemIds": ["one", "three"], "nextCursor": "cursor-4" },
+        "availableActions": ["load-more"],
+        "reconciliation": { "strategy": "preserve-continuation" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "forward-pagination-cancellation-preserves-items-and-cursor",
+      "family": "forward-pagination-cancellation",
+      "requiredConsumers": ["swift", "dotnet"],
+      "input": {
+        "preconditions": { "itemIds": ["one", "two"], "nextCursor": "cursor-2" },
+        "action": { "type": "cancel-load-more" },
+        "serverOutcome": { "cancelled": true }
+      },
+      "expected": {
+        "visibleState": { "itemIds": ["one", "two"], "nextCursor": "cursor-2", "error": null },
+        "availableActions": ["load-more"],
+        "reconciliation": { "strategy": "preserve-state" },
+        "cancellation": { "behavior": "preserve-items-and-cursor" }
+      }
+    },
+    {
+      "id": "private-post-visibility-filtered-before-limit",
+      "family": "private-post-collection-backend",
+      "requiredConsumers": ["backend"],
+      "input": {
+        "preconditions": { "visibleCount": 101, "newerFilteredCount": 1, "limit": 100 },
+        "action": { "type": "fetch-first-page" },
+        "serverOutcome": { "visibleItemCount": 100, "hasNextPage": true }
+      },
+      "expected": {
+        "visibleState": { "visibleItemCount": 100, "hasNextPage": true },
+        "availableActions": ["load-more"],
+        "reconciliation": { "strategy": "filter-before-limit" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": { "visibleItemCount": 100, "hasNextPage": true },
+        "availableActions": [],
+        "reconciliation": { "strategy": "filter-before-limit" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "private-post-scoped-cursor-has-no-gaps-or-duplicates",
+      "family": "private-post-collection-backend",
+      "requiredConsumers": ["backend"],
+      "input": {
+        "preconditions": {
+          "visibleCount": 101,
+          "newerFilteredCount": 1,
+          "limit": 100,
+          "firstPageItemIds": ["one", "two"],
+          "nextCursor": "cursor-3"
+        },
+        "action": { "type": "fetch-next-page" },
+        "serverOutcome": { "itemIds": ["three"], "nextCursor": null }
+      },
+      "expected": {
+        "visibleState": { "itemIds": ["one", "two", "three"], "duplicates": 0, "gaps": 0 },
+        "availableActions": [],
+        "reconciliation": { "strategy": "scoped-cursor" },
+        "cancellation": { "behavior": "not-applicable" }
+      },
+      "backendExpected": {
+        "visibleState": { "duplicates": 0, "gaps": 0 },
+        "availableActions": [],
+        "reconciliation": { "strategy": "scoped-cursor" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "private-post-browser-continuation-after-filtering",
+      "family": "private-post-collection-browser",
+      "requiredConsumers": ["web"],
+      "input": {
+        "preconditions": { "visibleCount": 101, "newerFilteredCount": 1, "pageSize": 100 },
+        "action": { "type": "load-more" },
+        "serverOutcome": { "loadedVisibleCount": 101 }
+      },
+      "expected": {
+        "visibleState": { "loadedVisibleCount": 101, "duplicates": 0 },
+        "availableActions": [],
+        "reconciliation": { "strategy": "browser-continuation" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    },
+    {
+      "id": "private-post-browser-removal-preserves-loaded-sibling",
+      "family": "private-post-collection-browser",
+      "requiredConsumers": ["web"],
+      "input": {
+        "preconditions": { "loadedItemIds": ["first-page", "later-one", "later-two"] },
+        "action": { "type": "remove", "itemId": "later-one" },
+        "serverOutcome": { "removed": true }
+      },
+      "expected": {
+        "visibleState": {
+          "presentItemIds": ["first-page", "later-two"],
+          "absentItemIds": ["later-one"]
+        },
+        "availableActions": [],
+        "reconciliation": { "strategy": "remove-one-by-id" },
+        "cancellation": { "behavior": "not-applicable" }
+      }
+    }
+  ],
+  "claims": [
+    {
+      "scenarioId": "moderation-appeal-draft-enables-approval",
+      "consumer": "backend",
+      "adapter": "backend-moderation-appeal-service"
+    },
+    {
+      "scenarioId": "moderation-appeal-draft-enables-approval",
+      "consumer": "web",
+      "adapter": "web-moderation-appeal-actions"
+    },
+    {
+      "scenarioId": "moderation-appeal-draft-enables-approval",
+      "consumer": "swift",
+      "adapter": "swift-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-draft-enables-approval",
+      "consumer": "dotnet",
+      "adapter": "dotnet-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-approval-enables-delivery",
+      "consumer": "backend",
+      "adapter": "backend-moderation-appeal-service"
+    },
+    {
+      "scenarioId": "moderation-appeal-approval-enables-delivery",
+      "consumer": "web",
+      "adapter": "web-moderation-appeal-actions"
+    },
+    {
+      "scenarioId": "moderation-appeal-approval-enables-delivery",
+      "consumer": "swift",
+      "adapter": "swift-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-approval-enables-delivery",
+      "consumer": "dotnet",
+      "adapter": "dotnet-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-delivery-enables-resolution",
+      "consumer": "backend",
+      "adapter": "backend-moderation-appeal-service"
+    },
+    {
+      "scenarioId": "moderation-appeal-delivery-enables-resolution",
+      "consumer": "web",
+      "adapter": "web-moderation-appeal-actions"
+    },
+    {
+      "scenarioId": "moderation-appeal-delivery-enables-resolution",
+      "consumer": "swift",
+      "adapter": "swift-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-delivery-enables-resolution",
+      "consumer": "dotnet",
+      "adapter": "dotnet-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-resolution-finalizes-state",
+      "consumer": "backend",
+      "adapter": "backend-moderation-appeal-service"
+    },
+    {
+      "scenarioId": "moderation-appeal-resolution-finalizes-state",
+      "consumer": "web",
+      "adapter": "web-moderation-appeal-actions"
+    },
+    {
+      "scenarioId": "moderation-appeal-resolution-finalizes-state",
+      "consumer": "swift",
+      "adapter": "swift-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-resolution-finalizes-state",
+      "consumer": "dotnet",
+      "adapter": "dotnet-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-suspension-moderator-cannot-accept",
+      "consumer": "backend",
+      "adapter": "backend-moderation-appeal-service"
+    },
+    {
+      "scenarioId": "moderation-appeal-suspension-moderator-cannot-accept",
+      "consumer": "web",
+      "adapter": "web-moderation-appeal-actions"
+    },
+    {
+      "scenarioId": "moderation-appeal-suspension-moderator-cannot-accept",
+      "consumer": "swift",
+      "adapter": "swift-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-suspension-moderator-cannot-accept",
+      "consumer": "dotnet",
+      "adapter": "dotnet-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-suspension-administrator-can-accept",
+      "consumer": "backend",
+      "adapter": "backend-moderation-appeal-service"
+    },
+    {
+      "scenarioId": "moderation-appeal-suspension-administrator-can-accept",
+      "consumer": "web",
+      "adapter": "web-moderation-appeal-actions"
+    },
+    {
+      "scenarioId": "moderation-appeal-suspension-administrator-can-accept",
+      "consumer": "swift",
+      "adapter": "swift-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "moderation-appeal-suspension-administrator-can-accept",
+      "consumer": "dotnet",
+      "adapter": "dotnet-moderation-appeals-view-model"
+    },
+    {
+      "scenarioId": "integrity-report-resolution-exact-read-authoritative",
+      "consumer": "backend",
+      "adapter": "backend-integrity-authority"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-exact-read-authoritative",
+      "consumer": "backend",
+      "adapter": "backend-integrity-authority"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-exact-read-authoritative",
+      "consumer": "backend",
+      "adapter": "backend-integrity-authority"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-revocation-exact-read-authoritative",
+      "consumer": "backend",
+      "adapter": "backend-integrity-authority"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-revocation-exact-read-authoritative",
+      "consumer": "backend",
+      "adapter": "backend-integrity-authority"
+    },
+    {
+      "scenarioId": "integrity-report-resolution-ambiguous-committed",
+      "consumer": "web",
+      "adapter": "web-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-resolution-ambiguous-committed",
+      "consumer": "swift",
+      "adapter": "swift-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-resolution-ambiguous-committed",
+      "consumer": "dotnet",
+      "adapter": "dotnet-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-ambiguous-committed",
+      "consumer": "web",
+      "adapter": "web-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-ambiguous-committed",
+      "consumer": "swift",
+      "adapter": "swift-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-ambiguous-committed",
+      "consumer": "dotnet",
+      "adapter": "dotnet-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-ambiguous-still-pending",
+      "consumer": "web",
+      "adapter": "web-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-ambiguous-still-pending",
+      "consumer": "swift",
+      "adapter": "swift-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-ambiguous-still-pending",
+      "consumer": "dotnet",
+      "adapter": "dotnet-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-ambiguous-new-row",
+      "consumer": "web",
+      "adapter": "web-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-ambiguous-new-row",
+      "consumer": "swift",
+      "adapter": "swift-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-ambiguous-new-row",
+      "consumer": "dotnet",
+      "adapter": "dotnet-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-ambiguous-unchanged-baseline",
+      "consumer": "web",
+      "adapter": "web-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-ambiguous-unchanged-baseline",
+      "consumer": "swift",
+      "adapter": "swift-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-ambiguous-unchanged-baseline",
+      "consumer": "dotnet",
+      "adapter": "dotnet-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-revoke-ambiguous-committed",
+      "consumer": "web",
+      "adapter": "web-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-revoke-ambiguous-committed",
+      "consumer": "swift",
+      "adapter": "swift-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-report-penalty-revoke-ambiguous-committed",
+      "consumer": "dotnet",
+      "adapter": "dotnet-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-revoke-ambiguous-committed",
+      "consumer": "web",
+      "adapter": "web-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-revoke-ambiguous-committed",
+      "consumer": "swift",
+      "adapter": "swift-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-vote-penalty-revoke-ambiguous-committed",
+      "consumer": "dotnet",
+      "adapter": "dotnet-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-reconciliation-exact-read-failure-fails-closed",
+      "consumer": "web",
+      "adapter": "web-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-reconciliation-exact-read-failure-fails-closed",
+      "consumer": "swift",
+      "adapter": "swift-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "integrity-reconciliation-exact-read-failure-fails-closed",
+      "consumer": "dotnet",
+      "adapter": "dotnet-integrity-reconciliation"
+    },
+    {
+      "scenarioId": "forward-pagination-appends-deduplicates-and-advances-cursor",
+      "consumer": "web",
+      "adapter": "web-forward-pagination"
+    },
+    {
+      "scenarioId": "forward-pagination-appends-deduplicates-and-advances-cursor",
+      "consumer": "swift",
+      "adapter": "swift-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-appends-deduplicates-and-advances-cursor",
+      "consumer": "dotnet",
+      "adapter": "dotnet-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-allows-one-request-in-flight",
+      "consumer": "web",
+      "adapter": "web-forward-pagination"
+    },
+    {
+      "scenarioId": "forward-pagination-allows-one-request-in-flight",
+      "consumer": "swift",
+      "adapter": "swift-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-allows-one-request-in-flight",
+      "consumer": "dotnet",
+      "adapter": "dotnet-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-ignores-stale-success-after-reset",
+      "consumer": "web",
+      "adapter": "web-forward-pagination"
+    },
+    {
+      "scenarioId": "forward-pagination-ignores-stale-success-after-reset",
+      "consumer": "swift",
+      "adapter": "swift-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-ignores-stale-success-after-reset",
+      "consumer": "dotnet",
+      "adapter": "dotnet-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-ignores-stale-failure-after-reset",
+      "consumer": "web",
+      "adapter": "web-forward-pagination"
+    },
+    {
+      "scenarioId": "forward-pagination-ignores-stale-failure-after-reset",
+      "consumer": "swift",
+      "adapter": "swift-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-ignores-stale-failure-after-reset",
+      "consumer": "dotnet",
+      "adapter": "dotnet-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-failure-preserves-items-and-retries-cursor",
+      "consumer": "web",
+      "adapter": "web-forward-pagination"
+    },
+    {
+      "scenarioId": "forward-pagination-failure-preserves-items-and-retries-cursor",
+      "consumer": "swift",
+      "adapter": "swift-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-failure-preserves-items-and-retries-cursor",
+      "consumer": "dotnet",
+      "adapter": "dotnet-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-removal-preserves-continuation",
+      "consumer": "web",
+      "adapter": "web-forward-pagination"
+    },
+    {
+      "scenarioId": "forward-pagination-removal-preserves-continuation",
+      "consumer": "swift",
+      "adapter": "swift-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-removal-preserves-continuation",
+      "consumer": "dotnet",
+      "adapter": "dotnet-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-cancellation-preserves-items-and-cursor",
+      "consumer": "swift",
+      "adapter": "swift-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "forward-pagination-cancellation-preserves-items-and-cursor",
+      "consumer": "dotnet",
+      "adapter": "dotnet-cursor-pagination-state"
+    },
+    {
+      "scenarioId": "private-post-visibility-filtered-before-limit",
+      "consumer": "backend",
+      "adapter": "backend-private-post-collection"
+    },
+    {
+      "scenarioId": "private-post-scoped-cursor-has-no-gaps-or-duplicates",
+      "consumer": "backend",
+      "adapter": "backend-private-post-collection"
+    },
+    {
+      "scenarioId": "private-post-browser-continuation-after-filtering",
+      "consumer": "web",
+      "adapter": "web-playwright-private-post-collection"
+    },
+    {
+      "scenarioId": "private-post-browser-removal-preserves-loaded-sibling",
+      "consumer": "web",
+      "adapter": "web-playwright-private-post-collection"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "@workers/bloom-filters",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@queues/bloom-filters": "workspace:^",
+    "@services/api-keys": "workspace:^",
+    "@services/bedrock-embeddings": "workspace:^",
+    "@services/bookmarks": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/urls-domains-blacklist": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@services/bloom-filter-config": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/rss-feeds": "workspace:^",
+    "@services/urls": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

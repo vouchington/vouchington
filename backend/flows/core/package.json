@@ -1,0 +1,26 @@
+{
+  "name": "@flows/core",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
+    "@queues/bedrock-embeddings": "workspace:^",
+    "@queues/openai-moderation": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

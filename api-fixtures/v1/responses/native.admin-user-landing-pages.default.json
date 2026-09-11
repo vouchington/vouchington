@@ -1,0 +1,19 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": null
+  },
+  "results": [
+    {
+      "created_at": "2026-06-28T10:00:00Z",
+      "id": "landing-page-1",
+      "is_default": true,
+      "slug": "links",
+      "subtitle": "Cards and reviews I recommend",
+      "title": "My Links",
+      "updated_at": "2026-06-29T10:00:00Z",
+      "user_id": "user-abc"
+    }
+  ]
+}

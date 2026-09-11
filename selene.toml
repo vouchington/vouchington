@@ -1,0 +1,6 @@
+std = "lua51+redis"
+
+exclude = ["**/.git/**", "**/node_modules/**", "**/coverage/**", "**/dist/**"]
+
+[lints]
+global_usage = "deny"

@@ -1,0 +1,35 @@
+{
+  "name": "@services/notifications-push",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@modules/feed-query-builders": "workspace:^",
+    "@services/notifications": "workspace:^",
+    "p-map": "7.0.7",
+    "sql-template-strings": "^2.2.2",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@types/web-push": "^3.6.4",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

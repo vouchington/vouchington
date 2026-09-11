@@ -1,0 +1,37 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6InVzZXItMSIsInNjb3BlIjoie1wicmVzb3VyY2VcIjpcIm15LWZyaWVuZC1yZWNvbW1lbmRhdGlvbnNcIixcIm93bmVyX2lkXCI6XCJmaXh0dXJlLXVzZXJcIixcIm9yZGVyXCI6XCJpZC1hc2NcIn0ifQ"
+  },
+  "results": [
+    {
+      "__entity_type": "user",
+      "id": "user-1",
+      "provider": "github",
+      "provider_friend_name": "Repeated Fixture Friend"
+    },
+    {
+      "__entity_type": "user",
+      "id": "019fafc1-308d-7db5-b834-6bbf641bf0e7",
+      "provider": "x",
+      "provider_friend_name": "Second Fixture Friend"
+    }
+  ],
+  "users": {
+    "019fafc1-308d-7db5-b834-6bbf641bf0e7": {
+      "__entity_type": "user",
+      "id": "019fafc1-308d-7db5-b834-6bbf641bf0e7",
+      "profile_image_id": null,
+      "roles": [],
+      "username": "secondfriend"
+    },
+    "user-1": {
+      "__entity_type": "user",
+      "id": "user-1",
+      "profile_image_id": null,
+      "roles": [],
+      "username": "testuser"
+    }
+  }
+}

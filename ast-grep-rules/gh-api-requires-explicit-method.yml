@@ -1,0 +1,130 @@
+id: gh-api-requires-explicit-method
+language: Tsx
+severity: error
+message: >-
+  A `gh api` argument array uses `-f`/`-F` (short, long `--field`/`--raw-field`, or attached like
+  `-Fper_page=100`) without an explicit `-X`/`--method` flag. `gh` defaults to POST whenever any such
+  parameter is present, so an endpoint meant to be read silently becomes a write (see #10956 —
+  verified live: `gh api repos/OWNER/REPO/labels -F per_page=100` with no `-X GET` returns HTTP 422
+  attempting to *create* a label). Add `-X GET` (or whichever method is actually intended) as an
+  explicit token — separated (`-X GET`, `--method GET`) or attached (`-XGET`, `--method=GET`) forms
+  both satisfy this check, matching `gh`'s own flag parsing. `gh api graphql` is exempt: GraphQL has
+  no GET form, so `-f`/`-F` there always POSTs by design and needs no `-X`.
+files:
+  - 'dev/**/*.mts'
+  - 'ci/**/*.mts'
+rule:
+  any:
+    # Direct `execFile('gh', ['api', ...])` / `runGh(['api', ...])` shape: the array literal itself
+    # opens with 'api'.
+    - all:
+        - pattern: '[$FLAG, $$$REST]'
+        - has:
+            stopBy: end
+            kind: string
+            regex: '^[''"](-f|-F|--field|--raw-field)'
+        - not:
+            has:
+              stopBy: end
+              kind: string
+              regex: '^[''"](-X|--method)'
+        - not:
+            has:
+              stopBy: end
+              kind: string
+              regex: '^[''"]graphql[''"]$'
+    # ci/transient-retry's shared `ghApi(args, options)` wrapper (ci/transient-retry/gh-api.mts)
+    # hoists the literal 'api' element inside the helper, so the caller's args array never starts
+    # with 'api' — match the call expression itself instead.
+    - all:
+        - pattern: 'ghApi($ARR, $$$GHREST)'
+        - has:
+            stopBy: end
+            kind: string
+            regex: '^[''"](-f|-F|--field|--raw-field)'
+        - not:
+            has:
+              stopBy: end
+              kind: string
+              regex: '^[''"](-X|--method)'
+        - not:
+            has:
+              stopBy: end
+              kind: string
+              regex: '^[''"]graphql[''"]$'
+constraints:
+  FLAG:
+    regex: '^[''"]api[''"]$'
+# No `.tsx` twin: every `gh api` call site in dev/**/ci/** is plain TypeScript, no JSX involved.
+examples:
+  - code: |
+      await execFileAsync('gh', ['api', `repos/${repo}/labels`, '-F', 'per_page=100'])
+    isValid: false
+    file: 'dev/agent-issue-labels/ensure-labels.mts'
+  - code: |
+      await execFileAsync('gh', [
+        'api',
+        '-X',
+        'GET',
+        `repos/${repo}/labels`,
+        '-F',
+        'per_page=100',
+      ])
+    isValid: true
+    file: 'dev/agent-issue-labels/ensure-labels.mts'
+  - code: |
+      await execFileAsync('gh', ['api', `repos/${repo}/labels`, '--field', 'per_page=100'])
+    isValid: false
+    file: 'dev/agent-issue-labels/ensure-labels.mts'
+  - code: |
+      await execFileAsync('gh', ['api', '-XGET', `repos/${repo}/labels`, '-F', 'per_page=100'])
+    isValid: true
+    file: 'dev/agent-issue-labels/ensure-labels.mts'
+  - code: |
+      await execFileAsync('gh', ['api', '--method=GET', `repos/${repo}/labels`, '-F', 'per_page=100'])
+    isValid: true
+    file: 'dev/agent-issue-labels/ensure-labels.mts'
+  - code: |
+      await runGh([
+        'api',
+        'graphql',
+        '-f',
+        `query=${query}`,
+        '-F',
+        `owner=${owner}`,
+        '-F',
+        `repo=${repo}`,
+        '-F',
+        `number=${ref.number}`,
+      ])
+    isValid: true
+    file: 'dev/pr-description/issue-closure.mts'
+  - code: |
+      const result = await ghApi(
+        [`repos/${repository}/check-runs/${job.id}/annotations`, '-F', 'per_page=100'],
+        { execFile, maxBuffer: LOG_MAX_BUFFER_BYTES, sleep },
+      )
+    isValid: false
+    file: 'ci/transient-retry/run-context.mts'
+  - code: |
+      const result = await ghApi(
+        [`repos/${repository}/check-runs/${job.id}/annotations`, '-Fper_page=100'],
+        { execFile, maxBuffer: LOG_MAX_BUFFER_BYTES, sleep },
+      )
+    isValid: false
+    file: 'ci/transient-retry/run-context.mts'
+  - code: |
+      const result = await ghApi(
+        [
+          '-X',
+          'GET',
+          `repos/${repository}/check-runs/${job.id}/annotations`,
+          '-F',
+          'per_page=100',
+          '--paginate',
+          '--slurp',
+        ],
+        { execFile, maxBuffer: LOG_MAX_BUFFER_BYTES, sleep },
+      )
+    isValid: true
+    file: 'ci/transient-retry/run-context.mts'

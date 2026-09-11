@@ -1,0 +1,86 @@
+{
+  "appeals": {
+    "accepted": 1,
+    "denied": 1,
+    "dismissed": 1,
+    "reduced": 1,
+    "success_rate": 0.67,
+    "total_closed": 3
+  },
+  "automod_performance": {
+    "actions_over_time": [],
+    "auto_removes": 1,
+    "confidence_distribution": [
+      {
+        "bucket": "0.8-1.0",
+        "count": 2
+      }
+    ],
+    "false_positive_count": 1,
+    "false_positive_rate": 0.33,
+    "reviewed_count": 3,
+    "sources": [
+      {
+        "count": 2,
+        "source_type": "openai_omni"
+      }
+    ],
+    "total_actions": 4
+  },
+  "moderator_workload": {
+    "moderators": [
+      {
+        "actor_id": "admin-1",
+        "counts": {
+          "remove": 2,
+          "warn": 1
+        },
+        "total": 3,
+        "weekly_counts": []
+      }
+    ],
+    "users": {
+      "admin-1": {
+        "username": "admin"
+      }
+    }
+  },
+  "new_user_friction": {
+    "first_posts": 10,
+    "rejected_first_posts": 2,
+    "rejection_rate": 0.2
+  },
+  "period_end": "2026-07-01T00:00:00.000Z",
+  "period_start": "2026-06-01T00:00:00.000Z",
+  "queue_volume": {
+    "clearance_actions_over_time": [
+      {
+        "count": 1,
+        "date": "2026-06-01",
+        "type": "reject"
+      }
+    ],
+    "moderator_actions_over_time": [],
+    "pending_reports": 2,
+    "reports_over_time": [
+      {
+        "count": 3,
+        "date": "2026-06-01"
+      }
+    ],
+    "total_reports": 12
+  },
+  "range": "30d",
+  "rule_violations": {
+    "reasons": [
+      {
+        "count": 5,
+        "reason": "spam"
+      }
+    ],
+    "reasons_over_time": []
+  },
+  "scope": {
+    "type": "global"
+  }
+}

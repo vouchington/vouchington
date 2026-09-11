@@ -1,0 +1,176 @@
+import type { NativeConsumerManifestEntry } from './types.mts'
+
+/** Canonical native consumer claims, kept in code-point key order. */
+export const NATIVE_CONSUMER_MANIFEST_CLAIMS_11_COMMUNITY_ROWS_TAIL = [
+  { key: 'native.swift.communityRows.transparencyBucketDetail', consumers: ['dotnet', 'swift'] },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.accept',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.activateRestriction',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.agentModeration',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.approve',
+    consumers: ['dotnet', 'swift'],
+  },
+  { key: 'native.swift.communityRows.transparencyCategories.ban', consumers: ['dotnet', 'swift'] },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.changeRole',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.communityAi',
+    consumers: ['dotnet', 'swift'],
+  },
+  { key: 'native.swift.communityRows.transparencyCategories.deny', consumers: ['dotnet', 'swift'] },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.dismissAppeal',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.dismissReport',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.harassment',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.illegalContent',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.liftBan',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.liftRestriction',
+    consumers: ['dotnet', 'swift'],
+  },
+  { key: 'native.swift.communityRows.transparencyCategories.lock', consumers: ['dotnet', 'swift'] },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.misinformation',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.openAiModeration',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.other',
+    consumers: ['dotnet', 'swift'],
+  },
+  { key: 'native.swift.communityRows.transparencyCategories.pin', consumers: ['dotnet', 'swift'] },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.postClearanceRejection',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.reduce',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.reject',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.remove',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.removeMember',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.resolveAppeal',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.resolveReport',
+    consumers: ['dotnet', 'swift'],
+  },
+  { key: 'native.swift.communityRows.transparencyCategories.spam', consumers: ['dotnet', 'swift'] },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.spamDetection',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.suspend',
+    consumers: ['dotnet', 'swift'],
+  },
+  { key: 'native.swift.communityRows.transparencyCategories.tag', consumers: ['dotnet', 'swift'] },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.unlock',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.unpin',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.unsuspend',
+    consumers: ['dotnet', 'swift'],
+  },
+  {
+    key: 'native.swift.communityRows.transparencyCategories.voteManipulation',
+    consumers: ['dotnet', 'swift'],
+  },
+  { key: 'native.swift.communityRows.transparencyCategories.warn', consumers: ['dotnet', 'swift'] },
+  { key: 'native.swift.communityRows.transparencyEmpty', consumers: ['dotnet', 'swift'] },
+  {
+    key: 'native.swift.communityRows.transparencyLatestReleasedDay',
+    consumers: ['dotnet', 'swift'],
+  },
+  { key: 'native.swift.communityRows.transparencyLocked', consumers: ['dotnet', 'swift'] },
+  { key: 'native.swift.communityRows.transparencyReleasedOn', consumers: ['dotnet', 'swift'] },
+  { key: 'native.swift.communityRows.visibility', consumers: ['swift'] },
+  { key: 'native.swift.communityRows.workload', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.actionFailed', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.activatedRestrictions', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.addedListItem', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.allocatedAgentPrompt', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.applicationAnswersMissing', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.applicationSubmitted', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.approvedApplication', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.approvedPost', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.archivedCommunity', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.bannedMember', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.claimedPost', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.claimedReport', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.clearedVacation', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.communityDigestsPaused', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.communityDigestsResumed', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.createdAgentPrompt', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.deallocatedAgentPrompt', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.deletedAgentPrompt', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.disabledAiAgent', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.enabledAiAgent', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.escalatedPost', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.escalatedReport', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.inviteRedeemed', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.inviteSent', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.issuedWarning', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.joinedCommunity', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.leftCommunity', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.liftedBan', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.liftedRestriction', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.loadedRecentAutomodActions', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.openedModmailThread', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.recordedAutomodFeedback', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.rejectedApplication', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.rejectedPost', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.releasedPost', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.releasedReport', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.removedListItem', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.removedMember', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.reopenedThread', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.resolvedThread', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.revokedInvite', consumers: ['swift'] },
+  { key: 'native.swift.communityStatus.sentModmailMessage', consumers: ['swift'] },
+] as const satisfies readonly NativeConsumerManifestEntry[]

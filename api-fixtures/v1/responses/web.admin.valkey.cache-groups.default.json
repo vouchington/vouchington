@@ -1,0 +1,16 @@
+{
+  "groups": [
+    {
+      "name": "posts",
+      "prefixes": ["posts", "posts_lookup", "post_metrics", "post_elections"]
+    },
+    {
+      "name": "urls",
+      "prefixes": ["urls", "urls_lookup", "url_hostnames", "hostname_elections"]
+    },
+    {
+      "name": "elections",
+      "prefixes": ["entity_relation_elections", "agent_moderation_elections"]
+    }
+  ]
+}

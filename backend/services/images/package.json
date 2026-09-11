@@ -1,0 +1,49 @@
+{
+  "name": "@services/images",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@data-stores/psql": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/entity-listeners": "workspace:^",
+    "@queues/images": "workspace:^",
+    "@services/post-clearance": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "@services/post-revisions": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "@vouchington/media": "0.2.0",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

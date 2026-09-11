@@ -1,0 +1,17 @@
+export const NO_DATA_MOCK_SOURCE_PATTERNS = [
+  'backend/data-stores/valkey/cache.mts',
+  'backend/data-stores/valkey-glide-mq/glide-mq-{enqueue,factory,retry,shared-client}.mts',
+  'backend/services/account-data-requests/s3.mts',
+  'backend/services/articles/storage.mts',
+  'backend/services/captcha/verify.mts',
+  'backend/services/crawls/s3.mts',
+  'backend/services/email-address-validator/resolve-mx.mts',
+  'backend/services/entity-cache/purge.mts',
+  'backend/services/fediverse-search/adapters/{bluesky,instance-classification,lemmy,mastodon,peertube}.mts',
+  'backend/services/fediverse-search/cursor.mts',
+  'backend/services/images/s3.mts',
+  'backend/services/language-detection/detector.mts',
+  'backend/services/recaptcha/{config,fetch-assessment}.mts',
+  'backend/services/sitemaps/{storage,tracked-range-discovery}.mts',
+  'backend/services/user-import-export/config.mts',
+] as const

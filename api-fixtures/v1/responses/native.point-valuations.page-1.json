@@ -1,0 +1,39 @@
+{
+  "page_info": {
+    "end_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDcyMiIsInNjb3BlIjoibXktcG9pbnQtdmFsdWF0aW9uczowMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDA3MjA6aWQtYXNjIn0",
+    "has_next_page": true,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDcyMSIsInNjb3BlIjoibXktcG9pbnQtdmFsdWF0aW9uczowMDAwMDAwMC0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDA3MjA6aWQtYXNjIn0"
+  },
+  "results": [
+    {
+      "id": "00000000-0000-7000-8000-000000000721",
+      "note": "Use for flexible travel redemptions",
+      "rewards_program": {
+        "id": "00000000-0000-7000-8000-000000000731",
+        "name": "Travel Rewards",
+        "slug": "travel-rewards"
+      },
+      "rewards_program_id": "00000000-0000-7000-8000-000000000731",
+      "value_per_point": {
+        "amount": 35000,
+        "currency": "usd",
+        "scale": 6
+      }
+    },
+    {
+      "id": "00000000-0000-7000-8000-000000000722",
+      "note": null,
+      "rewards_program": {
+        "id": "00000000-0000-7000-8000-000000000732",
+        "name": "Hotel Points",
+        "slug": "hotel-points"
+      },
+      "rewards_program_id": "00000000-0000-7000-8000-000000000732",
+      "value_per_point": {
+        "amount": 0,
+        "currency": "usd",
+        "scale": 6
+      }
+    }
+  ]
+}

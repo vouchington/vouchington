@@ -1,0 +1,46 @@
+{
+  "name": "@services/ap-inbox-activities",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@modules/activitypub-inbox-storage-policy": "workspace:^",
+    "@modules/activitypub-uris": "workspace:^",
+    "@modules/http-signatures": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/activitypub-delivery": "workspace:^",
+    "@services/ap-post-likes": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/fediverse-instances": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@services/remote-actors": "workspace:^",
+    "@services/route-rate-limits": "workspace:^",
+    "@services/users": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-errors": "^2.0.1",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

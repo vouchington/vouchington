@@ -1,0 +1,17 @@
+{
+  "point_valuation": {
+    "id": "00000000-0000-7000-8000-000000000722",
+    "note": null,
+    "rewards_program": {
+      "id": "00000000-0000-7000-8000-000000000732",
+      "name": "Hotel Points",
+      "slug": "hotel-points"
+    },
+    "rewards_program_id": "00000000-0000-7000-8000-000000000732",
+    "value_per_point": {
+      "amount": 0,
+      "currency": "usd",
+      "scale": 6
+    }
+  }
+}

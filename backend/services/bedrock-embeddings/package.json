@@ -1,0 +1,48 @@
+{
+  "name": "@services/bedrock-embeddings",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./search": {
+      "types": "./search/index.mts",
+      "import": "./search/index.mts",
+      "default": "./search/index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1127.0",
+    "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
+    "@modules/aws": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@queues/bloom-filters": "workspace:^",
+    "@services/analytics": "workspace:^",
+    "@services/bloom-filter-config": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "pg-copy-streams": "^7.0.0",
+    "pgvector": "^0.3.0",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@types/pg-copy-streams": "^1.2.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "chapters": [
+    {
+      "end_seconds": 60,
+      "image_url": "https://images.example.com/sideload/podcast-ep-1-chapter-intro.jpg?w=400",
+      "is_visible": true,
+      "start_seconds": 0,
+      "title": "Intro",
+      "url": "https://example.com/podcast-ep-1#intro"
+    },
+    {
+      "end_seconds": null,
+      "image_url": "https://images.example.com/sideload/podcast-ep-1-chapter-main.jpg?w=400",
+      "is_visible": false,
+      "start_seconds": 60,
+      "title": "Main Segment",
+      "url": "https://example.com/podcast-ep-1#main"
+    }
+  ]
+}

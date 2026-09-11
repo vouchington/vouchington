@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "sentry": {
+      "command": "npx",
+      "args": ["-y", "@sentry/mcp-server"],
+      "env": {
+        "SENTRY_ACCESS_TOKEN": "${SENTRY_ACCESS_TOKEN}",
+        "SENTRY_ORG": "voucha"
+      }
+    },
+    "agent-blackboard": {
+      "command": "bash",
+      "args": ["-c", "exec \"$(git rev-parse --show-toplevel)/dev/blackboard-mcp\""],
+      "env": {
+        "AGENT_BLACKBOARD_URL": "${AGENT_BLACKBOARD_URL}",
+        "AGENT_BLACKBOARD_TOKEN": "${AGENT_BLACKBOARD_TOKEN}"
+      }
+    }
+  }
+}

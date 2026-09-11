@@ -1,0 +1,44 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "has_previous_page": true,
+    "start_cursor": "fixture-community-role-and-sort-scoped-report-start-cursor"
+  },
+  "reports": [
+    {
+      "admin_action_path": "/admin/posts/00000000-0000-7000-8000-000000000603",
+      "case_id": "00000000-0000-7000-8000-000000000602",
+      "claim": {
+        "claimed_at": "2026-07-06T12:30:00.000Z",
+        "claimed_by_id": "00000000-0000-7000-8000-000000000610",
+        "community_id": "00000000-0000-7000-8000-000000000609",
+        "id": "00000000-0000-7000-8000-000000000608",
+        "post_id": "00000000-0000-7000-8000-000000000603",
+        "released_at": null,
+        "report_id": "00000000-0000-7000-8000-000000000601"
+      },
+      "community_ban_evasion": null,
+      "created_at": "2026-07-06T12:00:00.000Z",
+      "entity_id": "00000000-0000-7000-8000-000000000603",
+      "entity_type": "post",
+      "escalated_at": "2026-07-06T12:45:00.000Z",
+      "escalated_by_id": "00000000-0000-7000-8000-000000000611",
+      "id": "00000000-0000-7000-8000-000000000601",
+      "judgement": null,
+      "note": "Fixture moderator note",
+      "reason": "spam",
+      "report_count": 3,
+      "reporter_user_id": "00000000-0000-7000-8000-000000000605",
+      "reporter_username": "fixture-reporter",
+      "resolved_by_id": null,
+      "reviewed_at": null,
+      "status": "pending",
+      "target_available": true,
+      "target_content": null,
+      "target_label": "Fixture report target",
+      "target_path": "/discussion/fixture-report-target",
+      "target_user_id": "00000000-0000-7000-8000-000000000604"
+    }
+  ]
+}

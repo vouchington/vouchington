@@ -1,0 +1,40 @@
+{
+  "namespace": {
+    "can_update": false,
+    "can_view": true,
+    "config": {
+      "block_threshold": 0.5,
+      "blocking_enabled": false,
+      "enabled": true
+    },
+    "description": "Runtime reCAPTCHA Enterprise assessment and blocking controls.",
+    "field_count": 3,
+    "fields": [
+      {
+        "default_value": true,
+        "description": "Call reCAPTCHA Enterprise assessment APIs for eligible requests.",
+        "name": "enabled",
+        "type": "boolean",
+        "value": true
+      },
+      {
+        "default_value": false,
+        "description": "Reject low-score requests instead of logging only.",
+        "name": "blocking_enabled",
+        "type": "boolean",
+        "value": false
+      },
+      {
+        "default_value": 0.5,
+        "description": "Minimum acceptable reCAPTCHA Enterprise score.",
+        "max_value": 1,
+        "min_value": 0,
+        "name": "block_threshold",
+        "type": "number",
+        "value": 0.5
+      }
+    ],
+    "label": "reCAPTCHA",
+    "namespace": "recaptcha-config"
+  }
+}

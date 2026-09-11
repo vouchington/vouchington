@@ -1,0 +1,19 @@
+{
+  "relation": {
+    "created_at": "2026-06-01T12:00:00Z",
+    "created_by_id": "fixture-user",
+    "id": "relation-user-category-topic-bot",
+    "object_data": {
+      "id": "user-tag-bot",
+      "name": "Bot",
+      "slug": "bot",
+      "topic_type": "topic"
+    },
+    "object_id": "user-tag-bot",
+    "subject_id": "user-abc",
+    "votes_count_down": 0,
+    "votes_count_up": 1,
+    "votes_score_net": 1,
+    "votes_score_sort": 1
+  }
+}

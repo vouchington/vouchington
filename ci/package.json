@@ -1,0 +1,39 @@
+{
+  "name": "@voucha/ci",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CI-local reproduction and workflow support tools",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./runner-port-policy": {
+      "types": "./runner-port-policy.mts",
+      "import": "./runner-port-policy.mts",
+      "default": "./runner-port-policy.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "auto-harness-client": "0.6.0",
+    "coverage-check": "^0.17.0",
+    "jsonc-parser": "^3.3.1",
+    "no-mistakes": "^0.61.10",
+    "picomatch": "^4.0.4",
+    "rehype-stringify": "^10.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5",
+    "vouchington-tooling": "^0.16.0"
+  },
+  "devDependencies": {
+    "@ts-shared/utils": "workspace:^",
+    "@types/picomatch": "^4.0.3",
+    "@vitest/coverage-v8": "^5.0.0",
+    "oxfmt": "^0.66.0",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vitest": "^5.0.0",
+    "yaml": "^2.9.0"
+  }
+}

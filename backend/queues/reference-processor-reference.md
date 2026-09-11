@@ -1,0 +1,171 @@
+# Processor Reference
+
+[Back to Systems Summary](README.md#processor-reference)
+
+Default priorities and grouping live at the job level. See `Active Workers` above for concurrency.
+
+| Queue                                        | Processor                                      | Group Keys                                | Default Priority |
+| -------------------------------------------- | ---------------------------------------------- | ----------------------------------------- | ---------------- |
+| crawl_browser                                | crawl_browser                                  | —                                         | 10               |
+| account-data-requests                        | processExportRequest                           | —                                         | 10               |
+| account-data-requests                        | processCleanupExpiredExports                   | —                                         | 10               |
+| account-data-requests                        | recoverExportRequests                          | —                                         | 100              |
+| story-post-related-url-projections           | processReconcileStoryPostRelatedUrlProjections | story-post-related-url-projections        | 100              |
+| user-deletions                               | processUserDeletion                            | —                                         | 10               |
+| user-deletions                               | recoverUserDeletions                           | —                                         | 100              |
+| activitypub-inbox                            | processDelivery                                | —                                         | 10               |
+| activitypub-inbox                            | cleanupExpiredDeliveries                       | —                                         | 1                |
+| activitypub-inbox                            | recoverDeliveries                              | —                                         | 100              |
+| activitypub-inbox                            | rearmFailedDeliveries                          | —                                         | 100              |
+| activitypub-delivery                         | distributeActivity                             | activitypub-distribute__<activityId>      | 10               |
+| activitypub-delivery                         | deliverActivity                                | —                                         | 10               |
+| admin-imports                                | processImportRow                               | —                                         | 10               |
+| user-rss-feed-imports                        | processImportRow                               | —                                         | 10               |
+| ai_agents                                    | chat                                           | —                                         | 1                |
+| ai_agents                                    | moderation-prompt                              | —                                         | 3                |
+| ai_agents                                    | community-moderation-prompt                    | —                                         | 3                |
+| ai_agents                                    | customer-support                               | —                                         | 5                |
+| ai_agents                                    | reconcile-member-support-agent-intents         | —                                         | 100              |
+| ai_agents                                    | moderation-dispatcher                          | —                                         | 8                |
+| ai_agents                                    | community-moderation-dispatcher                | —                                         | 8                |
+| ai_agents                                    | story-clustering                               | —                                         | 15               |
+| ai_agents                                    | autotagger-post                                | —                                         | 20               |
+| ai_agents                                    | autotagger-rss-feed-item                       | —                                         | 20               |
+| ai_agents                                    | wikipedia-recommender                          | —                                         | 25               |
+| bloom-filters                                | processPopulateBloomFilter                     | —                                         | 5 (baseline)     |
+| bloom-filters                                | processRebuildBloomFilter                      | —                                         | 5 (baseline)     |
+| bloom-filters                                | processBackfillBloomFilter                     | —                                         | 5 (baseline)     |
+| bloom-filters                                | processBackfillUserBookmarkBloomFilter         | —                                         | 5 (baseline)     |
+| bloom-filters                                | processDeleteUserBookmarkBloomFilter           | —                                         | 5 (baseline)     |
+| bloom-filters                                | processRebuildEmbeddingBloomFilter             | —                                         | 5 (baseline)     |
+| crawl_referral_links                         | crawl_referral_links_dispatcher                | dispatcher                                | 100              |
+| crawl_referral_links                         | crawl_referral_link                            | crawl                                     | 10               |
+| crawl_html_boilerplate_removal               | boilerplate_removal_dispatcher                 | —                                         | 100              |
+| crawl_html_boilerplate_removal               | boilerplate_removal                            | —                                         | 10               |
+| crawl_hostnames                              | crawl_hostnames_dispatcher                     | —                                         | 100              |
+| crawl_hostnames                              | crawl_urls_per_hostname_dispatcher             | —                                         | 100              |
+| crawl_hostnames                              | crawl_tier1_dispatcher                         | —                                         | 100              |
+| crawl_hostnames                              | crawl_tier2_dispatcher                         | —                                         | 100              |
+| crawl_hostnames                              | refresh_hostname_crawler_dispatcher            | —                                         | 100              |
+| crawl_hostnames                              | refresh_hostname_crawler                       | —                                         | 10               |
+| crawl_hostnames                              | crawl_cleanup                                  | —                                         | 10               |
+| crawl_embeds                                 | resolve_crawl_oembed                           | oembed:<destination hostname>             | 10               |
+| crawl_embeds                                 | backfill_crawl_embeds                          | backfill                                  | 100              |
+| crawl_urls                                   | crawl_url                                      | —                                         | 10               |
+| elections                                    | processUpdateElectionVoteStats                 | topic                                     | 10               |
+| elections                                    | processUpdateElectionVoteStats                 | hostname                                  | 10               |
+| elections                                    | processUpdateElectionVoteStats                 | agent_moderation                          | 10               |
+| elections                                    | processUpdateElectionVoteStats                 | post                                      | 10               |
+| elections                                    | processUpdateElectionVoteStats                 | entity_relation                           | 10               |
+| elections                                    | processUpdateElectionVoteStats                 | rss_feed_item                             | 10               |
+| elections                                    | processUpdateElectionVoteStats                 | user_vouch                                | 10               |
+| emails                                       | processSendCommunityInviteEmail                | —                                         | 10               |
+| emails                                       | processSendDataExportReadyEmail                | —                                         | 10               |
+| emails                                       | processSendEmailAddressLoginToken              | —                                         | 10               |
+| emails                                       | processSendEmailVerificationToken              | —                                         | 10               |
+| emails                                       | dispatchEngagementEmails                       | —                                         | 100              |
+| emails                                       | dispatchCommunityModerationSummaryEmails       | —                                         | 100              |
+| emails                                       | processSendFollowTopicsEmail                   | —                                         | 10               |
+| emails                                       | processSendPostReferralLinkEmail               | —                                         | 10               |
+| emails                                       | processSendFollowNewsSourcesEmail              | —                                         | 10               |
+| emails                                       | processSendCommunityModerationSummaryEmail     | —                                         | 10               |
+| emails                                       | processSendCrmEmail                            | —                                         | 10               |
+| emails                                       | processSendSupportEmail                        | —                                         | 10               |
+| entity-listeners                             | processUserCreated                             | —                                         | 10               |
+| entity-listeners                             | processAutoFollowReferrer                      | —                                         | 10               |
+| entity-listeners                             | processUserLoggedIn                            | —                                         | 10               |
+| entity-listeners                             | processUserUpdated                             | —                                         | 10               |
+| entity-listeners                             | processTopicCreated                            | —                                         | 10               |
+| entity-listeners                             | processTopicUpdated                            | —                                         | 10               |
+| entity-listeners                             | processTopicDeleted                            | —                                         | 10               |
+| entity-listeners                             | processPostCreated                             | —                                         | 10               |
+| entity-listeners                             | processPostUpdated                             | —                                         | 10               |
+| entity-listeners                             | processPostDeleted                             | —                                         | 10               |
+| entity-listeners                             | processImageCreated                            | —                                         | 10               |
+| entity-listeners                             | processUrlCreated                              | —                                         | 10               |
+| entity-listeners                             | reconcileEntity                                | —                                         | 10               |
+| entity-listeners                             | reconcileEntities                              | —                                         | 100              |
+| entity-listeners                             | processReconcilePostCategoryFinalizations      | post-category-finalization-reconciliation | 100              |
+| entity-metrics-cache-refresh                 | processRefreshTopicMetrics                     | —                                         | 10               |
+| entity-metrics-cache-refresh                 | processRefreshPostMetrics                      | —                                         | 10               |
+| entity-metrics-cache-refresh                 | processRefreshUserMetrics                      | —                                         | 10               |
+| cache-purge                                  | processPurgeCacheTag                           | —                                         | 10               |
+| find-your-friends                            | dispatchFindYourFriends                        | dispatcher                                | 100              |
+| find-your-friends                            | syncFacebookFriends                            | sync_facebook                             | 10               |
+| find-your-friends                            | syncXFriends                                   | sync_x                                    | 10               |
+| find-your-friends                            | syncGithubFriends                              | sync_github                               | 10               |
+| oauth-authorization-exchange                 | exchangeOAuthAuthorization                     | —                                         | 1                |
+| oauth-authorization-exchange                 | dispatchOAuthAuthorizationExchanges            | —                                         | 100              |
+| images                                       | cleanup-abandoned-uploads                      | —                                         | 10               |
+| images                                       | extract-metadata                               | —                                         | 5                |
+| kagi-smallweb                                | sync                                           | —                                         | 10               |
+| memberships                                  | processStripeWebhook                           | —                                         | 10               |
+| memberships                                  | recoverStripeWebhooks                          | —                                         | 100              |
+| memberships                                  | processMembershipVerification                  | —                                         | 10               |
+| memberships                                  | recoverMembershipVerifications                 | —                                         | 100              |
+| memberships                                  | reconcileStripeMembershipCatalog               | `stripe-catalog:voucha-web`               | 100              |
+| memberships                                  | deliverMembershipEntitlementEffects            | —                                         | 100              |
+| memberships                                  | expireElapsedMemberships                       | —                                         | 100              |
+| memberships                                  | processRenewalNotificationCheck                | —                                         | 100              |
+| memberships                                  | processSendRenewalPriceIncreaseEmail           | —                                         | 10               |
+| notifications                                | processReconcilePostNotifications              | —                                         | 10               |
+| notifications                                | processReconcileRssFeedItemNotifications       | —                                         | 10               |
+| notifications                                | processDeliverNotificationPushIntent           | —                                         | 10               |
+| notifications                                | processReconcileNotificationPushIntents        | —                                         | 10               |
+| notifications                                | processDeleteNotification                      | —                                         | 10               |
+| notifications                                | processFollowNotification                      | —                                         | 10               |
+| notifications                                | processReferralSignupNotification              | —                                         | 10               |
+| notifications                                | processReferralClickNotification               | —                                         | 10               |
+| notifications                                | processCommunityActivityDigestScheduleTick     | —                                         | 10               |
+| notifications                                | processCommunityActivityDigestDispatch         | —                                         | 10               |
+| notifications                                | processCommunityActivityDigestBatch            | —                                         | 10               |
+| bedrock-embeddings-batch                     | creation_dispatcher                            | dispatcher                                | 100              |
+| bedrock-embeddings-batch                     | poll_dispatcher                                | dispatcher                                | 100              |
+| bedrock-embeddings-batch                     | topics                                         | creation                                  | 10               |
+| bedrock-embeddings-batch                     | posts                                          | creation                                  | 10               |
+| bedrock-embeddings-batch                     | rss_feed_items                                 | creation                                  | 10               |
+| bedrock-embeddings-batch                     | crawl_chunks                                   | creation                                  | 10               |
+| bedrock-embeddings-batch                     | poll_batch                                     | polling                                   | 10               |
+| bedrock_embeddings_nova_multimodal_v1_single | post                                           | —                                         | 10               |
+| bedrock_embeddings_nova_multimodal_v1_single | topic                                          | —                                         | 10               |
+| bedrock_embeddings_nova_multimodal_v1_single | rss_feed_item                                  | —                                         | 10               |
+| openai_moderation_omni_single                | post                                           | —                                         | 10               |
+| openai_moderation_omni_single                | image                                          | —                                         | 10               |
+| post-mentions                                | processPostMentions                            | —                                         | 10               |
+| psql                                         | runMigrations                                  | —                                         | 10               |
+| psql                                         | runViews                                       | —                                         | 10               |
+| psql                                         | runConfigDriven                                | —                                         | 10               |
+| psql                                         | createPartitions                               | —                                         | 10               |
+| psql                                         | cleanupPartitions                              | —                                         | 10               |
+| psql                                         | dataRetentionCleanup                           | —                                         | 10               |
+| post-publication                             | processReconcilePostPublication                | publication-reconciliation                | 100              |
+| rss-feed-item-categories                     | processReconcileRssFeedItemCategorySnapshots   | snapshot-reconciliation                   | 100              |
+| rss-feed-item-categories                     | processBackfillCategoriesForTopicAliases       | —                                         | 10               |
+| rss-feeds                                    | dispatchRssFeeds                               | dispatcher                                | 100              |
+| rss-feeds                                    | fetchRssFeed                                   | fetch                                     | 10               |
+| sitemaps                                     | processUpdatePostDaySitemap                    | post_day_today                            | 10               |
+| sitemaps                                     | processUpdatePostDaySitemap                    | post_day_past                             | 10               |
+| sitemaps                                     | processUpdatePostTypeIndex                     | indexes                                   | 10               |
+| sitemaps                                     | processUpdatePostsIndex                        | indexes                                   | 10               |
+| sitemaps                                     | processUpdateRootIndex                         | indexes                                   | 10               |
+| sitemaps                                     | processNightlyBackfillWeekDispatcher           | dispatcher                                | 100              |
+| sitemaps                                     | processWeeklyBackfillMonthDispatcher           | dispatcher                                | 100              |
+| sitemaps                                     | processMonthlyBackfillArchiveDispatcher        | dispatcher                                | 100              |
+| spam_detection                               | post                                           | —                                         | 10               |
+| topic-aliases                                | processTopicAliasesUpdate                      | —                                         | 10               |
+| topic-aliases                                | processReconcileTopicAliasCategoryMappings     | reconciliation                            | 100              |
+| topic-aliases                                | processInvalidatePostsForTopicAliases          | post-invalidation                         | 100              |
+| topic-ratings                                | processUpdateTopicRatingStats                  | —                                         | 10               |
+| urls-domains-blacklist                       | processBlacklistDispatcher                     | dispatcher                                | 100              |
+| urls-domains-blacklist                       | processBlacklistSourceSync                     | sync                                      | 10               |
+| vote-integrity                               | processVoteIntegrityCheck                      | —                                         | 10               |
+| vote-weight                                  | processRecalculateVoteWeightDispatcher         | —                                         | 100              |
+| vote-weight                                  | processRecalculateUserVoteWeight               | —                                         | 10               |
+| wikipedia-recommender                        | dispatch                                       | dispatcher                                | 100              |
+| customer_support                             | embedSupportMessage                            | —                                         | 10               |
+| bluesky-follow-propagation                   | reconcileFollow                                | —                                         | 10               |
+| bluesky-follow-propagation                   | backfillBlueskyFollowPropagation               | —                                         | 100              |
+| bluesky-follow-propagation                   | disconnectRequested                            | —                                         | 10               |
+| bluesky-follow-propagation                   | backfillBlueskyDisconnectRequests              | —                                         | 100              |
+
+Sitemap ordering groups are intentionally serialized: `post_day_today`, `post_day_past`, `indexes`, and `dispatcher` each run with concurrency `1`.

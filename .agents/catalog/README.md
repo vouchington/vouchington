@@ -1,0 +1,52 @@
+# Agent workflow catalog
+
+This focused index is directly linked from its owning `CLAUDE.md`; select the document that matches the work at hand.
+
+The approved shared workflow, testing, and database adapters load the matching Vouchington plugin
+skill first. Install the upstream Claude or Codex plugins using the [required agent plugin
+instructions](../../.claude/README.md#required-agent-plugins); the entries below only add
+Filaments-specific policy and pointers.
+
+- [Code review prompt](../skills/agent-workflow/code-review-prompt.md)
+- [Code review workflow](../skills/agent-workflow/code-review.md)
+- [Impact recipes](../skills/agent-workflow/impact-recipes.md)
+- [`skills/agent-workflow/SKILL.md`](../skills/agent-workflow/SKILL.md)
+- [`skills/backend-vitest-test-authoring/SKILL.md`](../skills/backend-vitest-test-authoring/SKILL.md)
+- [`skills/blackboard/SKILL.md`](../skills/blackboard/SKILL.md)
+- [`skills/chrome-qa/SKILL.md`](../skills/chrome-qa/SKILL.md)
+- [`skills/event-ingress-routing/SKILL.md`](../skills/event-ingress-routing/SKILL.md)
+- [`skills/git-commit-checklist/SKILL.md`](../skills/git-commit-checklist/SKILL.md)
+- [`skills/github-actions-checklist/SKILL.md`](../skills/github-actions-checklist/SKILL.md)
+- [`skills/github-issue/SKILL.md`](../skills/github-issue/SKILL.md)
+- [`skills/local-site-testing/SKILL.md`](../skills/local-site-testing/SKILL.md)
+- [`skills/organize-github-issues/SKILL.md`](../skills/organize-github-issues/SKILL.md)
+- [`skills/package-json-checklist/SKILL.md`](../skills/package-json-checklist/SKILL.md)
+- [Planning impact discovery](../skills/planning/references/impact-discovery.md)
+- [Planning live-browser preflight](../skills/planning/references/live-browser-preflight.md)
+- [Planning template](../skills/planning/references/plan-template.md)
+- [`skills/planning/SKILL.md`](../skills/planning/SKILL.md)
+- [`skills/playwright-authoring/SKILL.md`](../skills/playwright-authoring/SKILL.md)
+- [`skills/postgres-node-performance-tuning/SKILL.md`](../skills/postgres-node-performance-tuning/SKILL.md)
+- [`skills/postgres-partitioning-uuid-v7/SKILL.md`](../skills/postgres-partitioning-uuid-v7/SKILL.md)
+- [`skills/pr-description/SKILL.md`](../skills/pr-description/SKILL.md)
+- [`skills/ready-and-shepherd/SKILL.md`](../skills/ready-and-shepherd/SKILL.md)
+- [Retrospective distilling reference](../skills/retrospective-distill/distilling.md)
+- [`skills/retrospective-distill/SKILL.md`](../skills/retrospective-distill/SKILL.md)
+- [Retrospective fact contracts](../skills/retrospective/fact-contracts.md)
+- [Retrospective PR creation feedback](../skills/retrospective/pr-feedback.md)
+- [Retrospective sandbox audit](../skills/retrospective/sandbox-audit.md)
+- [Retrospective saving reference](../skills/retrospective/saving.md)
+- [`skills/retrospective/SKILL.md`](../skills/retrospective/SKILL.md)
+- [`skills/review-ci-logs/SKILL.md`](../skills/review-ci-logs/SKILL.md)
+- [`skills/review-github-issue-taxonomy/SKILL.md`](../skills/review-github-issue-taxonomy/SKILL.md)
+- [`skills/revisit-followups/SKILL.md`](../skills/revisit-followups/SKILL.md)
+- [`skills/stacked-prs/SKILL.md`](../skills/stacked-prs/SKILL.md)
+- [`skills/staging-qa/SKILL.md`](../skills/staging-qa/SKILL.md)
+- [`skills/static-analysis-checklist/SKILL.md`](../skills/static-analysis-checklist/SKILL.md)
+- [`skills/storybook-authoring/SKILL.md`](../skills/storybook-authoring/SKILL.md)
+- [`skills/triage-prs/SKILL.md`](../skills/triage-prs/SKILL.md)
+- [`skills/triage-security/SKILL.md`](../skills/triage-security/SKILL.md)
+- [`skills/vitest-test-authoring/SKILL.md`](../skills/vitest-test-authoring/SKILL.md)
+- [`skills/voucha-brand/SKILL.md`](../skills/voucha-brand/SKILL.md)
+- [`skills/voucha-queue-authoring/SKILL.md`](../skills/voucha-queue-authoring/SKILL.md)
+- [`skills/web-vitest-test-authoring/SKILL.md`](../skills/web-vitest-test-authoring/SKILL.md)

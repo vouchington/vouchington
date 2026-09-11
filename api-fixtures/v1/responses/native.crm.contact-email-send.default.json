@@ -1,0 +1,25 @@
+{
+  "message": {
+    "__entity_type": "crm_message",
+    "ai_generated_at": "2026-07-01T12:29:30Z",
+    "ai_prompt": "Write a warm intro",
+    "body_html": null,
+    "body_text": "Hi Alice, great to connect.",
+    "bounced_at": null,
+    "conversation_id": "00000000-0000-7000-8000-000000000700",
+    "created_at": "2026-07-01T12:30:00Z",
+    "delivered_at": null,
+    "direction": "outbound",
+    "discarded_at": null,
+    "email_provider": "ses",
+    "from_email": "admin@voucha.ai",
+    "id": "00000000-0000-7000-8000-000000000600",
+    "received_at": null,
+    "sent_at": "2026-07-01T12:30:00Z",
+    "sent_by_id": "00000000-0000-7000-8000-000000000001",
+    "ses_message_id": "ses-msg-0001",
+    "subject": "Warm intro",
+    "to_email": "alice@example.test",
+    "updated_at": "2026-07-01T12:30:00Z"
+  }
+}

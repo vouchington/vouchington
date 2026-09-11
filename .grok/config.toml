@@ -1,0 +1,17 @@
+[mcp_servers.agent-blackboard]
+command = "bash"
+args = ["-c", 'exec "$(git rev-parse --show-toplevel)/dev/blackboard-mcp"']
+env = { AGENT_BLACKBOARD_URL = "${AGENT_BLACKBOARD_URL}", AGENT_BLACKBOARD_TOKEN = "${AGENT_BLACKBOARD_TOKEN}" }
+enabled = true
+
+[permission]
+allow = [
+  "MCPTool(agent-blackboard__entry_append)",
+  "MCPTool(agent-blackboard__entry_get)",
+  "MCPTool(agent-blackboard__session_archive)",
+  "MCPTool(agent-blackboard__session_create)",
+  "MCPTool(agent-blackboard__session_ensure)",
+  "MCPTool(agent-blackboard__session_patch)",
+  "MCPTool(agent-blackboard__session_search)",
+  "MCPTool(agent-blackboard__snapshot_export)",
+]

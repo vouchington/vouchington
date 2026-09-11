@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Nudge the agent to run ./dev/initialize web when the web stack isn't initialized (.initialized ≠ "web").
+# Called by Claude Code and Codex hooks at session start; stdout is injected as context.
+#
+# Emits a hookSpecificOutput JSON nudge when .initialized is missing or not "web",
+# and exits 0 silently when .initialized = "web", on compact restart, or outside a git repo.
+# This gate is deliberately strict: "backend" is enough for DB/Valkey-backed backend tests
+# (see ./dev/initialize backend), but not for the full web stack this hook exists to push
+# agents toward, so a "backend" marker still nudges here.
+
+if [ -t 0 ]; then
+  PAYLOAD="{}"
+else
+  PAYLOAD="$(cat)"
+fi
+
+# Bail out silently if the payload signals a mid-session compaction restart.
+SOURCE="$(printf '%s' "$PAYLOAD" | jq -r '.source // empty' 2>/dev/null || true)"
+if [ "$SOURCE" = "compact" ]; then
+  exit 0
+fi
+
+# Bail out silently when not inside a git repository.
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  exit 0
+fi
+
+# Bail out silently when the web stack is already initialized.
+# .initialized contains the mode ("monorepo", "backend", or "web"); check for "web"
+# specifically because "monorepo" and "backend" init do not start the full stack.
+# NOTE: ./dev/teardown removes .initialized; ./dev/reset-worktree overwrites it with
+# "monorepo" (via ./dev/initialize monorepo). Either way, .initialized != "web" after
+# a reset, so this check gives an accurate post-reset signal.
+WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$WORKTREE_ROOT" ]; then
+  exit 0
+fi
+CONTENT="$(cat "${WORKTREE_ROOT}/.initialized" 2>/dev/null || true)"
+if [ "$CONTENT" = "web" ]; then
+  exit 0
+fi
+
+jq -n --arg m \
+  "Web stack not initialized — \`.initialized\` is not \`\"web\"\`. If this task involves running the web app or doing browser/UI validation, run \`./dev/initialize web\` then \`./dev/tmux\` first — never start dev servers manually (\`wrangler dev\` / \`next dev\` / \`pnpm … run dev\`). For lint/unit work only, \`./dev/initialize monorepo\` is enough. For DB/Valkey-backed backend tests without the full stack, \`./dev/initialize backend\` is enough; ignore this otherwise." \
+  '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":$m}}'

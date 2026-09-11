@@ -1,0 +1,29 @@
+{
+  "broker_capabilities": {
+    "facebook": {
+      "modes": {
+        "native": true,
+        "web": true
+      },
+      "purposes": ["authenticate", "connect"],
+      "version": 1
+    },
+    "github": {
+      "modes": {
+        "native": true,
+        "web": true
+      },
+      "purposes": ["authenticate", "connect"],
+      "version": 1
+    },
+    "x": {
+      "modes": {
+        "native": true,
+        "web": true
+      },
+      "purposes": ["authenticate", "connect"],
+      "version": 1
+    }
+  },
+  "providers": ["facebook", "x", "github"]
+}

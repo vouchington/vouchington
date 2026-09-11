@@ -1,0 +1,44 @@
+{
+  "publisher_types": [
+    {
+      "id": "publisher-type-mainstream-media",
+      "label": "Mainstream",
+      "slug": "mainstream-media"
+    },
+    {
+      "id": "publisher-type-public-media",
+      "label": "Public Media",
+      "slug": "public-media"
+    },
+    {
+      "id": "publisher-type-corporate-media",
+      "label": "Corporate",
+      "slug": "corporate-media"
+    },
+    {
+      "id": "publisher-type-blog",
+      "label": "Blog",
+      "slug": "blog"
+    },
+    {
+      "id": "publisher-type-aggregator",
+      "label": "Aggregator",
+      "slug": "aggregator"
+    },
+    {
+      "id": "publisher-type-forum",
+      "label": "Forum",
+      "slug": "forum"
+    },
+    {
+      "id": "publisher-type-ugc-platform",
+      "label": "UGC",
+      "slug": "ugc-platform"
+    },
+    {
+      "id": "publisher-type-review",
+      "label": "Review",
+      "slug": "review"
+    }
+  ]
+}
