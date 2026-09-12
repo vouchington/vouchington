@@ -47,6 +47,16 @@ describe('client parity matrix metadata guard', () => {
     )
   })
 
+  it('rejects issue definitions retargeted to this repository before the issues migrate', () => {
+    expect(
+      run(['[#1111] reference', '[#1111]: https://github.com/vouchington/vouchington/issues/1111']),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('issue definition [#1111] must target jonathanong/filaments'),
+      ]),
+    )
+  })
+
   it('rejects HTTP issue definitions', () => {
     expect(
       run(['[#1111] reference', '[#1111]: http://github.com/jonathanong/filaments/issues/1111']),
