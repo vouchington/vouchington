@@ -21,7 +21,7 @@ describe('wrangler runtime paths', () => {
       createWranglerRuntimeEnv(
         {
           CUSTOM_SETTING: 'preserved',
-          HOME: '/Users/jong',
+          HOME: '/Users/dev',
           TMPDIR: '/var/folders/system-temp',
           WRANGLER_SEND_ERROR_REPORTS: 'true',
           WRANGLER_SEND_METRICS: 'true',
