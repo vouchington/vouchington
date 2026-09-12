@@ -35,7 +35,7 @@
     "esbuild": "^0.28.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "react-email": "^6.9.3",
+    "react-email": "^6.9.5",
     "vitest": "^5.0.0"
   }
 }
