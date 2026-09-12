@@ -18,7 +18,7 @@
     "auto-harness-client": "0.6.0",
     "coverage-check": "^0.17.0",
     "jsonc-parser": "^3.3.1",
-    "no-mistakes": "^0.61.10",
+    "no-mistakes": "^0.61.11",
     "picomatch": "^4.0.4",
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",
