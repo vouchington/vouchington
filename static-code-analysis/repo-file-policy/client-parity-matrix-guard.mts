@@ -11,6 +11,15 @@ import type { MatrixSourceLocation } from './client-parity-matrix-source.mts'
 
 const CLIENT_PARITY_MATRIX_DOC = 'docs/requirements/CLIENT-PARITY-MATRIX.md'
 
+/**
+ * Where the issues the parity matrix cites actually live. This is deliberately not this
+ * repository: the matrix references issue numbers, and those issues have not been migrated out of
+ * `jonathanong/filaments` yet. Retarget this constant and the link-reference definitions in
+ * `docs/requirements/reference-client-parity-matrix-table-*.md` in the same change — the
+ * definitions resolve to real issues only while the two agree.
+ */
+const PARITY_MATRIX_ISSUE_TRACKER = { owner: 'jonathanong', repository: 'filaments' } as const
+
 const RESIDUAL_GAP_RE =
   /\b(?:remain(?:s|ing)?|still|missing|absent|placeholder|read-only|read only|web-only|web only|not exposed|external fallback|fallback|no pending state|catalog placeholder|unavailable)\b/i
 
@@ -87,11 +96,14 @@ export function checkClientParityMatrixGuard(
         `issue definition [#${definition.issueId}] must use canonical HTTPS`,
       )
     }
-    if (definition.owner !== 'vouchington' || definition.repository !== 'vouchington') {
+    if (
+      definition.owner !== PARITY_MATRIX_ISSUE_TRACKER.owner ||
+      definition.repository !== PARITY_MATRIX_ISSUE_TRACKER.repository
+    ) {
       error(
         errors,
         definition,
-        `issue definition [#${definition.issueId}] must target vouchington/vouchington`,
+        `issue definition [#${definition.issueId}] must target ${PARITY_MATRIX_ISSUE_TRACKER.owner}/${PARITY_MATRIX_ISSUE_TRACKER.repository}`,
       )
     }
     if (definition.issueId !== definition.urlIssueId) {

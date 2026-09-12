@@ -36,20 +36,30 @@ describe('client parity matrix metadata guard', () => {
     const errors = run([
       '[#1111] reference',
       '[#1111]: https://github.com/other/repository/issues/2222',
-      '[#1111]: https://github.com/vouchington/vouchington/issues/1111',
+      '[#1111]: https://github.com/jonathanong/filaments/issues/1111',
     ])
     expect(errors).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('must target vouchington/vouchington'),
+        expect.stringContaining('must target jonathanong/filaments'),
         expect.stringContaining('URL targets issue #2222'),
         expect.stringContaining('duplicate issue definition [#1111]'),
       ]),
     )
   })
 
+  it('rejects issue definitions retargeted to this repository before the issues migrate', () => {
+    expect(
+      run(['[#1111] reference', '[#1111]: https://github.com/vouchington/vouchington/issues/1111']),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('issue definition [#1111] must target jonathanong/filaments'),
+      ]),
+    )
+  })
+
   it('rejects HTTP issue definitions', () => {
     expect(
-      run(['[#1111] reference', '[#1111]: http://github.com/vouchington/vouchington/issues/1111']),
+      run(['[#1111] reference', '[#1111]: http://github.com/jonathanong/filaments/issues/1111']),
     ).toEqual(
       expect.arrayContaining([
         expect.stringContaining('issue definition [#1111] must use canonical HTTPS'),
@@ -58,7 +68,7 @@ describe('client parity matrix metadata guard', () => {
   })
 
   it('rejects unused issue definitions', () => {
-    expect(run(['[#4444]: https://github.com/vouchington/vouchington/issues/4444'])).toEqual(
+    expect(run(['[#4444]: https://github.com/jonathanong/filaments/issues/4444'])).toEqual(
       expect.arrayContaining([expect.stringContaining('issue definition [#4444] is unused')]),
     )
   })
@@ -89,7 +99,7 @@ describe('client parity matrix metadata guard', () => {
       '| # | Capability / Domain | Feature ID | Client(s) | Current state | Phase | Issue |',
       '| --- | --- | --- | --- | --- | --- | --- |',
       '| 1 | Messages | messages | Swift | Closed by native parity | 1 | [#1111] |',
-      '[#1111]: https://github.com/vouchington/vouchington/issues/1111',
+      '[#1111]: https://github.com/jonathanong/filaments/issues/1111',
     ])
     expect(errors).toEqual(
       expect.arrayContaining([
@@ -105,8 +115,8 @@ describe('client parity matrix metadata guard', () => {
       '| --- | --- | --- | --- | --- | --- | --- |',
       '| 1 | Messages | messages | Swift + .NET | | 1 | [#1111] |',
       '| 2 | Search | search | Swift + .NET | Native support remains incomplete | 1 | [#2222] |',
-      '[#1111]: https://github.com/vouchington/vouchington/issues/1111',
-      '[#2222]: https://github.com/vouchington/vouchington/issues/2222',
+      '[#1111]: https://github.com/jonathanong/filaments/issues/1111',
+      '[#2222]: https://github.com/jonathanong/filaments/issues/2222',
     ])
     expect(
       errors.filter(error => error.includes('active gap Current state must begin')),
