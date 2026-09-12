@@ -194,9 +194,9 @@ describe('start-wrangler config', () => {
     })
     const env = createWranglerRuntimeEnv(
       {
-        HOME: '/Users/jong',
+        HOME: '/Users/dev',
         TMPDIR: '/var/folders/system-temp',
-        WRANGLER_LOG_PATH: '/Users/jong/Library/Preferences/.wrangler/logs',
+        WRANGLER_LOG_PATH: '/Users/dev/Library/Preferences/.wrangler/logs',
       },
       runtimePaths,
     )
