@@ -136,9 +136,9 @@ describe('resolveProvenance — Agent line degradation', () => {
 describe('resolveProvenance — device', () => {
   it('joins username and lowercased hostname', async () => {
     const result = await resolveProvenance(
-      baseDeps({ hostname: () => 'MyHost.Local', username: () => 'jong' }),
+      baseDeps({ hostname: () => 'MyHost.Local', username: () => 'dev' }),
     )
-    expect(result.device).toBe('jong@myhost.local')
+    expect(result.device).toBe('dev@myhost.local')
   })
 })
 
@@ -153,7 +153,7 @@ describe('resolveProvenance — worktree', () => {
   it('extracts the path segment after /worktrees/ for a linked worktree', async () => {
     const result = await resolveProvenance(
       baseDeps({
-        gitToplevel: () => Promise.resolve('/Users/jong/repo/.claude/worktrees/my-feature'),
+        gitToplevel: () => Promise.resolve('/Users/dev/repo/.claude/worktrees/my-feature'),
         isMainCheckout: () => Promise.resolve(false),
       }),
     )
@@ -163,7 +163,7 @@ describe('resolveProvenance — worktree', () => {
   it('falls back to the toplevel basename when no /worktrees/ marker is present', async () => {
     const result = await resolveProvenance(
       baseDeps({
-        gitToplevel: () => Promise.resolve('/Users/jong/some-other-checkout'),
+        gitToplevel: () => Promise.resolve('/Users/dev/some-other-checkout'),
         isMainCheckout: () => Promise.resolve(false),
       }),
     )
