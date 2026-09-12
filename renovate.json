@@ -1,11 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":disableDependencyDashboard",
-    "helpers:pinGitHubActionDigests"
-  ],
-  "enabledManagers": ["nvm", "custom.regex", "github-actions"],
+  "extends": ["config:recommended", ":disableDependencyDashboard"],
+  "enabledManagers": ["nvm", "custom.regex"],
   "automerge": true,
   "platformAutomerge": true,
   "labels": ["dependencies", "renovate"],
