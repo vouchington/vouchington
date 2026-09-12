@@ -116,7 +116,7 @@ async function main(): Promise<number> {
       root: process.cwd(),
       sourceDir: process.env.COVERAGE_FALLBACK_DIR ?? './coverage-fallback',
       artifactsDir: process.env.COVERAGE_ARTIFACTS_DIR ?? './coverage-artifacts',
-      repository: process.env.GITHUB_REPOSITORY || 'jonathanong/filaments',
+      repository: process.env.GITHUB_REPOSITORY || 'vouchington/vouchington',
       revision:
         process.env.GITHUB_SHA ??
         execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),

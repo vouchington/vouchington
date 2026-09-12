@@ -13,7 +13,7 @@ import {
   type PrepareCoverageArtifactsOptions,
 } from './prepare-coverage-artifacts.mts'
 
-const repository = 'jonathanong/filaments'
+const repository = 'vouchington/vouchington'
 const revision = 'a'.repeat(40)
 const run = { id: '1234', currentAttempt: 2 } as const
 

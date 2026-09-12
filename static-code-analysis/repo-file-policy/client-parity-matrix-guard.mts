@@ -87,11 +87,11 @@ export function checkClientParityMatrixGuard(
         `issue definition [#${definition.issueId}] must use canonical HTTPS`,
       )
     }
-    if (definition.owner !== 'jonathanong' || definition.repository !== 'filaments') {
+    if (definition.owner !== 'vouchington' || definition.repository !== 'vouchington') {
       error(
         errors,
         definition,
-        `issue definition [#${definition.issueId}] must target jonathanong/filaments`,
+        `issue definition [#${definition.issueId}] must target vouchington/vouchington`,
       )
     }
     if (definition.issueId !== definition.urlIssueId) {
