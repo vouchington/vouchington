@@ -129,14 +129,13 @@ instead. The helper sizes from the smaller of physical RAM and `process.constrai
 matters on Linux runners whose service cgroup is stricter than the machine.
 
 The helper reserves 10 GiB before allocating remaining workers — mostly this build's own compile
-footprint plus the measured OS/runner-agent baseline, not fleet over-commitment. Re-measure before
-lowering it: see [fleet measurements](reference-host-locks-nextjs-build-worker-reserve.md).
+footprint plus the measured OS/runner-agent baseline, not fleet over-commitment. Do not lower it
+without first re-measuring actual memory usage across the self-hosted runner fleet.
 
 Build duration doesn't motivate lowering it either: sampled `build-web-targets` step durations show
-timeout headroom, not worker-count neutrality — see the fleet-measurements doc's build-duration
-table, which also documents that `experimental.cpus` sizes the worker pool for both the
-"Collecting page data" and "Generating static pages" build phases. Do not lower the reserve
-without first re-measuring both tables there.
+timeout headroom, not worker-count neutrality. `experimental.cpus` sizes the worker pool for both
+the "Collecting page data" and "Generating static pages" build phases. Do not lower the reserve
+without first re-measuring both memory and build duration across the fleet.
 
 The web image build invokes Next directly inside [`web/Dockerfile`](../../web/Dockerfile). The build
 container does not include `ci/`, and a lock inside its separate user namespace would not coordinate

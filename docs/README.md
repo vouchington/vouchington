@@ -35,6 +35,7 @@ Cross-link related docs bidirectionally instead of duplicating their content, an
 - [Agent Sandbox](development/agent-sandbox.md) — OS-level sandbox containment model for Claude and Codex, per-command bypass rationale (gh/docker/pnpm/git), and why the credentialed-CI threat is already contained
 - [Agent Harness Parity](development/agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor vs OpenCode capability map; Grok reuses Claude-compat, Cursor uses native `.cursor/` adapters, OpenCode reads `CLAUDE.md` without copied hooks
 - [First-Party Dependencies](development/first-party-dependencies.md) — Package → upstream repo map for packages authored by Jonathan Ong
+- [Documentation Moved to vouchington-docs](development/docs-moved-to-vouchington-docs.md) — Registry of paths deliberately absent from this repo, where each went, and why
 - [Finite Enum Ripple Checklist](development/finite-enum-ripple-checklist.md) — Required scan surfaces for topic type, post type, route slug, and other closed-string-set removals or renames
 - [PostgreSQL Schema Quality Rules](development/postgres-schema-rules.md) — FK indexing, redundant indexes, STORED-column recompute, score typing, and replica-write rules
 - [Checklists Index](checklists/README.md) — Lifecycle and edit checklists for commits, packages, CI, infrastructure, and backend queues
@@ -93,7 +94,6 @@ Cross-link related docs bidirectionally instead of duplicating their content, an
 - [Related](development/reference-dependency-updates-related.md)
 - [Supply-chain policy](development/reference-dependency-updates-supply-chain-policy.md)
 - [Verifying a Renovate change](development/reference-dependency-updates-verifying-a-renovate-change.md)
-- [Next.js build worker reserve: fleet measurements](development/reference-host-locks-nextjs-build-worker-reserve.md)
 - [Accepted automation CI risk](development/reference-merge-authority-accepted-automation-ci-risk.md)
 - [Automation PR labeling](development/reference-merge-authority-automation-pr-labeling.md)
 - [Decision flow](development/reference-merge-authority-decision-flow.md)
@@ -322,7 +322,6 @@ How the system works — architecture, pipelines, and infrastructure.
 - [Decision: Per-Task IP vs. Managed NAT Gateway](overview/infrastructure/reference-networking-decision-per-task-ip-vs-managed-nat-gateway.md)
 - [Production Server External API Inventory](overview/infrastructure/reference-networking-production-server-external-api-inventory.md)
 - [Status Summary](overview/infrastructure/reference-networking-status-summary.md)
-- [Topology](overview/infrastructure/reference-networking-topology.md)
 - [Table A — Buckets × purpose & configuration](overview/infrastructure/reference-s3-buckets-table-a-buckets-purpose-configuration.md)
 - [Table B — Buckets × lifecycle (post cost-review rules)](overview/infrastructure/reference-s3-buckets-table-b-buckets-lifecycle-post-cost-review-rules.md)
 
@@ -392,8 +391,6 @@ Feature specifications, rules, and policies.
 - [Keyboard Shortcuts](requirements/navigation/KEYBOARD-SHORTCUTS.md) — Keyboard shortcuts
 - [Landing Page Analytics](requirements/admin/LANDING-PAGE-ANALYTICS.md) — Landing page performance analytics for landing page owners
 - [Trust System](requirements/trust-safety/trust-system.md) — Phased trust/reputation design, vote weight calibration, contribution gating, bot defense
-- [Vote Integrity](requirements/trust-safety/vote-integrity.md) — Vote manipulation detection, voting ring penalties, admin review queue
-- [Vote Weight](requirements/trust-safety/vote-weight.md) — Vote-weight calculation, overrides, and refresh pipeline
 - [Community Moderation](requirements/moderation/community-moderation.md) — Community post review, moderator prompts, and enforcement flow
 - [Post Moderation](requirements/moderation/POST-MODERATION.md) — Roles, authorization matrix, action semantics, API routes, audit trail, and known gaps
 - [Moderation Policy Matrix](requirements/moderation/MODERATION-POLICY-MATRIX.md) — Canonical policy keys, labels, severity, and recommended actions
@@ -633,7 +630,6 @@ Feature specifications, rules, and policies.
 
 - [Strategy Index](strategy/README.md)
 - [Product Strategy](strategy/product-strategy.md) — Multi-vertical consumer intelligence platform positioning, differentiators, content policy, trust phases, branding, failure modes
-- [Go-to-Market](strategy/go-to-market.md) — Phased launch plan, segment messaging, display ad strategy, bot mitigation
 - [Landing Pages Strategy](strategy/landing-pages-strategy.md) — User landing pages as acquisition flywheel, social sharing, analytics, onboarding integration
 - [Feedback Loops](strategy/feedback-loops.md) — 24 feedback loops across growth, engagement, trust, monetization, and defense; gap analysis and growth roadmap
 - [Messaging & Voice](strategy/MESSAGING.md) — Brand voice, tone principles, and copy conventions

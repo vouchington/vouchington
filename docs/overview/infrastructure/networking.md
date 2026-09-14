@@ -1,12 +1,10 @@
 # Networking
 
 Staging and production cost estimates live in the private `vouchington/vouchington-docs`
-repository; the public IPv4 cost model below covers the per-task charging mechanics only.
+repository.
 
 ## Contents
 
-- <a id="topology"></a>[Topology](reference-networking-topology.md)
-- <a id="public-ipv4-cost-model"></a>[Public IPv4 Cost Model](reference-networking-topology.md)
 - <a id="decision-per-task-ip-vs-managed-nat-gateway"></a>[Decision: Per-Task IP vs. Managed NAT Gateway](reference-networking-decision-per-task-ip-vs-managed-nat-gateway.md)
 - <a id="production-server-external-api-inventory"></a>[Production Server External API Inventory](reference-networking-production-server-external-api-inventory.md)
 - <a id="aws-application-endpoint-inventory"></a>[AWS Application Endpoint Inventory](reference-networking-aws-application-endpoint-inventory.md)

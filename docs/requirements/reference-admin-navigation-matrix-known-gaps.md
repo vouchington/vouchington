@@ -23,7 +23,6 @@ Resolved: gap #1 (`crawler`) shipped as the `/crawlers` index page (`web/app/(cr
 - [Actions](./navigation/ACTIONS.md) — action button placement principles and tooltip rules
 - [CRM](./admin/CRM.md) — CRM contact management
 - [CUSTOMER-SUPPORT](./admin/CUSTOMER-SUPPORT.md) — support thread and contact management
-- [vote-integrity](./trust-safety/vote-integrity.md) — vote integrity flag review
 - [memberships](./users/memberships.md) — membership grant/management
 - [HOSTNAME-BLOCKING](./content/HOSTNAME-BLOCKING.md) — domain blocking and crawler management
 - [RSS-FEED-CATEGORY-ALIASES](./content/RSS-FEED-CATEGORY-ALIASES.md) — unmapped RSS feed category triage

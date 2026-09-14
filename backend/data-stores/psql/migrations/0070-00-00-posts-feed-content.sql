@@ -4,7 +4,7 @@
 -- edited-in-place: added is_baseline column to agents__moderators
 -- edited-in-place: added link post type with url_id column
 -- edited-in-place: folded idx_agent_moderations__flagged_prompt from 0430-00-00-automod-simulation-indexes
--- edited-in-place: migrated agent_models enum from gpt-5-nano/gpt-4o to gpt-5.4-nano (deprecation, see docs/overview/architecture/openai-cost-model.md)
+-- edited-in-place: migrated agent_models enum from gpt-5-nano/gpt-4o to gpt-5.4-nano (deprecation, see docs/development/docs-moved-to-vouchington-docs.md)
 -- edited-in-place: swapped 'english' to 'voucha_english' text search config (unaccent support)
 -- edited-in-place: removed no-op stat_posts__root_parent_deleted extended statistics (measured; kept per-column ANALYZE)
 -- Merged from: 0010-00-00-posts.sql, 0270-00-00-post-data-point-topics.sql

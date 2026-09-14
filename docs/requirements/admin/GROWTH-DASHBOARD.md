@@ -143,4 +143,3 @@ See [backend/api/v1/admin/growth-metrics/README.md](../../../backend/api/v1/admi
 
 - [Backend service](../../../backend/services/growth-metrics/README.md) — SQL and analytics approach
 - [API endpoint](../../../backend/api/v1/admin/growth-metrics/README.md) — Auth, params, response shape
-- [Go-to-market overview](../../strategy/go-to-market.md) — Phase 1–3 GTM success metrics

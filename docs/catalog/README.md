@@ -64,5 +64,4 @@ This focused index is directly linked from its owning `CLAUDE.md`; select the do
 - [`operations/deployed-error-investigation.md`](../operations/deployed-error-investigation.md)
 - [`operations/review-succession-history-audit.md`](../operations/review-succession-history-audit.md)
 - [`operations/staging-turnstile-always-approve.md`](../operations/staging-turnstile-always-approve.md)
-- [`runbooks/csam-child-safety-escalation.md`](../runbooks/csam-child-safety-escalation.md)
 - [`runbooks/product-safety-recall.md`](../runbooks/product-safety-recall.md)

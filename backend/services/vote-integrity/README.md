@@ -60,4 +60,3 @@ the generic all-source service response.
 
 - System: [`../../queues/vote-integrity/`](../../queues/vote-integrity/README.md)
 - API: [`../../api/v1/vote-integrity/`](../../api/v1/vote-integrity/README.md)
-- Docs: [`../../../docs/requirements/trust-safety/vote-integrity.md`](../../../docs/requirements/trust-safety/vote-integrity.md)

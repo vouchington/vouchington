@@ -41,8 +41,6 @@ Suspicious voting patterns are flagged automatically.
 
 **Service:** `backend/services/vote-integrity/`
 
-See [vote-integrity.md](../trust-safety/vote-integrity.md) for full details.
-
 Ambiguous report/vote mutations reconcile through authoritative exact reads. The shared
 `integrity-authoritative-read` and `integrity-ambiguous-reconciliation` scenarios in
 [`lifecycle-scenarios.json`](../../../api-fixtures/v1/lifecycle-scenarios.json) lock the backend,
@@ -179,6 +177,5 @@ backend/services/ai-usage/           — AI usage cost ledger (recordAiUsage, ge
 - [Reporting & Content Moderation](./REPORTING.md) — user report submission flow and rate limits
 - [Community Moderation](./community-moderation.md) — community agent prompts and slot limits
 - [Hostname Blocking](../content/HOSTNAME-BLOCKING.md) — domain blocking effects
-- [Vote Integrity](../trust-safety/vote-integrity.md) — suspicious voting flag management
 - [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — cross-cut entity/action reference
 - [Entity × Lifecycle Matrix](../ENTITY-LIFECYCLE-MATRIX.md) — entity lifecycle flows

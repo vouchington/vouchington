@@ -52,8 +52,7 @@ const nextConfig: NextConfig = {
     // physical or cgroup memory limit to preserve build headroom on constrained CI hosts.
     // On cgroup v2 with both properties set (this fleet's policy sets both),
     // process.constrainedMemory() returns min(memory.max, memory.high), so on
-    // this fleet's capped hosts the value received here is memory.high, not memory.max. See
-    // docs/development/reference-host-locks-nextjs-build-worker-reserve.md.
+    // this fleet's capped hosts the value received here is memory.high, not memory.max.
     cpus: nextBuildPageDataWorkerCount({
       physicalMemoryBytes: os.totalmem(),
       constrainedMemoryBytes: process.constrainedMemory(),

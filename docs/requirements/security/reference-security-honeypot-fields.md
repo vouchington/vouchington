@@ -37,14 +37,6 @@ Hidden form fields that bots fill but humans never see. Implemented as a zero-fr
 
 ### Backend behavior
 
-| Route                                    | Honeypot response                           |
-| ---------------------------------------- | ------------------------------------------- |
-| `POST /api/v1/auth/email-address/tokens` | `200 { email_address: ... }` (fake success) |
-| `POST /api/v1/auth/email-address/login`  | `401` (same as invalid token)               |
-| `POST /api/v1/posts`                     | `201 { post: { id, ... } }` (fake success)  |
-
-Detection is silent — bots never learn they were caught.
-
 See [`backend/services/honeypot/README.md`](../../../backend/services/honeypot/README.md) for service documentation.
 
 ---
@@ -104,7 +96,7 @@ Major AI crawlers (`GPTBot`, `ClaudeBot`, `Google-Extended`, etc.) are listed ex
 
 ### Progressive Rate Limiting (Planned)
 
-Bot tier differentiation with progressive rate limiting at the CF Worker edge is tracked separately (see `radiant-napping-hartmanis.md` plan). It layers on top of the above measures.
+Bot tier differentiation with progressive rate limiting at the CF Worker edge is tracked separately. It layers on top of the above measures.
 
 ---
 

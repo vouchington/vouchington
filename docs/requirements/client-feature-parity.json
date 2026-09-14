@@ -52,7 +52,7 @@
       "title": "Semantic voting",
       "domain": "Content",
       "intents": [],
-      "requirements": ["docs/requirements/trust-safety/vote-integrity.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "A",

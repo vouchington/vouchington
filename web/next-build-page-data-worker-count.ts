@@ -14,9 +14,8 @@
 const GIB = 1024 ** 3
 /**
  * Sized against this build's own compile footprint plus the OS/runner-agent baseline; not
- * against concurrent-build overcommit. Do not lower this without re-measuring
- * docs/development/reference-host-locks-nextjs-build-worker-reserve.md's fleet and build-duration
- * tables.
+ * against concurrent-build overcommit. Do not lower this without re-measuring actual memory
+ * and build-duration behavior across the self-hosted runner fleet.
  */
 const RESERVED_GIB_FOR_COMPILE_AND_OS_BASELINE = 10
 /** Surviving page-data workers were ~300–650 MiB RSS; 1.5 GiB leaves headroom. */
