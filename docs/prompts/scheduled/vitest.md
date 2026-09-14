@@ -49,8 +49,9 @@ Review Vitest tests. Pick exactly one concrete, bounded improvement that is safe
   `web-projects.mts`, and `tooling-projects.mts` never register it, so a missing sentinel line
   there is not evidence of anything. Check per-shard RSS/heap and the `[vitest-teardown]` /
   `[vitest-teardown-overrun]` output before assuming a leak regardless. The
-  `pool: 'forks'` sub-projects (backend, data, web, tooling — the root project uses
-  `pool: 'threads'`) have no per-project `poolOptions` / `maxForks` / `singleFork`; concurrency is
+  Per-project `pool` / `isolate` values are recorded in
+  [Pools, Isolation, and Vitest 5](../../development/reference-tests-vitest-projects.md#pools-isolation-and-vitest-5).
+  Forks-pool projects have no per-project `poolOptions` / `maxForks` / `singleFork`; concurrency is
   bounded only by the repo's `VITEST_MAX_WORKERS` env var via `parseVitestMaxWorkers()`, and
   `dev/vitest-config.test.mts` bans a hardcoded `maxWorkers` literal.
 - Record any deferred follow-up in the owning reference doc or a `CLAUDE.md`, not only in a PR body

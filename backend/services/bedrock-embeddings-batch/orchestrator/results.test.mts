@@ -28,7 +28,7 @@ describe('downloadBatchResults', () => {
   })
 
   it('rejects a Bedrock output URI that is not the dedicated bedrock-batch bucket', async () => {
-    const unsupportedUri = 's3://example-artifacts/bedrock-embeddings-output/'
+    const unsupportedUri = 's3://example-bucket/bedrock-embeddings-output/'
     readBatch.mockResolvedValue({
       rows: [{ data: { outputS3Uri: unsupportedUri } }],
     })

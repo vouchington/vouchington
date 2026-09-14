@@ -1,14 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
-  enqueueBulkProcessStripeWebhooks,
+  enqueueBulkProcessStripeEvents,
   enqueueBulkProcessMembershipVerifications,
   enqueueBulkSendRenewalPriceIncreaseEmail,
   enqueueDeliverMembershipEntitlementEffects,
   enqueueExpireElapsedMemberships,
   enqueueProcessMembershipVerification,
   enqueueRecoverMembershipVerifications,
-  enqueueProcessStripeWebhook,
+  enqueueProcessStripeEvent,
   enqueueReconcileStripeMembershipCatalog,
 } from './enqueues.mts'
 import {
@@ -81,8 +81,8 @@ describe('membership enqueues', () => {
     const stripeEventRecordId = randomUUID()
     const processingAttemptId = randomUUID()
     const stripeSubscriptionId = `sub_${randomUUID()}`
-    const jobId = `stripe-webhook__${stripeEventRecordId}__${processingAttemptId}`
-    await enqueueProcessStripeWebhook({
+    const jobId = `stripe-event__${stripeEventRecordId}__${processingAttemptId}`
+    await enqueueProcessStripeEvent({
       stripeEventRecordId,
       processingAttemptId,
       stripeSubscriptionId,
@@ -104,8 +104,8 @@ describe('membership enqueues', () => {
   it('does not serialize Stripe events without a normalized subscription id', async () => {
     const stripeEventRecordId = randomUUID()
     const processingAttemptId = randomUUID()
-    const jobId = `stripe-webhook__${stripeEventRecordId}__${processingAttemptId}`
-    await enqueueProcessStripeWebhook({
+    const jobId = `stripe-event__${stripeEventRecordId}__${processingAttemptId}`
+    await enqueueProcessStripeEvent({
       stripeEventRecordId,
       processingAttemptId,
       stripeSubscriptionId: null,
@@ -132,8 +132,8 @@ describe('membership enqueues', () => {
       stripeSubscriptionId: `sub_${randomUUID()}`,
       livemode: false,
     }
-    const jobId = `stripe-webhook__${data.stripeEventRecordId}__${data.processingAttemptId}`
-    const [job] = await enqueueBulkProcessStripeWebhooks([data])
+    const jobId = `stripe-event__${data.stripeEventRecordId}__${data.processingAttemptId}`
+    const [job] = await enqueueBulkProcessStripeEvents([data])
     expect(job).toMatchObject({
       id: jobId,
       data,

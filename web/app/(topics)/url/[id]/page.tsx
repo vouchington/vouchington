@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { getTranslations } from '@/lib/i18n/get-translations'
 import { getUrl, getUrlCrawls } from '@/lib/api/server/urls'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { UrlCrawlsPage } from '@/components/urls/url-crawls-page'
@@ -20,6 +21,7 @@ export const metadata = createNoIndexMetadata()
 export default async function UrlDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const currentUser = await getCurrentUser()
   if (!currentUser) redirect('/login')
+  const t = await getTranslations()
 
   const { id } = await params
   const data = await getUrl(id)
@@ -45,6 +47,7 @@ export default async function UrlDetailPage({ params }: { params: Promise<{ id: 
         <>
           <AboutVouchaAside />
           <UrlAdminAside
+            t={t}
             url={url}
             canTriggerCrawl={can_trigger_crawl}
             urlType={url_type}

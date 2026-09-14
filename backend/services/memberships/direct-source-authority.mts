@@ -127,7 +127,7 @@ export async function getDirectMembershipSourceAdmission(
 }
 
 /**
- * The user row lock makes this second admission check authoritative after checkout/webhook
+ * The user row lock makes this second admission check authoritative after checkout/event
  * preflight, so concurrent provider subscriptions cannot both replace the same projection.
  */
 export async function assertDirectMembershipSourceAdmission(

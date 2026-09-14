@@ -165,9 +165,7 @@ export function ModmailThreadClient({
               size='sm'
               variant='outline'
               onClick={() => {
-                handleResolve().catch(() => {
-                  // error handled in handleResolve
-                })
+                void handleResolve()
               }}
               data-pw='modmail-resolve-button'
             >
@@ -186,7 +184,7 @@ export function ModmailThreadClient({
             loading={loadingMore}
             data-pw='modmail-thread-load-more'
             onClick={() => {
-              handleLoadMore().catch(() => {})
+              void handleLoadMore()
             }}
           >
             {t('extracted.threadid.modmailThreadClient.loadOlderMessages_f17671d8')}
@@ -200,7 +198,7 @@ export function ModmailThreadClient({
         loadingMore={loadingMore}
         clearError={() => setLoadMoreError(null)}
         loadMore={() => {
-          handleLoadMore().catch(() => {})
+          void handleLoadMore()
         }}
       />
 
@@ -211,9 +209,7 @@ export function ModmailThreadClient({
           className='flex flex-col gap-2'
           onSubmit={e => {
             e.preventDefault()
-            handleSend().catch(() => {
-              // error handled in handleSend
-            })
+            void handleSend()
           }}
         >
           <Textarea

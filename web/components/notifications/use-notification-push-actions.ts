@@ -164,7 +164,7 @@ export function useNotificationPushActions(
         await getPushManager(registration)
           .getSubscription()
           .then(subscription => subscription?.unsubscribe())
-          .catch(() => undefined)
+          .catch(console.error)
         setCurrentBinding(null)
         setDeletedIds(prev => new Set(prev).add(disabledSubscriptionId))
       })

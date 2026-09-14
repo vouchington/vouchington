@@ -5,21 +5,15 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { workerQueuePolicyCommandOutput } from './worker-queue-policy-cli.mts'
-import {
-  devWorkerCpuQueues,
-  devWorkerIoQueues,
-  formatQueueIncludeList,
-  formatQueueSelection,
-  workerQueuePolicy,
-} from './worker-queue-policy.mts'
+import { formatQueueIncludeList, workerQueuePolicy } from './worker-queue-policy.mts'
 
 describe('worker queue inventory policy CLI', () => {
-  it('prints dev queue selections', () => {
-    expect(workerQueuePolicyCommandOutput('dev-cpu-queues')).toBe(
-      formatQueueIncludeList(devWorkerCpuQueues()),
-    )
-    expect(workerQueuePolicyCommandOutput('dev-io-queues')).toBe(
-      formatQueueSelection(devWorkerIoQueues(), workerQueuePolicy.ioCapableQueues),
+  it('prints every policy-managed queue for the single local worker', () => {
+    expect(workerQueuePolicyCommandOutput('dev-all-queues')).toBe(
+      formatQueueIncludeList([
+        ...workerQueuePolicy.cpuOnlyQueues,
+        ...workerQueuePolicy.ioCapableQueues,
+      ]),
     )
   })
 
@@ -43,13 +37,18 @@ describe('worker queue inventory policy CLI', () => {
         [
           '--experimental-strip-types',
           join(isolatedPackage, 'worker-queue-policy-cli.mts'),
-          'dev-cpu-queues',
+          'dev-all-queues',
         ],
         { encoding: 'utf8' },
       )
 
       expect(result.status).toBe(0)
-      expect(result.stdout.trim()).toBe(formatQueueIncludeList(devWorkerCpuQueues()))
+      expect(result.stdout.trim()).toBe(
+        formatQueueIncludeList([
+          ...workerQueuePolicy.cpuOnlyQueues,
+          ...workerQueuePolicy.ioCapableQueues,
+        ]),
+      )
     } finally {
       rmSync(isolatedRoot, { recursive: true, force: true })
     }

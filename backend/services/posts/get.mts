@@ -117,19 +117,33 @@ export const getDeletedPostByAny = async (
   }
 }
 
-export async function getPostModerationTimestamps(
+export async function getPostModerationCompletion(
   postId: string,
   options?: QueryOptions,
 ): Promise<{
-  openai_omni_moderation_created_at: Date | null
-  spam_detection_created_at: Date | null
+  openai_omni_moderation_completed: boolean
+  spam_detection_completed: boolean
 } | null> {
   const { rows } = await read(
-    sql`/* getPostModerationTimestamps */
-      SELECT openai_omni_moderation_created_at,
-        spam_detection_created_at
-      FROM posts
-      WHERE id = ${postId}
+    sql`/* getPostModerationCompletion */
+      SELECT
+        EXISTS (
+          SELECT 1 FROM post_moderation_dispositions disposition
+          WHERE disposition.version_id = version.id
+            AND disposition.source = 'openai_omni'
+            AND disposition.disposition <> 'incomplete'
+        ) AS openai_omni_moderation_completed,
+        EXISTS (
+          SELECT 1 FROM post_moderation_dispositions disposition
+          WHERE disposition.version_id = version.id
+            AND disposition.source = 'spam_detection'
+            AND disposition.disposition <> 'incomplete'
+        ) AS spam_detection_completed
+      FROM posts post
+      JOIN post_moderation_versions version
+        ON version.post_id = post.id
+       AND version.content_sha256 = post.llm_moderation_content_sha256
+      WHERE post.id = ${postId}
       LIMIT 1
     `,
     options,

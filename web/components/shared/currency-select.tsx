@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { CURRENCIES, type Currency, type CurrencyCode } from '@ts-shared/money'
 import { fetchCurrencies } from '@/lib/api/client/currencies'
 import { Label } from '@/components/ui/label'
@@ -33,7 +34,7 @@ export function CurrencySelect({
       .then(response => {
         if (active && response.results.length > 0) setCurrencies(response.results)
       })
-      .catch(() => undefined)
+      .catch(Sentry.captureException)
     return () => {
       active = false
     }

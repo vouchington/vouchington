@@ -3,7 +3,7 @@ import { createTestUser, getTestUserSessionById } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
 import { countTestWebUserAgents } from '../../test-helpers/entities/user-sessions.mts'
 import { upsertAuthenticatedSession } from './user-sessions.mts'
-import { runTestActionsAcrossUserAgentConflict } from './test-helpers/concurrent-user-agent.mts'
+import { runTestActionsAcrossUserAgentConflict } from '../../test-helpers/services/jwt-session/concurrent-user-agent.mts'
 
 describe('authenticated session persistence', () => {
   it('persists both sessions across a concurrent first-use user-agent conflict', async () => {

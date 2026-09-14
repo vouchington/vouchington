@@ -16,7 +16,6 @@ import {
 import { checkRouteAdminSurfaceGuard } from './route-admin-surface-guard.mts'
 import { checkFiniteEnumRippleGuard } from './finite-enum-ripple-guard.mts'
 import { checkSchemaDocDriftGuard } from './schema-doc-drift-guard.mts'
-import { checkCostTableConsistencyGuard } from './cost-table-consistency-guard.mts'
 import { checkClientParityMatrixGuard } from './client-parity-matrix-guard.mts'
 import { checkRedirectDestinations } from './redirect-destination-guard.mts'
 import { checkGhApiShellQuoting } from './gh-api-shell-quoting-guard.mts'
@@ -29,6 +28,7 @@ import { checkLifecycleScenarioContract } from './lifecycle-scenario-contract.mt
 import { checkLocalLlmEndpointPolicyContract } from './local-llm-endpoint-policy-contract.mts'
 import { checkPostPublicationReaderInventory } from './post-publication-reader-inventory.mts'
 import { checkPostPublicationWriterInventory } from './post-publication-writer-inventory.mts'
+import { checkPublicSourceLiterals } from './public-source-literal-guard.mts'
 
 type RepoFilePolicyOptions = {
   schemaSnapshot?: unknown
@@ -89,7 +89,6 @@ export async function checkRepoFilePolicy(
   checkRouteAdminSurfaceGuard(ctx.repoRoot, trackedFileSet, errors)
   checkFiniteEnumRippleGuard(ctx, errors, trackedFiles)
   checkSchemaDocDriftGuard(ctx.repoRoot, trackedFiles, schema, errors, ctx.readTrackedFile)
-  checkCostTableConsistencyGuard(ctx.repoRoot, ctx.trackedFiles, errors)
   checkClientParityMatrixGuard(ctx.repoRoot, trackedFiles, errors)
   checkLifecycleScenarioContract(ctx.repoRoot, trackedFiles, errors)
   checkLocalLlmEndpointPolicyContract(ctx.repoRoot, trackedFiles, errors)
@@ -103,5 +102,6 @@ export async function checkRepoFilePolicy(
   errors.push(...ghaWorkspacePolicy.errors)
   checkTransientRetryPromptGuard(ctx.repoRoot, trackedFiles, errors)
   checkLivingDocsPinGuard(ctx.repoRoot, trackedFiles, errors)
+  checkPublicSourceLiterals(ctx.repoRoot, trackedFiles, errors)
   return { errors }
 }

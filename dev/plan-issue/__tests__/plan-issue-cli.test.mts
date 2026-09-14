@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 import { executePlanIssue, parsePlanIssueArgs, withPrivateBodySnapshot } from '../../plan-issue.mts'
 import { buildPlanIssueCreateArgs } from '../validate.mts'
-import { VALID_PLAN_BODY } from '../test-helpers/valid-plan-body.mts'
+import { VALID_PLAN_BODY } from '../../test-helpers/plan-issue/valid-plan-body.mts'
 
 const VALID_BODY = VALID_PLAN_BODY
 const acceptMermaid = () => Promise.resolve([])

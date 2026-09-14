@@ -126,7 +126,9 @@ describe('initialize dependency install', () => {
 
   it('runs native addon readiness after dependency installation and before mise or success state', async () => {
     const source = await readFile(new URL('../initialize', import.meta.url), 'utf8')
-    const install = source.indexOf('retry_command 3 5 "pnpm install${CI:+ --frozen-lockfile}"')
+    const install = source.indexOf(
+      'retry_command 3 5 "pnpm install${CI:+ --frozen-lockfile} --config.confirmModulesPurge=false"',
+    )
     const readiness = source.indexOf('native-addon-readiness.mts')
     const mise = source.indexOf('Installing pinned CI tools via mise')
     const marker = source.indexOf('persist_initialization_capability "$MODE"')
@@ -136,6 +138,24 @@ describe('initialize dependency install', () => {
     expect(readiness).toBeLessThan(mise)
     expect(readiness).toBeLessThan(marker)
     expect(readiness).toBeLessThan(success)
+  })
+
+  it('installs dependencies before loading the published worktree helper or allocating resources', async () => {
+    const source = await readFile(new URL('../initialize', import.meta.url), 'utf8')
+    const main = source.indexOf('main() {')
+    const install = source.indexOf(
+      'retry_command 3 5 "pnpm install${CI:+ --frozen-lockfile} --config.confirmModulesPurge=false"',
+      main,
+    )
+    const loadHelper = source.indexOf('source "$REPO_ROOT/dev/lib/git-worktrees.sh"', main)
+    const registerResources = source.indexOf(
+      'register_live_worktree_resource_paths "$REPO_ROOT"',
+      main,
+    )
+
+    expect(install).toBeGreaterThan(main)
+    expect(loadHelper).toBeGreaterThan(install)
+    expect(registerResources).toBeGreaterThan(loadHelper)
   })
 
   it('runs the bootstrap storage check before Node activation and the full preflight after it', async () => {

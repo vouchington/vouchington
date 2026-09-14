@@ -13,18 +13,13 @@ const UI_MESSAGES_KEY: keyof Window = '__UI_MESSAGES__'
 // `loadMessages`. Rejecting it here turns that failure into a loud, synchronous test error instead
 // of a race that happens to resolve before any assertion runs — the same trap a "looks fine
 // locally" fix could hide, since a real network-fetched locale chunk is never this fast.
-vi.mock(import('@ts-shared/ui-messages'), async () => {
-  const actual =
-    await vi.importActual<typeof import('@ts-shared/ui-messages')>('@ts-shared/ui-messages')
-  return {
-    ...actual,
-    loadMessages: vi.fn<VitestLooseMock>(() => {
-      throw new Error(
-        'loadMessages must not be called: the bootstrap-seeded locale should hit the synchronous cache path',
-      )
-    }),
-  }
-})
+vi.mock(import('@/lib/i18n/load-client-messages'), () => ({
+  loadClientMessages: vi.fn<VitestLooseMock>(() => {
+    throw new Error(
+      'loadClientMessages must not be called: the bootstrap-seeded locale should hit the synchronous cache path',
+    )
+  }),
+}))
 
 /** No ancestor Suspense boundary anywhere in this tree — the exact case team-lead asked to see
  * proven end to end through the real production seam (`window.__UI_MESSAGES__` →
@@ -60,8 +55,9 @@ describe('seedFromWindowBootstrap — production hydration-warming path', () => 
     // tests use) because, unlike those, this test actually exercises the function leaf, which
     // calls Intl.PluralRules(locale) internally — an invalid tag throws there, not in this test.
     const locale = 'en'
-    const { loadMessages: realLoadMessages } =
-      await vi.importActual<typeof import('@ts-shared/ui-messages')>('@ts-shared/ui-messages')
+    const { loadMessages: realLoadMessages } = await vi.importActual<
+      typeof import('@ts-shared/ui-messages/locale-loader')
+    >('@ts-shared/ui-messages/locale-loader')
     const realCatalog: EnCatalog = await realLoadMessages('en')
 
     // Mirrors exactly what layout.tsx ships: only the string leaves, deep-cloned so this test

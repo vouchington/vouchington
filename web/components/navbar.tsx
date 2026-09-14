@@ -25,10 +25,11 @@ import { IntentSwitcher } from './navbar/intent-switcher'
 import { useNavbarKeyboardShortcuts } from './navbar/use-keyboard-shortcuts'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ProfileMenuUser } from '@/lib/auth/client-auth-user'
+import type { KeyboardShortcutsDialog as KeyboardShortcutsDialogComponent } from '@/components/keyboard-shortcuts-dialog'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const KeyboardShortcutsDialog = dynamic(() =>
-  import('@/components/keyboard-shortcuts-dialog').then(m => m.KeyboardShortcutsDialog),
+const KeyboardShortcutsDialog = dynamic<Parameters<typeof KeyboardShortcutsDialogComponent>[0]>(
+  () => import('@/components/keyboard-shortcuts-dialog').then(m => m.KeyboardShortcutsDialog),
 )
 
 export function Navbar({ profileMenuUser }: { profileMenuUser: ProfileMenuUser | null }) {

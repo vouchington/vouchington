@@ -30,6 +30,14 @@ async function makePathBin(commands: string[]) {
   testDirs.push(bin)
 
   for (const command of commands) {
+    if (command === 'df') {
+      await writeFile(
+        join(bin, 'df'),
+        '#!/bin/bash\nprintf "Filesystem 1024-blocks Used Available Capacity Mounted on\\nfixture 20000000 0 10000000 0%% /\\n"\n',
+      )
+      await chmod(join(bin, 'df'), 0o755)
+      continue
+    }
     const commandPath = await execFileAsync('bash', ['-lc', `command -v ${command}`])
     await symlink(commandPath.stdout.trim(), join(bin, command))
   }
@@ -72,6 +80,15 @@ async function runFixtureInitializeWeb({
   // Fixtures live under os.tmpdir(); pin process temp away from that prefix so
   // initialize still classifies this checkout as main (the suite subject).
   const isolatedTmp = await makeIsolatedTmp()
+  await writeFile(
+    join(path, 'pnpm'),
+    `#!/bin/bash
+/bin/mkdir -p "$PWD/node_modules/vouchington-tooling/scripts/worktree"
+/bin/cp "$WORKTREE_SCRIPT_SOURCE" "$PWD/node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh"
+printf 'ran\\n' > "$PWD/pnpm-ran"
+`,
+  )
+  await chmod(join(path, 'pnpm'), 0o755)
 
   try {
     const result = await execFileAsync('/bin/bash', [join(root, 'dev', 'initialize'), 'web'], {
@@ -81,6 +98,10 @@ async function runFixtureInitializeWeb({
         HOME: root,
         PATH: path,
         SKIP_NVM_INSTALL: '1',
+        WORKTREE_SCRIPT_SOURCE: join(
+          devRoot,
+          '../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
+        ),
         TEMP: isolatedTmp,
         TMP: isolatedTmp,
         TMPDIR: isolatedTmp,
@@ -189,8 +210,7 @@ if [ "$*" != info ]; then printf 'mutated\n' > '${dockerMutationMarker}'; fi
 exit 0
 `,
     )
-    await writeFile(join(bin, 'pnpm'), `#!/bin/bash\nprintf 'ran\n' > '${pnpmMarker}'\nexit 1\n`)
-    await Promise.all(['docker', 'pnpm'].map(file => chmod(join(bin, file), 0o755)))
+    await chmod(join(bin, 'docker'), 0o755)
 
     const result = await runFixtureInitializeWeb({ path: bin, root })
 
@@ -199,7 +219,7 @@ exit 0
     expect(result.stdout).not.toContain('Clearing stale dev caches')
     await expectCacheSentinelsToExist(sentinels, true)
     expect(await fileExists(dockerMutationMarker)).toBe(false)
-    expect(await fileExists(pnpmMarker)).toBe(false)
+    expect(await fileExists(pnpmMarker)).toBe(true)
     expect(await fileExists(join(root, '.env'))).toBe(false)
     expect(await fileExists(join(root, '.valkey-port'))).toBe(false)
   })

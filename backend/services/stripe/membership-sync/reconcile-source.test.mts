@@ -13,7 +13,7 @@ import {
   getMembershipByUserId,
   getMembershipHistory,
   grantMembership,
-  updateMembershipFromWebhook,
+  updateMembershipFromEvent,
 } from '@services/memberships'
 import { getStripeMembershipSourceIdentity } from '@services/memberships/create-types'
 import { reconcileStripeMembershipSource } from './reconcile-source.mts'
@@ -40,7 +40,7 @@ describe('reconcileStripeMembershipSource', () => {
     })
     const terminalMembership = await getMembershipByStripeSubscriptionId(sourceIdentity)
     if (!terminalMembership) throw new Error('Expected terminal Stripe membership')
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: terminal.id, status: 'cancelled' },
       async () => {},
     )

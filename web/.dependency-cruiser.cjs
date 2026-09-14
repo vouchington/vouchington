@@ -2,7 +2,7 @@
  * dependency-cruiser configuration for web/
  *
  * Enforces the path-based part of the web-api-no-direct-request-clients guardrail.
- * web/lib/api/ is the permanent owner boundary for the raw request singletons;
+ * web/lib/api/ and its first-layer API test helpers are the owner boundaries for the raw request singletons;
  * all other web files must import route-specific helpers from @/lib/api/client
  * or @/lib/api/server instead of @/lib/api/client/instance or
  * @/lib/api/server/instance.
@@ -30,16 +30,17 @@ module.exports = {
     {
       name: 'web-api-no-direct-request-clients',
       comment:
-        'web/lib/api/ owns the raw request singletons. Files outside that boundary ' +
+        'web/lib/api/ and web/test-helpers/lib/api/ own the raw request singletons. ' +
+        'Files outside those boundaries ' +
         'may not import ' +
         '@/lib/api/client/instance or @/lib/api/server/instance. ' +
         'Import route-specific helpers from @/lib/api/client or @/lib/api/server instead.',
       severity: 'error',
       from: {
         path: '^web/',
-        // Intentional owner boundary, not a temporary exemption. Endpoint helper modules
-        // in web/lib/api/ are the only modules allowed to compose the raw singleton clients.
-        pathNot: ['^web/lib/api/'],
+        // Intentional owner boundaries, not temporary exemptions. Endpoint modules and their
+        // first-layer API test helpers are the only modules allowed to compose raw clients.
+        pathNot: ['^web/lib/api/', '^web/test-helpers/lib/api/'],
       },
       to: {
         // @/lib/api/client/instance → web/lib/api/client/instance.*

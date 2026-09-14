@@ -42,7 +42,7 @@ export const coverageConfigForScope = (scope: string | undefined): CoverageConfi
                     'web/storybook/component-story-ratchet-renderer.tsx',
                     'web/storybook/entities/entity-fixtures.ts',
                     'web/storybook/entities/topics-story-recommendations.ts',
-                    'web/storybook/test-helpers/component-story-coverage/message.ts',
+                    'web/test-helpers/storybook/component-story-coverage/message.ts',
                   ]
                 : storybookBrowser
                   ? ['web/components/**/*.{ts,tsx}', 'web/hooks/**/*.{ts,tsx}']
@@ -57,6 +57,7 @@ export const coverageConfigForScope = (scope: string | undefined): CoverageConfi
       'integration-tests/**',
       'playwright.config.mts',
       'backend/dev.mts',
+      'backend/services/localization/compile-cli.mts',
       'web/instrumentation.ts',
       'web/next.config.ts',
       'web/*.config.ts',

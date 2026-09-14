@@ -8,6 +8,8 @@ This focused index is directly linked from its owning `CLAUDE.md`; select the do
 - [`overview/architecture/reference-typescript-standards-resource-management.md`](../overview/architecture/reference-typescript-standards-resource-management.md)
 - [`overview/architecture/native-clients.md`](../overview/architecture/native-clients.md)
 - [`overview/infrastructure/README.md`](../overview/infrastructure/README.md)
+- [`overview/infrastructure/reference-environment-variables-payments-google-play.md`](../overview/infrastructure/reference-environment-variables-payments-google-play.md)
+- [`overview/infrastructure/reference-environment-variables-payments-microsoft-store.md`](../overview/infrastructure/reference-environment-variables-payments-microsoft-store.md)
 - [`prompts/automation/fix-dependabot.md`](../prompts/automation/fix-dependabot.md)
 - [`prompts/automation/fix-issue.md`](../prompts/automation/fix-issue.md)
 - [`prompts/automation/plan.md`](../prompts/automation/plan.md)

@@ -40,11 +40,19 @@ describe('coverage suite catalog', () => {
       index: 2,
       total: 2,
     })
-    expect(coverageProducerPartition('web-integration-shard-1')).toEqual({
+    expect(coverageProducerPartition('web-integration-shard-1', { CI_SHARD: '1/1' })).toEqual({
       group: 'web-integration',
       index: 1,
       total: 1,
     })
+  })
+
+  it('rejects missing, malformed, and incomplete sharded provenance', () => {
+    expect(() => coverageProducerPartition('web-shard-1')).toThrow(/CI_SHARD/)
+    expect(() => coverageProducerPartition('web-shard-2', { CI_SHARD: '1/2' })).toThrow(/CI_SHARD/)
+    expect(() => coverageProducerPartition('web-shard-2', { CI_SHARD: '2/1' })).toThrow(
+      /include shard 2/,
+    )
   })
 
   it('gives every upstream provenance descriptor at least one project', () => {
@@ -75,7 +83,7 @@ describe('coverage suite catalog', () => {
     )
   })
 
-  it('describes promoted shards even when their registry default is lower', () => {
+  it('describes dynamically sized shards without catalog enumeration', () => {
     expect(coverageSuiteDescriptor('backend-shard-5').suite).toBe('backend-shard-5')
     expect(coverageSuiteDescriptor('backend-shard-5').projects).toEqual(
       coverageSuiteDescriptor('backend-shard-1').projects,

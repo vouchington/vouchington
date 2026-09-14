@@ -1,6 +1,9 @@
 import { globSync } from 'node:fs'
 
+import { GITHUB_MATRIX_MAX_JOBS } from '../shard-limits.mts'
 import { isRunnablePlaywrightSpec } from '../test-plan.mts'
+
+export { GITHUB_MATRIX_MAX_JOBS } from '../shard-limits.mts'
 
 export const PLAYWRIGHT_ESTIMATED_SECONDS_PER_SPEC = 2
 // Allocation heuristic, not a measured duration: this is the per-shard test-execution budget the
@@ -10,8 +13,6 @@ export const PLAYWRIGHT_ESTIMATED_SECONDS_PER_SPEC = 2
 // 720s of estimated spec time, spread over the resulting shard count, plus a ~30s fixed per-shard
 // build/startup buffer, stays comfortably under the 600s hard ceiling.
 export const PLAYWRIGHT_EXECUTION_BUDGET_SECONDS = 240
-export const GITHUB_MATRIX_MAX_JOBS = 256
-
 function validatedShardTotalOverride(override?: string): number | undefined {
   if (override === undefined || override === '') return undefined
   if (!/^[1-9]\d*$/.test(override)) {

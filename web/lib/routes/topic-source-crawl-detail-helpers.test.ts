@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
-import esMessages from '@ts-shared/ui-messages/messages/es'
 import { computeCrawlOutcome } from '@/components/topics/manage-source/crawl-outcome'
 import { getCrawlOutcomeMessage } from './topic-source-crawl-detail-helpers'
+import { enMessages, esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 function translateOutcome(responseCode: number, itemCount?: number): string {
   const outcome = computeCrawlOutcome(

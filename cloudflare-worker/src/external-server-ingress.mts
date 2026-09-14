@@ -1,4 +1,5 @@
 const APPLE_APP_STORE_NOTIFICATION_PATH = '/api/v1/memberships/apple-app-store/notifications'
+const GOOGLE_PLAY_NOTIFICATION_PATH = '/api/v1/memberships/google-play/notifications'
 const FEDERATION_GET_INGRESS_PATHS = new Set([
   '/.well-known/webfinger',
   '/.well-known/nodeinfo',
@@ -22,7 +23,11 @@ const normalizeIngressPathname = (pathname: string): string => {
 export const isExternalServerToServerIngress = (method: string, pathname: string): boolean => {
   const normalizedPathname = normalizeIngressPathname(pathname)
   const normalizedMethod = method.toUpperCase()
-  if (normalizedMethod === 'POST' && normalizedPathname === APPLE_APP_STORE_NOTIFICATION_PATH) {
+  if (
+    normalizedMethod === 'POST' &&
+    (normalizedPathname === APPLE_APP_STORE_NOTIFICATION_PATH ||
+      normalizedPathname === GOOGLE_PLAY_NOTIFICATION_PATH)
+  ) {
     return true
   }
 

@@ -2,7 +2,7 @@ import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { findPreToolUseBlock } from '../codex-hooks/policy.mts'
-import { VALID_PLAN_BODY as validPlanBody } from '../plan-issue/test-helpers/valid-plan-body.mts'
+import { VALID_PLAN_BODY as validPlanBody } from '../test-helpers/plan-issue/valid-plan-body.mts'
 import { withTestTempDir } from './test-temp-root.mts'
 
 const VALID_PLAN_BODY = validPlanBody.replaceAll('\n', '\\n')

@@ -50,7 +50,7 @@ export default async function DomainsComparePage({ searchParams }: PageProps) {
     <PageWithAside showFooter={false}>
       <div className='space-y-4'>
         {breadcrumbItems.length > 0 && (
-          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
         )}
         <Breadcrumbs items={breadcrumbItems} />
         <div>

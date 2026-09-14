@@ -77,12 +77,6 @@ CREATE TABLE IF NOT EXISTS posts (
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
 
-  -- spam detection
-  spam_detection_flagged BOOLEAN,
-  spam_detection_created_at TIMESTAMPTZ,
-  spam_detection_score FLOAT,
-  spam_detection_results JSONB,
-
   -- archive
   archived_at TIMESTAMPTZ,
   archived_by_id UUID REFERENCES users ON DELETE SET NULL,
@@ -121,15 +115,6 @@ CREATE TABLE IF NOT EXISTS posts (
   CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
   ban_evasion_post_embedding_input_sha256 BYTEA,
   CHECK (ban_evasion_post_embedding_input_sha256 IS NULL OR OCTET_LENGTH(ban_evasion_post_embedding_input_sha256) = 32),
-
-  -- openai omni moderation content
-  openai_omni_moderation_content_sha256 BYTEA NOT NULL,
-  CHECK (OCTET_LENGTH(openai_omni_moderation_content_sha256) = 32),
-  openai_omni_moderation_input_sha256 BYTEA,
-  CHECK (openai_omni_moderation_input_sha256 IS NULL OR OCTET_LENGTH(openai_omni_moderation_input_sha256) = 32),
-  openai_omni_moderation_results JSONB,
-  openai_omni_moderation_flagged BOOLEAN,
-  openai_omni_moderation_created_at TIMESTAMPTZ,
 
   -- llm moderation results
   llm_moderation_content_sha256 BYTEA NOT NULL,
@@ -236,10 +221,6 @@ BEFORE UPDATE OF
   updated_by_id,
   deleted_at,
   deleted_by_id,
-  spam_detection_flagged,
-  spam_detection_created_at,
-  spam_detection_score,
-  spam_detection_results,
   archived_at,
   archived_by_id,
   data_point_vertical,
@@ -248,11 +229,7 @@ BEFORE UPDATE OF
   bedrock_nova_multimodal_v1_input_sha256,
   bedrock_nova_multimodal_v1_embedding,
   bedrock_nova_multimodal_v1_embedding_created_at,
-  bedrock_nova_multimodal_v1_input_token_count,
-  openai_omni_moderation_input_sha256,
-  openai_omni_moderation_results,
-  openai_omni_moderation_flagged,
-  openai_omni_moderation_created_at
+  bedrock_nova_multimodal_v1_input_token_count
 ON posts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
@@ -312,19 +289,6 @@ WHERE root_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_posts__root_id__community_id__id
 ON posts (root_id, community_id, id)
 WHERE root_id IS NOT NULL;
-
--- find existing openai omni moderation results by input hash
-CREATE INDEX IF NOT EXISTS idx_posts__openai_omni_moderation_input_sha256
-ON posts (openai_omni_moderation_input_sha256)
-WHERE openai_omni_moderation_input_sha256 IS NOT NULL;
-
--- find out of date openai omni moderation results
-CREATE INDEX IF NOT EXISTS ids_posts__openai_omni_moderation_to_update
-ON posts (id)
-WHERE (
-  openai_omni_moderation_input_sha256 IS NULL
-  OR openai_omni_moderation_input_sha256 != openai_omni_moderation_content_sha256
-);
 
 -- find existing embeddings by input hash
 CREATE INDEX IF NOT EXISTS idx_posts__bedrock_nova_multimodal_v1_input_sha256
@@ -420,10 +384,6 @@ COMMENT ON COLUMN posts.is_anonymous IS 'Whether the author''s identity is hidde
 COMMENT ON COLUMN posts.community_id IS 'Community scope for comments. NULL means global. FK to communities added in 0200-00-00-communities.sql.';
 COMMENT ON COLUMN posts.votes_snapshot_xmax IS 'Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.';
 COMMENT ON COLUMN posts.votes_snapshot_xip_count IS 'Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.';
-COMMENT ON COLUMN posts.spam_detection_flagged IS 'Whether the spam detection model flagged this post. NULL means not yet evaluated.';
-COMMENT ON COLUMN posts.spam_detection_created_at IS 'When spam detection was last run on this post.';
-COMMENT ON COLUMN posts.spam_detection_score IS 'Raw spam likelihood score from the detection model (higher = more likely spam).';
-COMMENT ON COLUMN posts.spam_detection_results IS 'Full JSONB output from the spam detection model, including per-category scores.';
 COMMENT ON COLUMN posts.archived_at IS 'Timestamp when this post was archived; NULL means not archived.';
 COMMENT ON COLUMN posts.archived_by_id IS 'User who archived this post; NULL if not archived or user was deleted.';
 COMMENT ON COLUMN posts.data_point_vertical IS 'Discriminator for the structured data point schema (credit_card, bank_account). NULL for non-data-point posts.';

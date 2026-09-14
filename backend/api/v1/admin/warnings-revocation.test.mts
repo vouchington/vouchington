@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestUserWarning } from '@voucha/test-helpers'
 import { revokeUserWarning } from '@services/user-warnings'
 import { addUserRole } from '@services/users/roles-permissions'

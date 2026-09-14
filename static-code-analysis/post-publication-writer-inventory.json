@@ -13,9 +13,10 @@
     "backend/services/posts/archive.mts",
     "backend/services/posts/post-ratings.mts",
     "backend/services/posts/post-ratings/delete.mts",
+    "backend/services/post-clearance/approve-pending.mts",
     "backend/services/post-clearance/check-clearance.mts",
     "backend/services/post-clearance/reset-clearance.mts",
-    "backend/services/post-clearance/update-status.mts",
+    "backend/services/post-clearance/set-status.mts",
     "backend/services/post-publication/capture-author-deletion-batch.mts",
     "backend/services/communities/archive.mts",
     "backend/services/communities/delete.mts",
@@ -23,6 +24,8 @@
     "backend/services/communities/publications/add.mts",
     "backend/services/communities/publications/agent-moderate.mts",
     "backend/services/communities/publications/moderate.mts",
+    "backend/services/communities/publications/platform-override.mts",
+    "backend/services/communities/publications/unpublish.mts",
     "backend/services/rss-feeds/delete.mts",
     "backend/services/rss-feeds/discoverability.mts",
     "backend/services/rss-feeds/update.mts",
@@ -40,7 +43,6 @@
     "backend/services/moderation-appeals/lift-sanctions.mts",
     "backend/services/moderation-appeals/resolve.mts",
     "backend/services/moderation-training/automod-feedback.mts",
-    "backend/services/openai-moderation/persist-post-results.mts",
     "backend/services/entity-relations/upsert.mts",
     "backend/services/entity-relations/write-relations.mts",
     "backend/services/entity-relations/delete.mts",
@@ -103,8 +105,8 @@
       "reason": "moderation thread state is not a publication predicate"
     },
     {
-      "path": "backend/services/moderation-training/post-level-flags.mts",
-      "reason": "moderation signal is a precursor; clearance captures the transition"
+      "path": "backend/services/openai-moderation/persist-post-results.mts",
+      "reason": "writes append-only moderation dispositions; clearance owns publication state"
     },
     {
       "path": "backend/services/openai-moderation/posts.mts",
@@ -129,6 +131,10 @@
     {
       "path": "backend/services/posts/update/post-update-query.mts",
       "reason": "called inside captured post update"
+    },
+    {
+      "path": "backend/services/post-clearance/update-status.mts",
+      "reason": "delegates clearance and publication writes to captured set-status"
     },
     {
       "path": "backend/services/rss-feed-items/upsert-queries.mts",

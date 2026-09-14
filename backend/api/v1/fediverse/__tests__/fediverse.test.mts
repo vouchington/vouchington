@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 
 describe('GET /api/v1/fediverse/search', () => {
   it('returns an empty bucket list for anonymous callers and sets public cache headers, without querying any provider', async () => {

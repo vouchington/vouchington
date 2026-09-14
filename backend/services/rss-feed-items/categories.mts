@@ -142,7 +142,6 @@ async function upsertRssFeedItemCategorySnapshots(
     }
   }
 
-  // ast-grep-ignore: no-three-sequential-awaits -- category publication capture must commit before relation repair, which must precede snapshot reconciliation.
   await using query = await beginTransaction()
   {
     await lockTopicAliasPublicationScopes(

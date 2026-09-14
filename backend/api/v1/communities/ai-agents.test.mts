@@ -1,4 +1,4 @@
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createRandomString,
   createTestUser,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -67,7 +68,7 @@ export function DynamicConfigFieldRow({
         {field.type === 'boolean' ? (
           <Switch
             checked={Boolean(field.value)}
-            onCheckedChange={value => updateField(field.name, value).catch(() => undefined)}
+            onCheckedChange={value => updateField(field.name, value).catch(Sentry.captureException)}
             disabled={!canUpdate || saving}
             aria-label={field.name}
             data-pw='dynamic-config-boolean-field'

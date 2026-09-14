@@ -13,10 +13,7 @@ import {
 } from './native-resource-catalog.mts'
 import { writeNativeResourceFiles } from './native-resource-writer.mts'
 import { generateNativeResourceFiles } from './native-resources.mts'
-import enMessages from './messages/en.ts'
-import esMessages from './messages/es.ts'
-import frMessages from './messages/fr.ts'
-import ptMessages from './messages/pt.ts'
+import { enMessages, esMessages, frMessages, ptMessages } from './locale-catalogs.mts'
 
 const CATALOGS = { en: enMessages, es: esMessages, fr: frMessages, pt: ptMessages }
 const ONE_OTHER: PluralForms = { one: '{count} item', other: '{count} items' }
@@ -72,7 +69,7 @@ describe('native UI message resources', () => {
       pt: structuredClone(ptMessages),
     }
     for (const catalog of Object.values(catalogs)) {
-      catalog.common.save = 'Save "A&B" {name}'
+      ;(catalog.common as { save: string }).save = 'Save "A&B" {name}'
     }
     const manifest = [
       { key: 'common.save', consumers: ['swift', 'dotnet'] },
@@ -96,7 +93,10 @@ describe('native UI message resources', () => {
     )
 
     const catalogs = { ...CATALOGS, es: structuredClone(esMessages) }
-    catalogs.es.common.save = 'Guardar {value}'
+    catalogs.es = {
+      ...catalogs.es,
+      common: { ...(catalogs.es.common as { save: string }), save: 'Guardar {value}' },
+    }
     const manifest = [
       { key: 'common.save', consumers: ['swift'] },
     ] as const satisfies readonly NativeConsumerManifestEntry[]

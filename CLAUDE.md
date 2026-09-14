@@ -30,6 +30,10 @@ Read the [agent-workflow skill](.agents/skills/agent-workflow/SKILL.md) for all 
 
 Read the `CLAUDE.md` in each directory whose files you change, and parents up to this root. Codex does not auto-load nested files; Claude Code does when the working tree is in that directory. Top-level workspaces: [docs/development/MONOREPO.md](docs/development/MONOREPO.md). Placement rubric: [docs/CLAUDE.md](docs/CLAUDE.md).
 
+Test-helper directories are allowed only at `test-helpers/**` or immediately below a top-level
+workspace as `<top-level>/test-helpers/**`; nested or alternate helper-directory names, including
+`test-support`, are banned.
+
 ## Catalogs
 
 - [README.md](README.md)

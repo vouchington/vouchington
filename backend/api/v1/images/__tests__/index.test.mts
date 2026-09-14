@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertPendingTestImage, markImageComplete } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import * as createImageUploadUrlModule from '@services/images/create-upload-url'

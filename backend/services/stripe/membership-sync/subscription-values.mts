@@ -2,7 +2,7 @@ import { getSkuByStripePriceIdForLifecycle } from '@services/memberships'
 import type { StripeMembershipSourceIdentity } from '@services/memberships/create-types'
 import type { Membership, MembershipStatus } from '@services/memberships/types'
 import { getStripeSubscription } from '@modules/stripe/subscriptions'
-import { getStripeObjectNumber, mapStripeWebhookStatus } from '../webhook-utils.mts'
+import { getStripeObjectNumber, mapStripeSubscriptionStatus } from '../event-utils.mts'
 import { getStripeTerminalTimestamp, getStripeTimestamp } from './clocks.mts'
 
 export type StripeSubscriptionMembershipValues = {
@@ -34,7 +34,7 @@ export async function getStripeSubscriptionMembershipValues(
       (subscription as unknown as Record<string, unknown>).current_period_start,
     ) ?? subscription.items.data[0]?.current_period_start
   return {
-    status: mapStripeWebhookStatus(subscription.status),
+    status: mapStripeSubscriptionStatus(subscription.status),
     plan: sku.plan,
     skuId: sku.id,
     expiresAt: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : undefined,

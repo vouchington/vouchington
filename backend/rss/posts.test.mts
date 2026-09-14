@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 // Register this package routes on the shared app singleton for route tests.
 import './index.mts'
 import { createTestUser } from '@voucha/test-helpers'

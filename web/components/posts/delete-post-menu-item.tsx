@@ -60,7 +60,7 @@ export function DeletePostMenuItem({ postIdOrSlug }: DeletePostMenuItemProps) {
               disabled={isDeleting}
               onClick={e => {
                 e.preventDefault()
-                handleDelete().catch(() => undefined)
+                void handleDelete()
               }}
               data-pw='post-delete-confirm'
             >

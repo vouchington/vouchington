@@ -2,6 +2,9 @@ name: Web API Tests
 
 on:
   workflow_call:
+    outputs:
+      shard-total:
+        value: ${{ jobs.prep.outputs.shard-total }}
     inputs:
       publish_coverage:
         description: 'Whether to publish LCOV for a same-run PR coverage consumer'
@@ -23,7 +26,7 @@ on:
         type: boolean
         default: true
       shard_total_override:
-        description: 'Shard count to use instead of the web-api default when full_suite is false'
+        description: 'Explicit shard count for a selected run'
         required: false
         type: string
         default: ''
@@ -44,7 +47,7 @@ on:
         type: boolean
         default: false
       shard_total_override:
-        description: 'Shard count to use instead of the web-api default'
+        description: 'Explicit shard count for a selected run'
         required: false
         type: string
         default: ''
@@ -59,7 +62,7 @@ env:
 jobs:
   prep:
     runs-on: [self-hosted]
-    timeout-minutes: 5
+    timeout-minutes: 8
     permissions:
       contents: read
     outputs:
@@ -78,10 +81,25 @@ jobs:
       - uses: ./.github/actions/clean-workspace
         with:
           deepen: ${{ inputs.publish_coverage && 'true' || 'false' }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: ${{ inputs.shard_total_override != '' }}
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+      - uses: ./.github/actions/setup-node-pnpm
+        if: ${{ inputs.shard_total_override == '' }}
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Resolve web-api shard total
+        id: shard-total
+        env:
+          SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override }}
+        run: node ci/vitest/shard-total.mts test-web-api
       - uses: ./.github/actions/make-shard-matrix
         id: shards
         with:
-          total: ${{ inputs.shard_total_override || 1 }}
+          total: ${{ steps.shard-total.outputs.shard-total }}
 
   web-api-tests:
     needs: [prep]

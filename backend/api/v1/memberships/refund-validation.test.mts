@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { getMembershipRefunds } from '@services/memberships/refunds'
 import type { PrivateUser } from '@services/users/types'
@@ -177,6 +177,11 @@ describe('POST /api/v1/memberships/refunds validation', () => {
   it('returns 400 when note is not a string', async () => {
     const response = await postRefundWithNote(42)
     expect(response.body.message).toBe('note must be a string')
+  })
+
+  it.each(['', ' \t '])('returns 400 when note is blank after trimming', async note => {
+    const response = await postRefundWithNote(note)
+    expect(response.body.message).toBe('note must not be blank')
   })
 
   it('returns 400 when note exceeds 1000 characters', async () => {

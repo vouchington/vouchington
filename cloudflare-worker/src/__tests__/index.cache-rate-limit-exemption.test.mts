@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import worker from '../index.mts'
-import { createContext, restoreGlobals, setupMemoryCaches } from '../test-helpers/mock-env.mts'
+import {
+  createContext,
+  restoreGlobals,
+  setupMemoryCaches,
+} from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 const PLACEHOLDER_NONCE = 'test-placeholder-nonce-that-is-at-least-32-characters-long'

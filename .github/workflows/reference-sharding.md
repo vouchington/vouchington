@@ -14,24 +14,26 @@ Vitest jobs to settle before dispatching Playwright; that outer dependency debou
 allocation without serializing either Playwright matrix or making an upstream test failure suppress
 the browser suites.
 
-Vitest's ownership registry is the source of the defaults and selection policy. PR-selected and
-promoted-full file-count suites emit `shard_total_override = ceil(fileCount / filesPerShard)`
-(GitHub matrix max 256). A positive override wins even when `full_suite` is true. `main` and
-fail-open runs use the registered defaults:
+Vitest's ownership registry owns each file-count policy. PR-selected and promoted-full jobs emit
+`shard_total_override = ceil(fileCount / filesPerShard)` (GitHub matrix max 256). Otherwise the
+reusable workflow counts the checked-out live suite after installing dependencies and resolves the
+same formula. A positive override wins even when `full_suite` is true; missing or nonpositive live
+counts fail the prep job rather than silently using a stale numeric fallback:
 
-| CI job                 | Default shards | PR sizing policy                        |
-| ---------------------- | -------------- | --------------------------------------- |
-| `test-backend-unit`    | 5              | One shard per 520 selected suite files  |
-| `test-web`             | 2              | One shard per 800 selected suite files  |
-| `test-web-api`         | 1              | One shard per 64 selected suite files   |
-| `test-web-integration` | 1              | Fixed at one unless manually overridden |
+| CI job                 | Sizing policy                                   |
+| ---------------------- | ----------------------------------------------- |
+| `test-backend-unit`    | One shard per 520 checked-out or selected files |
+| `test-web`             | One shard per 800 checked-out or selected files |
+| `test-web-api`         | One shard per 64 checked-out or selected files  |
+| `test-web-integration` | Fixed at one unless manually overridden         |
 
 The full-stack integration suite is matrix-capable so it can be split later without redesigning
 the report and artifact contracts. Its build and setup dominate its current runtime, so automatic
-file-count fan-out would only duplicate that work. There is deliberately no workflow
-`max-parallel`: GitHub schedules each matrix job against normal runner capacity and queues excess
-work. Every shard-capable workflow puts a ten-minute watchdog on the Vitest command itself; this
-is a step deadline, not a replacement for the job's broader timeout.
+file-count fan-out would only duplicate that work. The backend-unit matrix alone caps
+`max-parallel` at five, preserving its prior simultaneous Tests-pool demand while its six shards
+queue in the same run. Other matrices remain uncapped: GitHub schedules them against normal runner
+capacity and queues excess work. Every shard-capable workflow puts a ten-minute watchdog on the
+Vitest command itself; this is a step deadline, not a replacement for the job's broader timeout.
 
 Playwright has no repository-variable shard cap on the PR path. PR, labelled-full, fail-open, and
 manual runs use `max(1, ceil(runnable spec count × 2 seconds / 240 seconds))`; GitHub's matrix

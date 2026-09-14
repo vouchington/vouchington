@@ -152,6 +152,7 @@ export const concurrencyTopologyPolicy = {
   ]),
   '.github/workflows/pnpm-dedupe.yml': retained(['fixed-resource']),
   '.github/workflows/static-code-analysis.yml': conditional(['pull-request', 'ref']),
+  '.github/workflows/static-code-analysis.yml#no-mistakes-owned': fifo(['fixed-resource']),
   '.github/workflows/storybook.yml': conditional(['input-resource', 'sha']),
   '.github/workflows/sync-articles.yml': retained(['run']),
   '.github/workflows/tests-playwright-credentialed.yml': conditional(['pull-request', 'sha']),

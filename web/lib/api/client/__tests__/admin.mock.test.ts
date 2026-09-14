@@ -58,6 +58,7 @@ describe('admin', () => {
       const result = await markPostForReview('post-123')
       expect(mockPost).toHaveBeenCalledWith('/api/v1/posts/post-123/clearances', {
         status: 'in_review',
+        reason_code: 'staff_reviewed',
       })
       expect(result).toEqual({ clearance_status: 'in_review' })
     })
@@ -69,6 +70,7 @@ describe('admin', () => {
       await updateAdminReviewQueuePost('post-1', 'approved')
       expect(mockPost).toHaveBeenCalledWith('/api/v1/posts/post-1/clearances', {
         status: 'approved',
+        reason_code: 'staff_approved',
       })
     })
 
@@ -77,6 +79,7 @@ describe('admin', () => {
       await updateAdminReviewQueuePost('post-2', 'rejected')
       expect(mockPost).toHaveBeenCalledWith('/api/v1/posts/post-2/clearances', {
         status: 'rejected',
+        reason_code: 'staff_rejected',
       })
     })
   })

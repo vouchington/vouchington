@@ -26,7 +26,7 @@
     "@atproto-labs/handle-resolver-node": "^0.2.8",
     "@atproto/jwk": "^0.7.4",
     "@atproto/jwk-jose": "^0.2.4",
-    "@atproto/oauth-client-node": "^0.5.4",
+    "@atproto/oauth-client-node": "^0.5.7",
     "@modules/api-egress-proxy": "workspace:^",
     "@modules/utils": "workspace:^"
   }

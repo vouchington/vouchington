@@ -1,6 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { randomBytes, randomUUID } from 'node:crypto'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { oauthAuthorizationBrokerConfig } from '@services/oauth'
 import {

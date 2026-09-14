@@ -14,7 +14,7 @@ import {
 import { getAdminReviewQueuePostHref } from '@/lib/admin-review-queue'
 import type { AdminReviewQueuePost } from '@/types/admin-review-queue'
 import { ModerationSlaBadge } from '@/components/moderation/moderation-queue-badges'
-import { ClearanceBadge, PostTypeBadge, Signal } from './review-queue-helpers'
+import { ClearanceBadge, ModerationSummary, PostTypeBadge } from './review-queue-helpers'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ReviewQueueMedia } from './review-queue-media'
 import { PostContentText } from '@/components/posts/post-content-text'
@@ -89,7 +89,7 @@ export function ReviewQueueTable({
                   />
                   <ReviewQueueMedia
                     postId={post.id}
-                    mediaContext={post.media_context}
+                    mediaReveal={post.media_reveal}
                     onReveal={onReveal}
                     revealDisabled={revealDisabled}
                   />
@@ -103,16 +103,7 @@ export function ReviewQueueTable({
                   <ClearanceBadge status={post.clearance_status} />
                 </TableCell>
                 <TableCell>
-                  <div className='flex flex-col gap-1 text-sm'>
-                    <Signal
-                      label={t('extracted.reviewQueue.reviewQueueTable.openAi_6f708293')}
-                      value={post.openai_omni_moderation_flagged}
-                    />
-                    <Signal
-                      label={t('extracted.reviewQueue.reviewQueueTable.spam_708293a4')}
-                      value={post.spam_detection_flagged}
-                    />
-                  </div>
+                  <ModerationSummary summary={post.moderation_summary} />
                 </TableCell>
                 <TableCell>
                   <div className='flex justify-end gap-2'>

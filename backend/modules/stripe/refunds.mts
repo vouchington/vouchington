@@ -15,6 +15,7 @@ export function createStripeRefund(options: {
   paymentIntentId?: string
   amountMinorUnits?: number
   idempotencyKey: string
+  metadata?: Record<string, string>
 }): Promise<Stripe.Response<Stripe.Refund>> {
   const stripe = getStripeClient()
   return stripe.refunds.create(
@@ -22,6 +23,7 @@ export function createStripeRefund(options: {
       ...(options.chargeId ? { charge: options.chargeId } : {}),
       ...(options.paymentIntentId ? { payment_intent: options.paymentIntentId } : {}),
       ...(options.amountMinorUnits !== undefined ? { amount: options.amountMinorUnits } : {}),
+      ...(options.metadata ? { metadata: options.metadata } : {}),
     },
     { idempotencyKey: options.idempotencyKey },
   )

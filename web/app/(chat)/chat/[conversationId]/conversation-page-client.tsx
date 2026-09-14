@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect, useCallback, useEffectEvent, useRef } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { ChatLayout } from '@/components/chat/chat-layout'
 import { ChatMessages } from '@/components/chat/chat-messages'
@@ -35,7 +36,7 @@ export function ConversationPageClient({ conversationId, initialMessages }: Prop
           const currentTitle = chatSidebar?.conversations.find(c => c.id === convId)?.title
           if (!currentTitle?.trim()) {
             chatSidebar?.updateConversation(convId, { title: fallbackTitle })
-            updateConversationTitle(convId, fallbackTitle).catch(() => {})
+            updateConversationTitle(convId, fallbackTitle).catch(Sentry.captureException)
           }
         }
       })
@@ -72,9 +73,7 @@ export function ConversationPageClient({ conversationId, initialMessages }: Prop
   )
   const sendPendingMessage = useEffectEvent((pendingConversationId: string, message: string) => {
     if (pendingConversationId !== conversationId) return
-    handleSend(message).catch(() => {
-      // error handled via hook's error state
-    })
+    handleSend(message).catch(Sentry.captureException)
   })
 
   useEffect(() => {

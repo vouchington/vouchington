@@ -8,6 +8,7 @@
 // scripts must receive the nonce instead of relying on a fallback.
 
 import { parseBrowserUploadOrigins } from './csp-browser-upload-origins.mts'
+import { getSentryDsnConfig } from '@ts-shared/utils/sentry-deployment-gate'
 
 const isVitest = (import.meta as ImportMeta & { env?: { MODE?: string } }).env?.MODE === 'test'
 
@@ -45,12 +46,6 @@ const GOOGLE_FRAME_ORIGIN = 'https://accounts.google.com'
 // PeerTube instances are arbitrary origins — they cannot be added statically
 // and render as external links instead of iframes.
 const VIDEO_EMBED_ORIGINS = ['https://www.youtube-nocookie.com', 'https://player.vimeo.com']
-
-// Pinned Sentry ingest hostname (per SECURITY.md production checklist).
-// The primary path uses the /monitoring tunnel (same-origin); this is a
-// fallback for contexts that cannot reach the tunnel (service workers,
-// prerendered pages).
-const SENTRY_INGEST_ORIGIN = 'https://o4507688154824704.ingest.us.sentry.io'
 
 // Facebook API origins for connect-src: graph.facebook.com for Graph API calls
 // and www.facebook.com for impression pixel / analytics.
@@ -105,7 +100,6 @@ export const REGISTERED_WEB_CSP_ORIGINS: readonly RegisteredWebCspOrigin[] = [
   { origin: 'https://www.gstatic.com', directives: ['script-src'] },
   { origin: 'https://www.youtube-nocookie.com', directives: ['frame-src'] },
   { origin: 'https://player.vimeo.com', directives: ['frame-src'] },
-  { origin: SENTRY_INGEST_ORIGIN, directives: ['connect-src'] },
   { origin: 'https://graph.facebook.com', directives: ['connect-src'] },
   { origin: 'https://www.facebook.com', directives: ['connect-src'] },
   { origin: HN_ALGOLIA_ORIGIN, directives: ['connect-src'] },
@@ -157,6 +151,8 @@ export const buildWebCsp = (
     production?: boolean
     nonce: string
     requireBrowserUploadOrigins?: boolean
+    sentryTunnelPreviousWebDsn?: string
+    sentryWebDsn?: string
   },
 ): string => {
   const normalizedOrigin = normalizeAssetOrigin(assetOrigin)
@@ -165,6 +161,15 @@ export const buildWebCsp = (
       ? []
       : parseBrowserUploadOrigins(options.browserUploadOrigins)
   const asset = normalizedOrigin ? ` ${normalizedOrigin}` : ''
+  // Keep configured ingest origins as a fallback for contexts that cannot use the tunnel.
+  const sentryWebDsn = getSentryDsnConfig(options.sentryWebDsn)
+  const sentryOrigins = [
+    sentryWebDsn?.origin,
+    sentryWebDsn === undefined
+      ? undefined
+      : getSentryDsnConfig(options.sentryTunnelPreviousWebDsn)?.origin,
+  ].filter((origin): origin is string => origin !== undefined)
+  const sentry = sentryOrigins.length === 0 ? '' : `${sentryOrigins.join(' ')} `
   // React dev mode requires 'unsafe-eval' for source maps and hot-reload error
   // callstacks. Excluded unless production is explicitly false, so callers
   // get the production-safe default when they omit the production flag.
@@ -186,7 +191,7 @@ export const buildWebCsp = (
     `frame-src 'self' ${GTM_ORIGIN} ${TURNSTILE_ORIGIN} ${GOOGLE_FRAME_ORIGIN} ${RECAPTCHA_FRAME_ORIGIN} ${VIDEO_EMBED_ORIGINS.join(' ')}`,
     `media-src 'self' https: blob:`,
     // Asset origin supports source maps and dev overlay resources.
-    `connect-src 'self' ${SENTRY_INGEST_ORIGIN} ${GTM_ORIGIN} ${TURNSTILE_ORIGIN} ${OAUTH_SCRIPT_ORIGINS.join(' ')} ${RECAPTCHA_CONNECT_ORIGIN} ${FACEBOOK_API_ORIGINS.join(' ')} ${HN_ALGOLIA_ORIGIN} ${browserUploadOrigins.join(' ')}${asset}`,
+    `connect-src 'self' ${sentry}${GTM_ORIGIN} ${TURNSTILE_ORIGIN} ${OAUTH_SCRIPT_ORIGINS.join(' ')} ${RECAPTCHA_CONNECT_ORIGIN} ${FACEBOOK_API_ORIGINS.join(' ')} ${HN_ALGOLIA_ORIGIN} ${browserUploadOrigins.join(' ')}${asset}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

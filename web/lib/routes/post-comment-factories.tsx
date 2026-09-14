@@ -156,7 +156,7 @@ export function createCommentPermalinkPage(postType: PostType, slug: string) {
           })}
         />
         {breadcrumbItems.length > 0 && (
-          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
         )}
         <Breadcrumbs items={breadcrumbItems} />
 

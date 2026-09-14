@@ -1,4 +1,5 @@
 import { createMyWebPushSubscription, deleteMyWebPushSubscription } from '@/lib/api/client/my'
+import * as Sentry from '@sentry/nextjs'
 import { bindPushBinding, clearPushBinding } from '@/lib/push-service-worker'
 import {
   PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS,
@@ -61,7 +62,7 @@ async function bindSavedPushGeneration(
     )
     return saved
   } catch (error) {
-    await deleteMyWebPushSubscription(saved.id).catch(() => undefined)
+    await deleteMyWebPushSubscription(saved.id).catch(Sentry.captureException)
     throw error
   }
 }

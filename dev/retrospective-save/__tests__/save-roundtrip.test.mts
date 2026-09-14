@@ -9,7 +9,7 @@ import {
   entryFixture,
   HOSTED_ENV,
   sessionsClientFixture,
-} from '../../blackboard/test-helpers/client-fixtures.mts'
+} from '../../test-helpers/blackboard/client-fixtures.mts'
 import { RetrospectiveSaveError, runSave } from '../save.mts'
 
 const testDirs: string[] = []

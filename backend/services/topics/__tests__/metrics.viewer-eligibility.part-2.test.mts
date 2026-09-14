@@ -88,12 +88,7 @@ describe('getTopicViewerCounts — eligibility and dedup', () => {
     expect(counts.discussions).toBe(3)
   })
 
-  // Unlike view_topic_metrics's anonymous view_public_post_eligibility (used by
-  // getTopicMetricsByAnyBatch), buildViewerPostDiscoveryEligibilityFilter never tests
-  // openai_omni_moderation_flagged -- the same filter backs eligible-posts-cte.mts, so a viewer's
-  // topic count matches the feed it fronts. This pins that pre-existing divergence, which this
-  // candidate-bind rewrite does not touch.
-  it('does not exclude moderation-flagged posts from viewer-scoped counts', async () => {
+  it('counts posts that have completed moderation and remain approved', async () => {
     const author = (await createTestUser()) as PrivateUser
     const viewer = (await createTestUser()) as PrivateUser
     const topic = await createTestTopic({

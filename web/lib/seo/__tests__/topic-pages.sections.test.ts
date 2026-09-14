@@ -1,3 +1,4 @@
+import { defaultTranslator as t } from '@ts-shared/ui-messages/default-translator'
 import { describe, it, expect } from 'vitest'
 
 import {
@@ -93,6 +94,7 @@ describe('createTopicSectionMetadata', () => {
 describe('createTopicSectionStructuredData', () => {
   it('uses correct schemaOrgType when categories provided', () => {
     const result = createTopicSectionStructuredData(
+      t,
       mockTopic,
       'books',
       { label: 'Discussions', path: 'discussions' },
@@ -103,7 +105,7 @@ describe('createTopicSectionStructuredData', () => {
   })
 
   it('defaults to Thing when categories not provided', () => {
-    const result = createTopicSectionStructuredData(mockTopic, 'books', {
+    const result = createTopicSectionStructuredData(t, mockTopic, 'books', {
       label: 'Discussions',
       path: 'discussions',
     })
@@ -113,6 +115,7 @@ describe('createTopicSectionStructuredData', () => {
 
   it('uses first matching category type when multiple provided', () => {
     const result = createTopicSectionStructuredData(
+      t,
       mockTopic,
       'books',
       { label: 'Discussions', path: 'discussions' },
@@ -124,6 +127,7 @@ describe('createTopicSectionStructuredData', () => {
 
   it('includes breadcrumb schema with correct paths', () => {
     const result = createTopicSectionStructuredData(
+      t,
       mockTopic,
       'books',
       { label: 'Discussions', path: 'discussions' },
@@ -136,6 +140,7 @@ describe('createTopicSectionStructuredData', () => {
 
   it('generates correct topic name with section label', () => {
     const result = createTopicSectionStructuredData(
+      t,
       mockTopic,
       'books',
       { label: 'Data Points', path: 'data-points' },
@@ -148,6 +153,7 @@ describe('createTopicSectionStructuredData', () => {
 
   it('generates paths correctly based on topicTypeSlug', () => {
     const result = createTopicSectionStructuredData(
+      t,
       mockTopic,
       'movies',
       { label: 'Reviews', path: 'reviews' },
@@ -170,6 +176,7 @@ describe('createTopicSectionStructuredData', () => {
     }
 
     const result = createTopicSectionStructuredData(
+      t,
       mockTopic,
       'books',
       { label: 'Discussions', path: 'discussions' },
@@ -187,6 +194,7 @@ describe('createTopicSectionStructuredData', () => {
 
   it('omits dateModified from topic section structured data', () => {
     const result = createTopicSectionStructuredData(
+      t,
       mockTopic,
       'books',
       {
@@ -201,6 +209,7 @@ describe('createTopicSectionStructuredData', () => {
 
   it('omits AggregateRating when topicMetrics is not provided', () => {
     const result = createTopicSectionStructuredData(
+      t,
       mockTopic,
       'books',
       { label: 'Discussions', path: 'discussions' },
@@ -222,6 +231,7 @@ describe('createTopicSectionStructuredData', () => {
     }
 
     const result = createTopicSectionStructuredData(
+      t,
       mockTopic,
       'books',
       { label: 'Discussions', path: 'discussions' },
@@ -233,7 +243,7 @@ describe('createTopicSectionStructuredData', () => {
   })
 
   it('strips feed url from rss_feed topic structured data name', () => {
-    const result = createTopicSectionStructuredData(mockSourceTopic, 'source', {
+    const result = createTopicSectionStructuredData(t, mockSourceTopic, 'source', {
       label: 'Posts',
       path: 'posts',
     })
@@ -244,6 +254,7 @@ describe('createTopicSectionStructuredData', () => {
 
   it('strips feed url from rss_feed review structured data name', () => {
     const result = createTopicReviewSectionStructuredData(
+      t,
       mockSourceTopic,
       'source',
       null,

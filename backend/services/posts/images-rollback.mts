@@ -2,7 +2,11 @@ import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
-import { setPostClearanceStatus, type ClearanceStatus } from '@services/post-clearance'
+import {
+  ensureCurrentPostModerationVersion,
+  restorePostClearanceStatus,
+  type ClearanceStatus,
+} from '@services/post-clearance'
 
 export type PostImageRollback = {
   revisionId: string
@@ -16,22 +20,17 @@ export type PostImageRollback = {
     order_index: number
     caption: string
   }>
-  currentOpenaiModerationContentSha256: Buffer
   currentLlmModerationContentSha256: Buffer
-  openaiModerationContentSha256: Buffer
   llmModerationContentSha256: Buffer
-  changedById: string
   currentLatestClearanceChangeId: string | null
   latestClearanceChangeId: string | null
   approvedAt: Date | null
   rejectedAt: Date | null
   inReviewAt: Date | null
-  spamDetectionFlagged: boolean | null
-  spamDetectionCreatedAt: Date | null
-  spamDetectionScore: number | null
-  spamDetectionResults: unknown | null
-  openaiModerationFlagged: boolean | null
-  openaiModerationCreatedAt: Date | null
+  clearanceChangedById: string | null
+  clearancePublicReasonCode: string | null
+  clearancePrivateNote: string | null
+  clearancePlatformOverride: boolean
 }
 
 export async function rollbackPostImages(
@@ -43,23 +42,28 @@ export async function rollbackPostImages(
     const imageIds = [
       ...new Set([...rollback.currentImages, ...rollback.images].map(image => image.image_id)),
     ].toSorted()
+    let rollbackImagesAvailable = true
     if (imageIds.length > 0) {
-      await query(sql`/* rollbackPostImages:lockImages */
+      const { rows: availableImages } = await query<{
+        id: string
+      }>(sql`/* rollbackPostImages:lockImages */
         SELECT id
         FROM images
         WHERE id = ANY(${imageIds}::uuid[])
+          AND upload_completed_at IS NOT NULL
+          AND deleted_at IS NULL
+          AND quarantine_pending_at IS NULL
         ORDER BY id
         FOR SHARE
       `)
+      rollbackImagesAvailable = availableImages.length === imageIds.length
     }
     await lockPostPublication(query, postId)
     const { rows: postRows } = await query<{
-      openai_omni_moderation_content_sha256: Buffer | null
       llm_moderation_content_sha256: Buffer | null
       latest_clearance_change_id: string | null
     }>(sql`/* rollbackPostImages */
-      SELECT openai_omni_moderation_content_sha256,
-        llm_moderation_content_sha256,
+      SELECT llm_moderation_content_sha256,
         latest_clearance_change_id
       FROM posts
       WHERE id = ${postId}
@@ -68,16 +72,14 @@ export async function rollbackPostImages(
     const post = postRows[0]
     if (
       !post ||
-      !bufferEquals(
-        post.openai_omni_moderation_content_sha256,
-        rollback.currentOpenaiModerationContentSha256,
-      ) ||
+      !rollbackImagesAvailable ||
       !bufferEquals(
         post.llm_moderation_content_sha256,
         rollback.currentLlmModerationContentSha256,
       ) ||
       post.latest_clearance_change_id !== rollback.currentLatestClearanceChangeId
     ) {
+      if (post) await ensureCurrentPostModerationVersion(postId, { query })
       return false
     }
 
@@ -89,7 +91,10 @@ export async function rollbackPostImages(
         ORDER BY order_index
       `,
     )
-    if (!postImagesEqual(currentImages, rollback.currentImages)) return false
+    if (!postImagesEqual(currentImages, rollback.currentImages)) {
+      await ensureCurrentPostModerationVersion(postId, { query })
+      return false
+    }
 
     await query(sql`/* rollbackPostImages */ DELETE FROM post_images WHERE post_id = ${postId}`)
     if (rollback.images.length > 0) {
@@ -105,18 +110,7 @@ export async function rollbackPostImages(
     }
     await query(sql`/* rollbackPostImages */
       UPDATE posts
-      SET openai_omni_moderation_content_sha256 = ${rollback.openaiModerationContentSha256},
-          llm_moderation_content_sha256 = ${rollback.llmModerationContentSha256},
-          spam_detection_flagged = ${rollback.spamDetectionFlagged},
-          spam_detection_created_at = ${rollback.spamDetectionCreatedAt},
-          spam_detection_score = ${rollback.spamDetectionScore},
-          spam_detection_results = ${
-            rollback.spamDetectionResults == null
-              ? null
-              : JSON.stringify(rollback.spamDetectionResults)
-          }::jsonb,
-          openai_omni_moderation_flagged = ${rollback.openaiModerationFlagged},
-          openai_omni_moderation_created_at = ${rollback.openaiModerationCreatedAt},
+      SET llm_moderation_content_sha256 = ${rollback.llmModerationContentSha256},
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${postId}
     `)
@@ -126,14 +120,23 @@ export async function rollbackPostImages(
         AND post_id = ${postId}
     `)
     if (rollback.currentLatestClearanceChangeId !== rollback.latestClearanceChangeId) {
-      await setPostClearanceStatus(
+      if (rollback.currentLatestClearanceChangeId === null) {
+        throw new Error(`Post image rollback is missing the compensated change for post ${postId}`)
+      }
+      await restorePostClearanceStatus(
         postId,
         getRollbackClearanceStatus(rollback),
-        rollback.changedById,
+        rollback.clearanceChangedById,
         { query },
         {
           reason: 'image_update_enqueue_rollback',
           compensates_change_id: rollback.currentLatestClearanceChangeId,
+          restores_change_id: rollback.latestClearanceChangeId,
+        },
+        {
+          reasonCode: rollback.clearancePublicReasonCode ?? undefined,
+          privateNote: rollback.clearancePrivateNote ?? undefined,
+          platformOverride: rollback.clearancePlatformOverride,
         },
       )
     }

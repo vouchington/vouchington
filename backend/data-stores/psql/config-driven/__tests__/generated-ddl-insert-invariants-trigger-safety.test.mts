@@ -2,13 +2,13 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
 import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
-import { findFirstUnguardedInsertViolation } from '../../test-helpers/config-driven/generated-ddl-insert-invariants.mts'
+import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
 import {
   generatedDependenciesForTable,
   hasGeneratedArbiterViolation,
   hasReplayUnsafeTrigger,
   triggerTextsForTable,
-} from '../../test-helpers/config-driven/schema-snapshot-facts.mts'
+} from '../../../../test-helpers/data-stores/psql/config-driven/schema-snapshot-facts.mts'
 
 describe('schema-snapshot-facts (backend real schema.json singleton)', () => {
   it('returns the real trigger texts for a known table', () => {

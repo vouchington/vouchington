@@ -155,6 +155,7 @@ describe('route rate-limit registry', () => {
     const routes = [
       'POST:/api/v1/membership-purchase-intents',
       'POST:/api/v1/membership-verifications',
+      'POST:/api/v1/memberships/microsoft-store/service-tickets',
       'POST:/api/v1/memberships/billing-portal-sessions',
     ]
 

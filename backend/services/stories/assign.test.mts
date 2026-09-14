@@ -27,8 +27,8 @@ import {
   claimPostPublicationDirtyWork,
 } from '@services/post-publication/dirty-work'
 import { invalidateStories } from './cache-invalidation.mts'
-import { settleStoryPostTopicVoteCapture } from './test-helpers/post-topic-vote-capture.mts'
-import { drainStoryPostRelatedUrlProjection } from './test-helpers/story-post-related-url-projection.mts'
+import { settleStoryPostTopicVoteCapture } from '../../test-helpers/services/stories/post-topic-vote-capture.mts'
+import { drainStoryPostRelatedUrlProjection } from '../../test-helpers/services/stories/story-post-related-url-projection.mts'
 import type { PrivateUser } from '@services/users/types'
 
 describe('assign', () => {

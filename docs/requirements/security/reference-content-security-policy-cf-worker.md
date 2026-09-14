@@ -21,7 +21,7 @@ img-src 'self' data: https: https://images-staging.voucha.ai https://images.vouc
 font-src 'self' {CSP_ASSET_ORIGIN};
 frame-src 'self' https://g.voucha.ai https://challenges.cloudflare.com https://accounts.google.com https://www.google.com https://www.youtube-nocookie.com https://player.vimeo.com;
 media-src 'self' https: blob:;
-connect-src 'self' https://o4507688154824704.ingest.us.sentry.io https://g.voucha.ai https://challenges.cloudflare.com https://connect.facebook.net https://accounts.google.com https://appleid.cdn-apple.com https://www.google.com https://graph.facebook.com https://www.facebook.com {CSP_BROWSER_UPLOAD_ORIGINS} {CSP_ASSET_ORIGIN};
+connect-src 'self' {CSP_SENTRY_ORIGIN} https://g.voucha.ai https://challenges.cloudflare.com https://connect.facebook.net https://accounts.google.com https://appleid.cdn-apple.com https://www.google.com https://graph.facebook.com https://www.facebook.com {CSP_BROWSER_UPLOAD_ORIGINS} {CSP_ASSET_ORIGIN};
 object-src 'none';
 base-uri 'self';
 form-action 'self';

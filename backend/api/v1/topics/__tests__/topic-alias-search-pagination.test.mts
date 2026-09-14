@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createTestTopic } from '@voucha/test-helpers'
 import { createTopicAliases } from '@services/topics/aliases'
 import { encodeScopedAliasCursor } from '@modules/pagination'

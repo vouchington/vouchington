@@ -1,8 +1,10 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 
 import {
   beginTransaction,
   createTestRetentionWindow,
+  createTestMembership,
   createTestSku,
   createTestUserDirect,
   getTestMembershipGrant,
@@ -18,8 +20,49 @@ import { terminateRetainedMembershipGrants } from '../terminate-retained-members
 import { createMembership, grantMembership } from '../../memberships/create.mts'
 import { expireElapsedMemberships } from '../../memberships/grants/expire-elapsed.mts'
 import { revokeMembershipGrant } from '../../memberships/grants/revoke.mts'
+import { claimAdministratorRefundRequest } from '../../memberships/refund-reconciliation/administrator-request.mts'
 
 describe('membership lineage retention', () => {
+  it('skips an incomplete administrator refund without starving the deletion batch', async () => {
+    const window = createTestRetentionWindow()
+    const [administrator, refundMember, eligibleMember] = await Promise.all([
+      createTestUserDirect(),
+      createTestUserDirect(),
+      createTestUserDirect(),
+    ])
+    if (!administrator || !refundMember || !eligibleMember) {
+      throw new Error('Failed to create test users')
+    }
+    const membership = await createTestMembership({
+      user_id: refundMember.id,
+      stripe_subscription_id: `sub-retention-refund-${randomUUID()}`,
+    })
+    await claimAdministratorRefundRequest({
+      amount: { amount: 700, currency: 'usd' },
+      cancelRequested: false,
+      idempotencyKey: randomUUID(),
+      issuedById: administrator.id,
+      membershipId: membership.id,
+      note: null,
+      periodEndsAt: new Date('2026-10-01T00:00:00.000Z'),
+      periodStartedAt: new Date('2026-09-01T00:00:00.000Z'),
+      providerPaymentReference: `ch-retention-refund-${randomUUID()}`,
+      providerSubscriptionReference: null,
+      reason: 'requested',
+      requestFingerprint: randomUUID().replaceAll('-', '').repeat(2),
+    })
+    await Promise.all([
+      softDeleteUserAt(refundMember.id, window.firstEligibleDate),
+      softDeleteUserAt(eligibleMember.id, window.secondEligibleDate),
+    ])
+
+    await expect(
+      cleanupSoftDeletedUsers({ ...window, batchSize: 1, maxBatches: 1 }),
+    ).resolves.toEqual({ deleted: 1, hasMore: true })
+    expect(await getTestUserRaw(refundMember.id)).not.toBeNull()
+    expect(await getTestUserRaw(eligibleMember.id)).toBeNull()
+  }, 60_000)
+
   it('terminalizes active and queued grants before concurrent final account deletion', async () => {
     const window = createTestRetentionWindow()
     const [administrator, member] = await Promise.all([

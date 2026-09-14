@@ -58,6 +58,13 @@ describe('workspace-package-relative-import-boundaries', () => {
       expect(new RegExp(rule.from.pathNot).test(`${packageRoot}/index.d.mts`)).toBe(true)
     })
 
+    it('exempts the non-runtime backend test-helper workspace', () => {
+      expect(new RegExp(rule.from.pathNot).test('backend/test-helpers/services/example.mts')).toBe(
+        true,
+      )
+      expect(new RegExp(rule.from.pathNot).test('backend/services/example/index.mts')).toBe(false)
+    })
+
     it('restricts only local, non-type-only dependencies', () => {
       expect(rule.to.dependencyTypes).toEqual(['local'])
       expect(rule.to.dependencyTypesNot).toEqual(['type-only'])

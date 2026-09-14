@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('GET /api/v1/topics/publisher-types', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 
 describe('PUT /api/v1/bookmarks/user/:id/follow response privacy', () => {

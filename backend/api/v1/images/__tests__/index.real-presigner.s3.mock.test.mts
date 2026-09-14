@@ -3,7 +3,7 @@ import { hasS3Credentials } from '@modules/aws/credentials'
 
 vi.unmock('@aws-sdk/s3-request-presigner')
 
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 

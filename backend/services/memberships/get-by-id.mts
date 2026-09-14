@@ -8,10 +8,3 @@ export async function getLatestMembershipByUserId(userId: string): Promise<Membe
   `)
   return (rows[0] as Membership) ?? null
 }
-
-export async function getMembershipById(membershipId: string): Promise<Membership | null> {
-  const { rows } = await read(sql`/* getMembershipById */
-    SELECT * FROM view_memberships WHERE id = ${membershipId} LIMIT 1
-  `)
-  return (rows[0] as Membership) ?? null
-}

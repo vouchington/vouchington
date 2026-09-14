@@ -12,7 +12,7 @@ const webTestsJobName = 'test-web / web-tests (1)'
 const playwrightShardJobName = 'playwright-tests / playwright-tests (2)'
 const storePlaywrightOtelJobName = 'store-playwright-otel'
 const matchingLog = [
-  'RUN vX.Y.Z /Users/jonathanong/actions-runners/1/_work/filaments/filaments',
+  'RUN vX.Y.Z /Users/dev/actions-runners/1/_work/filaments/filaments',
   'VITEST_COVERAGE_ENABLED: true',
   'undefined',
   "ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL Command was killed with SIGSEGV (Segmentation fault): vitest run '--bail=3' --project web --maxWorkers=7 --shard 1/3 --passWithNoTests",

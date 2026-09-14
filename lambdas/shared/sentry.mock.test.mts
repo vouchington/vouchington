@@ -72,6 +72,20 @@ describe('initSentry', () => {
     }
   })
 
+  it('disables deployed reporting when SENTRY_DSN is missing or invalid', () => {
+    process.env.ENVIRONMENT = 'production'
+    initSentry({ lambdaName: 'test-lambda' })
+    expect(Sentry.init).toHaveBeenCalledWith(
+      expect.objectContaining({ dsn: undefined, enabled: false }),
+    )
+
+    process.env.SENTRY_DSN = 'https://public@example.test/123'
+    initSentry({ lambdaName: 'test-lambda' })
+    expect(Sentry.init).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dsn: 'https://public@example.test/123', enabled: true }),
+    )
+  })
+
   it('disables Sentry in test environment', () => {
     process.env.NODE_ENV = 'test'
     delete process.env.CI
@@ -110,6 +124,7 @@ describe('initSentry', () => {
       process.env.NODE_ENV = 'production'
       delete process.env.CI
       process.env.ENVIRONMENT = environment
+      process.env.SENTRY_DSN = 'https://public@example.test/123'
       initSentry({ lambdaName: 'test-lambda' })
       expect(Sentry.init).toHaveBeenCalledWith(
         expect.objectContaining({ enabled: true, environment }),
@@ -212,12 +227,12 @@ describe('initSentry', () => {
     })
   })
 
-  it('defaults to the hardcoded DSN and trace sample rate', () => {
+  it('leaves the DSN undefined and defaults the trace sample rate when it is unset', () => {
     process.env.NODE_ENV = 'test'
     initSentry({ lambdaName: 'test-lambda' })
     expect(Sentry.init).toHaveBeenCalledWith(
       expect.objectContaining({
-        dsn: expect.stringContaining('4511154787319808'),
+        dsn: undefined,
         tracesSampleRate: 1.0,
       }),
     )
@@ -225,20 +240,20 @@ describe('initSentry', () => {
 
   it('uses Sentry config env vars when present', () => {
     process.env.NODE_ENV = 'test'
-    process.env.SENTRY_DSN = 'https://example@o0.ingest.sentry.io/123'
+    process.env.SENTRY_DSN = 'https://example@o0.example.test/123'
     process.env.SENTRY_TRACES_SAMPLE_RATE = '0.25'
 
     initSentry({ lambdaName: 'test-lambda' })
 
     expect(Sentry.init).toHaveBeenCalledWith(
       expect.objectContaining({
-        dsn: 'https://example@o0.ingest.sentry.io/123',
+        dsn: 'https://example@o0.example.test/123',
         tracesSampleRate: 0.25,
       }),
     )
   })
 
-  it('falls back to hardcoded Sentry config for blank or invalid env vars', () => {
+  it('disables Sentry transport for blank or invalid DSNs while keeping trace defaults', () => {
     process.env.NODE_ENV = 'test'
     process.env.SENTRY_DSN = '   '
     process.env.SENTRY_TRACES_SAMPLE_RATE = '2'
@@ -247,7 +262,7 @@ describe('initSentry', () => {
 
     expect(Sentry.init).toHaveBeenCalledWith(
       expect.objectContaining({
-        dsn: expect.stringContaining('4511154787319808'),
+        dsn: undefined,
         tracesSampleRate: 1.0,
       }),
     )

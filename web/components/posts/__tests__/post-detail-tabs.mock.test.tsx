@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render } from '@testing-library/react'
 import { PostDetailTabs } from '../post-detail-tabs'
-import { consumePreservedScrollPathname } from '@/lib/navigation/scroll-preservation'
+import { consumePreservedScrollPosition } from '@/lib/navigation/scroll-preservation'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 
 vi.mock(
@@ -43,7 +43,7 @@ vi.mock(
 
 describe('PostDetailTabs', () => {
   beforeEach(() => {
-    consumePreservedScrollPathname('/__test_reset__')
+    consumePreservedScrollPosition('/__test_reset__')
   })
 
   it('renders both Comments and Manage Tags tabs when authenticated', () => {
@@ -123,7 +123,7 @@ describe('PostDetailTabs', () => {
     expect(commentsTab).not.toBeNull()
     fireEvent.click(commentsTab!)
 
-    expect(consumePreservedScrollPathname('/review/xyz-456')).toBe(true)
+    expect(consumePreservedScrollPosition('/review/xyz-456')).not.toBeNull()
   })
 
   it('renders locale-formatted comment count in the Comments tab', () => {

@@ -21,6 +21,10 @@
 !backend/types/**
 !email-templates/
 !email-templates/**
+!localization/
+!localization/**
+!dev/localization/
+!dev/localization/**
 !static-code-analysis/
 !static-code-analysis/docker-deploy/
 !static-code-analysis/docker-deploy/**

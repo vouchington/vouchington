@@ -44,6 +44,7 @@
     "static-code-analysis/**/*.mts",
     "static-code-analysis/**/*.ts",
     "static-code-analysis/**/*.d.ts",
+    "localization/**/*.mts",
     "monitors/**/*.mts",
     "monitors/**/*.ts",
     "monitors/**/*.d.ts",

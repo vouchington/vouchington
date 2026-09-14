@@ -4,7 +4,7 @@ import { GITHUB_BODY_MAX_CHARACTERS, validateGitHubBodyLength } from 'vouchingto
 import {
   VALID_PR_BODY as VALID_BODY,
   VALID_PROVENANCE_BLOCK,
-} from '../test-helpers/valid-pr-body.mts'
+} from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { validatePrBody } from '../validate.mts'
 
 function withoutSection(body: string, sectionHeading: string): string {

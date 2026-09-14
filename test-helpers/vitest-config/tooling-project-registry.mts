@@ -60,6 +60,10 @@ export const toolingWorkflowProjectNames = configuredToolingProjectNames.filter(
   name => toolingProjectPolicies[name].runInToolingWorkflow,
 )
 
+export const dedicatedToolingWorkflowProjectNames = configuredToolingProjectNames.filter(
+  name => toolingProjectPolicies[name].runInDedicatedToolingWorkflow,
+)
+
 export const localCoverageToolingProjectNames = configuredToolingProjectNames.filter(
   name => toolingProjectPolicies[name].runInLocalCoverage,
 )

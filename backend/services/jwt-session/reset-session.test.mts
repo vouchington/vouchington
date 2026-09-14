@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { resetSessionState } from './reset-session.mts'
-import { expectUuidV7, legacyUuidV4, signLegacyDeviceJwt } from './test-helpers/index.mts'
+import {
+  expectUuidV7,
+  legacyUuidV4,
+  signLegacyDeviceJwt,
+} from '../../test-helpers/services/jwt-session/index.mts'
 
 describe('resetSessionState', () => {
   it('mints a UUIDv7 device id when no device token is present', async () => {

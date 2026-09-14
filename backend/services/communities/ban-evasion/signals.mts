@@ -84,11 +84,11 @@ export async function checkContentHashMatchToBannedPosts(
     JOIN posts banned_posts
       ON banned_posts.created_by_id = cb.user_id
       AND banned_posts.community_id = ${communityId}
-      AND banned_posts.openai_omni_moderation_content_sha256 IS NOT NULL
-      AND banned_posts.openai_omni_moderation_content_sha256 = candidate_posts.openai_omni_moderation_content_sha256
+      AND banned_posts.llm_moderation_content_sha256 IS NOT NULL
+      AND banned_posts.llm_moderation_content_sha256 = candidate_posts.llm_moderation_content_sha256
       AND banned_posts.deleted_at IS NULL
     WHERE candidate_posts.created_by_id = ${candidateUserId}
-      AND candidate_posts.openai_omni_moderation_content_sha256 IS NOT NULL
+      AND candidate_posts.llm_moderation_content_sha256 IS NOT NULL
       AND candidate_posts.deleted_at IS NULL
       AND candidate_posts.community_id = ${communityId}`
   if (triggeringPostId) {

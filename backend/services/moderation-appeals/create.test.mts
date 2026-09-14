@@ -6,7 +6,7 @@ import {
   insertTestCommunity,
   insertTestPost,
   insertTestCommunityPostReview,
-  setTestLatestPostClearanceNote,
+  appendTestPlatformRejectionNote,
   updateTestCommunityPostReviewState,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -33,7 +33,7 @@ describe('createModerationAppeal', () => {
         markdown: 'My post content',
         clearanceStatus: 'rejected',
       })
-      await setTestLatestPostClearanceNote(postId, internalRemovalNote)
+      await appendTestPlatformRejectionNote(postId, internalRemovalNote)
       const input = parseCreateModerationAppealInput({
         target_type: 'removal',
         target_id: postId,

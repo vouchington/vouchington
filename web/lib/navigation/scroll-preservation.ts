@@ -1,4 +1,9 @@
-let preservedScrollPathname: string | null = null
+interface PreservedScrollPosition {
+  pathname: string
+  scrollY: number
+}
+
+let preservedScrollPosition: PreservedScrollPosition | null = null
 
 interface ScrollPreservingClickEvent {
   defaultPrevented: boolean
@@ -9,22 +14,22 @@ interface ScrollPreservingClickEvent {
   shiftKey: boolean
 }
 
-export function preserveScrollForPathname(pathname: string) {
-  preservedScrollPathname = pathname
+export function preserveScrollForPathname(pathname: string, scrollY = window.scrollY) {
+  preservedScrollPosition = { pathname, scrollY }
 }
 
-export function consumePreservedScrollPathname(pathname: string): boolean {
-  if (preservedScrollPathname === null) return false
+export function consumePreservedScrollPosition(pathname: string): number | null {
+  if (preservedScrollPosition === null) return null
 
-  const shouldPreserve = preservedScrollPathname === pathname
-  preservedScrollPathname = null
-  return shouldPreserve
+  const preserved = preservedScrollPosition
+  preservedScrollPosition = null
+  return preserved.pathname === pathname ? preserved.scrollY : null
 }
 
 export function preserveScrollForInternalHrefClick(
   event: ScrollPreservingClickEvent,
   href: unknown,
-) {
+): boolean {
   if (
     event.defaultPrevented ||
     event.button !== 0 ||
@@ -34,13 +39,16 @@ export function preserveScrollForInternalHrefClick(
     event.shiftKey ||
     typeof href !== 'string'
   ) {
-    return
+    return false
   }
 
   try {
     const url = new URL(href, window.location.href)
-    if (url.origin === window.location.origin) preserveScrollForPathname(url.pathname)
+    if (url.origin !== window.location.origin) return false
+    preserveScrollForPathname(url.pathname)
+    return true
   } catch {
     // Ignore malformed hrefs; normal navigation handling can decide what to do.
+    return false
   }
 }

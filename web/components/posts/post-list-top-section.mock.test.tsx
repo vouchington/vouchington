@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 vi.mock(import('@/components/ui/breadcrumb'), () => ({
   Breadcrumbs: () => <nav>breadcrumbs</nav>,

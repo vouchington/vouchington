@@ -180,7 +180,6 @@ describe('no-mistakes test plan config', () => {
         'backend/**/*.ts',
         'backend/**/package.json',
         'ts-shared/**/*.mts',
-        'ts-shared/**/*.ts',
         'ts-shared/**/package.json',
         'pnpm-workspace.yaml',
         'static-code-analysis/docker-deploy/**',
@@ -224,6 +223,12 @@ describe('no-mistakes test plan config', () => {
       paths: ['.agents/skills/**'],
       targets: ['github-actions', 'ci-tools', 'dev-tools', 'static-analysis-tools'],
     })
+    expect(named['localization-email-residuals']).toEqual({
+      name: 'localization-email-residuals',
+      paths: ['email-templates/**', 'ts-shared/ui-messages/**', 'dev/localization/**'],
+      targets: ['backend-email-templates'],
+    })
+    expect(projectToJob()['backend-email-templates']).toBe('test-backend-modules')
     expect(config.projects['ci-inventory-config']).toBeUndefined()
     expect(named['ci-inventory-config']).toEqual({
       name: 'ci-inventory-config',

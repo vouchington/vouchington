@@ -17,6 +17,7 @@ async function assertImagesExistForUser(
     WHERE id = ANY(${imageIds}::uuid[])
       AND upload_completed_at IS NOT NULL
       AND deleted_at IS NULL
+      AND quarantine_pending_at IS NULL
   `)
 
   const rowMap = new Map(rows.map((r: { id: string; created_by_id: string }) => [r.id, r]))

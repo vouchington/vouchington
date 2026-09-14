@@ -31,18 +31,62 @@ export function ClearanceBadge({ status }: { status: AdminReviewQueuePost['clear
   )
 }
 
-export function Signal({ label, value }: { label: string; value: boolean | null }) {
+export function ModerationSummary({
+  summary,
+}: {
+  summary: AdminReviewQueuePost['moderation_summary']
+}) {
   const t = useTranslations()
-  const text =
-    value === true
-      ? t('extracted.reviewQueue.reviewQueueHelpers.flagged_5588be88')
-      : value === false
-        ? t('extracted.reviewQueue.reviewQueueHelpers.clear_913a4cb9')
-        : t('extracted.reviewQueue.reviewQueueHelpers.pending_62a2fed3')
+  const disposition = (() => {
+    switch (summary.disposition) {
+      case 'pass':
+        return t('extracted.reviewQueue.reviewQueueHelpers.clear_913a4cb9')
+      case 'review':
+        return t('extracted.reviewQueue.reviewQueueHelpers.inReview_c3905914')
+      case 'reject':
+        return t('extracted.reviewQueue.reviewQueueHelpers.rejected_aea4a04a')
+      case 'incomplete':
+      case null:
+        return t('extracted.reviewQueue.reviewQueueHelpers.pending_62a2fed3')
+    }
+  })()
+  const reasonCodes = [...new Set(summary.reason_codes)]
+
+  function reasonLabel(reasonCode: string): string {
+    switch (reasonCode) {
+      case 'provider_pass':
+      case 'provider_passed':
+        return t('extracted.reviewQueue.reviewQueueHelpers.clear_913a4cb9')
+      case 'staff_approved':
+        return t('extracted.reviewQueue.reviewQueueHelpers.approved_87b42e40')
+      case 'staff_rejected':
+        return t('extracted.reviewQueue.reviewQueueHelpers.rejected_aea4a04a')
+      case 'staff_reviewed':
+        return t('extracted.reviewQueue.reviewQueueHelpers.inReview_c3905914')
+      case 'automation_unavailable':
+      case 'no_content_to_moderate':
+        return t('extracted.reviewQueue.reviewQueueHelpers.pending_62a2fed3')
+      case 'provider_flagged':
+      case 'spam_signal':
+      case 'sexual_minors':
+        return t('extracted.reviewQueue.reviewQueueHelpers.flagged_5588be88')
+      default:
+        return t('extracted.reviewQueue.reviewQueueHelpers.pending_62a2fed3')
+    }
+  }
+
   return (
-    <span className='text-muted-foreground'>
-      {label}: <span className='text-foreground'>{text}</span>
-    </span>
+    <div className='flex flex-col gap-1 text-sm'>
+      <span className='capitalize text-foreground'>{disposition}</span>
+      {reasonCodes.map(reasonCode => (
+        <span
+          key={reasonCode}
+          className='text-muted-foreground'
+        >
+          {reasonLabel(reasonCode)}
+        </span>
+      ))}
+    </div>
   )
 }
 

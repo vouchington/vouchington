@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { checkConfigInventoryPolicy, collectConfigInventory } from './index.mts'
 import { GENERIC_REVIEW_REASON } from './review-reasons.mts'
-import { makeRepoFixture } from './test-helpers/repo-fixture.mts'
+import { makeRepoFixture } from '../test-helpers/config-inventory/repo-fixture.mts'
 
 describe('config inventory', () => {
   const testDirs: string[] = []

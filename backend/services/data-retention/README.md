@@ -9,8 +9,9 @@ retention is 90 days and never selects pending delivery work.
 
 - `runDataRetentionCleanup()` — runs all retention jobs in sequence and returns deletion counts
 - `cleanupSoftDeletedUsers()` — hard-deletes users soft-deleted more than 90 days ago, but leaves a
-  user with an incomplete `user_deletion_requests` lifecycle intact; this prevents retention from
-  bypassing the durable account-deletion privacy and provider-cleanup fence. Final purge also
+  user with an incomplete `user_deletion_requests` lifecycle or administrator refund operation
+  intact; this prevents retention from bypassing durable privacy, provider-cleanup, and refund
+  reconciliation fences. Final purge also
   revokes retained administrator grants, terminalizes their source state, and closes open activation
   periods before removing the account while preserving the grant audit rows
 - `cleanupOldReferralAttributions()` — removes anonymous (`user_id IS NULL`) referral attribution

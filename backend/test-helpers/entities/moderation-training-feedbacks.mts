@@ -20,10 +20,27 @@ export async function getTestPostClearanceState(postId: string): Promise<
       SELECT
         approved_at,
         rejected_at,
-        openai_omni_moderation_flagged,
-        spam_detection_flagged
-      FROM posts
-      WHERE id = ${postId}
+        CASE WHEN openai.disposition IS NULL THEN NULL ELSE openai.disposition <> 'pass' END AS openai_omni_moderation_flagged,
+        CASE WHEN spam.disposition IS NULL THEN NULL ELSE spam.disposition <> 'pass' END AS spam_detection_flagged
+      FROM posts post
+      LEFT JOIN post_moderation_versions version
+        ON version.post_id = post.id
+       AND version.content_sha256 = post.llm_moderation_content_sha256
+       AND version.policy_revision = '2026-09-09.1'
+      LEFT JOIN LATERAL (
+        SELECT disposition
+        FROM post_moderation_dispositions
+        WHERE version_id = version.id AND source = 'openai_omni'
+        ORDER BY id DESC LIMIT 1
+      ) openai ON true
+      LEFT JOIN LATERAL (
+        SELECT disposition
+        FROM post_moderation_dispositions
+        WHERE version_id = version.id AND source = 'spam_detection'
+        ORDER BY id DESC LIMIT 1
+      ) spam ON true
+      WHERE post.id = ${postId}
+      ORDER BY version.id DESC NULLS LAST LIMIT 1
       `,
   )
   return rows[0]

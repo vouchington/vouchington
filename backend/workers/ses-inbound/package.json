@@ -12,7 +12,7 @@
     }
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1129.0",
+    "@aws-sdk/client-s3": "^3.1131.0",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/queue-config": "workspace:^",
@@ -22,7 +22,7 @@
     "@services/customer-support": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
     "glide-mq": "^0.15.5",
-    "mailparser": "^3.9.22"
+    "mailparser": "^3.9.24"
   },
   "devDependencies": {
     "@types/mailparser": "^3.4.6"

@@ -1,4 +1,5 @@
 import { isIP } from 'node:net'
+import { getSentryDsnConfig } from '@ts-shared/utils/sentry-deployment-gate'
 
 /**
  * The IPv6-capable egress allowlist from the API's AAAA record audit (epic #7987).
@@ -16,7 +17,6 @@ import { isIP } from 'node:net'
  * production-server egress catalog in `docs/overview/infrastructure/networking.md`.
  */
 export const IPV6_ALLOWLIST: readonly string[] = [
-  'o4507688154824704.ingest.us.sentry.io',
   'challenges.cloudflare.com',
   'recaptchaenterprise.googleapis.com',
   'webrisk.googleapis.com',
@@ -30,6 +30,12 @@ export const IPV6_ALLOWLIST: readonly string[] = [
   'email.us-west-2.api.aws',
   'monitoring.us-west-2.api.aws',
 ]
+
+/** Returns the configured Sentry authority for explicit reachability verification. */
+export function getConfiguredSentryHost(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const sentryHost = getSentryDsnConfig(env.SENTRY_DSN)?.origin
+  return sentryHost === undefined ? undefined : new URL(sentryHost).host
+}
 
 // S3 uses virtual-hosted bucket subdomains, so its audited dual-stack service endpoint must match
 // by suffix. Other AWS clients remain exact-host entries above.

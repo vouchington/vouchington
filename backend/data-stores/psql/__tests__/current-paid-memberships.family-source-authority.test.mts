@@ -1,21 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
-import { read } from '../index.mts'
-import { createLocalTestUser } from '../test-helpers/users.mts'
+import { createLocalTestUser } from '../../../test-helpers/data-stores/psql/users.mts'
+import {
+  getCurrentPaidMembershipForUser,
+  getPrivateUserMembershipForUser,
+} from '../../../test-helpers/data-stores/psql/current-paid-memberships-family-source-authority.mts'
 import { createTestFamilyMembership } from '../../../test-helpers/entities/memberships/family.mts'
 import { createTestSku } from '../../../test-helpers/entities/memberships.mts'
 import { rejectTestMembershipProviderEvidence } from '../../../test-helpers/entities/memberships/updates.mts'
-
-type PaidMembershipViewRow = {
-  plan: 'plus' | 'pro'
-  user_id: string
-}
-
-type PrivateUserMembershipRow = {
-  id: string
-  membership_plan: 'plus' | 'pro' | null
-}
 
 describe('current paid membership view family-source authority', () => {
   it.each(['cancelled', 'expired', 'past_due', 'paused'] as const)(
@@ -35,7 +27,7 @@ describe('current paid membership view family-source authority', () => {
         userId: user.id,
       })
 
-      await expect(getCurrentPaidMembership(user.id)).resolves.toEqual([])
+      await expect(getCurrentPaidMembershipForUser(user.id)).resolves.toEqual([])
     },
   )
 
@@ -97,43 +89,27 @@ describe('current paid membership view family-source authority', () => {
     })
     await rejectTestMembershipProviderEvidence(rejectedFamily.id)
 
-    await expect(getCurrentPaidMembership(validUser.id)).resolves.toEqual([
+    await expect(getCurrentPaidMembershipForUser(validUser.id)).resolves.toEqual([
       { user_id: validUser.id, plan: 'plus' },
     ])
-    await expect(getCurrentPaidMembership(futureUser.id)).resolves.toEqual([])
-    await expect(getCurrentPaidMembership(elapsedUser.id)).resolves.toEqual([])
-    await expect(getCurrentPaidMembership(rejectedUser.id)).resolves.toEqual([])
-    await expect(getPrivateUserMembership(validUser.id)).resolves.toEqual({
+    await expect(getCurrentPaidMembershipForUser(futureUser.id)).resolves.toEqual([])
+    await expect(getCurrentPaidMembershipForUser(elapsedUser.id)).resolves.toEqual([])
+    await expect(getCurrentPaidMembershipForUser(rejectedUser.id)).resolves.toEqual([])
+    await expect(getPrivateUserMembershipForUser(validUser.id)).resolves.toEqual({
       id: validUser.id,
       membership_plan: 'plus',
     })
-    await expect(getPrivateUserMembership(futureUser.id)).resolves.toEqual({
+    await expect(getPrivateUserMembershipForUser(futureUser.id)).resolves.toEqual({
       id: futureUser.id,
       membership_plan: null,
     })
-    await expect(getPrivateUserMembership(elapsedUser.id)).resolves.toEqual({
+    await expect(getPrivateUserMembershipForUser(elapsedUser.id)).resolves.toEqual({
       id: elapsedUser.id,
       membership_plan: null,
     })
-    await expect(getPrivateUserMembership(rejectedUser.id)).resolves.toEqual({
+    await expect(getPrivateUserMembershipForUser(rejectedUser.id)).resolves.toEqual({
       id: rejectedUser.id,
       membership_plan: null,
     })
   })
 })
-
-async function getCurrentPaidMembership(userId: string): Promise<PaidMembershipViewRow[]> {
-  const { rows } = await read<PaidMembershipViewRow>(sql`/* getCurrentPaidMembership */
-    SELECT user_id, plan
-    FROM view_current_paid_memberships
-    WHERE user_id = ${userId}`)
-  return rows
-}
-
-async function getPrivateUserMembership(userId: string): Promise<PrivateUserMembershipRow> {
-  const { rows } = await read<PrivateUserMembershipRow>(sql`/* getPrivateUserMembership */
-    SELECT id, membership_plan
-    FROM view_users_private
-    WHERE id = ${userId}`)
-  return rows[0]!
-}

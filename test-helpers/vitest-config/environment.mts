@@ -148,6 +148,7 @@ export const parseStorybookBrowserApiPort = (): number | undefined => {
   return 45_000 + ((runNumber + attemptOffset) % 10_000)
 }
 export const vitestViteCacheDir = resolve(process.cwd(), '.cache/vite/vitest')
+export const vitestFsModuleCachePath = resolve(process.cwd(), '.cache/vite/fs-module')
 export const storybookBrowserCacheDir =
   process.env.VITEST_STORYBOOK_BROWSER_CACHE_DIR ??
   (process.env.CI

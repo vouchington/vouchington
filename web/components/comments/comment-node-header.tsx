@@ -12,8 +12,9 @@ import { userTabForPostType } from '@/lib/links/entity-href'
 import type { MouseEvent, ReactNode } from 'react'
 import type { CommentNodeData } from './comment-tree-utils'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import type { ReportMenuKebab as ReportMenuKebabComponent } from '@/components/shared/report-menu-item'
 
-const ReportMenuKebab = dynamic(
+const ReportMenuKebab = dynamic<Parameters<typeof ReportMenuKebabComponent>[0]>(
   () => import('@/components/shared/report-menu-item').then(m => m.ReportMenuKebab),
   { ssr: false },
 )

@@ -1,9 +1,12 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import type { User } from '@/types/user'
 import RootLayout from './layout'
 import { SpeculationRulesScript } from '@/components/seo/speculation-rules-script'
 import { RootAppShell } from './root-app-shell'
+
+vi.mock(import('@/lib/i18n/load-server-messages'), () => ({ loadServerMessages: loadJsonMessages }))
 
 interface HeaderBag {
   get: (key: string) => string | null
@@ -29,12 +32,7 @@ const getCurrentUserMock = vi.hoisted(() => vi.fn<() => Promise<User | null>>())
 const headersMock = vi.hoisted(() => vi.fn<() => Promise<HeaderBag>>())
 const cookiesMock = vi.hoisted(() => vi.fn<() => Promise<CookieBag>>())
 const redirectMock = vi.hoisted(() => vi.fn<(path: string) => never>())
-// redirectMock is required so that vi.mock(import('next/navigation'), ...) can hoist it. Layout no longer
-// calls redirect directly, but the mock is kept to prevent errors from modules that still
-// reference next/navigation at import time.
 
-// getResolvedUiLocale() is React.cache-wrapped; without an identity cache here its first result
-// would memoize module-wide and leak into every later it() in this file.
 vi.mock<ReactModule>(import('react'), async importOriginal => {
   const actual = await importOriginal<ReactModule>()
   return {

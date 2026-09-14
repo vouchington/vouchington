@@ -56,6 +56,7 @@ _none_
 **Indexes:**
 
 - `idx_membership_verifications__evidence_id`: `CREATE INDEX idx_membership_verifications__evidence_id ON public.membership_verifications USING btree (membership_provider_evidence_id)`
+- `idx_membership_verifications__pending_microsoft_source_recovery`: `CREATE INDEX idx_membership_verifications__pending_microsoft_source_recovery ON public.membership_verifications USING btree (user_id, environment, application_id, request_fingerprint) WHERE ((provider = 'microsoft_store'::membership_provider_kinds) AND (verified_at IS NULL) AND (conflicted_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_membership_verifications__pending_processing`: `CREATE INDEX idx_membership_verifications__pending_processing ON public.membership_verifications USING btree (next_processing_at, id) WHERE ((verified_at IS NULL) AND (conflicted_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_membership_verifications__processing_claim_token`: `CREATE UNIQUE INDEX idx_membership_verifications__processing_claim_token ON public.membership_verifications USING btree (processing_claim_token) WHERE (processing_claim_token IS NOT NULL)`
 - `idx_membership_verifications__purchase_intent_id`: `CREATE INDEX idx_membership_verifications__purchase_intent_id ON public.membership_verifications USING btree (membership_purchase_intent_id, id DESC) WHERE (membership_purchase_intent_id IS NOT NULL)`

@@ -19,7 +19,7 @@ const buildGateCascadeLog = 'One or more build jobs were missing, malformed, or 
 function admissionLog(freeGiB = 34, requiredGiB = 35): string {
   return [
     'A job started hook has been configured by the self-hosted runner administrator',
-    "Run '/Users/jonathanong/.local/share/voucha-actions-runner-health/current/job-started.sh'",
+    "Run '/Users/dev/.local/share/voucha-actions-runner-health/current/job-started.sh'",
     `Runner disk admission rejected: free=${freeGiB}GiB required=${requiredGiB}GiB active_leases=2`,
     '##[error]Process completed with exit code 1.',
   ].join('\n')

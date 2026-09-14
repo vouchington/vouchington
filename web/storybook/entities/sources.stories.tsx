@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { CreateSourceForm } from '@/components/sources/create-source-form'
 import { RssFeedListItem } from '@/components/sources/rss-feed-list-item'
 import { SourcesFilterForm } from '@/components/topics/sources-filter-form'
@@ -13,6 +15,8 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 export const ListPage: Story = {
   render: () => (
@@ -106,6 +110,7 @@ function SourceAsides() {
   return (
     <AsideStack>
       <TopicSourcesAside
+        t={t}
         rssFeeds={{
           results: rssFeeds,
           page_info: { has_next_page: false, end_cursor: null, start_cursor: null },

@@ -16,18 +16,9 @@ Response:
       "created_at": "..."
     }
   ],
-  "openai_moderation": {
-    "flagged": true,
-    "results": [
-      {
-        "flagged": true,
-        "categories": { "harassment": true, "violence": false }
-      }
-    ]
-  }
+  "platform_moderation": { "status": "in_review" }
 }
 ```
 
-`openai_moderation.results` contains the stored raw provider result object or array when moderation
-has run, and is `null` when the post has no stored provider results. This field is available only
-through this authorized moderation-results route; general post responses do not expose it.
+`platform_moderation.status` exposes only the provider-neutral coarse lifecycle. Provider identity,
+raw results, and private evidence are restricted to staff review surfaces.

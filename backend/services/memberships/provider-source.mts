@@ -5,6 +5,13 @@ import type {
   MembershipProviderSourceKind,
 } from './create-types.mts'
 
+export class ProviderMembershipSourceConflictError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ProviderMembershipSourceConflictError'
+  }
+}
+
 export async function createProviderMembershipSource<
   SourceKind extends MembershipProviderSourceKind,
 >(
@@ -72,7 +79,9 @@ function assertProviderAccountMatches(
     options.sourceIdentity.providerAccountId !== undefined &&
     providerAccountId !== options.sourceIdentity.providerAccountId
   )
-    throw new Error('Provider lineage account does not match the incoming evidence')
+    throw new ProviderMembershipSourceConflictError(
+      'Provider lineage account does not match the incoming evidence',
+    )
 }
 
 async function createOrLockProviderLineageBinding(
@@ -99,7 +108,7 @@ async function createOrLockProviderLineageBinding(
     | { id: string; user_id: string; originating_invoice_id: string | null }
     | undefined
   if (binding?.user_id !== options.userId)
-    throw new Error('Provider lineage is bound to another account')
+    throw new ProviderMembershipSourceConflictError('Provider lineage is bound to another account')
   if (options.stripeOriginatingInvoiceId && binding.originating_invoice_id === null) {
     await query(sql`/* createMembership: fill Stripe originating invoice */
       UPDATE membership_lineage_bindings
@@ -152,6 +161,6 @@ async function createOrLockProviderSource(
       | undefined
   }
   if (!source || source.user_id !== options.userId || source.source_kind !== options.sourceKind)
-    throw new Error('Provider source belongs to another account')
+    throw new ProviderMembershipSourceConflictError('Provider source belongs to another account')
   return source
 }

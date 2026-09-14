@@ -3,9 +3,11 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { shardedJobPolicies } from '../../ci/vitest/project-ownership-registry.mts'
 
 import {
+  type ExpectationOptions,
+  type ProducerResults,
+  type SuiteExpectation,
   writeAttemptFixtures,
   writeExplicitAttemptFixtures,
 } from './vitest-report-expectation-fixture.mts'
@@ -14,36 +16,27 @@ import {
   mergeExpectationStep,
 } from './vitest-report-expectation-workflows-fixture.mts'
 
-interface ExpectationOptions {
-  readonly attempts?: Readonly<Record<string, number>>
-  readonly coveragePlan?: Record<string, { shards: number }>
-  readonly runnable?: Partial<Record<string, boolean>>
-  readonly storybookBrowserMode?: string
-}
+type ResolverResult = { status: number | null; output: string; stderr: string; stdout: string }
+type ResolvedContext = { attempt: number; suites: SuiteExpectation[]; version: string }
 
-type SuiteExpectation = { readonly suite: string; readonly minimumAttempt: number }
-type ProducerResult = { result: string; attempt?: string }
-
-function defaultShardSuites(job: string, minimumAttempt: number): SuiteExpectation[] {
-  const policy = shardedJobPolicies()[job]
-  if (!policy) throw new Error(`Missing shard policy for ${job}`)
-  return Array.from({ length: policy.defaultShards }, (_, index) => ({
-    suite: `${policy.reportPrefix}-${index + 1}`,
+function shardSuites(prefix: string, total: number, minimumAttempt: number): SuiteExpectation[] {
+  return Array.from({ length: total }, (_, index) => ({
+    suite: `${prefix}-${index + 1}`,
     minimumAttempt,
   }))
 }
 
 function runExpectationResolver(
-  results: Record<string, ProducerResult>,
+  results: ProducerResults,
   options: ExpectationOptions = {},
-): { status: number | null; output: string; stdout: string } {
+): ResolverResult {
   expect(expectationStep?.run).toBeTypeOf('string')
   const directory = mkdtempSync(join(tmpdir(), 'vitest-report-expectation-'))
   const outputPath = join(directory, 'github-output')
   const attemptsDirectory = join(directory, 'attempts')
   writeAttemptFixtures(attemptsDirectory, results)
   writeExplicitAttemptFixtures(attemptsDirectory, options.attempts ?? {})
-  const result = spawnSync('bash', ['-c', expectationStep?.run ?? ''], {
+  const result = spawnSync('bash', ['-e', '-c', expectationStep?.run ?? ''], {
     encoding: 'utf8',
     env: {
       ...process.env,
@@ -61,7 +54,10 @@ function runExpectationResolver(
           ]),
         ),
       ),
-      COVERAGE_PLAN: JSON.stringify(options.coveragePlan ?? {}),
+      BACKEND_UNIT_SHARD_TOTAL: options.shardTotals?.['test-backend-unit'] ?? '',
+      WEB_SHARD_TOTAL: options.shardTotals?.['test-web'] ?? '',
+      WEB_API_SHARD_TOTAL: options.shardTotals?.['test-web-api'] ?? '',
+      WEB_INTEGRATION_SHARD_TOTAL: options.shardTotals?.['test-web-integration'] ?? '',
       STORYBOOK_BROWSER_MODE: options.storybookBrowserMode ?? 'full',
       RUN_WEB_TESTS: String(options.runnable?.['test-web'] ?? false),
       RUN_WEB_API_TESTS: String(options.runnable?.['test-web-api'] ?? false),
@@ -73,20 +69,16 @@ function runExpectationResolver(
   })
   const output = existsSync(outputPath) ? readFileSync(outputPath, 'utf8').trim() : ''
   rmSync(directory, { force: true, recursive: true })
-  return { status: result.status, output, stdout: result.stdout }
+  return { status: result.status, output, stderr: result.stderr, stdout: result.stdout }
 }
 
 function resolveContext(
-  results: Record<string, ProducerResult>,
+  results: ProducerResults,
   options: ExpectationOptions = {},
-): { attempt: number; suites: SuiteExpectation[]; version: string } {
+): ResolvedContext {
   const result = runExpectationResolver(results, options)
-  expect(result.status).toBe(0)
-  return JSON.parse(result.output.slice('context='.length)) as {
-    attempt: number
-    suites: SuiteExpectation[]
-    version: string
-  }
+  expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: '' })
+  return JSON.parse(result.output.slice('context='.length)) as ResolvedContext
 }
 
 function runMergeExpectationResolver(
@@ -120,16 +112,13 @@ describe('Vitest report expectation fan-in', () => {
   it('emits exact runnable suite expectations before producer failure handling', () => {
     const resolution = runExpectationResolver(
       { 'test-backend-unit': { result: 'failure' }, 'test-tooling': { result: 'success' } },
-      { runnable: { 'test-backend-unit': true } },
+      { runnable: { 'test-backend-unit': true }, shardTotals: { 'test-backend-unit': '2' } },
     )
     expect(resolution.status).toBe(1)
     expect(JSON.parse(resolution.output.slice('context='.length))).toEqual({
       version: 'vitest-report-expectations:v2',
       attempt: 2,
-      suites: [
-        ...defaultShardSuites('test-backend-unit', 2),
-        { suite: 'tooling', minimumAttempt: 2 },
-      ],
+      suites: [...shardSuites('backend-shard', 2, 2), { suite: 'tooling', minimumAttempt: 2 }],
     })
     expect(resolution.stdout).toContain(
       '::error::One or more Vitest producer jobs failed or were cancelled.',
@@ -145,9 +134,9 @@ describe('Vitest report expectation fan-in', () => {
       },
       {
         runnable: { 'test-backend-unit': true, 'test-web': true },
-        coveragePlan: {
-          'test-backend-unit': { shards: 2 },
-          'test-web': { shards: 1 },
+        shardTotals: {
+          'test-backend-unit': '2',
+          'test-web': '1',
         },
         storybookBrowserMode: 'empty',
       },
@@ -167,9 +156,8 @@ describe('Vitest report expectation fan-in', () => {
     expect(merged.suites).toContainEqual({ suite: 'postgres-schema', minimumAttempt: 2 })
   })
 
-  it('uses registry-parity defaults and selector coverage-plan widths for web API and integration', () => {
-    const policies = shardedJobPolicies()
-    const defaults = resolveContext(
+  it('uses exact producer totals for web API and integration', () => {
+    const exact = resolveContext(
       {
         'test-backend-unit': { result: 'success' },
         'test-web': { result: 'success' },
@@ -182,20 +170,28 @@ describe('Vitest report expectation fan-in', () => {
           'test-web': true,
           'test-web-api': true,
         },
+        attempts: {
+          'web-api-shard-3': 2,
+          'web-integration-shard-2': 2,
+        },
+        shardTotals: {
+          'test-backend-unit': '2',
+          'test-web': '1',
+          'test-web-api': '3',
+          'test-web-integration': '2',
+        },
       },
     )
-    expect(defaults.suites.map(({ suite }) => suite)).toEqual(
-      ['test-backend-unit', 'test-web', 'test-web-api', 'test-web-integration']
-        .flatMap(job => {
-          const policy = policies[job]
-          expect(policy).toBeDefined()
-          return Array.from(
-            { length: policy?.defaultShards ?? 0 },
-            (_, index) => `${policy?.reportPrefix}-${index + 1}`,
-          )
-        })
-        .toSorted(),
-    )
+    expect(exact.suites.map(({ suite }) => suite)).toEqual([
+      'backend-shard-1',
+      'backend-shard-2',
+      'web-api-shard-1',
+      'web-api-shard-2',
+      'web-api-shard-3',
+      'web-integration-shard-1',
+      'web-integration-shard-2',
+      'web-shard-1',
+    ])
 
     const planned = resolveContext(
       {
@@ -204,10 +200,13 @@ describe('Vitest report expectation fan-in', () => {
       },
       {
         runnable: { 'test-web-api': true },
-        attempts: { 'web-api-shard-3': 2, 'web-integration-shard-2': 2 },
-        coveragePlan: {
-          'test-web-api': { shards: 3 },
-          'test-web-integration': { shards: 2 },
+        attempts: {
+          'web-api-shard-3': 2,
+          'web-integration-shard-2': 2,
+        },
+        shardTotals: {
+          'test-web-api': '3',
+          'test-web-integration': '2',
         },
       },
     )
@@ -220,13 +219,10 @@ describe('Vitest report expectation fan-in', () => {
     ])
   })
 
-  it('uses a zero-shard selector coverage plan to suppress a successful fixed-shard job', () => {
-    expect(
-      resolveContext(
-        { 'test-web-integration': { result: 'success' } },
-        { coveragePlan: { 'test-web-integration': { shards: 0 } } },
-      ).suites,
-    ).toEqual([])
+  it('fails closed when a running sharded producer has no exact total', () => {
+    const result = runExpectationResolver({ 'test-web-integration': { result: 'success' } })
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('running sharded producer has no exact shard total')
   })
 
   it('does not expect blobs from successful side-duty-only jobs', () => {
@@ -267,6 +263,7 @@ describe('Vitest report expectation fan-in', () => {
             'backend-shard-4': 1,
           },
           runnable: { 'test-backend-unit': true },
+          shardTotals: { 'test-backend-unit': '4' },
         },
       )
 
@@ -279,7 +276,7 @@ describe('Vitest report expectation fan-in', () => {
         1,
         1,
         1,
-        ...defaultShardSuites('test-backend-unit', 2)
+        ...shardSuites('backend-shard', 4, 2)
           .slice(4)
           .map(() => 2),
       ])
@@ -289,7 +286,7 @@ describe('Vitest report expectation fan-in', () => {
   it.each(['failure', 'cancelled'])('fails aggregation for a %s producer', result => {
     const resolution = runExpectationResolver(
       { 'test-backend-unit': { result } },
-      { runnable: { 'test-backend-unit': true } },
+      { runnable: { 'test-backend-unit': true }, shardTotals: { 'test-backend-unit': '1' } },
     )
     expect(resolution.status).toBe(1)
     expect(resolution.stdout).toContain(

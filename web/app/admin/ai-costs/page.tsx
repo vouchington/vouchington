@@ -46,7 +46,10 @@ export default async function AdminAiCostsPage({
         description={t('extracted.aiCosts.page.perCommunityLlmModerationUsage_4d9a2c81')}
       />
       <AdminTableShell aria-label={t('extracted.aiCosts.page.aiCosts_75cce222')}>
-        <table className='min-w-full divide-y divide-border'>
+        <table
+          className='min-w-full divide-y divide-border'
+          data-pw='localization-admin-ai-costs-page'
+        >
           <thead className='bg-muted/50'>
             <tr>
               <th

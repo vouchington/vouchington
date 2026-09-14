@@ -17,7 +17,8 @@ CREATE OR REPLACE VIEW view_post_clearance_status AS
     -- AUTHOR-VISIBLE: exposed to post authors via ContentRemovedNotice when clearance_status='rejected'.
     -- Do not write internal moderator notes here; use a separate field for user-facing reasons.
     CASE
-      WHEN posts.rejected_at IS NOT NULL THEN post_clearance_changes.note
+      WHEN posts.rejected_at IS NOT NULL OR posts.in_review_at IS NOT NULL
+        THEN post_clearance_changes.public_reason_code
     END AS clearance_reason
   FROM posts
   LEFT JOIN post_clearance_changes

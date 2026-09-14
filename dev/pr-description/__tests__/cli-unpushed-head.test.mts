@@ -5,8 +5,12 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
-import { FIXTURE_HEAD_BRANCH, writeFakeGh, writeFakeGit } from '../test-helpers/fake-cli.mts'
-import { VALID_PROVENANCE_BLOCK } from '../test-helpers/valid-pr-body.mts'
+import {
+  FIXTURE_HEAD_BRANCH,
+  writeFakeGh,
+  writeFakeGit,
+} from '../../test-helpers/pr-description/fake-cli.mts'
+import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
 
 describe('dev/pr-description.mts create with an unpushed head branch', () => {
   const execFileAsync = promisify(execFile)

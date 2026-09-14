@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest, createTestUser } from '@voucha/test-helpers'
 import { getTestUserSessionById } from '../../../test-helpers/entities/user-sessions.mts'
 import {

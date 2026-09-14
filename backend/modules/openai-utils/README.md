@@ -10,9 +10,8 @@ OpenAI API utilities — rate limit handling for glide-mq workers and response t
 - `isOpenAIFlexResourceUnavailableError(error): boolean` — detects the flex/priority-tier
   "Resource Unavailable" 429 OpenAI returns when no spare capacity exists for that tier right
   now. This specific 429 is **not billed** (OpenAI never started processing the request),
-  unlike an ordinary rate-limit or server error — see
-  [OpenAI Cost Model § Retry budgets](../../../docs/overview/architecture/openai-cost-model.md#retry-budgets)
-  for why that distinction matters to retry-cost accounting.
+  unlike an ordinary rate-limit or server error, which is why retry-cost accounting treats a
+  retry against it as free and a retry against anything else as spend.
 - `isOpenAIServerError(error): boolean` — detects 5xx OpenAI API errors. Responses creation
   disables SDK retries; only the response boundary's explicitly unbilled flex retry is automatic.
 - `isOpenAIAuthError(error): boolean` — detects 401/403 auth errors
@@ -29,9 +28,9 @@ OpenAI API utilities — rate limit handling for glide-mq workers and response t
 - `SupportedModel` / `SupportedServiceTier` — types derived from `SUPPORTED_MODEL_TIERS`, so an
   unsupported model/tier pair is a compile error at any call site that constructs one directly.
 - `FLEX_SERVICE_TIER` — the `'flex'` tier constant for background/batch-tolerant agent requests.
-- See [OpenAI Cost Model](../../../docs/overview/architecture/openai-cost-model.md) for the
-  full pricing matrix, its source/retrieval date, and the refresh procedure when OpenAI updates
-  pricing or ships a new model.
+- The full pricing matrix, its source/retrieval date, and the refresh procedure for when OpenAI
+  updates pricing or ships a new model live in the private `vouchington/vouchington-docs`
+  repository.
 
 ### Response text
 
@@ -62,8 +61,7 @@ is a two-function fact baked into this file, not a per-caller choice:
   ECS rolling-deploy replacement mid-call.
 - `streamOpenAIResponse(params, options?)` — always creates in the **foreground** (`background`
   omitted). Chat's time-to-first-token budget can't absorb the background queueing delay measured
-  in the #8836 spike (~4.2-4.8s on `gpt-5.4-nano`/flex) — see
-  [OpenAI Cost Model](../../../docs/overview/architecture/openai-cost-model.md).
+  in the #8836 spike (~4.2-4.8s on `gpt-5.4-nano`/flex).
 - `cancelOpenAIResponse(responseId)` / `retrieveOpenAIResponse(responseId)`
   (`background-response-teardown.mts`) — the only two ways to touch an in-flight or terminal
   background response after creation, both `maxRetries: 0` with a short timeout since they run on
@@ -110,4 +108,3 @@ backstop. Both dispatcher profiles retain the API egress guardrail; see
 - OpenAI agents service: [../../services/openai-agents/README.md](../../services/openai-agents/README.md)
 - Retry policy per workload: [../../agents/_shared/reference-exports.md](../../agents/_shared/reference-exports.md)
 - Usage ledger: [../../services/ai-usage/README.md](../../services/ai-usage/README.md)
-- [OpenAI Cost Model](../../../docs/overview/architecture/openai-cost-model.md) — model policy, pricing, retry budgets, and production forecast

@@ -34,11 +34,12 @@ export async function getTestMembershipProviderEvidence(
 
 export async function getTestMembershipProviderEvidenceTerminalState(evidenceId: string) {
   const { rows } = await read<{
+    verified_at: Date | null
     rejected_at: Date | null
     rejection_reason: string | null
     observation_count: number
   }>(sql`/* getTestMembershipProviderEvidenceTerminalState */
-    SELECT evidence.rejected_at, evidence.rejection_reason,
+    SELECT evidence.verified_at, evidence.rejected_at, evidence.rejection_reason,
       COUNT(observation.id)::int AS observation_count
     FROM membership_provider_evidence_records evidence
     LEFT JOIN membership_provider_observations observation

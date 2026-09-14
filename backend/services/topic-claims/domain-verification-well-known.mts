@@ -1,4 +1,5 @@
 import { fetchWithTimeout } from '@modules/utils/http'
+import onError from '@modules/on-error'
 import { validateUrl } from 'ssrf-guard/node'
 import { fetchWellKnownText, type SecureHttpTransport } from '@vouchington/domain-verification'
 
@@ -78,10 +79,7 @@ function withAbortableBody(response: Response, signal: AbortSignal): Response {
   }
 
   function onAbort(): void {
-    void reader
-      .cancel(signal.reason)
-      .catch(() => undefined)
-      .finally(release)
+    void reader.cancel(signal.reason).catch(onError).finally(release)
   }
 
   if (signal.aborted) onAbort()
@@ -105,7 +103,7 @@ function withAbortableBody(response: Response, signal: AbortSignal): Response {
       },
       async cancel(reason) {
         release()
-        await reader.cancel(reason).catch(() => undefined)
+        await reader.cancel(reason).catch(onError)
       },
     }),
     { status: response.status, statusText: response.statusText, headers: response.headers },

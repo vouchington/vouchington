@@ -1,4 +1,3 @@
-import { defaultTranslator } from '@ts-shared/ui-messages/default-translator'
 import type { MessageKey, Translator } from '@ts-shared/ui-messages'
 import { buildAbsoluteUrl } from './constants'
 
@@ -18,7 +17,7 @@ export function resolveBreadcrumbName(item: BreadcrumbNavItem, t: Translator): s
 
 export function createBreadcrumbSchema(
   items: BreadcrumbNavItem[],
-  t: Translator = defaultTranslator,
+  t: Translator,
 ): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',

@@ -12,6 +12,8 @@ export const NO_DATA_MOCK_SOURCE_PATTERNS = [
   'backend/services/images/s3.mts',
   'backend/services/language-detection/detector.mts',
   'backend/services/recaptcha/{config,fetch-assessment}.mts',
+  'backend/services/localization/{compile-catalog,database,index,query,resolve}.mts',
+  'backend/api/v1/localization/route.mts',
   'backend/services/sitemaps/{storage,tracked-range-discovery}.mts',
   'backend/services/user-import-export/config.mts',
 ] as const

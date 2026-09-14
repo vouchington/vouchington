@@ -9,11 +9,15 @@ import { getImageUrl } from '@/lib/utils/image-url'
 import type { Community, CommunityMember, CommunityMetrics } from '@/types/api-responses'
 import { communityHref } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import type JoinButtonComponent from './join-button'
+import type MessageModsButtonComponent from './message-mods-button'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const JoinButton = dynamic(() => import('./join-button'))
+const JoinButton = dynamic<Parameters<typeof JoinButtonComponent>[0]>(() => import('./join-button'))
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const MessageModsButton = dynamic(() => import('./message-mods-button'))
+const MessageModsButton = dynamic<Parameters<typeof MessageModsButtonComponent>[0]>(
+  () => import('./message-mods-button'),
+)
 
 interface CommunityHeaderProps {
   community: Community

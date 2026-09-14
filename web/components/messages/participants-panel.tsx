@@ -2,6 +2,7 @@
 /* oxlint-disable max-lines -- component covers the full participant lifecycle */
 
 import { useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { useRouter } from 'next/navigation'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { Button } from '@/components/ui/button'
@@ -136,8 +137,7 @@ export function ParticipantsPanel({
                     variant='destructive'
                     data-pw='confirm-remove-participant'
                     onClick={() => {
-                      if (participant.user_id)
-                        handleRemoveParticipant(participant.user_id).catch(() => {})
+                      if (participant.user_id) void handleRemoveParticipant(participant.user_id)
                     }}
                   >
                     {t('extracted.messages.participantsPanel.remove_c3812fc4')}
@@ -174,7 +174,7 @@ export function ParticipantsPanel({
               renderItem={u => <span>{u.username ? `@${u.username}` : u.id}</span>}
               onSelect={(user, { setQuery }) => {
                 setQuery('')
-                handleAddParticipant(user).catch(() => {})
+                void handleAddParticipant(user)
               }}
               clearResultsOnSelect
               placeholder={t('extracted.messages.participantsPanel.searchUsers_02b756f1')}
@@ -212,7 +212,7 @@ export function ParticipantsPanel({
               variant={policy === 'owner_only' ? 'default' : 'outline'}
               data-pw='policy-owner-only'
               disabled={updating}
-              onClick={() => handlePolicyChange('owner_only').catch(() => {})}
+              onClick={() => handlePolicyChange('owner_only').catch(Sentry.captureException)}
             >
               {t('extracted.messages.participantsPanel.ownerOnly_55a834c8')}
             </Button>
@@ -221,7 +221,7 @@ export function ParticipantsPanel({
               variant={policy === 'all_members' ? 'default' : 'outline'}
               data-pw='policy-all-members'
               disabled={updating}
-              onClick={() => handlePolicyChange('all_members').catch(() => {})}
+              onClick={() => handlePolicyChange('all_members').catch(Sentry.captureException)}
             >
               {t('extracted.messages.participantsPanel.allMembers_3d6fe3e7')}
             </Button>
@@ -234,7 +234,7 @@ export function ParticipantsPanel({
           size='sm'
           variant='outline'
           data-pw='leave-conversation-button'
-          onClick={() => handleRemoveParticipant(currentUserId).catch(() => {})}
+          onClick={() => handleRemoveParticipant(currentUserId).catch(Sentry.captureException)}
         >
           {t('extracted.messages.participantsPanel.leaveConversation_cd3693d4')}
         </Button>

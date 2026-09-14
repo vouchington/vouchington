@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import manifest from '../../../../../api-fixtures/v1/manifest.json'
-import { mergeEndpointRegistries } from '../test-helpers/manifest-coverage/endpoint-registry'
-import { nonWebEndpointRegistry } from '../test-helpers/manifest-coverage/registry'
+import { mergeEndpointRegistries } from '../../../../test-helpers/lib/api/client/manifest-coverage/endpoint-registry'
+import { nonWebEndpointRegistry } from '../../../../test-helpers/lib/api/client/manifest-coverage/registry'
 
 const nonWebFixtures = manifest.fixtures.filter(entry => !entry.consumers.includes('web'))
 

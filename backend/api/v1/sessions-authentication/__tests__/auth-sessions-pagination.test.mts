@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { createUniqueTestEmail, insertEmailAddressLoginToken } from '@voucha/test-helpers'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { insertTestUserSession } from '../../../../test-helpers/entities/user-sessions.mts'
 import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 import '../index.mts'

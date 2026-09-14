@@ -76,6 +76,7 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['post_revisions', defaultRange('id')],
   ['ai_usage_records', defaultRange('id')],
   ['post_clearance_changes', defaultRange('id')],
+  ['community_post_review_changes', defaultRange('id')],
   ['user_sessions', defaultRange('id')],
   ['session_referral_attributions', defaultRange('id')],
   ['conversation_messages', defaultRange('conversation_id')],

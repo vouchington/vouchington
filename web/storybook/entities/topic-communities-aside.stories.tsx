@@ -1,12 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { createTranslator, loadMessages } from '@ts-shared/ui-messages'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { TopicCommunitiesAsideContent } from '@/components/topics/topic-communities-aside-content'
 import { EntityStoryFrame, AsideStack } from './entity-story-frame'
 import { communities, topics } from './entity-fixtures'
 import type { Topic } from '@/types/topics'
 import type { Community, CommunityMetrics } from '@/types/api-responses'
 
-const t = createTranslator('en', await loadMessages('en'))
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const meta = {
   title: 'Entities/TopicCommunitiesAside',

@@ -5,7 +5,9 @@
     ".agent-retrospectives/**",
     "coverage-full/**",
     "email-templates/__snapshots__/*.html",
-    "web/tsconfig.json"
+    "web/tsconfig.json",
+    "localization/catalog/**",
+    "localization/normalized-fixture/**"
   ],
   "arrowParens": "avoid",
   "jsxSingleQuote": true,

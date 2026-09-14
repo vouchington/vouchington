@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 
 describe('test harness: mutation media-type enforcement', () => {
   it('rejects a POST with text/plain body with 415 before routing', async () => {

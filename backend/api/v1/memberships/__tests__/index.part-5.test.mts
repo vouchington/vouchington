@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestMembership, createTestUser } from '@voucha/test-helpers'
 import * as stripePortal from '@modules/stripe/portal'
 import type { PrivateUser } from '@services/users/types'

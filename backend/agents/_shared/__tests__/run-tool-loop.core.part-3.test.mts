@@ -5,7 +5,7 @@ import {
   makeTextResponse,
   makeToolCall,
   makeToolCallResponse,
-} from '../test-helpers/run-tool-loop-test-helpers.mts'
+} from '../../../test-helpers/agents/_shared/run-tool-loop-test-helpers.mts'
 import { recordAgentResponseUsage } from '../record-response-usage.mts'
 
 const tool: AgentTool = {

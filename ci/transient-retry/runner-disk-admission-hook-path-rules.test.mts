@@ -19,7 +19,7 @@ function makeCtx(overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 function flatHookPathAdmissionLog(freeGiB = 34, requiredGiB = 35): string {
   return [
     'A job started hook has been configured by the self-hosted runner administrator',
-    "Run '/Users/jonathanong/.local/share/voucha-actions-runner-health/job-started.sh'",
+    "Run '/Users/dev/.local/share/voucha-actions-runner-health/job-started.sh'",
     `Runner disk admission rejected: free=${freeGiB}GiB required=${requiredGiB}GiB active_leases=2`,
     '##[error]Process completed with exit code 1.',
   ].join('\n')
@@ -32,7 +32,7 @@ function flatHookPathAdmissionLog(freeGiB = 34, requiredGiB = 35): string {
 // but the stale literal-path check here was a real, independent regression this run also exposed.
 const realCurrentPathAdmissionLog = [
   'A job started hook has been configured by the self-hosted runner administrator',
-  "##[group]Run '/Users/jonathanong/.local/share/voucha-actions-runner-health/current/job-started.sh'",
+  "##[group]Run '/Users/dev/.local/share/voucha-actions-runner-health/current/job-started.sh'",
   'shell: /bin/bash --noprofile --norc -e -o pipefail {0}',
   '##[endgroup]',
   'Removed generated build outputs: files=0 directories=0 bytes=0',

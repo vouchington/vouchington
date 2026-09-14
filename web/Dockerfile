@@ -33,6 +33,8 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharin
 # webpack to bundle them correctly.
 COPY backend/types/ /app/backend/types/
 COPY ts-shared/ /app/ts-shared/
+# Next build still resolves the Vitest-only JSON catalog import; live SSR uses the backend.
+COPY localization/ /app/localization/
 
 COPY web/ /app/web/
 

@@ -1,15 +1,15 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import { createLocalTestUser } from '../../test-helpers/users.mts'
+import { createLocalTestUser } from '../../../../test-helpers/data-stores/psql/users.mts'
 import {
   insertLocalTestGoogleAccount,
   connectLocalTestGoogleAccount,
-} from '../../test-helpers/oauth-accounts.mts'
-import { insertLocalTestPost } from '../../test-helpers/posts.mts'
+} from '../../../../test-helpers/data-stores/psql/oauth-accounts.mts'
+import { insertLocalTestPost } from '../../../../test-helpers/data-stores/psql/posts.mts'
 import {
   queryEmbeddedUser,
   setUserDisplayNameFrom,
   queryPostCreatedBy,
-} from '../test-helpers/view-users.mts'
+} from '../../../../test-helpers/data-stores/psql/views/view-users.mts'
 
 describe('view-users', () => {
   // Shared user and post created once for the file — avoids firing processUserCreated per test.

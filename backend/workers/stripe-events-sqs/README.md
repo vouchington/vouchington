@@ -1,9 +1,9 @@
 # Stripe Events SQS Worker
 
 Consumer package for the `stripe-events-sqs` SQS queue — the sole Stripe ingestion path since the
-HTTP webhook route was deleted in #9330. Unwraps the EventBridge `PutEvents` envelope's `detail` and
+HTTP endpoint was deleted in #9330. Unwraps the EventBridge `PutEvents` envelope's `detail` and
 calls `ingestStripeEvent()`, which inserts into the `stripe_events` ledger and enqueues
-`processStripeWebhook` for a row that needs processing.
+`processStripeEvent` for a row that needs processing.
 
 The EventBridge partner event bus, rule, target, and SQS queue policy granting
 `events.amazonaws.com` send access are owned by

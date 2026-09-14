@@ -1,8 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { handleSentryTunnel } from './sentry-tunnel.mts'
+import { handleSentryTunnel as handleConfiguredSentryTunnel } from './sentry-tunnel.mts'
 
-const VALID_DSN =
-  'https://7a947dd8dc8d498c5b9d212113b1a44c@o4507688154824704.ingest.us.sentry.io/4507688156856320'
+const VALID_DSN = 'https://web_public@web.example.test/123'
+const WORKER_DSN = 'https://worker_public@worker.example.test/456'
+const TUNNEL_ENV = { SENTRY_DSN: WORKER_DSN, SENTRY_WEB_DSN: VALID_DSN }
+
+const handleSentryTunnel = (
+  request: Request,
+  env: { SENTRY_DSN?: string; SENTRY_WEB_DSN?: string } = TUNNEL_ENV,
+): Promise<Response> => handleConfiguredSentryTunnel(request, env)
 
 function makeEnvelope(dsn = VALID_DSN) {
   return [
@@ -94,7 +100,7 @@ describe('handleSentryTunnel', () => {
     // Response body is null — Sentry response headers are not forwarded to the client
     expect(await res.text()).toBe('')
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      'https://o4507688154824704.ingest.us.sentry.io/api/4507688156856320/envelope/',
+      'https://web.example.test/api/123/envelope/',
       expect.objectContaining({
         method: 'POST',
         body: envelope,
@@ -138,15 +144,15 @@ describe('handleSentryTunnel', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled()
   })
 
-  it('returns 403 for unknown Sentry host', async () => {
-    const envelope = makeEnvelope('https://key@malicious.example.com/4507688156856320')
+  it('returns 403 for an unconfigured Sentry DSN host', async () => {
+    const envelope = makeEnvelope('https://key@malicious.example.test/123')
     const res = await handleSentryTunnel(makeRequest(envelope))
     expect(res.status).toBe(403)
     expect(globalThis.fetch).not.toHaveBeenCalled()
   })
 
-  it('returns 403 for unknown project ID', async () => {
-    const envelope = makeEnvelope('https://key@o4507688154824704.ingest.us.sentry.io/9999999999')
+  it('returns 403 for an unconfigured Sentry DSN project', async () => {
+    const envelope = makeEnvelope('https://key@web.example.test/999')
     const res = await handleSentryTunnel(makeRequest(envelope))
     expect(res.status).toBe(403)
     expect(globalThis.fetch).not.toHaveBeenCalled()
@@ -168,7 +174,7 @@ describe('handleSentryTunnel', () => {
     expect(warnSpy).toHaveBeenCalledTimes(1)
     const logged = warnSpy.mock.calls[0]?.[0]
     expect(logged).toEqual(expect.any(String))
-    expect(logged).not.toContain('7a947dd8dc8d498c5b9d212113b1a44c')
+    expect(logged).not.toContain('web-public')
     expect(logged).not.toContain('retry-after')
     expect(JSON.parse(logged as string)).toEqual({
       message: 'sentry_tunnel_upstream_response',
@@ -176,7 +182,7 @@ describe('handleSentryTunnel', () => {
       status: 429,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       envelopeItemCount: 2,
       envelopeItemTypes: ['event', 'transaction'],
     })
@@ -209,7 +215,7 @@ describe('handleSentryTunnel', () => {
     expect(errorSpy).toHaveBeenCalledTimes(1)
     const logged = errorSpy.mock.calls[0]?.[0]
     expect(logged).toEqual(expect.any(String))
-    expect(logged).not.toContain('7a947dd8dc8d498c5b9d212113b1a44c')
+    expect(logged).not.toContain('web-public')
     expect(logged).not.toContain('network error from Sentry fetch')
     expect(logged).not.toContain('socket reset while contacting Sentry')
     expect(JSON.parse(logged as string)).toEqual({
@@ -218,7 +224,7 @@ describe('handleSentryTunnel', () => {
       status: 502,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       envelopeItemCount: 1,
       envelopeItemTypes: ['event'],
       errorName: 'TypeError',
@@ -268,22 +274,19 @@ describe('handleSentryTunnel', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled()
   })
 
-  it('forwards an envelope from the cloudflare-worker Sentry project', async () => {
-    const cfWorkerDsn =
-      'https://66b5c8c708ff98c9c2f5b79306578ab7@o4507688154824704.ingest.us.sentry.io/4511154639077376'
-    const envelope = makeEnvelope(cfWorkerDsn)
+  it('forwards an envelope from the configured Worker Sentry project', async () => {
+    const envelope = makeEnvelope(WORKER_DSN)
     const res = await handleSentryTunnel(makeRequest(envelope))
 
     expect(res.status).toBe(200)
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      'https://o4507688154824704.ingest.us.sentry.io/api/4511154639077376/envelope/',
+      'https://worker.example.test/api/456/envelope/',
       expect.objectContaining({ method: 'POST', body: envelope }),
     )
   })
 
-  it('returns 403 for the backend project ID (not in allowlist)', async () => {
-    const backendDsn =
-      'https://9eddc64eb41c6073cf0a2ae295b8cb67@o4507688154824704.ingest.us.sentry.io/4507721302736896'
+  it('returns 403 for a private runtime DSN that is not configured for this Worker', async () => {
+    const backendDsn = 'https://backend_public@backend.example.test/789'
     const envelope = makeEnvelope(backendDsn)
     const res = await handleSentryTunnel(makeRequest(envelope))
 

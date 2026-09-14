@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import * as Sentry from '@sentry/nextjs'
 import { MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -137,7 +138,7 @@ export function PostDetailOverflowMenu({
           selectedFollowers={actions.selectedFollowers}
           onAudienceChange={actions.handleAudienceChange}
           onOpenChange={open => actions.resetDialogState(open)}
-          onSend={() => actions.handleSend().catch(() => undefined)}
+          onSend={() => actions.handleSend().catch(Sentry.captureException)}
           onToggleFollowerSelection={follower => actions.toggleFollowerSelection(follower)}
         />
       )}

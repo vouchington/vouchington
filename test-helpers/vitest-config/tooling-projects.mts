@@ -51,6 +51,7 @@ export const toolingProjects = [
       include: [
         'static-code-analysis/__tests__/backend-contract-program-construction-location-parity.test.mts',
         'static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts',
+        'static-code-analysis/__tests__/no-inline-noop-promise-catch-oxlint.test.mts',
         'static-code-analysis/__tests__/ssrf-guard-import-options-oxlint.test.mts',
       ],
       exclude: defaultExcludes,
@@ -113,8 +114,25 @@ export const toolingProjects = [
     extends: true,
     test: {
       ...toolingTestBudget,
+      // no-mistakes analyzeProject / invocation.lock cannot be SIGKILLed on the
+      // tooling threads pool (#11686); keep isolate: true from toolingTestBudget.
+      pool: 'forks',
       name: 'i18n-extract-codemod',
       include: ['static-code-analysis/i18n-extract/**/*.test.mts'],
+      exclude: [
+        '**/node_modules/**',
+        '**/.git/**',
+        'static-code-analysis/i18n-extract/route-bounds.test.mts',
+      ],
+      setupFiles: [isolatedSetupFile],
+    },
+  },
+  {
+    extends: true,
+    test: {
+      ...toolingTestBudget,
+      name: 'i18n-route-bounds',
+      include: ['static-code-analysis/i18n-extract/route-bounds.test.mts'],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],
     },

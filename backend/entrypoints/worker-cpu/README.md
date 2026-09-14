@@ -1,7 +1,7 @@
 # worker-cpu Entrypoint
 
 Entry point for the CPU-capable worker container. It can load every worker definition, including
-Rust NAPI addons and Lightpanda cloud browser crawling. Local development filters it to CPU queues.
+Rust NAPI addons and Lightpanda cloud browser crawling. Local development runs every queue here.
 
 ## Queues
 
@@ -20,8 +20,8 @@ Rust NAPI addons and Lightpanda cloud browser crawling. Local development filter
 
 The full queue-classification policy lives in
 [`../../modules/worker-queue-inventory/worker-queue-policy.json`](../../modules/worker-queue-inventory/worker-queue-policy.json).
-CPU-only queues can run only in this entrypoint; `WORKER_CPU_EXTRA_QUEUES` moves IO-capable queues
-here only in local development.
+CPU-only queues can run only in this entrypoint; IO-capable queues are also loaded here by the
+merged local development worker.
 
 ## Grafana IRM heartbeat
 

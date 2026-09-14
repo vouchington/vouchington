@@ -22,6 +22,7 @@
   },
   "scripts": {},
   "dependencies": {
+    "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/money": "workspace:^"
   }
 }

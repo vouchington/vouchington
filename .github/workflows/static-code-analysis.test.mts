@@ -33,6 +33,12 @@ describe('static-code-analysis workflow', () => {
     )
   })
 
+  it('checks the row catalog through the no-write Platform formatter', () => {
+    expect(workflow).toContain(
+      '      - name: Check localization catalog format\n        if: ${{ inputs.docs_only != true }}\n        run: pnpm exec vouchington-localization format --check --source localization/catalog',
+    )
+  })
+
   it('installs CI tools via mise and runs them before static checks', () => {
     const miseStep = workflow.indexOf('      - name: Install CI tools via mise')
     const repoChecksStep = workflow.indexOf('      - name: Repo Node static checks')
@@ -80,18 +86,20 @@ describe('static-code-analysis workflow', () => {
   it('keeps markdown-relevant checks on docs-only PRs and skips TypeScript lint graph work', () => {
     const noMistakesStep = workflow.indexOf('      - name: Run no-mistakes')
     const liveTopologyStep = workflow.indexOf('      - name: Check live workflow topology')
-    const fullPolicy = workflow.indexOf('      - name: Repo Node static checks')
+    const routeSelectorStep = workflow.indexOf(
+      '      - name: Check web route localization selector map',
+    )
     const typecheckScripts = workflow.indexOf('      - name: Typecheck scripts')
     const oxlint = workflow.indexOf('pnpm exec oxlint --type-aware --deny-warnings')
     const knip = workflow.indexOf('pnpm exec knip --treat-config-hints-as-errors')
 
     expect(noMistakesStep).toBeGreaterThanOrEqual(0)
     expect(liveTopologyStep).toBeGreaterThan(noMistakesStep)
-    expect(fullPolicy).toBeGreaterThan(liveTopologyStep)
+    expect(routeSelectorStep).toBeGreaterThan(liveTopologyStep)
     expect(workflow.slice(noMistakesStep, liveTopologyStep)).not.toContain(
       'if: ${{ inputs.docs_only != true }}',
     )
-    expect(workflow.slice(liveTopologyStep, fullPolicy)).toContain(
+    expect(workflow.slice(liveTopologyStep, routeSelectorStep)).toContain(
       'if: ${{ inputs.docs_only != true }}',
     )
     expect(workflow.slice(typecheckScripts, typecheckScripts + 120)).toContain(
@@ -109,6 +117,14 @@ describe('static-code-analysis workflow', () => {
     const oxfmt = workflow.indexOf('pnpm exec oxfmt --check')
     expect(oxfmt).toBeGreaterThan(knip)
     expect(workflow.slice(oxfmt, oxfmt + 80)).not.toContain('if: ${{ inputs.docs_only != true }}')
+  })
+
+  it('FIFO-serializes only the no-mistakes-owned job across pull requests', () => {
+    expect(workflow).toContain('  no-mistakes-owned:')
+    expect(workflow).toContain('    needs: [static-code-analysis]')
+    expect(workflow).toContain('      group: no-mistakes-invocation')
+    expect(workflow).toContain('      cancel-in-progress: false')
+    expect(workflow).toContain('      queue: max')
   })
 
   it('runs remaining repo-owned static checks in CI', () => {

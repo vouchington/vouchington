@@ -1,7 +1,7 @@
 import { GITHUB_BODY_MAX_CHARACTERS, validateGitHubBodyLength } from 'vouchington-tooling/gh-cli'
 import { describe, expect, it } from 'vitest'
 
-import { VALID_PLAN_BODY } from '../test-helpers/valid-plan-body.mts'
+import { VALID_PLAN_BODY } from '../../test-helpers/plan-issue/valid-plan-body.mts'
 import { validatePlanIssue } from '../validate.mts'
 
 function bodyAtLength(length: number): string {

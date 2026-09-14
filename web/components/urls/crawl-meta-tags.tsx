@@ -1,10 +1,11 @@
 import { EmbedPreviewCard } from '@/components/shared/embed-preview-card'
-import { getTranslations } from '@/lib/i18n/get-translations'
+import type { getTranslations } from '@/lib/i18n/get-translations'
 import { selectCrawlEmbedPreview } from '@/lib/embeds/embed-preview'
 import type { CrawlResponse } from '@/types/api-responses/urls-onboarding-and-trends'
 import type { CrawlerHtmlStructuredObject } from '@/types/api-responses/posts-topics-and-feeds'
 
 interface Props {
+  t: Awaited<ReturnType<typeof getTranslations>>
   meta: CrawlerHtmlStructuredObject
   lang: string | null
   ogImageSideload?: string | null
@@ -12,7 +13,8 @@ interface Props {
   crawlTitle?: string | null
 }
 
-export async function CrawlMetaTags({
+export function CrawlMetaTags({
+  t,
   meta,
   lang,
   ogImageSideload,
@@ -20,8 +22,6 @@ export async function CrawlMetaTags({
   crawlTitle,
 }: Props) {
   if (Object.keys(meta).length === 0 && !lang && !embedMetadata) return null
-
-  const t = await getTranslations()
 
   const ogImage = ogImageSideload ?? null
   const preview = selectCrawlEmbedPreview({

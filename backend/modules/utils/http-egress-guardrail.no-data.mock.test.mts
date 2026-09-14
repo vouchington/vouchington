@@ -7,15 +7,16 @@ import {
   resetEgressGuardrailDedupeForTest,
 } from './http-egress-guardrail.mts'
 
+const SENTRY_DSN = `https://${'a'.repeat(32)}@o${12345}.ingest.eu.sentry.io/${67890}`
+const SENTRY_ORIGIN = new URL(SENTRY_DSN).origin
+
 describe('classifyEgressOrigin', () => {
   it('classifies a non-allowlisted host as off-allowlist', () => {
     expect(classifyEgressOrigin('https://api.stripe.com')).toBe('off-allowlist')
   })
 
-  it('classifies an allowlisted host as allowlisted', () => {
-    expect(classifyEgressOrigin('https://o4507688154824704.ingest.us.sentry.io')).toBe(
-      'allowlisted',
-    )
+  it('does not treat a configured but unaudited Sentry host as IPv6-allowlisted', () => {
+    expect(classifyEgressOrigin(SENTRY_ORIGIN)).toBe('off-allowlist')
   })
 
   it('classifies a loopback origin as exempt', () => {
@@ -83,14 +84,14 @@ describe('createEgressGuardrailInterceptor', () => {
     expect(sentryCaptureMessageMock).toHaveBeenCalledOnce()
   })
 
-  it('does not report an allowlisted origin to Sentry, but still delegates', () => {
+  it('reports a configured but unaudited Sentry origin and still delegates', () => {
     const stubDispatch = vi.fn<() => boolean>(() => true)
     const dispatch = createEgressGuardrailInterceptor()(stubDispatch)
 
     const result = dispatch(
       {
-        origin: 'https://o4507688154824704.ingest.us.sentry.io',
-        path: '/api/4507721302736896/envelope',
+        origin: SENTRY_ORIGIN,
+        path: '/api/123/envelope',
         method: 'POST',
       },
       {},
@@ -98,7 +99,11 @@ describe('createEgressGuardrailInterceptor', () => {
 
     expect(result).toBe(true)
     expect(stubDispatch).toHaveBeenCalledOnce()
-    expect(sentryCaptureMessageMock).not.toHaveBeenCalled()
+    expect(sentryCaptureMessageMock).toHaveBeenCalledOnce()
+    expect(sentryCaptureMessageMock).toHaveBeenCalledWith(
+      expect.stringContaining(SENTRY_ORIGIN.slice('https://'.length)),
+      expect.objectContaining({ level: 'warning' }),
+    )
   })
 
   it('does not report an exempt origin to Sentry, but still delegates', () => {

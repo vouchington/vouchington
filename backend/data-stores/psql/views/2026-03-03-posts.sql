@@ -137,6 +137,7 @@ CREATE OR REPLACE VIEW view_posts AS
       JOIN images ON images.id = post_images.image_id
         AND images.deleted_at IS NULL
         AND images.upload_completed_at IS NOT NULL
+        AND images.quarantine_pending_at IS NULL
       WHERE post_images.post_id = posts.id
     ), '[]'::json) AS images,
 
@@ -147,13 +148,12 @@ CREATE OR REPLACE VIEW view_posts AS
     posts.updated_by_id,
     posts.deleted_at,
     posts.deleted_by_id,
-    posts.openai_omni_moderation_flagged,
+    CASE
+      WHEN openai_moderation.disposition IS NULL THEN NULL
+      ELSE openai_moderation.disposition <> 'pass'
+    END AS openai_omni_moderation_flagged,
     clearance.clearance_status,
     clearance.clearance_updated_at,
-    posts.spam_detection_flagged,
-    posts.spam_detection_created_at,
-    posts.spam_detection_score,
-    posts.spam_detection_results,
 
     CASE WHEN posts.post_type = 'topic_recommendation' THEN (
       SELECT jsonb_build_object(
@@ -216,6 +216,17 @@ CREATE OR REPLACE VIEW view_posts AS
     clearance.clearance_reason
   FROM posts
   JOIN view_post_clearance_status clearance ON clearance.post_id = posts.id
+  LEFT JOIN LATERAL (
+    SELECT disposition.disposition
+    FROM post_moderation_versions version
+    JOIN post_moderation_dispositions disposition ON disposition.version_id = version.id
+    WHERE version.post_id = posts.id
+      AND version.content_sha256 = posts.llm_moderation_content_sha256
+      AND version.policy_revision = '2026-09-09.1'
+      AND disposition.source = 'openai_omni'
+    ORDER BY disposition.id DESC
+    LIMIT 1
+  ) openai_moderation ON true
   LEFT JOIN LATERAL (
     SELECT
       created_at AS locked_at,

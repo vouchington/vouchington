@@ -31,6 +31,14 @@ describe('web Dockerfile dependency install', () => {
     expect(dockerfile).not.toContain("--filter './backend/types...'")
   })
 
+  it('copies catalog JSON so non-deployed production SSR can assemble without the API', () => {
+    const localizationCopy = dockerfile.indexOf('COPY localization/ /app/localization/')
+    const nextBuild = dockerfile.indexOf('NODE_ENV=production pnpm --dir web exec next build')
+
+    expect(localizationCopy).toBeGreaterThan(-1)
+    expect(nextBuild).toBeGreaterThan(localizationCopy)
+  })
+
   it('does not run a separate fetch or enable fetch-only CI behavior', () => {
     expect(dockerfile).not.toContain('pnpm fetch')
     expect(dockerfile).not.toContain('ENV CI=true')

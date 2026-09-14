@@ -14,24 +14,23 @@
       "id": "019e7d79-e100-7000-8000-000000000000",
       "lingua_rs_detected_language": null,
       "markdown_preview": "Older post on the second review queue page.",
-      "media_context": {
+      "media_reveal": {
         "images": [],
         "requires_reveal": false
       },
-      "openai_omni_moderation_flagged": false,
-      "openai_omni_moderation_results": {
-        "categories": {}
+      "moderation_summary": {
+        "disposition": "review",
+        "evidence_summary": {
+          "flagged_category_count": 0,
+          "signal_count": 1
+        },
+        "reason_codes": ["spam_signal"]
       },
       "post_type": "article",
       "root_id": null,
       "root_post_type": null,
       "root_slug": null,
       "slug": "review-post-page-2",
-      "spam_detection_flagged": true,
-      "spam_detection_results": {
-        "signals": ["repeated_content"]
-      },
-      "spam_detection_score": 0.78,
       "title": "Older rejected review post"
     }
   ]

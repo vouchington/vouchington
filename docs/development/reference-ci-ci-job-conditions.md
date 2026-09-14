@@ -5,7 +5,8 @@
 The PR CI orchestrator starts on every PR (any base branch, including stacked PRs) and manual
 dispatch, then lets `detect-changes` decide
 which reusable workflows should run. On PRs, `select-ci` additionally emits fixed `full-ci` and
-`run-<root-job>` topology outputs from an exact base/merge revision analysis. A bounded result
+`run-<root-job>` topology outputs from pair-2 revision analysis (`origin/<base_ref>` vs merge
+`HEAD`; see [Workflow Topology Contracts](reference-ci-workflow-topology-contracts.md)). A bounded result
 adds only its affected producer to that producer's existing path predicate; a missing output or
 global fallback runs every otherwise eligible producer. Vitest's separate `full-suite` and
 `full-test-<job>` contracts remain responsible only for test execution narrowing. Workflow and

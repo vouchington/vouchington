@@ -5,8 +5,13 @@ import {
   enableQueryCapture,
   getCapturedQueries,
 } from './query-capture.mts'
-import { write } from './runtime.mts'
 import { beginTransaction, registerPostCommitAction, withTransactionOptions } from './setup.mts'
+import {
+  captureBorrowedClientTransactionQuery,
+  captureExplicitTransactionQuery,
+  captureInternallyOwnedTransactionQuery,
+  captureOwnedTransactionQuery,
+} from '../../test-helpers/data-stores/psql/post-commit-actions-query-resource.mts'
 
 describe('explicit query post-commit actions', () => {
   afterEach(() => {
@@ -16,9 +21,7 @@ describe('explicit query post-commit actions', () => {
 
   it('captures queries executed through an owned transaction', async () => {
     enableQueryCapture()
-    await using transaction = await beginTransaction()
-
-    await transaction('/* ownedTransactionCapture */ SELECT $1::integer', [1])
+    await captureOwnedTransactionQuery()
 
     expect(getCapturedQueries()).toEqual([
       expect.objectContaining({
@@ -26,16 +29,11 @@ describe('explicit query post-commit actions', () => {
         values: [1],
       }),
     ])
-    await transaction.rollback()
   })
 
   it('captures an owned transaction passed as an explicit query exactly once', async () => {
     enableQueryCapture()
-    await using transaction = await beginTransaction()
-
-    await withTransactionOptions({ query: transaction }, query =>
-      write('/* explicitQueryCapture */ SELECT $1::integer', [1], { query }),
-    )
+    await captureExplicitTransactionQuery()
 
     expect(getCapturedQueries()).toEqual([
       expect.objectContaining({
@@ -43,16 +41,11 @@ describe('explicit query post-commit actions', () => {
         values: [1],
       }),
     ])
-    await transaction.rollback()
   })
 
   it('captures queries executed through an active borrowed client transaction', async () => {
     enableQueryCapture()
-    await using transaction = await beginTransaction()
-
-    await withTransactionOptions({ client: transaction.client }, query =>
-      write('/* borrowedClientCapture */ SELECT $1::integer', [1], { query }),
-    )
+    await captureBorrowedClientTransactionQuery()
 
     expect(getCapturedQueries()).toEqual([
       expect.objectContaining({
@@ -60,15 +53,12 @@ describe('explicit query post-commit actions', () => {
         values: [1],
       }),
     ])
-    await transaction.rollback()
   })
 
   it('captures queries executed through an internally owned transaction', async () => {
     enableQueryCapture()
 
-    await withTransactionOptions({}, query =>
-      write('/* internalTransactionCapture */ SELECT $1::integer', [1], { query }),
-    )
+    await captureInternallyOwnedTransactionQuery()
 
     expect(getCapturedQueries()).toEqual([
       expect.objectContaining({

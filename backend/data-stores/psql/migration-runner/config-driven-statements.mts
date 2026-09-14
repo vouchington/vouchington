@@ -1,4 +1,5 @@
 import { beginTransaction, type OwnedTransaction } from '../setup.mts'
+import onError from '@modules/on-error'
 import type { QueryExecutor } from '../types.mts'
 import { splitSqlStatements } from './sql-statements.mts'
 
@@ -69,7 +70,7 @@ async function runConfigDrivenStatementsWithWriterTransaction(
     await runConfigDrivenStatementsWithLocalLockTimeout(statements, writer, lockTimeoutMs)
     await writer('/* runConfigDrivenStatementsInTransaction */ COMMIT')
   } catch (error) {
-    await writer('/* runConfigDrivenStatementsInTransaction */ ROLLBACK').catch(() => {})
+    await writer('/* runConfigDrivenStatementsInTransaction */ ROLLBACK').catch(onError)
     throw error
   }
 }

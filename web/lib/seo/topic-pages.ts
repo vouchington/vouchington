@@ -8,6 +8,7 @@ import { getSchemaOrgType } from './schema-org-types'
 import { getTopicDisplayTitle } from '@/lib/topics/display-name'
 import { buildImagePath } from '@/lib/utils/image-url'
 import type { Topic, TopicMetrics } from '@/types/topics'
+import type { Translator } from '@ts-shared/ui-messages'
 
 interface TopicSectionOptions {
   label: string
@@ -34,6 +35,7 @@ export function createTopicSectionMetadata(
 }
 
 export function createTopicSectionStructuredData(
+  t: Translator,
   topic: Topic,
   topicTypeSlug: string,
   section: TopicSectionOptions,
@@ -72,11 +74,13 @@ export function createTopicSectionStructuredData(
           { name: section.label, path: pagePath },
         ],
       }),
+      t,
     ),
   }
 }
 
 export function createTopicReviewSectionStructuredData(
+  t: Translator,
   topic: Topic,
   topicTypeSlug: string,
   topicMetrics: TopicMetrics | null,
@@ -116,6 +120,7 @@ export function createTopicReviewSectionStructuredData(
           { name: reviewsLabel, path: reviewPath },
         ],
       }),
+      t,
     ),
   }
 }

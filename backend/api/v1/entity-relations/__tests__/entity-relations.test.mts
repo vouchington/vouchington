@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   insertTestPost,
   insertTestTopic,
@@ -18,7 +18,7 @@ import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 import type { PrivateUser } from '@services/users/types'
 
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { expectEntityRelationPagination } from '../test-helpers/entity-relations-pagination.mts'
+import { expectEntityRelationPagination } from '../../../../test-helpers/api/v1/entity-relations/entity-relations-pagination.mts'
 
 describe('entity-relations', () => {
   let user: PrivateUser

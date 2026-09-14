@@ -1182,19 +1182,25 @@
           "behaviorTests": []
         },
         "swift": {
-          "status": "none",
-          "uiEvidence": [],
-          "behaviorTests": []
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaLocalization/Generated/Resources/en.lproj/Localizable.strings",
+            "swift-clients/ui/Sources/VouchaLocalization/UiLocaleController.swift"
+          ],
+          "behaviorTests": [
+            "swift-clients/ui/Tests/VouchaUITests/SwiftLocalizationAcceptanceTests.swift"
+          ]
         },
         "dotnet": {
-          "status": "none",
-          "uiEvidence": [],
-          "behaviorTests": []
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.Core/Localization/Generated/UiMessages.resx",
+            "dotnet-clients/src/Voucha.Client.Core/Localization/UiLocaleController.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Localization/NativeLocalizationSurfaceMatrixTests.cs"
+          ]
         }
-      },
-      "gap": {
-        "summary": "Swift and .NET still contain untranslated or non-locale-aware UI.",
-        "trackingIssue": "https://github.com/jonathanong/filaments/issues/7892"
       }
     },
     {

@@ -129,7 +129,7 @@ export function useReportIntegrityFlags(
   function applyPenaltyWithConfirmation(flagId: string) {
     if (penaltyConfirm[flagId]) {
       setPenaltyConfirm(prev => ({ ...prev, [flagId]: false }))
-      handleApplyPenalty(flagId).catch(() => {})
+      void handleApplyPenalty(flagId)
     } else {
       setPenaltyConfirm(prev => ({ ...prev, [flagId]: true }))
     }

@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { enqueueCreatePostModeration } from './enqueues.mts'
+import {
+  enqueueCreatePostModeration,
+  enqueueReconcileImageQuarantines,
+  enqueueReconcilePostModeration,
+} from './enqueues.mts'
 import { openai_moderation_omni_single } from './queues.mts'
 
 describe('enqueueCreatePostModeration', () => {
@@ -24,6 +28,52 @@ describe('enqueueCreatePostModeration', () => {
       deduplication: {
         id: `post_moderation_${postId}_${deduplicationKey}`,
         mode: 'debounce',
+      },
+    })
+  })
+})
+
+describe('enqueueReconcileImageQuarantines', () => {
+  beforeEach(async () => {
+    await openai_moderation_omni_single.obliterate({ force: true })
+  })
+
+  it('uses a one-attempt, throttled reconciliation job', async () => {
+    await enqueueReconcileImageQuarantines()
+
+    const [job] = await openai_moderation_omni_single.getJobs('waiting')
+    expect(job).toMatchObject({
+      name: 'reconcile_image_quarantines',
+      opts: {
+        attempts: 1,
+        priority: 100,
+        deduplication: {
+          id: 'openai-moderation:reconcile-image-quarantines',
+          mode: 'throttle',
+        },
+      },
+    })
+  })
+})
+
+describe('enqueueReconcilePostModeration', () => {
+  beforeEach(async () => {
+    await openai_moderation_omni_single.obliterate({ force: true })
+  })
+
+  it('uses a one-attempt, throttled reconciliation job', async () => {
+    await enqueueReconcilePostModeration()
+
+    const [job] = await openai_moderation_omni_single.getJobs('waiting')
+    expect(job).toMatchObject({
+      name: 'reconcile_post_moderation',
+      opts: {
+        attempts: 1,
+        priority: 100,
+        deduplication: {
+          id: 'openai-moderation:reconcile-post-moderation',
+          mode: 'throttle',
+        },
       },
     })
   })

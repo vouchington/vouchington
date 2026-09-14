@@ -21,6 +21,7 @@ scope:
     - '**/*.{mts,ts,tsx}'
   ignored:
     - 'backend/dev.mts'
+    - 'backend/services/localization/compile-cli.mts'
     - 'web/instrumentation.ts'
     - 'web/next.config.ts'
     - 'web/*.config.ts'
@@ -49,9 +50,9 @@ rules:
     patch_coverage_min: 0
   - paths: 'ts-shared/**'
     patch_coverage_min: 100
-  - paths: 'web/lib/api/client/test-helpers/**'
+  - paths: 'web/test-helpers/lib/api/client/**'
     patch_coverage_min: 0
-  - paths: 'web/lib/api/test-helpers/**'
+  - paths: 'web/test-helpers/lib/api/**'
     patch_coverage_min: 0
   - paths: 'web/lib/api/**'
     patch_coverage_min: 100
@@ -65,7 +66,7 @@ rules:
     patch_coverage_min: 95
   - paths: 'web/test-helpers/components/**/*test-helpers.tsx'
     patch_coverage_min: 0
-  - paths: 'web/storybook/test-helpers/**'
+  - paths: 'web/test-helpers/storybook/**'
     patch_coverage_min: 0
   - paths: 'web/storybook/__tests__/component-story-coverage.test.ts'
     patch_coverage_min: 0

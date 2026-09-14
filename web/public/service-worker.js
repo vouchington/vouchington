@@ -12,7 +12,7 @@ self.addEventListener('install', event => {
     caches
       .open('voucha-offline-v1')
       .then(cache => cache.add(createOfflineRequest()))
-      .catch(() => {}),
+      .catch(console.error),
   )
 })
 

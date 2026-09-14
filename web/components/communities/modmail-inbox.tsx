@@ -159,7 +159,7 @@ export function ModmailInbox({ communitySlug, initialData }: Props) {
             disabled={loadingMore}
             loading={loadingMore}
             onClick={() => {
-              handleLoadMore().catch(() => {})
+              void handleLoadMore()
             }}
           >
             {t('extracted.shared.paginatedListFooter.retry_942087cc')}

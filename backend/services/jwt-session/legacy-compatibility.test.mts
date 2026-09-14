@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, afterEach, describe, expect, it } from 'vitest'
 import { isUUIDv7 } from '@ts-shared/session-jwt'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
   createUniqueTestEmail,
@@ -12,7 +12,11 @@ import { routeRateLimitConfig } from '../route-rate-limits/config.mts'
 import { refreshSessionState } from './flows.mts'
 import { resetSessionState } from './reset-session.mts'
 import { revokeSession } from './revocation.mts'
-import { legacyUuidV4, signLegacyDeviceJwt, signLegacySessionJwt } from './test-helpers/index.mts'
+import {
+  legacyUuidV4,
+  signLegacyDeviceJwt,
+  signLegacySessionJwt,
+} from '../../test-helpers/services/jwt-session/index.mts'
 import '../../api/v1/sessions-authentication/index.mts'
 
 describe('legacy UUIDv4 session compatibility matrix', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import * as OTPAuth from 'otpauth'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTotpAuthenticator } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'

@@ -17,7 +17,8 @@
 | Referral/affiliate links | Detected referral link patterns                      |
 | Low quality text         | Excessive caps, repetition, short content with links |
 
-**Database:** `posts.spam_detection_flagged`, `posts.spam_detection_score`, `posts.spam_detection_results`, `posts.spam_detection_created_at`
+**Database:** current-version `post_moderation_dispositions` rows with source `spam_detection`;
+bounded score/signal evidence remains private to moderation staff.
 
 **Services:** `backend/services/spam-detection/`
 
@@ -29,14 +30,15 @@
 
 - Uses `omni-moderation-latest` model (text + images)
 - Content SHA256 deduplication — skips if content unchanged
-- Results stored directly on the `posts` row
-- Flagged posts: `posts.openai_omni_moderation_flagged = true` (hidden from search for non-owner/non-admin)
+- Results append a typed disposition to the immutable current content version
+- Ordinary flags enter staff review; only `sexual/minors` deterministically rejects
 
 **Images:** Flagged images are **automatically deleted** (`backend/services/openai-moderation/images.mts`)
 
 **Queue:** `openai_moderation_omni_single` (concurrency 5, rate limit 10/sec)
 
-**Database:** `posts.openai_omni_moderation_flagged`, `posts.openai_omni_moderation_results`, `posts.openai_omni_moderation_created_at`, `images.openai_omni_moderation_*`
+**Database:** post outcomes use `post_moderation_versions`, `post_moderation_attempts`, and
+`post_moderation_dispositions`. Image moderation continues to use `images.openai_omni_moderation_*`.
 
 **Services:** `backend/services/openai-moderation/`, `backend/queues/openai-moderation/`
 

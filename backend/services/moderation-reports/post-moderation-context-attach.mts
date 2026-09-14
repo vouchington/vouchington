@@ -8,7 +8,7 @@ import type { ModerationReportEntityType } from './config.mts'
 export type { PostModerationContext }
 
 /**
- * Downgrade a staff-tier context to the public tier in memory (drop OpenAI/agent category
+ * Downgrade a staff-tier context to the public tier in memory (drop platform/agent category
  * details, keep coarse flags + agent-added tags) — avoids re-querying the DB when a caller
  * already loaded the staff context.
  */
@@ -17,8 +17,8 @@ export function toPublicPostModerationContext(
 ): PostModerationContext | null {
   if (!context) return null
   return {
-    openai_moderation: context.openai_moderation
-      ? { flagged: context.openai_moderation.flagged }
+    platform_moderation: context.platform_moderation
+      ? { flagged: context.platform_moderation.flagged }
       : null,
     agent_moderations: context.agent_moderations.map(a => ({ slug: a.slug, flagged: a.flagged })),
     agent_added_tags: context.agent_added_tags,

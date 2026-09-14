@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
 
 export type StoredOpenAIModerationResults =
   | Record<string, unknown>
@@ -20,23 +21,49 @@ export async function getStoredPostOpenAIModeration(
   options?: QueryOptions,
 ): Promise<StoredPostOpenAIModeration | null> {
   const { rows } = await read<{
-    openai_omni_moderation_flagged: boolean | null
-    openai_omni_moderation_results: unknown
+    disposition: 'pass' | 'review' | 'reject' | 'incomplete' | null
+    evidence: unknown
   }>(
     sql`/* getStoredPostOpenAIModeration */
-      SELECT openai_omni_moderation_flagged, openai_omni_moderation_results
-      FROM posts
-      WHERE id = ${postId}
-        AND deleted_at IS NULL
+      SELECT disposition.disposition, disposition.evidence
+      FROM posts post
+      LEFT JOIN post_moderation_versions version
+        ON version.post_id = post.id
+       AND version.content_sha256 = post.llm_moderation_content_sha256
+       AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
+      LEFT JOIN LATERAL (
+        SELECT disposition, evidence
+        FROM post_moderation_dispositions
+        WHERE version_id = version.id
+          AND source = 'openai_omni'
+        ORDER BY id DESC
+        LIMIT 1
+      ) disposition ON true
+      WHERE post.id = ${postId}
+        AND post.deleted_at IS NULL
       LIMIT 1
     `,
     options,
   )
   const row = rows[0]
   if (!row) return null
+  if (row.disposition === null) return { flagged: null, results: null }
+  const evidence = normalizeStoredOpenAIModerationResults(row.evidence)
+  const flaggedCategories =
+    evidence && !Array.isArray(evidence) && Array.isArray(evidence.flagged_categories)
+      ? evidence.flagged_categories.filter((value): value is string => typeof value === 'string')
+      : []
   return {
-    flagged: row.openai_omni_moderation_flagged,
-    results: normalizeStoredOpenAIModerationResults(row.openai_omni_moderation_results),
+    flagged: row.disposition === 'review' || row.disposition === 'reject',
+    results:
+      row.disposition === 'incomplete'
+        ? null
+        : [
+            {
+              flagged: row.disposition !== 'pass',
+              categories: Object.fromEntries(flaggedCategories.map(category => [category, true])),
+            },
+          ],
   }
 }
 

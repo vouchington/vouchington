@@ -62,14 +62,14 @@ unsupported — use merge instead.
 
 ## List-Item / Card Anatomy
 
-| Element        | Shows                                   | Visible when           |
-| -------------- | --------------------------------------- | ---------------------- |
-| Avatar         | First letter of topic name              | Always                 |
-| Type badge     | Humanized `topic_type` label            | Always                 |
-| Description    | First two lines of `markdown` (clamped) | When `markdown` is set |
-| Rating         | Star summary                            | When reviews exist     |
-| Review count   | Number of reviews                       | When reviews exist     |
-| Follower count | Number of followers                     | When followers exist   |
+| Element        | Shows                                                          | Visible when           |
+| -------------- | -------------------------------------------------------------- | ---------------------- |
+| Avatar         | First letter of topic name                                     | Always                 |
+| Type badge     | Humanized `topic_type` label; unknown values use generic Topic | Always                 |
+| Description    | First two lines of `markdown` (clamped)                        | When `markdown` is set |
+| Rating         | Star summary                                                   | When reviews exist     |
+| Review count   | Number of reviews                                              | When reviews exist     |
+| Follower count | Number of followers                                            | When followers exist   |
 
 ## Detail Anatomy
 

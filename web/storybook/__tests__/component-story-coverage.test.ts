@@ -5,23 +5,23 @@ import {
   componentExports,
   defaultComponentExports,
   namedComponentExports,
-} from '../test-helpers/component-story-coverage/source'
-import { workspaceFiles } from '../test-helpers/component-story-coverage/workspace'
+} from '../../test-helpers/storybook/component-story-coverage/source'
+import { workspaceFiles } from '../../test-helpers/storybook/component-story-coverage/workspace'
 import {
   reachableStorybookFiles,
   runtimeImports,
   usedRuntimeImports,
-} from '../test-helpers/component-story-coverage/imports'
+} from '../../test-helpers/storybook/component-story-coverage/imports'
 import {
   coveredComponentKeys,
   coveredComponentKeysForImport,
   namedReexportTargets,
   namespaceComponentImports,
-} from '../test-helpers/component-story-coverage/keys'
+} from '../../test-helpers/storybook/component-story-coverage/keys'
 import {
   formatMissingComponentsMessage,
   formatNamespaceImportsMessage,
-} from '../test-helpers/component-story-coverage/message'
+} from '../../test-helpers/storybook/component-story-coverage/message'
 
 const excludedComponentReasons = excludedComponentReasonsJson as Record<string, string>
 

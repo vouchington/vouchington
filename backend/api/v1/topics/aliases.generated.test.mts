@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createRandomString, createTestUser, createTestTopic } from '@voucha/test-helpers'
 describe('GET /api/v1/topics/aliases', () => {
   let topicId: string

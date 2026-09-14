@@ -5,18 +5,26 @@ import {
   markPostOpenAIModerationNoContent,
   streamUnmoderatedPostIdBatches,
   streamUnmoderatedImageIdBatches,
+  reconcilePendingImageQuarantines,
 } from '@services/openai-moderation'
 import { getPostByAny } from '@services/posts/get'
 import { Worker, type Job } from 'glide-mq'
 import { handleOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
-import { checkPostClearance } from '@services/post-clearance'
+import {
+  beginPostModerationAttempt,
+  checkPostClearance,
+  failPostModerationAttempt,
+  reconcilePostModerationWork,
+} from '@services/post-clearance'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import {
   enqueueCreatePostModerationBatch,
   enqueueCreateImageModerationBatch,
+  enqueueCreatePostModeration,
 } from '@queues/openai-moderation/enqueues'
+import { enqueueSpamDetection } from '@queues/spam-detection/enqueues'
 
-type OpenAIModerationJobData = { id: string }
+type OpenAIModerationJobData = { id?: string }
 
 export async function handleOpenAIModerationOmniSingleJob(
   job: Job<OpenAIModerationJobData>,
@@ -28,24 +36,31 @@ export async function handleOpenAIModerationOmniSingleJob(
         if (!job.data.id) throw new Error('Post job requires id in job.data')
         const post = await getPostByAny(job.data.id, { readOnly: false })
         if (!post) return null
-        const result = await upsertPostOpenAIModeration(post, { readOnly: false })
-        await enqueueReconcilePostNotifications(post.id)
+        const attempt = await beginPostModerationAttempt(post.id, 'openai_omni')
+        if (!attempt) return { success: true, applied: false }
+        try {
+          const result = await upsertPostOpenAIModeration(post, { readOnly: false, attempt })
+          await enqueueReconcilePostNotifications(post.id)
 
-        // Check clearance gate after moderation completes (enqueuePostModerationAgents is called inside on approval)
-        if (result.skipped) {
-          /* v8 ignore start -- valid post rows require text content; service-level tests cover direct no-content handling */
-          if (result.reason === 'no_content_to_moderate') {
-            // No content to moderate — mark as done so the clearance gate can proceed
-            await markPostOpenAIModerationNoContent(post.id)
+          if (result.skipped) {
+            /* v8 ignore start -- valid post rows require text content; service-level tests cover direct no-content handling */
+            if (result.reason === 'no_content_to_moderate') {
+              await markPostOpenAIModerationNoContent(post.id, attempt)
+              await checkPostClearance(post.id)
+            } else if (result.reason === 'content_changed') {
+              await failPostModerationAttempt(attempt, 'content_changed')
+            }
+            /* v8 ignore stop */
+          } else {
             await checkPostClearance(post.id)
           }
-          /* v8 ignore stop */
-          // content_changed: skip — next moderation job (triggered by entity listener update) will handle it
-        } else {
-          await checkPostClearance(post.id)
-        }
 
-        return { success: true }
+          return { success: true }
+        } catch (error) {
+          const failure = await failPostModerationAttempt(attempt, classifyModerationError(error))
+          if (failure.exhausted) await checkPostClearance(post.id)
+          throw error
+        }
       }
       case 'image': {
         if (!job.data.id) throw new Error('Image job requires id in job.data')
@@ -69,10 +84,34 @@ export async function handleOpenAIModerationOmniSingleJob(
         }
         return { enqueued }
       }
+      case 'reconcile_image_quarantines':
+        return await reconcilePendingImageQuarantines()
+      case 'reconcile_post_moderation': {
+        const reconciliation = await reconcilePostModerationWork()
+        await Promise.all(
+          reconciliation.due.map(({ post_id: postId, source }) =>
+            source === 'openai_omni'
+              ? enqueueCreatePostModeration(postId, { deduplicationKey: 'recovery' })
+              : enqueueSpamDetection(postId, { deduplicationKey: 'recovery' }),
+          ),
+        )
+        await Promise.all(reconciliation.exhausted_post_ids.map(checkPostClearance))
+        return {
+          enqueued: reconciliation.due.length,
+          moved_to_review: reconciliation.exhausted_post_ids.length,
+        }
+      }
       default:
         throw new Error(`Unknown job type: ${job.name}`)
     }
   } catch (error: unknown) {
     return await handleOpenAIRateLimit(error, worker)
   }
+}
+
+function classifyModerationError(error: unknown): string {
+  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
+    return error.code.slice(0, 100)
+  }
+  return error instanceof Error ? error.name.slice(0, 100) : 'unknown_error'
 }

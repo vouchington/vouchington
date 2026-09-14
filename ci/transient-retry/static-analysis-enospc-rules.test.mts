@@ -9,7 +9,7 @@ const matchingLog = [
   'static-code-analysis / static-code-analysis\tUNKNOWN STEP\t2026-07-13T02:53:26.4560890Z ##[group]Run actions/checkout@vNEXT',
   'static-code-analysis / static-code-analysis\tUNKNOWN STEP\t2026-07-13T02:53:26.9060770Z node:fs:2422',
   'static-code-analysis / static-code-analysis\tUNKNOWN STEP\t2026-07-13T02:53:26.9451710Z Error: ENOSPC: no space left on device, write',
-  'static-code-analysis / static-code-analysis\tUNKNOWN STEP\t2026-07-13T02:53:26.9735000Z     at file_command_issueFileCommand (file:///Users/jonathanong/actions-runners/5/_work/_actions/actions/checkout/v7.0.0/dist/index.js:32043:33)',
+  'static-code-analysis / static-code-analysis\tUNKNOWN STEP\t2026-07-13T02:53:26.9735000Z     at file_command_issueFileCommand (file:///Users/dev/actions-runners/5/_work/_actions/actions/checkout/v7.0.0/dist/index.js:32043:33)',
   "static-code-analysis / static-code-analysis\tUNKNOWN STEP\t2026-07-13T02:53:27.0238960Z   code: 'ENOSPC',",
 ].join('\n')
 
@@ -58,6 +58,29 @@ describe('static-analysis-checkout-enospc', () => {
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
+  })
+
+  it('matches checkout disk exhaustion on the no-mistakes-owned job', async () => {
+    const noMistakesJobName = 'static-code-analysis / no-mistakes-owned'
+    const result = await decide(
+      makeCtx({
+        failedJobNames: [noMistakesJobName, 'tests', 'build'],
+        jobConclusions: new Map([
+          [noMistakesJobName, 'failure'],
+          ['tests', 'cancelled'],
+          ['build', 'cancelled'],
+        ]),
+        failedJobLogs: () =>
+          Promise.resolve(
+            new Map([
+              [noMistakesJobName, matchingLog.replaceAll(staticAnalysisJobName, noMistakesJobName)],
+            ]),
+          ),
+      }),
+      RULES,
+    )
+    expect(result.decision).toBe('rerun')
+    expect(result.matchedRule).toBe('static-analysis-checkout-enospc')
   })
 
   it('does not match when another job genuinely failed', async () => {

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getUserProfile, GET_USER_PROFILE_WITH_BIO } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { getTranslations } from '@/lib/i18n/get-translations'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
 import { createUserPathname } from '@/lib/links/entity-href'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
@@ -15,9 +16,10 @@ interface UserRouteLayoutProps {
 }
 
 export async function UserRouteLayout({ idOrUsername, children }: UserRouteLayoutProps) {
-  const [profileData, currentUser] = await Promise.all([
+  const [profileData, currentUser, t] = await Promise.all([
     getUserProfile(idOrUsername, GET_USER_PROFILE_WITH_BIO),
     getCurrentUser(),
+    getTranslations(),
   ])
 
   if (!profileData) {
@@ -38,7 +40,7 @@ export async function UserRouteLayout({ idOrUsername, children }: UserRouteLayou
   return (
     <>
       {breadcrumbItems.length > 0 && (
-        <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+        <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
       )}
       <UserDetailLayout
         user={user}

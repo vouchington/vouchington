@@ -62,7 +62,7 @@ export function UnpublishFromCommunityMenuItem({
               disabled={isUnpublishing}
               onClick={e => {
                 e.preventDefault()
-                handleUnpublish().catch(() => undefined)
+                void handleUnpublish()
               }}
               data-pw='post-unpublish-from-community-confirm'
             >

@@ -1,17 +1,14 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth } from '../../response-helpers.mts'
-import { apiRequest } from '../../response-contract.mts'
+import { apiHeaders, apiRequest, apiResponse } from '../../response-contract.mts'
 import { currentUserCanRefundMembership } from '@services/memberships/authorization'
-import { refundMembership } from '@services/memberships/refund-membership'
+import { startAdministratorRefundReconciliation } from '@services/memberships'
+import { enqueueDispatchMembershipRefundReconciliationBestEffort } from '@queues/memberships/enqueues'
 import type { MembershipRefundReason } from '@services/memberships/types'
 import { isUUID } from '@modules/utils'
 import { isMoney, type Money } from '@ts-shared/money'
-import {
-  cancelSubscriptionImmediatelyOperation,
-  createRefundOperation,
-  listSubscriptionInvoicesOperation,
-} from '@modules/stripe/operations'
+import { listSubscriptionInvoicesOperation } from '@modules/stripe/operations'
 
 const VALID_REASONS = new Set<string>(['goodwill', 'requested', 'dispute', 'other'])
 
@@ -27,9 +24,21 @@ type MembershipRefundRequestBody = {
   idempotency_key: string
 }
 
-type MembershipRefundCancellationStatus = 'not_requested' | 'completed' | 'pending'
-
 app.route('/api/v1/memberships/refunds').post(async (ctx: Context) => {
+  apiHeaders('POST:/api/v1/memberships/refunds', {
+    responses: {
+      202: {
+        description: 'Refund reconciliation continues asynchronously.',
+        headers: {
+          'Retry-After': {
+            description: 'Seconds before replaying the same idempotent refund request.',
+            required: true,
+            type: 'integer',
+          },
+        },
+      },
+    },
+  })
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/memberships/refunds')
 
   if (!currentUserCanRefundMembership(currentUser)) {
@@ -86,7 +95,8 @@ app.route('/api/v1/memberships/refunds').post(async (ctx: Context) => {
 
   if (rawBody.note != null) {
     ctx.assert(typeof rawBody.note === 'string', 400, 'note must be a string')
-    ctx.assert(rawBody.note.length <= 1000, 400, 'note must be 1000 characters or fewer')
+    ctx.assert(rawBody.note.trim().length > 0, 400, 'note must not be blank')
+    ctx.assert(rawBody.note.trim().length <= 1000, 400, 'note must be 1000 characters or fewer')
   }
 
   const wireRequestBody: MembershipRefundRequestBody = {
@@ -101,12 +111,14 @@ app.route('/api/v1/memberships/refunds').post(async (ctx: Context) => {
     reason: rawBody.reason as MembershipRefundReason,
     ...(rawBody.cancel !== undefined && { cancel: rawBody.cancel }),
     ...(rawBody.amount !== undefined && { amount: rawBody.amount as Money }),
-    ...(rawBody.note !== undefined && { note: rawBody.note as string | null }),
+    ...(rawBody.note !== undefined && {
+      note: rawBody.note === null ? null : (rawBody.note as string).trim(),
+    }),
     idempotency_key: rawBody.idempotency_key,
   }
   const body = apiRequest('POST:/api/v1/memberships/refunds', wireRequestBody)
 
-  const refund = await refundMembership(
+  const reconciliation = await startAdministratorRefundReconciliation(
     currentUser.id,
     {
       targetUserId: body.user_id,
@@ -121,20 +133,26 @@ app.route('/api/v1/memberships/refunds').post(async (ctx: Context) => {
     },
     {
       listSubscriptionInvoices: listSubscriptionInvoicesOperation,
-      createRefund: createRefundOperation,
-      cancelSubscriptionImmediately: cancelSubscriptionImmediatelyOperation,
     },
   )
-
-  const cancellationStatus: MembershipRefundCancellationStatus = !body.cancel
-    ? 'not_requested'
-    : refund.revoked_access
-      ? 'completed'
-      : 'pending'
-
-  ctx.setStatus(201)
-  ctx.json({
-    refund: { id: refund.id },
-    cancellation_status: cancellationStatus,
-  })
+  if (reconciliation.result.outcome === 'completed') {
+    ctx.setStatus(201)
+    ctx.json(
+      apiResponse('POST:/api/v1/memberships/refunds#completed', {
+        outcome: 'completed' as const,
+        refund: { id: reconciliation.result.refundId },
+        cancellation_status: reconciliation.result.cancellationStatus,
+      }),
+    )
+    return
+  }
+  enqueueDispatchMembershipRefundReconciliationBestEffort()
+  ctx.setStatus(202)
+  ctx.set('Retry-After', '300')
+  ctx.json(
+    apiResponse('POST:/api/v1/memberships/refunds#reconciling', {
+      outcome: 'reconciling' as const,
+      retry_after_seconds: 300,
+    }),
+  )
 })

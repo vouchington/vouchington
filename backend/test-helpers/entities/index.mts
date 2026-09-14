@@ -27,6 +27,7 @@ export * from './user-post-collections.mts'
 export * from './post-review-ratings.mts'
 export * from './posts-deletion.mts'
 export * from './post-revisions.mts'
+export * from './post-images.mts'
 export * from './topic-revisions.mts'
 export * from './post-field-queries.mts'
 export * from './post-stories.mts'
@@ -106,6 +107,15 @@ export * from './follows.mts'
 export * from './friends.mts'
 export * from './memberships.mts'
 export * from './memberships/provider-lineages.mts'
+export {
+  holdTestMembershipRowLock,
+  holdTestMembershipSourceStateLock,
+  probeTestUserLock,
+  runTestStripeCatalogReconciliationWhileProductReferenced,
+} from './memberships/locks.mts'
+export * from './membership-source-rebinding.mts'
+export * from './membership-refund-reconciliation-state.mts'
+export * from './membership-refund-event-state.mts'
 export { markTestMembershipPurchaseIntentFailed } from './memberships/purchase-intents.mts'
 export {
   getTestMembershipProviderEvidence,
@@ -139,7 +149,6 @@ export * from './community-post-reviews.mts'
 export * from './community-list-items.mts'
 export * from './post-clearance.mts'
 export * from './post-moderation.mts'
-export * from './post-moderation-legacy.mts'
 export * from './referral-links.mts'
 export * from './retailers.mts'
 export * from './vote-integrity.mts'

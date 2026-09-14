@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import type { MessageKey } from '@ts-shared/ui-messages'
 import { ApiError } from './error'
 
@@ -124,7 +125,7 @@ const MAX_ERROR_RESPONSE_BYTES = 64 * 1024
 async function readBoundedErrorText(response: Response): Promise<string | null> {
   const contentLength = Number(response.headers.get('content-length'))
   if (Number.isFinite(contentLength) && contentLength > MAX_ERROR_RESPONSE_BYTES) {
-    await response.body?.cancel().catch(() => {})
+    await response.body?.cancel().catch(Sentry.captureException)
     return null
   }
   if (!response.body) return ''
@@ -141,7 +142,7 @@ async function readBoundedErrorText(response: Response): Promise<string | null> 
       bytes += result.value.byteLength
       if (bytes > MAX_ERROR_RESPONSE_BYTES) {
         // oxlint-disable-next-line no-await-in-loop -- finish cancelling before releasing the oversized response.
-        await reader.cancel().catch(() => {})
+        await reader.cancel().catch(Sentry.captureException)
         return null
       }
       text += decoder.decode(result.value, { stream: true })

@@ -8,7 +8,11 @@ import type { Community, CommunityMember } from './types.mts'
 import type { CommunityOwner } from './search.mts'
 import { getCommunityMember } from './members/get.mts'
 import { getPendingApplicationForUser } from './applications/pending.mts'
-import { currentUserCanModerateCommunity, currentUserCanViewCommunity } from './authorization.mts'
+import {
+  currentUserCanModerateCommunity,
+  currentUserCanModerateCommunityPublication,
+  currentUserCanViewCommunity,
+} from './authorization.mts'
 
 export type CommunityWithOwner = Community & { owner: CommunityOwner | null }
 
@@ -87,6 +91,21 @@ export async function loadCommunityForModerator(
   const community = await getCommunityOrThrow(idOrSlug, options)
   const membership = await getCommunityMember(community.id, currentUser.id, options)
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
+  return { community, membership, hasPendingApplication: false }
+}
+
+export async function loadCommunityForPublicationModerator(
+  currentUser: PrivateUser,
+  idOrSlug: string,
+  options?: QueryOptions,
+): Promise<LoadedCommunity> {
+  const community = await getCommunityOrThrow(idOrSlug, options)
+  const membership = await getCommunityMember(community.id, currentUser.id, options)
+  assert(
+    currentUserCanModerateCommunityPublication(currentUser, community, membership),
+    403,
+    'Forbidden',
+  )
   return { community, membership, hasPendingApplication: false }
 }
 

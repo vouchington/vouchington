@@ -2,6 +2,7 @@ import { writeFileSync } from 'node:fs'
 
 import { ciTopologyImpact } from 'no-mistakes'
 
+import { resolvePair2Revisions, type Pair2Revisions } from '../pr-revision-pairs.mts'
 import {
   CI_ROOT_JOB_IDS,
   CI_WORKFLOW_PATH,
@@ -52,11 +53,15 @@ export async function selectTopology({
   worktreeRoot,
   allVitestJobs,
   writeOutput,
+  baseBranch = process.env['GITHUB_BASE_REF'] || 'main',
+  resolveRevisions = resolvePair2Revisions,
 }: {
   changedFiles: readonly string[]
   worktreeRoot: string
   allVitestJobs: readonly string[]
   writeOutput: (key: string, value: string) => void
+  baseBranch?: string
+  resolveRevisions?: (worktreeRoot: string, baseBranch: string) => Pair2Revisions
 }): Promise<TopologySelection> {
   if (changedFiles.some(isCiControlSurface)) {
     writeTopologyOutputs(writeOutput, true)
@@ -71,14 +76,16 @@ export async function selectTopology({
     writeTopologyOutputs(writeOutput, false)
     return { affectedRootJobIds: new Set(), fullCi: false, fullJobs: new Set() }
   }
-  const input = {
-    root: worktreeRoot,
-    base: process.env['TOPOLOGY_BASE_SHA'] ?? '',
-    head: process.env['TOPOLOGY_HEAD_SHA'] ?? '',
-    entryWorkflow: CI_WORKFLOW_PATH,
-  }
-  if (!input.base || !input.head) {
-    writeArtifacts(input, null, 'missing exact topology revisions')
+  let revisions: Pair2Revisions
+  try {
+    revisions = resolveRevisions(worktreeRoot, baseBranch)
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    writeArtifacts(
+      { root: worktreeRoot, entryWorkflow: CI_WORKFLOW_PATH },
+      null,
+      `missing pair-2 topology revisions: ${reason}`,
+    )
     writeTopologyOutputs(writeOutput, true)
     return {
       affectedRootJobIds: new Set(TOPOLOGY_ROOT_JOB_IDS),
@@ -86,6 +93,12 @@ export async function selectTopology({
       fullJobs: new Set(allVitestJobs),
       reason: 'missing exact topology revisions',
     }
+  }
+  const input = {
+    root: worktreeRoot,
+    base: revisions.base,
+    head: revisions.head,
+    entryWorkflow: CI_WORKFLOW_PATH,
   }
   let impact: unknown
   let routing

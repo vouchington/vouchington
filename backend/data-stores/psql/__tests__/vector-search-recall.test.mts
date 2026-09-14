@@ -4,7 +4,7 @@ import {
   makeNearbyEmbedding,
   makeRandomEmbedding,
   TEST_HNSW_EF_SEARCH,
-} from '../test-helpers/vector-search-recall.mts'
+} from '../../../test-helpers/data-stores/psql/vector-search-recall.mts'
 
 describe('test-database vector search recall floor', () => {
   // Guards the raiseHnswEfSearchForTestDatabase() call in vitest.setup.data-stores.mts: without

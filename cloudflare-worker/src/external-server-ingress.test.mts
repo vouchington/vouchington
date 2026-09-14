@@ -14,6 +14,14 @@ describe('external server-to-server ingress routing', () => {
     )
   })
 
+  it('matches Google Play notifications only at their POST endpoint', () => {
+    const path = '/api/v1/memberships/google-play/notifications'
+    expect(isExternalServerToServerIngress('POST', path)).toBe(true)
+    expect(isExternalServerToServerIngress('POST', `${path}/`)).toBe(true)
+    expect(isExternalServerToServerIngress('GET', path)).toBe(false)
+    expect(isExternalServerToServerIngress('POST', '/api/v1/memberships/google-play')).toBe(false)
+  })
+
   it('retains federation server-to-server ingress classification', () => {
     expect(isExternalServerToServerIngress('POST', '/ap/inbox')).toBe(true)
     expect(isExternalServerToServerIngress('GET', '/.well-known/webfinger')).toBe(true)

@@ -6,7 +6,7 @@ import {
   STAGING_CANARY_FAULT_HEADER,
   STAGING_CANARY_SECRET_HEADER,
 } from '../staging-control-headers.mts'
-import { createContext } from '../test-helpers/mock-env.mts'
+import { createContext } from '../../test-helpers/src/mock-env.mts'
 import type { EdgeExecutionContext, Env } from '../types.mts'
 
 const BASIC = `Basic ${btoa('staging:password')}`

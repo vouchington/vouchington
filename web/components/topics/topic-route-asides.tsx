@@ -15,8 +15,9 @@ import { PodcastShowMetadataAside } from '@/components/podcasts/podcast-show-met
 import type { getTranslations } from '@/lib/i18n/get-translations'
 import type { RssFeedsListResponseBody, TopicResponseBody } from '@/types/api-responses'
 import type { HostnameListResponse } from '@/types/hostnames'
+import type { TopicActionsAside as TopicActionsAsideComponent } from './topic-actions-aside'
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const TopicActionsAside = dynamic(() =>
+const TopicActionsAside = dynamic<Parameters<typeof TopicActionsAsideComponent>[0]>(() =>
   import('./topic-actions-aside').then(mod => mod.TopicActionsAside),
 )
 
@@ -57,10 +58,14 @@ export function TopicRouteAsides({
         contentLanguage={topic.lingua_rs_detected_language}
       />
       {firstRssFeed?.feed_type === 'podcast' && firstRssFeed.topic.id === topic.id && (
-        <PodcastShowMetadataAside feed={firstRssFeed} />
+        <PodcastShowMetadataAside
+          t={t}
+          feed={firstRssFeed}
+        />
       )}
       <ReferralCtaAside />
       <TopicSourcesAside
+        t={t}
         rssFeeds={rssFeeds}
         hostnames={hostnames}
       />

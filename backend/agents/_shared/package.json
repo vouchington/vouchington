@@ -32,7 +32,7 @@
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/tools": "workspace:^",
-    "openai": "^7.10.0"
+    "openai": "^7.15.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

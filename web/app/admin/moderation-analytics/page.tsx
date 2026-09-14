@@ -9,13 +9,14 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 import { getAdminModerationAnalytics } from '@/lib/api/server/moderation-analytics'
 import type { ModerationAnalyticsRange } from '@/types/moderation-analytics'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import type ModerationAnalyticsDashboardComponent from '@/components/admin/moderation-analytics/moderation-analytics-dashboard'
 
 export const metadata: Metadata = createNoIndexMetadata('Moderation Analytics | Admin')
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const ModerationAnalyticsDashboard = nextDynamic(
-  () => import('@/components/admin/moderation-analytics/moderation-analytics-dashboard'),
-)
+const ModerationAnalyticsDashboard = nextDynamic<
+  Parameters<typeof ModerationAnalyticsDashboardComponent>[0]
+>(() => import('@/components/admin/moderation-analytics/moderation-analytics-dashboard'))
 
 const VALID_RANGES = new Set<ModerationAnalyticsRange>(['today', '7d', '30d', '90d', 'all'])
 

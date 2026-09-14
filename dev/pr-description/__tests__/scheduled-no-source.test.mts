@@ -5,7 +5,7 @@ import { extractFixMainInterimClassifierRootCauseRef } from '../scheduled-no-sou
 import {
   VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY,
   VALID_PROVENANCE_BLOCK,
-} from '../test-helpers/valid-pr-body.mts'
+} from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { validatePrBody, validatePrBodyWithIssueReferences } from '../validate.mts'
 
 function rootCauseIssue(overrides: Partial<ReferencedIssue> = {}): ReferencedIssue {

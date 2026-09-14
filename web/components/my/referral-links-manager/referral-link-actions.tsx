@@ -19,9 +19,7 @@ interface ReferralLinkActionsProps {
   setEditingId: (id: string | null) => void
 }
 
-// Keys are looked up by useTranslations() inline below (t(UNFURL_BUTTON_LABEL_KEY[status])) rather
-// than inlined into JSX text, since the label is derived from a 4-way status, not a boolean ternary
-// the i18n-extract codemod can splice directly.
+// Keep the finite status-key registry literal so route copy generation can include each label.
 const UNFURL_BUTTON_LABEL_KEY: Record<UnfurlStatus, MessageKey> = {
   never: 'extracted.referralLinksManager.referralLinkActions.unfurl_767a3048',
   pending: 'extracted.referralLinksManager.referralLinkActions.unfurling_e1bb00da',

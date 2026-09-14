@@ -2,14 +2,21 @@
 
 [Back to Tests and Checks](tests.md#translation-catalog-and-locale-checks)
 
-UI message catalogs (`@ts-shared/ui-messages`) are hand-maintained. Native resources are produced
-from the typed native-consumer manifest into the separate native-client checkout. These checks
-guard the producer contract:
+The normalized catalog is hand-maintained through `pnpm run localization:catalog --`; agents do
+not parse or edit its row JSON directly. `copies.json` owns descriptors, `aliases.json` owns
+consumer keys, and `translations/<locale>.json` owns locale text. Generated `routes.json` is
+route-selector membership, not translation authoring input. Native resources are produced from the
+typed native-consumer manifest into the separate native-client checkout. These checks guard the
+producer contract:
 
-- `ts-shared/ui-messages/index.test.mts` (`loadMessages` block) — monolith ↔ split assembly:
-  catches split chunks that fail to re-assemble to the monolithic catalog.
-- `ts-shared/ui-messages/messages/__tests__/parity.test.mts` — cross-locale key parity: catches
-  `es`/`fr`/`pt` monolith keys missing or extra vs. `en`, and leaf-kind (string vs. serializable
+- `ts-shared/ui-messages/index.test.mts` (`loadMessages` block) — JSON catalog load and locale
+  fallback for the web consumer tree.
+- `ts-shared/ui-messages/index.test.mts` (`onUnresolved` cases) and
+  `ts-shared/ui-messages/catalog-tree.test.mts` (`lookupCatalogLeaf`) — default `createTranslator`
+  still throws on a missing or non-leaf key; with `onUnresolved` those keys degrade and unknown
+  select-plural cases still throw.
+- `ts-shared/ui-messages/parity.test.mts` — cross-locale key parity: catches
+  `es`/`fr`/`pt` keys missing or extra vs. `en`, and leaf-kind (string vs. serializable
   descriptor) mismatches.
 - `ts-shared/ui-messages/native-resources.test.mts`,
   `native-resource-export.test.mts`, and
@@ -17,6 +24,52 @@ guard the producer contract:
   isolated consumer checkout, real Swift/C#/XAML consumer ownership, placeholder and descriptor
   parity, deterministic output, escaping, and stale/missing/extra file detection. Catalog CLI
   subprocesses use a 30s timeout, matching `index.test.mts` locale assembly.
+
+Every live web server and browser fetches `GET /api/v1/localization` for a versioned web-chrome
+selector plus one versioned exact current-route selector (`web/lib/i18n/webSelectorsForPath`). The server resolves those
+selectors through generated `routes.json`; Vitest may query the catalog runtime directly. These
+checks guard that request-selection contract instead of catalog content:
+
+- `web/lib/i18n/__tests__/localized-route-boundary.mock.test.tsx` — changes the pathname under the
+  persistent root layout and proves the destination batch resolves and merges before its translated
+  route copy renders. The route cache is keyed by locale and pathname, while the regular locale
+  cache keeps merged chrome and already-visited route copy available to shared UI.
+- `web/lib/i18n/__tests__/get-translations.mock.test.ts`,
+  `web/lib/i18n/__tests__/use-translations-unresolved.test.tsx`, and
+  `web/lib/i18n/__tests__/report-unresolved-message.test.ts` — a selected-catalog miss returns
+  an empty string, reports one Sentry error per key per translator, and does not toast.
+
+- `web/lib/i18n/__tests__/localization-selectors.test.ts` — combined selector checks and route
+  lookup coverage for the generated selector IDs. The full transitive import-closure proof runs in
+  the generated-map check below; repeating graph queries inside web tests contends on the shared
+  `no-mistakes` lock.
+- `static-code-analysis/i18n-extract/route-bounds.test.mts` — compiles the real catalog, caches
+  package-runtime responses per selector, checks every generated route's combined copy in English,
+  Spanish, French, and Portuguese against selector, message, and serialized payload limits, and
+  compares representative routes against direct combined requests.
+- `playwright/tests/routes/localization-availability.spec.mts` — renders login, admin AI costs,
+  and the dynamically loaded growth dashboard in English against the backend, with the browser
+  error monitor enabled.
+- `web/scripts/tests/smoke-test-web.sh` — compiles only the real homepage and chrome selectors
+  for its standalone backend, then verifies the production web server through that backend. The
+  all-route SQLite sweep above owns catalog-wide bounds coverage.
+- `.github/workflows/build-web.yml` — the Docker image smoke starts the same real localization
+  resolver against a compiled homepage catalog and supplies its URL to the running web image.
+- `pnpm exec vouchington-localization format --check --source localization/catalog` — reads every
+  formatter-owned row table, rejects noncanonical serialization and catalog semantic failures, and
+  never rewrites catalog source. It runs as "Check localization catalog format" in static-analysis
+  CI; use `pnpm run localization:catalog -- format` when an agent must rewrite rows through the
+  authoring CLI.
+- `static-code-analysis/i18n-extract/route-selector-map.test.mts` — unit-tests `assembleRouteAliasMap` and route discovery on tiny fake-git fixtures in the `i18n-extract-codemod` Vitest project. Graph closures live in `route-selector-map.mock.test.mts`, which mocks `analyzeProject` / `resolveCheck` so tooling Vitest never waits on the user-global no-mistakes lock ([#11696](https://github.com/jonathanong/filaments/issues/11696)). The 25s analysis budget remains on `analysis-budget.mts` for genuine lock diagnostics and is not applied to production `--check`.
+- `static-code-analysis/i18n-extract/route-selector-map.mts --check` — regenerates
+  `web/lib/i18n/route-selectors.generated.mts` and `localization/catalog/routes.json` (stable
+  selectors and pattern-keyed alias membership for every real `web/app` route) and fails if either committed
+  artifact is stale. It follows no-mistakes dependency closures and recursively resolves dynamic
+  import targets, then lexically matches known alias literals. It does not parse source with an
+  AST. Run without `--check` to write both artifacts after adding or moving a route. Costly and
+  serialized by the dependency graph: a CI-tier operation, wired into
+  `.github/workflows/static-code-analysis.yml` as "Check web route localization selector map"
+  rather than run per-commit locally.
 
 The catalog and native-resource tests run as the `ts-shared` Vitest project:
 
@@ -28,17 +81,13 @@ pnpm run native-localization:check
 Targeted two-file form, following the [Project Name Reference](reference-project-name-reference.md#project-name-reference) pattern:
 
 ```bash
-pnpm exec vitest run --project ts-shared ts-shared/ui-messages/index.test.mts ts-shared/ui-messages/messages/__tests__/parity.test.mts
+pnpm exec vitest run --project ts-shared ts-shared/ui-messages/index.test.mts ts-shared/ui-messages/parity.test.mts
 ```
 
-After any rebase that touches a file anywhere under `ts-shared/ui-messages/messages/`, **run
+After any rebase that touches a file under `localization/catalog/`, **run
 `pnpm run test:ts-shared` explicitly.** Two real incidents (PR #7168, PR #7188) shipped catalog
-drift a rebase introduced that surfaced only after many pushes. The no-mistakes test planner does
-not reliably auto-select these tests for split-chunk-only edits: `index.test.mts` statically
-imports only `index.mts` and the four monoliths, and the split chunks are reached solely through a
-dynamic `import()` inside `index.mts` that the planner does not trace — a monolith edit selects
-both tests, but a split-chunk-only edit can select neither. After changing any file under
-`ts-shared/ui-messages/messages/`, run the command above rather than relying on CI to discover it.
+drift a rebase introduced that surfaced only after many pushes. After changing catalog JSON,
+run the command above rather than relying on CI to discover it.
 
 After changing the manifest or one of its catalog leaves, validate the Filaments producer with
 `pnpm run native-localization:check`. Generate or check native output only from the native-client
@@ -67,7 +116,7 @@ Other translation consumers, one command each (see [LOCALIZATION.md § Translati
 Checklist](../requirements/users/LOCALIZATION.md#translation-validation-checklist) for the full
 checklist and consumer matrix):
 
-- `pnpm run test:email-templates` — transactional email copy parity.
+- `pnpm run test:email-templates` — transactional email catalog resolution.
 - `pnpm run test:web` — web locale resolution (`resolveUiLocale`/`getResolvedUiLocale`).
 - From a [vouchington-clients](https://github.com/vouchington/vouchington-clients) checkout,
   `swift-clients/tooling/with-build-lock.sh swift test --package-path swift-clients/ui` (+ the

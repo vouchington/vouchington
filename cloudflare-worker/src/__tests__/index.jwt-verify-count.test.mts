@@ -3,7 +3,11 @@ import * as sessionJwt from '@ts-shared/session-jwt'
 import { mintUUIDv7 } from '@ts-shared/session-jwt'
 import worker from '../index.mts'
 import { createSignedDeviceJwt, createSignedSessionJwt } from '../auth/test-jwt-fixtures.mts'
-import { createContext, restoreGlobals, setupMemoryCaches } from '../test-helpers/mock-env.mts'
+import {
+  createContext,
+  restoreGlobals,
+  setupMemoryCaches,
+} from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 // Regression guard for the JWT verify-once dedup (see auth/jwt.mts's verifyBackendSessionTokens):

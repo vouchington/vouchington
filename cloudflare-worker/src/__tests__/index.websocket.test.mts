@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
 
 import worker from '../index.mts'
 
-import { createContext, restoreGlobals, setupMemoryCaches } from '../test-helpers/mock-env.mts'
+import {
+  createContext,
+  restoreGlobals,
+  setupMemoryCaches,
+} from '../../test-helpers/src/mock-env.mts'
 
 import type { Env } from '../types.mts'
 
@@ -72,7 +76,7 @@ describe('WebSocket handling', () => {
     // We still verify that accept() was called on both sides of the bridge.
     await worker
       .fetch(
-        new Request('https://voucha.ai/_next/webpack-hmr', {
+        new Request('https://voucha.ai/_next/hmr', {
           headers: { Upgrade: 'websocket', Connection: 'Upgrade' },
         }),
         env,
@@ -104,7 +108,7 @@ describe('WebSocket handling', () => {
     }
 
     const response = await worker.fetch(
-      new Request('https://voucha.ai/_next/webpack-hmr', {
+      new Request('https://voucha.ai/_next/hmr', {
         headers: { Upgrade: 'websocket' },
       }),
       env,
@@ -127,7 +131,7 @@ describe('WebSocket handling', () => {
     }
 
     const response = await worker.fetch(
-      new Request('https://voucha.ai/_next/webpack-hmr', {
+      new Request('https://voucha.ai/_next/hmr', {
         headers: { Upgrade: 'websocket' },
       }),
       env,
@@ -151,7 +155,7 @@ describe('WebSocket handling', () => {
     }
 
     const response = await worker.fetch(
-      new Request('https://voucha.ai/_next/webpack-hmr', {
+      new Request('https://voucha.ai/_next/hmr', {
         headers: { Upgrade: 'websocket' },
       }),
       env,
@@ -172,7 +176,7 @@ describe('WebSocket handling', () => {
     }
 
     const response = await worker.fetch(
-      new Request('https://voucha.ai/_next/webpack-hmr', {
+      new Request('https://voucha.ai/_next/hmr', {
         headers: { Upgrade: 'websocket' },
       }),
       env,
@@ -193,7 +197,7 @@ describe('WebSocket handling', () => {
     }
 
     const response = await worker.fetch(
-      new Request('https://voucha.ai/_next/webpack-hmr', {
+      new Request('https://voucha.ai/_next/hmr', {
         headers: { Upgrade: 'websocket' },
       }),
       env,

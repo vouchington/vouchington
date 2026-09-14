@@ -9,19 +9,27 @@ import { AsideDrawer } from '@/components/aside-drawer'
 import { ContentContainer } from '@/components/layout/content-container'
 import { postTagTabs } from '@/components/tags/tag-relation-configs'
 import { getPostPath, getPostTitle } from '@/lib/post-helpers'
+import type { getTranslations } from '@/lib/i18n/get-translations'
 import { createBreadcrumbSchema } from '@/lib/seo/structured-data'
 import { communityHref } from '@/lib/links/entity-href'
 import type { PostResponseBody } from '@/types/api-responses'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 
 interface ManagePostTagsProps {
+  t: Awaited<ReturnType<typeof getTranslations>>
   postData: PostResponseBody
   hideDownCount: boolean
   slug: string
   objectType: string
 }
 
-export function ManagePostTags({ postData, hideDownCount, slug, objectType }: ManagePostTagsProps) {
+export function ManagePostTags({
+  t,
+  postData,
+  hideDownCount,
+  slug,
+  objectType,
+}: ManagePostTagsProps) {
   const post = postData.post
   const postPath = getPostPath(slug, post)
   const postCommunity = post.community_id
@@ -44,6 +52,7 @@ export function ManagePostTags({ postData, hideDownCount, slug, objectType }: Ma
     <>
       <AsideDrawer showFooter>
         <PostDetailAside
+          t={t}
           post={post}
           authorAside={postData.author_aside ?? null}
           sourceUrls={[postData.link_embed?.source_url]}
@@ -55,7 +64,7 @@ export function ManagePostTags({ postData, hideDownCount, slug, objectType }: Ma
       >
         <div className='min-w-0 flex-1'>
           <div className='space-y-4'>
-            <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+            <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
             <Breadcrumbs items={breadcrumbItems} />
             <PostDetail
               post={post}
@@ -86,6 +95,7 @@ export function ManagePostTags({ postData, hideDownCount, slug, objectType }: Ma
         </div>
         <AsideColumn showFooter>
           <PostDetailAside
+            t={t}
             post={post}
             authorAside={postData.author_aside ?? null}
             sourceUrls={[postData.link_embed?.source_url]}

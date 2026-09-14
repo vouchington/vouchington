@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, it } from 'vitest'
 import { membershipBillingControls } from '@services/memberships/purchase-controls'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestNativeMembershipProviderProduct,
   createTestSku,

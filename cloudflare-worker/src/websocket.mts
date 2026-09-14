@@ -3,7 +3,7 @@ import { edgeErrorResponse } from './error-response.mts'
 import { isProductionMode } from './production-mode.mts'
 import type { Env } from './types.mts'
 
-export const DEV_HMR_WEBSOCKET_PATH = '/_next/webpack-hmr'
+export const DEV_HMR_WEBSOCKET_PATH = '/_next/hmr'
 const NO_STRIP_COOKIES = new Set<string>()
 const LOCAL_WEBSOCKET_ORIGIN_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
 

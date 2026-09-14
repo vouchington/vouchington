@@ -19,6 +19,21 @@
       "import": "./apple/index.mts",
       "default": "./apple/index.mts"
     },
+    "./google": {
+      "types": "./google/index.mts",
+      "import": "./google/index.mts",
+      "default": "./google/index.mts"
+    },
+    "./microsoft": {
+      "types": "./microsoft/index.mts",
+      "import": "./microsoft/index.mts",
+      "default": "./microsoft/index.mts"
+    },
+    "./refunds": {
+      "types": "./refunds/index.mts",
+      "import": "./refunds/index.mts",
+      "default": "./refunds/index.mts"
+    },
     "./*": {
       "types": "./*.mts",
       "import": "./*.mts",
@@ -34,6 +49,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/stripe": "workspace:^",
     "@modules/token-secrets": "workspace:^",
+    "@modules/utils": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
     "@queues/vote-weight": "workspace:^",

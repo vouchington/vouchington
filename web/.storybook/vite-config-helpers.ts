@@ -153,6 +153,25 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
         new URL('../storybook/mocks/assert-proxied-image-src.ts', import.meta.url),
       ),
     },
+    {
+      find: 'next/headers',
+      replacement: fileURLToPath(new URL('../storybook/mocks/next-headers.ts', import.meta.url)),
+    },
+    {
+      find: 'next/script',
+      replacement: fileURLToPath(new URL('../storybook/mocks/next-script.tsx', import.meta.url)),
+    },
+    ...(
+      [
+        ['@/lib/i18n/get-translations', 'get-translations.ts'],
+        ['@/lib/i18n/load-server-messages', 'load-server-messages.ts'],
+        ['@/lib/i18n/get-resolved-ui-locale', 'get-resolved-ui-locale.ts'],
+      ] as const
+    ).map(([find, file]) => ({
+      // These reach next/headers / server-only. Keep them out of the Storybook browser graph.
+      find,
+      replacement: fileURLToPath(new URL(`../storybook/mocks/${file}`, import.meta.url)),
+    })),
     ...workspaceAliases,
   ]
 }

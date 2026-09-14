@@ -8,6 +8,7 @@ import {
   type WebSocketRoute,
 } from 'playwright-core'
 import { PlaywrightBlocker } from '@ghostery/adblocker-playwright'
+import onError from '@modules/on-error'
 import {
   CrawlerConnectError,
   CrawlerNetworkError,
@@ -107,7 +108,7 @@ export async function crawlWithBrowser(
         const rawUrl = route.request().url()
         if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
           // Non-http(s) resources (data:, blob:, about:) bypass both the SSRF guard and the ad-blocker.
-          await route.continue().catch(() => {})
+          await route.continue()
           return
         }
         try {
@@ -115,11 +116,11 @@ export async function crawlWithBrowser(
         } catch (err) {
           // Captured so the navigation catch below can rethrow it as CrawlerSsrfError instead of the generic aborted-navigation error Playwright raises.
           if (route.request().isNavigationRequest() && err instanceof Error) ssrfError = err
-          await route.abort('blockedbyclient').catch(() => {})
+          await route.abort('blockedbyclient')
           return
         }
         // SSRF-safe: defer to the ad-blocker's handler registered below us in the route stack; with none installed, fallback() continues to network.
-        await route.fallback().catch(() => {})
+        await route.fallback()
       })
 
       // page.route() does not see WebSocket handshakes — Playwright intercepts them through a
@@ -129,7 +130,7 @@ export async function crawlWithBrowser(
         try {
           dependencies.assertSafeUrlSync(ws.url(), WEBSOCKET_ALLOWED_SCHEMES)
         } catch {
-          await ws.close({ code: 1008, reason: 'blocked by client' }).catch(() => {})
+          await ws.close({ code: 1008, reason: 'blocked by client' })
           return
         }
         ws.connectToServer()
@@ -186,8 +187,8 @@ export async function crawlWithBrowser(
       finalUrl,
     }
   } finally {
-    if (page) await page.close().catch(() => {})
-    if (context) await context.close().catch(() => {})
+    if (page) await page.close().catch(onError)
+    if (context) await context.close().catch(onError)
     if (browser)
       await browser.close().catch((err: unknown) => {
         console.error('Failed to close browser', err)

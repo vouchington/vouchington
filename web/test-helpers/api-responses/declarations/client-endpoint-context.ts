@@ -72,6 +72,10 @@ export interface WebFixtureClientEndpointContext {
     | 'getHouseholdsClient'
     | 'removeHouseholdMembership'
   >
+  readonly memberships: Pick<
+    typeof import('@/lib/api/client/memberships'),
+    'createMembershipRefund'
+  >
   readonly importExport: Pick<
     typeof import('@/lib/api/client/import-export'),
     'exportTopics' | 'getRssFeedImport' | 'importRssFeeds' | 'importTopics'

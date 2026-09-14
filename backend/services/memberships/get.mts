@@ -22,7 +22,7 @@ export {
   getMembershipSourceIdByMembershipId,
   getStripeSubscriptionIdByMembershipSourceId,
 } from './refunds/index.mts'
-export { getLatestMembershipByUserId, getMembershipById } from './get-by-id.mts'
+export { getLatestMembershipByUserId } from './get-by-id.mts'
 
 export async function getUserActivePlan(
   userId: string,

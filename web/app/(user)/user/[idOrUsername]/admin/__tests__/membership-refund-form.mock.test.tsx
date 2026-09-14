@@ -80,6 +80,7 @@ describe('MembershipRefundForm', () => {
     vi.clearAllMocks()
     sessionStorage.clear()
     mockCreateMembershipRefund.mockResolvedValue({
+      outcome: 'completed',
       refund: { id: 're_test' },
       cancellation_status: 'not_requested',
     })
@@ -104,11 +105,13 @@ describe('MembershipRefundForm', () => {
     expect(mockRefresh).toHaveBeenCalledOnce()
   })
 
-  it('preserves pending cancellation in memory when session storage persistence fails', async () => {
+  it('keeps a pending reconciliation locked in memory when storage persistence fails', async () => {
     makeStorageMethodThrow('setItem')
-    mockCreateMembershipRefund
-      .mockResolvedValueOnce({ refund: { id: 're_pending' }, cancellation_status: 'pending' })
-      .mockResolvedValueOnce({ refund: { id: 're_pending' }, cancellation_status: 'completed' })
+    mockCreateMembershipRefund.mockResolvedValueOnce({
+      outcome: 'completed',
+      refund: { id: 're_pending' },
+      cancellation_status: 'pending',
+    })
     const { container } = renderRefundForm()
 
     fireEvent.click(screen.getByRole('checkbox'))
@@ -119,21 +122,13 @@ describe('MembershipRefundForm', () => {
 
     await waitFor(() =>
       expect(mockToastWarning).toHaveBeenCalledWith(
-        'Refund issued, but access could not be revoked.',
+        'Refund reconciliation is continuing automatically.',
       ),
     )
     expect(mockCreateMembershipRefund).toHaveBeenCalledOnce()
-    expect(screen.getByRole('button', { name: 'Retry Access Revocation' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Reconciling Refund' })).toBeDisabled()
     expect(screen.getByPlaceholderText(/For example, 5\.00/)).toBeDisabled()
     expect(screen.getByRole('checkbox')).toBeChecked()
-
-    fireEvent.submit(container.querySelector('form')!)
-
-    await waitFor(() => expect(mockCreateMembershipRefund).toHaveBeenCalledTimes(2))
-    expect(mockCreateMembershipRefund.mock.calls[1]![0]).toEqual(
-      mockCreateMembershipRefund.mock.calls[0]![0],
-    )
-    expect(mockToastSuccess).toHaveBeenCalledWith('Refund issued and access revoked')
   })
 
   it('shows error toast when the refund API call fails', async () => {
@@ -152,6 +147,7 @@ describe('MembershipRefundForm', () => {
     mockCreateMembershipRefund
       .mockRejectedValueOnce(new Error('Response lost'))
       .mockResolvedValueOnce({
+        outcome: 'completed',
         refund: { id: 're_retry' },
         cancellation_status: 'not_requested',
       })
@@ -175,6 +171,7 @@ describe('MembershipRefundForm', () => {
     mockCreateMembershipRefund
       .mockRejectedValueOnce(new Error('Response lost'))
       .mockResolvedValueOnce({
+        outcome: 'completed',
         refund: { id: 're_retry' },
         cancellation_status: 'not_requested',
       })
@@ -196,6 +193,7 @@ describe('MembershipRefundForm', () => {
     mockCreateMembershipRefund
       .mockRejectedValueOnce(new Error('Response lost'))
       .mockResolvedValueOnce({
+        outcome: 'completed',
         refund: { id: 're_changed' },
         cancellation_status: 'not_requested',
       })
@@ -256,35 +254,5 @@ describe('MembershipRefundForm', () => {
     expect(mockCreateMembershipRefund.mock.calls[1]![0].idempotency_key).not.toBe(
       mockCreateMembershipRefund.mock.calls[0]![0].idempotency_key,
     )
-  })
-
-  it('tombstones a persisted pending attempt when terminal storage removal fails', async () => {
-    mockCreateMembershipRefund
-      .mockResolvedValueOnce({ refund: { id: 're_pending' }, cancellation_status: 'pending' })
-      .mockResolvedValueOnce({ refund: { id: 're_pending' }, cancellation_status: 'completed' })
-    const firstRender = renderRefundForm()
-
-    fireEvent.click(screen.getByRole('checkbox'))
-    fireEvent.change(screen.getByPlaceholderText(/For example, 5\.00/), {
-      target: { value: '500' },
-    })
-    fireEvent.submit(firstRender.container.querySelector('form')!)
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Retry Access Revocation' })).toBeEnabled(),
-    )
-    expect(sessionStorage).toHaveLength(1)
-
-    makeStorageMethodThrow('removeItem')
-    fireEvent.submit(firstRender.container.querySelector('form')!)
-    await waitFor(() =>
-      expect(mockToastSuccess).toHaveBeenCalledWith('Refund issued and access revoked'),
-    )
-
-    firstRender.unmount()
-    renderRefundForm()
-
-    expect(screen.getByRole('button', { name: 'Issue Refund' })).toBeEnabled()
-    expect(screen.getByPlaceholderText(/For example, 5\.00/)).toBeEnabled()
-    expect(screen.getByRole('checkbox')).not.toBeChecked()
   })
 })

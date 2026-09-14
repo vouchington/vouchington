@@ -8,21 +8,22 @@ import { UserProfileLinks } from '@/components/users/profile-links'
 
 import type { AuthorAside, PostCreatedBy, PostType } from '@/types/posts'
 import { userTabForPostType } from '@/lib/links/entity-href'
-import { getTranslations } from '@/lib/i18n/get-translations'
+import type { getTranslations } from '@/lib/i18n/get-translations'
+import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const FollowButton = dynamic(() =>
+const FollowButton = dynamic<Parameters<typeof FollowButtonComponent>[0]>(() =>
   import('@/components/shared/follow-button').then(mod => mod.FollowButton),
 )
 
 interface PostAuthorAsideProps {
+  t: Awaited<ReturnType<typeof getTranslations>>
   author: PostCreatedBy
   aside: AuthorAside | null
   postType: PostType
 }
 
-export async function PostAuthorAside({ author, aside, postType }: PostAuthorAsideProps) {
-  const t = await getTranslations()
+export function PostAuthorAside({ t, author, aside, postType }: PostAuthorAsideProps) {
   const tab = userTabForPostType(postType)
   const showFollow = !!aside
 

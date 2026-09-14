@@ -10,7 +10,12 @@ const initializePath = fileURLToPath(new URL('../initialize', import.meta.url))
 const testDirs: string[] = []
 
 export function initializeBashArgs(script: string, args: string[] = []): string[] {
-  return sourceBashArgs(initializePath, script, args, true)
+  return sourceBashArgs(
+    initializePath,
+    `if [ -r "$REPO_ROOT/dev/lib/git-worktrees.sh" ]; then source "$REPO_ROOT/dev/lib/git-worktrees.sh"; fi; ${script}`,
+    args,
+    true,
+  )
 }
 
 export function sourceBashArgs(

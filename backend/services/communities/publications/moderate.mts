@@ -2,32 +2,41 @@ import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import { assertNotBanned } from '../bans/get.mts'
-import { lockCommunityUser } from '../bans/lock.mts'
 import { enqueueCommunityModerationDispatcher } from '@queues/ai-agents/enqueues/community-moderation'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import { approvePendingPostClearance } from '@services/post-clearance'
 import { recordModeratorAction } from '@services/moderator-actions'
 import {
   recordPublicationApprovedFeedback,
   recordPublicationRejectedFeedback,
-  recordPublicationUnpublishedFeedback,
 } from './training-feedback.mts'
 import { recordCommunityPublicationChange } from './publication-change.mts'
-import { assertModeratorAccess, getPublicationReview } from './access.mts'
-import { lockPostPublication } from '@services/post-publication'
+import { assertPublicationModeratorAccess, getPublicationReview } from './access.mts'
+import { assertNotBanned } from '../bans/get.mts'
+import { lockCommunityUser } from '../bans/lock.mts'
+import { overridePublication } from './platform-override.mts'
+import { recordPublicationReviewChange } from './review-change.mts'
+
 export { unpublishPostAsAgent } from './agent-moderate.mts'
 export { assertModeratorAccess } from './access.mts'
+export { unpublishPost } from './unpublish.mts'
+
+export { overridePublication } from './platform-override.mts'
 
 export async function approvePublication(
   currentUser: PrivateUser,
   communityId: string,
   postId: string,
 ): Promise<void> {
-  const community = await assertModeratorAccess(currentUser, communityId)
+  const access = await assertPublicationModeratorAccess(currentUser, communityId)
+  if (access.isPlatformModerator) {
+    await overridePublication(currentUser, communityId, postId, {
+      action: 'approve',
+      reasonCode: 'staff_approved',
+    })
+    return
+  }
 
-  const publication = await getPublicationReview(communityId, postId)
-  assert(publication, 404, 'Community post review not found')
+  const publication = await assertCommunityPublicationCanChange(communityId, postId)
   assert(
     !publication.approved_at && !publication.rejected_at,
     422,
@@ -37,59 +46,46 @@ export async function approvePublication(
 
   await using query = await beginTransaction()
   const options = { query }
-
-  // A banned user's pending post must not be approved/published, even though their membership
-  // was already removed by the ban. Take the per-user lock and recheck inside the transaction
-  // so a ban committing concurrently cannot slip an approval through.
   if (publication.submitted_by_id) {
     await lockCommunityUser(communityId, publication.submitted_by_id, options)
     await assertNotBanned(communityId, publication.submitted_by_id, options)
   }
-
   const { rowCount } = await write(
     sql`/* approvePublication */
-    UPDATE community_post_reviews
-    SET reviewed_at = CURRENT_TIMESTAMP,
-        reviewed_by_id = ${currentUser.id},
-        approved_at = CURRENT_TIMESTAMP
-    WHERE community_id = ${communityId}
-      AND post_id = ${postId}
-      AND approved_at IS NULL
-      AND rejected_at IS NULL
-    `,
+      UPDATE community_post_reviews
+      SET reviewed_at = CURRENT_TIMESTAMP,
+          reviewed_by_id = ${currentUser.id},
+          approved_at = CURRENT_TIMESTAMP
+      WHERE community_id = ${communityId}
+        AND post_id = ${postId}
+        AND approved_at IS NULL
+        AND rejected_at IS NULL
+        AND platform_override_at IS NULL`,
     options,
   )
   const changed = (rowCount ?? 0) > 0
   if (changed) {
+    await recordPublicationReviewChange(query, {
+      communityId,
+      postId,
+      actorUserId: currentUser.id,
+      action: 'approve',
+    })
     await recordCommunityPublicationChange(query, communityId, postId)
   }
-  const approved = changed
-
   await query.commit()
 
-  if (approved) {
+  if (changed) {
     await recordPublicationApprovedFeedback({
       actorUserId: currentUser.id,
       communityId,
       postId,
-      communityTrusted: Boolean(community.trusted_at),
+      communityTrusted: Boolean(access.community.trusted_at),
     })
-  }
-
-  if (community.trusted_at) {
-    await approvePendingPostClearance(postId, currentUser.id)
-  }
-
-  if (approved) {
-    await recordModeratorAction(currentUser.id, {
-      actionType: 'approve',
-      communityId,
-      postId,
-    })
+    await recordModeratorAction(currentUser.id, { actionType: 'approve', communityId, postId })
     void enqueueRefreshTopHashtags()
+    void enqueueCommunityModerationDispatcher(postId, communityId)
   }
-
-  void enqueueCommunityModerationDispatcher(postId, communityId)
 }
 
 export async function rejectPublication(
@@ -98,44 +94,52 @@ export async function rejectPublication(
   postId: string,
   reason?: string,
 ): Promise<void> {
-  await assertModeratorAccess(currentUser, communityId)
+  const access = await assertPublicationModeratorAccess(currentUser, communityId)
+  if (access.isPlatformModerator) {
+    await overridePublication(currentUser, communityId, postId, {
+      action: 'reject',
+      reasonCode: 'staff_rejected',
+      privateNote: reason,
+    })
+    return
+  }
+  if (reason) assertReasonText(reason, 1000, 'Reason')
 
-  const publication = await getPublicationReview(communityId, postId)
-  assert(publication, 404, 'Community post review not found')
+  const publication = await assertCommunityPublicationCanChange(communityId, postId)
   assert(
     !publication.approved_at && !publication.rejected_at,
     422,
     'Community post review has already been reviewed',
   )
 
-  if (reason) {
-    assert(reason.trim() === reason, 422, 'Reason must not have leading or trailing whitespace')
-    assert(reason.length <= 1000, 422, 'Reason must be at most 1000 characters')
-  }
-
   await using query = await beginTransaction()
   const { rowCount } = await write(
     sql`/* rejectPublication */
-  UPDATE community_post_reviews
-  SET reviewed_at = CURRENT_TIMESTAMP,
-      reviewed_by_id = ${currentUser.id},
-      rejected_at = CURRENT_TIMESTAMP,
-      rejection_reason = ${reason ?? null}
-  WHERE community_id = ${communityId}
-    AND post_id = ${postId}
-    AND approved_at IS NULL
-    AND rejected_at IS NULL
-    `,
+      UPDATE community_post_reviews
+      SET reviewed_at = CURRENT_TIMESTAMP,
+          reviewed_by_id = ${currentUser.id},
+          rejected_at = CURRENT_TIMESTAMP,
+          rejection_reason = ${reason ?? null}
+      WHERE community_id = ${communityId}
+        AND post_id = ${postId}
+        AND approved_at IS NULL
+        AND rejected_at IS NULL
+        AND platform_override_at IS NULL`,
     { query },
   )
   const changed = (rowCount ?? 0) > 0
   if (changed) {
+    await recordPublicationReviewChange(query, {
+      communityId,
+      postId,
+      actorUserId: currentUser.id,
+      action: 'reject',
+    })
     await recordCommunityPublicationChange(query, communityId, postId)
   }
-  const rejected = changed
-
   await query.commit()
-  if (rejected) {
+
+  if (changed) {
     await recordPublicationRejectedFeedback({
       actorUserId: currentUser.id,
       communityId,
@@ -152,45 +156,18 @@ export async function rejectPublication(
   }
 }
 
-export async function unpublishPost(
-  currentUser: PrivateUser,
-  communityId: string,
-  postId: string,
-): Promise<void> {
-  await assertModeratorAccess(currentUser, communityId)
-
+async function assertCommunityPublicationCanChange(communityId: string, postId: string) {
   const publication = await getPublicationReview(communityId, postId)
   assert(publication, 404, 'Community post review not found')
-  assert(publication.approved_at && !publication.rejected_at, 422, 'Post is not published')
-  assert(!publication.unpublished_at, 422, 'Post has already been unpublished')
-
-  await using query = await beginTransaction()
-  await lockPostPublication(query, postId)
-  const { rowCount } = await write(
-    sql`/* unpublishPost */
-  UPDATE community_post_reviews
-  SET unpublished_at = CURRENT_TIMESTAMP,
-      unpublished_by_id = ${currentUser.id}
-  WHERE community_id = ${communityId}
-    AND post_id = ${postId}
-    AND unpublished_at IS NULL
-    `,
-    { query },
+  assert(
+    !publication.platform_override_at,
+    403,
+    'This publication has a platform moderation override',
   )
-  const changed = (rowCount ?? 0) > 0
-  if (changed) {
-    await recordCommunityPublicationChange(query, communityId, postId)
-  }
-  const unpublished = changed
+  return publication
+}
 
-  await query.commit()
-  if (unpublished) {
-    await recordPublicationUnpublishedFeedback({ actorUserId: currentUser.id, communityId, postId })
-    await recordModeratorAction(currentUser.id, {
-      actionType: 'remove',
-      communityId,
-      postId,
-    })
-    void enqueueRefreshTopHashtags()
-  }
+function assertReasonText(value: string, maxLength: number, name: string): void {
+  assert(value.trim() === value, 422, `${name} must not have leading or trailing whitespace`)
+  assert(value.length <= maxLength, 422, `${name} must be at most ${maxLength} characters`)
 }

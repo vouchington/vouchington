@@ -10,7 +10,7 @@ import sql from 'sql-template-strings'
  */
 export async function assertImageExists(imageId: string): Promise<void> {
   const { rows } = await read(
-    sql`/* assertImageExists */ SELECT id FROM images WHERE id = ${imageId} AND upload_completed_at IS NOT NULL AND deleted_at IS NULL LIMIT 1`,
+    sql`/* assertImageExists */ SELECT id FROM images WHERE id = ${imageId} AND upload_completed_at IS NOT NULL AND deleted_at IS NULL AND quarantine_pending_at IS NULL LIMIT 1`,
   )
   assert(rows.length > 0, 400, 'Image not found or not complete')
 }

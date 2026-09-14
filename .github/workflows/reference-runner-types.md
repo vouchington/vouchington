@@ -41,12 +41,12 @@ Ubicloud (ephemeral):
 AWS CodeBuild-hosted (ephemeral, issue #6681):
 
 - Filaments image-validation jobs can opt into ephemeral GitHub Actions runners hosted by the
-  private infrastructure repository's `voucha-ci-runner` CodeBuild project.
+  private infrastructure repository's managed CodeBuild runner.
 - Label syntax (GitHub's documented folded form for CodeBuild-hosted runners —
   a single space-separated string):
-  `codebuild-voucha-ci-runner-${{ github.run_id }}-${{ github.run_attempt }} image:<image-id> instance-size:<size>`.
-  One project serves every job shape via this override; there is no per-shape
-  CodeBuild project.
+  `<managed-build-runner> image:<image-id> instance-size:<size>`.
+  One managed runner service serves every job shape via this override; there is
+  no per-shape project.
 - Image/size combinations used by consuming workflows:
   - `image:arm-3.0 instance-size:large` — 8 vCPU / 16 GiB, ARM. The CodeBuild
     escape hatch for `build-web.yml` `build` — reachable only through the

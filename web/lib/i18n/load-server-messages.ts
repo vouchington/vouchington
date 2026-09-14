@@ -1,0 +1,117 @@
+import 'server-only'
+
+import { headers } from 'next/headers'
+import type { EnCatalog } from '@ts-shared/ui-messages'
+import type { LocalizationBatch } from '@vouchington/localization'
+import { getWebLocalizationBatch } from '@/lib/api/server/localization'
+import { catalogFromLocalizationBatch } from './catalog-from-batch'
+import { webLocalizationSearchParams } from './localization-query'
+import { webSelectorsForPath } from './localization-selectors'
+
+const REFRESH_RETRY_DELAY_MS = 60_000
+
+type LoadingCatalog = {
+  state: 'loading'
+  promise: Promise<EnCatalog>
+}
+
+type ResolvedCatalog = {
+  state: 'resolved'
+  batch: LocalizationBatch
+  catalog: EnCatalog
+  expiresAt: number
+  refresh?: Promise<void>
+  retryAt: number
+}
+
+type CatalogEntry = LoadingCatalog | ResolvedCatalog
+
+const catalogs = new Map<string, CatalogEntry>()
+
+function expiresAt(batch: LocalizationBatch): number {
+  const ttlMilliseconds = Number.isFinite(batch.ttlSeconds)
+    ? Math.max(0, batch.ttlSeconds * 1000)
+    : 0
+  return Date.now() + ttlMilliseconds
+}
+
+function resolvedCatalog(batch: LocalizationBatch): ResolvedCatalog {
+  return {
+    state: 'resolved',
+    batch,
+    catalog: catalogFromLocalizationBatch(batch),
+    expiresAt: expiresAt(batch),
+    retryAt: 0,
+  }
+}
+
+function loadInitialCatalog(
+  cacheKey: string,
+  locale: string,
+  pathname: string,
+): Promise<EnCatalog> {
+  const promise = getWebLocalizationBatch(locale, webSelectorsForPath(pathname).join(',')).then(
+    batch => {
+      const entry = resolvedCatalog(batch)
+      const current = catalogs.get(cacheKey)
+      if (current?.state === 'loading' && current.promise === promise) {
+        catalogs.set(cacheKey, entry)
+      }
+      return entry.catalog
+    },
+    error => {
+      const current = catalogs.get(cacheKey)
+      if (current?.state === 'loading' && current.promise === promise) {
+        catalogs.delete(cacheKey)
+      }
+      throw error
+    },
+  )
+  catalogs.set(cacheKey, { state: 'loading', promise })
+  return promise
+}
+
+function refreshCatalog(
+  cacheKey: string,
+  entry: ResolvedCatalog,
+  locale: string,
+  pathname: string,
+): void {
+  if (entry.refresh || Date.now() < entry.retryAt) return
+
+  const refresh = getWebLocalizationBatch(locale, webSelectorsForPath(pathname).join(','))
+    .then(batch => {
+      if (catalogs.get(cacheKey) !== entry) return undefined
+      const refreshed = resolvedCatalog(batch)
+      entry.batch = refreshed.batch
+      entry.catalog = refreshed.catalog
+      entry.expiresAt = refreshed.expiresAt
+      entry.retryAt = 0
+      return undefined
+    })
+    .catch(() => {
+      if (catalogs.get(cacheKey) === entry) {
+        entry.retryAt = Date.now() + REFRESH_RETRY_DELAY_MS
+      }
+    })
+    .finally(() => {
+      if (entry.refresh === refresh) entry.refresh = undefined
+    })
+  entry.refresh = refresh
+}
+
+/** Every live SSR render fetches route copy from the backend; the TTL cache avoids repeat work. */
+export async function loadServerMessages(locale: string): Promise<EnCatalog> {
+  const pathname = (await headers()).get('x-pathname') ?? ''
+  const params = webLocalizationSearchParams(locale, webSelectorsForPath(pathname))
+  const cacheKey = `${params.locales}:${params.selectors}`
+  const entry = catalogs.get(cacheKey)
+  if (!entry) {
+    return loadInitialCatalog(cacheKey, locale, pathname)
+  }
+  if (entry.state === 'loading') return entry.promise
+  if (Date.now() >= entry.expiresAt) {
+    refreshCatalog(cacheKey, entry, locale, pathname)
+  }
+  return entry.catalog
+}

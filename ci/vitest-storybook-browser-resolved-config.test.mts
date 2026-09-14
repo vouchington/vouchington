@@ -79,7 +79,9 @@ process.stdout.write('\\n${resolvedConfigMarker}' + payload)`,
       resolved.include?.filter(value => value === storybookBrowserOptimizeDeps.at(-1)),
     ).toHaveLength(1)
     expect(resolved.include).not.toContain('next/image')
+    expect(resolved.include).not.toContain('next/headers')
     expect(resolved.exclude?.filter(value => value === 'next/image')).toHaveLength(1)
+    expect(resolved.exclude?.filter(value => value === 'next/headers')).toHaveLength(1)
     expect(resolved.providerOptions?.launchOptions?.channel).toBe('chromium')
   })
 })

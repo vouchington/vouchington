@@ -8,6 +8,7 @@ import {
   Text,
   render,
 } from './react-email-runtime.mts'
+import { emailCopy } from './catalog-copy.mts'
 import { VouchaFooter, VouchaHeader } from './components.tsx'
 import { resolveUiLocale } from './locale.mts'
 import { styles } from './styles.mts'
@@ -17,41 +18,17 @@ import type {
   SupportReplyEmailProps,
 } from './types.mts'
 
-// oxlint-disable-next-line react/only-export-components
-export const supportReplyCopyByLocale = {
-  en: {
-    preview: 'A message from Voucha Support',
-    signoff: '- Voucha Support Team',
-    subject: 'Re: Your support request',
-  },
-  es: {
-    preview: 'Un mensaje del equipo de soporte de Voucha',
-    signoff: '- El equipo de soporte de Voucha',
-    subject: 'Re: Tu solicitud de soporte',
-  },
-  fr: {
-    preview: "Un message de l'équipe d'assistance Voucha",
-    signoff: "- L'équipe d'assistance Voucha",
-    subject: 'Re: Votre demande d’assistance',
-  },
-  pt: {
-    preview: 'Uma mensagem da equipe de suporte da Voucha',
-    signoff: '- Equipe de suporte da Voucha',
-    subject: 'Re: Sua solicitação de suporte',
-  },
-} as const
-
 const SupportReplyEmail: PreviewableEmailComponent<SupportReplyEmailProps> = ({
   bodyText,
   uiLocale,
 }) => {
   const locale = resolveUiLocale(uiLocale)
-  const copy = supportReplyCopyByLocale[locale]
+  const t = emailCopy(locale, 'support-reply')
 
   return (
     <Html>
       <Head />
-      <Preview>{copy.preview}</Preview>
+      <Preview>{t('preview')}</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
           <VouchaHeader />
@@ -65,7 +42,7 @@ const SupportReplyEmail: PreviewableEmailComponent<SupportReplyEmailProps> = ({
                 {line || '\u00A0'}
               </Text>
             ))}
-            <Text style={styles.paragraph}>{copy.signoff}</Text>
+            <Text style={styles.paragraph}>{t('signoff')}</Text>
           </Section>
           <VouchaFooter uiLocale={locale} />
         </Container>
@@ -82,11 +59,11 @@ SupportReplyEmail.PreviewProps = {
 
 async function renderSupportReplyEmail(props: SupportReplyEmailProps): EmailRenderResultPromise {
   const locale = resolveUiLocale(props.uiLocale)
-  const copy = supportReplyCopyByLocale[locale]
+  const t = emailCopy(locale, 'support-reply')
   return {
-    subject: props.subject ?? copy.subject,
+    subject: props.subject ?? t('subject'),
     html: await render(<SupportReplyEmail {...props} />, { pretty: true }),
-    text: `${props.bodyText}\n\n${copy.signoff}`,
+    text: `${props.bodyText}\n\n${t('signoff')}`,
   }
 }
 

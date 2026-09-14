@@ -14,7 +14,7 @@ vi.mock(
 import { clientApi } from '../instance'
 import { ImageBlockedError, ImageProcessingTimeoutError, pollImageUntilTerminal } from '../images'
 import { ApiError } from '../../error'
-import { makeState, MockEventSource } from '../test-helpers/images'
+import { makeState, MockEventSource } from '../../../../test-helpers/lib/api/client/images'
 
 const mockGet = vi.mocked(clientApi.get)
 

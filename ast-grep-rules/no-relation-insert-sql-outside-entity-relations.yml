@@ -13,7 +13,7 @@ ignores:
   - 'backend/data-stores/psql/config-driven/**'
   - 'backend/scripts/**'
   - 'backend/test-helpers/**'
-  - 'backend/data-stores/psql/test-helpers/**'
+  - 'backend/test-helpers/data-stores/psql/**'
   - '**/*.test.mts'
   - '**/*.spec.mts'
 rule:

@@ -23,6 +23,7 @@ export async function unpublishPostAsAgent(
 ): Promise<AgentRemovalResult> {
   const publication = await getReview(communityId, postId)
   if (!publication) return 'not-applicable'
+  if (publication.platform_override_at) return 'not-applicable'
   if (!publication.approved_at || publication.rejected_at) return 'not-applicable'
   if (publication.unpublished_at) return 'already-removed'
 
@@ -40,6 +41,7 @@ export async function unpublishPostAsAgent(
         AND approved_at IS NOT NULL
         AND rejected_at IS NULL
         AND unpublished_at IS NULL
+        AND platform_override_at IS NULL
       `,
     { query },
   )
@@ -47,6 +49,16 @@ export async function unpublishPostAsAgent(
     await query.commit()
     return 'already-removed'
   }
+  // ast-grep-ignore: no-three-sequential-awaits -- review history, publication capture, and moderator audit must commit in causal order
+  await write(
+    sql`/* recordAgentPublicationReviewChange */
+      INSERT INTO community_post_review_changes (
+        community_id, post_id, actor_user_id, action, platform_override
+      ) VALUES (
+        ${communityId}, ${postId}, ${moderationSystemUserId}, 'unpublish', false
+      )`,
+    { query },
+  )
   await recordPostPublicationChange(query, {
     scope: { type: 'post', postId },
     reason: 'community_publication_changed',

@@ -1,6 +1,9 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { createPostModerationContent } from '@services/posts/content'
+import { getPostByAny } from '@services/posts/get'
+import type { Post } from '@services/posts/types'
 import {
   approveTestPost,
   countPostImageRevisions,
@@ -8,7 +11,6 @@ import {
   getImageModerationState,
   getTestPostPublicationDirtyWorkForScope,
   getPostLLMModerationContentSha256,
-  getPostModerationData,
   getPostModerationResetState,
   insertTestImage,
   insertTestCommunity,
@@ -19,7 +21,6 @@ import {
   readAllQueueJobs,
   setImageOpenAIModerationResults,
   setPostLLMModerationContentSha256,
-  setPostModerationContentSha256,
   setPostOpenAIModerationResults,
   setPostSpamDetectionResults,
 } from '@voucha/test-helpers'
@@ -98,6 +99,11 @@ describe('deleteImageById rollback', () => {
     await setImageOpenAIModerationResults(imageId, [{ category: 'old-image-state' }], true)
 
     for (const postId of postIds) {
+      const post = (await getPostByAny(postId, { readOnly: false })) as Post
+      await setPostLLMModerationContentSha256(
+        postId,
+        createPostModerationContent(post).content_sha256,
+      )
       await approveTestPost(postId)
       await setPostSpamDetectionResults(postId, [
         { signal: 'fixture', score: 0.7, flagged: true, details: { postId } },
@@ -120,9 +126,17 @@ describe('deleteImageById rollback', () => {
     await expect(deleteImageById(imageId)).rejects.toThrow(enqueueError)
 
     await expect(getImageModerationState(imageId)).resolves.toEqual(beforeImage)
-    await expect(Promise.all(postIds.map(getPostModerationResetState))).resolves.toEqual(
-      beforePosts,
-    )
+    const afterPosts = await Promise.all(postIds.map(getPostModerationResetState))
+    for (const [index, afterPost] of afterPosts.entries()) {
+      const beforePost = beforePosts[index]!
+      expect(afterPost).toEqual({
+        ...beforePost,
+        approved_at: expect.any(Date),
+        latest_clearance_change_id: expect.any(String),
+      })
+      expect(afterPost!.approved_at).not.toEqual(beforePost!.approved_at)
+      expect(afterPost!.latest_clearance_change_id).not.toBe(beforePost!.latest_clearance_change_id)
+    }
     await expect(Promise.all(postIds.map(countPostImageRevisions))).resolves.toEqual([0, 0])
     const afterDirtyWork = await Promise.all(
       postIds.map(postId => getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })),
@@ -217,7 +231,7 @@ describe('deleteImageById rollback', () => {
     await expect(countPostImageRevisions(postId)).resolves.toBe(1)
   })
 
-  it('skips stale post rollback when a concurrent edit changes moderation hashes', async () => {
+  it('rehashes restored content instead of preserving a concurrent digest-only change', async () => {
     const creator = await createTestUserDirect()
     expect(creator).toBeTruthy()
     const suffix = randomUUID()
@@ -231,6 +245,11 @@ describe('deleteImageById rollback', () => {
     const imageId = await insertTestImage(creator!.id)
     await insertTestPostImage({ postId, imageId })
     await setImageOpenAIModerationResults(imageId, [{ category: 'old-image-state' }], true)
+    const originalPost = (await getPostByAny(postId, { readOnly: false })) as Post
+    await setPostLLMModerationContentSha256(
+      postId,
+      createPostModerationContent(originalPost).content_sha256,
+    )
     await approveTestPost(postId)
     await setPostSpamDetectionResults(postId, [
       { signal: 'fixture', score: 0.7, flagged: true, details: { postId } },
@@ -244,7 +263,6 @@ describe('deleteImageById rollback', () => {
     const editedHash = randomBytes(32)
     const enqueueError = new Error('bulk post update enqueue failed')
     vi.spyOn(entitiesListeners, 'addBulk').mockImplementationOnce(async () => {
-      await setPostModerationContentSha256(postId, editedHash)
       await setPostLLMModerationContentSha256(postId, editedHash)
       throw enqueueError
     })
@@ -253,12 +271,13 @@ describe('deleteImageById rollback', () => {
 
     const afterPost = await getPostModerationResetState(postId)
     expect(afterPost).not.toEqual(beforePost)
-    const afterModeration = (await getPostModerationData(postId)) as {
-      openai_omni_moderation_content_sha256: Buffer | null
-    } | null
-    expect(afterModeration?.openai_omni_moderation_content_sha256).toEqual(editedHash)
-    await expect(getPostLLMModerationContentSha256(postId)).resolves.toEqual(editedHash)
-    expect(afterPost?.spam_detection_results).toBeNull()
-    expect(afterPost?.openai_omni_moderation_flagged).toBeNull()
+    const restoredPost = (await getPostByAny(postId, { readOnly: false })) as Post
+    const restoredHash = createPostModerationContent(restoredPost).content_sha256
+    await expect(getPostLLMModerationContentSha256(postId)).resolves.toEqual(restoredHash)
+    expect(restoredHash).not.toEqual(editedHash)
+    expect(afterPost?.spam_detection_results).toEqual(
+      expect.objectContaining({ composite_score: 0.7 }),
+    )
+    expect(afterPost?.openai_omni_moderation_flagged).toBe(true)
   })
 })

@@ -133,13 +133,13 @@ describe('Vitest CI triggers', () => {
     for (const filterName of expensiveRuntimeFilters) {
       expectRefinedRuntimeFilterMisses(filterName, [
         '.github/actions/build-web-targets/build-web-targets.test.mts',
-        'backend/agents/_shared/test-helpers/subagent-test-utils.mts',
+        'backend/test-helpers/subagent-test-utils.mts',
         'backend/services/foo.test.mts',
         'backend/test-helpers/entities/users.mts',
         'cloudflare-worker/src/proxy.spec.mts',
         'docs/development/ci.md',
         'email-templates/welcome.test.tsx',
-        'lambdas/image-resize/test-helpers/index.mts',
+        'lambdas/test-helpers/image-resize/index.mts',
         'lambdas/image-resize/transform.spec.mts',
         'ts-shared/session-jwt/index.test.mts',
         'web/app/routes.spec.mts',
@@ -156,7 +156,7 @@ describe('Vitest CI triggers', () => {
     ).toBe(false)
     expect(
       refinedRuntimeFilterMatchesChangedFiles('build-backend', [
-        'backend/agents/_shared/test-helpers/subagent-test-utils.mts',
+        'backend/test-helpers/subagent-test-utils.mts',
         'backend/test-helpers/entities/users.mts',
         'backend/services/foo.test.mts',
       ]),

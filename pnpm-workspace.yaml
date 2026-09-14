@@ -81,6 +81,8 @@ minimumReleaseAgeExclude:
   - '@vouchington/html-utils'
   - '@vouchington/http-transport'
   - '@vouchington/image-resize'
+  - '@vouchington/localization'
+  - '@vouchington/localization-compiler'
   - '@vouchington/media'
   - '@vouchington/memberships'
   - '@vouchington/pagination'

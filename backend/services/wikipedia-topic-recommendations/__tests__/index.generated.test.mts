@@ -18,7 +18,7 @@ import { getTopicByAny } from '@services/topics'
 
 import type { CreateTopicRecommendationInput } from '../types.mts'
 
-import { refreshRecommendationVoteStats } from '../test-helpers/vote-stats.mts'
+import { refreshRecommendationVoteStats } from '../../../test-helpers/services/wikipedia-topic-recommendations/vote-stats.mts'
 
 import {
   approveTopicRecommendation,

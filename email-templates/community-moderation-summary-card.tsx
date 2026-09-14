@@ -1,11 +1,9 @@
 import { Button, Section, Text } from './react-email-runtime.mts'
-import type { communityModerationSummaryCopyByLocale } from './community-moderation-summary-copy.mts'
+import type { EmailTranslator } from './catalog-copy.mts'
 import { borderRadius, colors, styles } from './styles.mts'
 import type { CommunityModerationSummaryEmailProps } from './types.mts'
 
 type Community = CommunityModerationSummaryEmailProps['communities'][number]
-type CommunityModerationSummaryCopy =
-  (typeof communityModerationSummaryCopyByLocale)[keyof typeof communityModerationSummaryCopyByLocale]
 
 const card = {
   backgroundColor: colors.muted,
@@ -43,61 +41,61 @@ const digestHeading = {
 
 export function CommunityModerationSummaryCard({
   community,
-  copy,
+  t,
 }: {
   community: Community
-  copy: CommunityModerationSummaryCopy
+  t: EmailTranslator
 }) {
   return (
     <Section style={card}>
       <Text style={cardHeading}>{community.name}</Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.pendingPostReviews}:`}</strong>{' '}
+        <strong style={statLabel}>{`${t('pendingPostReviews')}:`}</strong>{' '}
         {community.pendingPostReviews}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.pendingApplications}:`}</strong>{' '}
+        <strong style={statLabel}>{`${t('pendingApplications')}:`}</strong>{' '}
         {community.pendingApplications}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.pendingReports}:`}</strong> {community.pendingReports}
+        <strong style={statLabel}>{`${t('pendingReports')}:`}</strong> {community.pendingReports}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.escalatedItems}:`}</strong> {community.escalatedItems}
+        <strong style={statLabel}>{`${t('escalatedItems')}:`}</strong> {community.escalatedItems}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.suspectedBanEvaders}:`}</strong>{' '}
+        <strong style={statLabel}>{`${t('suspectedBanEvaders')}:`}</strong>{' '}
         {community.suspectedBanEvaders}
       </Text>
-      <Text style={digestHeading}>{copy.activityHeading}</Text>
+      <Text style={digestHeading}>{t('activityHeading')}</Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.memberChange}:`}</strong>{' '}
+        <strong style={statLabel}>{`${t('memberChange')}:`}</strong>{' '}
         {community.netMemberChange > 0
           ? `+${community.netMemberChange}`
           : community.netMemberChange}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.totalActiveMembers}:`}</strong>{' '}
+        <strong style={statLabel}>{`${t('totalActiveMembers')}:`}</strong>{' '}
         {community.totalActiveMembers}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.newDiscussions}:`}</strong>{' '}
+        <strong style={statLabel}>{`${t('newDiscussions')}:`}</strong>{' '}
         {community.newDiscussionPosts}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.newReviews}:`}</strong> {community.newReviewPosts}
+        <strong style={statLabel}>{`${t('newReviews')}:`}</strong> {community.newReviewPosts}
       </Text>
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.newDataPoints}:`}</strong> {community.newDataPointPosts}
+        <strong style={statLabel}>{`${t('newDataPoints')}:`}</strong> {community.newDataPointPosts}
       </Text>
       {community.topDiscussionTitle !== null ? (
         <Text style={statLine}>
-          <strong style={statLabel}>{`${copy.topDiscussion}:`}</strong>{' '}
-          {`${community.topDiscussionTitle} (${copy.topDiscussionReplies(community.topDiscussionReplyCount)})`}
+          <strong style={statLabel}>{`${t('topDiscussion')}:`}</strong>{' '}
+          {`${community.topDiscussionTitle} (${t('topDiscussionReplies', { count: community.topDiscussionReplyCount })})`}
         </Text>
       ) : null}
       <Text style={statLine}>
-        <strong style={statLabel}>{`${copy.activeMembers}:`}</strong>{' '}
+        <strong style={statLabel}>{`${t('activeMembers')}:`}</strong>{' '}
         {`${community.activeMemberCount} (${Math.round(community.activeMemberRate * 100)}%)`}
       </Text>
       <Section style={styles.buttonContainer}>
@@ -105,7 +103,7 @@ export function CommunityModerationSummaryCard({
           href={community.url}
           style={styles.secondaryButton}
         >
-          {copy.itemButton}
+          {t('itemButton')}
         </Button>
       </Section>
     </Section>

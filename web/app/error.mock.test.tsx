@@ -1,6 +1,21 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import ErrorPage from './error'
+
+const { invalidateMessages, invalidateRouteMessages } = vi.hoisted(() => ({
+  invalidateMessages: vi.fn<(locale: string) => void>(),
+  invalidateRouteMessages: vi.fn<(locale: string, pathname: string) => void>(),
+}))
+
+vi.mock(import('@/lib/i18n/use-translations'), async importOriginal => ({
+  ...(await importOriginal()),
+  invalidateMessages,
+}))
+
+vi.mock(import('@/lib/i18n/route-messages-cache'), async importOriginal => ({
+  ...(await importOriginal()),
+  invalidateRouteMessages,
+}))
 
 vi.mock(
   import('next/link'),
@@ -18,6 +33,12 @@ vi.mock(
 )
 
 describe('ErrorPage', () => {
+  afterEach(() => {
+    invalidateMessages.mockReset()
+    invalidateRouteMessages.mockReset()
+    window.history.pushState({}, '', '/')
+  })
+
   it('renders 429-specific copy from digest', () => {
     const reset = vi.fn<VitestLooseMock>()
     render(
@@ -59,8 +80,9 @@ describe('ErrorPage', () => {
     expect(screen.getByText('500')).toBeInTheDocument()
   })
 
-  it('calls reset when "Try again" is clicked', () => {
+  it('invalidates the current locale and route before reset when "Try again" is clicked', () => {
     const reset = vi.fn<VitestLooseMock>()
+    window.history.pushState({}, '', '/my/notifications?tab=unread')
     render(
       <ErrorPage
         error={new Error('oops')}
@@ -69,7 +91,11 @@ describe('ErrorPage', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /try again/i }))
+    expect(invalidateMessages).toHaveBeenCalledExactlyOnceWith('en')
+    expect(invalidateRouteMessages).toHaveBeenCalledExactlyOnceWith('en', '/my/notifications')
     expect(reset).toHaveBeenCalledTimes(1)
+    expect(invalidateMessages).toHaveBeenCalledBefore(reset)
+    expect(invalidateRouteMessages).toHaveBeenCalledBefore(reset)
   })
 
   it('renders "Home" link pointing to /', () => {

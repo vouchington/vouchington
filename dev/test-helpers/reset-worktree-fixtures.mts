@@ -10,13 +10,13 @@ const stopServicesPath = join(scriptDir, 'stop-services')
 const refuseOnMainPath = join(scriptDir, 'lib/refuse-on-main.sh')
 const dbNameFromUrlPath = join(scriptDir, 'lib/db-name-from-url.sh')
 const dbTargetPath = join(scriptDir, 'lib/db-target.sh')
-const gitWorktreesPath = join(scriptDir, 'lib/git-worktrees.sh')
+const publishedHelper = 'node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh'
+const gitWorktreesPath = join(scriptDir, '..', publishedHelper)
+const gitWorktreesAdapterPath = join(scriptDir, 'lib/git-worktrees.sh')
 const worktreeResourceEnvPath = join(scriptDir, 'lib/worktree-resource-env.sh')
-const resetWorktreeLockPath = join(scriptDir, 'lib/reset-worktree-lock.sh')
 const gitIndexLockPath = join(scriptDir, 'lib/git-index-lock.sh')
 const tmuxNamePath = join(scriptDir, 'tmux-name')
 const testDirs: string[] = []
-
 export async function makeRepo({
   isMainWorktree = false,
   withEnv = true,
@@ -25,6 +25,8 @@ export async function makeRepo({
   const dir = await mkdtemp(join(tmpdir(), 'voucha-reset-worktree-'))
   testDirs.push(dir)
   await mkdir(join(dir, 'dev', 'lib'), { recursive: true })
+  await mkdir(join(dir, 'node_modules/vouchington-tooling/scripts/worktree'), { recursive: true })
+  await writeFile(join(dir, publishedHelper), await readFile(gitWorktreesPath, 'utf8'))
   await mkdir(join(dir, 'backend'), { recursive: true })
   for (const [name, src] of [
     ['reset-worktree', resetWorktreePath],
@@ -39,9 +41,9 @@ export async function makeRepo({
     ['refuse-on-main.sh', refuseOnMainPath],
     ['db-name-from-url.sh', dbNameFromUrlPath],
     ['db-target.sh', dbTargetPath],
-    ['git-worktrees.sh', gitWorktreesPath],
+    ['git-worktrees.sh', gitWorktreesAdapterPath],
+    ['git-worktrees-recovery.sh', join(scriptDir, 'lib/git-worktrees-recovery.sh')],
     ['worktree-resource-env.sh', worktreeResourceEnvPath],
-    ['reset-worktree-lock.sh', resetWorktreeLockPath],
     ['git-index-lock.sh', gitIndexLockPath],
   ] as const) {
     await writeFile(join(dir, 'dev', 'lib', name), await readFile(src, 'utf8'))
@@ -78,8 +80,9 @@ export WORKTREE_DIR=${isMainWorktree ? basename(dir) : 'ddeadbeefcafe'}
 
 export async function makeFakeBin({
   gitDirty = false,
+  gitFetchFails = false,
   gitUntracked = '',
-}: { gitDirty?: boolean; gitUntracked?: string } = {}) {
+}: { gitDirty?: boolean; gitFetchFails?: boolean; gitUntracked?: string } = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'voucha-reset-worktree-bin-'))
   testDirs.push(dir)
   await writeFile(
@@ -104,6 +107,7 @@ case "$*" in
     ;;
   "fetch origin main")
     printf 'git fetch origin main\\n' >> "$log"
+    exit ${gitFetchFails ? 1 : 0}
     ;;
   "branch --show-current")
     printf 'worktree-test\\n'
@@ -160,7 +164,6 @@ log="\${FAKE_COMMAND_LOG:?}"
 printf 'tmux %s\\n' "$*" >> "$log"
 case "$1" in
   has-session) exit "\${FAKE_TMUX_HAS_SESSION_EXIT:-1}" ;;
-  list-windows) printf '%s\\n' "\${FAKE_TMUX_WINDOWS:-}" ;;
   display-message)
     case "$*" in
       *"window_id"*) printf '@0\\n' ;;
@@ -189,11 +192,9 @@ printf '${cmd} %s\\n' "$*" >> "$log"
   }
   return dir
 }
-
 export function registerTestDir(dir: string) {
   testDirs.push(dir)
 }
-
 export async function cleanupResetWorktreeTestDirs() {
   await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
 }

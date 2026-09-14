@@ -3,12 +3,9 @@ import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getOptionalAuthAndRateLimit, requireAuth } from '../../response-helpers.mts'
 import {
   loadCommunityForViewer,
-  loadCommunityForModerator,
+  loadCommunityForPublicationModerator,
   searchCommunityPosts,
   searchPendingPosts,
-  approvePublication,
-  rejectPublication,
-  unpublishPost,
   getPinnedPostIds,
 } from '@services/communities'
 import { attachPostClaims } from '@services/moderation-claims'
@@ -128,7 +125,7 @@ app.route('/api/v1/communities/:idOrSlug/posts/pending').get(async (ctx: Context
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/communities/:idOrSlug/posts/pending')
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const { community } = await loadCommunityForModerator(currentUser, idOrSlug)
+  const { community } = await loadCommunityForPublicationModerator(currentUser, idOrSlug)
 
   const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
   const after = ctx.query.after as string | undefined
@@ -167,34 +164,4 @@ app.route('/api/v1/communities/:idOrSlug/posts/pending').get(async (ctx: Context
 
   ctx.setType('json')
   await ctx.pipeline(streamJsonObject(output))
-})
-
-app.route('/api/v1/communities/:idOrSlug/posts/:postId').patch(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/communities/:idOrSlug/posts/:postId')
-
-  const { idOrSlug, postId } = ctx.params as { idOrSlug: string; postId: string }
-  const { community } = await loadCommunityForModerator(currentUser, idOrSlug)
-
-  const body = (await ctx.request.json('1mb')) as {
-    status: 'approved' | 'rejected' | 'unpublished'
-    reason?: string
-  }
-  ctx.assert(
-    body && typeof body === 'object' && !Array.isArray(body),
-    422,
-    'Request body must be an object',
-  )
-  ctx.assert(body.status, 422, 'status is required')
-
-  if (body.status === 'approved') {
-    await approvePublication(currentUser, community.id, postId)
-  } else if (body.status === 'rejected') {
-    await rejectPublication(currentUser, community.id, postId, body.reason)
-  } else if (body.status === 'unpublished') {
-    await unpublishPost(currentUser, community.id, postId)
-  } else {
-    ctx.throw(422, "Invalid status; must be one of 'approved', 'rejected', or 'unpublished'")
-  }
-
-  ctx.setStatus(204)
 })

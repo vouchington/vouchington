@@ -181,6 +181,18 @@ describe('getBasicAuthResponse', () => {
     expect(result).toBeNull()
   })
 
+  it('exempts only POST Google Play notifications from staging Basic Auth', () => {
+    const env = { ...baseEnv, BASIC_AUTH_CREDENTIALS: 'alice:hunter2' }
+    const post = makeRequest(
+      '/api/v1/memberships/google-play/notifications',
+      'Bearer google-jwt',
+      'POST',
+    )
+    expect(getBasicAuthResponse(post.request, env, post.url)).toBeNull()
+    const get = makeRequest('/api/v1/memberships/google-play/notifications', 'Bearer google-jwt')
+    expect(getBasicAuthResponse(get.request, env, get.url)?.status).toBe(401)
+  })
+
   it('returns null (exempted) for infra ping without credentials', () => {
     const { request, url } = makeRequest('/infra/ping')
     const result = getBasicAuthResponse(

@@ -31,13 +31,16 @@ describe('applyPostSpamDetectionResults', () => {
     await expect(getPostSpamDetectionState(post.id)).resolves.toMatchObject({
       spam_detection_flagged: true,
       spam_detection_score: 0.75,
-      spam_detection_results: [
-        {
-          flagged: true,
-          score: 1,
-          signal: 'spam_keywords',
-        },
-      ],
+      spam_detection_results: {
+        composite_score: 0.75,
+        signals: [
+          {
+            flagged: true,
+            score: 1,
+            signal: 'spam_keywords',
+          },
+        ],
+      },
     })
     expect((await getPostSpamDetectionState(post.id))?.spam_detection_created_at).toBeInstanceOf(
       Date,

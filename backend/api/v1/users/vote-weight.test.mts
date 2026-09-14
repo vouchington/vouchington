@@ -1,6 +1,6 @@
 import { describe, it, beforeAll } from 'vitest'
 import { randomBytes } from 'node:crypto'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createTestUserDirect } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useLayoutEffect, useMemo, useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { buildTree, buildCommentNodeData } from './comment-tree-utils'
 import { getPreference, setPreference } from '@/lib/preferences/storage'
 import { previewMarkdown } from '@/lib/api/client/markdown'
@@ -99,7 +100,7 @@ export function useCommentTreeState({
         .then(({ html }) => {
           setExtraMarkdownToHtml(prev => ({ ...prev, [comment.id]: html }))
         })
-        .catch(() => undefined)
+        .catch(Sentry.captureException)
     }
   }
 

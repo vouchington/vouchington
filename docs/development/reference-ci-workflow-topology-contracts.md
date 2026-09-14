@@ -29,7 +29,23 @@ workflow-run source/subscriber path queries. It is restricted to the loaded work
 retained callee closure, and is never included in schema-version-1 JSON.
 
 For PR producer routing, `ci/vitest/ci-select.mts` calls the versioned
-`ciTopologyImpact()` API with the event's exact base SHA and checked-out merge SHA. Its report is
+`ciTopologyImpact()` API with **pair 2** revisions: `origin/${GITHUB_BASE_REF}` and `HEAD` after
+checking out GitHub's `refs/pull/N/merge`. That is the merge parent versus the merge commit, so
+already-merged `main` files are on both sides and cancel out. Do not pass
+`pull_request.base.sha` as `base` while `head` is `github.sha`: the recorded base SHA can lag the
+merge parent and the changed-path set then includes commits that already landed on main
+([#11711](https://github.com/jonathanong/filaments/issues/11711)). Pair 1
+(`pull_request.base.sha` vs `pull_request.head.sha`) remains valid for consumers that are not
+looking at the merge checkout, such as gitleaks PR scans and patch coverage.
+
+```mermaid
+flowchart LR
+  pair1["pair 1: base.sha vs head.sha"] --> allowed[allowed]
+  pair2["pair 2: origin/base_ref vs HEAD"] --> allowed
+  mixed["mixed: base.sha vs github.sha"] --> forbidden[forbidden]
+```
+
+The topology impact report is
 accepted only when schema, revisions, changed-path set, root-job identities, and diagnostic scopes
 are complete and internally consistent. A bounded report emits `full-ci=false` plus fixed
 `run-<root-job>` outputs; consumers OR those PR-only terms with their existing path predicate.

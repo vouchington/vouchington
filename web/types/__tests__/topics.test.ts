@@ -57,8 +57,8 @@ describe('getTopicTypeLabel', () => {
     expect(getTopicTypeLabel('referral_program')).toBe(topicTypes.referral_program.label)
   })
 
-  it('falls back to the raw topic type for unknown values', () => {
-    expect(getTopicTypeLabel('unknown_type')).toBe('unknown_type')
+  it('uses the generic Topic label for unknown values', () => {
+    expect(getTopicTypeLabel('unknown_type')).toBe(topicTypes.topic.label)
   })
 })
 

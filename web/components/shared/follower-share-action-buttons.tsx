@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -65,7 +66,7 @@ export function FollowerShareActionButtons({
             {menuLeadingItems ? <DropdownMenuSeparator /> : null}
             <DropdownMenuItem
               disabled={isSharePending}
-              onSelect={() => onShare().catch(() => undefined)}
+              onSelect={() => onShare().catch(Sentry.captureException)}
               title={t(
                 'extracted.shared.followerShareActionButtons.shareAppearsInYourFollowersFeed_3bcbcbb1',
               )}
@@ -97,7 +98,7 @@ export function FollowerShareActionButtons({
         variant='outline'
         size='sm'
         disabled={isSharePending}
-        onClick={() => onShare().catch(() => undefined)}
+        onClick={() => onShare().catch(Sentry.captureException)}
         title={t(
           'extracted.shared.followerShareActionButtons.shareAppearsInYourFollowersFeed_3bcbcbb1',
         )}

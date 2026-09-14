@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createOpenAIModerationResponse, createTestUser } from '@voucha/test-helpers'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createConversation } from '@services/conversations-messages/create'
 import { checkApiMessageSafety } from './check-api-message-safety.mts'
 import { requestOpenAIModeration } from '@modules/openai-utils/moderate'

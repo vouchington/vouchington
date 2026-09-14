@@ -33,10 +33,6 @@
       "rejected_at": null,
       "root_id": null,
       "slug": "fixture-post-3",
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "Saved post post-3",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null

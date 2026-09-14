@@ -75,6 +75,16 @@ export async function lockEligibleSoftDeletedUserForFinalPurge(
           SELECT 1 FROM user_deletion_requests
           WHERE user_id = users.id AND completed_at IS NULL
         )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM memberships membership
+          INNER JOIN membership_administrator_refund_operation_requests request
+            ON request.membership_id = membership.id
+          INNER JOIN membership_operations operation
+            ON operation.id = request.membership_operation_id
+          WHERE membership.user_id = users.id
+            AND operation.completed_at IS NULL
+        )
       FOR UPDATE OF users`,
     [targetId, cutoffDate, lowerBoundDate ?? null],
   )

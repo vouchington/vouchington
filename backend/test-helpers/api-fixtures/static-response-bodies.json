@@ -25,10 +25,6 @@
       "archived_by_id": null,
       "clearance_reason": null,
       "clearance_updated_at": null,
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "updated_by_id": null,
       "ai_summary_markdown": "",
       "topic_recommendation": {
@@ -1026,6 +1022,14 @@
       "product_id": "00000000-0000-7000-8000-000000000701",
       "provider": "microsoft_store",
       "replayed": false
+    }
+  },
+  "native.memberships.microsoft.service-tickets.default": {
+    "service_tickets": {
+      "collections_service_ticket": "fixture-collections-ticket",
+      "purchase_service_ticket": "fixture-purchase-ticket",
+      "publisher_user_id": "00000000-0000-7000-8000-000000000001",
+      "expires_at": "2027-01-01T00:00:00.000Z"
     }
   },
   "native.memberships.purchase-intent.stripe.default": {
@@ -2516,24 +2520,23 @@
         "created_by_id": null,
         "id": "019e8300-5e60-7000-8000-000000000000",
         "markdown_preview": "Anonymous comment waiting for administrator review.",
-        "media_context": {
+        "media_reveal": {
           "images": [],
           "requires_reveal": false
         },
-        "openai_omni_moderation_flagged": false,
-        "openai_omni_moderation_results": {
-          "categories": {}
+        "moderation_summary": {
+          "disposition": "review",
+          "evidence_summary": {
+            "flagged_category_count": 0,
+            "signal_count": 1
+          },
+          "reason_codes": ["spam_signal"]
         },
         "post_type": "comment",
         "root_id": "review-root-post",
         "root_post_type": "discussion",
         "root_slug": "review-root-discussion",
         "slug": "review-post-in-review",
-        "spam_detection_flagged": true,
-        "spam_detection_results": {
-          "signals": ["excessive_links"]
-        },
-        "spam_detection_score": 0.91,
         "declared_language": null,
         "lingua_rs_detected_language": null,
         "title": "Comment in review"
@@ -2545,7 +2548,7 @@
         "created_by_id": "review-author-rejected",
         "id": "019e82f2-a2c0-7000-8000-000000000000",
         "markdown_preview": "Post rejected by automated moderation.",
-        "media_context": {
+        "media_reveal": {
           "images": [
             {
               "caption": "Flagged attachment",
@@ -2555,22 +2558,19 @@
           ],
           "requires_reveal": true
         },
-        "openai_omni_moderation_flagged": true,
-        "openai_omni_moderation_results": {
-          "categories": {
-            "harassment": true
-          }
+        "moderation_summary": {
+          "disposition": "review",
+          "evidence_summary": {
+            "flagged_category_count": 1,
+            "signal_count": 0
+          },
+          "reason_codes": ["provider_flagged"]
         },
         "post_type": "discussion",
         "root_id": null,
         "root_post_type": null,
         "root_slug": null,
         "slug": "review-post-rejected",
-        "spam_detection_flagged": false,
-        "spam_detection_results": {
-          "signals": []
-        },
-        "spam_detection_score": 0.12,
         "declared_language": null,
         "lingua_rs_detected_language": null,
         "title": "Rejected review post"
@@ -2591,24 +2591,23 @@
         "created_by_id": "review-author-page-2",
         "id": "019e7d79-e100-7000-8000-000000000000",
         "markdown_preview": "Older post on the second review queue page.",
-        "media_context": {
+        "media_reveal": {
           "images": [],
           "requires_reveal": false
         },
-        "openai_omni_moderation_flagged": false,
-        "openai_omni_moderation_results": {
-          "categories": {}
+        "moderation_summary": {
+          "disposition": "review",
+          "evidence_summary": {
+            "flagged_category_count": 0,
+            "signal_count": 1
+          },
+          "reason_codes": ["spam_signal"]
         },
         "post_type": "article",
         "root_id": null,
         "root_post_type": null,
         "root_slug": null,
         "slug": "review-post-page-2",
-        "spam_detection_flagged": true,
-        "spam_detection_results": {
-          "signals": ["repeated_content"]
-        },
-        "spam_detection_score": 0.78,
         "declared_language": null,
         "lingua_rs_detected_language": null,
         "title": "Older rejected review post"

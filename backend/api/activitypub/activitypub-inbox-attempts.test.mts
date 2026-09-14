@@ -1,5 +1,5 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { createRequest, nextTestRequestIp } from '@voucha/api/test-helpers/server'
+import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { activityPubInboxDeliveryExistsOnPrimaryForTest } from '@voucha/test-helpers'
 import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'

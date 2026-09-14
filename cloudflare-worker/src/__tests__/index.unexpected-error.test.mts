@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createWorker } from '../index.mts'
 import type { WorkerExceptionTags } from '../sentry.mts'
-import { createContext } from '../test-helpers/mock-env.mts'
+import { createContext } from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 describe('worker unexpected-error boundary', () => {

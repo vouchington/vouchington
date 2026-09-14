@@ -1,21 +1,24 @@
 import { describe, expect, it, vi } from 'vitest'
-import sql from 'sql-template-strings'
 import {
   beginBoundedTransaction,
   beginTransaction,
   registerPostCommitAction,
   withTransactionOptions,
-  writePool,
 } from './setup.mts'
+import {
+  recordIdleBorrowedTransactionQueries,
+  recordNestedOwnedBorrowedClientQueries,
+  rejectPostCommitActionOnExternalTransaction,
+  runExplicitCommitActionProbe,
+  runFailedBoundedPostCommitActionProbe,
+} from '../../test-helpers/data-stores/psql/post-commit-actions.mts'
 
 describe('transaction post-commit actions', () => {
   it('runs actions only after an explicit commit', async () => {
     const action = vi.fn<() => Promise<void>>(async () => undefined)
-    await using transaction = await beginTransaction()
-    registerPostCommitAction(transaction, action)
-    await transaction(sql`/* post-commit actions explicit commit */ SELECT 1`)
-    expect(action).not.toHaveBeenCalled()
-    await transaction.commit()
+    const actionRanBeforeCommit = await runExplicitCommitActionProbe(action)
+
+    expect(actionRanBeforeCommit).toBe(false)
     expect(action).toHaveBeenCalledOnce()
   })
 
@@ -151,24 +154,9 @@ describe('transaction post-commit actions', () => {
 
   it('rejects actions on an externally active, unowned client transaction', async () => {
     const action = vi.fn<() => Promise<void>>(async () => undefined)
-    const client = await writePool.connect()
-    let transactionOpen = false
-    try {
-      // oxlint-disable-next-line no-mistakes/postgres-no-manual-transaction -- verifies an externally owned transaction cannot claim post-commit actions
-      await client.query('/* post-commit actions external begin */ BEGIN')
-      transactionOpen = true
-      await expect(
-        withTransactionOptions({ client }, async query => {
-          registerPostCommitAction(query, action)
-        }),
-      ).rejects.toThrow('Post-commit actions require a transaction query owned')
-    } finally {
-      if (transactionOpen) {
-        // oxlint-disable-next-line no-mistakes/postgres-no-manual-transaction -- restore the externally owned transaction after the ownership regression
-        await client.query('/* post-commit actions external rollback */ ROLLBACK')
-      }
-      client.release()
-    }
+    await expect(rejectPostCommitActionOnExternalTransaction(action)).rejects.toThrow(
+      'Post-commit actions require a transaction query owned',
+    )
   })
 
   it('runs bounded-resource actions after commit and drops them on failure', async () => {
@@ -182,18 +170,34 @@ describe('transaction post-commit actions', () => {
     expect(committed).toHaveBeenCalledOnce()
 
     const rolledBack = vi.fn<() => Promise<void>>(async () => undefined)
-    await using failed = await beginBoundedTransaction({
-      connectionTimeoutMs: 5_000,
-      statementTimeoutMs: 5_000,
-    })
-    registerPostCommitAction(failed, rolledBack)
-    await expect(
-      failed(sql`/* post-commit actions failed bounded commit */ SELECT 1 / 0`),
-    ).rejects.toThrow('division by zero')
-    await expect(failed.commit()).rejects.toThrow('division by zero')
-    expect(rolledBack).not.toHaveBeenCalled()
-    expect(() => registerPostCommitAction(failed, rolledBack)).toThrow(
+    const failures = await runFailedBoundedPostCommitActionProbe(rolledBack)
+
+    expect(failures.queryError).toHaveProperty('message', 'division by zero')
+    expect(failures.commitError).toHaveProperty('message', 'division by zero')
+    expect(failures.postFailureRegistrationError).toHaveProperty(
+      'message',
       'Post-commit actions require a transaction query owned by @data-stores/psql wrappers',
     )
+    expect(rolledBack).not.toHaveBeenCalled()
+  })
+
+  it('probes an idle borrowed client only with the upstream savepoint', async () => {
+    const queries = await recordIdleBorrowedTransactionQueries()
+
+    expect(queries.some(text => text.includes('psql_post_commit_action_probe'))).toBe(false)
+    expect(queries.filter(text => text.includes('vouchington_transaction_probe'))).not.toHaveLength(
+      0,
+    )
+    expect(queries.some(text => /\bBEGIN\b/.test(text))).toBe(true)
+  })
+
+  it('joins a nested owned client without a local probe or nested begin', async () => {
+    const queries = await recordNestedOwnedBorrowedClientQueries()
+
+    expect(queries.some(text => text.includes('psql_post_commit_action_probe'))).toBe(false)
+    expect(queries.filter(text => text.includes('vouchington_transaction_probe'))).not.toHaveLength(
+      0,
+    )
+    expect(queries.some(text => /\bBEGIN\b/.test(text))).toBe(false)
   })
 })

@@ -1,10 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { IPV6_ALLOWLIST, isExemptEgressHost, isIpv6AllowlistedHost } from './ipv6-allowlist.mts'
+import {
+  IPV6_ALLOWLIST,
+  getConfiguredSentryHost,
+  isExemptEgressHost,
+  isIpv6AllowlistedHost,
+} from './ipv6-allowlist.mts'
+
+const SENTRY_DSN = `https://${'a'.repeat(32)}@o${12345}.ingest.eu.sentry.io/${67890}`
+const SENTRY_HOST = new URL(SENTRY_DSN).hostname
+const SENTRY_DSN_WITH_PORT = `https://${'a'.repeat(32)}@o${12345}.ingest.eu.sentry.io:8443/${67890}`
+const SENTRY_IPV6_DSN_WITH_PORT = `https://${'a'.repeat(32)}@[2001:db8::1]:8443/${67890}`
 
 describe('isIpv6AllowlistedHost', () => {
   it('allows every audited fixed IPv6 API hostname exactly', () => {
     expect(IPV6_ALLOWLIST).toEqual([
-      'o4507688154824704.ingest.us.sentry.io',
       'challenges.cloudflare.com',
       'recaptchaenterprise.googleapis.com',
       'webrisk.googleapis.com',
@@ -29,8 +38,20 @@ describe('isIpv6AllowlistedHost', () => {
     expect(isIpv6AllowlistedHost('example-images.s3.dualstack.us-west-2.amazonaws.com')).toBe(true)
   })
 
+  it('derives the optional Sentry verification host without treating it as audited', () => {
+    expect(getConfiguredSentryHost({ SENTRY_DSN: SENTRY_DSN })).toBe(SENTRY_HOST)
+    expect(getConfiguredSentryHost({ SENTRY_DSN: SENTRY_DSN_WITH_PORT })).toBe(
+      `${SENTRY_HOST}:8443`,
+    )
+    expect(getConfiguredSentryHost({ SENTRY_DSN: SENTRY_IPV6_DSN_WITH_PORT })).toBe(
+      '[2001:db8::1]:8443',
+    )
+    expect(getConfiguredSentryHost({ SENTRY_DSN: 'not-a-dsn' })).toBeUndefined()
+    expect(isIpv6AllowlistedHost(SENTRY_HOST)).toBe(false)
+  })
+
   it('rejects subdomains of audited fixed API hostnames', () => {
-    expect(isIpv6AllowlistedHost('child.o4507688154824704.ingest.us.sentry.io')).toBe(false)
+    expect(isIpv6AllowlistedHost(`child.${SENTRY_HOST}`)).toBe(false)
     expect(isIpv6AllowlistedHost('child.graph.facebook.com')).toBe(false)
   })
 
@@ -41,10 +62,6 @@ describe('isIpv6AllowlistedHost', () => {
     expect(isIpv6AllowlistedHost('attacker-amazonaws.com')).toBe(false)
     expect(isIpv6AllowlistedHost('bedrock-runtime.us-east-1.api.aws')).toBe(false)
     expect(isIpv6AllowlistedHost('unaudited.us-west-2.api.aws')).toBe(false)
-  })
-
-  it('matches an allowlisted host exactly', () => {
-    expect(isIpv6AllowlistedHost('o4507688154824704.ingest.us.sentry.io')).toBe(true)
   })
 
   it('does not allow a parent domain of an audited exact host', () => {

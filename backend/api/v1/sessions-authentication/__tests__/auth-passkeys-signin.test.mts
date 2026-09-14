@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { v7 } from 'uuid'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import {
   legacyUuidV4,
   signLegacyDeviceJwt,
   signLegacySessionJwt,
-} from '@services/jwt-session/test-helpers/index'
+} from '@voucha/test-helpers/services/jwt-session/index'
 import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
   EDGE_ANON_SESSION_JWT_ISSUER,

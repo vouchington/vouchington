@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { seedMessages } from '@/lib/i18n/use-translations'
 import type { IndividualCard, SpendingCategory } from '@/types/my'
-import esMessages from '@ts-shared/ui-messages/messages/es'
 import { CardDisplayRow } from '../cards-manager/card-row'
 import { CategorySummary } from '../spending-categories-manager/category-summary'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 const noOp = vi.fn<() => void>()
 

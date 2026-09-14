@@ -13,7 +13,7 @@ import {
   makeToolCall,
   makeToolCallResponse,
   makeToolResult,
-} from '../test-helpers/run-tool-loop-test-helpers.mts'
+} from '../../../test-helpers/agents/_shared/run-tool-loop-test-helpers.mts'
 
 const mockTool: AgentTool = {
   schema: { name: 'search_posts', description: 'Search posts', parameters: {} },

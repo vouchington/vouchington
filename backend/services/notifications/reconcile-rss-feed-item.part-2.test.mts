@@ -3,7 +3,7 @@ import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { listNotifications } from './list.mts'
 import { markNotificationRead } from './mutations.mts'
 import { reconcileNotificationsForRssFeedItem } from './reconcile-rss-feed-item.mts'
-import { insertNotificationTestRssFeedItem } from './test-helpers/rss-feed-items.mts'
+import { insertNotificationTestRssFeedItem } from '../../test-helpers/services/notifications/rss-feed-items.mts'
 import {
   createTestUser,
   insertTestRssFeedDirect,

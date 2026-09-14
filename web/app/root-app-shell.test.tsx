@@ -31,9 +31,11 @@ describe('RootAppShell auth boundary', () => {
       currentUser: privateUser,
       globalFeatureFlags: {},
       isStandaloneLandingPage: true,
+      initialPathname: '/',
       mainContent: <main />,
       runtimePublicConfig: {},
       uiLocale: 'en',
+      uiMessages: {},
     })
     const authProvider = findElementByType(tree, AuthProvider)
 

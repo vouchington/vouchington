@@ -109,6 +109,11 @@ export type CommunityPostReview = {
   rejection_reason: string | null
   unpublished_at: Date | null
   unpublished_by_id: string | null
+  platform_override_at: Date | null
+  platform_override_by_id: string | null
+  platform_override_action: 'approve' | 'reject' | 'unpublish' | 'restore' | null
+  platform_override_reason_code: string | null
+  platform_override_private_note: string | null
 }
 
 export type CommunityPinnedPost = {

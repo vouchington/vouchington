@@ -32,7 +32,7 @@ export const nativeModerationReviewQueueApiFixtureCases = [
       routeTemplate: '/api/v1/posts/:idOrSlug/clearances',
       pathParams: { idOrSlug: reviewQueueFixture.inReviewPostId },
     },
-    requestBody: { status: 'approved' },
+    requestBody: { status: 'approved', reason_code: 'staff_approved' },
     migratedFrom: ['backend/api/v1/posts/post-routes/post-mutation-routes.mts'],
   }),
   fixtureCase({
@@ -43,7 +43,7 @@ export const nativeModerationReviewQueueApiFixtureCases = [
       routeTemplate: '/api/v1/posts/:idOrSlug/clearances',
       pathParams: { idOrSlug: reviewQueueFixture.inReviewPostId },
     },
-    requestBody: { status: 'rejected' },
+    requestBody: { status: 'rejected', reason_code: 'staff_rejected' },
     migratedFrom: ['backend/api/v1/posts/post-routes/post-mutation-routes.mts'],
   }),
   fixtureCase({
@@ -54,7 +54,7 @@ export const nativeModerationReviewQueueApiFixtureCases = [
       routeTemplate: '/api/v1/posts/:idOrSlug/clearances',
       pathParams: { idOrSlug: reviewQueueFixture.rejectedPostId },
     },
-    requestBody: { status: 'in_review' },
+    requestBody: { status: 'in_review', reason_code: 'staff_reviewed' },
     migratedFrom: ['backend/api/v1/posts/post-routes/post-mutation-routes.mts'],
   }),
 ]

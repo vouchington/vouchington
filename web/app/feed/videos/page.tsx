@@ -3,11 +3,12 @@ import { FeedNewsListPage } from '@/components/feed/feed-news-list-page'
 import { AddSourceButton } from '@/components/sources/add-source-button'
 import type { Metadata } from 'next'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
-import { defaultTranslator } from '@ts-shared/ui-messages/default-translator'
+import { getTranslations } from '@/lib/i18n/get-translations'
 
-export const metadata: Metadata = createNoIndexMetadata(
-  defaultTranslator(feedRouteConfigs['videos'].title),
-)
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations()
+  return createNoIndexMetadata(t(feedRouteConfigs['videos'].title))
+}
 
 export const dynamic = 'force-dynamic'
 

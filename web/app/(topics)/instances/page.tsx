@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import {
@@ -8,7 +9,7 @@ import {
 import { getEffectiveServerFeatureFlag } from '@/lib/feature-flags/server'
 import { topicRouteConfigs } from '@/lib/route-configs'
 import { createPageMetadata } from '@/lib/seo/metadata'
-import { defaultTranslator } from '@ts-shared/ui-messages/default-translator'
+import { getTranslations } from '@/lib/i18n/get-translations'
 import { getFediverseInstances } from '@/lib/api/server/fediverse'
 
 async function loadInstancesPage(options: TopicListLoadOptions): Promise<TopicListLoadResult> {
@@ -25,11 +26,14 @@ async function loadInstancesPage(options: TopicListLoadOptions): Promise<TopicLi
   }
 }
 
-export const metadata = createPageMetadata({
-  title: defaultTranslator(topicRouteConfigs.instances.title),
-  description: defaultTranslator(topicRouteConfigs.instances.description),
-  path: '/instances',
-})
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations()
+  return createPageMetadata({
+    title: t(topicRouteConfigs.instances.title),
+    description: t(topicRouteConfigs.instances.description),
+    path: '/instances',
+  })
+}
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>

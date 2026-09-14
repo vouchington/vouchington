@@ -1,8 +1,12 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { onGracefulShutdown } from '../index.mts'
-import { getPartitionRows } from '../test-helpers/election-schema.mts'
+import { getPartitionRows } from '../../../test-helpers/data-stores/psql/election-schema.mts'
 
-const DEFERRED_RANGE_LEDGER_TABLES = ['ai_usage_records', 'post_clearance_changes']
+const DEFERRED_RANGE_LEDGER_TABLES = [
+  'ai_usage_records',
+  'community_post_review_changes',
+  'post_clearance_changes',
+]
 const USER_KEY_RANGE_TABLES = [
   ['conversation_messages', 'conversation_id'],
   ['notifications', 'user_id'],

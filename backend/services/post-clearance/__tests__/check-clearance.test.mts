@@ -8,6 +8,7 @@ import {
   getPostClearanceChanges,
   getLatestPostClearanceTransparencyCategories,
   getModeratorActionRowsForTest,
+  getTestPostPublicationDirtyWorkForScope,
   setPostModerationComplete,
   setPostSpamDetectionComplete,
   safeUsername,
@@ -51,13 +52,16 @@ describe('checkPostClearance', () => {
 
     const status = await getPostClearanceStatus(postId)
     expect(status).toBe('approved')
+    const after = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })
+    expect(after).toBeDefined()
+    expect(after!.reasons).toContain('post_clearance_changed')
     await expect(getPostClearanceChanges(postId)).resolves.toContainEqual({
       change_type: 'approve',
       changed_by_id: moderationSystemUserId,
     })
   })
 
-  it('transitions to rejected when openai moderation flags the post', async () => {
+  it('transitions to review when OpenAI moderation flags the post', async () => {
     const postId = await insertTestPost({
       title: `clearance-moderation-flagged-${randomSuffix()}`,
       slug: `clearance-moderation-flagged-${randomSuffix()}`,
@@ -71,22 +75,16 @@ describe('checkPostClearance', () => {
     await checkPostClearance(postId)
 
     const status = await getPostClearanceStatus(postId)
-    expect(status).toBe('rejected')
+    expect(status).toBe('in_review')
     await expect(getPostClearanceChanges(postId)).resolves.toContainEqual({
-      change_type: 'reject',
+      change_type: 'mark_in_review',
       changed_by_id: moderationSystemUserId,
     })
     const actions = await getModeratorActionRowsForTest({ actorId: moderationSystemUserId, postId })
-    expect(actions).toContainEqual(
-      expect.objectContaining({
-        action_type: 'reject',
-        actor_id: moderationSystemUserId,
-        post_id: postId,
-      }),
-    )
+    expect(actions).not.toContainEqual(expect.objectContaining({ action_type: 'reject' }))
   })
 
-  it('transitions to rejected when spam detection flags the post', async () => {
+  it('transitions to review when spam detection flags the post', async () => {
     const postId = await insertTestPost({
       title: `clearance-spam-flagged-${randomSuffix()}`,
       slug: `clearance-spam-flagged-${randomSuffix()}`,
@@ -100,10 +98,10 @@ describe('checkPostClearance', () => {
     await checkPostClearance(postId)
 
     const status = await getPostClearanceStatus(postId)
-    expect(status).toBe('rejected')
+    expect(status).toBe('in_review')
   })
 
-  it('stamps both automated rejection sources when both checks flag a post', async () => {
+  it('does not stamp rejection transparency categories for review signals', async () => {
     const postId = await insertTestPost({
       title: `clearance-both-flagged-${randomSuffix()}`,
       slug: `clearance-both-flagged-${randomSuffix()}`,
@@ -115,10 +113,7 @@ describe('checkPostClearance', () => {
     await setPostSpamDetectionComplete(postId, true)
     await checkPostClearance(postId)
 
-    await expect(getLatestPostClearanceTransparencyCategories(postId)).resolves.toEqual([
-      'openai_omni',
-      'spam_detection',
-    ])
+    await expect(getLatestPostClearanceTransparencyCategories(postId)).resolves.toEqual([])
   })
 
   it('stays pending when only openai moderation is complete', async () => {
@@ -175,7 +170,7 @@ describe('checkPostClearance', () => {
     expect(status).toBe('approved')
   })
 
-  it('demotes an already-approved post to rejected when moderation flags it', async () => {
+  it('demotes an already-approved post to review when moderation flags it', async () => {
     const postId = await insertTestPost({
       title: `clearance-approved-demote-moderation-${randomSuffix()}`,
       slug: `clearance-approved-demote-moderation-${randomSuffix()}`,
@@ -189,11 +184,10 @@ describe('checkPostClearance', () => {
     await checkPostClearance(postId)
 
     const status = await getPostClearanceStatus(postId)
-    // Moderation flagged — approved post demoted to rejected
-    expect(status).toBe('rejected')
+    expect(status).toBe('in_review')
   })
 
-  it('demotes an already-approved post to rejected when spam detection flags it', async () => {
+  it('demotes an already-approved post to review when spam detection flags it', async () => {
     const postId = await insertTestPost({
       title: `clearance-approved-demote-spam-${randomSuffix()}`,
       slug: `clearance-approved-demote-spam-${randomSuffix()}`,
@@ -207,8 +201,7 @@ describe('checkPostClearance', () => {
     await checkPostClearance(postId)
 
     const status = await getPostClearanceStatus(postId)
-    // Spam flagged — approved post demoted to rejected
-    expect(status).toBe('rejected')
+    expect(status).toBe('in_review')
   })
 })
 
@@ -220,7 +213,7 @@ describe('resetPostClearance', () => {
     userId = user!.id
   })
 
-  it('resets approved post back to pending and clears spam detection columns', async () => {
+  it('resets approved post back to pending without rewriting prior dispositions', async () => {
     const postId = await insertTestPost({
       title: `reset-test-${randomSuffix()}`,
       slug: `reset-test-${randomSuffix()}`,

@@ -8,7 +8,7 @@ import {
   entriesClientFixture,
   HOSTED_ENV,
   sessionsClientFixture,
-} from '../../blackboard/test-helpers/client-fixtures.mts'
+} from '../../test-helpers/blackboard/client-fixtures.mts'
 import { appendCheckpoint, type AppendCheckpointInput } from '../append.mts'
 
 // Every case below exercises appendCheckpoint's guards or connect/append plumbing, none of which

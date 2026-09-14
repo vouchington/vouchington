@@ -7,15 +7,15 @@ import {
   isIgnoredForNameInflection,
   isSnakeCase,
   looksPlural,
-} from '../test-helpers/schema-static-analysis/name-helpers.mts'
+} from '../../../test-helpers/data-stores/psql/schema-static-analysis/name-helpers.mts'
 import {
   getCommentViolations,
   getNamedColumns,
   getNamedObjects,
   getTypeViolations,
-} from '../test-helpers/schema-static-analysis/queries.mts'
-import { getUuidConventionViolations } from '../test-helpers/schema-static-analysis/uuid-query.mts'
-import { getTimestampConventionViolations } from '../test-helpers/schema-static-analysis/timestamp-query.mts'
+} from '../../../test-helpers/data-stores/psql/schema-static-analysis/queries.mts'
+import { getUuidConventionViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/uuid-query.mts'
+import { getTimestampConventionViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/timestamp-query.mts'
 import {
   formatCommentViolation,
   formatTimestampConventionViolation,
@@ -23,7 +23,7 @@ import {
   isAllowedCommentViolation,
   isAllowedTimestampConventionViolation,
   isAllowedUuidConventionViolation,
-} from '../test-helpers/schema-static-analysis/conventions.mts'
+} from '../../../test-helpers/data-stores/psql/schema-static-analysis/conventions.mts'
 
 type SerialViolation = {
   table_name: string

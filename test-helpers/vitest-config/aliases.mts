@@ -70,6 +70,10 @@ export function backendAliases({
       replacement: resolve(process.cwd(), 'backend/data-stores/$1'),
     },
     {
+      find: /^@vouchington\/csv$/,
+      replacement: resolve(process.cwd(), 'backend/modules/csv/node_modules/@vouchington/csv'),
+    },
+    {
       find: /^@voucha\/api$/,
       replacement: resolve(process.cwd(), 'backend/api'),
     },

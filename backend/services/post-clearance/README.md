@@ -10,11 +10,11 @@ Service for managing post visibility gates with lifecycle timestamps and
 stateDiagram-v2
     [*] --> pending: Non-admin post created
     [*] --> approved: Admin or story post created + approve change
-    pending --> approved: checkPostClearance() — both checks pass, no flags
-    pending --> rejected: checkPostClearance() — either check flags
-    approved --> rejected: checkPostClearance() — either check flags (demotion)
+    pending --> approved: both current-version sources pass
+    pending --> in_review: source review or incomplete disposition
+    pending --> rejected: deterministic child-safety rejection
 
-    approved --> rejected: updateClearanceStatus() — admin/agent action
+    approved --> rejected: updateClearanceStatus() — staff override
     approved --> in_review: updateClearanceStatus() — agent flags for review
     rejected --> approved: updateClearanceStatus() — admin approves
     rejected --> rejected: updateClearanceStatus() — admin re-rejects
@@ -27,41 +27,34 @@ stateDiagram-v2
 ### `checkPostClearance(postId: string): Promise<void>`
 
 Atomic gate check. Inserts a `post_clearance_changes` row and updates the post lifecycle
-timestamps only when both moderation inputs are complete:
+timestamps only when both current-version automated dispositions exist:
 
-1. **Rejection**: records `change_type='reject'`, clears `approved_at`/`in_review_at`, and sets `rejected_at` when a pending or approved post is flagged.
-2. **Approval**: records `change_type='approve'` and sets `approved_at` when a pending post has no flags.
+1. **Rejection**: only a deterministic `reject` disposition can set `rejected_at`.
+2. **Review**: `review` or `incomplete` sets `in_review_at`.
+3. **Approval**: both sources must append `pass` before `approved_at` is set.
 
 Invalidates the post cache if either UPDATE matched a row. Enqueues LLM agent moderation (fire-and-forget) only when the approval UPDATE matched.
 
 **Called by**: `@queues/spam-detection` processor after spam check completes; `@queues/openai-moderation` worker after moderation completes.
 
-### `updateClearanceStatus(postId: string, status: ClearanceStatus, updatedById?: string): Promise<void>`
+### `updateClearanceStatus(postId, status, updatedById, decision): Promise<void>`
 
-Admin or agent override. Directly sets `clearance_status` to any valid value.
+Administrator or site-moderator override. Directly sets `clearance_status` to any valid value.
 
-- Records a `post_clearance_changes` row, updates lifecycle timestamps, and updates `updated_by_id`
+- Requires a stable public reason code, accepts an optional private staff note, and records both a
+  `post_clearance_changes` row and a staff disposition
 - Does NOT run gate logic — caller is responsible for determining the correct status
 - Used by: admin review queue API, agent moderation processors, community moderation actions
 
 ### `resetPostClearance(postId: string, changedById?: string | null, options?: QueryOptions): Promise<boolean>`
 
-Resets clearance to `pending` on post edit. Records `change_type='reset_to_pending'`, clears
-`approved_at`, `rejected_at`, `in_review_at`, `openai_omni_moderation_created_at`,
-`spam_detection_created_at`, and their result columns.
-Returns `true` only when a reset row was recorded; already-pending posts with cleared moderation
-fields are no-ops.
+Resets clearance to `pending` on post edit. Records `change_type='reset_to_pending'` and clears the
+three coarse lifecycle timestamps. Provider outcomes remain immutable on the prior content version.
 
-Callers that reset clearance because moderation inputs changed must durably enqueue the follow-up
-moderation work before returning success. If that enqueue fails after clearance or moderation fields
-were reset, the caller must restore the previous clearance and moderation state so the post is not
-left pending without replacement jobs.
+Callers durably enqueue the new content hash. PostgreSQL owns three attempts at T+0/T+5/T+20 and a
+T+30 fail-closed transition to staff review.
 
 **Called by**: post update service whenever post content changes.
-
-### `markSpamDetectionNotFlagged(postId: string): Promise<void>`
-
-Marks spam detection as complete with no flag. Used when spam detection determines a post is clean.
 
 ## Integration Points
 

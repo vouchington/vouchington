@@ -14,6 +14,8 @@ type VitestProjectConfig = {
     setupFiles?: string[]
     testTimeout?: number
     hookTimeout?: number
+    pool?: string
+    isolate?: boolean
   }
 }
 
@@ -207,6 +209,14 @@ describe('Vitest worker-count invariant', () => {
   })
 })
 
+describe('i18n-extract-codemod pool (#11686)', () => {
+  it('runs no-mistakes analysis on forks so a stalled worker can be SIGKILLed', () => {
+    const project = vitestProjects.find(entry => entry.test?.name === 'i18n-extract-codemod')
+    expect(project?.test?.pool).toBe('forks')
+    expect(project?.test?.isolate).toBe(true)
+  })
+})
+
 describe('Vitest timeout policy (#10762, #8078)', () => {
   // A project without an explicit testTimeout/hookTimeout silently inherits Vitest's built-in
   // 5000/10000 defaults, invisible at the project's definition site — how ts-shared broke `main`
@@ -262,5 +272,13 @@ describe('Vitest timeout policy (#10762, #8078)', () => {
       )
       .map(project => ({ name: project.name, hookTimeout: project.hookTimeout }))
     expect(overCap).toEqual([])
+  })
+})
+
+describe('Vitest fsModuleCache', () => {
+  it('persists transformed modules under the workspace Vite cache tree', () => {
+    expect(rootConfig.test?.fsModuleCache).toBe(true)
+    expect(rootConfig.test?.fsModuleCachePath).toBe(join(process.cwd(), '.cache/vite/fs-module'))
+    expect(rootConfig.test?.fsModuleCachePath).not.toMatch(/node_modules/)
   })
 })

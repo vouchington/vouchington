@@ -86,10 +86,6 @@
       "rejected_at": null,
       "root_id": "profile-comment-root-1",
       "slug": null,
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "Profile comment",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null
@@ -122,10 +118,6 @@
       "rejected_at": null,
       "root_id": null,
       "slug": "profile-comment-root",
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "Root review for profile comment",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null
@@ -158,10 +150,6 @@
       "rejected_at": null,
       "root_id": null,
       "slug": "profile-discussion",
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "Profile discussion",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null
@@ -194,10 +182,6 @@
       "rejected_at": null,
       "root_id": null,
       "slug": "profile-review",
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "Profile review",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null

@@ -54,23 +54,23 @@ export function PinnedPostsManager({ communitySlug, posts, initialPinnedPosts }:
     if (index === 0) return
     const newIds = [...pinnedPostIds]
     ;[newIds[index - 1], newIds[index]] = [newIds[index]!, newIds[index - 1]!]
-    updatePins(newIds).catch(() => undefined)
+    void updatePins(newIds)
   }
 
   function moveDown(index: number) {
     if (index === pinnedPostIds.length - 1) return
     const newIds = [...pinnedPostIds]
     ;[newIds[index], newIds[index + 1]] = [newIds[index + 1]!, newIds[index]!]
-    updatePins(newIds).catch(() => undefined)
+    void updatePins(newIds)
   }
 
   function removePin(postId: string) {
-    updatePins(pinnedPostIds.filter(id => id !== postId)).catch(() => undefined)
+    void updatePins(pinnedPostIds.filter(id => id !== postId))
   }
 
   function addPin(postId: string) {
     if (pinnedPostIds.includes(postId)) return
-    updatePins([...pinnedPostIds, postId]).catch(() => undefined)
+    void updatePins([...pinnedPostIds, postId])
   }
 
   /* c8 ignore next -- reformatted by oxfmt; lambda branch not covered in unit tests */

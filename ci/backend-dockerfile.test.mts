@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest'
 const dockerfile = readFileSync('backend/Dockerfile', 'utf8')
 const dockerBake = readFileSync('backend/docker-bake.hcl', 'utf8')
 const dockerignore = readFileSync('.dockerignore', 'utf8')
+const localizationCatalogCopy =
+  'COPY --link --from=builder --chown=65532:65532 /app/localization/catalog.sqlite /app/localization/catalog.sqlite'
+const localizationCatalogEnvironment =
+  'ENV LOCALIZATION_SQLITE_PATH=/app/localization/catalog.sqlite'
 
 function normalizeDockerfileInstruction(instruction: string): string {
   return instruction.trim().replace(/\s+/g, ' ')
@@ -122,10 +126,34 @@ describe('backend Dockerfile dependency install', () => {
     expect(workspaceManifestCopy).toBeGreaterThan(rootManifestCopy)
     expect(filteredInstall).toBeGreaterThan(workspaceManifestCopy)
     expect(dockerignore.split(/\r?\n/)).toEqual(
-      expect.arrayContaining(['!api-fixtures/', '!api-fixtures/**', '!ci/', '!ci/package.json']),
+      expect.arrayContaining([
+        '!api-fixtures/',
+        '!api-fixtures/**',
+        '!ci/',
+        '!ci/package.json',
+        '!localization/',
+        '!localization/**',
+        '!dev/localization/',
+        '!dev/localization/**',
+      ]),
     )
-    expect(dockerfile).toContain('COPY api-fixtures/ ./api-fixtures/')
+    expect(dockerfile).toContain('COPY localization/ ./localization/')
+    expect(dockerfile).toContain(
+      'node --experimental-strip-types backend/services/localization/compile-cli.mts --source localization/catalog --output /app/localization/catalog.sqlite',
+    )
   })
+
+  it.each(['api', 'worker-cpu', 'worker-io'])(
+    'installs the localization catalog in the %s runtime stage',
+    stageName => {
+      const stageInstructions = getStageInstructions(stageName)
+
+      expect(getInstructionsByType(stageInstructions, 'COPY')).toContain(localizationCatalogCopy)
+      expect(getInstructionsByType(stageInstructions, 'ENV')).toContain(
+        localizationCatalogEnvironment,
+      )
+    },
+  )
 
   it.each([
     ['@entrypoints/api', '/prod/api'],

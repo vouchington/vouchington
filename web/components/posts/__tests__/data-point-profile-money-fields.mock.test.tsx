@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
 import { seedMessages } from '@/lib/i18n/use-translations'
-import esMessages from '@ts-shared/ui-messages/messages/es'
 import { DataPointProfileFields } from '../data-point-profile-fields'
 import type { FinancialProfile } from '@/types/my'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 vi.mock(
   import('@/components/ui/checkbox'),

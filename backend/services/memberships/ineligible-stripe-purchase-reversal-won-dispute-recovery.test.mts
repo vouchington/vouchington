@@ -8,7 +8,7 @@ import {
 import {
   createRecoveryOperations,
   createWonDisputeRecoveryFixture,
-} from './test-helpers/won-dispute-recovery-fixtures.mts'
+} from '../../test-helpers/services/memberships/won-dispute-recovery-fixtures.mts'
 import { getIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/case-read.mts'
 import { claimWonStripeDisputeRecovery } from './ineligible-stripe-purchase-reversal/won-dispute-recovery-ledger.mts'
 import { reconcileWonStripeDispute } from './reconcile-won-stripe-dispute.mts'

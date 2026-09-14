@@ -61,7 +61,6 @@ export async function getPostIdsByUrlIds(
         AND rel.votes_score_net > 0
         AND posts.deleted_at IS NULL
         AND posts.post_type != 'topic_recommendation'
-        AND NOT (posts.openai_omni_moderation_flagged IS TRUE AND posts.openai_omni_moderation_created_at IS NOT NULL)
   `
 
   query.append(sql` AND `).append(eligibilityFilter)
@@ -77,7 +76,6 @@ export async function getPostIdsByUrlIds(
       INNER JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
       WHERE posts.post_type = 'link'
         AND posts.deleted_at IS NULL
-        AND NOT (posts.openai_omni_moderation_flagged IS TRUE AND posts.openai_omni_moderation_created_at IS NOT NULL)
   `)
 
   query.append(sql` AND `).append(eligibilityFilter)

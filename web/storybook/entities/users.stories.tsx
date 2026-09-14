@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { createTranslator, loadMessages } from '@ts-shared/ui-messages'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { UserLink } from '@/components/users/user-link'
 import { UserProfileLinks } from '@/components/users/profile-links'
 import { UserList, UserListItem } from '@/components/users/user-list'
@@ -20,7 +21,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const t = createTranslator('en', await loadMessages('en'))
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 export const Links: Story = {
   render: () => (

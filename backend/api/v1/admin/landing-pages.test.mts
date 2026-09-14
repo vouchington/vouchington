@@ -6,7 +6,7 @@ import {
   createTestUserDirect,
   setUserReferrerId,
 } from '@voucha/test-helpers'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
 

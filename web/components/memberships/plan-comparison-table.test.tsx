@@ -2,10 +2,10 @@ import { beforeAll, describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { createTranslator, type Translator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { PlanComparisonTable } from './plan-comparison-table'
 import type { MembershipBenefitCatalog, MembershipPlanSku } from '@/types/api-responses'
 import plansFixture from '../../../api-fixtures/v1/responses/native.memberships.plans.default.json'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <TooltipProvider>{children}</TooltipProvider>

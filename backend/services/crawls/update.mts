@@ -4,6 +4,7 @@ import { isUUID } from '@modules/utils'
 import type { UpdateCrawlOptions, CrawlBasic } from './types.mts'
 import createError from 'http-errors'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
+import onError from '@modules/on-error'
 import { appendEmbedMetadataUpdate } from './update-embed-metadata.mts'
 
 export const updateCrawl = async (
@@ -101,7 +102,7 @@ export const updateCrawl = async (
   // clears. The detector writes a "none" result for empty input and deduplicates
   // via its input key, so re-enqueuing is safe.
   if (hasLanguageDetectionInput(options)) {
-    void enqueueLanguageDetection('crawl', crawlId).catch(() => undefined)
+    void enqueueLanguageDetection('crawl', crawlId).catch(onError)
   }
 
   return {

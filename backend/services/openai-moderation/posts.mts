@@ -4,14 +4,14 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createOpenAIModeration } from './request.mts'
 import { applyPostOpenAIModerationResults } from './persist-post-results.mts'
-import {
-  normalizeStoredOpenAIModerationResults,
-  type PersistedOpenAIModerationResults,
-} from './stored-results.mts'
+import { type PersistedOpenAIModerationResults } from './stored-results.mts'
+import type { PostModerationAttempt } from '@services/post-clearance/moderation-ledger'
+import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
 
 type OpenAIModerationReadOptions = {
   readOnly?: boolean
   dependencies?: Partial<PostOpenAIModerationDependencies>
+  attempt?: PostModerationAttempt
 }
 
 type PostOpenAIModerationDependencies = {
@@ -51,6 +51,7 @@ export async function upsertPostOpenAIModeration(
       content_sha256,
       existing.results,
       existing.flagged,
+      options.attempt,
     )
 
     if (!applied) {
@@ -72,7 +73,13 @@ export async function upsertPostOpenAIModeration(
   const results = await dependencies.createOpenAIModeration(texts, images_urls)
   const flagged = results.some(result => result.flagged)
 
-  const applied = await applyPostOpenAIModerationResults(post.id, content_sha256, results, flagged)
+  const applied = await applyPostOpenAIModerationResults(
+    post.id,
+    content_sha256,
+    results,
+    flagged,
+    options.attempt,
+  )
   if (!applied) {
     return {
       content_sha256,
@@ -96,15 +103,21 @@ export async function isPostOpenAIModerationUpToDate(
   const query = options.readOnly === false ? write : read
   const { rows } = await query(sql`/* isPostOpenAIModerationUpToDate */
     SELECT 1
-    FROM posts
-    WHERE id = ${postId}
-      AND (
-        openai_omni_moderation_content_sha256 = ${contentSha256}
-        AND openai_omni_moderation_input_sha256 = ${contentSha256}
-        AND openai_omni_moderation_results IS NOT NULL
-        AND openai_omni_moderation_flagged IS NOT NULL
-        AND openai_omni_moderation_created_at IS NOT NULL
-      )
+    FROM posts post
+    JOIN post_moderation_versions version
+      ON version.post_id = post.id
+     AND version.content_sha256 = ${contentSha256}
+     AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
+    JOIN LATERAL (
+      SELECT disposition.disposition
+      FROM post_moderation_dispositions disposition
+      WHERE disposition.version_id = version.id
+        AND disposition.source = 'openai_omni'
+      ORDER BY disposition.id DESC
+      LIMIT 1
+    ) latest ON latest.disposition <> 'incomplete'
+    WHERE post.id = ${postId}
+      AND post.llm_moderation_content_sha256 = ${contentSha256}
   `)
 
   return rows.length > 0
@@ -116,11 +129,20 @@ export async function findExistingPostOpenAIModeration(
 ): Promise<{ results: PersistedOpenAIModerationResults; flagged: boolean } | null> {
   const query = options.readOnly === false ? write : read
   const { rows } = await query(sql`/* findExistingPostOpenAIModeration */
-    SELECT openai_omni_moderation_results, openai_omni_moderation_flagged
-    FROM posts
-    WHERE openai_omni_moderation_input_sha256 = ${contentSha256}
-      AND openai_omni_moderation_results IS NOT NULL
-      AND openai_omni_moderation_flagged IS NOT NULL
+    SELECT disposition.disposition, disposition.evidence
+    FROM post_moderation_versions version
+    JOIN LATERAL (
+      SELECT disposition, evidence, id
+      FROM post_moderation_dispositions
+      WHERE version_id = version.id
+        AND source = 'openai_omni'
+        AND disposition <> 'incomplete'
+      ORDER BY id DESC
+      LIMIT 1
+    ) disposition ON true
+    WHERE version.content_sha256 = ${contentSha256}
+      AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
+    ORDER BY version.id DESC
     LIMIT 1
   `)
 
@@ -128,10 +150,22 @@ export async function findExistingPostOpenAIModeration(
     return null
   }
 
-  const results = normalizeStoredOpenAIModerationResults(rows[0].openai_omni_moderation_results)
-  if (results === null) return null
+  const row = rows[0] as {
+    disposition: 'pass' | 'review' | 'reject'
+    evidence: { flagged_categories?: unknown }
+  }
+  const categories = Array.isArray(row.evidence?.flagged_categories)
+    ? Object.fromEntries(
+        row.evidence.flagged_categories
+          .filter((value): value is string => typeof value === 'string')
+          .map(value => [value, true]),
+      )
+    : {}
+  const results: PersistedOpenAIModerationResults = [
+    { flagged: row.disposition !== 'pass', categories },
+  ]
   return {
     results,
-    flagged: rows[0].openai_omni_moderation_flagged,
+    flagged: row.disposition !== 'pass',
   }
 }

@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { seedMessages } from '@/lib/i18n/use-translations'
 import type { MembershipPlanSku } from '@/types/api-responses'
-import esMessages from '@ts-shared/ui-messages/messages/es'
 import { PaidPlanCard } from '../paid-plan-card'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 const yearlySku: MembershipPlanSku = {
   id: 'plus-yearly',

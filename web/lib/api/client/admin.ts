@@ -49,6 +49,7 @@ export async function updateAdminReviewQueuePost(
     `/api/v1/posts/${postId}/clearances`,
     {
       status,
+      reason_code: status === 'approved' ? 'staff_approved' : 'staff_rejected',
     },
   )
 
@@ -64,6 +65,7 @@ export async function updateAdminReviewQueuePost(
 export function markPostForReview(idOrSlug: string): Promise<{ clearance_status: string }> {
   return clientApi.post<{ clearance_status: string }>(`/api/v1/posts/${idOrSlug}/clearances`, {
     status: 'in_review',
+    reason_code: 'staff_reviewed',
   })
 }
 

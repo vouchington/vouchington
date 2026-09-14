@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { TopicSourcesAside } from '../topic-sources-aside'
 import type { RssFeedsListResponseBody } from '@/types/api-responses'
 import type { HostnameListResponse } from '@/types/hostnames'
@@ -102,12 +104,19 @@ function makeRssFeedsWithoutHostname(): RssFeedsListResponseBody {
 }
 
 describe('TopicSourcesAside', () => {
-  it('renders an in-app link to /domain/<hostname> when hostname is present', async () => {
+  let t: ReturnType<typeof createTranslator>
+
+  beforeAll(() => {
+    t = createTranslator('en', enMessages)
+  })
+
+  it('renders an in-app link to /domain/<hostname> when hostname is present', () => {
     const { container } = render(
-      await TopicSourcesAside({
-        rssFeeds: makeRssFeedsWithHostname('example.com'),
-        hostnames: makeEmptyHostnames(),
-      }),
+      <TopicSourcesAside
+        t={t}
+        rssFeeds={makeRssFeedsWithHostname('example.com')}
+        hostnames={makeEmptyHostnames()}
+      />,
     )
 
     const link = container.querySelector('a[href="/domain/example.com"]')
@@ -117,12 +126,13 @@ describe('TopicSourcesAside', () => {
     expect(link!.getAttribute('rel')).toBeNull()
   })
 
-  it('renders title as plain text when hostname is null', async () => {
+  it('renders title as plain text when hostname is null', () => {
     const { container } = render(
-      await TopicSourcesAside({
-        rssFeeds: makeRssFeedsWithoutHostname(),
-        hostnames: makeEmptyHostnames(),
-      }),
+      <TopicSourcesAside
+        t={t}
+        rssFeeds={makeRssFeedsWithoutHostname()}
+        hostnames={makeEmptyHostnames()}
+      />,
     )
 
     expect(screen.getByText('Example Feed')).not.toBeNull()

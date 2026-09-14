@@ -7,6 +7,7 @@ import {
   createTestMembership,
   createTestUser,
   getTestStripeCatalogMappings,
+  runTestStripeCatalogReconciliationWhileProductReferenced,
 } from '@voucha/test-helpers'
 import { getActivePlansCached, getSkuByStripePriceIdForLifecycle } from './get-catalog.mts'
 import {
@@ -133,6 +134,13 @@ describe('Stripe membership catalog reconciliation', () => {
     await expect(
       getTestStripeCatalogMappings(context.applicationId, context.environment),
     ).resolves.toEqual([])
+  })
+
+  it('reconciles while a canonical membership product is foreign-key referenced', async () => {
+    await runTestStripeCatalogReconciliationWhileProductReferenced(() =>
+      reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('fk-hold') }),
+    )
+    await expect(isStripeMembershipCatalogReady(context)).resolves.toBe(true)
   })
 
   it('serializes concurrent repeat reconciliations into one active catalog', async () => {

@@ -13,12 +13,15 @@ export interface AdminReviewQueuePost {
   root_slug: string | null
   clearance_status: 'rejected' | 'in_review' | 'approved' | 'pending'
   clearance_updated_at: string | null
-  spam_detection_flagged: boolean | null
-  spam_detection_score: number | null
-  spam_detection_results: unknown
-  openai_omni_moderation_flagged: boolean | null
-  openai_omni_moderation_results: unknown
-  media_context?: {
+  moderation_summary: {
+    disposition: 'pass' | 'review' | 'reject' | 'incomplete' | null
+    reason_codes: string[]
+    evidence_summary: {
+      flagged_category_count: number
+      signal_count: number
+    }
+  }
+  media_reveal: {
     requires_reveal: boolean
     images: Array<{
       image_id: string

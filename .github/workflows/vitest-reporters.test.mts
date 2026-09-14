@@ -53,12 +53,27 @@ describe('Vitest CI reporters', () => {
     expect(commands.length).toBeGreaterThan(0)
 
     for (const { command } of commands.filter(
-      ({ command: rawCommand }) => !rawCommand.includes('run-storybook-browser-tests.mts'),
+      ({ command: rawCommand }) =>
+        !rawCommand.includes('run-storybook-browser-tests.mts') &&
+        !rawCommand.includes('--project i18n-route-bounds'),
     )) {
       expect(command).toContain('--bail=3')
     }
 
-    for (const { command, env } of commands) {
+    const isolatedRouteBounds = commands.filter(({ command }) =>
+      command.includes('--project i18n-route-bounds'),
+    )
+    // Route bounds is intentionally isolated from the regular tooling coverage/blob producer:
+    // both jobs are called by the same test-tooling workflow, whose fan-in owns one tooling
+    // report. A second producer here would require a separate top-level expectation and would
+    // make the existing tooling artifact ambiguous.
+    expect(isolatedRouteBounds.map(({ env }) => env)).toEqual([
+      { VITEST_SELECTED_FILES: "${{ !inputs.full_suite && inputs.selected_test_files || '' }}" },
+    ])
+
+    for (const { command, env } of commands.filter(
+      ({ command }) => !command.includes('--project i18n-route-bounds'),
+    )) {
       expect(command).not.toContain('--reporter=')
       expect(command).not.toContain('--outputFile=')
       expect(command).not.toContain('--reporter=dot')
@@ -73,7 +88,9 @@ describe('Vitest CI reporters', () => {
     // — so this counts exactly one first-attempt call per Vitest command.
     expect(
       workflowText.match(/name: Upload .+ vitest blob to GitHub \(fallback\)$/gm)?.length,
-    ).toBe(commands.length)
+    ).toBe(
+      commands.filter(({ command }) => !command.includes('--project i18n-route-bounds')).length,
+    )
 
     // The upload's path/include-hidden-files pair now lives once in the shared leaf
     // composite action rather than once per call site, so it is checked there directly

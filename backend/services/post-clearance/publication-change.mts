@@ -9,6 +9,7 @@ export function recordPostClearancePublicationChange(
   return recordPostPublicationChange(query, {
     scope: { type: 'post', postId },
     reason: 'post_clearance_changed',
+    impactedCommunityIds: communityId ? [communityId] : undefined,
     footprint: { priorCommunityId: communityId ?? undefined },
   })
 }

@@ -56,4 +56,3 @@ All external content (RSS feeds, crawled pages, user posts) passed to LLMs must 
 - [AI agent rules](../../../backend/agents/CLAUDE.md) — agent patterns and tool loop design
 - [Backend service rules](../../../backend/services/CLAUDE.md) — service boundaries and mocking policy
 - [Chat agent](../../../backend/agents/chat/README.md) — hosted chat lifecycle and continuation recovery
-- [OpenAI Cost Model](openai-cost-model.md) — model policy, pricing, retry budgets, and the usage ledger

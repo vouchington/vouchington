@@ -6,7 +6,10 @@ const gitWorktreeOverrideEnvNames = new Set<string>([
 ])
 
 export function gitEnvWithoutWorktreeOverrides(): NodeJS.ProcessEnv {
-  return Object.fromEntries(
-    Object.entries(process.env).filter(([key]) => !gitWorktreeOverrideEnvNames.has(key)),
-  )
+  return {
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(([key]) => !gitWorktreeOverrideEnvNames.has(key)),
+    ),
+    NODE_ENV: process.env.NODE_ENV,
+  }
 }

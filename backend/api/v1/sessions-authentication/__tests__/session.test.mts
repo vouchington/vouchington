@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { createRequest, nextTestRequestIp } from '@voucha/api/test-helpers/server'
+import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
@@ -13,7 +13,7 @@ import {
   legacyUuidV4,
   signLegacyDeviceJwt,
   signLegacySessionJwt,
-} from '@services/jwt-session/test-helpers/index'
+} from '@voucha/test-helpers/services/jwt-session/index'
 import {
   closeScopedDynamicConfigContext,
   overrideDynamicConfigFieldsForTest,

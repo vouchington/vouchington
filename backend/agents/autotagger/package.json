@@ -35,7 +35,7 @@
     "@services/topics": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/tools": "workspace:^",
-    "openai": "^7.10.0"
+    "openai": "^7.15.0"
   },
   "devDependencies": {
     "@services/rss-feeds": "workspace:^",

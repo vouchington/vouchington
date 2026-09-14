@@ -125,6 +125,7 @@ export function rejectPost(
 export function unpublishCommunityPost(idOrSlug: string, postId: string): Promise<void> {
   return clientApi.patch(`/api/v1/communities/${idOrSlug}/posts/${postId}`, {
     status: 'unpublished',
+    reason_code: 'staff_unpublished',
   })
 }
 

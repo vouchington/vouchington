@@ -2,6 +2,7 @@
 'use client'
 
 import { useMemo, useState, useEffect, useRef } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { createPortal } from 'react-dom'
 import { ProxiedImage as Image } from '@/components/shared/proxied-image'
 import { isSideloadImageSrc } from '@/lib/utils/assert-proxied-image-src'
@@ -121,9 +122,7 @@ export function MarkdownContentEnhancer({
 
       // Code block upgrade: Shiki syntax highlighting (lazy-loaded WASM).
       if (features.code) {
-        highlightCodeBlocks(container).catch(() => {
-          // Ignore errors — code blocks remain unstyled rather than breaking the page.
-        })
+        highlightCodeBlocks(container).catch(Sentry.captureException)
       }
 
       if (shouldEnhanceImages) {

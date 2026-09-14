@@ -4,7 +4,7 @@ import type { S3Client } from '@aws-sdk/client-s3'
 import { createLambdaHandler, type LambdaHandlerDependencies } from '../handler.mts'
 import type { EnvironmentConfig, SideloadConfig } from '../config.mts'
 import { HttpOperationError, S3OperationError } from '../errors.mts'
-import { toBase64Url } from '../test-helpers/index.mts'
+import { toBase64Url } from '../../test-helpers/image-resize/index.mts'
 
 describe('handler.sideload', () => {
   const mockEnvConfig: EnvironmentConfig = {

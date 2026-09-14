@@ -8,7 +8,7 @@ import { addUrl } from '@services/urls'
 import {
   insertNotificationTestRssFeedItem,
   rssFeedItemContentSha256,
-} from './test-helpers/rss-feed-items.mts'
+} from '../../test-helpers/services/notifications/rss-feed-items.mts'
 import {
   addCategoryToRssFeedItem,
   createTestTopic,

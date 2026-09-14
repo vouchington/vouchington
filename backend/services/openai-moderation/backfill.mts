@@ -1,5 +1,6 @@
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
 
 // Number of IDs accumulated before a batch is yielded for bulk enqueue. The cursor
 // reads from PostgreSQL in pages of this size and we re-chunk yields to match, so
@@ -53,10 +54,21 @@ export function streamUnmoderatedPostIdBatches(): AsyncGenerator<string[], void,
   return streamIdBatches(
     createAsyncGeneratorFromCursor<{ id: string }>(
       sql`/* streamUnmoderatedPostIdBatches */
-        SELECT id FROM posts
-        WHERE openai_omni_moderation_input_sha256 IS DISTINCT FROM openai_omni_moderation_content_sha256
-          AND deleted_at IS NULL
-        ORDER BY id
+        SELECT post.id
+        FROM posts post
+        LEFT JOIN post_moderation_versions version
+          ON version.post_id = post.id
+         AND version.content_sha256 = post.llm_moderation_content_sha256
+         AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
+        WHERE post.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1
+            FROM post_moderation_dispositions disposition
+            WHERE disposition.version_id = version.id
+              AND disposition.source = 'openai_omni'
+              AND disposition.disposition <> 'incomplete'
+          )
+        ORDER BY post.id
       `,
       { batchSize: BACKFILL_BATCH_SIZE },
     ),

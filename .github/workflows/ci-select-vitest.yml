@@ -72,8 +72,6 @@ on:
         value: ${{ jobs.select-ci.outputs.full-suite }}
       reason:
         value: ${{ jobs.select-ci.outputs.reason }}
-      coverage-plan:
-        value: ${{ jobs.select-ci.outputs.coverage-plan }}
       shard-total-test-web:
         value: ${{ jobs.select-ci.outputs.shard-total-test-web }}
       files-test-web:
@@ -219,7 +217,6 @@ jobs:
       run-build-web: ${{ steps.select.outputs.run-build-web }}
       full-suite: ${{ steps.select.outputs.full-suite }}
       reason: ${{ steps.select.outputs.reason }}
-      coverage-plan: ${{ steps.select.outputs.coverage-plan }}
       shard-total-test-web: ${{ steps.select.outputs.shard-total-test-web }}
       files-test-web: ${{ steps.select.outputs.files-test-web }}
       full-test-web: ${{ steps.select.outputs.full-test-web }}
@@ -292,8 +289,6 @@ jobs:
         id: select
         env:
           EVENT_NAME: ${{ github.event_name }}
-          TOPOLOGY_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          TOPOLOGY_HEAD_SHA: ${{ github.sha }}
           PR_LABELS: ${{ inputs.detect-changes-outputs-pr-labels-json || '[]' }}
         run: node ci/vitest/ci-select.mts
       - name: Upload Vitest test plan

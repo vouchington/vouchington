@@ -9,9 +9,9 @@ import {
   insertTestModerationAppeal,
   insertTestModeratorAction,
   insertTestPost,
+  recordTestPostModerationDisposition,
   insertTestSystemModerationReport,
   insertTestUserWarning,
-  setPostModerationComplete,
   setPostOpenAIModerationFlaggedOnly,
   setPostSpamDetectionComplete,
   setTestBanEvasionFlag,
@@ -79,7 +79,12 @@ describe('getModerationAnalytics review regressions', () => {
       markdown: 'flagged post',
       communityId: community.id,
     })
-    await setPostModerationComplete(postId, true)
+    await recordTestPostModerationDisposition({
+      postId,
+      source: 'openai_omni',
+      disposition: 'reject',
+      reasonCode: 'sexual_minors',
+    })
     await setPostSpamDetectionComplete(postId, true)
     await checkPostClearance(postId)
     const beforeFlagsAreCleared = await getModerationAnalytics('7d', {

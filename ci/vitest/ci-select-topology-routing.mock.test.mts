@@ -15,6 +15,7 @@ vi.mock<typeof import('no-mistakes')>(
     }) as unknown as typeof import('no-mistakes'),
 )
 
+import { CI_WORKFLOW_PATH } from '../workflow-topology-impact.mts'
 import { allJobs, nonTopologyFullJobs } from './ci-select.mts'
 import { selectTopology } from './ci-select-topology.mts'
 
@@ -75,5 +76,62 @@ describe('non-topology forced-full routing', () => {
     })
     expect(outputs.get('full-ci')).toBe('true')
     expect(noMistakes.ciTopologyImpact).not.toHaveBeenCalled()
+  })
+
+  it('calls ciTopologyImpact with pair-2 revisions, not pull_request.base.sha vs github.sha', async () => {
+    const base = 'a'.repeat(40)
+    const head = 'b'.repeat(40)
+    const changedFiles = ['.github/workflows/static-code-analysis.yml']
+    noMistakes.ciTopologyImpact.mockResolvedValue({
+      schemaVersion: 1,
+      baseRevision: base,
+      headRevision: head,
+      changedPaths: changedFiles,
+      affectedWorkflows: changedFiles,
+      affectedRootJobIds: [`${CI_WORKFLOW_PATH}#static-code-analysis`],
+      diagnostics: [],
+      globalFallback: false,
+    })
+    const outputs = new Map<string, string>()
+    const selection = await selectTopology({
+      changedFiles,
+      worktreeRoot: process.cwd(),
+      allVitestJobs: allJobs(),
+      writeOutput: (key, value) => outputs.set(key, value),
+      resolveRevisions: () => ({ base, head }),
+    })
+
+    expect(noMistakes.ciTopologyImpact).toHaveBeenCalledWith({
+      root: process.cwd(),
+      base,
+      head,
+      entryWorkflow: CI_WORKFLOW_PATH,
+    })
+    expect(selection.fullCi).toBe(false)
+    expect(outputs.get('full-ci')).toBe('false')
+    expect(outputs.get('run-static-code-analysis')).toBe('true')
+    expect(outputs.get('run-build-web')).toBe('false')
+    expect(outputs.get('run-build-backend')).toBe('false')
+  })
+
+  it('fails open when pair-2 revisions cannot be resolved', async () => {
+    const outputs = new Map<string, string>()
+    const selection = await selectTopology({
+      changedFiles: ['.github/workflows/static-code-analysis.yml'],
+      worktreeRoot: process.cwd(),
+      allVitestJobs: allJobs(),
+      writeOutput: (key, value) => outputs.set(key, value),
+      resolveRevisions: () => {
+        throw new Error('origin/main missing')
+      },
+    })
+
+    expect(noMistakes.ciTopologyImpact).not.toHaveBeenCalled()
+    expect(selection).toMatchObject({
+      fullCi: true,
+      reason: 'missing exact topology revisions',
+    })
+    expect(outputs.get('full-ci')).toBe('true')
+    expect(outputs.get('run-build-web')).toBe('true')
   })
 })

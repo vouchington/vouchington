@@ -152,6 +152,7 @@ export async function checkIndexRenames({
    check-index-renames.lifecycle.test.mts cover the same git plumbing and result formatting
    against mkdtemp fixture repositories instead. */
 if (process.argv?.[1] && realpathSync(process.argv[1]) === __filename) {
+  // Pair 2: CI passes origin/<base_ref>. Do not accept pull_request.base.sha here (#11711).
   const baseRef = process.env.PR_BASE_SHA?.trim() || 'origin/main'
   try {
     const result = await checkIndexRenames({ cwd: process.cwd(), baseRef })

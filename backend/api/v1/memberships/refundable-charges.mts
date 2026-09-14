@@ -2,7 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth } from '../../response-helpers.mts'
 import { currentUserCanRefundMembership } from '@services/memberships/authorization'
-import { listRefundableCharges } from '@services/memberships/refund-membership'
+import { listRefundableCharges } from '@services/memberships/refund-stripe-operations'
 import { listSubscriptionInvoicesOperation } from '@modules/stripe/operations'
 
 app.route('/api/v1/memberships/refundable-charges').get(async (ctx: Context) => {

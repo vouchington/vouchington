@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { resolveBlackboardConnection } from '../client.mts'
-import { HOSTED_ENV } from '../test-helpers/client-fixtures.mts'
+import { HOSTED_ENV } from '../../test-helpers/blackboard/client-fixtures.mts'
 
 describe('resolveBlackboardConnection', () => {
   it('throws when AGENT_BLACKBOARD_URL is not set', async () => {

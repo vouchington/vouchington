@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
-import { findFirstGeneratedDdlViolation } from '../../test-helpers/config-driven/generated-ddl-guard-helpers.mts'
+import { findFirstGeneratedDdlViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
 
 describe('config-driven generated EXECUTE DDL guard regressions', () => {
   beforeAll(() => loadSqlParserModule())

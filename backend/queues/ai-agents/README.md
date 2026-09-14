@@ -127,8 +127,7 @@ The required eight-mode durability contract and exact test evidence live in the
 
 Every OpenAI call in this queue that goes through `createOpenAIResponse()`
 (`@modules/openai-utils/create-response.mts`) — every job here except `chat`'s own streamed
-assistant response, which stays foreground for chat's time-to-first-token budget (see
-[OpenAI Cost Model](../../../docs/overview/architecture/openai-cost-model.md)) — now runs with
+assistant response, which stays foreground for chat's time-to-first-token budget — now runs with
 `background: true` internally, so a response keeps generating and billing on OpenAI's side even if
 the worker that started it crashes, OOM-kills, or is replaced mid-call by an ECS rolling deploy.
 `reconcile-background-responses` is the crash-recovery reconciler for that class of orphan: it runs

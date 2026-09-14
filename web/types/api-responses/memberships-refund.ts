@@ -27,8 +27,18 @@ export interface MembershipRefund {
   created_at: string
 }
 
-export interface MembershipRefundResponseBody {
+export interface CompletedMembershipRefundResponseBody {
+  outcome: 'completed'
   refund: { id: string }
   cancellation_status: 'not_requested' | 'completed' | 'pending'
 }
+
+export interface ReconcilingMembershipRefundResponseBody {
+  outcome: 'reconciling'
+  retry_after_seconds: number
+}
+
+export type MembershipRefundResponseBody =
+  | CompletedMembershipRefundResponseBody
+  | ReconcilingMembershipRefundResponseBody
 import type { Money } from '@ts-shared/money'

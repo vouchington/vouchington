@@ -149,6 +149,9 @@ describe('api serve shutdown callbacks', () => {
     const source = await readFile(new URL('./serve.mts', import.meta.url), 'utf8')
 
     expect(source).toContain('startApiServer(server, PORT, {')
+    expect(source).toContain('ensurePlaywrightLocalizationSqlite')
+    expect(source).toContain("'@services/localization/compile-catalog'")
+    expect(source).not.toContain("'@services/localization/compile-catalog.mts'")
     expect(source).toContain('exitAfterErrorReporting(() => flushSentry(2000), exitWithFailure)')
     expect(source).toContain('exitWithFailure,')
     expect(source).toContain('flushErrorReporting: () => flushSentry(2000)')

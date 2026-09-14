@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { FollowerShareActionButtons } from './follower-share-action-buttons'
 import { FollowerSendDialog } from './follower-send-dialog'
 import { useFollowerShareActions } from './use-follower-share-actions'
@@ -56,7 +57,7 @@ export function FollowerShareActions({
         selectedFollowers={actions.selectedFollowers}
         onAudienceChange={actions.handleAudienceChange}
         onOpenChange={open => actions.resetDialogState(open)}
-        onSend={() => actions.handleSend().catch(() => undefined)}
+        onSend={() => actions.handleSend().catch(Sentry.captureException)}
         onToggleFollowerSelection={follower => actions.toggleFollowerSelection(follower)}
       />
     </>

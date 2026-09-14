@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY } from '../test-helpers/valid-pr-body.mts'
+import { VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY } from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { validatePrBody } from '../validate.mts'
 
 describe('Fix Main interim-classifier no-closing-ref PR validation: type-6 raw HTML blocks', () => {

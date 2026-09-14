@@ -1,13 +1,17 @@
+import type { Metadata } from 'next'
 import { PostListPage } from '@/components/posts/post-list-page'
 import { postRouteConfigs } from '@/lib/route-configs'
 import { createPageMetadata } from '@/lib/seo/metadata'
-import { defaultTranslator } from '@ts-shared/ui-messages/default-translator'
+import { getTranslations } from '@/lib/i18n/get-translations'
 
-export const metadata = createPageMetadata({
-  title: defaultTranslator(postRouteConfigs.articles.title),
-  description: defaultTranslator(postRouteConfigs.articles.description),
-  path: '/articles',
-})
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations()
+  return createPageMetadata({
+    title: t(postRouteConfigs.articles.title),
+    description: t(postRouteConfigs.articles.description),
+    path: '/articles',
+  })
+}
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>

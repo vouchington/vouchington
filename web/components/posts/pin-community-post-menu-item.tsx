@@ -71,7 +71,7 @@ export function PinCommunityPostMenuItem({
       <DropdownMenuItem
         onSelect={e => {
           e.preventDefault()
-          handleToggle().catch(() => undefined)
+          void handleToggle()
         }}
         disabled={pending}
         data-pw='unpin-community-post-menu-item'
@@ -86,7 +86,7 @@ export function PinCommunityPostMenuItem({
     <DropdownMenuItem
       onSelect={e => {
         e.preventDefault()
-        handleToggle().catch(() => undefined)
+        void handleToggle()
       }}
       disabled={pending}
       data-pw='pin-community-post-menu-item'

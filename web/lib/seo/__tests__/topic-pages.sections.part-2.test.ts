@@ -1,3 +1,4 @@
+import { defaultTranslator as t } from '@ts-shared/ui-messages/default-translator'
 import { describe, it, expect } from 'vitest'
 
 import {
@@ -43,6 +44,7 @@ describe('createTopicReviewSectionStructuredData', () => {
     }
 
     const result = createTopicReviewSectionStructuredData(
+      t,
       mockTopic,
       'books',
       metricsWithRatings,
@@ -69,6 +71,7 @@ describe('createTopicReviewSectionStructuredData', () => {
     }
 
     const result = createTopicReviewSectionStructuredData(
+      t,
       mockTopic,
       'books',
       metricsWithRatings,
@@ -95,6 +98,7 @@ describe('createTopicReviewSectionStructuredData', () => {
     }
 
     const result = createTopicReviewSectionStructuredData(
+      t,
       mockTopic,
       'books',
       metricsWithoutRatings,
@@ -107,7 +111,7 @@ describe('createTopicReviewSectionStructuredData', () => {
   })
 
   it('omits AggregateRating when metrics is null', () => {
-    const result = createTopicReviewSectionStructuredData(mockTopic, 'books', null, 'Reviews', [
+    const result = createTopicReviewSectionStructuredData(t, mockTopic, 'books', null, 'Reviews', [
       'books',
     ])
 
@@ -128,6 +132,7 @@ describe('createTopicReviewSectionStructuredData', () => {
     }
 
     const result = createTopicReviewSectionStructuredData(
+      t,
       { ...mockTopic, name: 'VS Code', slug: 'vs-code' },
       'software-products',
       metricsWithRatings,
@@ -139,7 +144,7 @@ describe('createTopicReviewSectionStructuredData', () => {
   })
 
   it('includes breadcrumb schema for review section', () => {
-    const result = createTopicReviewSectionStructuredData(mockTopic, 'books', null, 'Reviews', [
+    const result = createTopicReviewSectionStructuredData(t, mockTopic, 'books', null, 'Reviews', [
       'books',
     ])
 
@@ -161,6 +166,7 @@ describe('createTopicReviewSectionStructuredData', () => {
     }
 
     const result = createTopicReviewSectionStructuredData(
+      t,
       mockTopic,
       'unknown-type',
       metricsWithRatings,
@@ -171,7 +177,7 @@ describe('createTopicReviewSectionStructuredData', () => {
   })
 
   it('omits dateModified from review section structured data', () => {
-    const result = createTopicReviewSectionStructuredData(mockTopic, 'books', null, 'Reviews', [
+    const result = createTopicReviewSectionStructuredData(t, mockTopic, 'books', null, 'Reviews', [
       'books',
     ])
 

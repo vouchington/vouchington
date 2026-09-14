@@ -57,8 +57,8 @@ export async function runModeratorOnPost(
   moderatorSlug: string,
   options?: RunModeratorOnPostOptions,
 ): Promise<ModerationResult> {
-  if (post.openai_omni_moderation_flagged === true) {
-    return createSkippedResult(moderatorSlug, 'Skipped: OpenAI moderation already flagged')
+  if (post.rejected_at || post.in_review_at) {
+    return createSkippedResult(moderatorSlug, 'Skipped: post is not cleared for publication')
   }
   const config = await getModeratorConfig(moderatorSlug, options?.promptId)
   if (!config) {

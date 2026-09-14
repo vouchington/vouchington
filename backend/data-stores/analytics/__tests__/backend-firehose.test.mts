@@ -13,7 +13,7 @@ import { emit } from '../emit.mts'
 import { onGracefulShutdown } from '../graceful-shutdown.mts'
 
 import { writeRecord as writeLocalRecord } from '../backend-local.mts'
-import { suppressedError } from '../test-helpers/suppressed-error.mts'
+import { suppressedError } from '../../../test-helpers/data-stores/analytics/suppressed-error.mts'
 
 import {
   flush,

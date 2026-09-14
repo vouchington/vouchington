@@ -1,4 +1,9 @@
 import { normalizeAssetOrigin } from './csp.mts'
+import {
+  getSentryDsnConfig,
+  resolveSentryEnablement,
+  SENTRY_CONFIGURATION_WARNING,
+} from '@ts-shared/utils/sentry-deployment-gate'
 import { isProductionValueInvalid } from './production-mode.mts'
 
 // Module-level flags so warnings fire at most once per isolate. CF Workers
@@ -8,6 +13,7 @@ let productionValueInvalidLogged = false
 let cspAssetOriginInvalidLogged = false
 let cachePlaceholderNonceEmptyLogged = false
 let cachePlaceholderNonceTooShortLogged = false
+let sentryConfigurationInvalidLogged = false
 
 // Below this length the placeholder is guessable enough that a cached page's CSP nonce
 // stops being meaningfully secret. Shared with request-handler.mts's canUseCachedOriginForWeb
@@ -77,5 +83,35 @@ export function warnIfCachePlaceholderNonceMissing(env: {
       'CACHE_PLACEHOLDER_NONCE is too short (minimum 32 characters) — generate with: openssl rand -hex 32',
     )
     cachePlaceholderNonceTooShortLogged = true
+  }
+}
+
+/** Warn once when a deployed Worker cannot initialize its private or browser Sentry configuration. */
+export function warnIfSentryConfigurationInvalid(env: {
+  ENVIRONMENT?: string
+  SENTRY_DSN?: string
+  SENTRY_TUNNEL_PREVIOUS_WEB_DSN?: string
+  SENTRY_WEB_DSN?: string
+}): void {
+  const { enabled } = resolveSentryEnablement({
+    environment: env.ENVIRONMENT,
+    otelEnabled: false,
+  })
+  const requiredConfigurationInvalid =
+    !getSentryDsnConfig(env.SENTRY_DSN) || !getSentryDsnConfig(env.SENTRY_WEB_DSN)
+  const rotationConfigurationInvalid =
+    env.SENTRY_TUNNEL_PREVIOUS_WEB_DSN !== undefined &&
+    !getSentryDsnConfig(env.SENTRY_TUNNEL_PREVIOUS_WEB_DSN)
+  if (
+    enabled &&
+    (requiredConfigurationInvalid || rotationConfigurationInvalid) &&
+    !sentryConfigurationInvalidLogged
+  ) {
+    console.warn(
+      requiredConfigurationInvalid
+        ? SENTRY_CONFIGURATION_WARNING
+        : 'Sentry tunnel rotation overlap is disabled because the previous browser DSN is invalid.',
+    )
+    sentryConfigurationInvalidLogged = true
   }
 }

@@ -268,7 +268,7 @@ reproduce under parallelism (#8460, #8559).
 
 - **Tests that mint a fresh identity already need no cleanup at all.**
   `createRequest()` assigns a unique IP via `nextTestRequestIp()`
-  (`backend/api/test-helpers/server.mts`), so each test's rate-limit keys never collide with another
+  (`backend/test-helpers/api/server.mts`), so each test's rate-limit keys never collide with another
   test's. The web integration suite similarly creates fresh session/device state and a unique
   Worker-visible IP for its one email-login contract. Do not call `invalidate()` "just in case" —
   remove it.

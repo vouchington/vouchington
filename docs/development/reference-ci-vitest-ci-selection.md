@@ -46,8 +46,8 @@ outputs make every job selected by its coarse area and trust gates run its full 
 A cancelled run remains cancelled: the jobs' leading `!cancelled()` gate prevents them from
 starting. The same fail-open discipline applies inside `ci-select.mts` itself — a `vitest:full` PR
 label, an unmapped Vitest project, or a `no-mistakes` planner failure/fallback all short-circuit to
-`full-suite=true` via a single `fullOut()` helper that also fills in max shard counts and clears any
-Vitest narrowing outputs. Topology routing runs before every early full-suite exit once the planner
+`full-suite=true` via a single `fullOut()` helper that clears Vitest narrowing outputs. The reusable
+workflows then count their checked-out file-count suites before building matrices. Topology routing runs before every early full-suite exit once the planner
 has supplied its changed-file inventory; if the planner fails before that inventory exists, the
 selector emits `full-ci=true`. No downstream consumer can read a half-written selection as
 "nothing to run." The same `testsPlan()` result supplies both selected tests and its complete changed-file
@@ -152,19 +152,19 @@ a second Git diff, so the safety routing and test selection cannot disagree abou
    `targets:` Vitest projects whenever a matching path changes, independent of the test's own read
    mechanism. A literal-path `readFileSync` call can still narrow `no-mistakes`'s single-file
    dependency-graph planning locally, but does not by itself guarantee CI coverage.
-   `filesPerShard` also sizes **promoted-full PR jobs**: `ci-select.mts` emits
-   `shard_total_override = ceil(jobSuite / filesPerShard)`, and the reusable workflows honor that
-   override even when `full_suite` is true. `main-*.yml` never passes an override, so merges to
-   `main` use the registry defaults: five backend shards, two web shards, one API shard, and
-   one full-stack integration shard. The file-count thresholds are 520 backend files, 800 web files,
+   For every full-suite path, including a selected set promoted to full, the reusable prep job
+   counts the checked-out live file-count suite and resolves the same capped formula; a missing or
+   nonpositive count fails closed. Selector overrides are reserved for narrowed selected-file runs,
+   where they describe the selected set rather than the full suite. The file-count thresholds are 520 backend files, 800 web files,
    and 64 API files per shard — fewer, longer-running shards, sized so each targets around
    eight minutes, leaving room below the ten-minute Vitest command watchdog for setup and artifact
    transport. Integration is intentionally not
    auto-sized: its Worker/Next build and full-stack setup dominate the current Vitest duration, so
    automatic fan-out would duplicate that fixed cost. It accepts a validated manual override and
-   retains distinct `web-integration-shard-N` report identities. There is no workflow
-   `max-parallel`; matrix jobs use normal GitHub runner queueing. PR #9522 run `32120944162`
-   selected 2151 backend-unit files (131653 encoded
+   retains distinct `web-integration-shard-N` report identities. The backend-unit matrix alone
+   caps `max-parallel` at five, preserving its prior simultaneous Tests-pool demand while its six
+   shards queue in the same run; other matrices use normal GitHub runner queueing. PR #9522 run
+   `32120944162` selected 2151 backend-unit files (131653 encoded
    bytes) and failed to spawn `/usr/bin/bash` with `E2BIG` because that list stayed in
    `SELECTED_TEST_FILES`. `resolveJobSelection()` now promotes a job to `full-<job>=true` and
    clears the list when the selected files are strictly greater than 50% of that job's live suite
@@ -172,8 +172,8 @@ a second Git diff, so the safety routing and test selection cannot disagree abou
    (`SELECTED_FILES_ENV_MAX_BYTES`, 120 KiB) used when GitHub Actions interpolates
    `SELECTED_TEST_FILES=...` into a step `env:` block. See `SELECTED_FILES_ENV_MAX_BYTES` in
    [`vouchington-tooling/gha-selected-files`](https://github.com/vouchington/vouchington-tooling).
-   When `test-backend-unit` has no selected tests, its caller is skipped and its coverage plan
-   declares zero expected shards. The separate `backend-smoke` job still runs for backend-area or
+   When `test-backend-unit` has no selected tests, its caller is skipped. The separate
+   `backend-smoke` job still runs for backend-area or
    forced-full CI. Sharded `vitest run` invocations add `--passWithNoTests` so a non-empty plan whose
    partition is empty still exits 0.
 8. **Storybook browser narrowing** — the Storybook preview build always builds every story (a
@@ -185,13 +185,12 @@ a second Git diff, so the safety routing and test selection cannot disagree abou
    `storybook` job itself is never whole-skipped by
    `select-ci` because its `web-storybook`/`web-storybook-component-coverage` projects run a
    whole-repo coverage ratchet.
-9. **Coverage and report completeness** — `ci-select.mts` emits a `coverage-plan` JSON output
-   for every sharded producer. `ci/prepare-coverage-artifacts.mts`
-   reads it from `SELECT_VITEST_COVERAGE_PLAN` and, when present, expects only that many shard
-   artifacts from a `success` sharded job instead of the fixed default count — so a reduced-shard
-   selection run isn't flagged as missing artifacts for shards it never scheduled. A zero-shard
-   plan is valid for a sharded job that intentionally skipped Vitest; an empty/absent/malformed
-   value preserves the fixed-count fail-open behavior. Before checking producer failures, the
+9. **Coverage and report completeness** — each sharded reusable workflow exposes its resolved
+   shard total, and `ci-test-coverage.yml` consumes those exact producer outputs
+   for every sharded producer. `ci/prepare-coverage-artifacts.mts` receives the resulting exact
+   report expectations, so a reduced-shard selection run is not flagged as missing artifacts for
+   shards it never scheduled. A running sharded producer without a positive exact total fails
+   closed. Before checking producer failures, the
    `test-coverage` fan-in writes the exact Vitest report expectation context for every producer
    that was scheduled to run tests, including failed or cancelled producers. The context expands
    the selected backend/web/API/integration shard totals, Storybook's browser mode, and each selected non-sharded
@@ -277,13 +276,18 @@ output and runs unnarrowed — `main` CI is always the full-suite safety net of 
 starts. `main-checks.yml` path-gates which of tooling, ts-shared, and explain-analyze start;
 a started job still runs its full configured suite.
 
-| Job / setting             | Default | Purpose                                                                |
-| ------------------------- | ------- | ---------------------------------------------------------------------- |
-| `test-backend-unit`       | `5`     | Default shards; PR selected/promoted-full runs use 520 files per shard |
-| `test-web`                | `2`     | Default shards; PR selected/promoted-full runs use 800 files per shard |
-| `test-web-api`            | `1`     | Default shards; PR selected/promoted-full runs use 64 files per shard  |
-| `test-web-integration`    | `1`     | Default shard; only an explicit validated override expands the matrix  |
-| `VITEST_SAMPLE_COLD_JOBS` | (unset) | Set to `false` to restore unscoped (non-warm-job-only) sampling        |
+For ordinary PR selection, `select-ci` uses live suite counts only to decide when a selected set
+should promote to a full suite. It never supplies a stale numeric fallback: if counting is
+unavailable, it omits a full-suite override and the reusable workflow counts its checked-out suite
+before building the matrix.
+
+| Job / setting             | Value   | Purpose                                                              |
+| ------------------------- | ------- | -------------------------------------------------------------------- |
+| `test-backend-unit`       | 520     | Files per shard for selected and checked-out full suites             |
+| `test-web`                | 800     | Files per shard for selected and checked-out full suites             |
+| `test-web-api`            | 64      | Files per shard for selected and checked-out full suites             |
+| `test-web-integration`    | 1       | Fixed shard count; explicit validated override may expand the matrix |
+| `VITEST_SAMPLE_COLD_JOBS` | (unset) | Set to `false` to restore unscoped (non-warm-job-only) sampling      |
 
 The selector uploads `vitest-test-plan.*` plus `ci-topology-impact.*` artifacts with one-day
 retention. The topology artifact records the exact revisions, upstream result, and any fail-open

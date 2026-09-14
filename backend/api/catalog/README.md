@@ -24,6 +24,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../v1/friend-recommendations/README.md`](../v1/friend-recommendations/README.md)
 - [`../v1/landing-pages/README.md`](../v1/landing-pages/README.md)
 - [`../v1/lists/README.md`](../v1/lists/README.md)
+- [`../v1/localization/README.md`](../v1/localization/README.md)
 - [`../v1/markdown/README.md`](../v1/markdown/README.md)
 - [`../v1/mcp/README.md`](../v1/mcp/README.md)
 - [`../v1/my/aside-preferences/README.md`](../v1/my/aside-preferences/README.md)

@@ -15,19 +15,14 @@ const deferredLoad = vi.hoisted(() => ({
   current: null as { promise: Promise<EnCatalog>; resolve: (value: EnCatalog) => void } | null,
 }))
 
-vi.mock(import('@ts-shared/ui-messages'), async () => {
-  const actual =
-    await vi.importActual<typeof import('@ts-shared/ui-messages')>('@ts-shared/ui-messages')
-  return {
-    ...actual,
-    loadMessages: vi.fn<VitestLooseMock>(() => {
-      if (!deferredLoad.current) {
-        throw new Error('test must arm deferredLoad.current before triggering a load')
-      }
-      return deferredLoad.current.promise
-    }),
-  }
-})
+vi.mock(import('@/lib/i18n/load-client-messages'), () => ({
+  loadClientMessages: vi.fn<VitestLooseMock>(() => {
+    if (!deferredLoad.current) {
+      throw new Error('test must arm deferredLoad.current before triggering a load')
+    }
+    return deferredLoad.current.promise
+  }),
+}))
 
 function Greeting({ locale }: { locale: string }) {
   const messages = use(getMessagesPromise(locale))
@@ -88,8 +83,9 @@ describe('client-side catalog cache — hydration pop-in', () => {
     })
     deferredLoad.current = { promise: deferredPromise, resolve: resolveDeferred }
 
-    const { loadMessages: realLoadMessages } =
-      await vi.importActual<typeof import('@ts-shared/ui-messages')>('@ts-shared/ui-messages')
+    const { loadMessages: realLoadMessages } = await vi.importActual<
+      typeof import('@ts-shared/ui-messages/locale-loader')
+    >('@ts-shared/ui-messages/locale-loader')
     const realCatalog: EnCatalog = await realLoadMessages('en')
 
     const { container: renderedContainer } = render(
@@ -113,8 +109,9 @@ describe('client-side catalog cache — hydration pop-in', () => {
   })
 
   it('fix: seeding the cache before render means the fallback never renders at all', async () => {
-    const { loadMessages: realLoadMessages } =
-      await vi.importActual<typeof import('@ts-shared/ui-messages')>('@ts-shared/ui-messages')
+    const { loadMessages: realLoadMessages } = await vi.importActual<
+      typeof import('@ts-shared/ui-messages/locale-loader')
+    >('@ts-shared/ui-messages/locale-loader')
     const realCatalog = await realLoadMessages('en')
 
     // The fix: whatever warmed the active locale's catalog (a value serialized into the initial
@@ -146,8 +143,9 @@ describe('client-side catalog cache — hydration pop-in', () => {
     container.innerHTML = '<p data-testid="greeting">Home</p>'
     document.body.append(container)
 
-    const { loadMessages: realLoadMessages } =
-      await vi.importActual<typeof import('@ts-shared/ui-messages')>('@ts-shared/ui-messages')
+    const { loadMessages: realLoadMessages } = await vi.importActual<
+      typeof import('@ts-shared/ui-messages/locale-loader')
+    >('@ts-shared/ui-messages/locale-loader')
     const realCatalog = await realLoadMessages('en')
 
     seedMessages('hydration-warm-test-seeded-no-boundary', realCatalog)

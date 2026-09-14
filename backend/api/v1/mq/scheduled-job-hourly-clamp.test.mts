@@ -19,13 +19,18 @@ const NON_PRODUCTION_CLAMP_JOBS = [
   'bedrock-embeddings-batch/poll_dispatcher',
   'emails/dispatchCommunityModerationSummaryEmails',
   'memberships/appleNotificationRecovery',
+  'memberships/googlePlayNotificationRecovery',
+  'memberships/googlePlayAcknowledgementRecovery',
+  'memberships/dispatchMembershipRefundReconciliation',
   'memberships/membershipEntitlementEffects',
   'memberships/membershipGrantExpiry',
   'memberships/membershipVerificationRecovery',
   'memberships/stripeCatalogReconciliation',
-  'memberships/stripeWebhookRecovery',
+  'memberships/stripeEventRecovery',
   'notifications/notification-push-intent-recovery',
   'oauth-authorization-exchange/oauthAuthorizationExchangeDispatcher',
+  'openai_moderation_omni_single/reconcile-image-quarantines',
+  'openai_moderation_omni_single/reconcile-post-moderation',
   'rss-feeds/dispatchRssFeeds',
   'ses_inbound/ses-inbound-reconciliation',
   'user-deletions/userDeletionRecovery',
@@ -39,8 +44,8 @@ describe('staging hourly-floor clamp', () => {
   it('clamps exactly the non-production high-frequency jobs and leaves every other repeat unchanged', async () => {
     const baseline = await captureRegisteredRepeats({ ENVIRONMENT: 'production' })
     const staging = await captureRegisteredRepeats({ ENVIRONMENT: 'staging' })
-    expect(baseline.size).toBe(66)
-    expect(staging.size).toBe(66)
+    expect(baseline.size).toBe(74)
+    expect(staging.size).toBe(74)
     const clamped = [...baseline.keys()].filter(
       key => JSON.stringify(staging.get(key)) !== JSON.stringify(baseline.get(key)),
     )

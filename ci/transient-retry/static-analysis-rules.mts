@@ -6,15 +6,24 @@ import { CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES } from './ci-aggregate-jobs.mts'
 import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
 const staticAnalysisJobName = 'static-code-analysis / static-code-analysis'
+const staticAnalysisNoMistakesJobName = 'static-code-analysis / no-mistakes-owned'
+
+function isStaticAnalysisCheckRun(name: string): boolean {
+  return name === staticAnalysisJobName || name === staticAnalysisNoMistakesJobName
+}
 
 function hasOnlyStaticAnalysisAndAggregateFailures(ctx: WorkflowRunContext): boolean {
-  if (!ctx.failedJobNames.includes(staticAnalysisJobName)) return false
+  if (!ctx.failedJobNames.some(isStaticAnalysisCheckRun)) return false
   return ctx.failedJobNames.every(name => {
-    if (name === staticAnalysisJobName || CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES.has(name)) {
+    if (isStaticAnalysisCheckRun(name) || CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES.has(name)) {
       return true
     }
     return ctx.jobConclusions?.get(name) === 'cancelled'
   })
+}
+
+function staticAnalysisJobLog(logs: Map<string, string>, jobName = staticAnalysisJobName): string {
+  return logs.get(jobName) ?? ''
 }
 
 function hasStaticAnalysisCheckoutDiskExhaustion(log: string): boolean {
@@ -44,7 +53,12 @@ export const staticAnalysisCheckoutDiskExhaustionRule: TransientRetryRule = {
     if (!hasOnlyStaticAnalysisAndAggregateFailures(ctx)) return false
 
     const logs = await ctx.failedJobLogs()
-    return hasStaticAnalysisCheckoutDiskExhaustion(logs.get(staticAnalysisJobName) ?? '')
+    return (
+      hasStaticAnalysisCheckoutDiskExhaustion(staticAnalysisJobLog(logs)) ||
+      hasStaticAnalysisCheckoutDiskExhaustion(
+        staticAnalysisJobLog(logs, staticAnalysisNoMistakesJobName),
+      )
+    )
   },
 }
 

@@ -1354,6 +1354,208 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Re-enqueue pending Google Play notifications",
+        "id": "googlePlayNotificationRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "googlePlayNotificationRecovery",
+    "template": {
+      "data": {},
+      "name": "recoverGooglePlayNotifications",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending Google Play acknowledgements",
+        "id": "googlePlayAcknowledgementRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "googlePlayAcknowledgementRecovery",
+    "template": {
+      "data": {},
+      "name": "recoverGooglePlayAcknowledgements",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recheck known active Google Play sources when RTDN delivery is missing",
+        "id": "googlePlayActiveSourceRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1h",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 3600000,
+    },
+    "schedulerId": "googlePlayActiveSourceRecovery",
+    "template": {
+      "data": {},
+      "name": "recoverGooglePlayActiveSources",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Refresh offline Google Pub/Sub OIDC signing keys",
+        "id": "googlePlayOidcTrustRefresh",
+        "kind": "scheduled-jobs",
+        "schedule": "every 3h",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 10800000,
+    },
+    "schedulerId": "googlePlayOidcTrustRefresh",
+    "template": {
+      "data": {},
+      "name": "refreshGooglePlayOidcTrust",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recheck known Microsoft Store sources with usable credentials",
+        "id": "microsoftStoreSourceRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1h",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 3600000,
+    },
+    "schedulerId": "microsoftStoreSourceRecovery",
+    "template": {
+      "data": {},
+      "name": "recoverMicrosoftStoreSources",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "microsoft-store-recovery",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch due membership refund reconciliations",
+        "id": "dispatchMembershipRefundReconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "memberships",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "dispatchMembershipRefundReconciliation",
+    "template": {
+      "data": {},
+      "name": "dispatchMembershipRefundReconciliation",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Reconcile the Stripe membership catalog",
         "id": "stripeCatalogReconciliation",
         "kind": "scheduled-jobs",
@@ -1522,7 +1724,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "backfillId": "stripe-webhook-recovery",
+        "backfillId": "stripe-event-recovery",
         "kind": "backfill",
       },
     ],
@@ -1531,9 +1733,9 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "repeat": {
       "every": 300000,
     },
-    "schedulerId": "stripeWebhookRecovery",
+    "schedulerId": "stripeEventRecovery",
     "template": {
-      "name": "recoverStripeWebhooks",
+      "name": "recoverStripeEvents",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -1608,6 +1810,82 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Retry pending CSAM image quarantine transfers",
+        "id": "reconcile-image-quarantines",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "openai_moderation_omni_single",
+    "registration": "sequential",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "reconcile-image-quarantines",
+    "template": {
+      "data": {},
+      "name": "reconcile_image_quarantines",
+      "opts": {
+        "attempts": 1,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "openai-moderation:reconcile-image-quarantines",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Retry or fail closed unresolved post moderation work",
+        "id": "reconcile-post-moderation",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "openai_moderation_omni_single",
+    "registration": "sequential",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "reconcile-post-moderation",
+    "template": {
+      "data": {},
+      "name": "reconcile_post_moderation",
+      "opts": {
+        "attempts": 1,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "openai-moderation:reconcile-post-moderation",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
       },
@@ -2513,6 +2791,22 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface, 
     "triggerName": "enqueueCleanupAbandonedUploads",
   },
   {
+    "description": "Retry pending CSAM image quarantine transfers",
+    "id": "reconcile-image-quarantines",
+    "job_name": "reconcile_image_quarantines",
+    "queue_name": "openai_moderation_omni_single",
+    "schedule": "every 1m",
+    "triggerName": "enqueueReconcileImageQuarantines",
+  },
+  {
+    "description": "Retry or fail closed unresolved post moderation work",
+    "id": "reconcile-post-moderation",
+    "job_name": "reconcile_post_moderation",
+    "queue_name": "openai_moderation_omni_single",
+    "schedule": "every 1m",
+    "triggerName": "enqueueReconcilePostModeration",
+  },
+  {
     "description": "Recalculate vote weights",
     "id": "dailyVoteWeightRecalculation",
     "job_name": "processRecalculateVoteWeightDispatcher",
@@ -2577,12 +2871,60 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface, 
     "triggerName": "enqueueRecoverAppleNotifications",
   },
   {
+    "description": "Re-enqueue pending Google Play notifications",
+    "id": "googlePlayNotificationRecovery",
+    "job_name": "recoverGooglePlayNotifications",
+    "queue_name": "memberships",
+    "schedule": "every 5m",
+    "triggerName": "enqueueRecoverGooglePlayNotifications",
+  },
+  {
+    "description": "Re-enqueue pending Google Play acknowledgements",
+    "id": "googlePlayAcknowledgementRecovery",
+    "job_name": "recoverGooglePlayAcknowledgements",
+    "queue_name": "memberships",
+    "schedule": "every 5m",
+    "triggerName": "enqueueRecoverGooglePlayAcknowledgements",
+  },
+  {
+    "description": "Recheck known active Google Play sources when RTDN delivery is missing",
+    "id": "googlePlayActiveSourceRecovery",
+    "job_name": "recoverGooglePlayActiveSources",
+    "queue_name": "memberships",
+    "schedule": "every 1h",
+    "triggerName": "enqueueRecoverGooglePlayActiveSources",
+  },
+  {
+    "description": "Refresh offline Google Pub/Sub OIDC signing keys",
+    "id": "googlePlayOidcTrustRefresh",
+    "job_name": "refreshGooglePlayOidcTrust",
+    "queue_name": "memberships",
+    "schedule": "every 3h",
+    "triggerName": "enqueueRefreshGooglePlayOidcTrust",
+  },
+  {
+    "description": "Recheck known Microsoft Store sources with usable credentials",
+    "id": "microsoftStoreSourceRecovery",
+    "job_name": "recoverMicrosoftStoreSources",
+    "queue_name": "memberships",
+    "schedule": "every 1h",
+    "triggerName": "enqueueRecoverMicrosoftStoreSources",
+  },
+  {
     "description": "Re-enqueue pending membership verification work",
     "id": "membershipVerificationRecovery",
     "job_name": "recoverMembershipVerifications",
     "queue_name": "memberships",
     "schedule": "every 5m",
     "triggerName": "enqueueRecoverMembershipVerifications",
+  },
+  {
+    "description": "Dispatch due membership refund reconciliations",
+    "id": "dispatchMembershipRefundReconciliation",
+    "job_name": "dispatchMembershipRefundReconciliation",
+    "queue_name": "memberships",
+    "schedule": "every 5m",
+    "triggerName": "enqueueDispatchMembershipRefundReconciliation",
   },
   {
     "description": "Reconcile the Stripe membership catalog",

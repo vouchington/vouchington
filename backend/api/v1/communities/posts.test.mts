@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
   insertTestCommunity,
@@ -152,6 +152,23 @@ describe('Community Posts Routes', () => {
       expect(Array.isArray(response.body.results)).toBe(true)
       expect(response.body).toHaveProperty('page_info')
     })
+
+    it('allows a site moderator without community membership', async () => {
+      const [owner, siteModerator] = await Promise.all([
+        createTestUser(),
+        createTestUser({ extraRoles: ['moderator'] }),
+      ])
+      const random = createRandomString(8)
+      const community = await insertTestCommunity({
+        createdById: owner.id,
+        slug: `posts-pending-staff-${random}`,
+      })
+
+      const request = createRequest()
+      await request.authenticateAs(siteModerator)
+
+      await request.get(`/api/v1/communities/${community.slug}/posts/pending`).expect(200)
+    })
   })
 
   describe('PATCH /api/v1/communities/:slug/posts/:postId', () => {
@@ -203,6 +220,41 @@ describe('Community Posts Routes', () => {
         .patch(`/api/v1/communities/${community.slug}/posts/${postId}`)
         .set('Content-Type', 'application/json')
         .send({ status: 'approved' })
+        .expect(204)
+    })
+
+    it('records a site-moderator override with its required public reason code', async () => {
+      const [owner, siteModerator] = await Promise.all([
+        createTestUser(),
+        createTestUser({ extraRoles: ['moderator'] }),
+      ])
+      const random = createRandomString(8)
+      const community = await insertTestCommunity({
+        createdById: owner.id,
+        slug: `posts-patch-staff-${random}`,
+        post_approval_required_at: new Date(),
+      })
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: owner.id,
+        role: 'owner',
+      })
+      const { id: postId } = await createCommunityPostFixture(owner, community.id, {
+        title: `Post Staff Override ${random}`,
+        markdown: 'some content',
+      })
+
+      const request = createRequest()
+      await request.authenticateAs(siteModerator)
+
+      await request
+        .patch(`/api/v1/communities/${community.slug}/posts/${postId}`)
+        .set('Content-Type', 'application/json')
+        .send({
+          status: 'approved',
+          reason_code: 'staff_reviewed',
+          private_note: 'Platform policy review complete',
+        })
         .expect(204)
     })
   })

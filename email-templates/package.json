@@ -21,13 +21,16 @@
   },
   "scripts": {
     "build": "node build.mjs",
-    "preview": "react-email dev --dir ."
+    "preview": "email dev --dir ."
   },
   "dependencies": {
-    "@ts-shared/money": "workspace:^"
+    "@ts-shared/money": "workspace:^",
+    "@vouchington/localization": "0.2.0",
+    "@vouchington/localization-compiler": "0.2.1"
   },
   "devDependencies": {
     "@react-email/render": "^2.1.0",
+    "@react-email/ui": "^6.9.5",
     "@ts-shared/languages": "workspace:^",
     "@types/node": "^26.4.0",
     "@types/react": "^19",

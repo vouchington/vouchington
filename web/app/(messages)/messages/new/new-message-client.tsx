@@ -62,7 +62,7 @@ export function NewMessageClient({ currentUserId }: Props) {
           className='space-y-4'
           onSubmit={e => {
             e.preventDefault()
-            handleSubmit().catch(() => {})
+            void handleSubmit()
           }}
         >
           <div className='space-y-1'>

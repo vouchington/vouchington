@@ -99,6 +99,8 @@
         "credentialed/**/*.spec.mts",
         "helpers/**/*.test.mts",
         "../playwright.credentialed.config.mts",
+        // Passed as a CLI path by dev/localization/local-smoke.mts, not imported.
+        "localization-tmux.config.mts",
       ],
       "project": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,

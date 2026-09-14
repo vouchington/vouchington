@@ -4,7 +4,7 @@ import {
   createRequest,
   formatTestRequestIp,
   nextTestRequestIp,
-} from '@voucha/api/test-helpers/server'
+} from '@voucha/test-helpers/api/server'
 import {
   overrideDynamicConfigFieldsForTest,
   createTestUser,

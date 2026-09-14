@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS images (
   openai_omni_moderation_flagged BOOLEAN,
   openai_omni_moderation_created_at TIMESTAMPTZ,
 
+  quarantine_pending_at TIMESTAMPTZ, -- moderation-history-guard-allow: a sensitive-image transfer remains blocked until its permanent evidence copy succeeds
   quarantined_at TIMESTAMPTZ, -- moderation-history-guard-allow: permanent evidence retention — quarantine is irreversible; no lifted_at needed
   quarantine_s3_key TEXT,
 
@@ -58,6 +59,10 @@ EXECUTE FUNCTION fn_guard_terminal_lifecycle('upload_completed_at', 'upload_fail
 CREATE INDEX IF NOT EXISTS idx_images__upload_in_flight
 ON images (id)
 WHERE upload_completed_at IS NULL AND upload_failed_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_images__quarantine_pending
+ON images (quarantine_pending_at, id)
+WHERE quarantine_pending_at IS NOT NULL AND deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_images__bedrock_nova_multimodal_v1_embedding
 ON images USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
@@ -86,7 +91,8 @@ COMMENT ON COLUMN images.upload_error IS 'Error message if upload processing fai
 COMMENT ON COLUMN images.openai_omni_moderation_results IS 'Raw JSONB results from OpenAI omni moderation API.';
 COMMENT ON COLUMN images.openai_omni_moderation_flagged IS 'Whether OpenAI moderation flagged this image.';
 COMMENT ON COLUMN images.openai_omni_moderation_created_at IS 'When the moderation check was performed.';
-COMMENT ON COLUMN images.quarantined_at IS 'When the image was copied to the CSAM quarantine bucket. NULL if not quarantined or copy failed.';
-COMMENT ON COLUMN images.quarantine_s3_key IS 'S3 key in the quarantine bucket. NULL if not quarantined or copy failed.';
+COMMENT ON COLUMN images.quarantine_pending_at IS 'When CSAM quarantine began. Pending images are unavailable until permanent copy and deletion complete.';
+COMMENT ON COLUMN images.quarantined_at IS 'When the image was copied to the CSAM quarantine bucket. NULL until the permanent copy succeeds.';
+COMMENT ON COLUMN images.quarantine_s3_key IS 'S3 key in the permanent quarantine bucket. NULL until the copy succeeds.';
 COMMENT ON COLUMN images.bedrock_nova_multimodal_v1_embedding IS '1024-dimensional vector from Amazon Nova 2 Multimodal Embeddings V1 for the image.';
 COMMENT ON COLUMN images.bedrock_nova_multimodal_v1_embedding_created_at IS 'When the image embedding was generated.';

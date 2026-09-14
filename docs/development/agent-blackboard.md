@@ -3,8 +3,8 @@
 Durable storage for
 [`agent-blackboard`](https://github.com/jonathanong/agent-blackboard), the published client, CLI,
 and MCP server that backs agent session journaling in Filaments. The root `package.json` installs
-`agent-blackboard` as a development dependency. Filaments connects to a **hosted AWS
-deployment** (Lambda Function URL + DynamoDB); there is no local server or database to run.
+`agent-blackboard` as a development dependency. Filaments connects to a **hosted deployment**;
+there is no local server or database to run.
 
 The package supplies the file-backed `snapshot_export`, `snapshot partition`, and `snapshot cleanup`
 commands used by the snapshot-distillation workflow below. The export implementation landed in
@@ -31,7 +31,7 @@ flowchart LR
   journalMcp[Blackboard skill MCP option] --> mcp[dev/blackboard-mcp]
   manual[pnpm exec manual commands] --> cli[root-installed agent-blackboard CLI]
   mcp --> cli
-  js -->|AGENT_BLACKBOARD_URL and AGENT_BLACKBOARD_TOKEN| lambda[Hosted Lambda Function URL]
+  js -->|AGENT_BLACKBOARD_URL and AGENT_BLACKBOARD_TOKEN| lambda[Hosted deployment]
   cli -->|same hosted connection| lambda
   lambda --> table[(Shared DynamoDB table)]
 ```
@@ -59,7 +59,7 @@ use the installed binary.
 ### 2. Export the hosted connection
 
 ```bash
-export AGENT_BLACKBOARD_URL=https://q365jix4mexb4pd5jaoegotmii0qcukx.lambda-url.us-west-2.on.aws/
+export AGENT_BLACKBOARD_URL=<hosted-blackboard-url>
 export AGENT_BLACKBOARD_TOKEN=<your client credential>
 ```
 
@@ -71,7 +71,7 @@ or follow the `agent-blackboard` repository's credential-management documentatio
 token available, mint a client credential through the installed CLI:
 
 ```bash
-AGENT_BLACKBOARD_URL=https://q365jix4mexb4pd5jaoegotmii0qcukx.lambda-url.us-west-2.on.aws/ \
+AGENT_BLACKBOARD_URL=<hosted-blackboard-url> \
   AGENT_BLACKBOARD_ADMIN_TOKEN=<admin token> \
   pnpm exec agent-blackboard credentials create --name <your-name>-local
 ```
@@ -317,16 +317,15 @@ change explicitly provisions and documents a scoped CI blackboard credential.
 
 ## AWS deploy path
 
-Filaments consumes a hosted deployment; it does not own or provision it. Canonical connection
-values:
+Filaments consumes a hosted deployment; it does not own or provision it. Configure connection
+values through the private operator runbook:
 
-- `AGENT_BLACKBOARD_URL` — `https://q365jix4mexb4pd5jaoegotmii0qcukx.lambda-url.us-west-2.on.aws/`
-- `AGENT_BLACKBOARD_TABLE_NAME` — `agent-blackboard-AgentBlackboardTable-X6ZCMJT3P4MU`
-  (server-side only; the Filaments client never sets this)
+- `AGENT_BLACKBOARD_URL` — the hosted service URL
+- `AGENT_BLACKBOARD_TABLE_NAME` — a server-side deployment identifier; the Filaments client never
+  sets it
 
-The Lambda function, Function URL, and DynamoDB table are provisioned from the separate
-`agent-blackboard` repository. Redeploying, scaling, or repairing that infrastructure is the
-deployment owner's responsibility.
+The hosted service is provisioned from the separate `agent-blackboard` repository. Redeploying,
+scaling, or repairing that infrastructure is the deployment owner's responsibility.
 
 ## Files
 

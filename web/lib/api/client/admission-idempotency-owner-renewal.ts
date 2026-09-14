@@ -1,5 +1,6 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
 import {
   type AdmissionLockManager,
   withAdmissionAllocationLock,
@@ -27,7 +28,7 @@ export function startAdmissionOwnerLeaseRenewal(options: OwnerRenewalOptions): (
   let timeout: ReturnType<typeof setTimeout>
   const schedule = (callback: () => Promise<void>) => {
     timeout = setTimeout(() => {
-      callback().catch(() => undefined)
+      callback().catch(Sentry.captureException)
     }, ADMISSION_OWNER_RENEWAL_MS)
   }
   const renew = async () => {

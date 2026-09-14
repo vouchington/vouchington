@@ -2,7 +2,7 @@ import { updateClearanceStatus } from '@services/post-clearance/update-status'
 import { createPost } from '@services/posts'
 import { createPostLLMModerator, updatePostLLMModerator } from '@services/moderation/moderators'
 import { describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createRandomString,
   createSystemUser,

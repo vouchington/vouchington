@@ -108,6 +108,18 @@ describe('coverage provenance manifest CLI adapter', () => {
     ).rejects.toThrowError(/must be provided together/)
   })
 
+  it('names a missing coverage producer instead of throwing raw ENOENT', async () => {
+    const fixture = makeFixture()
+    const missingLcov = join(fixture.root, 'coverage', 'missing-lcov.info')
+    await expect(
+      runCoverageManifestCli(['stamp', 'tooling', '4.1.10', missingLcov, fixture.manifestPath], {
+        cwd: fixture.root,
+        env: {},
+        revision: '5'.repeat(40),
+      }),
+    ).rejects.toThrowError(`Missing coverage producer LCOV for suite 'tooling' at ${missingLcov}`)
+  })
+
   it('rejects unknown Filaments suite names', async () => {
     const fixture = makeFixture()
     await expect(

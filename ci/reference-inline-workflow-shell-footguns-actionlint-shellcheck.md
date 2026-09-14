@@ -9,13 +9,13 @@ Several issues that have caused CI failures in inline `run:` blocks:
 ```yaml
 run: |
   aws ecs run-task \
-    --cluster my-cluster \ # this comment silently drops everything after it
+    --cluster "$CLUSTER_NAME" \ # this comment silently drops everything after it
     --launch-type FARGATE
 ```
 
 Shellcheck flags this as a literal `#` comment after a line continuation. The `\` on the `--cluster`
 line is NOT a continuation — it is consumed as the escape for `#`, and the command terminates after
-`my-cluster`. The `--launch-type` line is a separate, orphaned word. Fix: remove the comment or
+the cluster value. The `--launch-type` line is a separate, orphaned word. Fix: remove the comment or
 move it to a dedicated `# comment` line before the construct.
 
 **`docker exec` inherits `NODE_OPTIONS` from the runner environment**

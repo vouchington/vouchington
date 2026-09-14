@@ -1,4 +1,4 @@
-import { createTransactionResource } from '../test-helpers/transaction-resource.mts'
+import { createTransactionResource } from '../../../test-helpers/services/identity-verification/transaction-resource.mts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { beginTransaction } from '@voucha/test-helpers'
 import {

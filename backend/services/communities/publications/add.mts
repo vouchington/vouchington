@@ -104,6 +104,17 @@ async function createCommunityPostReviewWithOptions(
   )
 
   assert(rows[0], 422, 'Post already has a community review')
+  if (approvedAt) {
+    await write(
+      sql`/* recordAutomaticPublicationReviewChange */
+        INSERT INTO community_post_review_changes (
+          community_id, post_id, actor_user_id, action, platform_override
+        ) VALUES (
+          ${communityId}, ${postId}, NULL, 'approve', false
+        )`,
+      options,
+    )
+  }
   await recordPostPublicationChange(options.query as TransactionQuery, {
     scope: { type: 'post', postId },
     reason: 'community_publication_changed',

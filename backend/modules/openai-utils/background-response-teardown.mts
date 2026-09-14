@@ -10,7 +10,8 @@ const BACKGROUND_TEARDOWN_TIMEOUT_MS = 10_000
 /**
  * Cancels a background response, stopping the meter. Only stops spend — it does not reliably
  * carry usage synchronously (a cancelled background response's usage can lag ~10s behind the
- * cancel call; see the background-mode spike in docs/overview/architecture/openai-cost-model.md),
+ * cancel call, per the #8836 background-mode spike written up in the private
+ * vouchington/vouchington-docs repository),
  * so callers must not treat this as the usage-recording step. The registry sweeper's
  * retrieveOpenAIResponse() is what records usage for a response cancelled here.
  */

@@ -78,7 +78,7 @@ async function findStripeCatalogMappings(
       WHERE provider = 'stripe' AND environment = ${context.environment}
         AND application_id = ${context.applicationId}
         AND (provider_product_id = ${providerProductId} OR sku_id = ${skuId})
-      FOR UPDATE`,
+      FOR NO KEY UPDATE`,
     { query },
   )
   return rows as StripeCatalogMapping[]

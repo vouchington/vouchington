@@ -1,5 +1,6 @@
 import { read } from '@data-stores/psql'
 import { enqueueBulkLanguageDetection } from '@queues/language-detection/enqueues'
+import onError from '@modules/on-error'
 import {
   chunkArray,
   RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE,
@@ -102,7 +103,7 @@ export async function persistFeedMetadataAndReconcileLanguage(
     oldDeclaredLanguage,
     readFn,
     enqueueBulkLanguageDetectionFn,
-  ).catch(() => undefined)
+  ).catch(onError)
 }
 
 /**
@@ -136,6 +137,6 @@ async function reenqueueItemLanguageDetectionIfNeeded(
   const itemIds = (rows as { id: string }[]).map(row => row.id)
   for (const chunk of chunkArray(itemIds, RSS_FEED_ITEM_ENQUEUE_BATCH_SIZE)) {
     // oxlint-disable-next-line no-await-in-loop -- bounded queue batches are submitted serially so a large feed cannot exceed Valkey request limits.
-    await enqueueBulkLanguageDetectionFn('rss_feed_item', chunk).catch(() => undefined)
+    await enqueueBulkLanguageDetectionFn('rss_feed_item', chunk).catch(onError)
   }
 }

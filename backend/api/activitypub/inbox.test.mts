@@ -1,6 +1,6 @@
 import { createPrivateKey, sign as cryptoSign } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { updateUserFields } from '@services/users'
 import { getEntityRelations } from '@services/entity-relations'

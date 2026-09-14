@@ -1,4 +1,4 @@
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { describe, expect, it } from 'vitest'
 
 describe('GET /api/v1/currencies', () => {

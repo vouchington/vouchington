@@ -13,8 +13,6 @@ NC='\033[0m'
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 # shellcheck source=lib/worktree-resource-env.sh
 source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
-# shellcheck source=lib/reset-worktree-lock.sh
-source "$REPO_ROOT/dev/lib/reset-worktree-lock.sh"
 
 # Resolve git paths against REPO_ROOT (the script's own location, via `pwd -P`
 # above), never against the caller's cwd -- this script is meant to be run to
@@ -47,19 +45,6 @@ elif [ "$WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS" = active ]; then
     in_use=$((in_use + 1))
 else
     echo -e "${YELLOW}Worktree resource operation lock is invalid — investigate before removing manually.${NC}"
-    in_use=$((in_use + 1))
-fi
-
-if reset_worktree_lock_clear_stale "$REPO_ROOT"; then
-    if [ "$RESET_WORKTREE_LOCK_CLEANUP_STATUS" = removed ]; then
-        echo -e "${GREEN}Removed stale reset-worktree lock.${NC}"
-        removed=$((removed + 1))
-    fi
-elif [ "$RESET_WORKTREE_LOCK_CLEANUP_STATUS" = active ]; then
-    echo -e "${YELLOW}reset-worktree lock is active — not removed.${NC}"
-    in_use=$((in_use + 1))
-else
-    echo -e "${YELLOW}reset-worktree lock is invalid — investigate before removing manually.${NC}"
     in_use=$((in_use + 1))
 fi
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import worker from '../index.mts'
-import { createContext, restoreGlobals } from '../test-helpers/mock-env.mts'
+import { createContext, restoreGlobals } from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 describe('worker-owned inline response rate-limit exemptions', () => {

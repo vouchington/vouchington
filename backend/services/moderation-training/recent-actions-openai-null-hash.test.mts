@@ -12,7 +12,7 @@ import { recordAutomodActionFeedback } from './automod-feedback.mts'
 import { searchRecentAutomodActions } from './recent-actions.mts'
 
 describe('recent automod actions OpenAI source keys', () => {
-  it('skips OpenAI automod rows without an input hash', async () => {
+  it('uses the canonical content digest in OpenAI source keys', async () => {
     const owner = await createTestUser()
     const random = createRandomString(8)
     const community = await insertTestCommunity({
@@ -35,11 +35,11 @@ describe('recent automod actions OpenAI source keys', () => {
       limit: 5,
     })
 
-    expect(actions.actions.map(item => item.post_id)).not.toContain(postId)
+    expect(actions.actions.map(item => item.post_id)).toContain(postId)
     expect(actions.actions.every(item => item.source_key !== null)).toBe(true)
   })
 
-  it('keeps legacy OpenAI null-hash flags active when reviewing another source', async () => {
+  it('keeps OpenAI signals active when reviewing another source', async () => {
     const owner = await createTestUser()
     const random = createRandomString(8)
     const community = await insertTestCommunity({

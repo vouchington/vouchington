@@ -48,6 +48,9 @@ for arg in "$@"; do
     esac
 done
 
+# shellcheck source=lib/git-worktrees.sh
+source "$REPO_ROOT/dev/lib/git-worktrees.sh"
+
 # shellcheck source=lib/worktree-resource-env.sh
 source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
 
@@ -219,39 +222,12 @@ stop_entrypoint() {
     echo ""
 }
 
-tmux_window_exists() {
-    local session=$1
-    local window=$2
-    local name
-
-    while IFS= read -r name; do
-        if [ "$name" = "$window" ]; then
-            return 0
-        fi
-    done < <(tmux list-windows -t "$session" -F '#{window_name}' 2>/dev/null || true)
-
-    return 1
-}
-
 tmux_session_name() {
-    printf 'voucha-%s' "$(basename "$REPO_ROOT")"
-}
-
-current_tmux_target() {
-    if [ -z "${TMUX:-}" ]; then
-        return 0
-    fi
-
-    tmux display-message -p '#S:#W' 2>/dev/null || true
+    printf 'voucha-%s' "$(git_worktree_canonical_path_hash "$REPO_ROOT")"
 }
 
 stop_tmux_services() {
-    local session
-    local windows=(nextjs backend workers-io worker-cpu cloudflare lambdas)
-    local window
-    local target
-    local current_target
-    local sent=false
+    local session pane_session pane_pid command_pid parent_pid watcher depth
 
     session=$(tmux_session_name)
 
@@ -261,35 +237,59 @@ stop_tmux_services() {
         return 0
     fi
 
-    if ! tmux has-session -t "$session" 2>/dev/null; then
+    if ! tmux has-session -t "=$session" 2>/dev/null; then
         echo "No tmux session for this worktree ($session)"
         echo ""
         return 0
     fi
 
-    current_target=$(current_tmux_target)
+    echo -e "${YELLOW}Stopping tmux session $session (all managed and added windows)...${NC}"
+    if [ -n "${TMUX_PANE:-}" ]; then
+        pane_session=$(tmux display-message -p -t "$TMUX_PANE" '#S' 2>/dev/null || true)
+        if [ "$pane_session" = "$session" ]; then
+            pane_pid=$(tmux display-message -p -t "$TMUX_PANE" '#{pane_pid}' 2>/dev/null || true)
+            case "$pane_pid" in
+                ''|*[!0-9]*) echo -e "${YELLOW}  Could not identify caller pane; leaving tmux session running${NC}"; return 0 ;;
+            esac
 
-    echo -e "${YELLOW}Stopping tmux service windows in $session...${NC}"
-    for window in "${windows[@]}"; do
-        target="$session:$window"
-        if tmux_window_exists "$session" "$window"; then
-            if [ "$current_target" = "$target" ]; then
-                echo "  Skipping current tmux window $window"
-                continue
+            # Wait for the command started by the pane shell, not merely this
+            # script: reset and teardown still have work after stop-services.
+            command_pid=$$
+            for ((depth = 0; depth < 64 && command_pid != pane_pid; depth++)); do
+                parent_pid=$(ps -p "$command_pid" -o ppid= 2>/dev/null | tr -d '[:space:]' || true)
+                case "$parent_pid" in
+                    ''|0|*[!0-9]*) break ;;
+                esac
+                if [ "$parent_pid" -eq "$pane_pid" ]; then
+                    break
+                fi
+                command_pid=$parent_pid
+            done
+
+            if [ "$command_pid" -ne "$pane_pid" ] && [ "$parent_pid" != "$pane_pid" ]; then
+                echo -e "${YELLOW}  Could not identify caller command; leaving tmux session running${NC}"
+                return 0
             fi
 
-            if tmux send-keys -t "$target" C-c; then
-                sent=true
-                echo "  Sent Ctrl-C to $window"
+            if [ "$command_pid" -eq "$pane_pid" ]; then
+                parent_pid=$(ps -p "$pane_pid" -o ppid= 2>/dev/null | tr -d '[:space:]')
+                case "$parent_pid" in
+                    ''|0|*[!0-9]*) echo -e "${YELLOW}  Could not identify caller command; leaving tmux session running${NC}"; return 0 ;;
+                esac
             else
-                echo -e "${YELLOW}  Could not send Ctrl-C to $window; continuing${NC}"
+                parent_pid=$pane_pid
             fi
+            printf -v watcher 'while [ "$(ps -p %s -o ppid= 2>/dev/null | tr -d "[:space:]")" = "%s" ]; do sleep 0.2; done; tmux kill-session -t "=%s" 2>/dev/null' "$command_pid" "$parent_pid" "$session"
+            if tmux run-shell -b "$watcher"; then
+                echo "  Tmux session will close when this pane's command finishes"
+            else
+                echo -e "${YELLOW}  Could not schedule tmux session shutdown; leaving it running${NC}"
+            fi
+            echo ""
+            return 0
         fi
-    done
-
-    if ! $sent; then
-        echo "  No service windows found"
     fi
+    tmux kill-session -t "=$session" 2>/dev/null || echo -e "${YELLOW}  Could not kill tmux session${NC}"
     echo ""
 }
 
@@ -325,8 +325,6 @@ stop_valkey_container() {
 
 echo -e "${BLUE}=== Stopping Worktree Services ===${NC}\n"
 
-stop_tmux_services
-
 stop_port "backend" "${PORT:-}"
 stop_port "Next.js" "${NEXT_PORT:-${WEB_PORT:-}}"
 stop_port "CF Worker" "${WORKER_PORT:-}"
@@ -336,5 +334,9 @@ stop_entrypoint "backend workers-io" "backend/entrypoints/worker-io/serve.mts"
 stop_entrypoint "backend worker-cpu" "backend/entrypoints/worker-cpu/serve.mts"
 
 stop_valkey_container
+
+# A caller may be in a pane it added to the managed session. Close that
+# session after all other cleanup so killing its pane cannot interrupt us.
+stop_tmux_services
 
 echo -e "${GREEN}✓ Service stop complete${NC}"

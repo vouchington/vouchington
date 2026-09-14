@@ -7,7 +7,7 @@ import {
   entriesClientFixture,
   sessionFixture,
   sessionsClientFixture,
-} from '../../blackboard/test-helpers/client-fixtures.mts'
+} from '../../test-helpers/blackboard/client-fixtures.mts'
 import { BlackboardJournalError, runAppend } from '../append.mts'
 
 const testDirs: string[] = []

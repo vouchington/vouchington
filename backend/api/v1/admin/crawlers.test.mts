@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect, createReferralProgramFixture } from '@voucha/test-helpers'
 import { addUrl } from '@services/urls/upsert'
 import { createCrawler } from '@services/crawlers'

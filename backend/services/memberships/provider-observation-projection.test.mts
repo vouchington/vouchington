@@ -221,8 +221,55 @@ describe('provider observation projection', () => {
     })
     await expect(getMembershipByUserId(user.id)).resolves.toMatchObject({ plan: 'plus' })
   })
+  it('restores a retained grant while direct access is paused, then reactivates the direct source', async () => {
+    const user = await createTestUser()
+    const grantSku = await createTestSku({ plan: 'plus' })
+    await createMembership({ userId: user.id, plan: 'plus', skuId: grantSku.id, durationDays: 30 })
+    const effectiveAt = new Date(Date.now() - 2 * 86_400_000)
+    const fixture = await createAppleObservationFixture(user.id, 'pro', 'direct', { effectiveAt })
+    const active = await projectVerifiedProviderMembershipObservation({
+      userId: user.id,
+      membershipProviderObservationId: fixture.observation.membershipProviderObservationId,
+    })
+    const paused = await createTestUnprojectedProviderObservation({
+      ...fixture.observation.sourceIdentity,
+      userId: user.id,
+      membershipProductId: fixture.sku.id,
+      membershipProviderProductId: fixture.providerProduct.id,
+      sourceKind: 'direct',
+      status: 'paused',
+      effectiveAt,
+      providerOrder: 1,
+    })
+    await projectVerifiedProviderMembershipObservation({
+      userId: user.id,
+      membershipProviderObservationId: paused.membershipProviderObservationId,
+    })
+    await expect(getTestMembershipRaw(active.membershipId!)).resolves.toMatchObject({
+      paused_at: expect.any(Date),
+      projection_ended_at: expect.any(Date),
+    })
+    await expect(getMembershipByUserId(user.id)).resolves.toMatchObject({ plan: 'plus' })
+    const resumed = await createTestUnprojectedProviderObservation({
+      ...fixture.observation.sourceIdentity,
+      userId: user.id,
+      membershipProductId: fixture.sku.id,
+      membershipProviderProductId: fixture.providerProduct.id,
+      sourceKind: 'direct',
+      effectiveAt,
+      providerOrder: 2,
+    })
+    await projectVerifiedProviderMembershipObservation({
+      userId: user.id,
+      membershipProviderObservationId: resumed.membershipProviderObservationId,
+    })
+    await expect(getMembershipByUserId(user.id)).resolves.toMatchObject({
+      id: active.membershipId,
+      plan: 'pro',
+      status: 'active',
+    })
+  })
 })
-
 async function createAppleObservationFixture(
   userId: string,
   plan: 'plus' | 'pro',

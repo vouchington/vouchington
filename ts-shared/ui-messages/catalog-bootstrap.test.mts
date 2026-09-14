@@ -1,10 +1,64 @@
 import { describe, expect, it } from 'vitest'
 import { deserializeCatalog, serializeCatalog } from './catalog-bootstrap.mts'
 import { createTranslator } from './index.mts'
-import enMessages from './messages/en.ts'
-import esMessages from './messages/es.ts'
+import { catalogMessagesFromTables } from './load-catalog-json.mts'
+import { enMessages, esMessages } from './locale-catalogs.mts'
 
 describe('catalog bootstrap', () => {
+  it('projects normalized copies, aliases, and locale rows back to consumer aliases', () => {
+    expect(
+      catalogMessagesFromTables({
+        copies: [
+          {
+            id: 'copy.fixture.count',
+            descriptor: { kind: 'plural', valueParameter: 'count' },
+          },
+        ],
+        aliases: [
+          { consumer: 'web', alias: 'fixture.count', copyId: 'copy.fixture.count' },
+          { consumer: 'swift', alias: 'fixture.count', copyId: 'copy.fixture.count' },
+        ],
+        translations: {
+          'en-US': [
+            { id: 'copy.fixture.count', value: { one: '{count} item', other: '{count} items' } },
+          ],
+          es: [
+            {
+              id: 'copy.fixture.count',
+              value: { one: '{count} elemento', other: '{count} elementos' },
+            },
+          ],
+        },
+      }),
+    ).toEqual([
+      {
+        id: 'fixture.count',
+        consumers: ['web', 'swift'],
+        descriptor: { kind: 'plural', valueParameter: 'count' },
+        translations: {
+          'en-US': { one: '{count} item', other: '{count} items' },
+          es: { one: '{count} elemento', other: '{count} elementos' },
+        },
+      },
+    ])
+  })
+
+  it('rejects an alias that maps to different copies for separate consumers', () => {
+    expect(() =>
+      catalogMessagesFromTables({
+        copies: [
+          { id: 'copy.fixture.first', descriptor: null },
+          { id: 'copy.fixture.second', descriptor: null },
+        ],
+        aliases: [
+          { consumer: 'web', alias: 'fixture.duplicate', copyId: 'copy.fixture.first' },
+          { consumer: 'swift', alias: 'fixture.duplicate', copyId: 'copy.fixture.second' },
+        ],
+        translations: {},
+      }),
+    ).toThrow('Alias "fixture.duplicate" maps to more than one copy')
+  })
+
   it('serializes every catalog leaf, including plural descriptors', () => {
     const serialized = serializeCatalog(enMessages)
 
@@ -23,9 +77,8 @@ describe('catalog bootstrap', () => {
     ])
     const directory = dirname(fileURLToPath(import.meta.url))
     const webCatalogSources = await Promise.all([
-      readFile(join(directory, 'messages/en.ts'), 'utf8'),
-      readFile(join(directory, 'messages/en/core.ts'), 'utf8'),
       readFile(join(directory, 'locale-loader.mts'), 'utf8'),
+      readFile(join(directory, 'load-catalog-json.mts'), 'utf8'),
     ])
 
     expect(webCatalogSources.join('\n')).not.toMatch(

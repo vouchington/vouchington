@@ -130,9 +130,9 @@ describe('no-mistakes CI Vitest planner', () => {
     expect(output).toMatchObject({
       'full-test-web-api': 'true',
       'full-test-web-integration': 'true',
-      'shard-total-test-web-api': '1',
       'shard-total-test-web-integration': '1',
     })
+    expect(output).not.toHaveProperty('shard-total-test-web-api')
     expect(artifacts.json).toContain('"mode": "full"')
     expect(artifacts.markdown).toContain('Full suite: no-mistakes test planner failed')
   })

@@ -10,8 +10,8 @@ import {
   render,
 } from './react-email-runtime.mts'
 import { VouchaFooter, VouchaHeader } from './components.tsx'
+import { emailCopy, emailOptional } from './catalog-copy.mts'
 import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
-import { copyByLocale } from './welcome-copy.mts'
 import { styles } from './styles.mts'
 import type {
   EmailRenderResultPromise,
@@ -23,27 +23,27 @@ const baseUrl = process.env.SITE_ORIGIN ?? 'https://voucha.ai'
 
 const WelcomeEmail: PreviewableEmailComponent<WelcomeEmailProps> = ({ userName, uiLocale }) => {
   const locale = resolveUiLocale(uiLocale)
-  const copy = copyByLocale[locale]
+  const t = emailCopy(locale, 'welcome')
 
   return (
     <Html>
       <Head />
-      <Preview>{copy.preview}</Preview>
+      <Preview>{t('preview')}</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
           <VouchaHeader />
           <Section style={styles.section}>
-            <Text style={styles.heading}>{copy.heading(userName)}</Text>
-            <Text style={styles.paragraph}>{copy.intro}</Text>
+            <Text style={styles.heading}>{emailOptional(t, 'heading', userName)}</Text>
+            <Text style={styles.paragraph}>{t('intro')}</Text>
 
             <Text style={styles.listItem}>
-              <strong>{copy.bullet1Title}</strong> — {copy.bullet1Text}
+              <strong>{t('bullet1Title')}</strong> — {t('bullet1Text')}
             </Text>
             <Text style={styles.listItem}>
-              <strong>{copy.bullet2Title}</strong> — {copy.bullet2Text}
+              <strong>{t('bullet2Title')}</strong> — {t('bullet2Text')}
             </Text>
             <Text style={styles.listItem}>
-              <strong>{copy.bullet3Title}</strong> — {copy.bullet3Text}
+              <strong>{t('bullet3Title')}</strong> — {t('bullet3Text')}
             </Text>
 
             <Section style={styles.buttonContainer}>
@@ -51,11 +51,11 @@ const WelcomeEmail: PreviewableEmailComponent<WelcomeEmailProps> = ({ userName, 
                 href={`${baseUrl}/sources`}
                 style={styles.button}
               >
-                {copy.button}
+                {t('button')}
               </Button>
             </Section>
 
-            <Text style={styles.paragraph}>{copy.outro}</Text>
+            <Text style={styles.paragraph}>{t('outro')}</Text>
           </Section>
 
           <VouchaFooter uiLocale={locale} />
@@ -71,18 +71,11 @@ WelcomeEmail.PreviewProps = {
 
 async function renderWelcomeEmail(props: WelcomeEmailProps): EmailRenderResultPromise {
   const locale = resolveUiLocale(props.uiLocale)
-  const copy = copyByLocale[locale]
+  const t = emailCopy(locale, 'welcome')
   return {
-    subject:
-      locale === 'en'
-        ? 'Welcome to Voucha — here’s what you can do'
-        : locale === 'es'
-          ? 'Bienvenido a Voucha — esto es lo que puedes hacer'
-          : locale === 'fr'
-            ? 'Bienvenue sur Voucha — voici ce que vous pouvez faire'
-            : 'Bem-vindo à Voucha — veja o que você pode fazer',
+    subject: t('preview'),
     html: await render(<WelcomeEmail {...props} />, { pretty: true }),
-    text: `${copy.heading(props.userName)}\n\n${copy.textIntro}\n\n- ${copy.textBullet1}\n- ${copy.textBullet2}\n- ${copy.textBullet3}\n\n${copy.textBrowse} ${baseUrl}/sources\n\n${copy.textOutro}\n\n${getLocalizedSignoff(locale)}`,
+    text: `${emailOptional(t, 'heading', props.userName)}\n\n${t('textIntro')}\n\n- ${t('textBullet1')}\n- ${t('textBullet2')}\n- ${t('textBullet3')}\n\n${t('textBrowse')} ${baseUrl}/sources\n\n${t('textOutro')}\n\n${getLocalizedSignoff(locale)}`,
   }
 }
 

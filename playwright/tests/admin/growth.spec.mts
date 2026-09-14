@@ -40,12 +40,10 @@ test.describe('Growth Dashboard', () => {
 })
 
 test.describe('Growth Dashboard - unauthorized', () => {
-  test('redirects unauthenticated user to homepage', async ({ page }) => {
+  test('does not show growth metrics to an unauthenticated user', async ({ page }) => {
     await page.context().clearCookies()
-    const response = await page.goto('/growth')
-    // Should be redirected away from /growth
-    expect(page.url()).not.toContain('/growth')
-    // Status may be 200 after redirect, or check URL
-    expect(response?.status()).not.toBe(403)
+    await navigateTo(page, '/growth')
+    await expect(page.getByTestId('growth-dashboard-heading')).toHaveCount(0)
+    await expect(page.getByTestId('kpi-card')).toHaveCount(0)
   })
 })

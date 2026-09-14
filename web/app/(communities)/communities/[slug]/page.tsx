@@ -97,7 +97,7 @@ export default async function CommunityPage({ params, searchParams }: PageProps)
         })}
       />
       {breadcrumbItems.length > 0 && (
-        <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+        <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
       )}
       <div className='space-y-4'>
         <PostFilters

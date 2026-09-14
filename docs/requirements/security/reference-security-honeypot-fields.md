@@ -120,7 +120,8 @@ Before deploying to production, verify:
 - [ ] Verify **all subdomains** (including staging environments, mail servers, and third-party services sharing the TLD) are HTTPS-only **before** setting `PRODUCTION=true`. Once HSTS with `includeSubDomains` is cached by browsers, any non-HTTPS subdomain will become unreachable.
 - [ ] HSTS preload (optional, irreversible): set `HSTS_PRELOAD=true` in CF Worker **only after** verifying no HTTP subdomains exist and the domain is ready for preload-list submission; then submit at <https://hstspreload.org>
 - [ ] Verify `Content-Security-Policy` (enforcement, not report-only) is present on web page responses — set via `cloudflare-worker/src/csp.mts`; `script-src` must include a per-request nonce and must not include `unsafe-inline`
-- [ ] Verify `connect-src` uses the exact Sentry ingest hostname (not wildcard) — already pinned in `csp.mts`
+- [ ] Set `SENTRY_WEB_DSN` in the Worker environment and verify `connect-src` contains exactly its
+      validated origin (not a wildcard); missing or invalid configuration omits the origin
 - [ ] Verify `connect-src` uses the six exact legacy and dual-stack S3 image-upload origins required during the expand phase (not an `amazonaws.com` wildcard) — already pinned in `csp.mts`
 - [ ] Set `CSP_ASSET_ORIGIN` in CF Worker production environment to the CloudFront distribution URL
 

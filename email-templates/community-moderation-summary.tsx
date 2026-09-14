@@ -10,8 +10,8 @@ import {
   Text,
   render,
 } from './react-email-runtime.mts'
+import { emailCopy, emailOptional } from './catalog-copy.mts'
 import { CommunityModerationSummaryCard } from './community-moderation-summary-card.tsx'
-import { communityModerationSummaryCopyByLocale } from './community-moderation-summary-copy.mts'
 import { MarketingFooter, VouchaHeader } from './components.tsx'
 import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
 import { colors, styles } from './styles.mts'
@@ -39,18 +39,19 @@ const CommunityModerationSummaryEmail: PreviewableEmailComponent<
 }) =>
   (() => {
     const locale = resolveUiLocale(uiLocale)
-    const copy = communityModerationSummaryCopyByLocale[locale]
+    const t = emailCopy(locale, 'community-moderation-summary')
+    const dateVars = { date: generatedForDate }
     return (
       <Html>
         <Head />
-        <Preview>{copy.preview.replace('{date}', generatedForDate)}</Preview>
+        <Preview>{t('preview', dateVars)}</Preview>
         <Body style={styles.main}>
           <Container style={styles.container}>
             <VouchaHeader />
             <Section style={styles.section}>
-              <Text style={styles.heading}>{copy.heading}</Text>
+              <Text style={styles.heading}>{t('heading')}</Text>
               <Text style={styles.paragraph}>
-                {`${copy.greeting(userName)} ${copy.body.replace('{date}', generatedForDate)}`}
+                {`${emailOptional(t, 'greeting', userName)} ${t('body', dateVars)}`}
               </Text>
 
               {communities.length > 0 ? (
@@ -58,11 +59,11 @@ const CommunityModerationSummaryEmail: PreviewableEmailComponent<
                   <CommunityModerationSummaryCard
                     key={community.url}
                     community={community}
-                    copy={copy}
+                    t={t}
                   />
                 ))
               ) : (
-                <Text style={styles.paragraph}>{copy.empty}</Text>
+                <Text style={styles.paragraph}>{t('empty')}</Text>
               )}
 
               <Section style={styles.buttonContainer}>
@@ -70,7 +71,7 @@ const CommunityModerationSummaryEmail: PreviewableEmailComponent<
                   href={settingsUrl}
                   style={styles.button}
                 >
-                  {copy.settings}
+                  {t('settings')}
                 </Button>
               </Section>
 
@@ -79,7 +80,7 @@ const CommunityModerationSummaryEmail: PreviewableEmailComponent<
                   href={unsubscribeUrl}
                   style={settingsLink}
                 >
-                  {copy.unsubscribe}
+                  {t('unsubscribe')}
                 </Link>
               </Text>
             </Section>
@@ -143,44 +144,45 @@ async function renderCommunityModerationSummaryEmail(
   props: CommunityModerationSummaryEmailProps,
 ): EmailRenderResultPromise {
   const locale = resolveUiLocale(props.uiLocale)
-  const copy = communityModerationSummaryCopyByLocale[locale]
+  const t = emailCopy(locale, 'community-moderation-summary')
+  const dateVars = { date: props.generatedForDate }
   const communitySummaries = props.communities.flatMap(community => [
     community.name,
-    `${copy.pendingPostReviews}: ${community.pendingPostReviews}`,
-    `${copy.pendingApplications}: ${community.pendingApplications}`,
-    `${copy.pendingReports}: ${community.pendingReports}`,
-    `${copy.escalatedItems}: ${community.escalatedItems}`,
-    `${copy.suspectedBanEvaders}: ${community.suspectedBanEvaders}`,
-    copy.activityHeading,
-    `${copy.memberChange}: ${community.netMemberChange > 0 ? `+${community.netMemberChange}` : community.netMemberChange}`,
-    `${copy.totalActiveMembers}: ${community.totalActiveMembers}`,
-    `${copy.newDiscussions}: ${community.newDiscussionPosts}`,
-    `${copy.newReviews}: ${community.newReviewPosts}`,
-    `${copy.newDataPoints}: ${community.newDataPointPosts}`,
+    `${t('pendingPostReviews')}: ${community.pendingPostReviews}`,
+    `${t('pendingApplications')}: ${community.pendingApplications}`,
+    `${t('pendingReports')}: ${community.pendingReports}`,
+    `${t('escalatedItems')}: ${community.escalatedItems}`,
+    `${t('suspectedBanEvaders')}: ${community.suspectedBanEvaders}`,
+    t('activityHeading'),
+    `${t('memberChange')}: ${community.netMemberChange > 0 ? `+${community.netMemberChange}` : community.netMemberChange}`,
+    `${t('totalActiveMembers')}: ${community.totalActiveMembers}`,
+    `${t('newDiscussions')}: ${community.newDiscussionPosts}`,
+    `${t('newReviews')}: ${community.newReviewPosts}`,
+    `${t('newDataPoints')}: ${community.newDataPointPosts}`,
     ...(community.topDiscussionTitle !== null
       ? [
-          `${copy.topDiscussion}: ${community.topDiscussionTitle} (${copy.topDiscussionReplies(community.topDiscussionReplyCount)})`,
+          `${t('topDiscussion')}: ${community.topDiscussionTitle} (${t('topDiscussionReplies', { count: community.topDiscussionReplyCount })})`,
         ]
       : []),
-    `${copy.activeMembers}: ${community.activeMemberCount} (${Math.round(community.activeMemberRate * 100)}%)`,
-    `${copy.itemButton}: ${community.url}`,
+    `${t('activeMembers')}: ${community.activeMemberCount} (${Math.round(community.activeMemberRate * 100)}%)`,
+    `${t('itemButton')}: ${community.url}`,
     '',
   ])
 
   return {
-    subject: copy.subject.replace('{date}', props.generatedForDate),
+    subject: t('subject', dateVars),
     html: await render(<CommunityModerationSummaryEmail {...props} />, { pretty: true }),
     text: [
-      copy.greeting(props.userName),
+      emailOptional(t, 'greeting', props.userName),
       '',
-      copy.bodyText.replace('{date}', props.generatedForDate),
+      t('bodyText', dateVars),
       '',
       ...communitySummaries,
-      `${copy.settings}: ${props.settingsUrl}`,
+      `${t('settings')}: ${props.settingsUrl}`,
       '',
       getLocalizedSignoff(locale),
       '',
-      `${copy.unsubscribe}: ${props.unsubscribeUrl}`,
+      `${t('unsubscribe')}: ${props.unsubscribeUrl}`,
       '',
       props.physicalAddress,
     ].join('\n'),

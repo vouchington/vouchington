@@ -37,11 +37,9 @@ If you see database errors: `source .env && pnpm run db:clean && pnpm run db:mig
 
 See [docs/overview/infrastructure/deployment.md](../docs/overview/infrastructure/deployment.md) for the full deployment reference.
 
-Docker images are built for `linux/arm64` (ECS Fargate) and pushed to ECR:
-
-- ECR: `voucha-api`
-- ECR: `voucha-worker-cpu`
-- ECR: `voucha-worker-io`
+Docker images are built for the deployed Linux target and published through the
+private deployment receiver. Exact registry repositories are private
+infrastructure configuration.
 
 The bundled Rust N-API module is compiled for `aarch64-unknown-linux-gnu` with
 `target-cpu=neoverse-n1` (see [https://github.com/jonathanong/vurst](https://github.com/jonathanong/vurst) for the Rust source).

@@ -7,6 +7,7 @@ import {
   insertPendingTestImage,
   insertTestImage,
   setPostModerationComplete,
+  setPostLLMModerationContentSha256,
   updateImageStatus,
   updatePostModerationData,
 } from '@voucha/test-helpers'
@@ -38,9 +39,7 @@ describe('openai-moderation backfill streams', () => {
   it('streamUnmoderatedPostIdBatches includes never-moderated, content-changed, and no-content-then-edited posts; excludes up-to-date posts', async () => {
     // Never moderated — input_sha256 NULL, content_sha256 set → DISTINCT → included
     const unmoderated = await createTestPost({ user })
-    // No-content-then-edited — setPostModerationComplete sets created_at but leaves
-    // input_sha256 NULL (the markPostOpenAIModerationNoContent shape). input IS DISTINCT
-    // FROM content → included. A created_at-based predicate would wrongly exclude this.
+    // No-content-then-edited — the prior version remains complete but the new content hash is not.
     const noContentEdited = await createTestPost({ user })
     // Content changed — random input_sha256 differs from the post's content_sha256 → included
     const contentChanged = await createTestPost({ user })
@@ -50,7 +49,17 @@ describe('openai-moderation backfill streams', () => {
       throw new Error('Failed to create test posts')
     }
     await setPostModerationComplete(noContentEdited.id, false)
-    await updatePostModerationData(contentChanged.id, randomBytes(32), [], false)
+    await setPostLLMModerationContentSha256(noContentEdited.id, randomBytes(32))
+    const contentChangedData = (await getPostModerationData(contentChanged.id)) as {
+      openai_omni_moderation_content_sha256: Buffer
+    }
+    await updatePostModerationData(
+      contentChanged.id,
+      contentChangedData.openai_omni_moderation_content_sha256,
+      [],
+      false,
+    )
+    await setPostLLMModerationContentSha256(contentChanged.id, randomBytes(32))
     // Use the post's actual content fingerprint so input == content (genuinely up to date)
     const upToDateData = (await getPostModerationData(upToDate.id)) as {
       openai_omni_moderation_content_sha256: Buffer

@@ -119,6 +119,11 @@ process.on('unhandledRejection', reason => {
 })
 
 /* v8 ignore start -- production bootstrap adapters; startApiServer has direct callback coverage. */
+if (process.env.PLAYWRIGHT_TEST === 'true') {
+  const { ensurePlaywrightLocalizationSqlite } =
+    await import('@services/localization/compile-catalog')
+  await ensurePlaywrightLocalizationSqlite()
+}
 startApiServer(server, PORT, {
   exitWithFailure,
   flushErrorReporting: () => flushSentry(2000),

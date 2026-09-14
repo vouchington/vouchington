@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { TopicDescriptionAside } from '@/components/topics/topic-description-aside'
 import type { TopicContentUpdate } from '@/types/topics'
 import type { useTranslations } from '@/lib/i18n/use-translations'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 vi.mock(
   import('@/components/shared/markdown-content'),

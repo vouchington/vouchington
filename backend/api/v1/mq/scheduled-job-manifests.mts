@@ -15,6 +15,7 @@ import { scheduledJobManifest as images } from '@queues/images/enqueues/schedule
 import { scheduledJobManifest as kagiSmallweb } from '@queues/kagi-smallweb/enqueues/schedules'
 import { scheduledJobManifest as memberships } from '@queues/memberships/enqueues/schedules'
 import { scheduledJobManifest as notifications } from '@queues/notifications/enqueues/schedules'
+import { scheduledJobManifest as openaiModeration } from '@queues/openai-moderation/enqueues/schedules'
 import { scheduledJobManifest as oauthAuthorizationExchange } from '@queues/oauth-authorization-exchange/enqueues/schedules'
 import { scheduledJobManifest as postPublication } from '@queues/post-publication/enqueues/schedules'
 import { scheduledJobManifest as psql } from '@queues/psql/enqueues/schedules'
@@ -47,6 +48,7 @@ export const SCHEDULED_JOB_MANIFESTS = [
   kagiSmallweb,
   memberships,
   notifications,
+  openaiModeration,
   oauthAuthorizationExchange,
   postPublication,
   psql,

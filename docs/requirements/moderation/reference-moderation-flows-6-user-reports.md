@@ -123,13 +123,15 @@ returns `count`, `threshold`, `in_cooldown`, and `cooldown_ends_at`.
 
 **Surfaces:** `mod_queue`, `review_queue`, `reports`, `post_page`
 
-Review-queue rows include optional `media_context`. Its images are completed, nondeleted, ordered,
-and SQL-capped at 20 before aggregation. `requires_reveal` is true exactly when OpenAI omni
-moderation flagged the post. Web, Swift, and .NET reveal one post image group immediately and send
-one durable reveal request. If the response is lost, the revealed group stays visible while the
-client marks exposure state stale, blocks another reveal, and reconciles through the primary GET.
-On web, unrevealed media descendants remain inert so focus, keyboard activation, and pointer input
-cannot bypass the reveal gate, including while exposure state is stale or in cooldown.
+Review-queue rows include optional `media_reveal` metadata. Its images are completed, nondeleted,
+ordered, and SQL-capped at 20 before aggregation. `requires_reveal` is true exactly when the
+current normalized moderation disposition is `review` or `reject` and the row has at least one
+such image; it does not expose or depend on a provider-specific moderation result. Web, Swift, and
+.NET reveal one post image group immediately and send one durable reveal request. If the response
+is lost, the revealed group stays visible while the client marks exposure state stale, blocks
+another reveal, and reconciles through the primary GET. On web, unrevealed media descendants remain
+inert so focus, keyboard activation, and pointer input cannot bypass the reveal gate, including
+while exposure state is stale or in cooldown.
 Queue refreshes hydrate exposure alongside the visible rows and discard a GET superseded by a
 reveal outcome. At cooldown expiry, clients refetch rather than trusting a local timer. A failed
 refresh keeps the soft gate visible with retry; exposure never rejects unrelated moderation

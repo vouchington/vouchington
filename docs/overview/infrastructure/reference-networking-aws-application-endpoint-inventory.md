@@ -100,11 +100,12 @@ The task-start check must perform and retain these steps:
 1. `verify-ipv6-egress.mts` records task route evidence first and throws (failing the task) if it
    finds a non-loopback IPv4 address or no non-loopback IPv6 address — the run must not proceed on
    a task that isn't actually IPv6-only.
-2. For every host in `backend/modules/utils/ipv6-allowlist.mts`'s `IPV6_ALLOWLIST` plus the
-   dual-stack S3 host, the script resolves A/AAAA via `node:dns/promises` and makes an HTTPS `HEAD`
-   request via `getExternalFetch()`. It fails (non-zero exit) if any host has no AAAA answer or the
-   HTTPS request throws, and prints the complete per-host DNS answers and TLS result as JSON —
-   attach that output rather than a yes/no summary. A non-2xx HTTP response still counts as
+2. For every host in `backend/modules/utils/ipv6-allowlist.mts`'s `IPV6_ALLOWLIST`, the
+   configured `SENTRY_DSN` authority, and the dual-stack S3 host, the script resolves A/AAAA via
+   `node:dns/promises` and makes an HTTPS `HEAD` request via `getExternalFetch()`. It fails
+   (non-zero exit) if the deployed `SENTRY_DSN` is unset or invalid, if any host has no AAAA answer,
+   or if the HTTPS request throws, and prints the complete per-host DNS answers and TLS result as
+   JSON — attach that output rather than a yes/no summary. A non-2xx HTTP response still counts as
    reachable; only a network-level failure (timeout, connection refused, DNS failure) fails the
    check, since the goal is proving the IPv6 route and TLS handshake succeed, not exercising each
    endpoint's auth.

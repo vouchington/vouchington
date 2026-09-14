@@ -1,6 +1,7 @@
 /* oxlint-disable max-lines -- topics stories cover all entity topic surfaces; kept in one file for snapshot test parity */
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { createTranslator, loadMessages } from '@ts-shared/ui-messages'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { TopicActionsAside } from '@/components/topics/topic-actions-aside'
 import { TopicCard } from '@/components/topics/topic-card'
 import { TopicDescriptionAside } from '@/components/topics/topic-description-aside'
@@ -20,7 +21,7 @@ const storyContentUpdate = {
   updated_by: { id: 'user-0', username: 'jong', display_account: null },
 }
 
-const t = createTranslator('en', await loadMessages('en'))
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const meta = {
   title: 'Entities/Topics',
@@ -196,6 +197,7 @@ function TopicAsides() {
         contentUpdate={storyContentUpdate}
       />
       <TopicSourcesAside
+        t={t}
         rssFeeds={{
           results: rssFeeds.slice(0, 3),
           page_info: { has_next_page: false, end_cursor: null, start_cursor: null },

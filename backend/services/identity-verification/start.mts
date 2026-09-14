@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { IDENTITY_VERIFICATION_CURRENCY } from '@voucha/config'
 import type {
@@ -85,7 +86,7 @@ export async function startIdentityVerification(
     if (!session.url) throw new Error('Stripe Checkout session missing URL')
     await attachCheckout(attempt.id, session.id)
   } catch (error) {
-    await releaseAttempt(attempt.id).catch(() => {})
+    await releaseAttempt(attempt.id).catch(onError)
     throw error
   }
 
@@ -146,20 +147,20 @@ export async function startIdentityVerification(
     await transaction.commit()
     const recovered = rows[0] as { checkout_claimed_at?: Date | null } | undefined
     if (recovered?.checkout_claimed_at) {
-      await invalidateUsers(currentUser.id).catch(() => {})
+      await invalidateUsers(currentUser.id).catch(onError)
       return { url: session.url }
     }
-    await releaseAttachedAttempt(attempt.id, session.id).catch(() => {})
+    await releaseAttachedAttempt(attempt.id, session.id).catch(onError)
     throw error
   }
 
   if (!claimCommitted) {
-    await releaseAttachedAttempt(attempt.id, session.id).catch(() => {})
+    await releaseAttachedAttempt(attempt.id, session.id).catch(onError)
     throw createHttpError(409, 'A verification request is already in progress for this account.')
   }
 
   // Best-effort: the checkout session and DB transition already succeeded; a cache
   // invalidation failure must not prevent the client from receiving the checkout URL.
-  await invalidateUsers(currentUser.id).catch(() => {})
+  await invalidateUsers(currentUser.id).catch(onError)
   return { url: session.url }
 }

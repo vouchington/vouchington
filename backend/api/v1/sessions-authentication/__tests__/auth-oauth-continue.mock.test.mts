@@ -18,7 +18,7 @@ vi.doMock<typeof import('undici')>(import('undici'), async () => {
 })
 
 const { createRandomString } = await import('@voucha/test-helpers')
-const { createRequest } = await import('@voucha/api/test-helpers/server')
+const { createRequest } = await import('@voucha/test-helpers/api/server')
 const { Response: UndiciResponse } = await import('undici')
 
 function maxAgeOf(cookieHeader: string[] | undefined, name: string): number | undefined {

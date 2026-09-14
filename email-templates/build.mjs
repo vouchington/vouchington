@@ -12,6 +12,7 @@ await build({
   jsx: 'automatic',
   jsxImportSource: 'react',
   bundle: true,
+  external: ['@vouchington/localization', '@vouchington/localization-compiler'],
   banner: {
     js: "import { createRequire } from 'node:module';const require = createRequire(import.meta.url);",
   },

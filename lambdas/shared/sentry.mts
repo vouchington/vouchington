@@ -10,13 +10,14 @@ import {
   scrubSentryEvent,
   scrubSpanAttributes,
 } from '@ts-shared/utils/sentry-event-scrubbing'
-import { resolveSentryEnablement } from '@ts-shared/utils/sentry-deployment-gate'
+import {
+  resolveSentryDsnEnablement,
+  SENTRY_CONFIGURATION_WARNING,
+} from '@ts-shared/utils/sentry-deployment-gate'
 import { withSpikeProtection } from '@ts-shared/utils/sentry-spike-protection'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import { createOtelSpanProcessors } from './sentry-otel.mts'
 
-const DEFAULT_DSN =
-  'https://ce903d0a4171a9ee04761674abcbc8e2@o4507688154824704.ingest.us.sentry.io/4511154787319808'
 const DEFAULT_TRACES_SAMPLE_RATE = 1.0
 const REDACTED = '[Filtered]'
 const EMAIL_REDACTED = '[Filtered email]'
@@ -37,6 +38,15 @@ type SentrySpan = Parameters<NonNullable<SentryInitOptions['beforeSendSpan']>>[0
 type SentryTransactionEvent = Parameters<NonNullable<SentryInitOptions['beforeSendTransaction']>>[0]
 type SentryTransactionHint = Parameters<NonNullable<SentryInitOptions['beforeSendTransaction']>>[1]
 
+let sentryConfigurationInvalidLogged = false
+
+function warnIfSentryConfigurationInvalid(configurationInvalid: boolean): void {
+  if (configurationInvalid && !sentryConfigurationInvalidLogged) {
+    console.warn(SENTRY_CONFIGURATION_WARNING)
+    sentryConfigurationInvalidLogged = true
+  }
+}
+
 export interface InitSentryOptions {
   lambdaName: string
   beforeSend?: BeforeSend
@@ -47,14 +57,17 @@ export function captureException(error: unknown): void {
 }
 
 export function initSentry({ lambdaName, beforeSend }: InitSentryOptions): void {
-  const { enabled, environment, otelOnly } = resolveSentryEnablement({
-    environment: process.env.ENVIRONMENT,
-    otelEnabled: process.env.OTEL_ENABLED === '1',
-  })
+  const { enabled, environment, otelOnly, sentryDsn, configurationInvalid } =
+    resolveSentryDsnEnablement({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.ENVIRONMENT,
+      otelEnabled: process.env.OTEL_ENABLED === '1',
+    })
+  warnIfSentryConfigurationInvalid(configurationInvalid)
 
   const sentryInitOptions: SentryInitOptionsWithOtel = {
-    dsn: otelOnly ? undefined : getSentryDsn(),
-    // resolveSentryEnablement() passes ENVIRONMENT through unchanged; when it's unset, fall back
+    dsn: otelOnly ? undefined : sentryDsn?.dsn,
+    // resolveSentryDsnEnablement() passes ENVIRONMENT through unchanged; when it's unset, fall back
     // to the shared deploy-environment accessor (ENVIRONMENT ?? NODE_ENV ?? 'development') rather
     // than a hand-rolled NODE_ENV-only read.
     environment: environment ?? getDeployEnvironment(),
@@ -92,10 +105,6 @@ export function scrubSentryTransaction(
   _hint: SentryTransactionHint,
 ): SentryTransactionEvent {
   return scrubSentryEvent(event)
-}
-
-function getSentryDsn(): string {
-  return getNonEmptyEnv('SENTRY_DSN') ?? DEFAULT_DSN
 }
 
 function getTracesSampleRate(): number {

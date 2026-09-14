@@ -38,6 +38,7 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `agent_moderations`                                     | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `agent_responses`                                       | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `ai_usage_records`                                      | RANGE         | `id`                                   | default            | none              | target-scoped      |
+| `community_post_review_changes`                         | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `conversation_message_agentic_runs`                     | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `conversation_message_agentic_runs_events`              | RANGE         | `conversation_message_agentic_run_id`  | monthly            | cleanupPartitions | retention-window   |
 | `conversation_messages`                                 | RANGE         | `conversation_id`                      | default            | none              | target-scoped      |
@@ -121,11 +122,13 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `community_activity_digest_dispatch_windows`, `community_agent_prompt_changes`,
   `crm_contact_lifecycle_changes`,
   `dynamic_config_change_logs`, `follower_distribution_deliveries`, `follower_distributions`,
-  `identity_verification_attempts`, `membership_changes`, `membership_entitlement_effects`,
+  `identity_verification_attempts`, `membership_administrator_refund_operation_requests`,
+  `membership_changes`, `membership_entitlement_effects`,
   `membership_ineligible_purchase_reversal_refund_observations`,
   `membership_ineligible_purchase_reversal_refund_scan_cycles`,
   `membership_ineligible_purchase_reversal_refund_scans`, `membership_purchase_intents`,
-  `membership_refund_intents`, `membership_refunds`,
+  `membership_refund_operation_attempt_metadata_scans`, `membership_refund_operation_attempts`,
+  `membership_refunds`,
   `membership_verifications`, `moderation_appeal_lifecycle_changes`,
   `moderation_appeals`, `moderation_cases`, `moderation_report_judgements`, `moderation_reports`,
   `moderation_transparency_daily_rollups`, `moderation_transparency_released_daily_rollups`,
@@ -184,13 +187,17 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `github_accounts`, `google_accounts`,
   `households`, `individual_cards`, `individual_financial_profiles`,
   `individual_rewards_program_point_valuations`, `individual_rewards_program_statuses`,
-  `individuals`, `membership_automatic_refund_receipts`, `membership_changes`,
+  `individuals`, `membership_administrator_refund_operation_requests`,
+  `membership_automatic_refund_receipts`, `membership_changes`,
   `membership_grant_activation_periods`, `membership_grants`,
+  `membership_google_play_acknowledgements`, `membership_google_play_purchase_tokens`,
   `membership_ineligible_purchase_reversal_case_operations`,
   `membership_ineligible_purchase_reversal_cases`, `membership_lineage_bindings`,
+  `membership_microsoft_store_credentials`,
   `membership_operations`, `membership_products`, `membership_provider_evidence_records`,
   `membership_provider_lineages`, `membership_provider_observations`,
-  `membership_provider_products`, `membership_refund_intents`, `membership_refunds`,
+  `membership_provider_products`, `membership_refund_operation_attempts`,
+  `membership_refund_operation_attempt_metadata_scans`, `membership_refunds`,
   `membership_source_states`, `membership_sources`, `memberships`, `microsoft_accounts`,
   `moderation_media_reveals`, `moderation_queue_claims`, `moderation_training_feedbacks`,
   `phone_number_login_tokens`, `podcast_playback_positions`, `post__stories`,

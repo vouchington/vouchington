@@ -95,6 +95,8 @@ type CachePlan = {
 const optimizerProgressPattern = /\[optimizer\] (?:scanning|bundling) dependencies/
 const viteServerFetchFailurePattern =
   /Failed to fetch dynamically imported module: http:\/\/localhost:\d+\//
+const viteServerScriptNetworkChangePattern =
+  /\[PW Error\] script request failed for http:\/\/localhost:\d+\/\S+ url: net::ERR_NETWORK_CHANGED/
 // Runner-missing detection latches two independent markers (see hasAddonVitestSetupFile /
 // vitestRunnerMissingMarker). The markers are matched separately, never as one regex spanning
 // both, because the full "Failed to import test file … Vitest failed to find the runner" error
@@ -420,7 +422,11 @@ async function runUpstreamAttempt(
     )
       browserSessionConnectionTimedOut = true
     if (storybookBrowserTestOutputPattern.test(plainOutputBuffer)) firstTestOutputAt ??= now
-    if (viteServerFetchFailurePattern.test(plainOutputBuffer)) retryableViteFailure = true
+    if (
+      viteServerFetchFailurePattern.test(plainOutputBuffer) ||
+      (!semanticProgressSeen && viteServerScriptNetworkChangePattern.test(plainOutputBuffer))
+    )
+      retryableViteFailure = true
     const plainText = stripAnsi(text)
     if (
       hasStorybookViteNewDependenciesFound(plainText) ||

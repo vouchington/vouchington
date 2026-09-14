@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 const { mockRequireCurrentUser } = vi.hoisted(() => ({
   mockRequireCurrentUser: vi.fn<VitestLooseMock>(),

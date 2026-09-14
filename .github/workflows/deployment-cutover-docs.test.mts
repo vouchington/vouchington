@@ -32,28 +32,23 @@ describe('post-cutover deployment documentation', () => {
     expect(workflowReference).toContain('The global CI apply workflow and its trust')
   })
 
-  it('keeps staging credentials out of curl arguments and asserts exact smoke results', () => {
+  it('keeps staging credentials and private verification procedures out of public docs', () => {
     const runbook = read('docs/operations/cloudflare-worker-staging-auth.md')
-    const tracingDisabled = runbook.indexOf('set +x')
-    const usernameExpanded = runbook.indexOf('${STAGING_USER:?')
 
-    expect(runbook).toContain('chmod 600 "$auth_config"')
-    expect(runbook).toContain('chmod 600 "$canary_config"')
-    expect(tracingDisabled).toBeGreaterThanOrEqual(0)
-    expect(tracingDisabled).toBeLessThan(usernameExpanded)
-    expect(runbook).toContain('curl -q --config "$auth_config"')
-    expect(runbook).not.toMatch(/curl --/)
-    expect(runbook).not.toMatch(/curl[^\n]*\s-u(?:ser)?\s/)
-    expect(runbook).toContain('[ "$unauthenticated_status" = 401 ]')
-    expect(runbook).toContain('[ "$authenticated_status" = 200 ]')
-    expect(runbook).toContain('[ "$exempt_status" = 200 ]')
-    expect(runbook).toContain('${STAGING_CANARY_SECRET:?')
-    expect(runbook).toContain('https://staging.voucha.ai/infra/edge-cache-canary')
-    expect(runbook).toContain('expect_canary_failure 503 sie')
-    expect(runbook).toContain('expect_canary_failure 500 unexpected-throw')
-    expect(runbook).toContain('expect_canary_failure 502 purge-reject')
-    expect(runbook).toContain('Operators own live validation of the protected canary')
-    expect(runbook).not.toContain('receiver owns the live staging canary')
+    expect(runbook).toContain('private `vouchington-infra` operator runbooks')
+    expect(runbook).toContain(
+      'Treat Worker access credentials and access-control configuration as secrets.',
+    )
+    expect(runbook).toContain('After an authorized staging change')
+    expect(runbook).toContain('without recording credentials')
+    expect(runbook).toContain(
+      'If any check fails, stop the rollout and use the private rollback procedure.',
+    )
+    expect(runbook).not.toContain('auth_config')
+    expect(runbook).not.toContain('canary_config')
+    expect(runbook).not.toContain('STAGING_USER')
+    expect(runbook).not.toContain('STAGING_CANARY_SECRET')
+    expect(runbook).not.toContain('curl ')
   })
 
   it('uses exact saved-plan authorization for global recovery', () => {

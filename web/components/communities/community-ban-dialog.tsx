@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -140,7 +141,7 @@ export function BanDialog({ banLoading, community, member, state, username }: Pr
                   reason: reason || undefined,
                   expiresAt: durationToExpiresAt(duration),
                 })
-                .catch(() => {})
+                .catch(Sentry.captureException)
             }}
           >
             {banLoading

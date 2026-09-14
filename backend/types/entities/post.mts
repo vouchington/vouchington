@@ -50,12 +50,6 @@ export type Post = {
   clearance_status: ClearanceStatus
   clearance_reason: string | null
   clearance_updated_at: Date | null
-  spam_detection_flagged: boolean | null
-  spam_detection_created_at: Date | null
-  spam_detection_score: number | null
-  spam_detection_results: unknown | null
-  openai_omni_moderation_flagged?: boolean | null
-  openai_omni_moderation_created_at?: Date | null
   images?: Array<{ image_id: string; order_index: number; caption: string }>
   review_topic_ratings?: Array<{
     topic_id: string

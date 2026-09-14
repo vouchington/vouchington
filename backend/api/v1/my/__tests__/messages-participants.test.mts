@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, suspendTestUser } from '@voucha/test-helpers'
 import { createTestGroupConversation } from '@voucha/test-helpers/entities/conversations'
 import { setTestUserDirectMessagesAudience } from '@voucha/test-helpers/entities/users-dm-audience'

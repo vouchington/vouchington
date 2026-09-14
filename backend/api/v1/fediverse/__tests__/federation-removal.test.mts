@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 
 // Phase C6: this guardrail's job flipped from "assert every AP-shaped path stays absent"
 // (pre-Phase-C) to "assert the specific dead surfaces from the old, removed federation server stay

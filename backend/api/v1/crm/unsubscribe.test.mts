@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createTestCrmContact, createUniqueTestEmail } from '@voucha/test-helpers'
 import { createCrmUnsubscribeToken, getCrmContact } from '@services/crm-contacts'
 import type { PrivateUser } from '@services/users/types'

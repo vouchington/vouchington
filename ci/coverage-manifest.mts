@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process'
-import { realpathSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -75,6 +75,9 @@ export async function runCoverageManifestCli(
     repository: env.GITHUB_REPOSITORY || 'jonathanong/filaments',
     revision,
     collectorVersion,
+  }
+  if (!existsSync(common.lcovPath)) {
+    throw new Error(`Missing coverage producer LCOV for suite '${suite}' at ${common.lcovPath}`)
   }
   const run = runId && rawRunAttempt ? { id: runId, attempt: Number(rawRunAttempt) } : null
   if (command === 'stamp') return stampCoverageManifest({ ...common, run })

@@ -21,14 +21,42 @@ export async function selectPostIndicators(clusters: ClusterRow[]): Promise<Post
       p.id,
       EXISTS (
         SELECT 1
-        FROM jsonb_array_elements(COALESCE(p.spam_detection_results, '[]'::jsonb)) signal
-        WHERE signal->>'signal' = 'content_hash_duplicate'
+        FROM post_moderation_versions version
+        JOIN LATERAL (
+          SELECT evidence
+          FROM post_moderation_dispositions
+          WHERE version_id = version.id
+            AND source = 'spam_detection'
+          ORDER BY id DESC
+          LIMIT 1
+        ) disposition ON true
+        CROSS JOIN LATERAL jsonb_array_elements(
+          COALESCE(disposition.evidence->'signals', '[]'::jsonb)
+        ) signal
+        WHERE version.post_id = p.id
+          AND version.content_sha256 = p.llm_moderation_content_sha256
+          AND version.policy_revision = '2026-09-09.1'
+          AND signal->>'signal' = 'content_hash_duplicate'
           AND signal->>'flagged' = 'true'
       ) AS content_hash_duplicate,
       EXISTS (
         SELECT 1
-        FROM jsonb_array_elements(COALESCE(p.spam_detection_results, '[]'::jsonb)) signal
-        WHERE signal->>'signal' = 'embeddings_similarity'
+        FROM post_moderation_versions version
+        JOIN LATERAL (
+          SELECT evidence
+          FROM post_moderation_dispositions
+          WHERE version_id = version.id
+            AND source = 'spam_detection'
+          ORDER BY id DESC
+          LIMIT 1
+        ) disposition ON true
+        CROSS JOIN LATERAL jsonb_array_elements(
+          COALESCE(disposition.evidence->'signals', '[]'::jsonb)
+        ) signal
+        WHERE version.post_id = p.id
+          AND version.content_sha256 = p.llm_moderation_content_sha256
+          AND version.policy_revision = '2026-09-09.1'
+          AND signal->>'signal' = 'embeddings_similarity'
           AND signal->>'flagged' = 'true'
       ) AS embeddings_similarity,
       EXISTS (
@@ -38,7 +66,7 @@ export async function selectPostIndicators(clusters: ClusterRow[]): Promise<Post
           AND vif.flag_type = 'velocity_spike'
           AND vif.resolved_at IS NULL
       ) AS velocity_spike,
-      encode(p.openai_omni_moderation_content_sha256, 'hex') AS content_hash_hex
+      encode(p.llm_moderation_content_sha256, 'hex') AS content_hash_hex
     FROM posts p
     WHERE p.id IN (`
   appendUuidList(query, postIds)

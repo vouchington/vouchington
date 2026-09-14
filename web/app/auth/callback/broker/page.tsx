@@ -88,7 +88,7 @@ function OAuthBrokerCallbackContent() {
           return
         }
         if (cancelled) return
-        await acknowledgeOAuthAuthorization(activeFlowId).catch(() => undefined)
+        await acknowledgeOAuthAuthorization(activeFlowId)
         if (cancelled) return
         window.close()
       } catch (error) {

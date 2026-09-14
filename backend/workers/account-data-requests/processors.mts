@@ -84,7 +84,6 @@ export async function processExportRequest(
     const exportDir = join(tmpDir, 'export')
     const zipPath = join(tmpDir, `${requestId}.zip`)
 
-    // ast-grep-ignore: no-three-sequential-awaits -- worker processor performs dependent side effects in order
     await deps.writeExportFiles(userId, exportDir)
     await deps.zipDir(exportDir, zipPath)
 

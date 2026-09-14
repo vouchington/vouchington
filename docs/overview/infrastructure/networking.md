@@ -1,6 +1,7 @@
 # Networking
 
-For the canonical staging and production cost estimates, see [Deployment Costs](deployment-costs.md).
+Staging and production cost estimates live in the private `vouchington/vouchington-docs`
+repository; the public IPv4 cost model below covers the per-task charging mechanics only.
 
 ## Contents
 

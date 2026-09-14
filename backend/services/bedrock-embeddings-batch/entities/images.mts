@@ -20,6 +20,7 @@ export async function* streamPendingImages(): AsyncGenerator<PendingImage, void,
     SELECT id, s3_key, sha_256
     FROM images
     WHERE deleted_at IS NULL
+      AND quarantine_pending_at IS NULL
       AND openai_omni_moderation_created_at IS NOT NULL
       AND openai_omni_moderation_flagged = FALSE
       AND bedrock_nova_multimodal_v1_embedding_created_at IS NULL

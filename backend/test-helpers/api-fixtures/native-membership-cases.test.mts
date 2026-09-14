@@ -22,6 +22,9 @@ describe('native membership fixtures', () => {
     const verification = nativeMembershipApiFixtureCases.find(
       fixture => fixture.id === 'native.memberships.verification.pending.default',
     )!
+    const microsoftTickets = nativeMembershipApiFixtureCases.find(
+      fixture => fixture.id === 'native.memberships.microsoft.service-tickets.default',
+    )!
     const verificationStatus = nativeMembershipApiFixtureCases.find(
       fixture => fixture.id === 'native.memberships.verification-status.pending.default',
     )!
@@ -82,6 +85,19 @@ describe('native membership fixtures', () => {
       path: '/api/v1/membership-verifications',
       status: 202,
       body: { verification: expect.objectContaining({ status: 'pending' }) },
+    })
+    expect(microsoftTickets).toMatchObject({
+      auth: 'fixture-user',
+      consumers: ['dotnet-core'],
+      method: 'POST',
+      body: {
+        service_tickets: {
+          collections_service_ticket: expect.any(String),
+          purchase_service_ticket: expect.any(String),
+          publisher_user_id: expect.any(String),
+          expires_at: expect.any(String),
+        },
+      },
     })
     expect(verificationStatus).toMatchObject({
       auth: 'fixture-user',

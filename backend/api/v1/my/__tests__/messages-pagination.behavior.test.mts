@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestDirectConversation, createTestUser } from '@voucha/test-helpers'
 import { decodeCursor } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'

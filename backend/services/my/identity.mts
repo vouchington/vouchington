@@ -25,7 +25,7 @@ export async function updateProfileImageId(
 ): Promise<void> {
   if (profileImageId !== null) {
     const { rows } = await read(
-      sql`/* updateProfileImageId */ SELECT id FROM images WHERE id = ${profileImageId} AND created_by_id = ${userId} AND deleted_at IS NULL LIMIT 1`,
+      sql`/* updateProfileImageId */ SELECT id FROM images WHERE id = ${profileImageId} AND created_by_id = ${userId} AND deleted_at IS NULL AND quarantine_pending_at IS NULL LIMIT 1`,
     )
     assert(rows.length > 0, 400, 'Image not found or does not belong to you')
   }

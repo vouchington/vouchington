@@ -294,7 +294,6 @@ test_plan:
             - backend/**/*.ts
             - backend/**/package.json
             - ts-shared/**/*.mts
-            - ts-shared/**/*.ts
             - ts-shared/**/package.json
             - pnpm-workspace.yaml
             - static-code-analysis/docker-deploy/**
@@ -334,6 +333,13 @@ test_plan:
             - ci-tools
             - dev-tools
             - static-analysis-tools
+        - name: localization-email-residuals
+          paths:
+            - email-templates/**
+            - ts-shared/ui-messages/**
+            - dev/localization/**
+          targets:
+            - backend-email-templates
         - name: ci-inventory-config
           paths:
             - .no-mistakes.yml
@@ -483,6 +489,10 @@ rules:
     rule: nextjs-no-api-routes
     projects:
       - web
+    # Operational browser bootstrap, not an application API. The exact web fallback keeps
+    # web-first and Worker-first deploys compatible while the Worker owns the steady-state response.
+    exclude:
+      - web/app/runtime-sentry-config.js/route.ts
 
   - name: web no Next.js caching
     rule: nextjs-no-caching
@@ -793,115 +803,6 @@ rules:
   - name: banned repository paths
     rule: banned-paths
     scope: repository
-    # Nested helper directories are a migration backlog. Each exception is one tracked file, so
-    # a new nested helper cannot silently inherit an entire directory-level exemption.
-    exclude:
-      - backend/agents/_shared/test-helpers/run-tool-loop-test-helpers.mts
-      - backend/agents/_shared/test-helpers/subagent-fixtures.mts
-      - backend/agents/chat/test-helpers/stream-recovery.mts
-      - backend/api/test-helpers/http-boundary.mts
-      - backend/api/test-helpers/server.mts
-      - backend/api/test-helpers/server.test.mts
-      - backend/api/v1/entity-relations/test-helpers/entity-relations-pagination.mts
-      - backend/api/v1/sessions-authentication/test-helpers/auth-sessions-pagination.mts
-      - backend/data-stores/analytics/test-helpers/suppressed-error.mts
-      - backend/data-stores/psql/test-helpers/config-driven/cte-segment-ranges.mts
-      - backend/data-stores/psql/test-helpers/config-driven/ddl-precheck-stack-helpers.mts
-      - backend/data-stores/psql/test-helpers/config-driven/ddl-statement-classifiers.mts
-      - backend/data-stores/psql/test-helpers/config-driven/do-block-readers.mts
-      - backend/data-stores/psql/test-helpers/config-driven/generated-ddl-execute-helpers.mts
-      - backend/data-stores/psql/test-helpers/config-driven/generated-ddl-guard-helpers.mts
-      - backend/data-stores/psql/test-helpers/config-driven/generated-ddl-insert-invariants.mts
-      - backend/data-stores/psql/test-helpers/config-driven/generated-ddl-schema-invariants.mts
-      - backend/data-stores/psql/test-helpers/config-driven/not-exists-guard-depth.mts
-      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-arbiter.mts
-      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-column-refs.mts
-      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-convergence.mts
-      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-excluded-provenance.mts
-      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-generated-arbiter.mts
-      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-guarded-select.mts
-      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-triggers.mts
-      - backend/data-stores/psql/test-helpers/config-driven/on-conflict-volatility.mts
-      - backend/data-stores/psql/test-helpers/config-driven/query-wrapper-executability.mts
-      - backend/data-stores/psql/test-helpers/config-driven/schema-snapshot-facts.mts
-      - backend/data-stores/psql/test-helpers/config-driven/sql-literal-readers.mts
-      - backend/data-stores/psql/test-helpers/config-driven/sql-quoted-identifier-mask.mts
-      - backend/data-stores/psql/test-helpers/config-driven/sql-text-scanner-helpers.mts
-      - backend/data-stores/psql/test-helpers/election-schema.mts
-      - backend/data-stores/psql/test-helpers/email-addresses.mts
-      - backend/data-stores/psql/test-helpers/entity-relation-partitions.mts
-      - backend/data-stores/psql/test-helpers/oauth-accounts.mts
-      - backend/data-stores/psql/test-helpers/posts.mts
-      - backend/data-stores/psql/test-helpers/rss-feeds.mts
-      - backend/data-stores/psql/test-helpers/schema-snapshot-constraints.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/conventions.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/membership-timestamp-allowlists.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/membership-uuid-allowlists.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/moderation-ledger-allowlists.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/name-helpers.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/post-publication-allowlists.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/queries.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/story-post-related-url-projection-uuid-allowlists.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/timestamp-allowlists.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/timestamp-query.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/user-deletion-uuid-allowlists.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/uuid-allowlists.mts
-      - backend/data-stores/psql/test-helpers/schema-static-analysis/uuid-query.mts
-      - backend/data-stores/psql/test-helpers/statement-timeout.mts
-      - backend/data-stores/psql/test-helpers/users.mts
-      - backend/data-stores/psql/test-helpers/vector-search-recall.mts
-      - backend/data-stores/psql/views/test-helpers/view-rss-feed-current-states.mts
-      - backend/data-stores/psql/views/test-helpers/view-users.mts
-      - backend/modules/openai-utils/test-helpers/responses.mts
-      - backend/services/identity-verification/test-helpers/start-test-fixtures.mts
-      - backend/services/identity-verification/test-helpers/transaction-resource.mts
-      - backend/services/jwt-session/test-helpers/concurrent-user-agent.mts
-      - backend/services/jwt-session/test-helpers/index.mts
-      - backend/services/jwt-session/test-helpers/legacy-jwt.mts
-      - backend/services/memberships/test-helpers/won-dispute-recovery-fixtures.mts
-      - backend/services/notifications/test-helpers/rss-feed-items.mts
-      - backend/services/oauth/test-helpers/authorization-completion.mts
-      - backend/services/stories/test-helpers/post-topic-vote-capture.mts
-      - backend/services/stories/test-helpers/story-post-related-url-projection.mts
-      - backend/services/stripe/test-helpers/membership-sync-event.mts
-      - backend/services/wikipedia-topic-recommendations/test-helpers/vote-stats.mts
-      - ci/transient-retry/test-helpers/helpers.mts
-      - cloudflare-worker/src/test-helpers/cache.mts
-      - cloudflare-worker/src/test-helpers/mock-env.mts
-      - dev/blackboard/test-helpers/client-fixtures.mts
-      - dev/plan-issue/test-helpers/no-change-plan.mts
-      - dev/plan-issue/test-helpers/valid-plan-body.mts
-      - dev/pr-description/test-helpers/fake-cli.mts
-      - dev/pr-description/test-helpers/valid-pr-body.mts
-      - lambdas/image-resize/test-helpers/index.mts
-      - static-code-analysis/config-inventory/test-helpers/repo-fixture.mts
-      - web/app/(support-admin)/support/threads/[[]threadId[]]/test-helpers/admin-support-thread-detail-client-test-helpers.ts
-      - web/components/my/test-helpers/household-manager.ts
-      - web/components/topics/test-helpers/topic-route-layout-fixtures.ts
-      - web/lib/api/client/test-helpers/images.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/agent-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/community-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/crm-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/endpoint-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/engineering-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/moderation-integrity-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/moderation-parity-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/moderation-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/native-support-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/non-web-account-and-feeds-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/non-web-auth-and-fediverse-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/non-web-content-and-profiles-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/non-web-membership-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/non-web-registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/registry.ts
-      - web/lib/api/client/test-helpers/manifest-coverage/resource-registry.ts
-      - web/lib/api/test-helpers/api-fixture-endpoint-context.ts
-      - web/lib/navigation/test-helpers/breadcrumbs-test-helpers.ts
-      - web/storybook/test-helpers/component-story-coverage/imports.ts
-      - web/storybook/test-helpers/component-story-coverage/keys.ts
-      - web/storybook/test-helpers/component-story-coverage/message.ts
-      - web/storybook/test-helpers/component-story-coverage/source.ts
-      - web/storybook/test-helpers/component-story-coverage/workspace.ts
     options:
       bannedPaths:
         - glob: '*/*/**/test-helpers/**'
@@ -1032,6 +933,10 @@ rules:
           reason: First-party policy-injected HTTP transport contracts published by the repo author.
         - name: '@vouchington/image-resize'
           reason: First-party image transformation and negotiation utilities published by the repo author.
+        - name: '@vouchington/localization'
+          reason: First-party localization catalog contracts, locale fallback, and selector validation published by the repo author.
+        - name: '@vouchington/localization-compiler'
+          reason: First-party localization JSON-to-SQLite compiler and Node resolver published by the repo author.
         - name: '@vouchington/media'
           reason: First-party media validation, streaming, and S3 utilities published by the repo author.
         - name: '@vouchington/memberships'
@@ -1127,6 +1032,7 @@ rules:
         - email-templates
         - integration-tests
         - lambdas
+        - localization
         - monitors
         - playwright
         - seed
@@ -1634,6 +1540,7 @@ rules:
         playwright-helpers: [tooling]
         backend-docs-freshness: [tooling]
         i18n-extract-codemod: [tooling]
+        i18n-route-bounds: [tooling]
         docker-deploy: [tooling]
         backend/data-stores/analytics: [backend]
         backend/services/analytics: [backend]
@@ -2411,9 +2318,14 @@ rules:
         # Step budgets across worktree prep (1) + three ./dev/initialize passes (5 each, monorepo/backend/web) + Postgres provisioning (5) + always() cleanup (5) sum 26m; cap adds buffer for the unbounded checkout/setup-node/corepack steps ahead of them. See #10850.
         - job: '.github/workflows/initialize-smoke-test.yml#initialize-smoke-test'
           maxMinutes: 30
-        # Type-aware oxlint can wait at most 1m for its sole best-effort slot; the 70m cap is set by the full-workspace relink retry window (static-code-analysis.test.mts), which exceeds the analyzer acquisition budget.
+        # Remaining lint/typecheck/knip/depcruise step budgets plus setup-node-pnpm; the 25m
+        # route-selector --check moved to no-mistakes-owned.
         - job: '.github/workflows/static-code-analysis.yml#static-code-analysis'
-          maxMinutes: 70
+          maxMinutes: 50
+        # setup-node-pnpm (5m) + mise (3m) + no-mistakes check (10m) + topology (5m) +
+        # route-selector --check (25m) plus checkout/drain headroom. Cap must exceed the 25m step.
+        - job: '.github/workflows/static-code-analysis.yml#no-mistakes-owned'
+          maxMinutes: 55
         # Unexercised 30m GH-Pages build plus a ~20m test-retry watchdog budget. See #8078.
         - job: '.github/workflows/storybook.yml#storybook'
           maxMinutes: 94

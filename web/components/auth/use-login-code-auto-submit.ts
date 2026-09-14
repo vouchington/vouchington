@@ -29,7 +29,7 @@ export const useLoginCodeAutoSubmit = ({
       if (!hasStrongUserIntent()) return
 
       initialAutoSubmitPending.current = false
-      submitCode(code).catch(() => undefined)
+      void submitCode(code)
     }
 
     const canAutoSubmit =

@@ -67,6 +67,27 @@ immutable Apple transaction lineage. Duplicate notifications return success with
 evidence record. The route never calls an Apple network API. Authoritative history/status reads and
 recipient-specific family projection happen only in the membership worker.
 
+### `POST /api/v1/memberships/google-play/notifications`
+
+**Auth**: Google Pub/Sub push OIDC token with the configured audience and exact service-account identity
+
+Verifies the JWT from locally cached Google signing keys, then stores encrypted RTDN evidence under
+the Pub/Sub message ID and enqueues reconciliation before returning success. Duplicate delivery is
+idempotent. The route never fetches Google keys or subscriptions; the worker obtains authoritative
+Play state, reconciles linked purchase tokens, and schedules eligible acknowledgements.
+
+### `POST /api/v1/memberships/microsoft-store/service-tickets`
+
+**Auth**: Required signed-in member
+
+Returns short-lived Collections and Purchase service tickets bound to the current Voucha user ID.
+The Windows client exchanges them for Store ID keys and submits those keys only through
+`POST /api/v1/membership-verifications`. The Store ID keys are encrypted, expiring verification
+credentials, not lineage IDs. This endpoint remains available for evidence refresh when the
+Microsoft new-purchase gate is disabled.
+
+Response: `{ service_tickets: { collections_service_ticket, purchase_service_ticket, publisher_user_id, expires_at } }`
+
 ### `POST /api/v1/memberships/billing-portal-sessions`
 
 **Auth**: Required
@@ -124,7 +145,9 @@ Returns an empty array for members with admin-granted memberships (no Stripe sub
 
 **Auth**: Admins and customer support
 
-Issues a Stripe refund against a membership charge and records it in the financial ledger.
+Creates a durable reconciliation operation for a Stripe refund against a membership charge. The
+request can complete inline, but the PostgreSQL operation remains the source of truth when Stripe
+or cancellation needs recovery.
 
 Body: `{ user_id, charge_id?, payment_intent_id?, invoice_id, reason, idempotency_key, cancel?, amount?: { amount, currency }, note? }`
 
@@ -137,18 +160,12 @@ Body: `{ user_id, charge_id?, payment_intent_id?, invoice_id, reason, idempotenc
 Every caller must send `idempotency_key`; missing, null, non-string, and malformed values are
 invalid. The OpenAPI request schema marks the field required.
 
-If a refund succeeds but requested cancellation fails, the API still returns the persisted refund
-receipt with `cancellation_status: 'pending'`. Retrying the unchanged request with the same key
-resumes cancellation without a second refund.
+An exact replay reuses its immutable operation and never creates another Stripe refund or DELETE.
+When cancellation is still converging, it returns the receipt with `cancellation_status: 'pending'`.
+After a Stripe create response is lost, reconciliation first scans provider metadata after 23 hours
+before it can create again.
 
-Exact-key retries without a durable receipt are sent to Stripe only while the immutable request
-intent is less than 23 hours old. From 23 hours onward, the endpoint returns `409` and requires
-reconciliation because the request has reached the conservative provider idempotency horizon.
-An active receiptless retry resolves and validates its durable intent before contacting Stripe, then
-uses the intent's original membership and subscription even if a newer membership now exists. Only
-a request with no durable intent selects the latest membership.
-
-Response: `201 { refund: { id: string }, cancellation_status: 'not_requested' | 'completed' | 'pending' }`
+Response: `201 { outcome: 'completed', refund: { id: string }, cancellation_status: 'not_requested' | 'completed' | 'pending' }`, or `202` with `Retry-After: 300` and `{ outcome: 'reconciling', retry_after_seconds: 300 }`.
 
 ## Performance
 
@@ -164,8 +181,8 @@ Response: `201 { refund: { id: string }, cancellation_status: 'not_requested' | 
 | POST /api/v1/membership-grants                         | 3           | None                       | Auth + SKU lookup + grant                                                          |
 | DELETE /api/v1/membership-grants/:grantId              | 3+          | None                       | Auth + grant lookup + revoke + optional queued grant activation                    |
 | GET /api/v1/memberships/history/:userId                | 2           | None                       | Auth + history query                                                               |
-| GET /api/v1/memberships/refundable-charges             | 3+          | None                       | Auth + membership lookup + Stripe invoice list                                     |
-| POST /api/v1/memberships/refunds                       | 5+          | None                       | Auth + membership lookup + Stripe refund + optional Stripe cancel + DB write       |
+| GET /api/v1/memberships/refundable-charges             | 3+          | None                       | Auth + membership-source lookup + Stripe invoice list                              |
+| POST /api/v1/memberships/refunds                       | 5+          | None                       | Auth + immutable operation + fenced reconciliation                                 |
 
 ## Related
 

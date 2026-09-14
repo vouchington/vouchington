@@ -6,7 +6,7 @@ import {
   type ReferencedIssue,
 } from '../closing-refs.mts'
 import { formatReferencedIssueSummary } from '../referenced-issue-summary.mts'
-import { VALID_PROVENANCE_BLOCK } from '../test-helpers/valid-pr-body.mts'
+import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { type PullRequestIdentity, validatePrBodyWithIssueReferences } from '../validate.mts'
 const VALID_BODY = `## Summary
 

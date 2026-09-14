@@ -1,5 +1,5 @@
 import { expect } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { createApiKey } from '@services/api-keys'
 import type { PrivateUser } from '@services/users/types'

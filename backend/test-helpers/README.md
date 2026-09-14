@@ -126,6 +126,21 @@ try {
 }
 ```
 
+## Focused PostgreSQL Test Operations
+
+Backend tests never import PostgreSQL executors or `sql-template-strings`. Put schema setup,
+mutation probes, and database assertions in a domain-named module under `data-stores/psql/**`, then
+export only typed operations and results that describe the tested behavior. Keep `read`, `write`,
+`query`, transaction clients, and SQL statement objects private to the helper implementation.
+
+These helpers preserve direct database-constraint coverage while keeping SQL out of test files. A
+helper should identify the operation it performs, such as rejecting a refund-intent mutation or
+reading a current membership projection; do not replace raw SQL with a generic execute wrapper.
+
+When a centralized helper must exercise its former owning workspace directly, use an explicit
+source-relative import. Do not add that higher-layer workspace to `@voucha/test-helpers` and create
+a package cycle merely to preserve an alias that was valid before the helper moved.
+
 ## PostgreSQL Query Pool Observation
 
 Use `observeTestPostgresQueryPools(queryMarker, operation)` when a service test must prove that a

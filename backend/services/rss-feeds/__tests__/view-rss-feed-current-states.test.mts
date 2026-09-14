@@ -5,7 +5,7 @@ import {
   queryRssFeedBaseState,
   queryRssFeedCurrentState,
   queryRssFeedCurrentStatesViewDefinition,
-} from '@data-stores/psql/views/test-helpers/view-rss-feed-current-states'
+} from '@voucha/test-helpers/data-stores/psql/views/view-rss-feed-current-states'
 
 describe('view-rss-feed-current-states', () => {
   it('view_rss_feed_current_states exposes the latest enablement and discoverability rows', async () => {

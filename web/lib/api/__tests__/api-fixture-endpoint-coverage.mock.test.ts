@@ -59,7 +59,7 @@ vi.mock<typeof import('react')>(import('react'), async importOriginal => {
 
 import { WEB_API_FIXTURE_DECLARATIONS } from '@/test-helpers/api-responses/declarations'
 import type { WebApiFixtureDeclaration } from '@/test-helpers/api-responses/declarations/declaration'
-import { WEB_FIXTURE_ENDPOINT_CONTEXT } from '../test-helpers/api-fixture-endpoint-context'
+import { WEB_FIXTURE_ENDPOINT_CONTEXT } from '../../../test-helpers/lib/api/api-fixture-endpoint-context'
 
 interface CapturedRequest {
   method: string

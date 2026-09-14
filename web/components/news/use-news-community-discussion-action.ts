@@ -126,17 +126,17 @@ export function useNewsCommunityDiscussionAction({
 
   function openDialog() {
     setOpen(true)
-    loadCommunities().catch(() => undefined)
+    void loadCommunities()
   }
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen)
-    if (nextOpen) loadCommunities().catch(() => undefined)
+    if (nextOpen) void loadCommunities()
   }
 
   function handleUsernameSet() {
     setUsernameDialogOpen(false)
-    void submit().catch(() => undefined)
+    void submit()
   }
 
   function handleUsernameClose() {

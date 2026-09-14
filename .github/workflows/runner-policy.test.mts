@@ -70,6 +70,7 @@ describe('workflow runner policy', () => {
       ['.github/workflows/ci.yml', 'tests'],
       ['.github/workflows/tests-playwright.yml', 'select'],
       ['.github/workflows/static-code-analysis.yml', 'static-code-analysis'],
+      ['.github/workflows/static-code-analysis.yml', 'no-mistakes-owned'],
       ['.github/workflows/checks-static.yml', 'static-backend'],
       ['.github/workflows/checks-static.yml', 'static-lambdas'],
       ['.github/workflows/checks-static.yml', 'static-cloudflare'],

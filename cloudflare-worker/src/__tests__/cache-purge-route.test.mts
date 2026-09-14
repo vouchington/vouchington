@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { handleCachePurgeRequest } from '../cache-purge-route.mts'
 import type { EdgeExecutionContext, Env } from '../types.mts'
 import { CACHE_PURGE_SECRET_HEADER } from '@ts-shared/cache/purge'
+import { MAX_CACHE_TAG_BYTES } from '@ts-shared/cache/cache-tag-encoding'
 
 const SECRET = 'shared-worker-secret'
 
@@ -128,6 +129,52 @@ describe('handleCachePurgeRequest', () => {
     )
 
     expect(response.status).toBe(400)
+  })
+
+  it('rejects a tag Cloudflare would refuse before spending an RPC on the batch', async () => {
+    const env: Env = { CF_WORKER_SECRET: SECRET }
+    const purgeSpy = vi.fn<(tags: string[]) => ReturnType<typeof mockPurge>>(() =>
+      mockPurge({ success: true, errors: [] }),
+    )
+    const context = buildContext(purgeSpy) as EdgeExecutionContext
+
+    // One invalid tag fails the whole batch at Cloudflare, so the two good tags would be lost
+    // too. Answering 400 here keeps that opaque, retried 502 off the backend's queue.
+    const response = await handleCachePurgeRequest(
+      buildRequest(
+        { tags: ['post:abc', 'topic:new york', 'topic:def'] },
+        { [CACHE_PURGE_SECRET_HEADER]: SECRET },
+      ),
+      env,
+      context,
+    )
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({
+      message: 'Invalid request body',
+      code: 'INVALID_INPUT',
+    })
+    expect(purgeSpy).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 for a tag over the Cloudflare length cap', async () => {
+    const env: Env = { CF_WORKER_SECRET: SECRET }
+    const purgeSpy = vi.fn<(tags: string[]) => ReturnType<typeof mockPurge>>(() =>
+      mockPurge({ success: true, errors: [] }),
+    )
+    const context = buildContext(purgeSpy) as EdgeExecutionContext
+
+    const response = await handleCachePurgeRequest(
+      buildRequest(
+        { tags: [`topic:${'a'.repeat(MAX_CACHE_TAG_BYTES)}`] },
+        { [CACHE_PURGE_SECRET_HEADER]: SECRET },
+      ),
+      env,
+      context,
+    )
+
+    expect(response.status).toBe(400)
+    expect(purgeSpy).not.toHaveBeenCalled()
   })
 
   it('forwards valid tags to CachedOrigin.purge() and returns 200 no-store on success', async () => {

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import worker from '../index.mts'
 import { STAGING_AUTHORIZATION_HEADER } from '../basic-auth.mts'
-import { createContext, restoreGlobals } from '../test-helpers/mock-env.mts'
+import { createContext, restoreGlobals } from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 const BASIC = `Basic ${btoa('staging:password')}`

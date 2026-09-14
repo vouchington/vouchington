@@ -1,5 +1,9 @@
 export const PG_ENV_REVIEW_REASONS = new Map<string, string>([
   [
+    'DATABASE_PORT',
+    'Postgres connection port read by @vouchington/postgres at process start; keep environment-scoped with deployment network wiring.',
+  ],
+  [
     'PG_ADVISORY_LOCK_POOL_MAX',
     'Postgres advisory-lock pool size read by @vouchington/postgres at process start; keep environment-scoped.',
   ],

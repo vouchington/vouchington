@@ -18,7 +18,7 @@ export function PostLockMenuItem({ postIdOrSlug, lockedAt }: PostLockMenuItemPro
     <DropdownMenuItem
       disabled={isPending}
       onSelect={() => {
-        handleToggle().catch(() => undefined)
+        void handleToggle()
       }}
       aria-pressed={isLocked}
       title={tooltip}

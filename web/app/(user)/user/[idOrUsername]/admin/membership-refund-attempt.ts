@@ -3,22 +3,24 @@
 import { useSyncExternalStore } from 'react'
 import { createMembershipRefund } from '@/lib/api/client/memberships'
 import { chargeKey } from './membership-refund-charge-key.ts'
+import {
+  isObject,
+  isRefundRequest,
+  matchesRefundRequest,
+} from './membership-refund-attempt-validation.ts'
 import type { MembershipRefundFormState } from './membership-refund-form.types.ts'
 import type { RefundRequest } from './membership-refund-request.ts'
 import type { RefundableCharge } from '@/types/api-responses'
-import { isMoney } from '@ts-shared/money'
 import { majorUnitsInputValue } from '@/lib/money'
 
 const STORAGE_KEY_PREFIX = 'voucha:membership-refund-attempt:v2:'
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const REFUND_REASONS = new Set(['goodwill', 'requested', 'dispute', 'other'])
-
 export type MembershipRefundAttempt = {
   actorUserId: string
   request: RefundRequest
   requestFingerprint: string
   idempotencyKey: string
-  cancellationPending: boolean
+  reconciliationRetryAt: number | null
 }
 
 export type MembershipRefundAttemptScope = {
@@ -30,7 +32,7 @@ export function prepareMembershipRefundAttempt(
   scope: MembershipRefundAttemptScope,
   current: MembershipRefundAttempt | null,
   request: RefundRequest,
-  cancellationPending: boolean,
+  reconciliationRetryAt: number | null,
 ): MembershipRefundAttempt {
   const requestFingerprint = JSON.stringify([scope.actorUserId, request])
   const attempt = {
@@ -41,7 +43,7 @@ export function prepareMembershipRefundAttempt(
       current?.requestFingerprint === requestFingerprint
         ? current.idempotencyKey
         : crypto.randomUUID(),
-    cancellationPending,
+    reconciliationRetryAt,
   }
   persistMembershipRefundAttempt(scope, attempt)
   return attempt
@@ -59,8 +61,12 @@ export function submitMembershipRefundAttempt(
 export function persistPendingRefundAttempt(
   scope: MembershipRefundAttemptScope,
   attempt: MembershipRefundAttempt,
+  retryAfterSeconds: number,
 ): MembershipRefundAttempt {
-  const pendingAttempt = { ...attempt, cancellationPending: true }
+  const pendingAttempt = {
+    ...attempt,
+    reconciliationRetryAt: Date.now() + retryAfterSeconds * 1000,
+  }
   persistMembershipRefundAttempt(scope, pendingAttempt)
   return pendingAttempt
 }
@@ -72,7 +78,7 @@ function persistMembershipRefundAttempt(
   try {
     sessionStorage.setItem(storageKey(scope), JSON.stringify(attempt))
   } catch {
-    // The live attempt remains authoritative for this mounted form.
+    /* Best-effort browser persistence. */
   }
 }
 
@@ -84,7 +90,7 @@ export function clearMembershipRefundAttempt(scope: MembershipRefundAttemptScope
     try {
       sessionStorage.setItem(key, 'null')
     } catch {
-      // Terminal in-memory cleanup must not depend on browser storage availability.
+      /* Terminal in-memory cleanup remains authoritative. */
     }
   }
 }
@@ -100,18 +106,17 @@ export function useMembershipRefundAttempt(
   )
   const attempt = parseMembershipRefundAttempt(storedValue, scope)
   if (!attempt) return null
-  const charge = charges.find(candidate => matchesRequest(candidate, attempt.request))
-  if (!charge) return null
+  const charge = charges.find(candidate => matchesRefundRequest(candidate, attempt.request))
   return {
     attempt,
-    selectedChargeKey: chargeKey(charge),
+    selectedChargeKey: charge ? chargeKey(charge) : null,
     formState: {
       reason: attempt.request.reason,
       cancel: attempt.request.cancel,
       amountStr: attempt.request.amount ? majorUnitsInputValue(attempt.request.amount) : '',
       note: attempt.request.note ?? '',
     } satisfies MembershipRefundFormState,
-    isCancellationPending: attempt.cancellationPending,
+    reconciliationRetryAt: attempt.reconciliationRetryAt,
   }
 }
 
@@ -145,40 +150,12 @@ function isMembershipRefundAttempt(
   if (typeof value.idempotencyKey !== 'string' || !UUID_PATTERN.test(value.idempotencyKey)) {
     return false
   }
-  if (typeof value.cancellationPending !== 'boolean') return false
-  return !value.cancellationPending || value.request.cancel
-}
-
-function isRefundRequest(value: unknown, userId: string): value is RefundRequest {
-  if (!isObject(value) || value.user_id !== userId) return false
-  if (!isNullableString(value.charge_id) || !isNullableString(value.payment_intent_id)) return false
-  if (!value.charge_id && !value.payment_intent_id) return false
-  if (typeof value.invoice_id !== 'string' || !value.invoice_id) return false
-  if (typeof value.reason !== 'string' || !REFUND_REASONS.has(value.reason)) return false
-  if (typeof value.cancel !== 'boolean') return false
-  if (
-    value.amount !== undefined &&
-    (!isMoney(value.amount) || (value.amount as { amount: number }).amount <= 0)
-  ) {
-    return false
-  }
-  return value.note === null || value.note === undefined || typeof value.note === 'string'
-}
-
-function matchesRequest(charge: RefundableCharge, request: RefundRequest): boolean {
   return (
-    charge.charge_id === request.charge_id &&
-    charge.payment_intent_id === request.payment_intent_id &&
-    charge.invoice_id === request.invoice_id
+    value.reconciliationRetryAt === null ||
+    (typeof value.reconciliationRetryAt === 'number' &&
+      Number.isInteger(value.reconciliationRetryAt) &&
+      value.reconciliationRetryAt > 0)
   )
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function isNullableString(value: unknown): value is string | null {
-  return value === null || typeof value === 'string'
 }
 
 function storageKey(scope: MembershipRefundAttemptScope): string {

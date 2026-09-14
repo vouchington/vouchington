@@ -10,7 +10,7 @@ Review the latest CI runs. Pick exactly one concrete, bounded improvement that i
   the resource summary and exit evidence needed to diagnose the original failure.
 - Before adding or widening an `actions/upload-artifact@v7` step, question whether the upload is
   needed at all. GitHub Actions storage is billed on private repos (see
-  [CI / Testing Costs § GitHub Actions storage](../../overview/infrastructure/reference-deployment-costs-ci-testing-costs.md#github-actions-storage-metered));
+  [CI Reference](../../development/ci.md) for the artifact-and-log retention policy);
   `retention-days` is a **ceiling**, not the actual lifetime. Apply this delete-classified outcome
   matrix; KEEP-classified artifacts are never cleanup candidates and remain until GitHub expires
   them:

@@ -109,6 +109,22 @@ describe('createOtelSpanProcessors', () => {
 })
 
 describe('createSentryInitOptions', () => {
+  it('uses SENTRY_DSN and disables deployed reporting when it is missing or invalid', () => {
+    expect(createSentryInitOptions({ ENVIRONMENT: 'production', OTEL_ENABLED: '0' })).toMatchObject(
+      {
+        dsn: undefined,
+        enabled: false,
+      },
+    )
+    expect(
+      createSentryInitOptions({
+        ENVIRONMENT: 'production',
+        OTEL_ENABLED: '0',
+        SENTRY_DSN: 'https://public@example.test/123',
+      }),
+    ).toMatchObject({ dsn: 'https://public@example.test/123', enabled: true })
+  })
+
   it('fails closed on local dev, but still wires release, dsn, and scrubbing', () => {
     const options = createSentryInitOptions({
       GIT_COMMIT: 'dev-sha',
@@ -119,7 +135,7 @@ describe('createSentryInitOptions', () => {
     expect(options.enabled).toBe(false)
     expect(options.environment).toBe('development')
     expect(options.release).toBe('dev-sha')
-    expect(options.dsn).toContain('sentry.io')
+    expect(options.dsn).toBeUndefined()
     const scrubbed = options.beforeSend?.(
       { request: { url: 'https://example.com/x?token=secret' } } as never,
       { originalException: new Error('boom') },
@@ -132,9 +148,13 @@ describe('createSentryInitOptions', () => {
   it.each(['staging', 'production'] as const)(
     'enables reporting for the deployed environment %s',
     environment => {
-      expect(createSentryInitOptions({ ENVIRONMENT: environment, OTEL_ENABLED: '0' }).enabled).toBe(
-        true,
-      )
+      expect(
+        createSentryInitOptions({
+          ENVIRONMENT: environment,
+          OTEL_ENABLED: '0',
+          SENTRY_DSN: 'https://public@example.test/123',
+        }).enabled,
+      ).toBe(true)
     },
   )
 
@@ -184,6 +204,7 @@ describe('createSentryInitOptions', () => {
         NODE_ENV: 'test',
         OTEL_ENABLED: '1',
         GIT_COMMIT: 'abc123',
+        SENTRY_DSN: 'https://public@example.test/123',
       },
       {
         createOtelSpanProcessors: createSpanProcessors,
@@ -193,7 +214,7 @@ describe('createSentryInitOptions', () => {
     )
 
     expect(options.enabled).toBe(true)
-    expect(options.dsn).toContain('sentry.io')
+    expect(options.dsn).toBe('https://public@example.test/123')
     expect(options.environment).toBe('staging')
     expect(options.release).toBe('abc123')
     expect(options.openTelemetrySpanProcessors).toBe(spanProcessors)

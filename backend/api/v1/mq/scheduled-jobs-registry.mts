@@ -17,6 +17,8 @@ export const SCHEDULED_JOB_API_ORDER = [
   'wikipedia-recommender-dispatch',
   'account-data-requests-cleanup',
   'cleanup-abandoned-uploads-schedule',
+  'reconcile-image-quarantines',
+  'reconcile-post-moderation',
   'dailyVoteWeightRecalculation',
   'data-retention-cleanup-daily',
   'reconcile-vote-drift',
@@ -25,7 +27,13 @@ export const SCHEDULED_JOB_API_ORDER = [
   'membershipEntitlementEffects',
   'membershipGrantExpiry',
   'appleNotificationRecovery',
+  'googlePlayNotificationRecovery',
+  'googlePlayAcknowledgementRecovery',
+  'googlePlayActiveSourceRecovery',
+  'googlePlayOidcTrustRefresh',
+  'microsoftStoreSourceRecovery',
   'membershipVerificationRecovery',
+  'dispatchMembershipRefundReconciliation',
   'stripeCatalogReconciliation',
   'renewalNotificationCheck',
   'blacklistDispatcher',
@@ -57,7 +65,8 @@ export const SCHEDULED_JOB_API_ORDER = [
 
 // The hourly floor applies only on staging: production must register every job at its original
 // cadence, and development/test resolve to neither via getDeployEnvironment's fallback, so the
-// clamp stays off there too. See docs/overview/infrastructure/deployment-costs.md.
+// clamp stays off there too. The staging cost rationale lives in the private
+// vouchington/vouchington-docs repository.
 export const SCHEDULED_JOBS_REGISTRY: ProjectedScheduledJob[] = projectScheduledJobs(
   SCHEDULED_JOB_MANIFESTS,
   SCHEDULED_JOB_API_ORDER,

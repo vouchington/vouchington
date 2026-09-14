@@ -256,7 +256,16 @@ async function getAutomodPerformance(
       JOIN posts p ON p.id = pcc.post_id
       JOIN LATERAL (
         SELECT category AS source_type,
-          CASE WHEN category = 'spam_detection' THEN p.spam_detection_score::numeric END AS confidence
+          CASE WHEN category = 'spam_detection' THEN (
+            SELECT NULLIF(disposition.evidence->>'composite_score', '')::numeric
+            FROM post_moderation_versions version
+            JOIN post_moderation_dispositions disposition ON disposition.version_id = version.id
+            WHERE version.post_id = p.id
+              AND version.content_sha256 = p.llm_moderation_content_sha256
+              AND disposition.source = 'spam_detection'
+            ORDER BY disposition.id DESC
+            LIMIT 1
+          ) END AS confidence
         FROM unnest(pcc.moderation_transparency_categories) AS category
       ) source ON TRUE
       WHERE pcc.id >= ${periodStartUuid}::uuid

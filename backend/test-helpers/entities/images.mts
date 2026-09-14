@@ -57,7 +57,7 @@ export async function getImageModerationState(imageId: string): Promise<{
   openai_omni_moderation_created_at: Date | null
 } | null> {
   const { rows } = await read(sql`
-    SELECT deleted_at,
+    SELECT deleted_at, quarantine_pending_at, quarantined_at,
       openai_omni_moderation_results,
       openai_omni_moderation_flagged,
       openai_omni_moderation_created_at

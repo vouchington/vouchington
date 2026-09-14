@@ -3,13 +3,14 @@ import { appendFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
+import { pair2BaseRef } from '../pr-revision-pairs.mts'
 import { planTests, type PlannedTestTarget, type PlannedTests } from '../test-plan.mts'
 import {
   selectedFilesExceedEnvBudget,
   writeSelectedFilesOutput,
 } from 'vouchington-tooling/gha-selected-files'
-import { GITHUB_MATRIX_MAX_JOBS } from '../playwright/shard-selection.mts'
 import { assertBackendUnitSuiteBounds, countJobSuiteFiles } from './job-suite-count.mts'
+import { shardTotalFor } from './shard-total.mts'
 import { isShellPolicySource } from '../../.github/workflows/trivy-policy-helpers.mts'
 import { isCiControlSurface } from './ci-control-surfaces.mts'
 import {
@@ -136,7 +137,7 @@ export function vitestPlanOptions(
     framework: 'vitest',
     worktreeRoot,
     environment: 'pullRequest',
-    base: `origin/${baseBranch}`,
+    base: pair2BaseRef(baseBranch),
     head: 'HEAD',
     timeout: 0,
     lockTimeout: 0,
@@ -168,31 +169,23 @@ export function isWarmJob(files: Iterable<string>, fileGroupTypes: Map<string, s
   return false
 }
 
+function selectedShardTotal(
+  job: string,
+  fullJob: boolean,
+  selectedFileCount: number,
+): number | undefined {
+  const policy = SHARDED_JOB_POLICIES[job]
+  if (policy === undefined) throw new Error(`No sharding policy is registered for ${job}`)
+  if (policy.mode === 'fixed') return policy.shards
+  if (fullJob) return undefined
+  return selectedFileCount <= 0 ? undefined : shardTotalFor(selectedFileCount, policy.filesPerShard)
+}
+
 function resolveProjectName(target: PlannedTestTarget): string | null {
   if (target.project != null && target.project !== '') return target.project
   const index = target.runnerArgs.indexOf('--project')
   const fromArgs = index === -1 ? undefined : target.runnerArgs[index + 1]
   return fromArgs ?? null
-}
-
-export function shardTotalFor(fileCount: number, filesPerShard: number): number {
-  return Math.min(GITHUB_MATRIX_MAX_JOBS, Math.max(1, Math.ceil(fileCount / filesPerShard)))
-}
-
-export function shardedJobTotal(job: string, suiteFileCount = 0): number {
-  const policy = SHARDED_JOB_POLICIES[job]
-  if (policy === undefined) throw new Error(`No sharding policy is registered for ${job}`)
-  if (policy.mode === 'fixed' || suiteFileCount <= 0) return policy.defaultShards
-  return shardTotalFor(suiteFileCount, policy.filesPerShard)
-}
-
-export function shardedJobOutcome(
-  runTests: boolean | undefined,
-  shardTotal: number | undefined,
-  fallbackShardTotal: number,
-): { skip: boolean; coverageShards: number } {
-  if (runTests === false) return { skip: true, coverageShards: 0 }
-  return { skip: false, coverageShards: shardTotal ?? fallbackShardTotal }
 }
 
 export type JobSelectionReason = 'forced-full' | 'suite-fraction' | 'env-budget' | 'selected'
@@ -254,18 +247,21 @@ export function planCommentSummary(comment: string): string {
 export async function runVitestCiSelect(
   runPlanner: typeof planTests = planTests,
   artifactDirectory = process.cwd(),
+  countJobSuites: typeof countJobSuiteFiles = countJobSuiteFiles,
 ): Promise<void> {
   const eventName = process.env['EVENT_NAME'] ?? ''
   const worktreeRoot = process.env['GITHUB_WORKSPACE'] ?? process.cwd()
 
   let jobSuites = new Map<string, number>()
   try {
-    jobSuites = countJobSuiteFiles(worktreeRoot)
+    jobSuites = countJobSuites(worktreeRoot)
     const backendUnitSuite = jobSuites.get('test-backend-unit')
     if (backendUnitSuite !== undefined) assertBackendUnitSuiteBounds(backendUnitSuite)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    console.warn(`[select] job suite count failed; falling back to registry defaults: ${message}`)
+    console.warn(
+      `[select] job suite count failed; selection will not promote by suite fraction: ${message}`,
+    )
     jobSuites = new Map()
   }
 
@@ -281,7 +277,8 @@ export async function runVitestCiSelect(
     writeOutput('full-suite', 'true')
     writeOutput('reason', reason)
     for (const job of SHARDED_JOBS) {
-      writeOutput(`shard-total-${job}`, String(shardedJobTotal(job, jobSuites.get(job))))
+      const shardTotal = selectedShardTotal(job, true, 0)
+      if (shardTotal !== undefined) writeOutput(`shard-total-${job}`, String(shardTotal))
       writeSelectedFilesOutput(`files-${job}`, [])
       writeOutput(`full-${job}`, 'true')
       writeOutput(`run-tests-${job}`, 'true')
@@ -296,14 +293,6 @@ export async function runVitestCiSelect(
         writeOutput(`run-tests-${job}`, 'true')
       }
     }
-    writeOutput(
-      'coverage-plan',
-      JSON.stringify({
-        ...Object.fromEntries(
-          SHARDED_JOBS.map(job => [job, { shards: shardedJobTotal(job, jobSuites.get(job)) }]),
-        ),
-      }),
-    )
     appendSummary(
       [
         '## Vitest Test Selection',
@@ -313,14 +302,17 @@ export async function runVitestCiSelect(
         '| Job | Mode | Selected files | Shards | File details |',
         '| --- | --- | ---: | ---: | --- |',
         ...formatJobSummaryRows(
-          allJobs().map(job => ({
-            job,
-            mode: 'full' as const,
-            count: 'all' as const,
-            ...(SHARDED_JOBS.includes(job)
-              ? { shards: shardedJobTotal(job, jobSuites.get(job)) }
-              : {}),
-          })),
+          allJobs().map(job => {
+            const shardTotal = SHARDED_JOBS.includes(job)
+              ? selectedShardTotal(job, true, 0)
+              : undefined
+            return {
+              job,
+              mode: 'full' as const,
+              count: 'all' as const,
+              ...(shardTotal === undefined ? {} : { shards: shardTotal }),
+            }
+          }),
         ),
         '',
       ].join('\n'),
@@ -378,6 +370,7 @@ export async function runVitestCiSelect(
     worktreeRoot,
     allVitestJobs: allJobs(),
     writeOutput,
+    baseBranch,
   })
   if (topology.fullCi) {
     fullOut('workflow topology failed', topology.reason ?? 'workflow topology requested full CI', {
@@ -419,7 +412,6 @@ export async function runVitestCiSelect(
 
   const fullJobs = nonTopologyFullJobs(plan.changedFiles)
   for (const job of topology.fullJobs) fullJobs.add(job)
-
   // Scope the random safety sample to already-warm jobs so a lone sampled file never
   // forces a cold job's full container startup (~30s) just to run one incidental test.
   // Cold-job regressions are still caught by main CI's full run. Flip
@@ -449,13 +441,10 @@ export async function runVitestCiSelect(
   writeOutput('full-storybook', fullJobs.has(STORYBOOK_JOB) ? 'true' : 'false')
   writeSelectedFilesOutput('storybook-browser-files', storybookBrowserFiles)
 
-  const shardTotals = new Map<string, number>()
   const jobsRunningTests = new Map<string, boolean>()
   const resolvedFullJobs = new Set<string>(fullJobs)
   for (const job of SHARDED_JOBS) {
     const files = [...(jobFiles.get(job) ?? new Set<string>())]
-    const policy = SHARDED_JOB_POLICIES[job]
-    if (policy === undefined) throw new Error(`No sharding policy is registered for ${job}`)
     const { fullJob, selectedFiles } = resolveJobSelection(
       job,
       files,
@@ -464,31 +453,16 @@ export async function runVitestCiSelect(
     )
     if (fullJob) resolvedFullJobs.add(job)
     const runTests = fullJob || selectedFiles.length > 0
-    const shardTotal = fullJob
-      ? shardedJobTotal(job, jobSuites.get(job))
-      : policy.mode === 'fixed'
-        ? policy.defaultShards
-        : shardTotalFor(selectedFiles.length, policy.filesPerShard)
-    shardTotals.set(job, shardTotal)
+    const shardTotal = selectedShardTotal(job, fullJob, selectedFiles.length)
     jobsRunningTests.set(job, runTests)
     writeOutput(`full-${job}`, fullJob ? 'true' : 'false')
     writeOutput(`run-tests-${job}`, runTests ? 'true' : 'false')
-    writeOutput(`shard-total-${job}`, String(shardTotal))
+    if (shardTotal !== undefined) writeOutput(`shard-total-${job}`, String(shardTotal))
     writeSelectedFilesOutput(`files-${job}`, selectedFiles)
   }
 
-  const shardedJobOutcomes = new Map(
-    SHARDED_JOBS.map(job => [
-      job,
-      shardedJobOutcome(
-        jobsRunningTests.get(job),
-        shardTotals.get(job),
-        SHARDED_JOB_POLICIES[job]?.defaultShards ?? 1,
-      ),
-    ]),
-  )
-  for (const [job, outcome] of shardedJobOutcomes) {
-    if (outcome.skip) writeOutput(`skip-${job}`, 'true')
+  for (const job of SHARDED_JOBS) {
+    if (jobsRunningTests.get(job) === false) writeOutput(`skip-${job}`, 'true')
   }
 
   const skippableJobs = allJobs().filter(
@@ -513,23 +487,6 @@ export async function runVitestCiSelect(
       skippedJobs.push(job)
     }
   }
-  writeOutput(
-    'coverage-plan',
-    JSON.stringify({
-      ...Object.fromEntries(
-        SHARDED_JOBS.map(job => [
-          job,
-          {
-            shards:
-              shardedJobOutcomes.get(job)?.coverageShards ??
-              SHARDED_JOB_POLICIES[job]?.defaultShards ??
-              1,
-          },
-        ]),
-      ),
-    }),
-  )
-
   writeOutput('full-suite', 'false')
   const direct = groupCount(plan.groups, 'direct')
   const dependencies = groupCount(plan.groups, 'dependencies')
@@ -559,7 +516,9 @@ export async function runVitestCiSelect(
             job === STORYBOOK_JOB
               ? storybookBrowserMode !== 'empty' || files.size > 0
               : (jobsRunningTests.get(job) ?? (files.size > 0 || fullJob))
-          const shards = shardTotals.get(job)
+          const shardTotal = SHARDED_JOBS.includes(job)
+            ? selectedShardTotal(job, fullJob, files.size)
+            : undefined
           return {
             job,
             mode: fullJob
@@ -568,7 +527,7 @@ export async function runVitestCiSelect(
                 ? ('selected' as const)
                 : ('empty' as const),
             count: fullJob ? ('all' as const) : files.size,
-            ...(shards === undefined ? {} : { shards }),
+            ...(shardTotal === undefined ? {} : { shards: shardTotal }),
           }
         }),
       ),

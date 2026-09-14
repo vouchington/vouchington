@@ -19,8 +19,11 @@ POST /api/v1/communities/:idOrSlug/posts
               └── approved_at = NULL     ← pending moderator review
 ```
 
-Approved review rows enqueue community moderation agents. Pending rows are approved, rejected, or
-unpublished by community moderators.
+Approved review rows enqueue community moderation agents. Community owners and moderators can
+approve, reject, or unpublish their own community's publications. Administrators and site
+moderators can instead record a platform override: approve, reject, unpublish, or restore. The
+latest override is a projection and every decision is retained in `community_post_review_changes`.
+Community and automated moderation cannot alter a publication after a platform override.
 
 ## Status Model
 
@@ -30,6 +33,10 @@ unpublished by community moderators.
 | Approved    | `approved_at IS NOT NULL AND unpublished_at IS NULL AND rejected_at IS NULL` |
 | Rejected    | `rejected_at IS NOT NULL`                                                    |
 | Unpublished | `unpublished_at IS NOT NULL`                                                 |
+
+Platform override metadata is staff-only: `platform_override_*` holds the current platform
+decision, its stable public reason code, and an optional private note. It is not included in public
+post contracts.
 
 ## Visibility Rules
 
@@ -50,17 +57,18 @@ Community feed search supports newest-first and hot-score sorting. The web canon
 
 ## API Surface
 
-| Function                                        | File           |
-| ----------------------------------------------- | -------------- |
-| `createCommunityPostReview(userId, postId, id)` | `add.mts`      |
-| `approvePublication(user, communityId, postId)` | `moderate.mts` |
-| `rejectPublication(user, communityId, postId)`  | `moderate.mts` |
-| `unpublishPost(user, communityId, postId)`      | `moderate.mts` |
-| `unpublishPostAsAgent(communityId, postId)`     | `moderate.mts` |
-| `searchCommunityPosts(communityId, opts?)`      | `get.mts`      |
-| `searchPendingPosts(communityId, opts?)`        | `get.mts`      |
-| `getCommunityPostReview(communityId, postId)`   | `get.mts`      |
-| `getApprovedReviewsForPost(postId)`             | `get.mts`      |
+| Function                                                   | File           |
+| ---------------------------------------------------------- | -------------- |
+| `createCommunityPostReview(userId, postId, id)`            | `add.mts`      |
+| `approvePublication(user, communityId, postId)`            | `moderate.mts` |
+| `rejectPublication(user, communityId, postId)`             | `moderate.mts` |
+| `unpublishPost(user, communityId, postId)`                 | `moderate.mts` |
+| `overridePublication(user, communityId, postId, override)` | `moderate.mts` |
+| `unpublishPostAsAgent(communityId, postId)`                | `moderate.mts` |
+| `searchCommunityPosts(communityId, opts?)`                 | `get.mts`      |
+| `searchPendingPosts(communityId, opts?)`                   | `get.mts`      |
+| `getCommunityPostReview(communityId, postId)`              | `get.mts`      |
+| `getApprovedReviewsForPost(postId)`                        | `get.mts`      |
 
 ## Related
 

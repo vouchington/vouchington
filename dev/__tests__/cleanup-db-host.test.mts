@@ -9,6 +9,12 @@ import { afterEach, describe, expect, it } from 'vitest'
 const execFileAsync = promisify(execFile)
 const cleanupPath = fileURLToPath(new URL('../cleanup', import.meta.url))
 const devLibPath = fileURLToPath(new URL('../lib', import.meta.url))
+const publishedGitWorktreesPath = fileURLToPath(
+  new URL(
+    '../../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
+    import.meta.url,
+  ),
+)
 const testDirs: string[] = []
 
 async function makeRepo() {
@@ -20,6 +26,10 @@ async function makeRepo() {
   await writeFile(join(dir, 'dev', 'cleanup'), await readFile(cleanupPath, 'utf8'))
   await chmod(join(dir, 'dev', 'cleanup'), 0o755)
   await cp(devLibPath, join(dir, 'dev', 'lib'), { recursive: true })
+  await writeFile(
+    join(dir, 'dev', 'lib', 'git-worktrees.sh'),
+    await readFile(publishedGitWorktreesPath, 'utf8'),
+  )
   await writeFile(join(dir, 'current-env-with-unset-optional.sh'), ': "\${MISSING_OPTIONAL}"\n')
   await writeFile(
     join(dir, '.env'),

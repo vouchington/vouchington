@@ -78,7 +78,6 @@ function buildEligiblePostsForDayWhereSql(
       AND p.id >= ${bounds.startBound}
       AND p.id < ${bounds.endBound}
       AND `.append(buildPublicPostEligibilityFilter('p', 'root_post')).append(sql`
-      AND p.openai_omni_moderation_flagged IS NOT TRUE
       AND p.votes_score_net > 0
   `)
 }

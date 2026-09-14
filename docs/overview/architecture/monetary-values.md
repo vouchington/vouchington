@@ -128,9 +128,9 @@ ScaledMoneyAggregate[]`. Its string amount preserves a valid maximum membership 
 
 ## Provider-Raw Exception
 
-Raw external-provider payloads remain faithful to the provider. In particular, Stripe webhook and
+Raw external-provider payloads remain faithful to the provider. In particular, Stripe event and
 SDK fields may use provider-defined names and currency codes that are not in Voucha's catalog.
-Webhook ingestion must not retry forever merely because a new provider currency is unknown.
+Event ingestion must not retry forever merely because a new provider currency is unknown.
 
 The exception ends at the provider boundary. First-party tables, API responses, tools, fixtures,
 and client models normalize provider amounts to the integer money contracts. Any persisted raw

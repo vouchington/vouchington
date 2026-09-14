@@ -34,7 +34,11 @@ same browser URL is fetched as an authenticated variant and the Worker bypasses 
   guessing at `https://voucha.ai`, which keeps undeployed environments from sending purge jobs to
   a production origin. The worker forwards the tags to `CachedOrigin`'s `purge(tags)` RPC method,
   which calls `ctx.cache.purge({tags})` and throws if the cache binding is unavailable
-  (fail-closed, rather than silently no-oping on a cache-correctness path). Votes/elections are
+  (fail-closed, rather than silently no-oping on a cache-correctness path). Cloudflare accepts
+  only printable ASCII excluding space, at most 1024 bytes per tag, and fails the whole batch on
+  one bad tag, so `ts-shared/cache/cache-tag-encoding.mts` percent-encodes every identifier into
+  that alphabet (truncating on an escape boundary at the cap) and the purge route rejects a
+  non-conforming batch with 400 rather than letting it surface as a retried 502. Votes/elections are
   intentionally **not** wired to this purge path — see `cache-tags.mts` — and self-heal within the
   existing anon TTL instead.
 

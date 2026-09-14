@@ -18,12 +18,15 @@ export type ReviewQueuePost = {
   root_slug: string | null
   clearance_status: string
   clearance_updated_at: Date | null
-  spam_detection_flagged: boolean | null
-  spam_detection_score: number | null
-  spam_detection_results: unknown
-  openai_omni_moderation_flagged: boolean | null
-  openai_omni_moderation_results: unknown
-  media_context?: {
+  moderation_summary: {
+    disposition: 'pass' | 'review' | 'reject' | 'incomplete' | null
+    reason_codes: string[]
+    evidence_summary: {
+      flagged_category_count: number
+      signal_count: number
+    }
+  }
+  media_reveal: {
     requires_reveal: boolean
     images: Array<{
       image_id: string
@@ -44,8 +47,9 @@ export type SearchReviewQueueResult = {
 }
 
 /**
- * Returns posts with derived clearance_status IN ('rejected', 'in_review') for admin review.
- * Includes spam detection and OpenAI moderation results for review context.
+ * Returns posts with derived clearance_status IN ('rejected', 'in_review') for staff review.
+ * Provider outputs stay in the moderation ledger; this boundary exposes only a bounded,
+ * provider-neutral disposition summary.
  */
 export async function searchPostsForAdminReview(
   options: SearchReviewQueueOptions,
@@ -83,18 +87,58 @@ export async function searchPostsForAdminReview(
       ) AS root_slug,
       clearance.clearance_status,
       clearance.clearance_updated_at,
-      p.spam_detection_flagged,
-      p.spam_detection_score,
-      p.spam_detection_results,
-      p.openai_omni_moderation_flagged,
-      p.openai_omni_moderation_results,
+      moderation.moderation_summary,
       jsonb_build_object(
-        'requires_reveal', p.openai_omni_moderation_flagged IS TRUE,
+        'requires_reveal', COALESCE(
+          media.images IS NOT NULL
+            AND moderation.moderation_summary->>'disposition' IN ('review', 'reject'),
+          false
+        ),
         'images', COALESCE(media.images, '[]'::jsonb)
-      ) AS media_context
+      ) AS media_reveal
     FROM posts p
     LEFT JOIN posts root_post ON root_post.id = p.root_id
     JOIN view_post_clearance_status clearance ON clearance.post_id = p.id
+    LEFT JOIN LATERAL (
+      WITH current_version AS (
+        SELECT version.id
+        FROM post_moderation_versions version
+        WHERE version.post_id = p.id
+          AND version.content_sha256 = p.llm_moderation_content_sha256
+        ORDER BY version.id DESC
+        LIMIT 1
+      ),
+      latest_dispositions AS (
+        SELECT DISTINCT ON (disposition.source)
+          disposition.disposition,
+          disposition.reason_code,
+          disposition.evidence
+        FROM post_moderation_dispositions disposition
+        JOIN current_version ON current_version.id = disposition.version_id
+        WHERE disposition.source IN ('openai_omni', 'spam_detection')
+        ORDER BY disposition.source, disposition.id DESC
+      )
+      SELECT jsonb_build_object(
+        'disposition', CASE
+          WHEN bool_or(disposition = 'reject') THEN 'reject'
+          WHEN bool_or(disposition IN ('review', 'incomplete')) THEN 'review'
+          WHEN bool_and(disposition = 'pass') THEN 'pass'
+          ELSE NULL
+        END,
+        'reason_codes', COALESCE(jsonb_agg(reason_code ORDER BY reason_code), '[]'::jsonb),
+        'evidence_summary', jsonb_build_object(
+          'flagged_category_count', COALESCE(sum(
+            CASE WHEN jsonb_typeof(evidence->'flagged_categories') = 'array'
+              THEN jsonb_array_length(evidence->'flagged_categories') ELSE 0 END
+          ), 0),
+          'signal_count', COALESCE(sum(
+            CASE WHEN jsonb_typeof(evidence->'signals') = 'array'
+              THEN jsonb_array_length(evidence->'signals') ELSE 0 END
+          ), 0)
+        )
+      ) AS moderation_summary
+      FROM latest_dispositions
+    ) moderation ON true
     LEFT JOIN LATERAL (
       SELECT jsonb_agg(
         jsonb_build_object(
@@ -111,6 +155,7 @@ export async function searchPostsForAdminReview(
         WHERE pi.post_id = p.id
           AND i.deleted_at IS NULL
           AND i.upload_completed_at IS NOT NULL
+          AND i.quarantine_pending_at IS NULL
         ORDER BY pi.order_index, pi.image_id
         LIMIT 20
       ) bounded_images

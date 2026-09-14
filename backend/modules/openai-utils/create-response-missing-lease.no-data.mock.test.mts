@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { createOpenAIResponse, OpenAIResponseNotCompletedError } from './create-response.mts'
 import { runWithBackgroundResponseHooks } from './background-response-context.mts'
 import { runWithOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
-import { makeSdkResponse, makeStreamEvent } from './test-helpers/responses.mts'
+import {
+  makeSdkResponse,
+  makeStreamEvent,
+} from '../../test-helpers/modules/openai-utils/responses.mts'
 
 type CreateMock = (
   params: Parameters<typeof createOpenAIResponse>[0],

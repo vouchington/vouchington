@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import ChannelsPage from '../channels/import-export/page'
 import NewsSourcesPage from '../news-sources/import-export/page'
 import PodcastsPage from '../podcasts/import-export/page'
 import SourcesPage from '../sources/import-export/page'
 import TopicsPage from '../topics/import-export/page'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 vi.mock(import('@/lib/seo/metadata'), () => ({
   createNoIndexMetadata: vi.fn<VitestLooseMock>(() => ({})),

@@ -1,6 +1,9 @@
-import { beginTransaction } from '@data-stores/psql'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
-import sql from 'sql-template-strings'
+import {
+  completePostModerationAttempt,
+  ensureCurrentPostModerationVersion,
+  recordPostModerationDisposition,
+  type PostModerationAttempt,
+} from '@services/post-clearance/moderation-ledger'
 import type { PersistableOpenAIModerationResults } from './stored-results.mts'
 
 export async function applyPostOpenAIModerationResults(
@@ -8,68 +11,71 @@ export async function applyPostOpenAIModerationResults(
   contentSha256: Buffer,
   results: PersistableOpenAIModerationResults,
   flagged: boolean,
+  attempt?: PostModerationAttempt,
 ): Promise<boolean> {
-  await using query = await beginTransaction()
-  const scope = { type: 'post' as const, postId }
-  await lockPostPublication(query, postId)
-  const { rows } = await query<{ publication_eligibility_changed: boolean }>(
-    sql`/* applyPostOpenAIModerationResults */
-        WITH target_post AS (
-          SELECT id, openai_omni_moderation_flagged
-          FROM posts
-          WHERE id = ${postId}
-            AND openai_omni_moderation_content_sha256 = ${contentSha256}
-          FOR UPDATE
-        )
-        UPDATE posts
-        SET openai_omni_moderation_input_sha256 = ${contentSha256},
-          openai_omni_moderation_results = ${JSON.stringify(results)}::jsonb,
-          openai_omni_moderation_flagged = ${flagged},
-          openai_omni_moderation_created_at = NOW()
-        FROM target_post
-        WHERE posts.id = target_post.id
-        RETURNING
-          (target_post.openai_omni_moderation_flagged IS TRUE)
-            IS DISTINCT FROM (${flagged} IS TRUE) AS publication_eligibility_changed`,
-  )
-  if (rows[0]?.publication_eligibility_changed) {
-    await recordPostPublicationChange(query, {
-      scope,
-      reason: 'post_moderation_flag_changed',
-    })
+  const version = attempt ?? (await ensureCurrentPostModerationVersion(postId))
+  if (!version.content_sha256.equals(contentSha256)) return false
+
+  const sexualMinors = hasSexualMinorsSignal(results)
+  const disposition = sexualMinors ? 'reject' : flagged ? 'review' : 'pass'
+  const reasonCode = sexualMinors ? 'sexual_minors' : flagged ? 'provider_flagged' : 'provider_pass'
+  const evidence = { flagged_categories: getFlaggedCategories(results) }
+
+  if (attempt) {
+    return completePostModerationAttempt(attempt, { disposition, reasonCode, evidence })
   }
-  const result = rows.length > 0
-  await query.commit()
-  return result
+  return recordPostModerationDisposition({
+    versionId: 'version_id' in version ? version.version_id : version.id,
+    source: 'openai_omni',
+    disposition,
+    reasonCode,
+    evidence,
+  })
 }
 
-/** Marks an empty post's OpenAI moderation complete so the clearance gate can proceed. */
-export async function markPostOpenAIModerationNoContent(postId: string): Promise<void> {
-  await using query = await beginTransaction()
-  const scope = { type: 'post' as const, postId }
-  await lockPostPublication(query, postId)
-  const { rows } = await query<{ publication_eligibility_changed: boolean }>(
-    sql`/* markPostOpenAIModerationNoContent */
-        WITH target_post AS (
-          SELECT id, openai_omni_moderation_flagged
-          FROM posts
-          WHERE id = ${postId}
-            AND openai_omni_moderation_created_at IS NULL
-          FOR UPDATE
-        )
-        UPDATE posts
-        SET openai_omni_moderation_created_at = NOW(),
-          openai_omni_moderation_flagged = false
-        FROM target_post
-        WHERE posts.id = target_post.id
-        RETURNING target_post.openai_omni_moderation_flagged IS TRUE
-          AS publication_eligibility_changed`,
-  )
-  if (rows[0]?.publication_eligibility_changed) {
-    await recordPostPublicationChange(query, {
-      scope,
-      reason: 'post_moderation_flag_changed',
+/** Marks an empty post's OpenAI moderation pass so the clearance gate can proceed. */
+export async function markPostOpenAIModerationNoContent(
+  postId: string,
+  attempt?: PostModerationAttempt,
+): Promise<boolean> {
+  const version = attempt ?? (await ensureCurrentPostModerationVersion(postId))
+  if (attempt) {
+    return completePostModerationAttempt(attempt, {
+      disposition: 'pass',
+      reasonCode: 'no_content_to_moderate',
     })
   }
-  await query.commit()
+  return recordPostModerationDisposition({
+    versionId: 'version_id' in version ? version.version_id : version.id,
+    source: 'openai_omni',
+    disposition: 'pass',
+    reasonCode: 'no_content_to_moderate',
+  })
+}
+
+function hasSexualMinorsSignal(results: PersistableOpenAIModerationResults): boolean {
+  return asResultObjects(results).some(result => {
+    const categories = result.categories
+    return isRecord(categories) && categories['sexual/minors'] === true
+  })
+}
+
+function getFlaggedCategories(results: PersistableOpenAIModerationResults): string[] {
+  const categories = new Set<string>()
+  for (const result of asResultObjects(results)) {
+    if (!isRecord(result.categories)) continue
+    for (const [name, flagged] of Object.entries(result.categories)) {
+      if (flagged === true) categories.add(name)
+    }
+  }
+  return [...categories].sort().slice(0, 100)
+}
+
+function asResultObjects(results: PersistableOpenAIModerationResults): Record<string, unknown>[] {
+  if (Array.isArray(results)) return results.filter(isRecord)
+  return isRecord(results) ? [results] : []
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

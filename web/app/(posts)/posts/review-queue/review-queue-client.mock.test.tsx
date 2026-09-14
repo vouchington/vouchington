@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markPostForReview, updateAdminReviewQueuePost } from '@/lib/api/client'
 import { AdminReviewQueueClient } from './review-queue-client'
@@ -78,7 +78,7 @@ describe('AdminReviewQueueClient', () => {
     mockRecordMediaReveal.mockResolvedValue({ exposure })
   })
 
-  it('renders queued posts and signal summaries', () => {
+  it('renders queued posts and provider-neutral moderation summaries', () => {
     const { container } = render(<AdminReviewQueueClient initialData={makeResponse()} />)
 
     expect(screen.getByRole('heading', { name: 'Review Queue' })).toBeDefined()
@@ -94,9 +94,17 @@ describe('AdminReviewQueueClient', () => {
     expect(screen.getByRole('link', { name: 'Flagged topic' }).getAttribute('href')).toBe(
       '/topic-recommendations?q=Flagged%20topic',
     )
-    expect(screen.getAllByText('OpenAI:')).toHaveLength(3)
-    expect(screen.getAllByText('Spam:')).toHaveLength(3)
-    expect(screen.getByText('Rejected')).toBeDefined()
+    const flaggedPostRow = screen.getByText('Flagged post').closest('tr')
+    expect(flaggedPostRow).not.toBeNull()
+    expect(within(flaggedPostRow!).getAllByText('Rejected')).toHaveLength(2)
+    expect(within(flaggedPostRow!).getByText('flagged')).toBeDefined()
+    expect(screen.queryByText('provider flagged')).toBeNull()
+    expect(screen.queryByText('OpenAI:')).toBeNull()
+    expect(screen.queryByText('Spam:')).toBeNull()
+    const flaggedTopicRow = screen.getByText('Flagged topic').closest('tr')
+    expect(flaggedTopicRow).not.toBeNull()
+    expect(within(flaggedTopicRow!).getByText('pending')).toBeDefined()
+    expect(screen.getByText('3 queued posts, 2 flagged by automated checks')).toBeDefined()
     expect(container.querySelector('[data-pw="moderation-sla-badge"]')).not.toBeNull()
   })
 
@@ -137,7 +145,9 @@ describe('AdminReviewQueueClient', () => {
     await waitFor(() => {
       expect(screen.getByText('Flagged comment')).toBeDefined()
     })
-    expect(screen.getAllByText('Rejected')).toHaveLength(2)
+    const rejectedCommentRow = screen.getByText('Flagged comment').closest('tr')
+    expect(rejectedCommentRow).not.toBeNull()
+    expect(within(rejectedCommentRow!).getByText('Rejected')).toBeDefined()
     expect(mockToastSuccess).toHaveBeenCalledWith('Post rejected')
   })
 
@@ -214,12 +224,12 @@ function makeResponse(): AdminReviewQueueResponse {
         root_slug: null,
         clearance_status: 'rejected',
         clearance_updated_at: new Date().toISOString(),
-        spam_detection_flagged: false,
-        spam_detection_score: 0.2,
-        spam_detection_results: null,
-        openai_omni_moderation_flagged: true,
-        openai_omni_moderation_results: null,
-        media_context: {
+        moderation_summary: {
+          disposition: 'reject',
+          reason_codes: ['provider_flagged'],
+          evidence_summary: { flagged_category_count: 1, signal_count: 1 },
+        },
+        media_reveal: {
           requires_reveal: true,
           images: [{ image_id: 'image-1', order_index: 0, caption: 'Flagged image' }],
         },
@@ -239,12 +249,12 @@ function makeResponse(): AdminReviewQueueResponse {
         root_slug: 'root-post',
         clearance_status: 'in_review',
         clearance_updated_at: new Date().toISOString(),
-        spam_detection_flagged: true,
-        spam_detection_score: 0.8,
-        spam_detection_results: null,
-        openai_omni_moderation_flagged: false,
-        openai_omni_moderation_results: null,
-        media_context: { requires_reveal: false, images: [] },
+        moderation_summary: {
+          disposition: 'review',
+          reason_codes: ['suspicious_signal'],
+          evidence_summary: { flagged_category_count: 0, signal_count: 1 },
+        },
+        media_reveal: { requires_reveal: false, images: [] },
       },
       {
         id: 'topic-recommendation-1',
@@ -261,12 +271,12 @@ function makeResponse(): AdminReviewQueueResponse {
         root_slug: null,
         clearance_status: 'in_review',
         clearance_updated_at: new Date().toISOString(),
-        spam_detection_flagged: false,
-        spam_detection_score: 0.1,
-        spam_detection_results: null,
-        openai_omni_moderation_flagged: false,
-        openai_omni_moderation_results: null,
-        media_context: { requires_reveal: false, images: [] },
+        moderation_summary: {
+          disposition: 'review',
+          reason_codes: ['future_signal'],
+          evidence_summary: { flagged_category_count: 0, signal_count: 0 },
+        },
+        media_reveal: { requires_reveal: false, images: [] },
       },
     ],
     page_info: {

@@ -67,7 +67,7 @@ describe('post_moderation_context — listModerationReports (staff tier)', () =>
     const found = reports.find(r => r.entity_id === postId)
     expect(found).toBeDefined()
     expect(found!.post_moderation_context).not.toBeNull()
-    expect(found!.post_moderation_context!.openai_moderation).toBeNull()
+    expect(found!.post_moderation_context!.platform_moderation).toBeNull()
     expect(found!.post_moderation_context!.agent_moderations).toEqual([])
     expect(found!.post_moderation_context!.agent_added_tags).toEqual([])
   })
@@ -117,11 +117,11 @@ describe('post_moderation_context — listModerationReports (staff tier)', () =>
     const found = reports.find(r => r.entity_id === postId)
     expect(found).toBeDefined()
     const ctx = found!.post_moderation_context!
-    expect(ctx.openai_moderation).not.toBeNull()
-    expect(ctx.openai_moderation!.flagged).toBe(true)
+    expect(ctx.platform_moderation).not.toBeNull()
+    expect(ctx.platform_moderation!.flagged).toBe(true)
     // Staff tier: full categories present
-    expect(Array.isArray(ctx.openai_moderation!.categories)).toBe(true)
-    expect(ctx.openai_moderation!.categories).toContain('violence')
+    expect(Array.isArray(ctx.platform_moderation!.categories)).toBe(true)
+    expect(ctx.platform_moderation!.categories).toContain('violence')
     const agentMod = ctx.agent_moderations.find(m => m.slug === agentSlug)
     expect(agentMod).toBeDefined()
     expect(agentMod!.flagged).toBe(true)
@@ -202,10 +202,10 @@ describe('post_moderation_context — listRedactedModerationReports (public tier
     const found = reports.find(r => r.entity_id === postId)
     expect(found).toBeDefined()
     const ctx = found!.post_moderation_context!
-    expect(ctx.openai_moderation).not.toBeNull()
-    expect(ctx.openai_moderation!.flagged).toBe(true)
+    expect(ctx.platform_moderation).not.toBeNull()
+    expect(ctx.platform_moderation!.flagged).toBe(true)
     // Public tier: no categories key
-    expect('categories' in ctx.openai_moderation!).toBe(false)
+    expect('categories' in ctx.platform_moderation!).toBe(false)
     const agentMod = ctx.agent_moderations.find(m => m.slug === agentSlug)
     expect(agentMod).toBeDefined()
     expect(agentMod!.flagged).toBe(true)
@@ -233,7 +233,7 @@ describe('attachPostModerationContext — unit edge cases', () => {
     // Both items should receive the same context (null since postId doesn't exist in DB).
     const result = await attachPostModerationContext(items, 'staff')
     expect(result).toHaveLength(2)
-    // Non-existent post gets context with null openai_moderation (getPostModerationContextBatch
+    // Non-existent post gets context with null platform_moderation (getPostModerationContextBatch
     // provides a default entry for unknown IDs).
     expect(result[0]!.post_moderation_context).not.toBeNull()
     expect(result[1]!.post_moderation_context).not.toBeNull()
@@ -243,22 +243,22 @@ describe('attachPostModerationContext — unit edge cases', () => {
 describe('toPublicPostModerationContext', () => {
   it('drops category details but keeps coarse flags and tags', () => {
     const result = toPublicPostModerationContext({
-      openai_moderation: { flagged: true, categories: ['hate'] },
+      platform_moderation: { flagged: true, categories: ['hate'] },
       agent_moderations: [{ slug: 'spam', flagged: true, categories: ['promo'] }],
       agent_added_tags: ['ai-generated'],
     })
-    expect(result!.openai_moderation).toEqual({ flagged: true })
+    expect(result!.platform_moderation).toEqual({ flagged: true })
     expect(result!.agent_moderations).toEqual([{ slug: 'spam', flagged: true }])
     expect(result!.agent_added_tags).toEqual(['ai-generated'])
   })
 
-  it('handles null openai_moderation and a null context', () => {
+  it('handles null platform_moderation and a null context', () => {
     const result = toPublicPostModerationContext({
-      openai_moderation: null,
+      platform_moderation: null,
       agent_moderations: [],
       agent_added_tags: [],
     })
-    expect(result!.openai_moderation).toBeNull()
+    expect(result!.platform_moderation).toBeNull()
     expect(toPublicPostModerationContext(null)).toBeNull()
   })
 })

@@ -126,8 +126,8 @@ export async function addDummyEmbeddingToPost(
 
   if (options?.flagged) {
     query.append(sql`,
-        openai_omni_moderation_flagged = TRUE,
-        openai_omni_moderation_created_at = CURRENT_TIMESTAMP
+        approved_at = NULL,
+        in_review_at = CURRENT_TIMESTAMP
     `)
   }
 

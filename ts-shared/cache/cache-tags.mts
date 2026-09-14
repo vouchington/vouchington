@@ -9,22 +9,24 @@
 // identifier literally appears in the path — no DB lookup needed, Workers-safe — and the
 // backend's dual-form purge guarantees whichever form was cached still gets purged.
 //
-// `idOrSlug` is normalized the same way the backend normalizes ids/slugs before tagging
-// (see @services/entity-cache/keys.mts's use of normalizeKey) so a mixed-case URL segment
-// still matches the purge request's tag.
+// Both sides mint through `cacheTag()` (cache-tag-encoding.mts), which normalizes then
+// percent-encodes a raw identifier. `deriveEntityCacheTags` decodes the edge's `URL.pathname`
+// segments first, so both sides hand `cacheTag()` the same raw value and collapse onto one
+// canonical, Cloudflare-legal string. That decode lives here, at the one place a percent-encoded
+// identifier originates, and deliberately not inside the encoder — see
+// `decodeCacheTagPathSegment`.
 
-import { normalizeKey } from '@ts-shared/utils/strings'
+import { cacheTag, decodeCacheTagPathSegment } from './cache-tag-encoding.mts'
 
-export const postTag = (idOrSlug: string): string => `post:${normalizeKey(idOrSlug)}`
-export const topicTag = (idOrSlug: string): string => `topic:${normalizeKey(idOrSlug)}`
-export const userTag = (idOrSlug: string): string => `user:${normalizeKey(idOrSlug)}`
-export const communityTag = (idOrSlug: string): string => `community:${normalizeKey(idOrSlug)}`
-export const listTag = (id: string): string => `list:${normalizeKey(id)}`
-export const storyTag = (id: string): string => `story:${normalizeKey(id)}`
-export const hostnameTag = (idOrHostname: string): string =>
-  `hostname:${normalizeKey(idOrHostname)}`
-export const rssFeedTag = (id: string): string => `rss-feed:${normalizeKey(id)}`
-export const rssFeedItemTag = (id: string): string => `rss-feed-item:${normalizeKey(id)}`
+export const postTag = (idOrSlug: string): string => cacheTag('post', idOrSlug)
+export const topicTag = (idOrSlug: string): string => cacheTag('topic', idOrSlug)
+export const userTag = (idOrSlug: string): string => cacheTag('user', idOrSlug)
+export const communityTag = (idOrSlug: string): string => cacheTag('community', idOrSlug)
+export const listTag = (id: string): string => cacheTag('list', id)
+export const storyTag = (id: string): string => cacheTag('story', id)
+export const hostnameTag = (idOrHostname: string): string => cacheTag('hostname', idOrHostname)
+export const rssFeedTag = (id: string): string => cacheTag('rss-feed', id)
+export const rssFeedItemTag = (id: string): string => cacheTag('rss-feed-item', id)
 // No electionTag: "election" (vote summary/tally) is never a URL-addressable entity in this
 // codebase — it's always a sub-resource embedded on its owning post/topic/user/comment's own
 // detail page (see docs/requirements/ENTITY-ACTION-MATRIX.md), so minting an election:<id> tag
@@ -144,7 +146,12 @@ function stripMarkdownExtension(idOrSlug: string): string {
 // locale prefix exists yet); strip any locale prefix from `pathname` here when locale-prefixed
 // routing ships.
 export function deriveEntityCacheTags(pathname: string): string[] {
-  const segments = pathname.split('/').filter(Boolean)
+  // Decode per segment, never the whole pathname: an identifier containing a literal `/` reaches
+  // the edge as `%2F`, which `URL.pathname` leaves encoded, and decoding before the split would
+  // manufacture a segment boundary that the route never had. Family and static-subroute segments
+  // decode too, so `%63ompare` classifies the same as `compare` rather than slipping past the
+  // denylist as an unpurgeable entity tag.
+  const segments = pathname.split('/').filter(Boolean).map(decodeCacheTagPathSegment)
   if (segments.length < 2) return []
   if (segments[0] === 'api' && segments[1] === 'v1') {
     if (segments.length < 4) return []

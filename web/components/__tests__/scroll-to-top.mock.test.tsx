@@ -2,24 +2,54 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
 import { ScrollToTop } from '../scroll-to-top'
 import {
-  consumePreservedScrollPathname,
+  consumePreservedScrollPosition,
   preserveScrollForPathname,
 } from '@/lib/navigation/scroll-preservation'
 
 let mockPathname = '/initial'
-
 vi.mock(import('next/navigation'), () => ({
   usePathname: () => mockPathname,
 }))
 
 describe('ScrollToTop', () => {
   let scrollToSpy: ReturnType<typeof vi.spyOn>
+  let resizeObserverCallback: ResizeObserverCallback
+  let resizeObserverDisconnect: ReturnType<typeof vi.fn>
+  let htmlScrollHeight: PropertyDescriptor | undefined
+  let bodyScrollHeight: PropertyDescriptor | undefined
+  let innerHeight: PropertyDescriptor | undefined
+  let scrollY: PropertyDescriptor | undefined
   let mockMatchMedia: ReturnType<typeof vi.fn<(query: string) => MediaQueryList>>
 
   beforeEach(() => {
     mockPathname = '/initial'
-    consumePreservedScrollPathname('/__test_reset__')
-    scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    consumePreservedScrollPosition('/__test_reset__')
+    scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {
+      Object.defineProperty(window, 'scrollY', { configurable: true, value: 320 })
+    })
+    resizeObserverDisconnect = vi.fn<() => void>()
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resizeObserverCallback = callback
+        }
+
+        observe = vi.fn<(target: Element, options?: ResizeObserverOptions) => void>()
+        disconnect = resizeObserverDisconnect
+        unobserve = vi.fn<(target: Element) => void>()
+      },
+    )
+    htmlScrollHeight = Object.getOwnPropertyDescriptor(document.documentElement, 'scrollHeight')
+    bodyScrollHeight = Object.getOwnPropertyDescriptor(document.body, 'scrollHeight')
+    innerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
+    scrollY = Object.getOwnPropertyDescriptor(window, 'scrollY')
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      configurable: true,
+      value: 300,
+    })
+    Object.defineProperty(document.body, 'scrollHeight', { configurable: true, value: 300 })
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 200 })
     mockMatchMedia = vi.fn<(query: string) => MediaQueryList>(query => ({
       matches: true,
       media: query,
@@ -37,6 +67,11 @@ describe('ScrollToTop', () => {
     scrollToSpy.mockRestore()
     vi.useRealTimers()
     vi.unstubAllGlobals()
+    if (htmlScrollHeight)
+      Object.defineProperty(document.documentElement, 'scrollHeight', htmlScrollHeight)
+    if (bodyScrollHeight) Object.defineProperty(document.body, 'scrollHeight', bodyScrollHeight)
+    if (innerHeight) Object.defineProperty(window, 'innerHeight', innerHeight)
+    if (scrollY) Object.defineProperty(window, 'scrollY', scrollY)
     document.body.innerHTML = ''
   })
 
@@ -205,14 +240,23 @@ describe('ScrollToTop', () => {
     expect(scrollToSpy).toHaveBeenCalledTimes(2)
   })
 
-  it('does not scroll when an entity tab preserves the destination scroll', () => {
+  it('restores the saved position when the destination becomes tall enough', () => {
     const { rerender } = render(<ScrollToTop />)
 
-    preserveScrollForPathname('/entity/tags/post')
+    preserveScrollForPathname('/entity/tags/post', 320)
     mockPathname = '/entity/tags/post'
     rerender(<ScrollToTop />)
 
     expect(scrollToSpy).not.toHaveBeenCalled()
+
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      configurable: true,
+      value: 600,
+    })
+    resizeObserverCallback([], {} as ResizeObserver)
+
+    expect(scrollToSpy).toHaveBeenCalledWith({ top: 320, left: 0, behavior: 'instant' })
+    expect(resizeObserverDisconnect).toHaveBeenCalledOnce()
   })
 
   it('scrolls when a preserved destination does not match the next pathname', () => {

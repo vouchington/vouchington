@@ -25,7 +25,7 @@ import {
 import { enqueueReconcileEntities } from '@queues/entity-listeners/enqueues'
 import { enqueueRecoverExportRequests } from '@queues/account-data-requests/enqueues'
 import { enqueueRecoverUserDeletions } from '@queues/user-deletions/enqueues'
-import { enqueueRecoverStripeWebhooks } from '@queues/memberships/enqueues'
+import { enqueueRecoverStripeEvents } from '@queues/memberships/enqueues'
 import { enqueueSesInboundReconcile } from '@queues/ses-inbound/enqueues'
 import { SES_INBOUND_RECONCILE_JOB_NAME } from '@queues/ses-inbound/config'
 import { enqueueBackfillCrawlEmbeds } from '@queues/crawl-embeds/enqueues'
@@ -74,12 +74,12 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
     trigger: createBackfillTrigger(enqueueRecoverUserDeletions),
   },
   {
-    id: 'stripe-webhook-recovery',
+    id: 'stripe-event-recovery',
     queue_name: 'memberships',
-    job_name: 'recoverStripeWebhooks',
-    description: 'Recover persisted Stripe webhook events that were not completed',
+    job_name: 'recoverStripeEvents',
+    description: 'Recover persisted Stripe events that were not completed',
     source_table: 'stripe_events',
-    trigger: createBackfillTrigger(enqueueRecoverStripeWebhooks),
+    trigger: createBackfillTrigger(enqueueRecoverStripeEvents),
   },
   {
     id: 'openai-moderation-posts',

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Worker, type Job } from 'glide-mq'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { createConversation } from '@services/conversations-messages/create'
 import * as chatSafety from '../../check-api-message-safety.mts'

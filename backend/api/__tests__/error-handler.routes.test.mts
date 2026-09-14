@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import app from '@voucha/api/app'
 
 app.route('/api/v1/__tests__/error-handler-boom').get(() => {

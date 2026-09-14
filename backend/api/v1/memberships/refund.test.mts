@@ -1,34 +1,157 @@
 import { randomUUID } from 'node:crypto'
-import { describe, it, expect, beforeAll, vi, beforeEach } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
-import { createTestUser, createTestMembership } from '@voucha/test-helpers'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { STRIPE_PROVIDER_ENVIRONMENT } from '@voucha/config'
+import { createTestMembership, createTestUser } from '@voucha/test-helpers'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import * as stripeInvoices from '@modules/stripe/invoices'
 import * as stripeRefunds from '@modules/stripe/refunds'
-import * as stripeSubscriptions from '@modules/stripe/subscriptions'
 import { getMembershipRefunds } from '@services/memberships/refunds'
 import type { PrivateUser } from '@services/users/types'
 
-function fakeInvoiceList(
-  invoiceId: string,
-  chargeId: string | null,
-  paymentIntentId: string | null,
-  amountMinorUnits = 1000,
-) {
+describe('POST /api/v1/memberships/refunds', () => {
+  let admin: PrivateUser
+
+  beforeAll(async () => {
+    admin = await createTestUser({ administrator: true })
+  })
+
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns the completed union after persisting the durable refund receipt', async () => {
+    const fixture = await seedRefundableMembership()
+    vi.spyOn(stripeInvoices, 'listStripeSubscriptionInvoices').mockResolvedValue(
+      fakeInvoiceList(fixture),
+    )
+    vi.spyOn(stripeRefunds, 'createStripeRefund').mockResolvedValue(
+      fakeStripeRefund(fixture, 'succeeded'),
+    )
+    const request = createRequest()
+    await request.authenticateAs(admin)
+
+    const response = await request
+      .post('/api/v1/memberships/refunds')
+      .send(refundRequest(fixture))
+      .expect(201)
+
+    expect(response.headers['retry-after']).toBeUndefined()
+    expect(response.body).toEqual({
+      outcome: 'completed',
+      refund: { id: expect.any(String) },
+      cancellation_status: 'not_requested',
+    })
+    expect(await getMembershipRefunds(fixture.target.id)).toEqual([
+      expect.objectContaining({
+        amount: { amount: 1000, currency: 'usd' },
+        source: 'admin',
+        stripe_charge_id: fixture.chargeId,
+        stripe_refund_id: fixture.refundId,
+      }),
+    ])
+  })
+
+  it('returns 202 with Retry-After and exact replays do not create another refund', async () => {
+    const fixture = await seedRefundableMembership()
+    const listInvoices = vi
+      .spyOn(stripeInvoices, 'listStripeSubscriptionInvoices')
+      .mockResolvedValue(fakeInvoiceList(fixture))
+    const createRefund = vi
+      .spyOn(stripeRefunds, 'createStripeRefund')
+      .mockResolvedValue(fakeStripeRefund(fixture, 'pending'))
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    const body = refundRequest(fixture)
+
+    const first = await request.post('/api/v1/memberships/refunds').send(body).expect(202)
+    await createTestMembership({
+      user_id: fixture.target.id,
+      stripe_subscription_id: `sub_replacement_${randomUUID()}`,
+      provider_application_id: 'voucha-web',
+      provider_environment: STRIPE_PROVIDER_ENVIRONMENT,
+    })
+    const replay = await request.post('/api/v1/memberships/refunds').send(body).expect(202)
+
+    for (const response of [first, replay]) {
+      expect(response.headers['retry-after']).toBe('300')
+      expect(response.body).toEqual({ outcome: 'reconciling', retry_after_seconds: 300 })
+    }
+    expect(createRefund).toHaveBeenCalledOnce()
+    expect(listInvoices).toHaveBeenCalledOnce()
+    expect(await getMembershipRefunds(fixture.target.id)).toEqual([])
+  })
+
+  it('returns 409 when an idempotency key is replayed with a changed request', async () => {
+    const fixture = await seedRefundableMembership()
+    vi.spyOn(stripeInvoices, 'listStripeSubscriptionInvoices').mockResolvedValue(
+      fakeInvoiceList(fixture),
+    )
+    const createRefund = vi
+      .spyOn(stripeRefunds, 'createStripeRefund')
+      .mockResolvedValue(fakeStripeRefund(fixture, 'pending'))
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    const body = refundRequest(fixture)
+
+    await request.post('/api/v1/memberships/refunds').send(body).expect(202)
+    const conflict = await request
+      .post('/api/v1/memberships/refunds')
+      .send({ ...body, reason: 'dispute' })
+      .expect(409)
+
+    expect(conflict.body).toMatchObject({
+      message: 'Administrator refund idempotency key was reused for a different request',
+    })
+    expect(createRefund).toHaveBeenCalledOnce()
+  })
+})
+
+type RefundFixture = Awaited<ReturnType<typeof seedRefundableMembership>>
+
+async function seedRefundableMembership() {
+  const target = await createTestUser()
+  const subscriptionId = `sub_refund_${randomUUID()}`
+  await createTestMembership({
+    user_id: target.id,
+    stripe_subscription_id: subscriptionId,
+    provider_application_id: 'voucha-web',
+    provider_environment: STRIPE_PROVIDER_ENVIRONMENT,
+  })
+  return {
+    target,
+    subscriptionId,
+    chargeId: `ch_refund_${randomUUID()}`,
+    invoiceId: `in_refund_${randomUUID()}`,
+    refundId: `re_refund_${randomUUID()}`,
+    idempotencyKey: randomUUID(),
+  }
+}
+
+function refundRequest(fixture: RefundFixture) {
+  return {
+    user_id: fixture.target.id,
+    charge_id: fixture.chargeId,
+    invoice_id: fixture.invoiceId,
+    reason: 'requested',
+    idempotency_key: fixture.idempotencyKey,
+  }
+}
+
+function fakeInvoiceList(fixture: RefundFixture) {
   return {
     data: [
       {
         status: 'paid',
-        id: invoiceId,
-        amount_paid: amountMinorUnits,
+        id: fixture.invoiceId,
+        amount_paid: 1000,
         currency: 'usd',
-        created: 1700000000,
+        created: 1_700_000_000,
         description: null,
         payments: {
           data: [
             {
-              payment: chargeId
-                ? { type: 'charge', charge: chargeId }
-                : { type: 'payment_intent', payment_intent: paymentIntentId },
+              amount_paid: 1000,
+              payment: { type: 'charge', charge: fixture.chargeId },
             },
           ],
         },
@@ -37,225 +160,13 @@ function fakeInvoiceList(
   } as never
 }
 
-async function seedRefundableMembership() {
-  const target = await createTestUser()
-  const subscriptionId = `sub_test_${Math.random().toString(36).slice(2, 10)}`
-  await createTestMembership({ user_id: target.id, stripe_subscription_id: subscriptionId })
-  return { target, subscriptionId }
+function fakeStripeRefund(fixture: RefundFixture, status: 'pending' | 'succeeded') {
+  return {
+    id: fixture.refundId,
+    charge: fixture.chargeId,
+    payment_intent: null,
+    amount: 1000,
+    currency: 'usd',
+    status,
+  } as never
 }
-
-describe('POST /api/v1/memberships/refunds', () => {
-  let admin: PrivateUser
-  let customerSupport: PrivateUser
-  beforeAll(async () => {
-    admin = await createTestUser({ administrator: true })
-    customerSupport = await createTestUser({ extraRoles: ['customer_support'] })
-  })
-
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  it('returns 201 and persists a membership_refunds row for admin', async () => {
-    const { target } = await seedRefundableMembership()
-    const invoiceId = `in_admin_${Math.random().toString(36).slice(2, 8)}`
-    const chargeId = `ch_admin_${Math.random().toString(36).slice(2, 8)}`
-    const stripeRefundId = `re_admin_${Math.random().toString(36).slice(2, 8)}`
-    const idempotencyKey = randomUUID()
-    vi.spyOn(stripeInvoices, 'listStripeSubscriptionInvoices').mockResolvedValue(
-      fakeInvoiceList(invoiceId, chargeId, null),
-    )
-    vi.spyOn(stripeRefunds, 'createStripeRefund').mockResolvedValue({
-      id: stripeRefundId,
-      charge: chargeId,
-      payment_intent: null,
-      amount: 1000,
-      currency: 'usd',
-    } as never)
-
-    const request = createRequest()
-    await request.authenticateAs(admin)
-    const response = await request
-      .post('/api/v1/memberships/refunds')
-      .send({
-        user_id: target.id,
-        charge_id: chargeId,
-        invoice_id: invoiceId,
-        reason: 'goodwill',
-        idempotency_key: idempotencyKey,
-      })
-      .expect(201)
-
-    expect(response.body.refund).toHaveProperty('id')
-    expect(response.body.cancellation_status).toBe('not_requested')
-    const refunds = await getMembershipRefunds(target.id)
-    expect(refunds).toHaveLength(1)
-    expect(refunds[0]).toMatchObject({
-      stripe_refund_id: stripeRefundId,
-      stripe_charge_id: chargeId,
-      reason: 'goodwill',
-      revoked_access: false,
-      source: 'admin',
-    })
-  })
-
-  it('returns 201 and persists a membership_refunds row for customer_support', async () => {
-    const { target } = await seedRefundableMembership()
-    const invoiceId = `in_cs_${Math.random().toString(36).slice(2, 8)}`
-    const paymentIntentId = `pi_cs_${Math.random().toString(36).slice(2, 8)}`
-    const stripeRefundId = `re_cs_${Math.random().toString(36).slice(2, 8)}`
-    // Stripe always attaches the underlying charge to a refund response, even when the refund
-    // was requested by payment_intent_id (Stripe v22+ payment_intent-only charge path).
-    const derivedChargeId = `ch_cs_derived_${Math.random().toString(36).slice(2, 8)}`
-    vi.spyOn(stripeInvoices, 'listStripeSubscriptionInvoices').mockResolvedValue(
-      fakeInvoiceList(invoiceId, null, paymentIntentId),
-    )
-    vi.spyOn(stripeRefunds, 'createStripeRefund').mockResolvedValue({
-      id: stripeRefundId,
-      charge: derivedChargeId,
-      payment_intent: paymentIntentId,
-      amount: 1000,
-      currency: 'usd',
-    } as never)
-
-    const request = createRequest()
-    await request.authenticateAs(customerSupport)
-    const response = await request
-      .post('/api/v1/memberships/refunds')
-      .send({
-        user_id: target.id,
-        payment_intent_id: paymentIntentId,
-        invoice_id: invoiceId,
-        reason: 'requested',
-        idempotency_key: randomUUID(),
-      })
-      .expect(201)
-
-    expect(response.body.refund).toHaveProperty('id')
-    expect(response.body.cancellation_status).toBe('not_requested')
-    const refunds = await getMembershipRefunds(target.id)
-    expect(refunds.find(r => r.stripe_refund_id === stripeRefundId)).toMatchObject({
-      stripe_payment_intent_id: paymentIntentId,
-      reason: 'requested',
-    })
-  })
-
-  it('returns 201 for goodwill refund (cancel=false) and leaves the subscription active', async () => {
-    const { target } = await seedRefundableMembership()
-    const invoiceId = `in_gw_${Math.random().toString(36).slice(2, 8)}`
-    const chargeId = `ch_gw_${Math.random().toString(36).slice(2, 8)}`
-    const stripeRefundId = `re_gw_${Math.random().toString(36).slice(2, 8)}`
-    vi.spyOn(stripeInvoices, 'listStripeSubscriptionInvoices').mockResolvedValue(
-      fakeInvoiceList(invoiceId, chargeId, null),
-    )
-    vi.spyOn(stripeRefunds, 'createStripeRefund').mockResolvedValue({
-      id: stripeRefundId,
-      charge: chargeId,
-      payment_intent: null,
-      amount: 1000,
-      currency: 'usd',
-    } as never)
-    const cancelSpy = vi.spyOn(stripeSubscriptions, 'cancelStripeSubscriptionImmediately')
-
-    const request = createRequest()
-    await request.authenticateAs(admin)
-    const response = await request
-      .post('/api/v1/memberships/refunds')
-      .send({
-        user_id: target.id,
-        charge_id: chargeId,
-        invoice_id: invoiceId,
-        reason: 'goodwill',
-        cancel: false,
-        idempotency_key: randomUUID(),
-      })
-      .expect(201)
-
-    expect(response.body.refund).toHaveProperty('id')
-    expect(response.body.cancellation_status).toBe('not_requested')
-    expect(cancelSpy).not.toHaveBeenCalled()
-    const refunds = await getMembershipRefunds(target.id)
-    expect(refunds.find(r => r.stripe_refund_id === stripeRefundId)?.revoked_access).toBe(false)
-  })
-
-  it('returns 201 for revoke refund (cancel=true) and cancels the subscription', async () => {
-    const { target, subscriptionId } = await seedRefundableMembership()
-    const invoiceId = `in_rv_${Math.random().toString(36).slice(2, 8)}`
-    const chargeId = `ch_rv_${Math.random().toString(36).slice(2, 8)}`
-    const stripeRefundId = `re_rv_${Math.random().toString(36).slice(2, 8)}`
-    vi.spyOn(stripeInvoices, 'listStripeSubscriptionInvoices').mockResolvedValue(
-      fakeInvoiceList(invoiceId, chargeId, null),
-    )
-    vi.spyOn(stripeRefunds, 'createStripeRefund').mockResolvedValue({
-      id: stripeRefundId,
-      charge: chargeId,
-      payment_intent: null,
-      amount: 1000,
-      currency: 'usd',
-    } as never)
-    const cancelSpy = vi
-      .spyOn(stripeSubscriptions, 'cancelStripeSubscriptionImmediately')
-      .mockResolvedValue({} as never)
-
-    const request = createRequest()
-    await request.authenticateAs(admin)
-    const response = await request
-      .post('/api/v1/memberships/refunds')
-      .send({
-        user_id: target.id,
-        charge_id: chargeId,
-        invoice_id: invoiceId,
-        reason: 'dispute',
-        cancel: true,
-        idempotency_key: randomUUID(),
-      })
-      .expect(201)
-
-    expect(response.body.refund).toHaveProperty('id')
-    expect(response.body.cancellation_status).toBe('completed')
-    expect(cancelSpy).toHaveBeenCalledWith(subscriptionId)
-    const refunds = await getMembershipRefunds(target.id)
-    expect(refunds.find(r => r.stripe_refund_id === stripeRefundId)?.revoked_access).toBe(true)
-  })
-
-  it('returns 201 with pending cancellation after the refund succeeds without revoking access', async () => {
-    const { target } = await seedRefundableMembership()
-    const invoiceId = `in_pending_${Math.random().toString(36).slice(2, 8)}`
-    const chargeId = `ch_pending_${Math.random().toString(36).slice(2, 8)}`
-    const stripeRefundId = `re_pending_${Math.random().toString(36).slice(2, 8)}`
-    vi.spyOn(stripeInvoices, 'listStripeSubscriptionInvoices').mockResolvedValue(
-      fakeInvoiceList(invoiceId, chargeId, null),
-    )
-    vi.spyOn(stripeRefunds, 'createStripeRefund').mockResolvedValue({
-      id: stripeRefundId,
-      charge: chargeId,
-      payment_intent: null,
-      amount: 1000,
-      currency: 'usd',
-    } as never)
-    vi.spyOn(stripeSubscriptions, 'cancelStripeSubscriptionImmediately').mockRejectedValue(
-      new Error('Stripe cancellation unavailable'),
-    )
-
-    const request = createRequest()
-    await request.authenticateAs(admin)
-    const response = await request
-      .post('/api/v1/memberships/refunds')
-      .send({
-        user_id: target.id,
-        charge_id: chargeId,
-        invoice_id: invoiceId,
-        reason: 'dispute',
-        cancel: true,
-        idempotency_key: randomUUID(),
-      })
-      .expect(201)
-
-    expect(response.body).toEqual({
-      refund: { id: expect.any(String) },
-      cancellation_status: 'pending',
-    })
-    const refunds = await getMembershipRefunds(target.id)
-    expect(refunds.find(r => r.stripe_refund_id === stripeRefundId)?.revoked_access).toBe(false)
-  })
-})

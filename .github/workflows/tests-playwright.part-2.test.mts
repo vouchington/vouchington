@@ -104,4 +104,19 @@ describe('tests-playwright.yml PW_FILES selection', () => {
       '--shard=1/1',
     ])
   })
+
+  it('compiles the localization catalog after the web build and before Playwright starts', () => {
+    const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
+    expect(shardJob).not.toBeNull()
+    const body = shardJob![0]
+    const build = body.indexOf('uses: ./.github/actions/build-web-targets')
+    const compile = body.indexOf('Compile localization catalog')
+    const run = body.indexOf('Run Playwright tests')
+    expect(build).toBeGreaterThan(-1)
+    expect(compile).toBeGreaterThan(build)
+    expect(compile).toBeLessThan(run)
+    expect(body).toContain('compile-cli.mts')
+    expect(body).toContain('/dev/shm')
+    expect(body).toContain('LOCALIZATION_SQLITE_PATH')
+  })
 })

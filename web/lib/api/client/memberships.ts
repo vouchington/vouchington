@@ -4,6 +4,7 @@ import { clientApi } from './instance'
 import type {
   MembershipPurchaseIntentResponseBody,
   MembershipVerificationResponseBody,
+  MicrosoftStoreServiceTicketsResponseBody,
   MembershipPurchaseProvider,
   BillingPortalSessionResponseBody,
   MembershipPlansResponseBody,
@@ -41,6 +42,13 @@ export function fetchMembershipVerification(
 ): Promise<MembershipVerificationResponseBody> {
   return clientApi.get<MembershipVerificationResponseBody>(
     `/api/v1/membership-verifications/${encodeURIComponent(verificationId)}`,
+  )
+}
+
+export function createMicrosoftStoreServiceTickets(): Promise<MicrosoftStoreServiceTicketsResponseBody> {
+  return clientApi.post<MicrosoftStoreServiceTicketsResponseBody>(
+    '/api/v1/memberships/microsoft-store/service-tickets',
+    {},
   )
 }
 

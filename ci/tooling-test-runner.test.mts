@@ -1,12 +1,18 @@
+import { EventEmitter } from 'node:events'
+
 import { describe, expect, it } from 'vitest'
 import {
   toolingTestProjectNames,
   toolingWorkflowProjectNames,
 } from '../test-helpers/vitest-config/tooling-project-registry.mts'
+import { TOOLING_HANG_GRACE_MS } from './tooling-test-hang-watchdog.mts'
 import {
   buildToolingVitestArgs,
   runToolingTests,
+  runToolingTestsWatched,
+  toolingCoverageEnabled,
   type ToolingTestExecutor,
+  type ToolingWatchedRunDeps,
 } from './tooling-test-runner.mts'
 
 describe('tooling test runner', () => {
@@ -55,5 +61,51 @@ describe('tooling test runner', () => {
       args: ['exec', './ci/with-node-test-options', ...buildToolingVitestArgs(['--bail=3'])],
       env: { KEEP_ME: 'yes', VITEST_COVERAGE_SCOPE: 'tooling' },
     })
+  })
+
+  it.each(['--coverage', '--coverage=true'])(
+    'treats %s as coverage-enabled for the hang watchdog',
+    flag => {
+      expect(toolingCoverageEnabled(['exec', flag], {})).toBe(true)
+    },
+  )
+
+  it('SIGKILLs after a terminate-worker marker split around stdout', async () => {
+    let now = 0
+    const child = Object.assign(new EventEmitter(), {
+      pid: 42,
+      stderr: new EventEmitter(),
+      stdout: new EventEmitter(),
+    })
+    let interval: (() => void) | undefined
+    const killed: Array<{ pid: number; signal: NodeJS.Signals }> = []
+    const deps: ToolingWatchedRunDeps = {
+      spawn: (() => child) as unknown as ToolingWatchedRunDeps['spawn'],
+      now: () => now,
+      setInterval: callback => {
+        interval = callback
+        return 1
+      },
+      clearInterval: () => {
+        interval = undefined
+      },
+      killProcessGroup: (pid, signal) => {
+        killed.push({ pid, signal })
+        child.emit('close', null, signal)
+      },
+      onParentSignal: () => {},
+      offParentSignal: () => {},
+      stderr: { write: () => true },
+      stdout: { write: () => true },
+    }
+
+    const run = runToolingTestsWatched([], {}, deps)
+    child.stderr.emit('data', 'Timeout terminating ')
+    child.stdout.emit('data', 'progress\n')
+    child.stderr.emit('data', 'forks worker\n')
+    now = TOOLING_HANG_GRACE_MS
+    interval?.()
+    expect(killed).toEqual([{ pid: 42, signal: 'SIGKILL' }])
+    await expect(run).resolves.toEqual({ code: null, signal: 'SIGKILL' })
   })
 })

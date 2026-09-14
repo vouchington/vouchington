@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/auth/context'
 import type { PostType } from '@/types/posts'
 import { DiscussInCommunityAction } from './discuss-in-community-action'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import type { EntityBookmarkButton as EntityBookmarkButtonComponent } from '@/components/shared/entity-bookmark-button'
 
 interface PostDetailActionsProps {
   election?: { id: string; votesCountUp: number; votesCountDown: number }
@@ -33,7 +34,7 @@ interface PostDetailActionsProps {
 }
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const EntityBookmarkButton = dynamic(() =>
+const EntityBookmarkButton = dynamic<Parameters<typeof EntityBookmarkButtonComponent>[0]>(() =>
   import('@/components/shared/entity-bookmark-button').then(mod => mod.EntityBookmarkButton),
 )
 

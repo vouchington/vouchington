@@ -39,6 +39,7 @@
     "@services/entity-listener-reconciliation": "workspace:^",
     "@services/fediverse-instances": "workspace:^",
     "@services/jwt-session": "workspace:^",
+    "@services/localization": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
     "@services/users": "workspace:^",
     "@services/valkey-admin": "workspace:^",

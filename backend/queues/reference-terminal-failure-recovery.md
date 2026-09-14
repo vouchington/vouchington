@@ -48,6 +48,14 @@ matching retained completed jobs, re-enqueue missing stable IDs, and retry match
 jobs. A fenced claim prevents a stale worker from committing after another attempt has reclaimed
 the row.
 
+### Membership refund reconciliation recovery
+
+Membership refund dispatcher and child failures remain recoverable from incomplete
+`membership_operations`. The five-minute schedule rotates leases older than five minutes and
+re-enqueues only operation and lease IDs. Append-only provider attempts, durable backoff, bounded
+metadata discovery, and linked receipts let the next child resume without trusting terminal
+GlideMQ history or issuing a duplicate Stripe refund.
+
 ### Email Delivery Guarantees
 
 Postgres state and SES delivery cannot commit in one transaction, so an email processor cannot

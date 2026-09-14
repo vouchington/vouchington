@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ReferencedIssue } from '../closing-refs.mts'
-import { VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY } from '../test-helpers/valid-pr-body.mts'
+import { VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY } from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { type PullRequestIdentity, validatePrBodyWithIssueReferences } from '../validate.mts'
 
 const MERGED_TARGET: PullRequestIdentity = {

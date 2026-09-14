@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership } from '../../create.mts'
 import { getMembershipByUserId } from '../../get.mts'
-import { updateMembershipFromWebhook } from '../../update.mts'
+import { updateMembershipFromEvent } from '../../update.mts'
 import { resumeGrantAfterDirectAccessSuspensionInTransaction } from '../resume-after-direct-termination.mts'
 
 describe('direct source termination fallback', () => {
@@ -40,7 +40,7 @@ describe('direct source termination fallback', () => {
       stripeSubscriptionId: `sub_direct_termination_current_${randomUUID()}`,
     })
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: current.id, status: 'cancelled' },
       async () => false,
     )
@@ -84,7 +84,7 @@ describe('direct source termination fallback', () => {
         userId: member.id,
       })
 
-      await updateMembershipFromWebhook(
+      await updateMembershipFromEvent(
         { membershipId: current.id, status: 'cancelled' },
         async () => false,
       )

@@ -1,12 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Job, Worker } from 'glide-mq'
 import {
   createTestUser,
+  expireTestPostModerationVersion,
+  getPostClearanceStatus,
   getPostModerationData,
+  getTestPostModerationRetryDelayMinutes,
   insertPendingTestImage,
   insertTestImage,
   insertTestPost,
+  readAllQueueJobs,
   setImageOpenAIModerationResults,
   setPostModerationContentSha256,
   updateImageStatus,
@@ -15,9 +19,14 @@ import {
 import { notifications } from '@queues/notifications/queues'
 import { openai_moderation_omni_single } from '@queues/openai-moderation/queues'
 import { createPostModerationContent } from '@services/posts/content'
+import { ensureCurrentPostModerationVersion } from '@services/post-clearance'
 import { handleOpenAIModerationOmniSingleJob } from '../../processors/openai-moderation-omni-single.mts'
 
 describe('openai moderation single worker', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('uses current persisted moderation and enqueues notification reconciliation without calling OpenAI', async () => {
     const creator = await createTestUser()
     expect(creator).toBeTruthy()
@@ -108,6 +117,72 @@ describe('openai moderation single worker', () => {
     expect(
       waitingJobs.some(job => job.name === 'image' && (job.data as { id?: string }).id === imageId),
     ).toBe(true)
+  })
+
+  it('requeues due source work and moves deadline-exhausted posts to review', async () => {
+    const creator = await createTestUser()
+    expect(creator).toBeTruthy()
+    const duePostId = await insertTestPost({
+      title: `OpenAI reconcile due ${randomUUID()}`,
+      slug: `openai-reconcile-due-${randomUUID()}`,
+      createdById: creator!.id,
+      markdown: 'Reconciliation due work.',
+      clearanceStatus: 'pending',
+    })
+    const expiredPostId = await insertTestPost({
+      title: `OpenAI reconcile expired ${randomUUID()}`,
+      slug: `openai-reconcile-expired-${randomUUID()}`,
+      createdById: creator!.id,
+      markdown: 'Reconciliation expired work.',
+      clearanceStatus: 'pending',
+    })
+    await ensureCurrentPostModerationVersion(duePostId)
+    const expiredVersion = await ensureCurrentPostModerationVersion(expiredPostId)
+    await expireTestPostModerationVersion(expiredVersion.id)
+
+    const result = (await handleOpenAIModerationOmniSingleJob(
+      makeJob('reconcile_post_moderation', randomUUID()),
+      {} as Worker,
+    )) as { enqueued: number; moved_to_review: number }
+
+    expect(result.enqueued).toBeGreaterThanOrEqual(2)
+    expect(result.moved_to_review).toBeGreaterThanOrEqual(1)
+    await expect(getPostClearanceStatus(expiredPostId)).resolves.toBe('in_review')
+
+    const openaiJobs = await readAllQueueJobs(openai_moderation_omni_single)
+    expect(
+      openaiJobs.some(job => job.name === 'post' && (job.data as { id?: string }).id === duePostId),
+    ).toBe(true)
+  })
+
+  it('runs image quarantine reconciliation jobs', async () => {
+    await expect(
+      handleOpenAIModerationOmniSingleJob(
+        makeJob('reconcile_image_quarantines', randomUUID()),
+        {} as Worker,
+      ),
+    ).resolves.toEqual({ reconciled: 0 })
+  })
+
+  it('records a retryable failed attempt when the provider is unavailable', async () => {
+    const creator = await createTestUser()
+    expect(creator).toBeTruthy()
+    const postId = await insertTestPost({
+      title: `OpenAI provider unavailable ${randomUUID()}`,
+      slug: `openai-provider-unavailable-${randomUUID()}`,
+      createdById: creator!.id,
+      markdown: 'Provider unavailable worker fixture.',
+      clearanceStatus: 'pending',
+    })
+    vi.stubEnv('OPENAI_API_KEY', '')
+
+    await expect(
+      handleOpenAIModerationOmniSingleJob(makeJob('post', postId), {} as Worker),
+    ).rejects.toThrow('OPENAI_API_KEY is not set')
+    await expect(getTestPostModerationRetryDelayMinutes(postId, 'openai_omni')).resolves.toBe(5)
+    await expect(getPostModerationData(postId)).resolves.toMatchObject({
+      openai_omni_moderation_flagged: null,
+    })
   })
 
   it('rejects malformed and unknown jobs through the retry handler', async () => {

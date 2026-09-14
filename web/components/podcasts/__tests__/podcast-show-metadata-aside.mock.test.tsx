@@ -1,6 +1,8 @@
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { PodcastShowMetadataAside } from '../podcast-show-metadata-aside'
 import type { ViewRssFeed } from '@/types/rss-feeds'
 
@@ -94,8 +96,19 @@ function makeFeed(overrides: Partial<ViewRssFeed> = {}): ViewRssFeed {
 }
 
 describe('PodcastShowMetadataAside', () => {
-  it('returns null when no podcast_show and no categories', async () => {
-    const { container } = render(await PodcastShowMetadataAside({ feed: makeFeed() }))
+  let t: ReturnType<typeof createTranslator>
+
+  beforeAll(() => {
+    t = createTranslator('en', enMessages)
+  })
+
+  it('returns null when no podcast_show and no categories', () => {
+    const { container } = render(
+      <PodcastShowMetadataAside
+        t={t}
+        feed={makeFeed()}
+      />,
+    )
     expect(container.firstChild).toBeNull()
   })
 
@@ -109,7 +122,12 @@ describe('PodcastShowMetadataAside', () => {
         itunes_type: null,
       },
     })
-    render(await PodcastShowMetadataAside({ feed }))
+    render(
+      <PodcastShowMetadataAside
+        t={t}
+        feed={feed}
+      />,
+    )
     expect(screen.getByTestId('aside-accordion')).toBeDefined()
     expect(screen.getByText('About this podcast')).toBeDefined()
   })
@@ -124,7 +142,12 @@ describe('PodcastShowMetadataAside', () => {
         itunes_type: null,
       },
     })
-    render(await PodcastShowMetadataAside({ feed }))
+    render(
+      <PodcastShowMetadataAside
+        t={t}
+        feed={feed}
+      />,
+    )
     const img = screen.getByAltText('Test Podcast cover art')
     expect(img.getAttribute('src')).toBe('/sideload/test-cover.jpg')
   })
@@ -139,7 +162,12 @@ describe('PodcastShowMetadataAside', () => {
         itunes_type: null,
       },
     })
-    render(await PodcastShowMetadataAside({ feed }))
+    render(
+      <PodcastShowMetadataAside
+        t={t}
+        feed={feed}
+      />,
+    )
     expect(screen.getByTestId('mic-icon')).toBeDefined()
   })
 
@@ -153,7 +181,12 @@ describe('PodcastShowMetadataAside', () => {
         itunes_type: null,
       },
     })
-    render(await PodcastShowMetadataAside({ feed }))
+    render(
+      <PodcastShowMetadataAside
+        t={t}
+        feed={feed}
+      />,
+    )
     expect(screen.getByText('By NPR')).toBeDefined()
   })
 
@@ -167,7 +200,12 @@ describe('PodcastShowMetadataAside', () => {
         itunes_type: null,
       },
     })
-    render(await PodcastShowMetadataAside({ feed }))
+    render(
+      <PodcastShowMetadataAside
+        t={t}
+        feed={feed}
+      />,
+    )
     expect(screen.getByText('Explicit')).toBeDefined()
   })
 
@@ -175,7 +213,12 @@ describe('PodcastShowMetadataAside', () => {
     const feed = makeFeed({
       categories: [{ category_text: 'technology', topic_id: 'topic-2', topic_slug: 'technology' }],
     })
-    render(await PodcastShowMetadataAside({ feed }))
+    render(
+      <PodcastShowMetadataAside
+        t={t}
+        feed={feed}
+      />,
+    )
     const chip = screen.getByText('technology')
     const link = chip.closest('a')
     expect(link?.getAttribute('href')).toBe('/podcasts/technology')
@@ -185,7 +228,12 @@ describe('PodcastShowMetadataAside', () => {
     const feed = makeFeed({
       categories: [{ category_text: 'news', topic_id: null, topic_slug: null }],
     })
-    render(await PodcastShowMetadataAside({ feed }))
+    render(
+      <PodcastShowMetadataAside
+        t={t}
+        feed={feed}
+      />,
+    )
     expect(screen.getByText('news')).toBeDefined()
     expect(screen.queryByRole('link', { name: 'news' })).toBeNull()
   })
@@ -194,7 +242,12 @@ describe('PodcastShowMetadataAside', () => {
     const feed = makeFeed({
       categories: [{ category_text: 'business', topic_id: null, topic_slug: null }],
     })
-    render(await PodcastShowMetadataAside({ feed }))
+    render(
+      <PodcastShowMetadataAside
+        t={t}
+        feed={feed}
+      />,
+    )
     expect(screen.getByTestId('aside-accordion')).toBeDefined()
   })
 })

@@ -10,7 +10,7 @@ import {
   entryFixture,
   failingEntriesIterable,
   HOSTED_ENV,
-} from '../../blackboard/test-helpers/client-fixtures.mts'
+} from '../../test-helpers/blackboard/client-fixtures.mts'
 import { readPersistedSessionId } from '../../agent-session-id/persist.mts'
 import { runEntries } from '../entries.mts'
 

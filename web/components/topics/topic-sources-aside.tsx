@@ -1,19 +1,18 @@
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { domainHref } from '@/lib/links/entity-href'
-import { getTranslations } from '@/lib/i18n/get-translations'
+import type { getTranslations } from '@/lib/i18n/get-translations'
 import type { RssFeedsListResponseBody } from '@/types/api-responses'
 import type { HostnameListResponse } from '@/types/hostnames'
 
 interface TopicSourcesAsideProps {
+  t: Awaited<ReturnType<typeof getTranslations>>
   rssFeeds: RssFeedsListResponseBody
   hostnames: HostnameListResponse
 }
 
-export async function TopicSourcesAside({ rssFeeds, hostnames }: TopicSourcesAsideProps) {
+export function TopicSourcesAside({ t, rssFeeds, hostnames }: TopicSourcesAsideProps) {
   if (rssFeeds.results.length === 0 && hostnames.results.length === 0) return null
-
-  const t = await getTranslations()
 
   const firstFeed = rssFeeds.results[0]
 

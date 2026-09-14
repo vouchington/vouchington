@@ -8,7 +8,10 @@ import {
 } from '@voucha/test-helpers'
 import type { Response } from 'openai/resources/responses/responses'
 import { retrieveOpenAIResponse, cancelOpenAIResponse } from '@modules/openai-utils/create-response'
-import { makeSdkResponse, makeSdkTextResponse } from '@modules/openai-utils/test-helpers/responses'
+import {
+  makeSdkResponse,
+  makeSdkTextResponse,
+} from '@voucha/test-helpers/modules/openai-utils/responses'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { latchAccountingUncertainty } from '@services/ai-usage'
 import { reconcileExpiredBackgroundResponse } from './reconcile.mts'

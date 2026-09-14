@@ -18,7 +18,7 @@ describe('playwright-setup-backend-pnpm-activation-timeout', () => {
     '##[group]Run ./.github/actions/setup-backend',
     'with:',
     '  force-install: true',
-    'node: /home/jonathan-ong/actions-runners/1/_work/_tool/node/26.0.0/x64/bin/node v26.0.0',
+    'node: /home/runner/actions-runners/1/_work/_tool/node/26.0.0/x64/bin/node v26.0.0',
     '##[error]The action has timed out.',
     'Stop and remove container: c9706705a53d489da50390110724e2e1_valkeyvalkeybundlelatest_aacb89',
     'Cleaning up orphan processes',
@@ -64,7 +64,7 @@ describe('playwright-setup-backend-pnpm-activation-timeout', () => {
       failedJobLogs: failedJobLogs(
         [
           '##[group]Run ./.github/actions/setup-backend',
-          'node: /home/jonathan-ong/actions-runners/1/_work/_tool/node/26.0.0/x64/bin/node v26.0.0',
+          'node: /home/runner/actions-runners/1/_work/_tool/node/26.0.0/x64/bin/node v26.0.0',
           '##[error]The action has timed out.',
           'Cleaning up orphan processes',
         ].join('\n'),
@@ -94,7 +94,7 @@ describe('postgres-schema-setup-backend-pnpm-activation-timeout', () => {
     '##[group]Run ./.github/actions/setup-backend',
     'with:',
     '  force-install: true',
-    'node: /home/jonathan-ong/actions-runners/2/_work/_tool/node/26.0.0/x64/bin/node v26.0.0',
+    'node: /home/runner/actions-runners/2/_work/_tool/node/26.0.0/x64/bin/node v26.0.0',
     '##[error]The action has timed out.',
     'Run node data-stores/psql/schema-snapshot/generate.mts --check',
     'Error: The PostgreSQL schema snapshot is stale. Regenerate it against a PostgreSQL 18 database',
@@ -183,7 +183,7 @@ describe('main-checks-ts-shared-setup-backend-pnpm-activation-timeout', () => {
     'with:',
     '  runner-lifecycle: persistent',
     '##[group]Run set -euo pipefail',
-    'node: /home/jonathan-ong/actions-runners/2/_work/_tool/node/26.0.0/x64/bin/node v26.0.0',
+    'node: /home/runner/actions-runners/2/_work/_tool/node/26.0.0/x64/bin/node v26.0.0',
     '##[error]The action has timed out.',
     'Cleaning up orphan processes',
     'Terminate orphan process: pid (3044076) (npm install pnpm@11.13.1)',
@@ -211,7 +211,7 @@ describe('main-checks-ts-shared-setup-backend-pnpm-activation-timeout', () => {
       failedJobLogs: failedJobLogs(
         [
           '##[group]Run ./.github/actions/setup-backend',
-          'node: /home/jonathan-ong/actions-runners/2/_work/_tool/node/26.0.0/x64/bin/node v26.0.0',
+          'node: /home/runner/actions-runners/2/_work/_tool/node/26.0.0/x64/bin/node v26.0.0',
           '##[error]The action has timed out.',
           'Cleaning up orphan processes',
         ].join('\n'),

@@ -9,6 +9,7 @@ import {
   warnIfCachePlaceholderNonceMissing,
   warnIfCspAssetOriginInvalid,
   warnIfProductionValueInvalid,
+  warnIfSentryConfigurationInvalid,
 } from './env-validation.mts'
 import { edgeErrorResponse } from './error-response.mts'
 import { isProductionMode } from './production-mode.mts'
@@ -61,6 +62,7 @@ export function createWorker(
         }
         warnIfWorkerSecretMisconfigured(env)
         warnIfProductionValueInvalid(env)
+        warnIfSentryConfigurationInvalid(env)
         warnIfCspAssetOriginInvalid(env)
         warnIfCachePlaceholderNonceMissing(env)
         const isProduction = isProductionMode(env)
@@ -76,6 +78,8 @@ export function createWorker(
                 browserUploadOrigins: env.CSP_BROWSER_UPLOAD_ORIGINS,
                 production: isProduction,
                 nonce: cspNonce,
+                sentryTunnelPreviousWebDsn: env.SENTRY_TUNNEL_PREVIOUS_WEB_DSN,
+                sentryWebDsn: env.SENTRY_WEB_DSN,
               })
             : ''
         const responseCsp = isAdminBackendRoute(url.pathname) ? buildDashboardCsp() : webCsp
@@ -139,6 +143,8 @@ export function createWorker(
             browserUploadOrigins: recoveryEnv.CSP_BROWSER_UPLOAD_ORIGINS,
             production: recoveryIsProduction,
             nonce: cspNonce,
+            sentryTunnelPreviousWebDsn: recoveryEnv.SENTRY_TUNNEL_PREVIOUS_WEB_DSN,
+            sentryWebDsn: recoveryEnv.SENTRY_WEB_DSN,
             requireBrowserUploadOrigins: false,
           }),
           isOauthCallback ? 'unsafe-none' : undefined,

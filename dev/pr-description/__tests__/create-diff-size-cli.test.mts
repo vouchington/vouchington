@@ -5,8 +5,12 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
-import { FIXTURE_HEAD_BRANCH, FIXTURE_REMOTE_SHA, writeFakeGh } from '../test-helpers/fake-cli.mts'
-import { VALID_PROVENANCE_BLOCK } from '../test-helpers/valid-pr-body.mts'
+import {
+  FIXTURE_HEAD_BRANCH,
+  FIXTURE_REMOTE_SHA,
+  writeFakeGh,
+} from '../../test-helpers/pr-description/fake-cli.mts'
+import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { LARGE_DIFF_LINE_THRESHOLD } from '../diff-size.mts'
 
 /**

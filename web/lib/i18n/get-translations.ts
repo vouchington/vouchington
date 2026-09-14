@@ -1,6 +1,8 @@
 import { cache } from 'react'
-import { createTranslator, loadMessages } from '@ts-shared/ui-messages'
+import { createTranslator } from '@ts-shared/ui-messages'
 import { getResolvedUiLocale } from './get-resolved-ui-locale'
+import { loadServerMessages } from './load-server-messages'
+import { createUnresolvedMessageReporter } from './report-unresolved-message'
 
 /**
  * RSC/server helper: resolves the request's UI locale, loads its message catalog, and
@@ -10,6 +12,10 @@ import { getResolvedUiLocale } from './get-resolved-ui-locale'
  */
 export const getTranslations = cache(async () => {
   const locale = await getResolvedUiLocale()
-  const messages = await loadMessages(locale)
-  return createTranslator(locale, messages)
+  const messages = process.env.VITEST
+    ? await (await import('./load-json-messages')).loadJsonMessages(locale)
+    : await loadServerMessages(locale)
+  return createTranslator(locale, messages, {
+    onUnresolved: createUnresolvedMessageReporter(locale),
+  })
 })

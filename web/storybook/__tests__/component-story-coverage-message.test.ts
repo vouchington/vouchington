@@ -4,7 +4,7 @@ import {
   EXCLUSIONS_FILE,
   formatMissingComponentsMessage,
   formatNamespaceImportsMessage,
-} from '../test-helpers/component-story-coverage/message'
+} from '../../test-helpers/storybook/component-story-coverage/message'
 
 describe('component-story-coverage-message', () => {
   describe('formatMissingComponentsMessage', () => {

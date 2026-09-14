@@ -7,7 +7,7 @@ import {
   entriesIterable,
   entryFixture,
   failingEntriesIterable,
-} from '../test-helpers/client-fixtures.mts'
+} from '../../test-helpers/blackboard/client-fixtures.mts'
 
 function fakeConnection(): BlackboardConnection {
   return { baseUrl: 'http://127.0.0.1:3000', token: 'test-token' }

@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import esMessages from '@ts-shared/ui-messages/messages/es'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { seedMessages } from '@/lib/i18n/use-translations'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 const h = vi.hoisted(() => ({
   AppealDraftReconciliationTimeoutError: class extends Error {},

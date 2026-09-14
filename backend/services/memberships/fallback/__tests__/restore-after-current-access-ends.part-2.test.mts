@@ -11,7 +11,7 @@ import {
 import { createMembership, grantMembership } from '../../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../../get.mts'
 import { expireElapsedMembershipsForUser } from '../../grants/expire-elapsed.mts'
-import { updateMembershipFromWebhook } from '../../update.mts'
+import { updateMembershipFromEvent } from '../../update.mts'
 
 describe('fallback access after current direct or administrator-grant access ends', () => {
   it('restores family access when an active grant directly replacing family access expires', async () => {
@@ -84,7 +84,7 @@ describe('fallback access after current direct or administrator-grant access end
     const grantSku = await createTestSku({ plan: 'plus', interval: 'yearly' })
     await grantMembership(admin.id, user.id, 'plus', grantSku.id, 30)
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
       async () => false,
     )
@@ -162,7 +162,7 @@ describe('fallback access after current direct or administrator-grant access end
     expect(firstGrant.queued).toBe(true)
     expect(secondGrant.queued).toBe(true)
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
       async () => false,
     )

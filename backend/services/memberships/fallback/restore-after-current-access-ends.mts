@@ -115,7 +115,6 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
   })
   return true
 }
-
 async function getTerminalCurrentMembership(
   userId: string,
   membershipId: string,
@@ -176,6 +175,7 @@ async function getHighestPriorityFallbackSource(
         (source.source_kind = 'direct'
           AND source_state.cancelled_at IS NULL AND source_state.expired_at IS NULL
           AND source_state.paused_at IS NULL
+          AND (observation.provider = 'stripe' OR source_state.expires_at IS NULL OR source_state.expires_at > CURRENT_TIMESTAMP)
           AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL)
         OR (
           source.source_kind = 'family'

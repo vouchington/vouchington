@@ -64,24 +64,28 @@ export async function getAutomodFeedbackContext(
     SELECT
       p.id AS post_id,
       NULL::uuid AS agent_moderation_id,
-      CASE
-        WHEN ${sourceType} = 'openai_omni' THEN p.openai_omni_moderation_input_sha256
-        WHEN ${sourceType} = 'spam_detection' THEN p.llm_moderation_content_sha256
-        ELSE NULL
-      END AS input_sha256
+      version.content_sha256 AS input_sha256
     FROM posts p
+    JOIN post_moderation_versions version
+      ON version.post_id = p.id
+     AND version.content_sha256 = p.llm_moderation_content_sha256
+     AND version.policy_revision = '2026-09-09.1'
+    JOIN LATERAL (
+      SELECT 1
+      FROM (
+        SELECT disposition
+        FROM post_moderation_dispositions
+        WHERE version_id = version.id AND source::text = ${sourceType}
+        ORDER BY id DESC LIMIT 1
+      ) latest
+      WHERE latest.disposition IN ('review', 'reject')
+    ) disposition ON true
     WHERE p.id = ${id}
       AND p.community_id = ${communityId}
       AND p.deleted_at IS NULL
       AND p.rejected_at IS NOT NULL
-      AND (
-        (${sourceType} = 'openai_omni'
-          AND p.openai_omni_moderation_flagged IS TRUE
-          AND p.openai_omni_moderation_input_sha256 IS NOT DISTINCT FROM ${expectedInputSha256})
-        OR (${sourceType} = 'spam_detection'
-          AND p.spam_detection_flagged IS TRUE
-          AND p.llm_moderation_content_sha256 IS NOT DISTINCT FROM ${expectedInputSha256})
-      )
+      AND ${sourceType} IN ('openai_omni', 'spam_detection')
+      AND version.content_sha256 IS NOT DISTINCT FROM ${expectedInputSha256}
     LIMIT 1
   `)
   return (

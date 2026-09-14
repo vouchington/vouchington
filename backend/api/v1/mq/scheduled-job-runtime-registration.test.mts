@@ -40,6 +40,11 @@ import {
 } from '@queues/images/enqueues/schedules'
 import { imagesQueue } from '@queues/images/queues'
 import {
+  scheduledJobManifest as openAiModerationManifest,
+  upsertSchedules as registerOpenAiModeration,
+} from '@queues/openai-moderation/enqueues/schedules'
+import { openai_moderation_omni_single } from '@queues/openai-moderation/queues'
+import {
   scheduledJobManifest as kagiManifest,
   upsertSchedules as registerKagi,
 } from '@queues/kagi-smallweb/enqueues/schedules'
@@ -79,6 +84,7 @@ const REGISTRATIONS = [
   [registerCrawlReferral, crawlReferralLinksQueue, crawlReferralManifest],
   [registerFindYourFriends, findYourFriendsQueue, findYourFriendsManifest],
   [registerImages, imagesQueue, imagesManifest],
+  [registerOpenAiModeration, openai_moderation_omni_single, openAiModerationManifest],
   [registerKagi, kagiSmallWeb, kagiManifest],
   [registerSitemaps, sitemaps, sitemapsManifest],
   [registerUnfurl, unfurlReferralLinksQueue, unfurlManifest],

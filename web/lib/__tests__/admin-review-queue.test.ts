@@ -18,12 +18,12 @@ function makePost(overrides: Partial<AdminReviewQueuePost> = {}): AdminReviewQue
     root_slug: null,
     clearance_status: 'pending',
     clearance_updated_at: null,
-    spam_detection_flagged: null,
-    spam_detection_score: null,
-    spam_detection_results: null,
-    openai_omni_moderation_flagged: null,
-    openai_omni_moderation_results: null,
-    media_context: { requires_reveal: false, images: [] },
+    moderation_summary: {
+      disposition: null,
+      reason_codes: [],
+      evidence_summary: { flagged_category_count: 0, signal_count: 0 },
+    },
+    media_reveal: { requires_reveal: false, images: [] },
     ...overrides,
   }
 }

@@ -2,6 +2,11 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 import { VITEST_OWNERSHIP } from '../../ci/vitest/project-ownership.mts'
+import { shardedJobPolicies } from '../../ci/vitest/project-ownership-registry.mts'
+import {
+  dedicatedToolingWorkflowProjectNames,
+  toolingWorkflowProjectNames,
+} from '../../test-helpers/vitest-config/tooling-project-registry.mts'
 import { vitestArgs } from '../../ci/storybook-browser-runner-env.mts'
 import { shellLogicalLines } from './workflow-test-helpers.mts'
 
@@ -38,6 +43,12 @@ function requireJob(
   return job
 }
 
+function requireOrchestratorJob(orchestratorJob: string): (typeof VITEST_OWNERSHIP)[number] {
+  const job = VITEST_OWNERSHIP.find(candidate => candidate.orchestratorJob === orchestratorJob)
+  if (!job) throw new Error(`No job with orchestratorJob "${orchestratorJob}" is registered`)
+  return job
+}
+
 describe('Vitest project ownership <-> workflow --project commands', () => {
   const literalJobs = VITEST_OWNERSHIP.filter(job => job.invocation === 'literal')
 
@@ -70,11 +81,15 @@ describe('Vitest project ownership <-> workflow --project commands', () => {
     expect(workflowFile(job.workflow)).toContain('run-storybook-browser-tests.mts')
   })
 
-  it('tooling: routes through the central registry, not a literal --project list', () => {
+  it('tooling: routes regular projects through the central registry and isolates route bounds', () => {
     const job = requireJob('tooling-registry')
     expect(workflowFile(job.workflow)).toContain('tooling-test-runner.mts --workflow-projects')
-    expect(literalProjectsInvokedBy(job.workflow).size).toBe(0)
-    expect(job.projects.length).toBeGreaterThan(0)
+    expect([...modelProjectNames(job)].toSorted()).toEqual(
+      [...toolingWorkflowProjectNames].toSorted(),
+    )
+    expect([...literalProjectsInvokedBy(job.workflow)].toSorted()).toEqual(
+      [...dedicatedToolingWorkflowProjectNames].toSorted(),
+    )
   })
 
   it('portability: routes through the central group runner, not a literal --project list', () => {
@@ -82,6 +97,21 @@ describe('Vitest project ownership <-> workflow --project commands', () => {
     expect(workflowFile(job.workflow)).toContain('pnpm run test:portability')
     expect(literalProjectsInvokedBy(job.workflow).size).toBe(0)
     expect(job.projects.length).toBeGreaterThan(0)
+  })
+
+  it.each(Object.entries(shardedJobPolicies()))(
+    '%s: workflow resolves the matrix total before constructing it',
+    orchestratorJob => {
+      const workflow = workflowFile(requireOrchestratorJob(orchestratorJob).workflow)
+      expect(workflow).toContain(`node ci/vitest/shard-total.mts ${orchestratorJob}`)
+      expect(workflow).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
+    },
+  )
+
+  it('uses producer outputs, rather than shard policy defaults, in coverage aggregation', () => {
+    const coverageWorkflow = workflowFile('ci-test-coverage.yml')
+    expect(coverageWorkflow).toContain('running sharded producer has no exact shard total')
+    expect(coverageWorkflow).not.toContain('defaultShards')
   })
 
   it('has exactly one job per invocation form covered above, plus the literal jobs', () => {

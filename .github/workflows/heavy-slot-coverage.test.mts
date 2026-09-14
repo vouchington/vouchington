@@ -41,7 +41,7 @@ describe('host-global memory-heavy slot coverage', () => {
     ])
   })
 
-  it('keeps the oxlint workflow job timeout allowlisted at 70 minutes', () => {
+  it('keeps the oxlint workflow job timeout allowlisted without the route-selector check', () => {
     const config = load(readFileSync('.no-mistakes.yml', 'utf8')) as {
       rules?: Array<{
         rule?: string
@@ -55,7 +55,15 @@ describe('host-global memory-heavy slot coverage', () => {
       ),
     ).toEqual({
       job: '.github/workflows/static-code-analysis.yml#static-code-analysis',
-      maxMinutes: 70,
+      maxMinutes: 50,
+    })
+    expect(
+      timeouts?.options?.allow?.find(
+        entry => entry.job === '.github/workflows/static-code-analysis.yml#no-mistakes-owned',
+      ),
+    ).toEqual({
+      job: '.github/workflows/static-code-analysis.yml#no-mistakes-owned',
+      maxMinutes: 55,
     })
   })
 

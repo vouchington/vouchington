@@ -21,7 +21,12 @@ vi.mock(import('@/lib/api/client'), () => ({
 import { HouseholdManager } from '../household-manager'
 import type { HouseholdMembership as Membership } from '@/types/my'
 import type { PageInfo } from '@/types/api-responses'
-import { allByPw, deferred, makeMembership, makeSection } from '../test-helpers/household-manager'
+import {
+  allByPw,
+  deferred,
+  makeMembership,
+  makeSection,
+} from '../../../test-helpers/components/my/household-manager'
 
 describe('HouseholdManager pagination', () => {
   const terminalPageInfo: PageInfo = {

@@ -23,9 +23,9 @@ potentially billed failures latch the request day and stop. The default budget (
 call that does not set it explicitly. Pick the value from
 `backend/agents/_shared/retry-policy.mts` matching the caller's workload —
 `CHAT_SUBAGENT_RETRY_POLICY` (5), `SYNCHRONOUS_REQUEST_RETRY_POLICY` (1), or
-`QUEUED_BACKGROUND_RETRY_POLICY` (2) — rather than leaving the free-capacity budget implicit. See
-[OpenAI Cost Model § Retry budgets](../../../docs/overview/architecture/openai-cost-model.md#retry-budgets)
-for the full table and accounting contract.
+`QUEUED_BACKGROUND_RETRY_POLICY` (2) — rather than leaving the free-capacity budget implicit. The
+full retry-budget table and its accounting contract live in the private
+`vouchington/vouchington-docs` repository.
 
 ```typescript
 import { createOpenAIResponse, QUEUED_BACKGROUND_RETRY_POLICY } from '@agents/_shared'

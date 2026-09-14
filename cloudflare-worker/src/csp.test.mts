@@ -8,7 +8,11 @@ const BROWSER_UPLOAD_ORIGINS = JSON.stringify([
 
 const buildTestWebCsp = (
   assetOrigin?: string,
-  options: { production?: boolean; nonce?: string } = {},
+  options: {
+    production?: boolean
+    nonce?: string
+    sentryWebDsn?: string
+  } = {},
 ): string =>
   buildWebCsp(assetOrigin, {
     ...options,
@@ -161,10 +165,9 @@ describe('buildWebCsp', () => {
     expect(origins.filter(origin => !registeredOrigins.has(origin))).toEqual([])
   })
 
-  it('includes pinned Sentry ingest hostname in connect-src (not wildcard)', () => {
-    const csp = buildTestWebCsp()
-    expect(csp).toMatch(/connect-src [^;]*https:\/\/o4507688154824704\.ingest\.us\.sentry\.io/)
-    expect(csp).not.toContain('*.ingest.sentry.io')
+  it('does not include an ingest origin without a valid configured Sentry DSN', () => {
+    const csp = buildTestWebCsp(undefined, { sentryWebDsn: 'not-a-dsn' })
+    expect(csp).not.toContain('https://example.test')
   })
 
   it('includes only the injected S3 upload origins', () => {

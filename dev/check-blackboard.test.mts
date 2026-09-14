@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { sessionsClientFixture } from './blackboard/test-helpers/client-fixtures.mts'
+import { sessionsClientFixture } from './test-helpers/blackboard/client-fixtures.mts'
 import { runCheckBlackboard } from './check-blackboard.mts'
 
 const scriptPath = fileURLToPath(new URL('./check-blackboard.mts', import.meta.url))

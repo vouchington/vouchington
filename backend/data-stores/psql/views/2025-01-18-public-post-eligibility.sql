@@ -34,12 +34,10 @@ CREATE OR REPLACE VIEW view_public_post_eligibility AS
    AND candidate_suspension.lifted_at IS NULL
   WHERE candidate_post.deleted_at IS NULL
   AND candidate_post.approved_at IS NOT NULL
-  AND candidate_post.openai_omni_moderation_flagged IS NOT TRUE
   AND candidate_post.archived_at IS NULL
   AND candidate_suspension.user_id IS NULL
   AND root_post.deleted_at IS NULL
   AND root_post.approved_at IS NOT NULL
-  AND root_post.openai_omni_moderation_flagged IS NOT TRUE
   AND root_post.archived_at IS NULL
   AND root_post.privacy = 'public'
   AND root_post.broadcast = 'everyone'

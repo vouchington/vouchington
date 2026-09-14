@@ -10,13 +10,13 @@
 
 ## Moderation Filtering
 
-Posts flagged by OpenAI moderation are filtered from search results based on user permissions:
+Post search relies on the provider-neutral clearance projection:
 
-- **Anonymous users**: Cannot see flagged posts
-- **Authenticated users**: Can see their own flagged posts, but not other users' flagged posts
-- **Administrators**: Can see all posts, including flagged posts
+- **Anonymous users**: See only approved posts
+- **Authenticated users**: May see their own uncleared posts, but not other users' uncleared posts
+- **Moderation staff**: May see uncleared posts on authorized staff surfaces
 
-The filtering only applies to posts where `openai_omni_moderation_created_at IS NOT NULL` (moderation has been completed). Posts without completed moderation are treated as unflagged.
+Provider facts and evidence remain in the moderation ledger and are never part of search contracts.
 
 ## Query Builder
 

@@ -155,7 +155,7 @@ export async function PostListPage({ config, searchParams }: PostListPageProps) 
           })}
         />
         {breadcrumbItems.length > 0 && (
-          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
         )}
 
         <PostListTopSection

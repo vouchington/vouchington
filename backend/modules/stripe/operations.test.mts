@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as checkout from './checkout.mts'
+import * as stripeClientModule from '@modules/stripe/client'
 import * as customers from './customers.mts'
 import * as identity from './identity.mts'
 import * as invoices from './invoices.mts'
@@ -158,29 +159,57 @@ describe('Stripe operations', () => {
   })
 
   it('maps subscription invoices and payments to JSON-safe summaries', async () => {
-    vi.spyOn(invoices, 'listStripeSubscriptionInvoices').mockResolvedValue({
-      data: [
-        {
-          id: 'in_1',
-          status: 'paid',
-          amount_paid: 1200,
-          currency: 'usd',
-          created: 1_700_000_000,
-          description: undefined,
-          payments: {
-            data: [
-              {
-                amount_paid: 1200,
-                payment: { type: 'charge', charge: 'ch_1' },
-              },
-            ],
+    const list = vi
+      .fn<VitestLooseMock>()
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: 'in_1',
+            status: 'paid',
+            amount_paid: 1200,
+            currency: 'usd',
+            created: 1_700_000_000,
+            description: undefined,
+            payments: {
+              data: [
+                {
+                  amount_paid: 1200,
+                  payment: { type: 'charge', charge: 'ch_1' },
+                },
+              ],
+            },
           },
-        },
-      ],
+        ],
+        has_more: true,
+      })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: 'in_later',
+            status: 'open',
+            amount_paid: 0,
+            currency: 'usd',
+            created: 1_699_999_999,
+            description: 'later invoice',
+          },
+        ],
+        has_more: false,
+      })
+    const listInvoicePayments = vi.fn<VitestLooseMock>().mockResolvedValue({
+      data: [],
+      has_more: false,
+    })
+    const listLineItems = vi.fn<VitestLooseMock>().mockResolvedValue({
+      data: [],
+      has_more: false,
+    })
+    vi.spyOn(stripeClientModule, 'getStripeClient').mockReturnValue({
+      invoicePayments: { list: listInvoicePayments },
+      invoices: { list, listLineItems },
     } as never)
 
     await expect(
-      listSubscriptionInvoicesOperation({ subscriptionId: 'sub_1', limit: 100 }),
+      listSubscriptionInvoicesOperation({ subscriptionId: 'sub_1', limit: 1 }),
     ).resolves.toEqual([
       {
         id: 'in_1',
@@ -197,6 +226,14 @@ describe('Stripe operations', () => {
         ],
       },
     ])
+    expect(list).toHaveBeenCalledOnce()
+    expect(list).toHaveBeenCalledWith({
+      subscription: 'sub_1',
+      limit: 1,
+      expand: ['data.payments'],
+    })
+    expect(listInvoicePayments).not.toHaveBeenCalled()
+    expect(listLineItems).not.toHaveBeenCalled()
   })
 
   it('maps an invoice payment entry with no nested payment object safely', async () => {

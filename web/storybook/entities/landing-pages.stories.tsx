@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { createTranslator, loadMessages } from '@ts-shared/ui-messages'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { PublicLandingPageView } from '@/components/landing-pages/public-landing-page'
 import { LandingPagesManager } from '@/components/my/landing-pages-manager'
 import { ProfileLinkForm } from '@/components/my/profile-link-form'
@@ -14,7 +15,7 @@ import {
   storyCurrentUser,
 } from './entity-fixtures'
 
-const t = createTranslator('en', await loadMessages('en'))
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const meta = {
   title: 'Entities/Landing Pages',

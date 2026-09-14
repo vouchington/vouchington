@@ -8,8 +8,6 @@ fi
 
 worktree_resource_dir_from_path() {
   local path=$1
-  local digest
-  local digest_output
   local physical_path
   local worktree_dir
 
@@ -19,16 +17,11 @@ worktree_resource_dir_from_path() {
   if [ ! -e "$physical_path/.git" ] || worktree_resource_is_main "$physical_path"; then
     worktree_dir=$(basename "$physical_path")
   else
-    if ! digest_output=$(printf '%s' "$physical_path" | openssl dgst -sha256); then
-      echo "Error: failed to generate the worktree resource identity SHA-256 digest." >&2
-      return 1
+    if ! declare -F git_worktree_canonical_path_hash >/dev/null 2>&1; then
+      # shellcheck source=dev/lib/git-worktrees.sh
+      source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/git-worktrees.sh"
     fi
-    digest=${digest_output##* }
-    if [[ ! "$digest" =~ ^[0-9a-f]{64}$ ]]; then
-      echo "Error: worktree resource identity SHA-256 output was malformed." >&2
-      return 1
-    fi
-    worktree_dir="d${digest:0:12}"
+    worktree_dir=$(git_worktree_canonical_path_hash "$physical_path") || return 1
   fi
 
   printf '%s' "$worktree_dir"

@@ -1,6 +1,10 @@
 import { read } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { getLatestMembershipByUserId } from './get.mts'
+import {
+  getMembershipSourceIdByMembershipId,
+  getStripeSubscriptionIdByMembershipSourceId,
+  getLatestMembershipByUserId,
+} from './get.mts'
 import type {
   CancelSubscriptionImmediatelyPayload,
   CreateRefundPayload,
@@ -25,8 +29,12 @@ export async function listRefundableCharges(
   stripeOperations: Pick<MembershipStripeOperations, 'listSubscriptionInvoices'>,
 ): Promise<RefundableCharge[]> {
   const membership = await getLatestMembershipByUserId(targetUserId)
-  if (!membership?.stripe_subscription_id) return []
-  return listRefundableChargesForSubscription(membership.stripe_subscription_id, stripeOperations)
+  if (!membership) return []
+  const membershipSourceId = await getMembershipSourceIdByMembershipId(membership.id)
+  if (!membershipSourceId) return []
+  const stripeSubscriptionId = await getStripeSubscriptionIdByMembershipSourceId(membershipSourceId)
+  if (!stripeSubscriptionId) return []
+  return listRefundableChargesForSubscription(stripeSubscriptionId, stripeOperations)
 }
 
 export async function listRefundableChargesForSubscription(

@@ -24,11 +24,9 @@ export function useViewerHasCommunity(enabled: boolean): boolean {
         })
     }
     let active = true
-    cachedPromise
-      .then(v => {
-        if (active) setHasCommunity(v)
-      })
-      .catch(() => {})
+    void cachedPromise.then(v => {
+      if (active) setHasCommunity(v)
+    })
     return () => {
       active = false
       // Reset on logout or unmount so a subsequent login starts from false until

@@ -157,8 +157,6 @@ export const post = {
   archived_by_id: null,
   clearance_reason: null,
   clearance_updated_at: null,
-  spam_detection_created_at: null,
-  spam_detection_flagged: null,
   post_hashtags: [
     {
       id: '00000000-0000-7000-8000-000000000102',
@@ -171,8 +169,6 @@ export const post = {
     { type: 'topic', topic_id: 'topic-1', topic_name: 'Travel' },
     { type: 'hashtag', hashtag: '#Travel' },
   ],
-  spam_detection_results: null,
-  spam_detection_score: null,
   updated_by_id: null,
 }
 

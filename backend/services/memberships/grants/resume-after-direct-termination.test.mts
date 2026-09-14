@@ -11,7 +11,7 @@ import {
 import { createMembership, grantMembership } from '../create.mts'
 import { getMembershipByUserId } from '../get.mts'
 import { resumeGrantAfterDirectTermination } from './resume-after-direct-termination.mts'
-import { updateMembershipFromWebhook } from '../update.mts'
+import { updateMembershipFromEvent } from '../update.mts'
 
 describe('direct terms', () => {
   it('queues an admin grant behind a live direct term', async () => {
@@ -119,7 +119,7 @@ describe('direct terms', () => {
       stripeSubscriptionId: `sub_active_to_paused_direct_${member.id}`,
     })
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
       async () => false,
     )

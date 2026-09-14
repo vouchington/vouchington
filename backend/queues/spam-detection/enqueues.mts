@@ -35,7 +35,6 @@ function makeJobOpts(
 
 const defaults = {
   attempts: SPAM_DETECTION_DEFAULTS.attempts,
-  backoff: SPAM_DETECTION_DEFAULTS.backoff,
   removeOnComplete: SPAM_DETECTION_DEFAULTS.removeOnComplete,
   removeOnFail: SPAM_DETECTION_DEFAULTS.removeOnFail,
 } satisfies Partial<JobOptions>

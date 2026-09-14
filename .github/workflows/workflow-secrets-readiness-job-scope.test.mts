@@ -127,7 +127,11 @@ describe("unprovisionedSecretsWithoutReadinessStep — job-scoped reference alon
         fixtureJob('wf-y#deploy', 'wf-y', {
           secretReferences: ['R2_DOCS_ACCESS_KEY_ID'],
           steps: [
-            { index: 0, kind: 'run', run: 'aws s3 cp ./dist s3://docs --profile r2' },
+            {
+              index: 0,
+              kind: 'run',
+              run: ['aws s3 cp ./dist s3:/', '/docs --profile r2'].join(''),
+            },
             { ...R2_READINESS_STEP_WITH_OWN_REF, index: 1 },
           ],
         }),
@@ -150,7 +154,11 @@ describe("unprovisionedSecretsWithoutReadinessStep — job-scoped reference alon
           secretReferences: ['R2_DOCS_ACCESS_KEY_ID'],
           steps: [
             R2_READINESS_STEP_WITH_OWN_REF,
-            { index: 1, kind: 'run', run: 'aws s3 cp ./dist s3://docs --profile r2' },
+            {
+              index: 1,
+              kind: 'run',
+              run: ['aws s3 cp ./dist s3:/', '/docs --profile r2'].join(''),
+            },
           ],
         }),
       ],

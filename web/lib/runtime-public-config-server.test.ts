@@ -7,6 +7,15 @@ import {
 import { TURNSTILE_TEST_SITE_KEY } from './turnstile-config'
 
 describe('runtime public config server helpers', () => {
+  it('exposes SENTRY_WEB_DSN only through the runtime public bootstrap config', () => {
+    expect(
+      getServerRuntimePublicConfig({ SENTRY_WEB_DSN: 'https://public@example.test/123' }),
+    ).toMatchObject({ sentryDsn: 'https://public@example.test/123' })
+    expect(
+      getServerRuntimePublicConfig({ SENTRY_WEB_DSN: 'private-invalid-value' }).sentryDsn,
+    ).toBe(undefined)
+  })
+
   it('builds browser config from runtime env without requiring NEXT_PUBLIC names', () => {
     const config = getServerRuntimePublicConfig({
       ALLOW_TURNSTILE_TEST_KEY: 'true',
@@ -48,7 +57,7 @@ describe('runtime public config server helpers', () => {
         googleClientId: 'google-client</script>',
       }),
     ).toBe(
-      String.raw`window.__VOUCHA_PUBLIC_CONFIG__={"googleClientId":"google-client\u003c/script>"}`,
+      String.raw`window.__VOUCHA_PUBLIC_CONFIG__={"googleClientId":"google-client\u003c/script>"};window.dispatchEvent(new Event("voucha:runtime-public-config-ready"))`,
     )
   })
 

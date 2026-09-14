@@ -1,5 +1,8 @@
 import type * as Sentry from '@sentry/nextjs'
-import { resolveSentryEnablement } from '@ts-shared/utils/sentry-deployment-gate'
+import {
+  resolveSentryDsnEnablement,
+  SENTRY_CONFIGURATION_WARNING,
+} from '@ts-shared/utils/sentry-deployment-gate'
 import {
   scrubSentryError,
   scrubSentrySpan,
@@ -7,36 +10,51 @@ import {
 } from '@/lib/on-error/scrub-sentry-event'
 import {
   getBrowserRuntimePublicConfig,
+  getBrowserRuntimePublicConfigIfAvailable,
+  RUNTIME_PUBLIC_CONFIG_READY_EVENT,
   type RuntimePublicConfig,
 } from '@/lib/runtime-public-config'
 
-const dsn =
-  'https://7a947dd8dc8d498c5b9d212113b1a44c@o4507688154824704.ingest.us.sentry.io/4507688156856320'
-
-type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
+export type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
 
 interface SentryClientInitDeps {
-  getRuntimePublicConfig?: () => RuntimePublicConfig
-  resolveSentryEnablement?: typeof resolveSentryEnablement
+  getRuntimePublicConfig?: () => RuntimePublicConfig | undefined
+  resolveSentryEnablement?: typeof resolveSentryDsnEnablement
   scrubSentryError?: typeof scrubSentryError
   scrubSentrySpan?: typeof scrubSentrySpan
   scrubSentryTransaction?: typeof scrubSentryTransaction
 }
 
+interface RuntimePublicConfigEventTarget {
+  addEventListener(type: string, listener: () => void, options: { once: true }): void
+}
+
+let sentryConfigurationInvalidLogged = false
+
+function warnIfSentryConfigurationInvalid(configurationInvalid: boolean): void {
+  if (configurationInvalid && !sentryConfigurationInvalidLogged) {
+    console.warn(SENTRY_CONFIGURATION_WARNING)
+    sentryConfigurationInvalidLogged = true
+  }
+}
+
 export function createSentryClientInitOptions(deps: SentryClientInitDeps = {}): SentryInitOptions {
   const getRuntimeConfig = deps.getRuntimePublicConfig ?? getBrowserRuntimePublicConfig
-  const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryEnablement
+  const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
   const beforeSend = deps.scrubSentryError ?? scrubSentryError
   const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
   const beforeSendTransaction = deps.scrubSentryTransaction ?? scrubSentryTransaction
   // The browser has no OTel tracing story — OTEL_ENABLED never reaches the client bundle.
-  const { enabled, environment } = resolveEnablement({
-    environment: getRuntimeConfig().environment,
+  const runtimeConfig = getRuntimeConfig() ?? {}
+  const { enabled, environment, sentryDsn, configurationInvalid } = resolveEnablement({
+    dsn: runtimeConfig.sentryDsn,
+    environment: runtimeConfig.environment,
     otelEnabled: false,
   })
+  warnIfSentryConfigurationInvalid(configurationInvalid)
 
   return {
-    dsn,
+    dsn: sentryDsn?.dsn,
 
     // Route Sentry events through the CF Worker tunnel to bypass ad-blockers.
     // The CF Worker intercepts POST /monitoring and forwards to Sentry directly.
@@ -94,4 +112,30 @@ export function createSentryClientInitOptions(deps: SentryClientInitDeps = {}): 
       'AbortError',
     ],
   }
+}
+
+/** Initializes once the server-rendered runtime config bootstrap has executed. */
+export function initializeSentryClient(
+  init: (options: SentryInitOptions) => void,
+  deps: SentryClientInitDeps = {},
+  runtimeTarget: RuntimePublicConfigEventTarget | undefined = typeof window === 'undefined'
+    ? undefined
+    : window,
+): void {
+  if (runtimeTarget === undefined) return
+
+  const getRuntimeConfig = deps.getRuntimePublicConfig ?? getBrowserRuntimePublicConfigIfAvailable
+
+  const initialize = () =>
+    init(
+      createSentryClientInitOptions({
+        ...deps,
+        getRuntimePublicConfig: getRuntimeConfig,
+      }),
+    )
+  if (getRuntimeConfig() !== undefined) {
+    initialize()
+    return
+  }
+  runtimeTarget.addEventListener(RUNTIME_PUBLIC_CONFIG_READY_EVENT, initialize, { once: true })
 }

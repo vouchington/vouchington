@@ -12,6 +12,7 @@ import type {
   CommunityVisibility,
 } from './types.mts'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
+import onError from '@modules/on-error'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
@@ -121,7 +122,8 @@ export async function createCommunity(
     invalidate.communities(community),
     invalidateCommunityMemberUserMetrics(currentUserId),
   ])
-  void enqueueLanguageDetection('community', community.id).catch(() => undefined)
+  // Language detection is asynchronous enrichment; the committed community remains durable.
+  void enqueueLanguageDetection('community', community.id).catch(onError)
   return community
 }
 

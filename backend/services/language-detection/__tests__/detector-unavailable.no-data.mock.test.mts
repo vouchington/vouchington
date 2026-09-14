@@ -5,16 +5,18 @@
  * and the row's lingua_rs_input_sha256 stays NULL for the backfill.
  *
  * This needs its own file: detector.mts caches the resolved module at module
- * scope, so a fresh module (isolate: true) is required to exercise the null path.
+ * scope, so the module registry is reset before importing it to exercise the
+ * null path deterministically.
  */
 import { describe, it, expect, vi } from 'vitest'
 
-// Make the dynamic `import('lingua-rs')` reject so getLinguaMod resolves to null.
-vi.mock<typeof import('lingua-rs')>(import('lingua-rs'), () => {
+vi.resetModules()
+// Make the dynamic `import('lingua-rs')` reject so requireLinguaMod resolves to null.
+vi.doMock<typeof import('lingua-rs')>(import('lingua-rs'), () => {
   throw new Error('native binary unavailable')
 })
 
-import { detectLanguage, detectLanguageMany } from '../detector.mts'
+const { detectLanguage, detectLanguageMany } = await import('../detector.mts')
 
 describe('detector when lingua-rs is unavailable', () => {
   it('detectLanguage rejects instead of returning an empty result', async () => {

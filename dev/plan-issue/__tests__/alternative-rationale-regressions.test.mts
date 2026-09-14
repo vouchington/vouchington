@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { NO_CHANGE_ERRORS, withNoChangeDecision } from '../test-helpers/no-change-plan.mts'
-import { VALID_PLAN_BODY } from '../test-helpers/valid-plan-body.mts'
+import {
+  NO_CHANGE_ERRORS,
+  withNoChangeDecision,
+} from '../../test-helpers/plan-issue/no-change-plan.mts'
+import { VALID_PLAN_BODY } from '../../test-helpers/plan-issue/valid-plan-body.mts'
 import { validatePlanIssue } from '../validate.mts'
 
 describe('Alternative rationale regressions', () => {

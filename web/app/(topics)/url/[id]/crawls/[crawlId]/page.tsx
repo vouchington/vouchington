@@ -105,6 +105,7 @@ export default async function CrawlDetailPage({
 
       {hasMetaData && (
         <CrawlMetaTags
+          t={t}
           meta={crawl.meta_tags ?? {}}
           lang={crawl.lang ?? null}
           ogImageSideload={og_image_sideload ?? null}

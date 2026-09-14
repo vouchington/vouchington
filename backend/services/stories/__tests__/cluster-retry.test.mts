@@ -17,7 +17,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { upsertSystemAdministrator } from '@services/users/system-users'
-import { settleStoryPostTopicVoteCapture } from '../test-helpers/post-topic-vote-capture.mts'
+import { settleStoryPostTopicVoteCapture } from '../../../test-helpers/services/stories/post-topic-vote-capture.mts'
 import {
   acknowledgePostPublicationDirtyWork,
   claimPostPublicationDirtyWork,

@@ -20,14 +20,13 @@ export async function seedUserRemovedPlatformPosts(count = 2000): Promise<void> 
         values.push(id, title, markdown, seedUuid(0, '01'), hash, rejectedAt)
         const base = values.length - 5
         rows.push(
-          `($${base}, 'discussion', $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 4}, $${base + 4}, $${base + 5}::timestamptz)`,
+          `($${base}, 'discussion', $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 4}, $${base + 5}::timestamptz)`,
         )
       }
       await query(
         `/* seedExplainData */ INSERT INTO posts (
           id, post_type, title, markdown, created_by_id,
           bedrock_nova_multimodal_v1_content_sha256,
-          openai_omni_moderation_content_sha256,
           llm_moderation_content_sha256,
           rejected_at
         ) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,

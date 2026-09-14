@@ -2,7 +2,6 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-
 const workflow = readFileSync('.github/workflows/tests-backend-unit.yml', 'utf8')
 const stepsWorkflow = load(workflow) as {
   on?: {
@@ -11,13 +10,15 @@ const stepsWorkflow = load(workflow) as {
   }
   jobs?: Record<
     string,
-    { steps?: Array<{ env?: Record<string, string>; name?: string; run?: string }> }
+    {
+      steps?: Array<{ env?: Record<string, string>; name?: string; run?: string }>
+      strategy?: { 'max-parallel'?: number }
+    }
   >
 }
 const runBackendTestsScript = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(
   step => step.name === 'Run backend tests',
 )?.run
-
 // Isolates the FILES-array-computation prefix of the "Run backend tests" step
 // (everything before the `pnpm exec ... vitest run` invocation) so it can be exercised
 // directly, without actually running Vitest.
@@ -50,11 +51,9 @@ const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as {
   scripts: Record<string, string>
 }
 const vitestProjectGroupRunner = readFileSync('ci/run-vitest-project-group.mts', 'utf8')
-
 function jobSection(jobName: string): string {
   const start = workflow.indexOf(`\n  ${jobName}:`)
   expect(start).toBeGreaterThanOrEqual(0)
-
   const rest = workflow.slice(start + 1)
   const next = rest.search(/\n {2}[a-z][a-z0-9-]*:\n/)
   return next === -1 ? rest : rest.slice(0, next)
@@ -81,15 +80,17 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(backendJob).not.toContain('Check backend dependencies')
     expect(backendJob).not.toContain('Typecheck backend and email templates')
   })
-  it('prepares a configurable backend test shard matrix on a self-hosted utility runner', () => {
+  it('prepares a demand-neutral configurable backend test shard matrix on a self-hosted runner', () => {
     const prep = jobSection('prep')
-
     expect(prep).toContain('runs-on: [self-hosted]')
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
-    expect(prep).toContain('total: ${{ inputs.shard_total_override || 5 }}')
+    expect(prep).toContain('node ci/vitest/shard-total.mts test-backend-unit')
+    expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
+    expect(stepsWorkflow.jobs?.['backend-tests']?.strategy?.['max-parallel']).toBe(5)
   })
+
   it('keeps OpenAI integration tests out of the normal backend project', () => {
     expect(vitestConfig).toContain("name: 'backend-openai'")
     expect(vitestConfig).toContain("include: ['backend/**/*.openai*.test.mts']")

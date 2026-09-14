@@ -5,11 +5,14 @@ import type { Metadata } from 'next'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { getGrowthMetrics } from '@/lib/api/server/growth-metrics'
 import type { GrowthRange } from '@/types/growth-metrics'
+import type GrowthDashboardComponent from '@/components/admin/growth/growth-dashboard'
 
 export const metadata: Metadata = createNoIndexMetadata('Growth Dashboard')
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const GrowthDashboard = nextDynamic(() => import('@/components/admin/growth/growth-dashboard'))
+const GrowthDashboard = nextDynamic<Parameters<typeof GrowthDashboardComponent>[0]>(
+  () => import('@/components/admin/growth/growth-dashboard'),
+)
 
 const VALID_RANGES = new Set<GrowthRange>(['today', '7d', '30d', '90d', 'all'])
 
