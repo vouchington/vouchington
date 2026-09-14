@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createContext } from '../test-helpers/mock-env.mts'
+import { createContext } from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 const mockFetchInner = vi.fn<VitestLooseMock>()
@@ -20,7 +20,7 @@ describe('worker fetch handler — WebSocket upgrade bypass', () => {
     } satisfies Env
 
     const response = await worker.fetch(
-      new Request('https://voucha.ai/_next/webpack-hmr', {
+      new Request('https://voucha.ai/_next/hmr', {
         headers: { Upgrade: 'websocket' },
       }),
       env,

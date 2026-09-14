@@ -1,5 +1,10 @@
 import * as Sentry from '@sentry/nextjs'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { RUNTIME_PUBLIC_CONFIG_READY_EVENT } from './lib/runtime-public-config'
+import {
+  clearRuntimePublicConfigForTest,
+  setRuntimePublicConfigForTest,
+} from './test-helpers/runtime-public-config'
 
 const { sentryInitCall, mockSentryInit } = vi.hoisted(() => {
   const sentryInitCall: { options?: Parameters<typeof Sentry.init>[0] } = {}
@@ -22,7 +27,18 @@ function getInitOptions(): Record<string, unknown> {
 }
 
 describe('client Sentry config', () => {
+  afterEach(() => {
+    clearRuntimePublicConfigForTest()
+  })
+
   it('registers request metadata scrubbing', async () => {
+    expect(sentryInitCall.options).toBeUndefined()
+    setRuntimePublicConfigForTest({
+      environment: 'production',
+      sentryDsn: 'https://public@example.test/123',
+    })
+    window.dispatchEvent(new Event(RUNTIME_PUBLIC_CONFIG_READY_EVENT))
+
     const options = getInitOptions()
     const beforeSend = options.beforeSend as (
       event: Record<string, unknown>,

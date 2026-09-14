@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createUserProfileFixture, safeUsername } from '@voucha/test-helpers'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { updateUserFields } from '@services/users/update-fields'

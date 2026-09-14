@@ -1,14 +1,14 @@
 import type * as Sentry from '@sentry/nextjs'
-import { resolveSentryEnablement } from '@ts-shared/utils/sentry-deployment-gate'
+import {
+  resolveSentryDsnEnablement,
+  SENTRY_CONFIGURATION_WARNING,
+} from '@ts-shared/utils/sentry-deployment-gate'
 import {
   scrubSentryError,
   scrubSentrySpan,
   scrubSentryTransaction,
 } from '@/lib/on-error/scrub-sentry-event'
 import { createOtelSpanProcessors } from './sentry-otel'
-
-const dsn =
-  'https://7a947dd8dc8d498c5b9d212113b1a44c@o4507688154824704.ingest.us.sentry.io/4507688156856320'
 
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]> & {
   openTelemetrySpanProcessors?: ReturnType<typeof createOtelSpanProcessors>
@@ -17,9 +17,18 @@ type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]> & {
 interface SentryServerInitDeps {
   createOtelSpanProcessors?: typeof createOtelSpanProcessors
   scrubSentryError?: typeof scrubSentryError
-  resolveSentryEnablement?: typeof resolveSentryEnablement
+  resolveSentryEnablement?: typeof resolveSentryDsnEnablement
   scrubSentrySpan?: typeof scrubSentrySpan
   scrubSentryTransaction?: typeof scrubSentryTransaction
+}
+
+let sentryConfigurationInvalidLogged = false
+
+function warnIfSentryConfigurationInvalid(configurationInvalid: boolean): void {
+  if (configurationInvalid && !sentryConfigurationInvalidLogged) {
+    console.warn(SENTRY_CONFIGURATION_WARNING)
+    sentryConfigurationInvalidLogged = true
+  }
 }
 
 export function createSentryServerInitOptions(
@@ -31,14 +40,16 @@ export function createSentryServerInitOptions(
   const createSpanProcessors = deps.createOtelSpanProcessors ?? createOtelSpanProcessors
   const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
   const beforeSendTransaction = deps.scrubSentryTransaction ?? scrubSentryTransaction
-  const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryEnablement
-  const { enabled, environment, otelOnly } = resolveEnablement({
+  const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
+  const { enabled, environment, otelOnly, sentryDsn, configurationInvalid } = resolveEnablement({
+    dsn: envVars.SENTRY_DSN,
     environment: envVars.ENVIRONMENT,
     otelEnabled: envVars.OTEL_ENABLED === '1',
   })
+  warnIfSentryConfigurationInvalid(configurationInvalid)
 
   return {
-    dsn: otelOnly ? undefined : dsn,
+    dsn: otelOnly ? undefined : sentryDsn?.dsn,
 
     // Set sample rate (1.0 = 100% for development, adjust for production)
     tracesSampleRate: 1,

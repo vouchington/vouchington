@@ -10,7 +10,7 @@ import {
   entryFixture,
   failingEntriesIterable,
   HOSTED_ENV,
-} from '../../blackboard/test-helpers/client-fixtures.mts'
+} from '../../test-helpers/blackboard/client-fixtures.mts'
 import { validateRetroDoc } from '../../retrospective-validate.mts'
 import { readPersistedSessionId } from '../../agent-session-id/persist.mts'
 import { frictionLogDirectory } from '../config.mts'

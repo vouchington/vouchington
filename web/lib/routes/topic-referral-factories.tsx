@@ -73,6 +73,7 @@ export function createTopicReferralLinksPage(slug: string) {
 
     const referralLinksLabel = t('extracted.routes.topicReferralFactories.referralLinks_4348d2ad')
     const structuredData = createTopicSectionStructuredData(
+      t,
       topicData.topic,
       slug,
       { label: referralLinksLabel, path: 'referral-links' },
@@ -129,7 +130,10 @@ export function createTopicReferralLinksPage(slug: string) {
               )}
             </p>
           )}
-          <ReferralLinkList response={response} />
+          <ReferralLinkList
+            t={t}
+            response={response}
+          />
           {currentUser && !isOfficial && (
             <ReferralLinksShowAll referralProgramId={referralProgramId} />
           )}

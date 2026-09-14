@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeAll, beforeEach } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createTestCrmContact } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import * as crmOutreach from '@agents/crm-outreach'

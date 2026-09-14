@@ -34,10 +34,6 @@ export const USER_METRICS_BATCH_SQL = `/* getUserMetricsByAnyBatch */
       JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id
       WHERE posts.created_by_id IN (SELECT id FROM combined_ids)
         AND posts.is_anonymous IS NOT TRUE
-        AND (
-          posts.openai_omni_moderation_flagged IS NOT TRUE
-          OR posts.openai_omni_moderation_created_at IS NULL
-        )
       GROUP BY posts.created_by_id
     ),
     topic_follow_counts AS (

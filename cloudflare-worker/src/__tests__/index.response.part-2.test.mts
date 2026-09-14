@@ -6,7 +6,11 @@ import { ROBOTS_DISALLOW_PREFIXES } from '@ts-shared/route-classification'
 
 import { AI_CRAWLERS } from '../robots-txt.mts'
 
-import { createContext, restoreGlobals, setupMemoryCaches } from '../test-helpers/mock-env.mts'
+import {
+  createContext,
+  restoreGlobals,
+  setupMemoryCaches,
+} from '../../test-helpers/src/mock-env.mts'
 
 import type { Env } from '../types.mts'
 

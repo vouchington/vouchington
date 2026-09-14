@@ -218,7 +218,7 @@ describe('Vitest CI triggers', () => {
     expectRefinedRuntimeFilterMisses('playwright', [
       'ci/playwright/ci-select.test.mts',
       'ci/playwright/__tests__/selection.test.mts',
-      'cloudflare-worker/src/test-helpers/mock-env.mts',
+      'cloudflare-worker/test-helpers/src/mock-env.mts',
       'cloudflare-worker/src/auth/test-jwt-fixtures.mts',
       'dev/initialize',
       'dev/test-helpers/initialize.mts',

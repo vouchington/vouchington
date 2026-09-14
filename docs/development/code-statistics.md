@@ -103,7 +103,7 @@ of:
 
 - `api-fixtures/v1/client-intents.json` is `source` (runtime fixture data, not a
   config basename).
-- `cloudflare-worker/src/test-helpers/cache.mts` is `tooling` (matched by
+- `cloudflare-worker/test-helpers/src/cache.mts` is `tooling` (matched by
   `/test-helpers/`), not `tests`.
 - `backend/agents/.oxlintrc.json` is `tooling` (dot-prefixed JSON basename).
 

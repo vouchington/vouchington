@@ -51,6 +51,10 @@ export type MembershipVerificationResponseBody = {
   verification: import('@services/memberships').MembershipVerification
 }
 
+export type MicrosoftStoreServiceTicketsResponseBody = {
+  service_tickets: import('@services/memberships/microsoft').MicrosoftStoreServiceTickets
+}
+
 /**
  * Stripe billing portal session response body
  */

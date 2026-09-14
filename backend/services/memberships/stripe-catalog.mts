@@ -81,7 +81,7 @@ async function reconcileLockedStripeMembershipCatalog(
   const { rows } = await write(
     sql`/* reconcileStripeMembershipCatalog: lock canonical products */
       SELECT id, plan, billing_interval FROM membership_products
-      WHERE retired_at IS NULL ORDER BY plan, billing_interval FOR UPDATE`,
+      WHERE retired_at IS NULL ORDER BY plan, billing_interval FOR NO KEY UPDATE`,
     { query: transaction },
   )
   /* v8 ignore next -- defensive: the seeded canonical product set is structurally fixed. */

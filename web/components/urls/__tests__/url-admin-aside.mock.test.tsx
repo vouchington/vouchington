@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeAll, describe, it, expect, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { UrlAdminAside } from '../url-admin-aside'
 import type { PublicUrl, UrlDetailResponseBody } from '@/types/api-responses'
 
@@ -50,55 +52,70 @@ function makeUrl(hostname: string | null): PublicUrl {
 }
 
 describe('UrlAdminAside', () => {
-  it('renders hostname link when hostname is present', async () => {
-    render(
-      await UrlAdminAside({
-        url: makeUrl('example.com'),
-        canTriggerCrawl: false,
-        urlType: 'url',
-        rssFeedId: null,
-      }),
+  let t: ReturnType<typeof createTranslator>
+
+  beforeAll(() => {
+    t = createTranslator('en', enMessages)
+  })
+
+  function renderAside(props: {
+    url: ReturnType<typeof makeUrl>
+    canTriggerCrawl: boolean
+    urlType: UrlDetailResponseBody['url_type'] | 'url'
+    rssFeedId: string | null
+  }) {
+    return render(
+      <UrlAdminAside
+        t={t}
+        url={props.url}
+        canTriggerCrawl={props.canTriggerCrawl}
+        urlType={props.urlType as UrlDetailResponseBody['url_type']}
+        rssFeedId={props.rssFeedId}
+      />,
     )
+  }
+
+  it('renders hostname link when hostname is present', async () => {
+    renderAside({
+      url: makeUrl('example.com'),
+      canTriggerCrawl: false,
+      urlType: 'url',
+      rssFeedId: null,
+    })
 
     const link = screen.getByRole('link', { name: 'example.com' })
     expect(link.getAttribute('href')).toBe('/domain/example.com')
   })
 
   it('omits hostname row when hostname is null', async () => {
-    render(
-      await UrlAdminAside({
-        url: makeUrl(null),
-        canTriggerCrawl: false,
-        urlType: 'url',
-        rssFeedId: null,
-      }),
-    )
+    renderAside({
+      url: makeUrl(null),
+      canTriggerCrawl: false,
+      urlType: 'url',
+      rssFeedId: null,
+    })
 
     expect(screen.queryByText('Hostname')).toBeNull()
   })
 
   it('renders trigger crawl button when canTriggerCrawl is true', async () => {
-    render(
-      await UrlAdminAside({
-        url: makeUrl('example.com'),
-        canTriggerCrawl: true,
-        urlType: 'url',
-        rssFeedId: null,
-      }),
-    )
+    renderAside({
+      url: makeUrl('example.com'),
+      canTriggerCrawl: true,
+      urlType: 'url',
+      rssFeedId: null,
+    })
 
     expect(screen.getByRole('button', { name: /trigger crawl/i })).toBeDefined()
   })
 
   it('omits trigger crawl button when canTriggerCrawl is false', async () => {
-    render(
-      await UrlAdminAside({
-        url: makeUrl('example.com'),
-        canTriggerCrawl: false,
-        urlType: 'url' as UrlDetailResponseBody['url_type'],
-        rssFeedId: null,
-      }),
-    )
+    renderAside({
+      url: makeUrl('example.com'),
+      canTriggerCrawl: false,
+      urlType: 'url' as UrlDetailResponseBody['url_type'],
+      rssFeedId: null,
+    })
 
     expect(screen.queryByRole('button', { name: /trigger crawl/i })).toBeNull()
   })

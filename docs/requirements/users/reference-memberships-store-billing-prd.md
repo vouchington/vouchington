@@ -183,17 +183,65 @@ remains in an automatic pending state until reconciliation can safely finish.
 ### Google Play Billing
 
 - Treat `PENDING` as non-entitling.
-- Acknowledge only verified `PURCHASED` state and only once.
+- Acknowledge only verified `PURCHASED` state and only once. Enqueue the durable acknowledgement
+  immediately after verification commits; the periodic scan recovers a lost enqueue or reply.
 - Follow linked-token replacement chains.
+- When a verified current token links to a predecessor no longer fetchable after retention,
+  anchor the lineage at that predecessor digest and retain its encrypted alias so delayed RTDNs
+  can resolve the current token without rejecting the purchase.
+- A permanently unavailable current leaf of a known, bound source creates a verified
+  terminal observation and closes access; an unknown token cannot close another source.
 - Dedupe Real-time Developer Notification message IDs and fetch authoritative state after delivery.
+- Accept Pub/Sub push only after offline OIDC audience, issuer, and service-account verification
+  against worker-refreshed cached keys. Persist encrypted RTDN evidence and enqueue before success;
+  a missing trust cache is retryable. Reconciliation uses fetched provider state rather than
+  treating message delivery order as provider state order.
+- Store only encrypted purchase tokens and lookup digests. Worker-side `subscriptionsv2.get` and
+  bounded recovery own access changes. Five-minute scans recover unfinished RTDN and acknowledgement
+  work; an hourly cursor scan rechecks known active sources when an RTDN never arrives. A lost
+  acknowledgement reply is followed by a provider re-read before any retry. Cancellation preserves
+  access through the verified period end, while
+  pending, on-hold, expired, and revoked states never fabricate access.
+- A `SUBSCRIPTION_REVOKED` RTDN triggers an authoritative `subscriptionsv2.get`; Play reports a
+  revoked subscription as `EXPIRED`, ending access immediately. A voided-order notice is retained
+  as evidence and triggers the same fetch, but does not alone revoke a still-active subscription
+  because a refunded order is not necessarily the current entitlement term. See Google's
+  [subscription lifecycle](https://developer.android.com/google/play/billing/lifecycle/subscriptions#revocations)
+  and [RTDN reference](https://developer.android.com/google/play/billing/rtdn-reference#voided-purchases).
 
 ### Microsoft Store
 
 - Treat Store ID keys as encrypted, expiring verification credentials, never lineage.
-- Derive lineage from authoritative application, product, SKU, and collection identity.
+- Keep one credential set per Voucha user, Store environment, and application. Every verified
+  recurrence for that account can use it for recovery; a later repurchase cannot orphan an older
+  source. Replace each key only when its validated issuance/expiry tuple is newer, regardless of
+  the order in which verification workers finish. Each verification retains distinct lineage-bound
+  evidence, even when it reuses the same account keys; exact idempotency replay remains one request.
+- Derive lineage from authoritative application, product, SKU, and recurrence ID. The recurrence
+  ID stays stable through renewal and changes on repurchase; Collections item IDs are not lineage.
+- Match Collections `recurrenceData` to Billing State `id`, not the Collections item `id`.
+  [Microsoft's publisher-query contract](https://learn.microsoft.com/en-us/gaming/gdk/docs/store/commerce/service-to-service/microsoft-store-apis/xstore-v9-query-for-products)
+  defines that cross-API identity; Collections-only revocation must also create a newer observation.
+- When a matching product appears on only one of those APIs, keep verification pending for
+  reconciliation; an unrelated product is still invalid evidence. Reject only confirmed invalid
+  Store ID key responses, not generic service-token failures or throttling.
+- Gate entitlement by both recurrence state and provider start/end times. A delayed `Active`
+  response after expiry is terminal; a future-start collection never grants early. Older
+  observations cannot replace newer recovery credentials.
 - Refresh through the signed-in client and scheduled Collection/Billing State checks.
 - Never extend access beyond the last provider-verified end. Fresh client evidence restores access
   automatically.
+- A signed-in service-ticket request supplies separate short-lived Collections and Purchase
+  tickets for the Windows Store APIs. The client obtains both user Store ID keys and submits them
+  through the existing verification endpoint; neither key is ever an entitlement or lineage ID.
+- Server-side reconciliation scans only known sources with still-usable encrypted credentials.
+  Each keyset sweep freezes a UUIDv7 upper bound and continues through its finite page set before
+  starting the next sweep, so new purchases cannot indefinitely starve older sources.
+  A retryable Store failure keeps one source-scoped verification pending for the five-minute
+  verification recovery dispatcher; later hourly sweeps reuse that durable attempt rather than
+  creating additional pending evidence.
+  Once those keys expire, access remains capped at the last verified end until fresh signed-in
+  evidence arrives. No all-user polling or support intervention is required.
 
 ## API contract
 

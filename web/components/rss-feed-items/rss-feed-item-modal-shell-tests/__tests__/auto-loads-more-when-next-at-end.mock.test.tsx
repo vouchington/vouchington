@@ -1,9 +1,9 @@
 import { describe, expect, it, beforeAll, beforeEach, vi } from 'vitest'
 import { act, fireEvent, render } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import { RssFeedItemModalShell } from '../../rss-feed-item-modal-shell'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 vi.mock(
   import('next/navigation'),

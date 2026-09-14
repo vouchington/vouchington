@@ -1,5 +1,5 @@
-import { createTransactionResource } from '../test-helpers/transaction-resource.mts'
-import { makePrivateUser } from '../test-helpers/start-test-fixtures.mts'
+import { createTransactionResource } from '../../../test-helpers/services/identity-verification/transaction-resource.mts'
+import { makePrivateUser } from '../../../test-helpers/services/identity-verification/start-test-fixtures.mts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { beginTransaction } from '@voucha/test-helpers'
 import type { assertEligibleForIdentityVerification } from '../eligibility.mts'

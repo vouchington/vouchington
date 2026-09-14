@@ -34,10 +34,9 @@ container target locally. The checked-in `WORKER_IO_AUTOMATION_ENABLED` flag in
 is false by default; setting it to `true` adds the `worker-io` target to pull-request validation but
 does not publish or deploy it. The private `vouchington-infra` receiver owns worker image builds,
 publication, retention, deployment manifests, deployed task sizing, and each task definition's
-`QUEUES` selection. Local development keeps CPU-only and I/O-capable queues split by default. CPU-only
+`QUEUES` selection. Local development runs every policy-managed queue in one worker process. CPU-only
 queues can run only in `worker-cpu`, and every deployed environment must select every queue in
-exactly one worker process. `WORKER_CPU_EXTRA_QUEUES` moves selected I/O-capable queues to CPU only
-in local development; it does not configure deployed placement.
+exactly one worker process.
 
 `QUEUES` controls which queue workers a process constructs. Use comma-separated queue names to
 include only those queues, or prefix every entry with `-` to run every queue except those names.

@@ -1,11 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { createTranslator, type Translator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { CompareDataInsights } from '../compare-data-insights'
 import { ComparePage } from '../compare-page'
 import type { Topic, TopicMetrics } from '@/types/topics'
 import type { TopicDataPointInsights } from '@/types/topic-data-point-insights'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 vi.mock(
   import('next/link'),

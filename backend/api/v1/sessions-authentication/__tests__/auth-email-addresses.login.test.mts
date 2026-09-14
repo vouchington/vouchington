@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createRequest, nextTestRequestIp, request } from '@voucha/api/test-helpers/server'
+import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
 import {
   createUniqueTestEmail,
   overrideDynamicConfigFieldsForTest,
@@ -12,7 +12,7 @@ import {
   legacyUuidV4,
   signLegacyDeviceJwt,
   signLegacySessionJwt,
-} from '@services/jwt-session/test-helpers/index'
+} from '@voucha/test-helpers/services/jwt-session/index'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
 import {
   EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX,

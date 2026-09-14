@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UnsafeUrlError } from 'ssrf-guard/node'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { deliverActivityToInbox } from './deliver-activity.mts'
@@ -11,6 +11,17 @@ function okResponse(): Response {
   return new Response(null, { status: 202 })
 }
 
+function responseWithRejectedCancellation(error: Error): Response {
+  return new Response(
+    new ReadableStream({
+      cancel() {
+        return Promise.reject(error)
+      },
+    }),
+    { status: 500 },
+  )
+}
+
 describe('deliverActivityToInbox', () => {
   const validateUrl = vi.fn<VitestLooseMock>()
   const fetch = vi.fn<VitestLooseMock>()
@@ -19,6 +30,10 @@ describe('deliverActivityToInbox', () => {
     vi.clearAllMocks()
     validateUrl.mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
     fetch.mockResolvedValue(okResponse())
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('signs and POSTs the activity JSON to the inbox', async () => {
@@ -82,6 +97,23 @@ describe('deliverActivityToInbox', () => {
         { validateUrl, fetch },
       ),
     ).rejects.toThrow(/server error/i)
+  })
+
+  it('reports a failed best-effort body cancellation without replacing the delivery failure', async () => {
+    const cancellationError = new Error('response body cancellation failed')
+    const reportError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubEnv('NODE_ENV', 'development')
+    fetch.mockResolvedValueOnce(responseWithRejectedCancellation(cancellationError))
+
+    await expect(
+      deliverActivityToInbox(
+        { inboxUrl: INBOX_URL, activity: {}, keyId: KEY_ID, privateKeyPem },
+        { validateUrl, fetch },
+      ),
+    ).rejects.toThrow(/server error/i)
+    await new Promise<void>(queueMicrotask)
+
+    expect(reportError).toHaveBeenCalledWith(cancellationError)
   })
 
   it('throws on a permanent client error (410 Gone) response', async () => {

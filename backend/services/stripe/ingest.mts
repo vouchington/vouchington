@@ -1,5 +1,5 @@
 import type Stripe from 'stripe'
-import { enqueueProcessStripeWebhook } from '@queues/memberships/enqueues'
+import { enqueueProcessStripeEvent } from '@queues/memberships/enqueues'
 import { insertStripeEvent } from './insert-event.mts'
 import { restartFailedStripeEventAttempt } from './event-processing.mts'
 import type { InsertStripeEventResult } from './events-types.mts'
@@ -16,7 +16,7 @@ export async function ingestStripeEvent(event: Stripe.Event): Promise<InsertStri
         ? await restartFailedStripeEventAttempt(storedEvent.id)
         : storedEvent.processing_attempt_id
     if (processingAttemptId) {
-      await enqueueProcessStripeWebhook({
+      await enqueueProcessStripeEvent({
         stripeEventRecordId: storedEvent.id,
         processingAttemptId,
         stripeSubscriptionId: storedEvent.subscription_id,

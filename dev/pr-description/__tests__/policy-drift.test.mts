@@ -7,9 +7,9 @@ import { describe, expect, it } from 'vitest'
 import { findGitHubWorkflowBlock } from '../../codex-hooks/policy/github-workflow.mts'
 import { withTestTempDir } from '../../codex-hooks-tests/test-temp-root.mts'
 import { validatePlanIssue } from '../../plan-issue/validate.mts'
-import { VALID_PLAN_BODY } from '../../plan-issue/test-helpers/valid-plan-body.mts'
+import { VALID_PLAN_BODY } from '../../test-helpers/plan-issue/valid-plan-body.mts'
 import type { IssueReferenceLookup, ReferencedIssue } from '../closing-refs.mts'
-import { VALID_PROVENANCE_BLOCK } from '../test-helpers/valid-pr-body.mts'
+import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { validatePrBodyWithIssueReferences } from '../validate.mts'
 
 const PR_BODY = `## Related issues

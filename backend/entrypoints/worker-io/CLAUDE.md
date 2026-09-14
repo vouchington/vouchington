@@ -1,8 +1,8 @@
 # worker-io
 
-IO-bound workers: IO-capable queues not moved to worker-cpu.
+IO-bound workers for deployments that split worker capacity.
 
-Queue placement source: [../../modules/worker-queue-inventory/worker-queue-policy.json](../../modules/worker-queue-inventory/worker-queue-policy.json). CPU-only queues must never be added here. `WORKER_CPU_EXTRA_QUEUES` is limited to local development.
+Queue placement source: [../../modules/worker-queue-inventory/worker-queue-policy.json](../../modules/worker-queue-inventory/worker-queue-policy.json). CPU-only queues must never be added here. Local development uses worker-cpu instead.
 
 ## Rules
 

@@ -9,6 +9,7 @@ import {
   Text,
   render,
 } from './react-email-runtime.mts'
+import { emailCopy } from './catalog-copy.mts'
 import { VouchaFooter, VouchaHeader } from './components.tsx'
 import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
 import { styles } from './styles.mts'
@@ -18,118 +19,27 @@ import type {
   PreviewableEmailComponent,
 } from './types.mts'
 
-// oxlint-disable-next-line react/only-export-components
-export const applicationDecisionCopyByLocale = {
-  en: {
-    approved: {
-      subject: 'Your application to {communityName} was approved',
-      preview: 'Your application to {communityName} was approved',
-      heading: 'Application Approved',
-      body: 'Your application to join {communityName} has been approved. Welcome aboard!',
-      button: 'View community',
-      textBody: 'Your application to join {communityName} has been approved. Welcome aboard!',
-      textButton: 'View community:',
-    },
-    rejected: {
-      subject: 'Your application to {communityName} was rejected',
-      preview: 'Your application to {communityName} was rejected',
-      heading: 'Application Not Approved',
-      body: 'Your application to join {communityName} was not approved at this time.',
-      button: 'View community',
-      reasonLabel: 'Reason:',
-      textBody: 'Your application to join {communityName} was not approved at this time.',
-      textButton: 'View community:',
-    },
-  },
-  es: {
-    approved: {
-      subject: 'Tu solicitud para unirte a {communityName} fue aprobada',
-      preview: 'Tu solicitud para unirte a {communityName} fue aprobada',
-      heading: 'Solicitud aprobada',
-      body: 'Tu solicitud para unirte a {communityName} ha sido aprobada. ¡Bienvenido!',
-      button: 'Ver comunidad',
-      textBody: 'Tu solicitud para unirte a {communityName} ha sido aprobada. ¡Bienvenido!',
-      textButton: 'Ver comunidad:',
-    },
-    rejected: {
-      subject: 'Tu solicitud para unirte a {communityName} fue rechazada',
-      preview: 'Tu solicitud para unirte a {communityName} fue rechazada',
-      heading: 'Solicitud no aprobada',
-      body: 'Tu solicitud para unirte a {communityName} no fue aprobada en esta ocasión.',
-      button: 'Ver comunidad',
-      reasonLabel: 'Motivo:',
-      textBody: 'Tu solicitud para unirte a {communityName} no fue aprobada en esta ocasión.',
-      textButton: 'Ver comunidad:',
-    },
-  },
-  fr: {
-    approved: {
-      subject: 'Votre candidature pour rejoindre {communityName} a été approuvée',
-      preview: 'Votre candidature pour rejoindre {communityName} a été approuvée',
-      heading: 'Candidature approuvée',
-      body: 'Votre candidature pour rejoindre {communityName} a été approuvée. Bienvenue !',
-      button: 'Voir la communauté',
-      textBody: 'Votre candidature pour rejoindre {communityName} a été approuvée. Bienvenue !',
-      textButton: 'Voir la communauté :',
-    },
-    rejected: {
-      subject: 'Votre candidature pour rejoindre {communityName} a été refusée',
-      preview: 'Votre candidature pour rejoindre {communityName} a été refusée',
-      heading: 'Candidature non approuvée',
-      body: "Votre candidature pour rejoindre {communityName} n'a pas été approuvée cette fois-ci.",
-      button: 'Voir la communauté',
-      reasonLabel: 'Motif :',
-      textBody:
-        "Votre candidature pour rejoindre {communityName} n'a pas été approuvée cette fois-ci.",
-      textButton: 'Voir la communauté :',
-    },
-  },
-  pt: {
-    approved: {
-      subject: 'Sua solicitação para entrar em {communityName} foi aprovada',
-      preview: 'Sua solicitação para entrar em {communityName} foi aprovada',
-      heading: 'Solicitação aprovada',
-      body: 'Sua solicitação para entrar em {communityName} foi aprovada. Seja bem-vindo!',
-      button: 'Ver comunidade',
-      textBody: 'Sua solicitação para entrar em {communityName} foi aprovada. Seja bem-vindo!',
-      textButton: 'Ver comunidade:',
-    },
-    rejected: {
-      subject: 'Sua solicitação para entrar em {communityName} foi rejeitada',
-      preview: 'Sua solicitação para entrar em {communityName} foi rejeitada',
-      heading: 'Solicitação não aprovada',
-      body: 'Sua solicitação para entrar em {communityName} não foi aprovada desta vez.',
-      button: 'Ver comunidade',
-      reasonLabel: 'Motivo:',
-      textBody: 'Sua solicitação para entrar em {communityName} não foi aprovada desta vez.',
-      textButton: 'Ver comunidade:',
-    },
-  },
-} as const
-
 const CommunityApplicationDecisionEmail: PreviewableEmailComponent<
   CommunityApplicationDecisionEmailProps
 > = ({ communityName, communityUrl, status, rejectionReason, uiLocale }) => {
   const locale = resolveUiLocale(uiLocale)
-  const localeCopy = applicationDecisionCopyByLocale[locale]
-  const copy = localeCopy[status]
+  const t = emailCopy(locale, 'community-application-decision')
+  const vars = { communityName }
 
   return (
     <Html>
       <Head />
-      <Preview>{copy.preview.replace('{communityName}', communityName)}</Preview>
+      <Preview>{t(`${status}.preview`, vars)}</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
           <VouchaHeader />
           <Section style={styles.section}>
-            <Text style={styles.heading}>{copy.heading}</Text>
-            <Text style={styles.paragraph}>
-              {copy.body.replace('{communityName}', communityName)}
-            </Text>
+            <Text style={styles.heading}>{t(`${status}.heading`)}</Text>
+            <Text style={styles.paragraph}>{t(`${status}.body`, vars)}</Text>
 
             {status === 'rejected' && rejectionReason ? (
               <Text style={styles.paragraph}>
-                <strong>{localeCopy.rejected.reasonLabel}</strong> {rejectionReason}
+                <strong>{t('rejected.reasonLabel')}</strong> {rejectionReason}
               </Text>
             ) : null}
 
@@ -138,7 +48,7 @@ const CommunityApplicationDecisionEmail: PreviewableEmailComponent<
                 href={communityUrl}
                 style={styles.button}
               >
-                {copy.button}
+                {t(`${status}.button`)}
               </Button>
             </Section>
           </Section>
@@ -160,18 +70,17 @@ async function renderCommunityApplicationDecisionEmail(
   props: CommunityApplicationDecisionEmailProps,
 ): EmailRenderResultPromise {
   const locale = resolveUiLocale(props.uiLocale)
-  const localeCopy = applicationDecisionCopyByLocale[locale]
-  const copy = localeCopy[props.status]
-
+  const t = emailCopy(locale, 'community-application-decision')
+  const vars = { communityName: props.communityName }
   const reasonLine =
     props.status === 'rejected' && props.rejectionReason
-      ? `\n\n${localeCopy.rejected.reasonLabel} ${props.rejectionReason}`
+      ? `\n\n${t('rejected.reasonLabel')} ${props.rejectionReason}`
       : ''
 
   return {
-    subject: copy.subject.replace('{communityName}', props.communityName),
+    subject: t(`${props.status}.subject`, vars),
     html: await render(<CommunityApplicationDecisionEmail {...props} />, { pretty: true }),
-    text: `${copy.textBody.replace('{communityName}', props.communityName)}${reasonLine}\n\n${copy.textButton} ${props.communityUrl}\n\n${getLocalizedSignoff(locale)}`,
+    text: `${t(`${props.status}.textBody`, vars)}${reasonLine}\n\n${t(`${props.status}.textButton`)} ${props.communityUrl}\n\n${getLocalizedSignoff(locale)}`,
   }
 }
 

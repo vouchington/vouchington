@@ -17,7 +17,7 @@ test.describe('Plans page visuals', () => {
     await expect(page.getByTestId('plan-comparison-heading')).toBeVisible()
     await expect(page.getByTestId('free-plan-get-started-link')).toHaveAttribute('href', '/login')
 
-    const table = page.locator('table')
+    const table = page.getByTestId('plan-comparison-table')
     await expect(table).toBeVisible()
 
     // All three plan columns are present

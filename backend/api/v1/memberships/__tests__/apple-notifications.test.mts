@@ -1,5 +1,5 @@
 import { describe, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 
 describe('Apple App Store notification ingress route', () => {
   it('is an unauthenticated server-to-server route and rejects malformed evidence', async () => {

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { cancelOpenAIResponse, retrieveOpenAIResponse } from './background-response-teardown.mts'
-import { makeSdkResponse, makeSdkTextResponse } from './test-helpers/responses.mts'
+import {
+  makeSdkResponse,
+  makeSdkTextResponse,
+} from '../../test-helpers/modules/openai-utils/responses.mts'
 
 type CancelMock = (responseId: string, options?: unknown) => Promise<unknown>
 type RetrieveMock = (responseId: string, query: unknown, options?: unknown) => Promise<unknown>

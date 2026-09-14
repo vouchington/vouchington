@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
 
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   insertTestTopic,
   insertTestRssFeed,

@@ -38,10 +38,6 @@
       "rejected_at": null,
       "root_id": "bounded-ancestor-root",
       "slug": null,
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null
@@ -74,10 +70,6 @@
       "rejected_at": null,
       "root_id": "bounded-ancestor-root",
       "slug": null,
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null
@@ -110,10 +102,6 @@
       "rejected_at": null,
       "root_id": null,
       "slug": "fixture-bounded-ancestor-root",
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "Bounded ancestor thread",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null

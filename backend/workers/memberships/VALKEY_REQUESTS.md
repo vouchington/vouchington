@@ -14,4 +14,4 @@ connections). See [issue #4717](https://github.com/jonathanong/filaments/issues/
 
 - Most of the job processing is Stripe API calls and PSQL. ValkeyCache reads for SKU and active-plan lookups are conditional on whether the membership code path is invoked.
 - All calls land on `cacheValkeyClient`.
-- **Conditional:** Stripe identity-verification webhook events (checkout, session lifecycle) call `invalidate.users(userId)` = 1 `invokeScript` op (`cacheValkeyClient`) after updating user verification state. This is in addition to the SKU/plan cache reads and applies only to identity-type webhooks.
+- **Conditional:** Stripe identity-verification events (checkout, session lifecycle) call `invalidate.users(userId)` = 1 `invokeScript` op (`cacheValkeyClient`) after updating user verification state. This is in addition to the SKU/plan cache reads and applies only to identity-type events.

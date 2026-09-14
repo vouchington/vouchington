@@ -36,10 +36,6 @@ export const swiftPost = {
   archived_by_id: null,
   clearance_reason: null,
   clearance_updated_at: null,
-  spam_detection_created_at: null,
-  spam_detection_flagged: null,
-  spam_detection_results: null,
-  spam_detection_score: null,
   updated_by_id: null,
 }
 

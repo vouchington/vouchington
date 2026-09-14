@@ -6,9 +6,10 @@ import { AsideAccordion } from '@/components/asides/aside-accordion'
 import { getTopicDisplayName } from '@/lib/topics/display-name'
 import { podcastCategoryHref } from '@/lib/links/entity-href'
 import type { ViewRssFeed } from '@/types/rss-feeds'
-import { getTranslations } from '@/lib/i18n/get-translations'
+import type { getTranslations } from '@/lib/i18n/get-translations'
 
 interface PodcastShowMetadataAsideProps {
+  t: Awaited<ReturnType<typeof getTranslations>>
   feed: ViewRssFeed
 }
 
@@ -17,8 +18,7 @@ interface PodcastShowMetadataAsideProps {
  * Shows cover art, author, explicit badge, and Apple category chips.
  * Only rendered when feed_type === 'podcast'.
  */
-export async function PodcastShowMetadataAside({ feed }: PodcastShowMetadataAsideProps) {
-  const t = await getTranslations()
+export function PodcastShowMetadataAside({ t, feed }: PodcastShowMetadataAsideProps) {
   const show = feed.podcast_show
   if (!show && !feed.categories?.length) return null
 

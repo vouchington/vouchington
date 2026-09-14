@@ -71,7 +71,7 @@ describe('vitest environment coverage config', () => {
       'web/storybook/component-story-ratchet-renderer.tsx',
       'web/storybook/entities/entity-fixtures.ts',
       'web/storybook/entities/topics-story-recommendations.ts',
-      'web/storybook/test-helpers/component-story-coverage/message.ts',
+      'web/test-helpers/storybook/component-story-coverage/message.ts',
     ])
   })
 

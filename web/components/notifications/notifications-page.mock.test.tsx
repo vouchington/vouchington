@@ -3,18 +3,37 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { NotificationsPage } from './notifications-page'
 import { getPaginatedPage } from '@/lib/api/client'
 
+type NotificationListProps = Parameters<typeof import('./notification-list').NotificationList>[0]
+
 const mockReceiveLoadMore = vi.fn<VitestLooseMock>()
 
 const {
   mockMarkAllMyNotificationsRead,
+  mockMarkMyNotificationReadKeepalive,
   mockDeleteMyNotification,
   mockCreateMyWebPushSubscription,
   mockDeleteMyWebPushSubscription,
 } = vi.hoisted(() => ({
   mockMarkAllMyNotificationsRead: vi.fn<VitestLooseMock>(),
+  mockMarkMyNotificationReadKeepalive: vi.fn<VitestLooseMock>(),
   mockDeleteMyNotification: vi.fn<VitestLooseMock>(),
   mockCreateMyWebPushSubscription: vi.fn<VitestLooseMock>(),
   mockDeleteMyWebPushSubscription: vi.fn<VitestLooseMock>(),
+}))
+
+const { mockCaptureException, mockReceiveOpenNotification } = vi.hoisted(() => ({
+  mockCaptureException: vi.fn<VitestLooseMock>(),
+  mockReceiveOpenNotification: vi.fn<VitestLooseMock>(),
+}))
+const { mockNavigateToTarget, mockResolveNotificationTarget } = vi.hoisted(() => ({
+  mockNavigateToTarget: vi.fn<VitestLooseMock>(),
+  mockResolveNotificationTarget: vi.fn<VitestLooseMock>(),
+}))
+
+vi.mock(import('@sentry/nextjs'), () => ({ captureException: mockCaptureException }))
+vi.mock(import('./utils'), () => ({
+  navigateToTarget: mockNavigateToTarget,
+  resolveNotificationTarget: mockResolveNotificationTarget,
 }))
 
 vi.mock(import('@/components/shared/infinite-scroll'), () => ({
@@ -39,18 +58,56 @@ vi.mock(import('@/lib/api/client'), () => ({
 
 vi.mock(import('@/lib/api/client/my'), () => ({
   markAllMyNotificationsRead: mockMarkAllMyNotificationsRead,
+  markMyNotificationReadKeepalive: mockMarkMyNotificationReadKeepalive,
   deleteMyNotification: mockDeleteMyNotification,
   createMyWebPushSubscription: mockCreateMyWebPushSubscription,
   deleteMyWebPushSubscription: mockDeleteMyWebPushSubscription,
+}))
+
+vi.mock(import('./notification-list'), () => ({
+  NotificationList: ({ notifications, onDelete, onOpen }: NotificationListProps) => {
+    mockReceiveOpenNotification(onOpen)
+    return (
+      <div>
+        {notifications.results.map(({ id }) => {
+          const notification = notifications.notifications[id]!
+          return (
+            <div key={id}>
+              <span>{notification.title}</span>
+              <button
+                type='button'
+                onClick={() => onOpen(notification)}
+              >
+                Open notification
+              </button>
+              <button
+                type='button'
+                onClick={() => onDelete(id)}
+              >
+                Delete notification
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    )
+  },
 }))
 
 describe('notifications-page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockMarkAllMyNotificationsRead.mockReset()
+    mockMarkMyNotificationReadKeepalive.mockReset()
+    mockMarkMyNotificationReadKeepalive.mockResolvedValue(undefined)
     mockDeleteMyNotification.mockReset()
     mockCreateMyWebPushSubscription.mockReset()
     mockDeleteMyWebPushSubscription.mockReset()
+    mockCaptureException.mockReset()
+    mockReceiveOpenNotification.mockReset()
+    mockNavigateToTarget.mockReset()
+    mockResolveNotificationTarget.mockReset()
+    mockResolveNotificationTarget.mockReturnValue('/discussion/root-post/comment/p1')
   })
 
   describe('NotificationsPage', () => {
@@ -112,6 +169,27 @@ describe('notifications-page', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Delete notification' }))
       await waitFor(() => expect(mockDeleteMyNotification).toHaveBeenCalledWith('n1'))
+    })
+
+    it('reports a failed best-effort read receipt without interrupting notification opening', async () => {
+      const receiptError = new Error('read receipt failed')
+      mockMarkMyNotificationReadKeepalive.mockRejectedValue(receiptError)
+      render(
+        <NotificationsPage
+          initialNotifications={initialNotifications}
+          initialSubscriptions={[]}
+        />,
+      )
+
+      const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as (notification: {
+        id: string
+      }) => void
+      expect(() => onOpen(initialNotifications.notifications.n1)).not.toThrow()
+      expect(mockNavigateToTarget).toHaveBeenCalledWith('/discussion/root-post/comment/p1')
+
+      await waitFor(() => {
+        expect(mockCaptureException).toHaveBeenCalledWith(receiptError)
+      })
     })
 
     it('appends notifications from the next page', async () => {

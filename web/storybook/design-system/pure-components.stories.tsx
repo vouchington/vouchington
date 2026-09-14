@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { createTranslator, loadMessages } from '@ts-shared/ui-messages'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { AgentBadge } from '@/components/shared/agent-badge'
 import { RssFeedLink } from '@/components/shared/rss-feed-link'
 import { SearchInput, SearchInputShell } from '@/components/shared/search-input'
@@ -28,7 +29,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const t = createTranslator('en', await loadMessages('en'))
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const Frame = ({ children }: { children: React.ReactNode }) => (
   <main className='min-h-screen bg-background p-6 text-foreground'>

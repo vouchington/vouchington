@@ -6,7 +6,7 @@ import {
   makeSdkResponse,
   makeSdkTextResponse,
   makeStreamEvent,
-} from './test-helpers/responses.mts'
+} from '../../test-helpers/modules/openai-utils/responses.mts'
 
 type CreateMock = (
   params: Parameters<typeof createOpenAIResponse>[0],

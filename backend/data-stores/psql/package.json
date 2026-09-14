@@ -28,11 +28,11 @@
     "@modules/utils": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/postgres": "0.0.7",
+    "@vouchington/postgres": "0.0.8",
     "pg": "^8.23.0",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
-    "vouchington-tooling": "^0.16.0"
+    "vouchington-tooling": "^0.16.1"
   }
 }

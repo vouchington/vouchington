@@ -150,6 +150,8 @@ export const ENV_VAR_CONTRACT_GROUPS = [
       'APPLE_NATIVE_CLIENT_IDS',
       'APPLE_APP_STORE_APPLICATION_ID',
       'APPLE_APP_STORE_APP_ID',
+      'GOOGLE_PLAY_APPLICATION_ID',
+      'MICROSOFT_STORE_APPLICATION_ID',
       'GOOGLE_CLIENT_ID',
       'GITHUB_CLIENT_ID',
       'FACEBOOK_APP_ID',
@@ -181,7 +183,23 @@ export const ENV_VAR_CONTRACT_GROUPS = [
     'vouchington-infra',
     'internal',
     ['ecs-worker-environment'],
-    ['APPLE_APP_STORE_SERVER_API_ISSUER_ID', 'APPLE_APP_STORE_SERVER_API_KEY_ID'],
+    [
+      'APPLE_APP_STORE_SERVER_API_ISSUER_ID',
+      'APPLE_APP_STORE_SERVER_API_KEY_ID',
+      'GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL',
+    ],
+  ),
+  group(
+    'vouchington-infra',
+    'internal',
+    ['ecs-backend-environment'],
+    ['GOOGLE_PLAY_PUBSUB_AUDIENCE', 'GOOGLE_PLAY_PUBSUB_SERVICE_ACCOUNT_EMAIL'],
+  ),
+  group(
+    'vouchington-infra',
+    'internal',
+    ['ecs-backend-environment', 'ecs-worker-environment'],
+    ['MICROSOFT_STORE_TENANT_ID', 'MICROSOFT_STORE_CLIENT_ID'],
   ),
   group(
     'vouchington-infra',
@@ -212,6 +230,7 @@ export const ENV_VAR_CONTRACT_GROUPS = [
       'X_CLIENT_SECRET',
       'LINKEDIN_CLIENT_SECRET',
       'MICROSOFT_CLIENT_SECRET',
+      'MICROSOFT_STORE_CLIENT_SECRET',
       'STRIPE_SECRET_KEY',
       'WEB_PUSH_PRIVATE_KEY',
       'VOUCHA_SIDELOAD_SIGNING_KEYS',
@@ -224,7 +243,11 @@ export const ENV_VAR_CONTRACT_GROUPS = [
     'vouchington-infra',
     'secret',
     ['ecs-worker-secret'],
-    ['APPLE_APP_STORE_SERVER_API_PRIVATE_KEY', 'GRAFANA_IRM_HEARTBEAT_URL'],
+    [
+      'APPLE_APP_STORE_SERVER_API_PRIVATE_KEY',
+      'GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY',
+      'GRAFANA_IRM_HEARTBEAT_URL',
+    ],
   ),
   group(
     'vouchington-infra',
@@ -285,6 +308,17 @@ export const ENV_VAR_CONTRACT_GROUPS = [
     ],
   ),
   group(
+    'vouchington-infra',
+    'public',
+    [
+      'ecs-backend-environment',
+      'ecs-worker-environment',
+      'ecs-web-environment',
+      'lambda-image-resize',
+    ],
+    ['SENTRY_DSN'],
+  ),
+  group(
     'runtime-public-config',
     'public',
     ['ecs-web-environment'],
@@ -302,6 +336,7 @@ export const ENV_VAR_CONTRACT_GROUPS = [
       'NEXT_PUBLIC_MICROSOFT_TENANT_ID',
       'NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY',
       'NEXT_PUBLIC_X_CLIENT_ID',
+      'SENTRY_WEB_DSN',
     ],
   ),
   group(
@@ -338,6 +373,12 @@ export const ENV_VAR_CONTRACT_GROUPS = [
       'CACHED_STATIC_PATHS',
       'GEO_BLOCKED_COUNTRIES',
     ],
+  ),
+  group(
+    'cloudflare-worker',
+    'public',
+    ['cloudflare-staging-vars'],
+    ['SENTRY_DSN', 'SENTRY_TUNNEL_PREVIOUS_WEB_DSN', 'SENTRY_WEB_DSN'],
   ),
 ] as const satisfies readonly EnvVarContractGroup[]
 

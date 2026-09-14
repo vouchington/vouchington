@@ -20,7 +20,7 @@ import {
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
 import { insertStripeEvent } from './events.mts'
-import { makeStripeSubscriptionEvent } from './test-helpers/membership-sync-event.mts'
+import { makeStripeSubscriptionEvent } from '../../test-helpers/services/stripe/membership-sync-event.mts'
 
 vi.mock<typeof import('@modules/stripe/customers')>(
   import('@modules/stripe/customers'),

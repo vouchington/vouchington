@@ -4,8 +4,8 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
 
 /**
- * Resets a post back to 'pending' clearance, clearing spam detection results.
- * Called when post content changes and checks need to re-run.
+ * Resets a post back to pending when content changes. Provider outcomes are immutable and remain
+ * attached to the prior content version.
  */
 export async function resetPostClearance(
   postId: string,
@@ -24,12 +24,7 @@ export async function resetPostClearance(
           approved_at IS NOT NULL
           OR rejected_at IS NOT NULL
           OR in_review_at IS NOT NULL
-          OR spam_detection_flagged IS NOT NULL
-          OR spam_detection_created_at IS NOT NULL
-          OR spam_detection_score IS NOT NULL
-          OR spam_detection_results IS NOT NULL
-          OR openai_omni_moderation_flagged IS NOT NULL
-          OR openai_omni_moderation_created_at IS NOT NULL
+          OR latest_clearance_change_id IS NOT NULL
         )
       FOR UPDATE
     ),
@@ -44,13 +39,7 @@ export async function resetPostClearance(
       latest_clearance_change_id = inserted_change.id,
       approved_at = NULL,
       rejected_at = NULL,
-      in_review_at = NULL,
-      spam_detection_flagged = NULL,
-      spam_detection_created_at = NULL,
-      spam_detection_score = NULL,
-      spam_detection_results = NULL,
-      openai_omni_moderation_flagged = NULL,
-      openai_omni_moderation_created_at = NULL
+      in_review_at = NULL
     FROM inserted_change
     WHERE posts.id = inserted_change.post_id`,
       [postId, changedById ?? null],

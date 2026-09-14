@@ -2,6 +2,7 @@ import { buildApiCatalogLinkset } from './api-catalog.mts'
 import { edgeErrorResponse } from './error-response.mts'
 import { isGeoBlocked, parseBlockedCountries } from './geo-block.mts'
 import { generateRobotsTxt } from './robots-txt.mts'
+import { getRuntimeSentryConfigResponse } from './runtime-sentry-config.mts'
 import {
   buildAgentCard,
   buildAgentSkills,
@@ -38,7 +39,9 @@ export function getGeoBlockedResponse(request: Request, env: Env): Response | nu
   return null
 }
 
-export function getStaticInlineResponse(url: URL, env: Env): Response | null {
+export function getStaticInlineResponse(request: Request, url: URL, env: Env): Response | null {
+  const runtimeSentryConfigResponse = getRuntimeSentryConfigResponse(request, env)
+  if (runtimeSentryConfigResponse) return runtimeSentryConfigResponse
   const pathname = url.pathname
   if (pathname === '/robots.txt') {
     const siteOrigin = env.SITE_ORIGIN ?? 'https://voucha.ai'

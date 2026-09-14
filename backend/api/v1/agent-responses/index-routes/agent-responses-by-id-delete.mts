@@ -3,6 +3,7 @@ import { getAgentResponseById } from '@services/agent-responses/get'
 import { assertCurrentUserCanViewAgentResponse } from '@services/agent-responses/authorization'
 import { cancelAgentResponse } from '@services/agent-responses/update'
 import { ai_agents } from '@queues/ai-agents/queues'
+import onError from '@modules/on-error'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
 
@@ -20,7 +21,9 @@ app.route('/api/v1/agent-responses/:id').delete(async (ctx: Context) => {
   const jobId = await cancelAgentResponse(agentResponse.id)
 
   if (jobId) {
-    await ai_agents.signal(jobId, 'abort').catch(() => {})
+    // The response is already durably deleted; a transient signal failure must not turn the
+    // successful delete into an unretryable API error.
+    await ai_agents.signal(jobId, 'abort').catch(onError)
   }
 
   ctx.setStatus(204)

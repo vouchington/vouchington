@@ -73,7 +73,7 @@ export function TransferOwnershipDialog({ community, member, state, username }: 
             disabled={transferLoading}
             onClick={e => {
               e.preventDefault()
-              state.handleTransferOwnership(member.user_id).catch(() => {})
+              void state.handleTransferOwnership(member.user_id)
             }}
           >
             {transferLoading

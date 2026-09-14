@@ -3,14 +3,14 @@ import {
   entityRelationMetadatum,
   getEntityRelationVoteTableName,
 } from '@voucha/types/entities/entity-relations-metadata'
-import { createLocalTestUser } from '../../test-helpers/users.mts'
+import { createLocalTestUser } from '../../../../test-helpers/data-stores/psql/users.mts'
 import {
   createTopicForRelationPartitionTest,
   getPostSubjectTablePartitionKinds,
   getUserFollowTopicRelationsBySubjectIds,
   getUserFollowTopicRelationsByTopicIds,
   insertUserFollowTopicRelation,
-} from '../../test-helpers/entity-relation-partitions.mts'
+} from '../../../../test-helpers/data-stores/psql/entity-relation-partitions.mts'
 import generateEntityRelationsSql from '../0000-00-01-entity-relations.mts'
 
 describe('user-subject entity relation tables', () => {

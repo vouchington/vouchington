@@ -79,7 +79,7 @@ describe('checkPostgresRuntimeGuard', () => {
 
   it('flags a stale entry in a tracked schema allowlist file', { timeout: 10_000 }, async () => {
     const dir = await makeRepo()
-    const file = 'backend/data-stores/psql/test-helpers/schema-static-analysis/uuid-allowlists.mts'
+    const file = 'backend/test-helpers/data-stores/psql/schema-static-analysis/uuid-allowlists.mts'
     await track(dir, file, `export const UUID_ALLOWLIST = [['removed_table.id', 'reason']]\n`)
 
     const errors: string[] = []

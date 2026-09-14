@@ -79,6 +79,5 @@ function appendContentHashes(
     structured_data: newStructuredData,
   }).content_sha256
   updateQuery.append(sql`, bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha}`)
-  updateQuery.append(sql`, openai_omni_moderation_content_sha256 = ${moderationContentSha}`)
   updateQuery.append(sql`, llm_moderation_content_sha256 = ${moderationContentSha}`)
 }

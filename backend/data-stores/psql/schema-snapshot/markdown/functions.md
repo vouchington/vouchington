@@ -154,10 +154,26 @@ CREATE OR REPLACE FUNCTION public.fn_guard_membership_operation_mutation()
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_membership_refund_metadata_scan_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_metadata_scan_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_membership_refund_mutation`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_membership_refund_operation_attempt_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_operation_attempt_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -443,6 +459,14 @@ CREATE OR REPLACE FUNCTION public.fn_refresh_rss_feed_item_unmapped_category_cou
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_membership_administrator_refund_request_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_membership_automatic_refund_receipt_mutation`
 
 ```sql
@@ -479,14 +503,6 @@ CREATE OR REPLACE FUNCTION public.fn_reject_membership_provider_lineage_mutation
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_membership_provider_observation_mutation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_reject_membership_refund_intent_mutation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_membership_refund_intent_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -528,6 +544,22 @@ CREATE OR REPLACE FUNCTION public.fn_release_moderation_transparency_daily_rollu
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)
  RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_require_membership_administrator_refund_request_context`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_membership_administrator_refund_request_context()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_require_membership_refund_operation_attempt_context`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_membership_refund_operation_attempt_context()
+ RETURNS trigger
  LANGUAGE plpgsql
 ```
 

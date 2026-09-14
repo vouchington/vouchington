@@ -1,9 +1,16 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { emailCopy } from './catalog-copy.mts'
 import { renderDataExportReadyEmail } from './data-export-ready-renderer.mts'
 import DataExportReadyEmail from './data-export-ready.tsx'
 
 describe('renderDataExportReadyEmail', () => {
+  it('owns the timeframe sentence in the catalog', () => {
+    expect(emailCopy('fr', 'data-export-ready')('timeframe')).toBe(
+      'Veuillez télécharger vos données avant la fin de ce délai.',
+    )
+  })
+
   it('renders the expected subject and snapshots', async () => {
     const result = await renderDataExportReadyEmail(DataExportReadyEmail.PreviewProps!)
 

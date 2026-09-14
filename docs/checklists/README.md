@@ -10,7 +10,7 @@ Consolidated lifecycle and edit checklists for the Voucha monorepo. Each checkli
 - [GitHub Actions Checklist](github-actions.md) — Runner choice, pinning, concurrency, and docs-sync rules
 - [Backend Queue Authoring Checklist](backend-queues.md) — Queue/worker ownership, replayability, scheduling, backfills, and validation
 - [Native Parity Interactions](native-parity-interactions.md) — Native list/detail interaction checks, pagination cursors, and visibility gates
-- [Stripe Webhook Events](stripe-webhook-events.md) — Canonical list of Stripe events to subscribe to per environment
+- [Stripe Events](stripe-events.md) — Canonical list of Stripe events to subscribe to per environment
 - [Finite Enum Ripple Checklist](../development/finite-enum-ripple-checklist.md) — Scan surfaces for closed-string-set renames/removals
 
 ## See Also

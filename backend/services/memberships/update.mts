@@ -14,18 +14,18 @@ import {
 } from './update-result.mts'
 import { appendLifecycleSetClauses } from './update-lifecycle.mts'
 import type {
-  MembershipWebhookUpdateOptions,
-  RecordMembershipUpdateChange,
-} from './update/webhook-types.mts'
+  MembershipEventUpdateOptions,
+  RecordMembershipUpdateEventChange,
+} from './update/event-types.mts'
 
-type MembershipWebhookUpdateOutcome = {
+type MembershipEventUpdateOutcome = {
   membership: MembershipUpdateResult
   retainsPaidAccess: boolean
 }
 
-export async function updateMembershipFromWebhook(
-  options: MembershipWebhookUpdateOptions,
-  recordChange: RecordMembershipUpdateChange,
+export async function updateMembershipFromEvent(
+  options: MembershipEventUpdateOptions,
+  recordChange: RecordMembershipUpdateEventChange,
 ): Promise<MembershipUpdateResult | null> {
   const setClauses = [sql`updated_at = CURRENT_TIMESTAMP`]
 
@@ -46,7 +46,7 @@ export async function updateMembershipFromWebhook(
     if (!isTerminal) setClauses.push(sql`cancel_at_period_end = ${options.cancelAtPeriodEnd}`)
   }
 
-  const query = sql`/* updateMembershipFromWebhook */ UPDATE memberships SET `
+  const query = sql`/* updateMembershipFromEvent */ UPDATE memberships SET `
   for (let i = 0; i < setClauses.length; i++) {
     if (i > 0) query.append(sql`, `)
     query.append(setClauses[i])
@@ -99,14 +99,14 @@ export async function updateMembershipFromWebhook(
 
   const update = async (
     transaction: QueryExecutor,
-  ): Promise<MembershipWebhookUpdateOutcome | null> => {
-    await transaction(sql`/* updateMembershipFromWebhook:lockUser */
+  ): Promise<MembershipEventUpdateOutcome | null> => {
+    await transaction(sql`/* updateMembershipFromEvent:lockUser */
       SELECT users.id FROM memberships membership
       INNER JOIN users ON users.id = membership.user_id
       WHERE membership.id = ${options.membershipId} FOR UPDATE OF users
     `)
     if (options.membershipSourceId !== undefined && options.status === 'cancelled') {
-      await transaction(sql`/* updateMembershipFromWebhook:detachedSourceState */
+      await transaction(sql`/* updateMembershipFromEvent:detachedSourceState */
         UPDATE membership_source_states
         SET cancelled_at = COALESCE(cancelled_at, COALESCE(
           ${options.terminalEffectiveAt ?? null}::timestamptz, CURRENT_TIMESTAMP)),
@@ -121,7 +121,7 @@ export async function updateMembershipFromWebhook(
     const { rows } = await transaction(query)
     const updated = parseMembershipUpdateRow(rows[0] as MembershipUpdateRow | undefined)
     if (!updated) return null
-    await transaction(sql`/* updateMembershipFromWebhook:sourceState */
+    await transaction(sql`/* updateMembershipFromEvent:sourceState */
       UPDATE membership_source_states state
       SET membership_product_id = membership.membership_product_id,
           effective_at = membership.effective_at,
@@ -153,7 +153,7 @@ export async function updateMembershipFromWebhook(
       retainsPaidAccess: retainsPaidAccess || !!resumedAccess?.retainsPaidAccess,
     }
   }
-  let outcome: MembershipWebhookUpdateOutcome | null
+  let outcome: MembershipEventUpdateOutcome | null
   try {
     if (options.query) outcome = await update(options.query)
     else {

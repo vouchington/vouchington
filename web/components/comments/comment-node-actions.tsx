@@ -12,9 +12,12 @@ import { PostLockButton } from '@/components/posts/post-lock-button'
 import type { CommentNodeData } from './comment-tree-utils'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { useAuth } from '@/lib/auth/context'
+import type AdminModerationButtonComponent from '@/components/admin/admin-moderation-button'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const AdminModerationButton = dynamic(() => import('@/components/admin/admin-moderation-button'))
+const AdminModerationButton = dynamic<Parameters<typeof AdminModerationButtonComponent>[0]>(
+  () => import('@/components/admin/admin-moderation-button'),
+)
 
 export function CommentNodeActions({
   hideDownCount,

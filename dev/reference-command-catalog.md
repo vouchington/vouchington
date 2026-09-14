@@ -18,27 +18,37 @@ Operating-system and host provisioning is intentionally not a `dev/` entrypoint.
 [system-dependency contract](../docs/development/system-dependencies.md) and the canonical
 [host repository](https://github.com/vouchington/vouchington-machines).
 
-- `./dev/initialize [monorepo|backend|web]` — Current worktree. `monorepo` installs dependencies and
-  tools; `backend` additionally creates local config, database, Valkey, ports, and caches; `web`
+- `./dev/initialize [monorepo|backend|web]` — Current worktree. Checks Git and host prerequisites,
+  installs dependencies and tooling, then configures worktree resources. `backend` additionally creates
+  local config, database, Valkey, ports, and caches; `web`
   additionally sets up HTTPS certs and the CF Worker/Next.js environment.
-- `./dev/tmux [--no-attach] [-v]` — Current worktree; starts the full local service set and may
-  attach to tmux.
+- `./dev/tmux [--no-attach] [-v]` — Current web-initialized worktree; starts, reuses a healthy ready
+  session, or restores dead managed windows in its one session with `nextjs`, `backend`, `worker`,
+  `cloudflare`, and `lambdas` windows.
 - `./dev/tmux-name <name>` — Current tmux pane/window metadata only; an empty name clears the title.
-- `./dev/stop-services [--keep-valkey]` — Current worktree; stops service processes and normally its
-  Valkey container, but preserves database data.
+- `./dev/stop-services [--keep-valkey]` — Current worktree; closes its managed tmux session, including
+  added windows, stops matching service processes and normally its Valkey container, but preserves database data.
 - `./dev/reset` — Current disposable worktree; destructively recreates its database, flushes Valkey,
   and runs migrations.
 - `./dev/teardown [--yes] [--remove]` — Current disposable worktree; destructively removes services,
   database, and Valkey, and optionally the worktree directory.
-- `./dev/reset-worktree [--force]` — Current disposable worktree; destructively returns it to a fresh
-  branch from `origin/main`; `--force` permits discarding uncommitted changes. Fails closed if another
-  `./dev/reset-worktree` is already running for this worktree; see
+- `./dev/reset-worktree [--force]` — Current disposable worktree with dependencies installed; fetches
+  `origin/main` before teardown, then returns it to a fresh branch and runs monorepo initialization
+  (`pnpm install` follows the reset). `--force` permits discarding uncommitted changes. A second reset
+  of the same worktree fails immediately; see
   [git-worktree-locks.md](../docs/development/git-worktree-locks.md).
 - `./dev/cleanup [--yes]` — All local Voucha worktrees; removes confirmed orphaned canonical hashed databases, Valkey
   containers, and prunable worktrees.
-- `./dev/unstick-locks` — All local worktrees; removes stale zero-byte Git index locks, a dead-owner
-  worktree-resource operation lock, and a dead-owner `./dev/reset-worktree` lock, each only when no
-  corresponding operation is running.
+- `./dev/unstick-locks` — All local worktrees; removes stale zero-byte Git index locks and a dead-owner
+  worktree-resource operation lock when no corresponding operation is running.
+
+Generic Git worktree parsing and canonical path hashing come from the published
+`vouchington-tooling/scripts/worktree/git-worktrees.sh` through [`lib/git-worktrees.sh`](lib/git-worktrees.sh).
+When `node_modules` is missing, the adapter uses its checked-in
+[`git-worktrees-recovery.sh`](lib/git-worktrees-recovery.sh) so status, cleanup,
+teardown, and service shutdown remain available before reinstallation.
+Voucha database, Valkey, and protected-main ownership rules remain in
+[`lib/worktree-resource-env.sh`](lib/worktree-resource-env.sh).
 
 `./dev/db-clean` (also `pnpm run db:clean`) is the destructive database/Valkey implementation
 primitive used by higher-level workflows. Prefer `./dev/reset` for a complete developer reset;

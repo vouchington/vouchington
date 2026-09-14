@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createTranslator, type Translator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type { MembershipBenefitCatalog } from '@/types/api-responses'
 import plansFixture from '../../../api-fixtures/v1/responses/native.memberships.plans.default.json'
 import { presentCardFeatures } from './plan-benefit-presentation'
 import { PlanFeatureList } from './plan-feature-list'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 describe('PlanFeatureList', () => {
   let t: Translator

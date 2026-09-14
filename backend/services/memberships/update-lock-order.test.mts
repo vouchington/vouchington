@@ -1,26 +1,30 @@
 import { describe, expect, it, vi } from 'vitest'
-import { beginTransaction, createTestMembership, createTestUser } from '@voucha/test-helpers'
-import { updateMembershipFromWebhook } from './update.mts'
+import {
+  createTestMembership,
+  createTestUser,
+  holdTestMembershipRowLock,
+  holdTestMembershipSourceStateLock,
+  probeTestUserLock,
+} from '@voucha/test-helpers'
+import { updateMembershipFromEvent } from './update.mts'
 
-async function updateWithoutRecording(options: Parameters<typeof updateMembershipFromWebhook>[0]) {
-  return await updateMembershipFromWebhook(options, async () => {})
+async function updateWithoutRecording(options: Parameters<typeof updateMembershipFromEvent>[0]) {
+  return await updateMembershipFromEvent(options, async () => {})
 }
 
-describe('updateMembershipFromWebhook lock order', () => {
+describe('updateMembershipFromEvent lock order', () => {
   it('locks the owning user before waiting on the membership row', async () => {
     const lockUser = await createTestUser()
     const membership = await createTestMembership({ user_id: lockUser.id })
     const membershipLocked = Promise.withResolvers<void>()
     const releaseMembership = Promise.withResolvers<void>()
-    const holder = holdMembershipRow(membership.id, membershipLocked, releaseMembership)
+    const holder = holdTestMembershipRowLock(membership.id, membershipLocked, releaseMembership)
     await membershipLocked.promise
 
     const update = updateWithoutRecording({ membershipId: membership.id, status: 'past_due' })
     try {
       await vi.waitFor(async () => {
-        await expect(
-          probeUserLock(lockUser.id, '/* updateMembershipFromWebhook lock-order user probe */'),
-        ).rejects.toMatchObject({ code: '55P03' })
+        await expect(probeTestUserLock(lockUser.id)).rejects.toMatchObject({ code: '55P03' })
       })
     } finally {
       releaseMembership.resolve()
@@ -34,7 +38,7 @@ describe('updateMembershipFromWebhook lock order', () => {
     const membership = await createTestMembership({ user_id: lockUser.id })
     const sourceLocked = Promise.withResolvers<void>()
     const releaseSource = Promise.withResolvers<void>()
-    const holder = holdMembershipSource(
+    const holder = holdTestMembershipSourceStateLock(
       membership.membership_source_id,
       sourceLocked,
       releaseSource,
@@ -48,12 +52,7 @@ describe('updateMembershipFromWebhook lock order', () => {
     })
     try {
       await vi.waitFor(async () => {
-        await expect(
-          probeUserLock(
-            lockUser.id,
-            '/* updateMembershipFromWebhook detached lock-order user probe */',
-          ),
-        ).rejects.toMatchObject({ code: '55P03' })
+        await expect(probeTestUserLock(lockUser.id)).rejects.toMatchObject({ code: '55P03' })
       })
     } finally {
       releaseSource.resolve()
@@ -62,43 +61,3 @@ describe('updateMembershipFromWebhook lock order', () => {
     await expect(update).resolves.toMatchObject({ current: { status: 'cancelled' } })
   })
 })
-
-async function holdMembershipRow(
-  membershipId: string,
-  locked: PromiseWithResolvers<void>,
-  release: PromiseWithResolvers<void>,
-): Promise<void> {
-  await using query = await beginTransaction()
-  await query(
-    `/* updateMembershipFromWebhook lock-order membership holder */
-      SELECT id FROM memberships WHERE id = $1::uuid FOR UPDATE`,
-    [membershipId],
-  )
-  locked.resolve()
-  await release.promise
-  await query.commit()
-}
-
-async function holdMembershipSource(
-  sourceId: string,
-  locked: PromiseWithResolvers<void>,
-  release: PromiseWithResolvers<void>,
-): Promise<void> {
-  await using query = await beginTransaction()
-  await query(
-    `/* updateMembershipFromWebhook detached lock-order source holder */
-      SELECT membership_source_id FROM membership_source_states
-      WHERE membership_source_id = $1::uuid FOR UPDATE`,
-    [sourceId],
-  )
-  locked.resolve()
-  await release.promise
-  await query.commit()
-}
-
-async function probeUserLock(userId: string, comment: string): Promise<void> {
-  await using query = await beginTransaction()
-  await query(`SET LOCAL lock_timeout = '50ms'`)
-  await query(`${comment} SELECT id FROM users WHERE id = $1::uuid FOR UPDATE`, [userId])
-  await query.commit()
-}

@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export type OpenAIModerationContext = {
+export type PlatformModerationContext = {
   flagged: boolean
   /** Category labels from OpenAI omni-moderation results (staff only). */
   categories?: string[]
@@ -15,7 +15,7 @@ export type AgentModerationContext = {
 }
 
 export type PostModerationContext = {
-  openai_moderation: OpenAIModerationContext | null
+  platform_moderation: PlatformModerationContext | null
   agent_moderations: AgentModerationContext[]
   /** Topic slugs added to the post by moderator-agent system users. */
   agent_added_tags: string[]
@@ -26,7 +26,7 @@ export type PostModerationContextTier = 'staff' | 'public'
 /**
  * Returns per-post moderation context for a batch of post IDs.
  *
- * Staff tier includes full OpenAI results and agent category details.
+ * Staff tier includes bounded platform evidence and agent category details.
  * Public tier returns only flagged booleans and agent_added_tags.
  */
 export async function getPostModerationContextBatch(
@@ -37,14 +37,31 @@ export async function getPostModerationContextBatch(
 
   const idList = postIds.map(id => sql`${id}::uuid`).reduce((a, b) => a.append(sql`, `).append(b))
 
-  // Fetch OpenAI omni-moderation flags from posts table
+  // Fetch the current platform disposition from the immutable moderation ledger.
   const postsQuery = sql`/* getPostModerationContextBatch:posts */
     SELECT
-      id,
-      openai_omni_moderation_flagged,
-      openai_omni_moderation_results
-    FROM posts
-    WHERE id IN (`
+      post.id,
+      moderation.disposition AS platform_disposition,
+      moderation.evidence AS platform_evidence
+    FROM posts post
+    LEFT JOIN LATERAL (
+      SELECT disposition.disposition, disposition.evidence
+      FROM post_moderation_versions version
+      JOIN LATERAL (
+        SELECT latest.disposition, latest.evidence, latest.id
+        FROM post_moderation_dispositions latest
+        WHERE latest.version_id = version.id
+          AND latest.source = 'openai_omni'
+        ORDER BY latest.id DESC
+        LIMIT 1
+      ) disposition ON true
+      WHERE version.post_id = post.id
+        AND version.content_sha256 = post.llm_moderation_content_sha256
+        AND version.policy_revision = '2026-09-09.1'
+      ORDER BY version.id DESC
+      LIMIT 1
+    ) moderation ON true
+    WHERE post.id IN (`
   postsQuery.append(idList)
   postsQuery.append(sql`)`)
 
@@ -117,17 +134,17 @@ export async function getPostModerationContextBatch(
 
   for (const row of postsResult.rows as Array<{
     id: string
-    openai_omni_moderation_flagged: boolean | null
-    openai_omni_moderation_results: unknown
+    platform_disposition: 'pass' | 'review' | 'reject' | 'incomplete' | null
+    platform_evidence: unknown
   }>) {
     const agentRows = agentsByPost.get(row.id) ?? []
 
-    const openai_moderation: OpenAIModerationContext | null =
-      row.openai_omni_moderation_flagged !== null
+    const platform_moderation: PlatformModerationContext | null =
+      row.platform_disposition !== null
         ? {
-            flagged: row.openai_omni_moderation_flagged,
+            flagged: row.platform_disposition !== 'pass',
             ...(tier === 'staff'
-              ? { categories: extractOpenAICategories(row.openai_omni_moderation_results) }
+              ? { categories: extractFlaggedCategories(row.platform_evidence) }
               : {}),
           }
         : null
@@ -139,7 +156,7 @@ export async function getPostModerationContextBatch(
     }))
 
     result.set(row.id, {
-      openai_moderation,
+      platform_moderation,
       agent_moderations,
       agent_added_tags: tagsByPost.get(row.id) ?? [],
     })
@@ -149,7 +166,7 @@ export async function getPostModerationContextBatch(
   for (const postId of postIds) {
     if (!result.has(postId)) {
       result.set(postId, {
-        openai_moderation: null,
+        platform_moderation: null,
         agent_moderations: [],
         agent_added_tags: tagsByPost.get(postId) ?? [],
       })
@@ -159,22 +176,12 @@ export async function getPostModerationContextBatch(
   return result
 }
 
-function extractOpenAICategories(results: unknown): string[] {
-  if (!results || typeof results !== 'object') return []
-  // openai_omni_moderation_results is stored as the array returned by the omni
-  // moderation API: [{ flagged, categories: { hate: true, ... }, ... }, ...].
-  // Older/object-shaped rows ({ categories: {...} }) are also tolerated.
-  const entries = Array.isArray(results) ? results : [results]
-  const flagged = new Set<string>()
-  for (const entry of entries) {
-    if (!entry || typeof entry !== 'object') continue
-    const categories = (entry as Record<string, unknown>)['categories']
-    if (!categories || typeof categories !== 'object') continue
-    for (const [k, v] of Object.entries(categories as Record<string, boolean>)) {
-      if (v === true) flagged.add(k)
-    }
-  }
-  return [...flagged]
+function extractFlaggedCategories(evidence: unknown): string[] {
+  if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence)) return []
+  const categories = (evidence as Record<string, unknown>)['flagged_categories']
+  return Array.isArray(categories)
+    ? categories.filter((category): category is string => typeof category === 'string')
+    : []
 }
 
 function extractAgentCategories(results: unknown): string[] {

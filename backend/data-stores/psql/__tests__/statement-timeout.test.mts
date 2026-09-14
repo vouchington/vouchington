@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { read, write } from '@data-stores/psql'
-import { beginBoundedTransaction } from '../../../test-helpers/sql-state.mts'
 import {
-  getSessionStatementTimeout,
+  getReadPoolStatementTimeout,
+  getWritePoolStatementTimeout,
+  runStatementTimeoutAttributionProbe,
   TEST_STATEMENT_TIMEOUT_MS,
-} from '../test-helpers/statement-timeout.mts'
+} from '../../../test-helpers/data-stores/psql/statement-timeout.mts'
 
 // Guards the boundStatementTimeoutForTestDatabase() call in vitest.setup.data-stores.mts: without
 // it, statement_timeout is unbounded in tests (0, from getPsqlPoolConfiguration()'s test branch)
@@ -14,11 +14,11 @@ import {
 // in lib.dom transitively (see backend/types/lib-dom-absent.mts) and must never enter this program.
 describe('test-database statement_timeout bound', () => {
   it('applies TEST_STATEMENT_TIMEOUT_MS to a session opened by the read pool', async () => {
-    expect(await getSessionStatementTimeout(read)).toBe(TEST_STATEMENT_TIMEOUT_MS)
+    expect(await getReadPoolStatementTimeout()).toBe(TEST_STATEMENT_TIMEOUT_MS)
   })
 
   it('applies TEST_STATEMENT_TIMEOUT_MS to a session opened by the write pool', async () => {
-    expect(await getSessionStatementTimeout(write)).toBe(TEST_STATEMENT_TIMEOUT_MS)
+    expect(await getWritePoolStatementTimeout()).toBe(TEST_STATEMENT_TIMEOUT_MS)
   })
 })
 
@@ -30,19 +30,10 @@ describe('statement_timeout firing and attribution', () => {
   it('fires 57014 and names the query on stderr when a statement exceeds its bound', async () => {
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
 
-    await expect(runStatementTimeoutProbe()).rejects.toMatchObject({ code: '57014' })
+    await expect(runStatementTimeoutAttributionProbe()).rejects.toMatchObject({ code: '57014' })
 
     expect(stderrSpy).toHaveBeenCalledWith(
       expect.stringContaining('[pg-query-failed] annotation=guardStatementTimeoutProbe'),
     )
   })
 })
-
-async function runStatementTimeoutProbe(): Promise<void> {
-  await using transaction = await beginBoundedTransaction({
-    connectionTimeoutMs: 10_000,
-    statementTimeoutMs: 750,
-  })
-  await transaction('/* guardStatementTimeoutProbe */ SELECT pg_sleep(2)')
-  await transaction.commit()
-}

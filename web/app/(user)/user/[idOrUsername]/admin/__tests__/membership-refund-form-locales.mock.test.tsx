@@ -3,9 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { RefundableCharge } from '@/types/api-responses'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { seedMessages } from '@/lib/i18n/use-translations'
-import enMessages from '@ts-shared/ui-messages/messages/en'
-import esMessages from '@ts-shared/ui-messages/messages/es'
 import { MembershipRefundForm } from '../membership-refund-form'
+import { enMessages, esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 vi.mock(
   import('next/navigation'),

@@ -68,6 +68,32 @@ describe('tooling teardown plus artifact upload timeout safety', () => {
     expect(result.matchedRule).toBe('')
   })
 
+  it('does not treat mock timing-report ENOSPC plus a route-selector timeout as retryable', async () => {
+    const result = await decide(
+      makeCtx({
+        conclusion: 'failure',
+        failedJobLogs: () =>
+          Promise.resolve(
+            new Map([
+              [
+                toolingJobName,
+                [
+                  'Failed to write timing report to /tmp/setup-web-timings-write-failure.json: Error: ENOSPC: no space left on device',
+                  'FAIL i18n-extract-codemod static-code-analysis/i18n-extract/route-selector-map.test.mts',
+                  'Error: Test timed out in 30000ms.',
+                  '[vitest-pool]: Timeout terminating threads worker for test files static-code-analysis/i18n-extract/route-selector-map.test.mts.',
+                  "##[error]The action 'Run tooling tests' has timed out after 8 minutes.",
+                ].join('\n'),
+              ],
+            ]),
+          ),
+      }),
+      RULES,
+    )
+    expect(result.decision).toBe('dispatch')
+    expect(result.matchedRule).toBe('')
+  })
+
   it('does not rerun when another job genuinely failed', async () => {
     const result = await decide(
       makeCtx({

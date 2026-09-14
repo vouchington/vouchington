@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   legacyUuidV4,
   signLegacyDeviceJwt,
   signLegacySessionJwt,
-} from '@services/jwt-session/test-helpers/index'
+} from '@voucha/test-helpers/services/jwt-session/index'
 import { getTestUserSessionById } from '../../../../test-helpers/entities/user-sessions.mts'
 import '../index.mts'
 

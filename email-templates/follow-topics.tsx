@@ -10,8 +10,8 @@ import {
   Text,
   render,
 } from './react-email-runtime.mts'
+import { emailCopy, emailOptional } from './catalog-copy.mts'
 import { MarketingFooter, VouchaHeader } from './components.tsx'
-import { followTopicsCopyByLocale } from './follow-topics-copy.mts'
 import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
 import { borderRadius, colors, styles } from './styles.mts'
 import type {
@@ -62,17 +62,19 @@ const FollowTopicsEmail: PreviewableEmailComponent<FollowTopicsEmailProps> = ({
 }) =>
   (() => {
     const locale = resolveUiLocale(uiLocale)
-    const copy = followTopicsCopyByLocale[locale]
+    const t = emailCopy(locale, 'follow-topics')
     return (
       <Html>
         <Head />
-        <Preview>{copy.preview}</Preview>
+        <Preview>{t('preview')}</Preview>
         <Body style={styles.main}>
           <Container style={styles.container}>
             <VouchaHeader />
             <Section style={styles.section}>
-              <Text style={styles.heading}>{copy.heading}</Text>
-              <Text style={styles.paragraph}>{`${copy.greeting(userName)} ${copy.body}`}</Text>
+              <Text style={styles.heading}>{t('heading')}</Text>
+              <Text style={styles.paragraph}>
+                {`${emailOptional(t, 'greeting', userName)} ${t('body')}`}
+              </Text>
 
               {topics.length > 0 ? (
                 topics.map(topic => (
@@ -81,17 +83,17 @@ const FollowTopicsEmail: PreviewableEmailComponent<FollowTopicsEmailProps> = ({
                     style={card}
                   >
                     <Text style={cardHeading}>{topic.name}</Text>
-                    <Text style={cardText}>{topic.reason ?? copy.fallbackReason}</Text>
+                    <Text style={cardText}>{topic.reason ?? t('fallbackReason')}</Text>
                     <Button
                       href={topic.url}
                       style={itemButton}
                     >
-                      {copy.itemButton}
+                      {t('itemButton')}
                     </Button>
                   </Section>
                 ))
               ) : (
-                <Text style={styles.paragraph}>{copy.empty}</Text>
+                <Text style={styles.paragraph}>{t('empty')}</Text>
               )}
 
               <Section style={styles.buttonContainer}>
@@ -99,7 +101,7 @@ const FollowTopicsEmail: PreviewableEmailComponent<FollowTopicsEmailProps> = ({
                   href={settingsUrl}
                   style={styles.button}
                 >
-                  {copy.manage}
+                  {t('manage')}
                 </Button>
               </Section>
 
@@ -108,7 +110,7 @@ const FollowTopicsEmail: PreviewableEmailComponent<FollowTopicsEmailProps> = ({
                   href={unsubscribeUrl}
                   style={settingsLink}
                 >
-                  {copy.unsubscribe}
+                  {t('unsubscribe')}
                 </Link>
               </Text>
             </Section>
@@ -142,24 +144,24 @@ FollowTopicsEmail.PreviewProps = {
 
 async function renderFollowTopicsEmail(props: FollowTopicsEmailProps): EmailRenderResultPromise {
   const locale = resolveUiLocale(props.uiLocale)
-  const copy = followTopicsCopyByLocale[locale]
+  const t = emailCopy(locale, 'follow-topics')
   return {
-    subject: copy.subject,
+    subject: t('subject'),
     html: await render(<FollowTopicsEmail {...props} />, { pretty: true }),
     text: [
-      copy.greeting(props.userName),
+      emailOptional(t, 'greeting', props.userName),
       '',
-      copy.bodyText,
+      t('bodyText'),
       '',
       ...props.topics.flatMap(topic => [
         topic.name,
-        topic.reason ?? copy.fallbackReason,
-        `${copy.itemButton}: ${topic.url}`,
+        topic.reason ?? t('fallbackReason'),
+        `${t('itemButton')}: ${topic.url}`,
         '',
       ]),
-      `${copy.manage}: ${props.settingsUrl}`,
+      `${t('manage')}: ${props.settingsUrl}`,
       '',
-      `${copy.unsubscribe}: ${props.unsubscribeUrl}`,
+      `${t('unsubscribe')}: ${props.unsubscribeUrl}`,
       '',
       getLocalizedSignoff(locale),
       '',

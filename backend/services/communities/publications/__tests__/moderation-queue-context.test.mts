@@ -72,9 +72,9 @@ describe('searchCommunityModerationQueue — post_moderation_context', () => {
     const entry = result.entries.find(e => e.entity_id === postId)
     expect(entry).toBeDefined()
     const ctx = entry!.post_moderation_context!
-    expect(ctx.openai_moderation!.flagged).toBe(true)
-    expect(Array.isArray(ctx.openai_moderation!.categories)).toBe(true)
-    expect(ctx.openai_moderation!.categories).toContain('violence')
+    expect(ctx.platform_moderation!.flagged).toBe(true)
+    expect(Array.isArray(ctx.platform_moderation!.categories)).toBe(true)
+    expect(ctx.platform_moderation!.categories).toContain('violence')
     const agentMod = ctx.agent_moderations.find(m => m.slug === agentSlug)
     expect(agentMod!.categories).toContain('violence')
     expect(ctx.agent_added_tags).toContain(topicSlug)
@@ -129,9 +129,9 @@ describe('searchCommunityModerationQueue — post_moderation_context', () => {
     const entry = result.entries.find(e => e.entity_id === postId)
     expect(entry).toBeDefined()
     const ctx = entry!.post_moderation_context!
-    expect(ctx.openai_moderation!.flagged).toBe(true)
+    expect(ctx.platform_moderation!.flagged).toBe(true)
     // Public tier: no categories key
-    expect('categories' in ctx.openai_moderation!).toBe(false)
+    expect('categories' in ctx.platform_moderation!).toBe(false)
     const agentMod = ctx.agent_moderations.find(m => m.slug === agentSlug)
     expect(agentMod!.flagged).toBe(true)
     expect('categories' in agentMod!).toBe(false)

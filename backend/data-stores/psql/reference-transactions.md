@@ -38,11 +38,21 @@ transaction, because that nested scope must not own the outer transaction's comm
 caller already opened a transaction so this helper does not emit a nested `BEGIN` / `COMMIT` /
 `ROLLBACK`. New transaction ownership uses `beginTransaction({ client })` instead.
 
-Detection is a live backend probe, not `client.getTransactionStatus()`:
+Detection is a live backend probe, not `client.getTransactionStatus()`, but only against a
+**borrowed** connection the caller supplies — its state genuinely isn't known statically. An
+**owned** transaction (`beginTransaction`, `withTransaction`, `withTransactionOptions({ client })`
+given a `pg.Pool`, `beginBoundedTransaction`) acquires an idle connection from the pool itself, so
+it issues no probe.
 
-- `@vouchington/postgres` `isInTransaction()`: `SAVEPOINT` / `RELEASE SAVEPOINT vouchington_transaction_probe`
+The Filaments post-commit wrapper does not probe. `withTransactionOptions` opens post-commit-action
+scope only from WeakMaps populated by `beginTransaction` / `beginBoundedTransaction`. The client map
+is cleared before `commit` / `rollback` / `dispose` await upstream settlement, which can
+`release()` a pool-acquired `PoolClient`; the query-owner map stays until after post-commit actions
+run. Join versus `BEGIN` remains the upstream borrowed-path probe:
+
+- `@vouchington/postgres` `isInTransaction()`: `SAVEPOINT` / `RELEASE SAVEPOINT vouchington_transaction_probe`, run only on a borrowed `pg.PoolClient` — `withTransactionOptions({ client })` given a caller-supplied client, or the migration runner's `predicate-resolution.mts`
 - [transaction-ownership.mts](../../services/moderation-reports/transaction-ownership.mts)
-  `ownsReportResolutionTransaction`: the same pattern with `voucha_report_resolution_probe`
+  `ownsReportResolutionTransaction`: the same pattern with `voucha_report_resolution_probe`, always against a caller-supplied client
 
 `25P01` (`no_active_sql_transaction`) means the client is idle. Any other error, including `25P02`
 (`in_failed_sql_transaction`), is not treated as idle and is rethrown.

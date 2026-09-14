@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  shardedJobOutcome,
-  SIDE_DUTY_JOBS,
-  shouldSkipJob,
-  storybookBrowserSelection,
-} from './ci-select.mts'
+import { SIDE_DUTY_JOBS, shouldSkipJob, storybookBrowserSelection } from './ci-select.mts'
 
 describe('targeted workflow execution', () => {
   it('retains workflows with non-Vitest side duties when their test selection is empty', () => {
@@ -29,22 +24,6 @@ describe('targeted workflow execution', () => {
     expect(storybookBrowserSelection(['web/storybook/button.stories.tsx'], false)).toEqual({
       mode: 'selected',
       files: ['web/storybook/button.stories.tsx'],
-    })
-  })
-
-  it('whole-skips an explicit empty sharded selection and expects no coverage shards', () => {
-    expect(shardedJobOutcome(false, 1, 4)).toEqual({ skip: true, coverageShards: 0 })
-  })
-
-  it('runs selected and forced-full sharded selections with their resolved shard totals', () => {
-    expect(shardedJobOutcome(true, 2, 4)).toEqual({ skip: false, coverageShards: 2 })
-    expect(shardedJobOutcome(true, 5, 4)).toEqual({ skip: false, coverageShards: 5 })
-  })
-
-  it('fails open to the configured shard total when execution state is missing', () => {
-    expect(shardedJobOutcome(undefined, undefined, 4)).toEqual({
-      skip: false,
-      coverageShards: 4,
     })
   })
 })

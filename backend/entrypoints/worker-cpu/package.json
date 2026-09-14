@@ -37,6 +37,7 @@
     "@queues/heartbeat": "workspace:^",
     "@queues/images": "workspace:^",
     "@queues/language-detection": "workspace:^",
+    "@queues/openai-moderation": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
     "@queues/wikipedia-recommender": "workspace:^",
     "@workers/ai-agents": "workspace:^",

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { APIGatewayProxyEvent } from 'aws-lambda'
 import { parseOgRequest } from '../parse-og.mts'
 import { RequestParseError } from '../../errors.mts'
-import { toBase64Url } from '../../test-helpers/index.mts'
+import { toBase64Url } from '../../../test-helpers/image-resize/index.mts'
 
 function toOgBase64url(payload: unknown): string {
   return toBase64Url(JSON.stringify(payload))

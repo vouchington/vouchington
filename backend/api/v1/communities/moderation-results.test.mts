@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
   createTestPost,
@@ -9,7 +9,6 @@ import {
   insertTestCommunityPostReview,
   createTestMembership,
   createRandomString,
-  setPostOpenAIModerationResults,
 } from '@voucha/test-helpers'
 
 describe('moderation-results', () => {
@@ -88,10 +87,11 @@ describe('moderation-results', () => {
           .expect(200)
 
         expect(Array.isArray(res.body.community_agent_moderations)).toBe(true)
-        expect(res.body).toHaveProperty('openai_moderation')
+        expect(res.body.platform_moderation).toEqual({ status: 'approved' })
+        expect(res.body).not.toHaveProperty('openai_moderation')
       })
 
-      it('preserves stored OpenAI moderation results', async () => {
+      it('exposes only the provider-neutral platform moderation status', async () => {
         const random = createRandomString(8)
         const community = await insertTestCommunity({
           createdById: owner.id,
@@ -103,13 +103,7 @@ describe('moderation-results', () => {
           role: 'owner',
         })
         const post = await createTestPost({ user: owner })
-        await Promise.all([
-          insertTestCommunityPostReview({ communityId: community.id, postId: post.id }),
-          setPostOpenAIModerationResults(post.id, {
-            flagged: true,
-            categories: { harassment: true, violence: false },
-          }),
-        ])
+        await insertTestCommunityPostReview({ communityId: community.id, postId: post.id })
 
         const request = createRequest()
         await request.authenticateAs(owner)
@@ -117,15 +111,11 @@ describe('moderation-results', () => {
           .get(`/api/v1/communities/${community.slug}/posts/${post.id}/moderation-results`)
           .expect(200)
 
-        expect(response.body.openai_moderation).toEqual({
-          flagged: true,
-          results: [
-            {
-              flagged: true,
-              categories: { harassment: true, violence: false },
-            },
-          ],
+        expect(response.body).toMatchObject({
+          community_agent_moderations: expect.any(Array),
+          platform_moderation: { status: 'approved' },
         })
+        expect(response.body).not.toHaveProperty('openai_moderation')
       })
 
       it('returns 200 for moderator', async () => {
@@ -179,7 +169,8 @@ describe('moderation-results', () => {
           .expect(200)
 
         expect(Array.isArray(res.body.community_agent_moderations)).toBe(true)
-        expect(res.body).toHaveProperty('openai_moderation')
+        expect(res.body.platform_moderation).toEqual({ status: 'approved' })
+        expect(res.body).not.toHaveProperty('openai_moderation')
       })
 
       it('returns 404 for Plus+ community member when post has no approved review', async () => {

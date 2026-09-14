@@ -13,7 +13,7 @@ import {
   updatePost,
   type CreatePostUpdates,
 } from '@services/posts'
-import { assertNotSuspended, isAdminUser } from '@services/users'
+import { assertNotSuspended, isAdminUser, isModerationStaff } from '@services/users'
 import { getUserActivePlan } from '@services/memberships'
 import app from '../../../app.mts'
 import { requireAuth, requireAuthAndRateLimit } from '../../../response-helpers.mts'
@@ -78,7 +78,7 @@ app.route('/api/v1/posts/:idOrSlug').delete(async (ctx: Context) => {
 app.route('/api/v1/posts/:idOrSlug/clearances').post(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(
     ctx,
-    isAdminUser,
+    isModerationStaff,
     'POST:/api/v1/posts/:idOrSlug/clearances',
   )
 
@@ -86,11 +86,36 @@ app.route('/api/v1/posts/:idOrSlug/clearances').post(async (ctx: Context) => {
   ctx.assert(post, 404, 'Post not found')
   ctx.assert(!post.deleted_at, 404, 'Post not found')
 
-  const body = (await ctx.request.json('1kb')) as { status: ClearanceStatus }
+  const body = (await ctx.request.json('8kb')) as {
+    status?: unknown
+    reason_code?: unknown
+    private_note?: unknown
+  }
   const validStatuses: ClearanceStatus[] = ['approved', 'rejected', 'in_review', 'pending']
-  ctx.assert(validStatuses.includes(body.status), 422, 'Invalid status')
+  ctx.assert(
+    typeof body.status === 'string' && validStatuses.includes(body.status as ClearanceStatus),
+    422,
+    'Invalid status',
+  )
+  ctx.assert(
+    typeof body.reason_code === 'string' && /^[a-z][a-z0-9_]{0,99}$/.test(body.reason_code),
+    422,
+    'reason_code must be a stable identifier',
+  )
+  ctx.assert(
+    body.private_note === undefined ||
+      (typeof body.private_note === 'string' &&
+        body.private_note.trim() === body.private_note &&
+        body.private_note.length <= 4000),
+    422,
+    'private_note must be trimmed and at most 4000 characters',
+  )
 
-  await updateClearanceStatus(post.id, body.status, currentUser.id)
+  await updateClearanceStatus(post.id, body.status as ClearanceStatus, currentUser.id, {
+    reasonCode: body.reason_code,
+    privateNote: body.private_note,
+    platformOverride: true,
+  })
 
   ctx.json({ clearance_status: body.status })
 })

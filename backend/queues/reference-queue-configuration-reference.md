@@ -11,7 +11,7 @@ Pick config by job shape:
 | External API (OpenAI, crawler) | 3          | 5000 ms         | `throttle`                             | `PRIORITY_DEFAULT`    |
 | DB write / cache invalidation  | 3          | 1000 ms         | `debounce` (no ordering) or `throttle` | `PRIORITY_DEFAULT`    |
 | Dispatcher (cron)              | 3          | 5000 ms         | `throttle`                             | `PRIORITY_DISPATCHER` |
-| Stripe / payment webhook       | 5          | 10000 ms        | `simple`                               | `PRIORITY_DEFAULT`    |
+| Stripe / payment event         | 5          | 10000 ms        | `simple`                               | `PRIORITY_DEFAULT`    |
 | Long batch (export, sitemap)   | 3          | 30000 ms        | `simple`                               | `PRIORITY_DISPATCHER` |
 
 ### Deduplication Semantics

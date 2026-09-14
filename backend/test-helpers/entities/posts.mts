@@ -85,7 +85,7 @@ export async function insertTestPost(data: {
       post_type, title, markdown, created_by_id,
       root_id, parent_id, community_id, broadcast, privacy, is_anonymous,
       bedrock_nova_multimodal_v1_content_sha256,
-      openai_omni_moderation_content_sha256, llm_moderation_content_sha256
+      llm_moderation_content_sha256
   `
   if (data.urlId) insertPostQuery.append(sql`, url_id`)
   if (data.creationSourceUrlId) insertPostQuery.append(sql`, creation_source_url_id`)
@@ -97,7 +97,7 @@ export async function insertTestPost(data: {
       ${data.parentId === undefined ? null : data.parentId},
       ${data.communityId === undefined ? null : data.communityId},
       ${data.broadcast ?? 'everyone'}, ${data.privacy ?? 'public'}, ${data.isAnonymous ?? false},
-      ${sha256}, ${sha256}, ${sha256}
+      ${sha256}, ${sha256}
   `)
   if (data.urlId) insertPostQuery.append(sql`, ${data.urlId}`)
   if (data.creationSourceUrlId) insertPostQuery.append(sql`, ${data.creationSourceUrlId}`)
@@ -173,7 +173,7 @@ export async function updatePostTitleMarkdown(
 export async function setTestPostContentSha(postIds: string[], sha: Buffer): Promise<void> {
   await write(sql`/* setTestPostContentSha */
     UPDATE posts
-    SET openai_omni_moderation_content_sha256 = ${sha}
+    SET llm_moderation_content_sha256 = ${sha}
     WHERE id = ANY(${postIds}::uuid[])
   `)
 }
@@ -187,14 +187,4 @@ export async function getPostIdsByPrivacyFilter(filter: SQLStatement | null): Pr
   }
   const { rows } = await read(query)
   return rows.map((r: { id: string }) => r.id)
-}
-
-/** Mark a post as flagged by OpenAI omni moderation (activates the sensitive-media blur gate for moderators). */
-export async function setTestPostOmniModerationFlagged(postId: string): Promise<void> {
-  await write(sql`/* setTestPostOmniModerationFlagged */
-    UPDATE posts
-    SET openai_omni_moderation_flagged = true,
-        openai_omni_moderation_created_at = now()
-    WHERE id = ${postId}
-  `)
 }

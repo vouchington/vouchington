@@ -58,9 +58,6 @@
       "@ts-shared/ui-messages": [
         "../ts-shared/ui-messages/index.mts"
       ],
-      "@ts-shared/ui-messages/messages/*": [
-        "../ts-shared/ui-messages/messages/*.ts"
-      ],
       "@ts-shared/ui-messages/*": [
         "../ts-shared/ui-messages/*.mts"
       ],

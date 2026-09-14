@@ -225,7 +225,7 @@ describe('full-suite shard selection', () => {
 describe('revision-aware planner strategy', () => {
   it('uses GITHUB_BASE_REF for the diff base so non-main target branches work correctly', () => {
     expect(src).toContain("process.env['GITHUB_BASE_REF'] || 'main'")
-    expect(src).toContain('`origin/${baseBranch}`')
+    expect(src).toContain('base: pair2BaseRef(baseBranch)')
   })
 
   it('leaves revision diff streaming to no-mistakes without local patch buffers or fallbacks', () => {

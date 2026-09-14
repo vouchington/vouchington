@@ -8,11 +8,7 @@ import {
   endTestMembershipProjection,
   beginTransaction,
 } from '@voucha/test-helpers'
-import {
-  createMembership,
-  grantMembership,
-  updateMembershipFromWebhook,
-} from '@services/memberships'
+import { createMembership, grantMembership, updateMembershipFromEvent } from '@services/memberships'
 import { getMembershipByUserId } from '@services/memberships/get'
 import { restoreFallbackAfterCurrentAccessEndsInTransaction } from '../fallback/restore-after-current-access-ends.mts'
 import { getManageableStripeSubscriptionByUserId } from './get-manageable-stripe-subscription.mts'
@@ -81,7 +77,7 @@ describe('manageable Stripe subscription lookup', () => {
     expect(latestRetainedProjection!.id).not.toBe(secondRetainedProjection!.id)
 
     await grantMembership(administrator.id, member.id, 'pro', pro.id, 30)
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: latestRetainedProjection!.id, status: 'paused' },
       async () => false,
     )

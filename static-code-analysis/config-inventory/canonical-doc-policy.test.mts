@@ -2,7 +2,7 @@ import { rm } from 'node:fs/promises'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { checkConfigInventoryPolicy } from './index.mts'
-import { makeRepoFixture } from './test-helpers/repo-fixture.mts'
+import { makeRepoFixture } from '../test-helpers/config-inventory/repo-fixture.mts'
 
 const ENV_VARS_DOC = 'docs/overview/infrastructure/environment-variables.md'
 const COMMAND_CATALOG_DOC = 'dev/reference-command-catalog.md'

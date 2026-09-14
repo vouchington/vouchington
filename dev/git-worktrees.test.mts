@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -23,11 +23,13 @@ async function runHelper({
   porcelain,
   script,
   cwd,
+  sourcePath = helperPath,
 }: {
   repoRoot: string
   porcelain: string
   script: string
   cwd?: string
+  sourcePath?: string
 }) {
   const command = `
     git() {
@@ -43,7 +45,7 @@ async function runHelper({
     ${script}
   `
 
-  const result = await execFileAsync('bash', sourceBashArgs(helperPath, command), {
+  const result = await execFileAsync('bash', sourceBashArgs(sourcePath, command), {
     cwd,
     env: {
       ...process.env,
@@ -58,6 +60,52 @@ async function runHelper({
 describe('git-worktrees helpers', () => {
   afterEach(async () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
+  })
+
+  it('keeps worktree discovery and identity available without node_modules', async () => {
+    const repoRoot = await makeRepoRoot()
+    const adapter = join(repoRoot, 'dev', 'lib', 'git-worktrees.sh')
+    const recovery = join(repoRoot, 'dev', 'lib', 'git-worktrees-recovery.sh')
+    const liveWorktree = join(repoRoot, 'live-worktree')
+    await mkdir(join(repoRoot, 'dev', 'lib'), { recursive: true })
+    await mkdir(liveWorktree)
+    await writeFile(adapter, await readFile(helperPath, 'utf8'))
+    await writeFile(
+      recovery,
+      await readFile(
+        fileURLToPath(new URL('./lib/git-worktrees-recovery.sh', import.meta.url)),
+        'utf8',
+      ),
+    )
+
+    const porcelain = [
+      `worktree ${repoRoot}`,
+      '',
+      `worktree ${liveWorktree}`,
+      '',
+      `worktree ${repoRoot}-prunable`,
+      'prunable',
+      '',
+    ].join('\n')
+    const script = `
+      git_worktree_live_paths "$FAKE_REPO_ROOT"
+      git_worktree_prunable_paths "$FAKE_REPO_ROOT"
+      git_worktree_main_path "$FAKE_REPO_ROOT"
+      if git_worktree_path_is_registered "$FAKE_REPO_ROOT" "${liveWorktree}"; then printf 'registered\\n'; fi
+      if ! git_worktree_path_is_registered "$FAKE_REPO_ROOT" "${repoRoot}-missing"; then printf 'missing\\n'; fi
+      worktree_dir_from_path "${repoRoot}/.codex/worktrees/2"
+      printf '\\n'
+      git_worktree_canonical_path_hash "${liveWorktree}"
+    `
+    const installedOutput = await runHelper({ repoRoot, porcelain, script })
+    const offlineOutput = await runHelper({ repoRoot, porcelain, script, sourcePath: adapter })
+
+    expect(offlineOutput).toBe(installedOutput)
+    expect(offlineOutput).toContain('registered\nmissing\n2\nd')
+
+    await expect(
+      execFileAsync('bash', sourceBashArgs(adapter, 'git_worktree_live_paths "$1"', [repoRoot])),
+    ).rejects.toMatchObject({ code: 1 })
   })
 
   it('parses live, prunable, main, and registered worktree paths', async () => {

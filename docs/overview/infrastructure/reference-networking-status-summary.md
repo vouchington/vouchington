@@ -18,7 +18,6 @@
   discovery and compatibility evidence required before changing a URL, hostname, or origin
 - [Security](../../requirements/security/SECURITY.md) — browser CSP origins for direct dual-stack S3 uploads
 - [Infrastructure](infrastructure.md) — ECS sizing, Aurora/Valkey, CloudFront, S3
-- [Deployment Costs](deployment-costs.md) — Full cost breakdown per environment
 - [API Egress Proxy](../architecture/api-egress-proxy.md) — provider-scoped HTTP CONNECT routing
   from IPv6-only API tasks through the dual-stack CPU worker service
 - [`vouchington-infra` VPC](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/vpc.tf) — VPC, subnets, route tables

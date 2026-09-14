@@ -14,7 +14,11 @@ vi.mock(
 import { clientApi } from '../instance'
 import { POLL_INTERVAL_MS, uploadImageFile } from '../images'
 import { ApiError } from '../../error'
-import { flushMicrotasks, makeState, MockEventSource } from '../test-helpers/images'
+import {
+  flushMicrotasks,
+  makeState,
+  MockEventSource,
+} from '../../../../test-helpers/lib/api/client/images'
 
 const mockPost = vi.mocked(clientApi.post)
 const mockGet = vi.mocked(clientApi.get)

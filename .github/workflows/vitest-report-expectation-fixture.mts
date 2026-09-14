@@ -5,6 +5,16 @@ import {
   writeVitestReportAttempt,
 } from 'vouchington-tooling/vitest-blob-manifest'
 
+export interface ExpectationOptions {
+  readonly attempts?: Readonly<Record<string, number>>
+  readonly shardTotals?: Partial<Record<string, string>>
+  readonly runnable?: Partial<Record<string, boolean>>
+  readonly storybookBrowserMode?: string
+}
+
+export type ProducerResults = Record<string, { result: string; attempt?: string }>
+export type SuiteExpectation = { readonly suite: string; readonly minimumAttempt: number }
+
 const suitesByJob: Readonly<Record<string, readonly string[]>> = {
   'test-ts-shared': ['ts-shared'],
   'test-tooling': ['tooling'],

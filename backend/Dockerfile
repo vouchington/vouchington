@@ -85,13 +85,16 @@ COPY email-templates/ ./email-templates/
 COPY static-code-analysis/docker-deploy/ ./static-code-analysis/docker-deploy/
 COPY ts-shared/ ./ts-shared/
 COPY backend/ ./backend/
+COPY localization/ ./localization/
 
 # Build runtime artifacts that need source files and builder-only dependencies.
 # Run via node directly to avoid pnpm triggering a root-level install after
 # COPY . . exposes uninstalled workspaces (web, cloudflare-worker, lambdas, etc.).
 # Keep the build script plain ESM so it runs under every Node version used by
 # setup and image build steps.
-RUN node email-templates/build.mjs
+RUN node email-templates/build.mjs && \
+    mkdir -p /app/localization && \
+    node --experimental-strip-types backend/services/localization/compile-cli.mts --source localization/catalog --output /app/localization/catalog.sqlite
 
 # Stage 2a: Deploy API production tree.
 # These three deploy-* stages are siblings off builder, so BuildKit executes
@@ -245,8 +248,10 @@ WORKDIR /app/backend
 COPY --link --from=deploy-api --chown=65532:65532 /prod/api/node_modules ./node_modules
 COPY --link --from=deploy-api --exclude=node_modules --chown=65532:65532 /prod/api ./
 COPY --link --from=api-prewarm --chown=65532:65532 /app/backend/.node_compile_cache /app/backend/.node_compile_cache
+COPY --link --from=builder --chown=65532:65532 /app/localization/catalog.sqlite /app/localization/catalog.sqlite
 
 ENV NODE_COMPILE_CACHE=/app/backend/.node_compile_cache
+ENV LOCALIZATION_SQLITE_PATH=/app/localization/catalog.sqlite
 
 # Expose default port
 EXPOSE 3000
@@ -284,8 +289,10 @@ WORKDIR /app/backend
 COPY --link --from=deploy-worker-cpu --chown=65532:65532 /prod/worker-cpu/node_modules ./node_modules
 COPY --link --from=deploy-worker-cpu --exclude=node_modules --chown=65532:65532 /prod/worker-cpu ./
 COPY --link --from=worker-cpu-prewarm --chown=65532:65532 /app/backend/.node_compile_cache /app/backend/.node_compile_cache
+COPY --link --from=builder --chown=65532:65532 /app/localization/catalog.sqlite /app/localization/catalog.sqlite
 
 ENV NODE_COMPILE_CACHE=/app/backend/.node_compile_cache
+ENV LOCALIZATION_SQLITE_PATH=/app/localization/catalog.sqlite
 
 CMD ["serve.mts"]
 
@@ -312,7 +319,9 @@ WORKDIR /app/backend
 COPY --link --from=deploy-worker-io --chown=65532:65532 /prod/worker-io/node_modules ./node_modules
 COPY --link --from=deploy-worker-io --exclude=node_modules --chown=65532:65532 /prod/worker-io ./
 COPY --link --from=worker-io-prewarm --chown=65532:65532 /app/backend/.node_compile_cache /app/backend/.node_compile_cache
+COPY --link --from=builder --chown=65532:65532 /app/localization/catalog.sqlite /app/localization/catalog.sqlite
 
 ENV NODE_COMPILE_CACHE=/app/backend/.node_compile_cache
+ENV LOCALIZATION_SQLITE_PATH=/app/localization/catalog.sqlite
 
 CMD ["serve.mts"]

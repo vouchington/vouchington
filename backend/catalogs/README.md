@@ -192,6 +192,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/landing-page-analytics/README.md`](../services/landing-page-analytics/README.md)
 - [`../services/language-detection/README.md`](../services/language-detection/README.md)
 - [`../services/lists/README.md`](../services/lists/README.md)
+- [`../services/localization/README.md`](../services/localization/README.md)
 - [`../services/mcp-tools/README.md`](../services/mcp-tools/README.md)
 - [`../services/memberships/README.md`](../services/memberships/README.md)
 - [`../services/messaging/README.md`](../services/messaging/README.md)

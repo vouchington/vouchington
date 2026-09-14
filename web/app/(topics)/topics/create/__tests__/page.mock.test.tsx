@@ -2,13 +2,13 @@ import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import CreateTopicPage from '../create-topic-client'
 import { createTopic } from '@/lib/api/client/topics'
 import { checkAvailability } from '@/lib/api/client/availability'
 import { ApiError } from '@/lib/api/error'
 import { NON_SOURCE_TOPIC_TYPE_OPTIONS } from '@/types/topics'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 const mockToastError = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const mockToastSuccess = vi.hoisted(() => vi.fn<VitestLooseMock>())

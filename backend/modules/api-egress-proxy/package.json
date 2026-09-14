@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@data-stores/graceful-shutdown": "workspace:^",
+    "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "http-errors": "^2.0.1",

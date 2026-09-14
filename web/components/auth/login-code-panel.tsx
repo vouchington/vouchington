@@ -3,9 +3,10 @@
 import dynamic from 'next/dynamic'
 import type { RefObject, SyntheticEvent } from 'react'
 import { LoginCodeStep } from './login-code-step'
+import type MfaStepComponent from './mfa-step'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const MfaStep = dynamic(() => import('./mfa-step'))
+const MfaStep = dynamic<Parameters<typeof MfaStepComponent>[0]>(() => import('./mfa-step'))
 
 interface LoginCodePanelProps {
   active: boolean
@@ -55,7 +56,7 @@ export function LoginCodePanel({
     const upper = value.toUpperCase()
     setCode(upper)
     if (upper.length === 8 && !submitting.current) {
-      submitCode(upper).catch(() => undefined)
+      void submitCode(upper)
     }
   }
 

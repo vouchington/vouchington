@@ -38,9 +38,9 @@ Current packages:
   .NET resources in the external native-client checkout through
   `node dev/native-localization.mts --output-root <absolute-client-root> --consumer-root
 <absolute-client-root>`. Native-only catalog additions live in durable feature modules under
-  `ui-messages/messages/native-*`; the tooling-only generator composes only the matching native
-  locale with the canonical web locale, so web bundles and hydration payloads never include
-  `native.*`.
+  `ui-messages/locale-catalogs.mts` and `localization/catalog/`; the tooling-only generator composes
+  the matching native locale with the canonical web locale, so web bundles and hydration payloads
+  never include `native.*`.
 - `@ts-shared/url-signing`: package-backed HMAC-SHA256 signing and verification for sideload image
   URLs; Voucha owns its sideload and key-rotation policy.
 - `@ts-shared/user-profile-collections`: Canonical user profile relation collection catalog

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestUrlHostname } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'

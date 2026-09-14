@@ -34,13 +34,16 @@ export const storybookBrowserOptimizeDeps = [
 
 type OptimizeDepsConfig = { optimizeDeps: { exclude?: string[]; include?: string[] } }
 
+const storybookBrowserOptimizeDepsExclude = ['next/image', 'next/headers'] as const
+
 export const applyStorybookBrowserOptimizeDeps = (config: OptimizeDepsConfig): void => {
   const optimizeDeps = config.optimizeDeps
+  const excluded = new Set<string>(storybookBrowserOptimizeDepsExclude)
   optimizeDeps.include = [
     ...new Set([
-      ...(optimizeDeps.include ?? []).filter(dep => dep !== 'next/image'),
+      ...(optimizeDeps.include ?? []).filter(dep => !excluded.has(dep)),
       ...storybookBrowserOptimizeDeps,
     ]),
   ]
-  optimizeDeps.exclude = [...new Set([...(optimizeDeps.exclude ?? []), 'next/image'])]
+  optimizeDeps.exclude = [...new Set([...(optimizeDeps.exclude ?? []), ...excluded])]
 }

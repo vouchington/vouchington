@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
   insertPendingTestImage,
@@ -7,10 +7,13 @@ import {
   insertTestPost,
   insertTestPostImage,
   markImageDeleted,
-  setPostOpenAIModerationFlaggedOnly,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { encodeCursor } from '@modules/pagination'
+import {
+  ensureCurrentPostModerationVersion,
+  recordPostModerationDisposition,
+} from '@services/post-clearance'
 
 async function attachCompletedImages(
   postId: string,
@@ -42,36 +45,59 @@ describe('GET /api/v1/posts/review-queue media', () => {
     ])
   })
 
-  it('returns media context for zero and one image with the canonical reveal flag', async () => {
+  it('returns provider-neutral media reveal metadata for zero and one image', async () => {
     const prefix = crypto.randomUUID().replaceAll('-', '').slice(0, 9)
     const noImageId = `ffffffff-ffff-7fff-8000-${prefix}001`
     const oneImageId = `ffffffff-ffff-7fff-8000-${prefix}002`
-    const afterId = `ffffffff-ffff-7fff-8000-${prefix}003`
-    await insertTestPost({
-      id: noImageId,
-      title: `review-queue-no-image-${prefix}`,
-      slug: `review-queue-no-image-${prefix}`,
-      createdById: regularUser.id,
-      markdown: 'No attached image',
-      clearanceStatus: 'rejected',
-    })
-    await insertTestPost({
-      id: oneImageId,
-      title: `review-queue-one-image-${prefix}`,
-      slug: `review-queue-one-image-${prefix}`,
-      createdById: regularUser.id,
-      markdown: 'One attached image',
-      clearanceStatus: 'rejected',
-    })
-    await setPostOpenAIModerationFlaggedOnly(noImageId, false)
-    await setPostOpenAIModerationFlaggedOnly(oneImageId, true)
+    const passOneImageId = `ffffffff-ffff-7fff-8000-${prefix}003`
+    const afterId = `ffffffff-ffff-7fff-8000-${prefix}004`
+    for (const [id, title, markdown] of [
+      [noImageId, 'no-image', 'No attached image'],
+      [oneImageId, 'one-image', 'One attached image'],
+      [passOneImageId, 'pass-one-image', 'One attached image with a pass disposition'],
+    ] as const) {
+      await insertTestPost({
+        id,
+        title: `review-queue-${title}-${prefix}`,
+        slug: `review-queue-${title}-${prefix}`,
+        createdById: regularUser.id,
+        markdown,
+        clearanceStatus: 'rejected',
+      })
+    }
+    const [noImageVersion, oneImageVersion, passOneImageVersion] = await Promise.all([
+      ensureCurrentPostModerationVersion(noImageId),
+      ensureCurrentPostModerationVersion(oneImageId),
+      ensureCurrentPostModerationVersion(passOneImageId),
+    ])
+    await Promise.all([
+      recordPostModerationDisposition({
+        versionId: noImageVersion.id,
+        source: 'openai_omni',
+        disposition: 'review',
+        reasonCode: 'provider_flagged',
+      }),
+      recordPostModerationDisposition({
+        versionId: oneImageVersion.id,
+        source: 'openai_omni',
+        disposition: 'review',
+        reasonCode: 'provider_flagged',
+      }),
+      recordPostModerationDisposition({
+        versionId: passOneImageVersion.id,
+        source: 'openai_omni',
+        disposition: 'pass',
+        reasonCode: 'provider_passed',
+      }),
+    ])
     const [imageId] = await attachCompletedImages(oneImageId, regularUser.id, 1)
+    const [passImageId] = await attachCompletedImages(passOneImageId, regularUser.id, 1)
 
     const request = createRequest()
     await request.authenticateAs(admin)
     const response = await request
       .get(
-        `/api/v1/posts/review-queue?limit=2&after=${encodeURIComponent(encodeCursor({ id: afterId }))}`,
+        `/api/v1/posts/review-queue?limit=3&after=${encodeURIComponent(encodeCursor({ id: afterId }))}`,
       )
       .expect(200)
 
@@ -82,15 +108,19 @@ describe('GET /api/v1/posts/review-queue media', () => {
         images: Array<{ image_id: string; order_index: number; caption: string }>
       }
     >(
-      response.body.results.map((post: { id: string; media_context: unknown }) => [
+      response.body.results.map((post: { id: string; media_reveal: unknown }) => [
         post.id,
-        post.media_context,
+        post.media_reveal,
       ]),
     )
     expect(byId.get(noImageId)).toEqual({ requires_reveal: false, images: [] })
     expect(byId.get(oneImageId)).toEqual({
       requires_reveal: true,
       images: [{ image_id: imageId, order_index: 0, caption: 'Image 0' }],
+    })
+    expect(byId.get(passOneImageId)).toEqual({
+      requires_reveal: false,
+      images: [{ image_id: passImageId, order_index: 0, caption: 'Image 0' }],
     })
   })
 
@@ -139,9 +169,9 @@ describe('GET /api/v1/posts/review-queue media', () => {
       .expect(200)
     const byId = new Map<string, Array<{ image_id: string }>>(
       response.body.results.map(
-        (post: { id: string; media_context: { images: Array<{ image_id: string }> } }) => [
+        (post: { id: string; media_reveal: { images: Array<{ image_id: string }> } }) => [
           post.id,
-          post.media_context.images,
+          post.media_reveal.images,
         ],
       ),
     )

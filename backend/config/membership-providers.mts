@@ -1,4 +1,5 @@
 import { STRIPE_PROVIDER_ENVIRONMENT } from './stripe.mts'
+import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 
 export type MembershipProviderContext = {
   environment: 'test' | 'production'
@@ -16,14 +17,14 @@ export function getMembershipProviderContext(
 ): MembershipProviderContext {
   if (provider === 'stripe')
     return { environment: STRIPE_PROVIDER_ENVIRONMENT, applicationId: 'voucha-web' }
-  const environment = process.env.NODE_ENV === 'production' ? 'production' : 'test'
+  const environment = getDeployEnvironment() === 'production' ? 'production' : 'test'
   const variable = {
     apple_app_store: 'APPLE_APP_STORE_APPLICATION_ID',
     google_play: 'GOOGLE_PLAY_APPLICATION_ID',
     microsoft_store: 'MICROSOFT_STORE_APPLICATION_ID',
   }[provider]
   const configured = process.env[variable]
-  if (process.env.NODE_ENV === 'production' && !configured)
+  if (getDeployEnvironment() === 'production' && !configured)
     throw new Error(`${variable} is required in production`)
   return { environment, applicationId: configured ?? DEFAULT_APPLICATION_IDS[provider] }
 }

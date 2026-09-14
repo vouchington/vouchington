@@ -97,6 +97,13 @@ describe('web route baseline tests', () => {
             `route-auth-callback-${provider}`,
           )
           expect(result.html).toContain('Completing sign in...')
+          expect(
+            result.tracedRequests.some(
+              request =>
+                request.status === 200 &&
+                request.path.startsWith('/api/v1/localization?consumer=web&'),
+            ),
+          ).toBe(true)
         }),
       )
     })

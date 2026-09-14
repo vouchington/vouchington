@@ -20,6 +20,7 @@
     "@modules/queue-config": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/openai-moderation": "workspace:^",
+    "@queues/spam-detection": "workspace:^",
     "@services/openai-moderation": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",

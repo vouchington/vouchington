@@ -1,19 +1,11 @@
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import {
-  devWorkerCpuQueues,
-  devWorkerIoQueues,
-  formatQueueIncludeList,
-  formatQueueSelection,
-  workerQueuePolicy,
-} from './worker-queue-policy.mts'
+import { allWorkerQueueNames, formatQueueIncludeList } from './worker-queue-policy.mts'
 
 export function workerQueuePolicyCommandOutput(command: string | undefined): string {
   switch (command) {
-    case 'dev-cpu-queues':
-      return formatQueueIncludeList(devWorkerCpuQueues())
-    case 'dev-io-queues':
-      return formatQueueSelection(devWorkerIoQueues(), workerQueuePolicy.ioCapableQueues)
+    case 'dev-all-queues':
+      return formatQueueIncludeList(allWorkerQueueNames())
     default:
       throw new Error(`Unknown worker queue policy command: ${command ?? ''}`)
   }

@@ -2,7 +2,7 @@ import type { Membership } from '@voucha/types/entities/membership'
 
 // Loosened to the fields the tier predicates actually need (rather than the full `Membership`
 // entity) so callers holding only a partial projection -- e.g. the before/after lifecycle rows
-// returned by `updateMembershipFromWebhook` -- can reuse this single predicate instead of
+// returned by `updateMembershipFromEvent` -- can reuse this single predicate instead of
 // re-deriving it (see @services/memberships update.mts's `didLosePaidTier`).
 type MembershipTierFields = Pick<Membership, 'plan' | 'status' | 'expires_at'> &
   Partial<Pick<Membership, 'stripe_subscription_id'>>

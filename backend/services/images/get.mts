@@ -1,10 +1,18 @@
 import { read, write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 
-export const getImageByAny = async (string: string | Buffer) => {
+type GetImageOptions = {
+  includeQuarantinePending?: boolean
+}
+
+export const getImageByAny = async (
+  string: string | Buffer,
+  { includeQuarantinePending = false }: GetImageOptions = {},
+) => {
   if (!string) return null
 
   const filters = ['deleted_at IS NULL']
+  if (!includeQuarantinePending) filters.push('quarantine_pending_at IS NULL')
   const values = []
 
   if (typeof string === 'string' && isUUID(string)) {
@@ -31,6 +39,9 @@ export const getImageByAny = async (string: string | Buffer) => {
       s3_key,
       upload_staged_at,
       upload_source_deleted_at,
+      quarantine_pending_at,
+      quarantined_at,
+      quarantine_s3_key,
       openai_omni_moderation_results,
       openai_omni_moderation_flagged,
       openai_omni_moderation_created_at
@@ -44,7 +55,11 @@ export const getImageByAny = async (string: string | Buffer) => {
   return result.rows[0] || null
 }
 
-export const getImageById = async (id: string, includeDeleted = false) => {
+export const getImageById = async (
+  id: string,
+  includeDeleted = false,
+  { includeQuarantinePending = false }: GetImageOptions = {},
+) => {
   const filters = []
   const values = []
 
@@ -53,6 +68,7 @@ export const getImageById = async (id: string, includeDeleted = false) => {
   if (!includeDeleted) {
     filters.push('deleted_at IS NULL')
   }
+  if (!includeQuarantinePending) filters.push('quarantine_pending_at IS NULL')
 
   const result = await read(
     `/* getImageById */
@@ -72,6 +88,9 @@ export const getImageById = async (id: string, includeDeleted = false) => {
       upload_error,
       upload_staged_at,
       upload_source_deleted_at,
+      quarantine_pending_at,
+      quarantined_at,
+      quarantine_s3_key,
       openai_omni_moderation_results,
       openai_omni_moderation_flagged,
       openai_omni_moderation_created_at
@@ -85,16 +104,17 @@ export const getImageById = async (id: string, includeDeleted = false) => {
   return result.rows[0] || null
 }
 
-/**
- * Read an image from the primary so workers do not observe a lagging replica
- * immediately after the completion transaction commits.
- */
-export const getImageByIdFromPrimary = async (id: string, includeDeleted = false) => {
+/** Read an image from the primary so workers do not observe a lagging replica immediately after completion. */
+export const getImageByIdFromPrimary = async (
+  id: string,
+  includeDeleted = false,
+  { includeQuarantinePending = false }: GetImageOptions = {},
+) => {
   const filters = [`id = $1`]
-
   if (!includeDeleted) {
     filters.push('deleted_at IS NULL')
   }
+  if (!includeQuarantinePending) filters.push('quarantine_pending_at IS NULL')
 
   const result = await write(
     `/* getImageByIdFromPrimary */
@@ -114,6 +134,9 @@ export const getImageByIdFromPrimary = async (id: string, includeDeleted = false
       upload_error,
       upload_staged_at,
       upload_source_deleted_at,
+      quarantine_pending_at,
+      quarantined_at,
+      quarantine_s3_key,
       openai_omni_moderation_results,
       openai_omni_moderation_flagged,
       openai_omni_moderation_created_at
@@ -127,15 +150,19 @@ export const getImageByIdFromPrimary = async (id: string, includeDeleted = false
   return result.rows[0] || null
 }
 
-export const getImageByHash = async (hash: Buffer, includeDeleted = false) => {
+export const getImageByHash = async (
+  hash: Buffer,
+  includeDeleted = false,
+  { includeQuarantinePending = false }: GetImageOptions = {},
+) => {
   const filters = []
   const values = []
-
   filters.push(`sha_256 = $${values.push(hash)}`)
 
   if (!includeDeleted) {
     filters.push('deleted_at IS NULL')
   }
+  if (!includeQuarantinePending) filters.push('quarantine_pending_at IS NULL')
 
   const result = await write(
     `/* getImageByHash */
@@ -155,6 +182,9 @@ export const getImageByHash = async (hash: Buffer, includeDeleted = false) => {
       upload_error,
       upload_staged_at,
       upload_source_deleted_at,
+      quarantine_pending_at,
+      quarantined_at,
+      quarantine_s3_key,
       openai_omni_moderation_results,
       openai_omni_moderation_flagged,
       openai_omni_moderation_created_at

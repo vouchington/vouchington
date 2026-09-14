@@ -18,11 +18,14 @@ import { userTabForPostType } from '@/lib/links/entity-href'
 import { useAuth } from '@/lib/auth/context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ReportMenuKebab } from '@/components/shared/report-menu-item'
+import type AdminModerationButtonComponent from '@/components/admin/admin-moderation-button'
 import type { AgentModeration, AgentModerationElection } from '@/types/agents'
 import type { ElectionVote, Post, PostElection } from '@/types/posts'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const AdminModerationButton = dynamic(() => import('@/components/admin/admin-moderation-button'))
+const AdminModerationButton = dynamic<Parameters<typeof AdminModerationButtonComponent>[0]>(
+  () => import('@/components/admin/admin-moderation-button'),
+)
 
 export function PostCardFooter({
   post,

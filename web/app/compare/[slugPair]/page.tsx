@@ -94,7 +94,7 @@ export default async function CompareSlugPairPage({ params }: PageProps) {
   return (
     <PageWithAside showFooter={false}>
       <div className='space-y-4'>
-        <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+        <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
         <AnonymousStructuredDataScript
           data={createComparisonPageSchema({
             topicA: {

@@ -107,13 +107,13 @@ test.describe('Tag Pages', () => {
   test('article manage-tag tab changes preserve scroll position', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 320 })
     await navigateTo(page, `/article/${ARTICLE_ID}/tags/topic`)
-
     const manageTagsTab = page.getByTestId('post-detail-tab-manage-tags')
     await expect(manageTagsTab).toBeVisible()
-    await manageTagsTab.scrollIntoViewIfNeeded()
+    await page.mouse.move(640, 160)
+    await page.mouse.wheel(0, 320)
+    await page.waitForFunction(() => window.scrollY > 0)
 
     const beforeTabChangeScrollY = await page.evaluate(() => window.scrollY)
-    expect(beforeTabChangeScrollY).toBeGreaterThan(0)
 
     await manageTagsTab.click()
     await page.getByTestId('manage-tags-tab-post').click()
@@ -121,8 +121,7 @@ test.describe('Tag Pages', () => {
     await expect(page).toHaveURL(`/article/${ARTICLE_SLUG}/tags/post`)
     await expect(page.getByTestId('manage-tags-active-heading')).toHaveText('Related Posts')
 
-    const afterTabChangeScrollY = await page.evaluate(() => window.scrollY)
-    expect(afterTabChangeScrollY).toBeGreaterThan(0)
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(beforeTabChangeScrollY)
   })
 
   test('displays existing tags with semantic vote controls', async ({ page }) => {

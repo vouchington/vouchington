@@ -30,7 +30,6 @@ export async function insertStoryPostRecord(
       privacy,
       is_anonymous,
       bedrock_nova_multimodal_v1_content_sha256,
-      openai_omni_moderation_content_sha256,
       llm_moderation_content_sha256
     )
     VALUES (
@@ -43,7 +42,6 @@ export async function insertStoryPostRecord(
       'public',
       false,
       ${input.embeddingContentSha},
-      ${input.moderationContentSha},
       ${input.moderationContentSha}
     )
     RETURNING *

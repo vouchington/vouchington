@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decide } from '../decide.mts'
 import { RULES } from '../rules.mts'
-import { makeCtx } from '../test-helpers/helpers.mts'
+import { makeCtx } from '../../test-helpers/transient-retry/helpers.mts'
 describe('Storybook transient retry rules', () => {
   describe('storybook-browser-startup-transient watchdog shutdown', () => {
     const storybookJobName = 'storybook-build / storybook'
@@ -154,7 +154,7 @@ describe('Storybook transient retry rules', () => {
     const ciStorybookJobName = 'storybook / storybook'
     const matchingLog =
       'VITEST_STORYBOOK_BROWSER: 1\n' +
-      'RUN /home/jong/actions-runner/2/_work/filaments/filaments\n' +
+      'RUN /home/runner/actions-runner/2/_work/filaments/filaments\n' +
       '[vite] (client) [optimizer] scanning dependencies...\n' +
       "##[error]The action 'Run Storybook browser tests' has timed out after 10 minutes.\n" +
       'No files were found with the provided path: .vitest-reports/*.json\n' +

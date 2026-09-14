@@ -4,9 +4,10 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { TrendingFeedsViewModel } from '@/lib/view-models/homepage-view-models'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const FollowButton = dynamic(() =>
+const FollowButton = dynamic<Parameters<typeof FollowButtonComponent>[0]>(() =>
   import('@/components/shared/follow-button').then(mod => mod.FollowButton),
 )
 

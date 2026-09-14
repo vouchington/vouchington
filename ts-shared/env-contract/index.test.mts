@@ -55,6 +55,9 @@ describe('environment contract', () => {
       expect.arrayContaining([
         'NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY',
         'NEXT_PUBLIC_FEATURE_FLAG_COOKIE_MAX_LENGTH',
+        'SENTRY_DSN',
+        'SENTRY_TUNNEL_PREVIOUS_WEB_DSN',
+        'SENTRY_WEB_DSN',
       ]),
     )
     expect(knownSecretEnvNames()).not.toContain('GOOGLE_CLIENT_ID')
@@ -62,6 +65,7 @@ describe('environment contract', () => {
     expect(knownSecretEnvNames()).toContain('VOUCHA_BLUESKY_JWT_PRIVATE_KEYS_B64')
     expect(knownSecretEnvNames()).toContain('APPLE_APP_STORE_SERVER_API_PRIVATE_KEY')
     expect(knownSecretEnvNames()).toContain('LIGHTPANDA_TOKEN')
+    expect(knownSecretEnvNames()).not.toContain('SENTRY_DSN')
   })
 
   it('preserves locale-sorted sensitivity-name ordering', () => {

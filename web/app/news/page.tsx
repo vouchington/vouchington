@@ -78,7 +78,10 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
 
   return (
     <PageWithAside aside={NewsPageAside}>
-      <div className='space-y-4'>
+      <div
+        className='space-y-4'
+        data-pw='localization-tmux-smoke-news-page'
+      >
         <AnonymousStructuredDataScript
           data={createCollectionPageSchema({
             title: 'News',
@@ -87,7 +90,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
           })}
         />
         {breadcrumbItems.length > 0 && (
-          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
         )}
         <AnonymousStructuredDataScript
           data={createItemListSchema(

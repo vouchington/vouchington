@@ -1,7 +1,7 @@
 import type { Session } from 'agent-blackboard'
 import { describe, expect, it } from 'vitest'
 
-import { entryFixture, sessionFixture } from '../../blackboard/test-helpers/client-fixtures.mts'
+import { entryFixture, sessionFixture } from '../../test-helpers/blackboard/client-fixtures.mts'
 import { classifySession, type DistillCutoffs } from '../shape.mts'
 
 const RETRO_CUTOFF = '2026-08-01T00:00:00.000Z'

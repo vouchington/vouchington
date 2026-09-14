@@ -2,7 +2,7 @@ import { beforeAll, describe, it } from 'vitest'
 
 import { archivePost } from '@services/posts/archive'
 import type { PrivateUser } from '@services/users/types'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 // Register this package routes on the shared app singleton for route tests.
 import '../index.mts'
 import {

@@ -49,6 +49,10 @@ BEGIN
     RAISE EXCEPTION 'membership operations only allow one terminal lifecycle transition';
   END IF;
 
+  IF NEW.reconciliation_attempt_ordinal < OLD.reconciliation_attempt_ordinal THEN
+    RAISE EXCEPTION 'membership operations cannot decrease reconciliation attempts';
+  END IF;
+
   IF OLD.failed_at IS NOT NULL
     AND OLD.execution_claim_token IS NULL
     AND NEW.failed_at IS NOT NULL
@@ -56,6 +60,7 @@ BEGIN
     AND NEW.completed_at IS NULL
     AND NEW.provider_refund_id IS NOT DISTINCT FROM OLD.provider_refund_id
     AND NEW.remaining_refundable_minor_units <= OLD.remaining_refundable_minor_units
+    AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
   THEN
     RETURN NEW;
   END IF;
@@ -66,6 +71,13 @@ BEGIN
     AND NEW.failed_at IS NULL
     AND NEW.provider_refund_id IS NOT DISTINCT FROM OLD.provider_refund_id
     AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
+    AND (
+      NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal + 1
+      OR (
+        OLD.operation_kind <> 'administrator_refund'
+        AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
+      )
+    )
   THEN
     RETURN NEW;
   END IF;
@@ -75,6 +87,7 @@ BEGIN
     AND NEW.completed_at IS NULL
     AND NEW.failed_at IS NULL
     AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
+    AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
   THEN
     RETURN NEW;
   END IF;
@@ -88,6 +101,13 @@ BEGIN
     AND NEW.failed_at IS NULL
     AND NEW.provider_refund_id IS NOT DISTINCT FROM OLD.provider_refund_id
     AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
+    AND (
+      NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal + 1
+      OR (
+        OLD.operation_kind <> 'administrator_refund'
+        AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
+      )
+    )
   THEN
     RETURN NEW;
   END IF;
@@ -97,6 +117,7 @@ BEGIN
     AND NEW.completed_at IS NULL
     AND NEW.failed_at IS NOT NULL
     AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
+    AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
   THEN
     RETURN NEW;
   END IF;
@@ -106,6 +127,7 @@ BEGIN
     AND NEW.completed_at IS NOT NULL
     AND NEW.failed_at IS NULL
     AND NEW.remaining_refundable_minor_units IS NOT DISTINCT FROM OLD.remaining_refundable_minor_units
+    AND NEW.reconciliation_attempt_ordinal = OLD.reconciliation_attempt_ordinal
   THEN
     RETURN NEW;
   END IF;

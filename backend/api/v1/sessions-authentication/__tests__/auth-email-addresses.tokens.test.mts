@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-import { createRequest, request } from '@voucha/api/test-helpers/server'
+import { createRequest, request } from '@voucha/test-helpers/api/server'
 import {
   createUniqueTestEmail,
   overrideDynamicConfigFieldsForTest,

@@ -46,7 +46,7 @@ describe('post clearance pipeline', () => {
     expect(await getPostClearanceStatus(postId)).toBe('approved')
   })
 
-  it('reset then re-check rejects when spam flag is set after reset', async () => {
+  it('reset then re-check routes a spam flag to review', async () => {
     const postId = await insertTestPost({
       title: `pipeline-reset-spam-${randomSuffix()}`,
       slug: `pipeline-reset-spam-${randomSuffix()}`,
@@ -60,12 +60,12 @@ describe('post clearance pipeline', () => {
     expect(wasReset).toBe(true)
     expect(await getPostClearanceStatus(postId)).toBe('pending')
 
-    // Spam detected on re-check — should reject
+    // Spam detected on re-check requires human review.
     await setPostSpamDetectionComplete(postId, true)
     await setPostModerationComplete(postId, false)
     await checkPostClearance(postId)
 
-    expect(await getPostClearanceStatus(postId)).toBe('rejected')
+    expect(await getPostClearanceStatus(postId)).toBe('in_review')
   })
 
   it('admin override to approved after automatic rejection is reflected in clearance result', async () => {

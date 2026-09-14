@@ -133,7 +133,10 @@ export default async function Home() {
       aside={HomePageAside}
       showFooter={false}
     >
-      <div className='space-y-8 py-8'>
+      <div
+        className='space-y-8 py-8'
+        data-pw='localization-tmux-smoke-home-page'
+      >
         <AnonymousStructuredDataScript data={createOrganizationSchema()} />
         <AnonymousStructuredDataScript data={createWebSiteSchema()} />
         <div className='space-y-4'>

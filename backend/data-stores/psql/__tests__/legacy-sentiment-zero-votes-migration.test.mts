@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { writePool } from '@data-stores/psql'
-import { runConfigDrivenStatementsInTransaction } from '../migration-runner/config-driven-statements.mts'
+import { runLegacySentimentZeroVoteMigration } from '../../../test-helpers/data-stores/psql/legacy-sentiment-zero-votes-migration.mts'
 import generateElectionSchema from '../config-driven/0000-00-00-entity-elections.mts'
 import { generateLegacySentimentZeroVoteRepairSql } from '../config-driven/utils/legacy-sentiment-zero-vote-repair.mts'
-import { write } from '../setup.mts'
 
 const LEGACY_SENTIMENT_VOTE_TABLES = [
   ['post_votes', 'post_id', 'posts'],
@@ -255,10 +253,7 @@ VALUES ('00000000-0000-7000-8000-000000000003', '00000000-0000-7000-8000-0000000
     ).join('\n')
 
     const migrationSql = generateLegacySentimentZeroVoteRepairSql()
-    const migrationClient = await writePool.connect()
-    try {
-      await runConfigDrivenStatementsInTransaction(
-        `${setupTables}
+    await runLegacySentimentZeroVoteMigration(`${setupTables}
 CREATE TEMP TABLE election_vote_migration_claims (
   migration_id TEXT PRIMARY KEY,
   claimed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -282,16 +277,7 @@ DO $$ BEGIN
 ${neutralAssertions}
 ${topicMetricAssertions}
 ${deletedUserMetricAssertion}
-END $$;`,
-        (query, values) => write(query, values, { client: migrationClient }),
-      )
-
-      await expect(
-        migrationClient.query('SELECT score_is_neutral, score_is_semantic FROM post_votes LIMIT 0'),
-      ).resolves.toBeDefined()
-    } finally {
-      migrationClient.release()
-    }
+END $$;`)
     expect(LEGACY_SENTIMENT_VOTE_TABLES).toHaveLength(5)
     expect(generateElectionSchema().indexOf(migrationSql)).toBeGreaterThan(
       generateElectionSchema().indexOf('CREATE TABLE IF NOT EXISTS user_vouch_votes'),

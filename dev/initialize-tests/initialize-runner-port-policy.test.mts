@@ -15,7 +15,7 @@ async function run(script: string, env = '') {
   testDirs.push(root)
   await mkdir(join(root, 'worktree'))
   await writeFile(join(root, 'worktree', '.env'), env)
-  const command = `source "$1" >/dev/null 2>&1; ${script}`
+  const command = `source "$1" >/dev/null 2>&1; source "$REPO_ROOT/dev/lib/git-worktrees.sh"; ${script}`
   const result = await execFileAsync('bash', ['-lc', command, 'initialize-test', initializePath], {
     cwd: join(root, 'worktree'),
     env: { ...process.env, HOME: dirname(root) },

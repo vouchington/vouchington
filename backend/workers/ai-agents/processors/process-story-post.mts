@@ -1,6 +1,6 @@
 import type { Job } from 'glide-mq'
 import type { StoryPostJobData } from '@queues/ai-agents/types'
-import { getPostByAny, getPostModerationTimestamps } from '@services/posts/get'
+import { getPostByAny, getPostModerationCompletion } from '@services/posts/get'
 import type { Post } from '@services/posts/types'
 import { getStoryById, getStoryItemSummaries } from '@services/stories/get'
 import { getPostStoryByPostId } from '@services/stories/get-post-stories'
@@ -36,8 +36,8 @@ export async function processStoryPost(job: Job<StoryPostJobData>): Promise<unkn
     if (!currentPost || currentPost.post_type !== 'story' || !currentPost.ai_summary_markdown) {
       return null
     }
-    const moderation = await getPostModerationTimestamps(currentPost.id, { readOnly: false })
-    if (!moderation?.openai_omni_moderation_created_at || !moderation.spam_detection_created_at) {
+    const moderation = await getPostModerationCompletion(currentPost.id, { readOnly: false })
+    if (!moderation?.openai_omni_moderation_completed || !moderation.spam_detection_completed) {
       await updateStoryPostAgentResult(
         currentPost.id,
         currentPost.title ?? '',

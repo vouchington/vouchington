@@ -13,7 +13,11 @@ vi.mock(import('@/lib/api/client'), () => ({
 
 import { HouseholdManager } from '../household-manager'
 import type { HouseholdSection } from '@/types/my'
-import { allByPw, makeMembership, makeSection } from '../test-helpers/household-manager'
+import {
+  allByPw,
+  makeMembership,
+  makeSection,
+} from '../../../test-helpers/components/my/household-manager'
 
 const pageInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
 

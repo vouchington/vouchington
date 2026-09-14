@@ -52,8 +52,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <div className='flex min-h-screen items-center justify-center bg-muted/50'>
-      <div className='w-full max-w-md space-y-6 rounded-md border bg-card p-6 shadow-sm dark:shadow-none'>
-        <div className='text-center'>
+      <div
+        className='w-full max-w-md space-y-6 rounded-md border bg-card p-6 shadow-sm dark:shadow-none'
+        data-pw='localization-login-page'
+      >
+        <div
+          className='text-center'
+          data-pw='localization-tmux-smoke-login-page'
+        >
           <VouchaLogo className='mx-auto mb-4 h-6 w-auto' />
           <h1
             className='text-2xl font-bold'

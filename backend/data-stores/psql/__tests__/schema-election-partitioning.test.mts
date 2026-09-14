@@ -10,7 +10,7 @@ import {
   getConstraintRows,
   getIndexRows,
   getPartitionRows,
-} from '../test-helpers/election-schema.mts'
+} from '../../../test-helpers/data-stores/psql/election-schema.mts'
 
 const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)
 const configuredVoteTables = VOTE_SCHEMA_CONFIGS.map(config => config.voteTable)

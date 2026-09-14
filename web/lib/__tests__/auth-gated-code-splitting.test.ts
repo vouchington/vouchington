@@ -9,9 +9,10 @@ function readFile(file: string): string {
 
 function assertLazyImport({ file, modulePath, exportName }: LazyImportExpectation) {
   const contents = readFile(file)
+  const runtimeImports = contents.replace(/^import type[^\n]*$/gm, '')
   const escapedPath = RegExp.escape(modulePath)
 
-  expect(contents).not.toMatch(new RegExp(`from\\s+['"]${escapedPath}['"]`))
+  expect(runtimeImports).not.toMatch(new RegExp(`from\\s+['"]${escapedPath}['"]`))
   expect(contents).toMatch(new RegExp(String.raw`import\s*\(\s*['"]${escapedPath}['"]\s*\)`))
 
   if (!exportName) return

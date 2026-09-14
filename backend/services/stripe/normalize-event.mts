@@ -1,5 +1,5 @@
 import type Stripe from 'stripe'
-import { getStripeObjectId, getStripeObjectString } from './webhook-utils.mts'
+import { getStripeObjectId, getStripeObjectString } from './event-utils.mts'
 
 export function normalizeStripeEvent(event: Stripe.Event): {
   stripeCreatedAt: Date

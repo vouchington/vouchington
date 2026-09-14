@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeAll } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect, insertSessionReferralAttribution } from '@voucha/test-helpers'
 import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'

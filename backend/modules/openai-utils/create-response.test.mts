@@ -10,7 +10,7 @@ import {
   makeSdkResponse,
   makeSdkTextResponse,
   makeStreamEvent,
-} from './test-helpers/responses.mts'
+} from '../../test-helpers/modules/openai-utils/responses.mts'
 
 describe('streamOpenAIResponseEvents', () => {
   it.each(['AbortError', 'APIUserAbortError', 'TimeoutError'])(

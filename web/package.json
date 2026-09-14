@@ -49,7 +49,7 @@
     "@radix-ui/react-toggle": "^1.1.18",
     "@radix-ui/react-toggle-group": "^1.1.19",
     "@radix-ui/react-tooltip": "^1.2.16",
-    "@sentry/nextjs": "10.71.0",
+    "@sentry/nextjs": "10.74.0",
     "@simplewebauthn/browser": "^14.0.0",
     "@ts-shared/data-points": "workspace:^",
     "@ts-shared/feature-flags": "workspace:^",
@@ -63,6 +63,7 @@
     "@ts-shared/user-profile-collections": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/localization": "0.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -71,7 +72,7 @@
     "input-otp": "^1.5.0",
     "isbot": "^5.2.2",
     "lucide-react": "^1.42.0",
-    "next": "^16.3.4",
+    "next": "^16.3.5",
     "parse5": "8.0.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.3.0",
@@ -101,6 +102,6 @@
     "storybook": "^10.6.0",
     "tailwindcss": "^4",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vite": "^8.2.2"
+    "vite": "^8.3.0"
   }
 }

@@ -5,36 +5,17 @@ import {
   type PluralForms,
 } from './message-descriptors.mts'
 import type { NativeConsumerManifestEntry } from './native-consumer-manifest.mts'
-import enMessages from './messages/en.ts'
-import esMessages from './messages/es.ts'
-import frMessages from './messages/fr.ts'
-import { nativeDotnetMessages } from './messages/native-dotnet.ts'
-import { nativeSharedMessages } from './messages/native-shared.ts'
-import { nativeSwiftMessages } from './messages/native-swift.ts'
-import { nativeTaxonomyMessages } from './messages/native-taxonomy.ts'
-import ptMessages from './messages/pt.ts'
+import { catalogTreeForLocale } from './load-catalog-json.mts'
 
 export const NATIVE_RESOURCE_LOCALES = ['en', 'es', 'fr', 'pt'] as const
 export type NativeResourceLocale = (typeof NATIVE_RESOURCE_LOCALES)[number]
 export type NativeCatalogs = Readonly<Record<NativeResourceLocale, Catalog>>
 
 export const DEFAULT_NATIVE_CATALOGS: NativeCatalogs = {
-  en: withNativeCatalog(enMessages, 'en'),
-  es: withNativeCatalog(esMessages, 'es'),
-  fr: withNativeCatalog(frMessages, 'fr'),
-  pt: withNativeCatalog(ptMessages, 'pt'),
-}
-
-function withNativeCatalog(webCatalog: Catalog, locale: NativeResourceLocale): Catalog {
-  return {
-    ...webCatalog,
-    native: {
-      ...nativeSharedMessages[locale],
-      dotnet: nativeDotnetMessages[locale],
-      swift: nativeSwiftMessages[locale],
-      taxonomy: nativeTaxonomyMessages[locale],
-    },
-  }
+  en: catalogTreeForLocale('en', ['web', 'swift', 'dotnet']),
+  es: catalogTreeForLocale('es', ['web', 'swift', 'dotnet']),
+  fr: catalogTreeForLocale('fr', ['web', 'swift', 'dotnet']),
+  pt: catalogTreeForLocale('pt', ['web', 'swift', 'dotnet']),
 }
 
 export function getNativeCatalogLeaf(catalog: Catalog, key: string): CatalogLeaf {

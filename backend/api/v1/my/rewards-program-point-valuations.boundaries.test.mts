@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestRewardsProgram } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { MAX_POINT_VALUE_MICROUNITS } from '@ts-shared/money'

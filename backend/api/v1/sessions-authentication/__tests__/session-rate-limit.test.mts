@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
-import { createRequest, nextTestRequestIp } from '@voucha/api/test-helpers/server'
+import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 
 import { createDeviceAndSessionTokens, revokeSession } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'

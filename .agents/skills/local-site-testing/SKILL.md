@@ -43,15 +43,16 @@ Start the managed stack from outside tmux:
 ./dev/tmux
 ```
 
-If you are already inside a generated `claude` or `codex` tmux window, `./dev/tmux` was run
-from outside tmux to create the service windows. Do not run `./dev/tmux` again from inside tmux;
-source `.env`, inspect the existing service windows, and open the Cloudflare Worker URL printed by
-`./dev/tmux`. For browser-grade validation, that URL must be `https://localhost:$WORKER_PORT`. If
-`./dev/tmux` prints `http://localhost:$WORKER_PORT`, mkcert certs are missing; use that HTTP URL only
-as a process liveness fallback, then run the local setup script or regenerate `dev/certs/localhost*.pem`
-before validating browser behavior. If the service windows do not exist, leave tmux and run
-`./dev/tmux` from outside tmux. Do not start or restart individual web services manually; recover
-the managed stack with the lifecycle commands in [`dev/README.md`](../../../dev/README.md).
+The managed session contains only service windows. From an agent shell inside tmux, pass
+`--no-attach` to start or reuse that session; otherwise run `./dev/tmux` from outside tmux.
+If a managed pane has crashed and is sitting at `read`, rerun `./dev/tmux` or `--no-attach`; the
+launcher restores only the dead windows. Source `.env`, inspect the service windows, and open the
+Cloudflare Worker URL printed by `./dev/tmux`. For browser-grade validation, that URL must be
+`https://localhost:$WORKER_PORT`. If `./dev/tmux` prints `http://localhost:$WORKER_PORT`, mkcert
+certs are missing; use that HTTP URL only as a process liveness fallback, then run the local setup
+script or regenerate `dev/certs/localhost*.pem` before validating browser behavior. Do not start or
+restart individual web services manually; recover the managed stack with `./dev/tmux` or the
+lifecycle commands in [`dev/README.md`](../../../dev/README.md).
 
 The Cloudflare Worker is the only supported browser entry point. Use HTTPS for full-site validation:
 
@@ -93,8 +94,9 @@ When Wrangler logs `EMFILE` or browser checks fail under descriptor pressure, in
 ./dev/status
 ```
 
-If you still need an interactive site after cleanup, restart the whole stack with `./dev/tmux` from
-outside tmux. Restarting only Wrangler leaves the Worker proxying to stopped upstreams. For
+If you still need an interactive site after cleanup, run `./dev/tmux` from outside tmux. A crashed
+managed pane can be restored that way without `./dev/stop-services` first. Restarting only Wrangler
+leaves the Worker proxying to stopped upstreams. For
 Playwright specifically, keep Valkey running and retry with one worker:
 
 ```bash

@@ -1,7 +1,9 @@
 /* oxlint-disable no-mistakes/playwright-literals -- Footer IDs come from static link data; ast-grep still bans inline calls in data-pw. */
+'use client'
+
 import Link from 'next/link'
 import { footerContentLinks, footerSiteLinks } from './footer-links'
-import { getTranslations } from '@/lib/i18n/get-translations'
+import { useTranslations } from '@/lib/i18n/use-translations'
 
 function FooterLinks({
   links,
@@ -35,8 +37,8 @@ function FooterLinks({
   )
 }
 
-export async function SidebarSiteFooter() {
-  const t = await getTranslations()
+export function SidebarSiteFooter() {
+  const t = useTranslations()
   return (
     <footer
       data-pw='sidebar-site-footer'

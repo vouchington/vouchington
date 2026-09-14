@@ -210,7 +210,7 @@ describe('setup-web-integration', () => {
     const fs = await import('node:fs')
     process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-write-failure.json'
     vi.mocked(fs.writeFileSync).mockImplementation(() => {
-      throw new Error('ENOSPC: no space left on device')
+      throw new Error('EIO: simulated timing-report write failure')
     })
 
     const modulePath = './setup-web-integration.mts?timing-report-write-failure'

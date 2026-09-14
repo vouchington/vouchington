@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import * as Sentry from '@sentry/nextjs'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { UsernameRequiredDialog } from '@/components/shared/username-required-dialog'
@@ -66,7 +67,7 @@ export function NewsCommunityDiscussionAction({
       turnstile={turnstile}
       onOpenChange={handleOpenChange}
       onCommunitySlugChange={setCommunitySlug}
-      onSubmit={() => submit().catch(() => undefined)}
+      onSubmit={() => submit().catch(Sentry.captureException)}
     />
   )
 

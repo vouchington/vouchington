@@ -689,15 +689,7 @@ export const webCommunityModerationApiFixtureCases: ApiFixtureCase[] = [
     status: 200,
     body: {
       community_agent_moderations: [],
-      openai_moderation: {
-        flagged: true,
-        results: [
-          {
-            flagged: true,
-            categories: { harassment: true, violence: false },
-          },
-        ],
-      },
+      platform_moderation: { status: 'in_review' },
     },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['backend/api/v1/communities/moderation-results.mts'],

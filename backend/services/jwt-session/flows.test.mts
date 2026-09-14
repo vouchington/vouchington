@@ -7,7 +7,11 @@ import { isUUIDv7, signDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
 import { flush } from '@data-stores/analytics/backend-local'
 import { getTestPrivateUserById } from '@voucha/test-helpers'
 import { refreshSessionState } from './flows.mts'
-import { legacyUuidV4, signLegacyDeviceJwt, signLegacySessionJwt } from './test-helpers/index.mts'
+import {
+  legacyUuidV4,
+  signLegacyDeviceJwt,
+  signLegacySessionJwt,
+} from '../../test-helpers/services/jwt-session/index.mts'
 
 describe('flows', () => {
   let testDir: string

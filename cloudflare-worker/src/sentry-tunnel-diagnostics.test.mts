@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { handleSentryTunnel } from './sentry-tunnel.mts'
+import { handleSentryTunnel as handleConfiguredSentryTunnel } from './sentry-tunnel.mts'
 import { logSentryTunnelForwardFailure } from './sentry-tunnel-diagnostics.mts'
 
-const INVALID_PROJECT_DSN =
-  'https://secret-dsn-key@o4507688154824704.ingest.us.sentry.io/9999999999'
+const INVALID_PROJECT_DSN = 'https://secret_dsn_key@example.test/999'
+const TUNNEL_ENV = { SENTRY_WEB_DSN: 'https://public@example.test/123' }
+
+function handleSentryTunnel(request: Request): Promise<Response> {
+  return handleConfiguredSentryTunnel(request, TUNNEL_ENV)
+}
 
 function makeEnvelope(dsn = INVALID_PROJECT_DSN) {
   return [
@@ -49,7 +53,7 @@ describe('Sentry tunnel diagnostics', () => {
     expect(logged).not.toContain('9999999999')
     expect(JSON.parse(logged as string)).toEqual({
       message: 'sentry_tunnel_rejected',
-      reason: 'project_not_allowed',
+      reason: 'dsn_not_allowed',
       status: 403,
       method: 'POST',
       requestPath: '/monitoring',
@@ -77,7 +81,7 @@ describe('Sentry tunnel diagnostics', () => {
       code: 'UND_ERR_CONNECT_TIMEOUT',
     })
 
-    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '4507688156856320', error)
+    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '123', error)
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     const logged = errorSpy.mock.calls[0]?.[0]
@@ -89,7 +93,7 @@ describe('Sentry tunnel diagnostics', () => {
       status: 502,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       errorName: 'TypeError',
       errorCode: 'UND_ERR_CONNECT_TIMEOUT',
     })
@@ -100,7 +104,7 @@ describe('Sentry tunnel diagnostics', () => {
       code: { value: 'SECRET_FROM_ERROR_OBJECT' },
     })
 
-    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '4507688156856320', error)
+    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '123', error)
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     const logged = errorSpy.mock.calls[0]?.[0]
@@ -112,7 +116,7 @@ describe('Sentry tunnel diagnostics', () => {
       status: 502,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       errorName: 'TypeError',
     })
   })
@@ -125,7 +129,7 @@ describe('Sentry tunnel diagnostics', () => {
       },
     })
 
-    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '4507688156856320', error)
+    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '123', error)
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     const logged = errorSpy.mock.calls[0]?.[0]
@@ -137,7 +141,7 @@ describe('Sentry tunnel diagnostics', () => {
       status: 502,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       errorName: 'TypeError',
     })
   })
@@ -147,7 +151,7 @@ describe('Sentry tunnel diagnostics', () => {
       cause: { code: 'ECONNRESET' },
     })
 
-    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '4507688156856320', error)
+    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '123', error)
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     const logged = errorSpy.mock.calls[0]?.[0]
@@ -158,14 +162,14 @@ describe('Sentry tunnel diagnostics', () => {
       status: 502,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       errorName: 'TypeError',
       errorCode: 'ECONNRESET',
     })
   })
 
   it('logs non-error thrown values without code diagnostics', () => {
-    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '4507688156856320', 'string failure')
+    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '123', 'string failure')
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     const logged = errorSpy.mock.calls[0]?.[0]
@@ -177,7 +181,7 @@ describe('Sentry tunnel diagnostics', () => {
       status: 502,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       errorName: 'string',
     })
   })
@@ -190,7 +194,7 @@ describe('Sentry tunnel diagnostics', () => {
       },
     })
 
-    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '4507688156856320', error)
+    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '123', error)
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     const logged = errorSpy.mock.calls[0]?.[0]
@@ -202,7 +206,7 @@ describe('Sentry tunnel diagnostics', () => {
       status: 502,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       errorName: 'TypeError',
     })
   })
@@ -218,7 +222,7 @@ describe('Sentry tunnel diagnostics', () => {
     )
     const error = new TypeError('wrapped failure', { cause })
 
-    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '4507688156856320', error)
+    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '123', error)
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     const logged = errorSpy.mock.calls[0]?.[0]
@@ -230,7 +234,7 @@ describe('Sentry tunnel diagnostics', () => {
       status: 502,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       errorName: 'TypeError',
       errorCode: 'ECONNRESET',
     })
@@ -247,7 +251,7 @@ describe('Sentry tunnel diagnostics', () => {
     })
     const error = new TypeError('wrapped failure', { cause })
 
-    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '4507688156856320', error)
+    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '123', error)
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     const logged = errorSpy.mock.calls[0]?.[0]
@@ -259,7 +263,7 @@ describe('Sentry tunnel diagnostics', () => {
       status: 502,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       errorName: 'TypeError',
       errorCode: 'ECONNRESET',
     })
@@ -270,7 +274,7 @@ describe('Sentry tunnel diagnostics', () => {
       code: 500,
     })
 
-    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '4507688156856320', error)
+    logSentryTunnelForwardFailure(makeRequest(makeEnvelope()), '123', error)
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     const logged = errorSpy.mock.calls[0]?.[0]
@@ -281,7 +285,7 @@ describe('Sentry tunnel diagnostics', () => {
       status: 502,
       method: 'POST',
       requestPath: '/monitoring',
-      projectId: '4507688156856320',
+      projectId: '123',
       errorName: 'TypeError',
       errorCode: '500',
     })

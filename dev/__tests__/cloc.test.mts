@@ -46,7 +46,7 @@ const CLASSIFIER_FIXTURES: ReadonlyArray<{
   },
   // test-helpers directory → tooling (not tests)
   {
-    path: 'cloudflare-worker/src/test-helpers/cache.mts',
+    path: 'cloudflare-worker/test-helpers/src/cache.mts',
     category: 'tooling',
     service: 'cloudflare-worker',
   },

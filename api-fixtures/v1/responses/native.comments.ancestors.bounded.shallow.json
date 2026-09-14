@@ -43,10 +43,6 @@
       "privacy": "public",
       "root_id": "comment-root-post",
       "slug": null,
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null
@@ -84,10 +80,6 @@
       "privacy": "public",
       "root_id": "comment-root-post",
       "slug": null,
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null
@@ -125,10 +117,6 @@
       "privacy": "public",
       "root_id": null,
       "slug": "comment-root",
-      "spam_detection_created_at": null,
-      "spam_detection_flagged": null,
-      "spam_detection_results": null,
-      "spam_detection_score": null,
       "title": "Comment thread fixture",
       "updated_at": "2026-01-01T00:00:00Z",
       "updated_by_id": null

@@ -179,7 +179,7 @@ export function DirectMessagePageClient({
                 loading={loadingMore}
                 data-pw='dm-load-more-button'
                 onClick={() => {
-                  handleLoadMore().catch(() => {})
+                  void handleLoadMore()
                 }}
               >
                 {t('extracted.conversationid.conversationPageClient.loadOlderMessages_f17671d8')}
@@ -193,7 +193,7 @@ export function DirectMessagePageClient({
             loadingMore={loadingMore}
             clearError={() => setLoadMoreError(null)}
             loadMore={() => {
-              handleLoadMore().catch(() => {})
+              void handleLoadMore()
             }}
           />
           {messages.length === 0 ? (
@@ -227,9 +227,7 @@ export function DirectMessagePageClient({
           className='flex flex-col gap-2'
           onSubmit={e => {
             e.preventDefault()
-            handleSend().catch(() => {
-              // error handled in handleSend
-            })
+            void handleSend()
           }}
         >
           <Textarea

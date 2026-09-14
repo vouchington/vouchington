@@ -1,4 +1,5 @@
 import type { Browser, BrowserContext, Page } from 'playwright-core'
+import onError from '@modules/on-error'
 
 export type BrowserSession = {
   browser: Browser
@@ -15,7 +16,7 @@ export async function openBrowserSession(
     const opened = await openBrowserContext(browser)
     return { browser, ...opened }
   } catch (error) {
-    await browser.close().catch(() => {})
+    await browser.close().catch(onError)
     throw error
   }
 }
@@ -28,7 +29,7 @@ async function openBrowserContext(
     const page = await context.newPage()
     return { context, page }
   } catch (error) {
-    await context.close().catch(() => {})
+    await context.close().catch(onError)
     throw error
   }
 }

@@ -8,7 +8,7 @@ DO $$ BEGIN CREATE TYPE membership_source_kinds AS ENUM ('direct', 'family', 'ad
 DO $$ BEGIN CREATE TYPE membership_change_types AS ENUM ('source_observed', 'renewal', 'upgrade', 'downgrade', 'sku_migration', 'cancellation', 'pause', 'reactivation', 'expiration', 'admin_grant', 'admin_revoke', 'refund'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE membership_refund_reasons AS ENUM ('goodwill', 'requested', 'dispute', 'other'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE membership_refund_sources AS ENUM ('admin', 'stripe_dashboard'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE membership_operation_kinds AS ENUM ('cancel_source', 'automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE membership_operation_kinds AS ENUM ('cancel_source', 'automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE membership_verification_result_codes AS ENUM ('verified', 'competing_direct_source', 'invalid_evidence', 'wrong_account', 'wrong_application', 'wrong_environment', 'wrong_product', 'revoked', 'expired', 'purchase_pending', 'missing_account_token', 'stale_evidence'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TABLE IF NOT EXISTS membership_products (
@@ -374,6 +374,7 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   remaining_refundable_minor_units BIGINT CHECK (remaining_refundable_minor_units BETWEEN 0 AND 9007199254740991),
   currency_code TEXT REFERENCES currencies(code) ON DELETE RESTRICT,
   period_started_at TIMESTAMPTZ, period_ends_at TIMESTAMPTZ, collision_at TIMESTAMPTZ,
+  reconciliation_due_at TIMESTAMPTZ, reconciliation_attempt_ordinal INTEGER NOT NULL DEFAULT 0,
   requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, completed_at TIMESTAMPTZ, failed_at TIMESTAMPTZ, failure_message TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
@@ -383,15 +384,20 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   CHECK (period_ends_at IS NULL OR period_ends_at >= period_started_at),
   CHECK (remaining_refundable_minor_units IS NULL OR qualifying_allocation_minor_units IS NOT NULL),
   CHECK (remaining_refundable_minor_units IS NULL OR remaining_refundable_minor_units <= qualifying_allocation_minor_units),
+  CHECK (reconciliation_attempt_ordinal >= 0),
   CHECK ((operation_kind IN ('ineligible_purchase_reversal', 'collision_resolution')) = (collision_at IS NOT NULL)),
   CHECK (
-    operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution')
+    operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund')
     OR (qualifying_allocation_minor_units IS NULL AND remaining_refundable_minor_units IS NULL AND currency_code IS NULL AND period_started_at IS NULL AND period_ends_at IS NULL)
   ),
   CHECK (
     operation_kind NOT IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution')
     OR (qualifying_allocation_minor_units IS NOT NULL AND remaining_refundable_minor_units IS NOT NULL AND currency_code IS NOT NULL AND period_started_at IS NOT NULL AND period_ends_at IS NOT NULL)
   ),
+  CHECK (operation_kind <> 'administrator_refund' OR (period_started_at IS NULL AND period_ends_at IS NULL) OR (period_started_at IS NOT NULL AND period_ends_at IS NOT NULL)),
+  CHECK (operation_kind <> 'administrator_refund' OR (qualifying_allocation_minor_units IS NOT NULL AND remaining_refundable_minor_units IS NOT NULL AND currency_code IS NOT NULL)),
+  CHECK (operation_kind <> 'administrator_refund' OR completed_at IS NOT NULL OR reconciliation_due_at IS NOT NULL),
+  CHECK (completed_at IS NULL OR reconciliation_due_at IS NULL),
   CHECK (num_nonnulls(completed_at, failed_at) <= 1),
   CHECK (completed_at IS NULL OR completed_at >= requested_at),
   CHECK (failed_at IS NULL OR failed_at >= requested_at),
@@ -406,9 +412,11 @@ CREATE TABLE IF NOT EXISTS membership_operations (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_idempotency ON membership_operations (provider, environment, application_id, idempotency_key);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__receipt_snapshot ON membership_operations (id, provider, environment, application_id, operation_kind, remaining_refundable_minor_units, currency_code) NULLS NOT DISTINCT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__id_source ON membership_operations (id, membership_source_id);
 CREATE INDEX IF NOT EXISTS idx_membership_operations__source_id ON membership_operations (membership_source_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_membership_operations__lineage_id ON membership_operations (membership_provider_lineage_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_membership_operations__currency_code ON membership_operations (currency_code);
+CREATE INDEX IF NOT EXISTS idx_membership_operations__reconciliation_due ON membership_operations (reconciliation_due_at, id) WHERE completed_at IS NULL AND reconciliation_due_at IS NOT NULL;
 CREATE TABLE IF NOT EXISTS membership_automatic_refund_receipts (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_operation_id UUID NOT NULL REFERENCES membership_operations(id) ON DELETE RESTRICT,
   provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
@@ -434,26 +442,30 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__prov
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__operation_id ON membership_automatic_refund_receipts (membership_operation_id);
 CREATE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__currency_code ON membership_automatic_refund_receipts (currency_code);
 
--- These dedicated Stripe ingress/refund tables remain while current callers are migrated.
-CREATE TABLE IF NOT EXISTS membership_refund_intents (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), membership_id UUID NOT NULL,
-  membership_source_id UUID NOT NULL REFERENCES membership_sources(id) ON DELETE RESTRICT,
-  issued_by_id UUID NOT NULL,
-  stripe_idempotency_key TEXT NOT NULL UNIQUE, request_fingerprint TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS membership_administrator_refund_operation_requests (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  membership_operation_id UUID NOT NULL UNIQUE REFERENCES membership_operations(id) ON DELETE RESTRICT,
+  administrator_request_key TEXT NOT NULL, membership_id UUID NOT NULL, issued_by_id UUID NOT NULL,
+  provider_payment_reference TEXT NOT NULL, provider_subscription_reference TEXT,
+  amount_minor_units BIGINT NOT NULL CHECK (amount_minor_units BETWEEN 1 AND 9007199254740991),
+  currency_code TEXT NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
+  reason membership_refund_reasons NOT NULL, cancel_requested BOOLEAN NOT NULL,
+  request_fingerprint TEXT NOT NULL, note TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (char_length(stripe_idempotency_key) BETWEEN 1 AND 255 AND stripe_idempotency_key = TRIM(stripe_idempotency_key)),
-  CONSTRAINT membership_refund_intents_request_fingerprint_length_check CHECK (char_length(request_fingerprint) = 64),
-  CONSTRAINT uq_mrefund_intents__key_source UNIQUE (stripe_idempotency_key, membership_source_id)
+  CHECK (char_length(provider_payment_reference) BETWEEN 1 AND 255 AND provider_payment_reference = TRIM(provider_payment_reference)),
+  CHECK ((cancel_requested = FALSE AND provider_subscription_reference IS NULL) OR (cancel_requested = TRUE AND char_length(provider_subscription_reference) BETWEEN 1 AND 255 AND provider_subscription_reference = TRIM(provider_subscription_reference))),
+  CHECK (char_length(request_fingerprint) = 64),
+  CHECK (char_length(administrator_request_key) BETWEEN 1 AND 255 AND administrator_request_key = TRIM(administrator_request_key)),
+  CONSTRAINT uq_maror__operation_key UNIQUE (membership_operation_id, administrator_request_key),
+  CHECK (note IS NULL OR char_length(note) BETWEEN 1 AND 1000)
 );
-CREATE INDEX IF NOT EXISTS idx_mrefund_intents__membership_id ON membership_refund_intents (membership_id);
-CREATE INDEX IF NOT EXISTS idx_mrefund_intents__source_id ON membership_refund_intents (membership_source_id);
-CREATE FUNCTION fn_reject_membership_refund_intent_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION 'membership refund intents are append-only';
-END $$;
-CREATE TRIGGER trigger_membership_refund_intents_append_only BEFORE UPDATE OR DELETE ON membership_refund_intents FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_refund_intent_mutation();
+CREATE INDEX IF NOT EXISTS idx_maror__membership_id ON membership_administrator_refund_operation_requests (membership_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_maror__issued_by_id ON membership_administrator_refund_operation_requests (issued_by_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_maror__currency_code ON membership_administrator_refund_operation_requests (currency_code);
+
 CREATE TABLE IF NOT EXISTS membership_refunds (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), membership_id UUID NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuidv7(), membership_operation_id UUID,
+  membership_id UUID NOT NULL,
   membership_source_id UUID NOT NULL REFERENCES membership_sources(id) ON DELETE RESTRICT,
   user_id UUID,
   stripe_refund_id TEXT NOT NULL, stripe_charge_id TEXT NOT NULL, stripe_payment_intent_id TEXT,
@@ -463,7 +475,8 @@ CREATE TABLE IF NOT EXISTS membership_refunds (
   reason membership_refund_reasons NOT NULL, revoked_access BOOLEAN NOT NULL DEFAULT false, issued_by_id UUID, source membership_refund_sources NOT NULL,
   stripe_event_id TEXT, note TEXT, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT membership_refunds_source_identity_check CHECK ((source = 'admin' AND issued_by_id IS NOT NULL AND stripe_idempotency_key IS NOT NULL AND admin_request_fingerprint IS NOT NULL) OR (source = 'stripe_dashboard' AND issued_by_id IS NULL AND stripe_idempotency_key IS NULL AND admin_request_fingerprint IS NULL)),
-  CONSTRAINT fk_mrefunds__intent_source FOREIGN KEY (stripe_idempotency_key, membership_source_id) REFERENCES membership_refund_intents(stripe_idempotency_key, membership_source_id) ON DELETE RESTRICT
+  CONSTRAINT fk_membership_refunds__operation_source FOREIGN KEY (membership_operation_id, membership_source_id) REFERENCES membership_operations(id, membership_source_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_membership_refunds__administrator_request FOREIGN KEY (membership_operation_id, stripe_idempotency_key) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id, administrator_request_key) ON DELETE RESTRICT
 );
 CREATE INDEX IF NOT EXISTS idx_mrefunds__membership_id ON membership_refunds (membership_id);
 CREATE INDEX IF NOT EXISTS idx_mrefunds__source_id ON membership_refunds (membership_source_id);
@@ -472,6 +485,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_mrefunds__stripe_refund_id ON membership_r
 CREATE INDEX IF NOT EXISTS idx_mrefunds__stripe_charge_id ON membership_refunds (stripe_charge_id);
 CREATE INDEX IF NOT EXISTS idx_mrefunds__stripe_payment_intent_id ON membership_refunds (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mrefunds__stripe_idempotency_key ON membership_refunds (stripe_idempotency_key) WHERE stripe_idempotency_key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_mrefunds__operation_id ON membership_refunds (membership_operation_id, id DESC) WHERE membership_operation_id IS NOT NULL;
 CREATE FUNCTION fn_guard_membership_refund_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -503,6 +517,73 @@ BEGIN
   RAISE EXCEPTION 'membership refund receipts only allow one-way reconciliation or access revocation';
 END $$;
 CREATE TRIGGER trigger_membership_refunds_guard BEFORE UPDATE OR DELETE ON membership_refunds FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_refund_mutation();
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mrefunds__operation_receipt ON membership_refunds (membership_operation_id) WHERE membership_operation_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS membership_refund_operation_attempts (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  membership_operation_id UUID NOT NULL REFERENCES membership_operations(id) ON DELETE RESTRICT,
+  provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
+  attempt_ordinal INTEGER NOT NULL CHECK (attempt_ordinal >= 1), provider_idempotency_key TEXT NOT NULL, provider_refund_id TEXT,
+  amount_minor_units BIGINT NOT NULL CHECK (amount_minor_units BETWEEN 0 AND 9007199254740991),
+  currency_code TEXT NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CHECK (char_length(application_id) BETWEEN 1 AND 255 AND application_id = TRIM(application_id)),
+  CHECK (char_length(provider_idempotency_key) BETWEEN 1 AND 255 AND provider_idempotency_key = TRIM(provider_idempotency_key)),
+  CHECK (provider_refund_id IS NULL OR (char_length(provider_refund_id) BETWEEN 1 AND 255 AND provider_refund_id = TRIM(provider_refund_id))),
+  CONSTRAINT uq_membership_refund_operation_attempts__operation_ordinal UNIQUE (membership_operation_id, attempt_ordinal),
+  CONSTRAINT uq_membership_refund_operation_attempts__provider_idempotency UNIQUE (provider, environment, application_id, provider_idempotency_key)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__provider_refund ON membership_refund_operation_attempts (provider, environment, application_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_membership_refund_operation_attempts__currency_code ON membership_refund_operation_attempts (currency_code);
+
+CREATE OR REPLACE FUNCTION fn_require_membership_administrator_refund_request_context() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE valid_context BOOLEAN;
+BEGIN
+  SELECT operation.operation_kind = 'administrator_refund' AND operation.remaining_refundable_minor_units = NEW.amount_minor_units AND operation.currency_code = NEW.currency_code INTO valid_context FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;
+  IF valid_context IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'administrator refund request does not match its operation context' USING ERRCODE = '23514'; END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_maror_context BEFORE INSERT ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_require_membership_administrator_refund_request_context();
+CREATE OR REPLACE FUNCTION fn_reject_membership_administrator_refund_request_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'membership administrator refund requests are immutable'; END $$;
+CREATE TRIGGER trigger_maror_immutable BEFORE UPDATE OR DELETE ON membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_mutation();
+
+CREATE OR REPLACE FUNCTION fn_require_membership_refund_operation_attempt_context() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE valid_context BOOLEAN;
+BEGIN
+  SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund') AND operation.provider = NEW.provider AND operation.environment = NEW.environment AND operation.application_id = NEW.application_id AND operation.currency_code = NEW.currency_code AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units INTO valid_context FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;
+  IF valid_context IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'refund attempt does not match its operation context' USING ERRCODE = '23514'; END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_membership_refund_operation_attempts_context BEFORE INSERT ON membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_require_membership_refund_operation_attempt_context();
+CREATE OR REPLACE FUNCTION fn_guard_membership_refund_operation_attempt_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'membership refund operation attempts cannot be deleted'; END IF;
+  IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.attempt_ordinal, NEW.provider, NEW.environment, NEW.application_id, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.attempt_ordinal, OLD.provider, OLD.environment, OLD.application_id, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';
+END $$;
+CREATE TRIGGER trigger_membership_refund_operation_attempts_guard BEFORE UPDATE OR DELETE ON membership_refund_operation_attempts FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_refund_operation_attempt_mutation();
+
+CREATE TABLE IF NOT EXISTS membership_refund_operation_attempt_metadata_scans (
+  membership_refund_operation_attempt_id UUID PRIMARY KEY REFERENCES membership_refund_operation_attempts(id) ON DELETE RESTRICT,
+  stable_head_provider_refund_id TEXT, next_provider_refund_id TEXT, lease_token TEXT NOT NULL, completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK (stable_head_provider_refund_id IS NULL OR (char_length(stable_head_provider_refund_id) BETWEEN 1 AND 255 AND stable_head_provider_refund_id = TRIM(stable_head_provider_refund_id))),
+  CHECK (char_length(lease_token) BETWEEN 1 AND 255 AND lease_token = TRIM(lease_token)),
+  CHECK (next_provider_refund_id IS NULL OR (char_length(next_provider_refund_id) BETWEEN 1 AND 255 AND next_provider_refund_id = TRIM(next_provider_refund_id))),
+  CHECK (completed_at IS NULL OR next_provider_refund_id IS NULL)
+);
+CREATE OR REPLACE FUNCTION fn_guard_membership_refund_metadata_scan_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE lease_matches BOOLEAN;
+BEGIN
+  SELECT operation.execution_claim_token = NEW.lease_token INTO lease_matches FROM membership_refund_operation_attempts attempt INNER JOIN membership_operations operation ON operation.id = attempt.membership_operation_id WHERE attempt.id = NEW.membership_refund_operation_attempt_id;
+  IF lease_matches IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'membership refund metadata scan lease is stale'; END IF;
+  IF TG_OP = 'UPDATE' AND (OLD.completed_at IS NOT NULL OR NEW.created_at IS DISTINCT FROM OLD.created_at OR NEW.membership_refund_operation_attempt_id IS DISTINCT FROM OLD.membership_refund_operation_attempt_id OR (NEW.completed_at IS NOT NULL AND NEW.next_provider_refund_id IS NOT NULL)) THEN RAISE EXCEPTION 'membership refund metadata scan cannot be reopened or rewritten after completion'; END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_mrefund_attempt_scans_guard BEFORE INSERT OR UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_guard_membership_refund_metadata_scan_mutation();
+CREATE TRIGGER trigger_mrefund_attempt_scans_updated_at BEFORE UPDATE ON membership_refund_operation_attempt_metadata_scans FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE TABLE IF NOT EXISTS stripe_events (
   id UUID PRIMARY KEY DEFAULT uuidv7(), stripe_event_id TEXT NOT NULL, event_type TEXT NOT NULL, livemode BOOLEAN NOT NULL DEFAULT false, api_version TEXT,
@@ -733,6 +814,8 @@ COMMENT ON COLUMN membership_operations.requested_at IS 'When the operation was 
 COMMENT ON COLUMN membership_operations.completed_at IS 'When the provider operation completed.';
 COMMENT ON COLUMN membership_operations.failed_at IS 'When the provider operation failed.';
 COMMENT ON COLUMN membership_operations.failure_message IS 'Bounded failure detail for the operation.';
+COMMENT ON COLUMN membership_operations.reconciliation_due_at IS 'Earliest time a non-terminal refund operation may be leased for durable reconciliation.';
+COMMENT ON COLUMN membership_operations.reconciliation_attempt_ordinal IS 'Monotonic ordinal allocated when a reconciliation lease is acquired.';
 
 COMMENT ON TABLE membership_automatic_refund_receipts IS 'Immutable receipts for automatic or collision-resolution provider refunds.';
 COMMENT ON COLUMN membership_automatic_refund_receipts.membership_operation_id IS 'Operation that authorized this receipt.';
@@ -745,14 +828,8 @@ COMMENT ON COLUMN membership_automatic_refund_receipts.amount_minor_units IS 'Am
 COMMENT ON COLUMN membership_automatic_refund_receipts.remaining_refundable_minor_units IS 'Captured operation remainder that bounds this receipt amount.';
 COMMENT ON COLUMN membership_automatic_refund_receipts.currency_code IS 'Currency of the receipt amount and operation snapshot.';
 
-COMMENT ON TABLE membership_refund_intents IS 'Append-only Stripe refund request claims persisted before Stripe is called.';
-COMMENT ON COLUMN membership_refund_intents.membership_id IS 'Membership projection whose refund request was claimed.';
-COMMENT ON COLUMN membership_refund_intents.membership_source_id IS 'Immutable entitlement source against which the refund request was claimed.';
-COMMENT ON COLUMN membership_refund_intents.issued_by_id IS 'Administrator identity retained without an FK for audit persistence.';
-COMMENT ON COLUMN membership_refund_intents.stripe_idempotency_key IS 'Unique Stripe idempotency key for this request intent.';
-COMMENT ON COLUMN membership_refund_intents.request_fingerprint IS 'SHA-256 fingerprint of the exact administrator refund request.';
-
 COMMENT ON TABLE membership_refunds IS 'Append-only financial ledger of Stripe refunds issued or reconciled.';
+COMMENT ON COLUMN membership_refunds.membership_operation_id IS 'Operation that reconciled this refund.';
 COMMENT ON COLUMN membership_refunds.membership_id IS 'Membership projection against which the refund was issued.';
 COMMENT ON COLUMN membership_refunds.membership_source_id IS 'Immutable entitlement source whose provider lineage supplied the refunded charge.';
 COMMENT ON COLUMN membership_refunds.user_id IS 'Member recorded as refunded; retained after final account purge.';
@@ -767,10 +844,42 @@ COMMENT ON COLUMN membership_refunds.reason IS 'Categorized reason for the refun
 COMMENT ON COLUMN membership_refunds.revoked_access IS 'Whether this refund also revoked membership access.';
 COMMENT ON COLUMN membership_refunds.issued_by_id IS 'Administrator identity retained without an FK for audit persistence.';
 COMMENT ON COLUMN membership_refunds.source IS 'Whether the refund was administrator initiated or dashboard reconciled.';
-COMMENT ON COLUMN membership_refunds.stripe_event_id IS 'Stripe webhook event that created this reconciliation receipt.';
+COMMENT ON COLUMN membership_refunds.stripe_event_id IS 'Stripe event that created this reconciliation receipt.';
 COMMENT ON COLUMN membership_refunds.note IS 'Optional bounded administrative refund note.';
 
-COMMENT ON TABLE stripe_events IS 'Ingested Stripe webhook events with explicit processing lifecycle timestamps.';
+COMMENT ON TABLE membership_administrator_refund_operation_requests IS 'Immutable administrator refund request facts, bound one-to-one to the provider operation that reconciles them.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.membership_operation_id IS 'Administrator refund operation created for this exact request.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.administrator_request_key IS 'Administrator idempotency key bound to this immutable request.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.membership_id IS 'Membership selected by the administrator when the request was submitted.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.issued_by_id IS 'Administrator identity captured without an FK so audit history survives user deletion.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.provider_payment_reference IS 'Provider payment reference selected as the refund target.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.provider_subscription_reference IS 'Provider subscription selected for cancellation when cancel_requested is true.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.amount_minor_units IS 'Requested refund amount in the provider currency minor unit.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.currency_code IS 'ISO 4217 currency code requested for the refund.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.reason IS 'Administrator-selected refund reason.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.cancel_requested IS 'Whether the request also asks the provider subscription to be cancelled.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.request_fingerprint IS 'SHA-256 fingerprint of the exact immutable administrator request payload.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.note IS 'Optional administrator note captured with the request.';
+
+COMMENT ON TABLE membership_refund_operation_attempts IS 'Append-only provider refund attempts; only a missing provider refund ID may be enriched after insertion.';
+COMMENT ON COLUMN membership_refund_operation_attempts.membership_operation_id IS 'Refund operation whose provider attempt this records.';
+COMMENT ON COLUMN membership_refund_operation_attempts.provider IS 'Provider context copied from the immutable refund operation.';
+COMMENT ON COLUMN membership_refund_operation_attempts.environment IS 'Provider environment copied from the immutable refund operation.';
+COMMENT ON COLUMN membership_refund_operation_attempts.application_id IS 'Provider application copied from the immutable refund operation.';
+COMMENT ON COLUMN membership_refund_operation_attempts.attempt_ordinal IS 'Operation-local reconciliation lease ordinal that created this provider attempt.';
+COMMENT ON COLUMN membership_refund_operation_attempts.provider_idempotency_key IS 'Provider-scoped idempotency key used for this immutable attempt.';
+COMMENT ON COLUMN membership_refund_operation_attempts.provider_refund_id IS 'Provider refund identity, initially unknown and enriched at most once.';
+COMMENT ON COLUMN membership_refund_operation_attempts.amount_minor_units IS 'Attempted refund amount in the provider currency minor unit.';
+COMMENT ON COLUMN membership_refund_operation_attempts.currency_code IS 'ISO 4217 currency code for the attempted refund.';
+
+COMMENT ON TABLE membership_refund_operation_attempt_metadata_scans IS 'Mutable bounded cursor state for discovering a refund created before a provider response was acknowledged.';
+COMMENT ON COLUMN membership_refund_operation_attempt_metadata_scans.membership_refund_operation_attempt_id IS 'Refund operation attempt whose bounded provider-metadata discovery state this row owns.';
+COMMENT ON COLUMN membership_refund_operation_attempt_metadata_scans.stable_head_provider_refund_id IS 'Newest provider refund ID observed at scan start; a changed head restarts the scan before a create is permitted.';
+COMMENT ON COLUMN membership_refund_operation_attempt_metadata_scans.next_provider_refund_id IS 'Provider cursor for the next bounded discovery page.';
+COMMENT ON COLUMN membership_refund_operation_attempt_metadata_scans.lease_token IS 'Current operation lease required to advance, restart, or complete this scan; stale workers cannot write state.';
+COMMENT ON COLUMN membership_refund_operation_attempt_metadata_scans.completed_at IS 'Set only after a fresh head check proves the full scan was stable and no metadata match exists.';
+
+COMMENT ON TABLE stripe_events IS 'Ingested Stripe events with explicit processing lifecycle timestamps.';
 COMMENT ON COLUMN stripe_events.stripe_event_id IS 'Unique Stripe event identity used for deduplication.';
 COMMENT ON COLUMN stripe_events.event_type IS 'Stripe event type.';
 COMMENT ON COLUMN stripe_events.livemode IS 'Whether Stripe issued the event in live mode.';
@@ -780,8 +889,8 @@ COMMENT ON COLUMN stripe_events.customer_id IS 'Optional Stripe Customer identit
 COMMENT ON COLUMN stripe_events.subscription_id IS 'Optional Stripe Subscription identity from the payload.';
 COMMENT ON COLUMN stripe_events.invoice_id IS 'Optional Stripe Invoice identity from the payload.';
 COMMENT ON COLUMN stripe_events.checkout_session_id IS 'Optional Stripe Checkout Session identity from the payload.';
-COMMENT ON COLUMN stripe_events.received_at IS 'When the webhook was durably received.';
-COMMENT ON COLUMN stripe_events.processing_attempt_id IS 'Fencing token for the current webhook processing attempt.';
+COMMENT ON COLUMN stripe_events.received_at IS 'When the event was durably received.';
+COMMENT ON COLUMN stripe_events.processing_attempt_id IS 'Fencing token for the current event processing attempt.';
 COMMENT ON COLUMN stripe_events.dispatched_at IS 'When the current processing attempt was dispatched.';
 COMMENT ON COLUMN stripe_events.processing_started_at IS 'When the current processing attempt began.';
 COMMENT ON COLUMN stripe_events.processing_attempts IS 'Number of processing attempts.';
@@ -790,4 +899,4 @@ COMMENT ON COLUMN stripe_events.ignored_at IS 'When processing intentionally ign
 COMMENT ON COLUMN stripe_events.failed_at IS 'When processing last failed.';
 COMMENT ON COLUMN stripe_events.last_error_at IS 'When the latest processing error occurred.';
 COMMENT ON COLUMN stripe_events.last_error_message IS 'Bounded latest processing error detail.';
-COMMENT ON COLUMN stripe_events.payload IS 'Full Stripe webhook payload stored as JSONB.';
+COMMENT ON COLUMN stripe_events.payload IS 'Full Stripe event payload stored as JSONB.';

@@ -30,6 +30,16 @@ export async function cleanupSoftDeletedUserBatch(
         WHERE user_id = users.id
           AND completed_at IS NULL
       )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM memberships membership
+        INNER JOIN membership_administrator_refund_operation_requests request
+          ON request.membership_id = membership.id
+        INNER JOIN membership_operations operation
+          ON operation.id = request.membership_operation_id
+        WHERE membership.user_id = users.id
+          AND operation.completed_at IS NULL
+      )
   `
   if (lowerBoundDate !== undefined) targetQuery.append(sql` AND deleted_at >= ${lowerBoundDate}`)
   targetQuery.append(sql`

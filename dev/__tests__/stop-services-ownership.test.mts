@@ -13,6 +13,12 @@ const refuseOnMainPath = fileURLToPath(new URL('../lib/refuse-on-main.sh', impor
 const worktreeResourceEnvPath = fileURLToPath(
   new URL('../lib/worktree-resource-env.sh', import.meta.url),
 )
+const publishedGitWorktreesPath = fileURLToPath(
+  new URL(
+    '../../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
+    import.meta.url,
+  ),
+)
 const testDirs: string[] = []
 
 async function makeRepo() {
@@ -33,6 +39,10 @@ async function makeRepo() {
   await writeFile(
     join(dir, 'dev', 'lib', 'worktree-resource-env.sh'),
     await readFile(worktreeResourceEnvPath, 'utf8'),
+  )
+  await writeFile(
+    join(dir, 'dev', 'lib', 'git-worktrees.sh'),
+    await readFile(publishedGitWorktreesPath, 'utf8'),
   )
   await writeFile(join(dir, '.git'), 'gitdir: /fake/.git/worktrees/test\n')
 

@@ -22,7 +22,9 @@ export function AdminReviewQueueClient({ initialData }: { initialData: AdminRevi
 
   const reviewCount = posts.length
   const flaggedCount = posts.filter(
-    post => post.spam_detection_flagged === true || post.openai_omni_moderation_flagged === true,
+    post =>
+      post.moderation_summary.evidence_summary.flagged_category_count > 0 ||
+      post.moderation_summary.evidence_summary.signal_count > 0,
   ).length
 
   async function updatePost(

@@ -9,7 +9,7 @@ import {
 import { createMembership, grantMembership } from '../../create.mts'
 import { getStripeMembershipSourceIdentity } from '../../create-types.mts'
 import { getMembershipByStripeSubscriptionId, getMembershipByUserId } from '../../get.mts'
-import { updateMembershipFromWebhook } from '../../update.mts'
+import { updateMembershipFromEvent } from '../../update.mts'
 
 describe('direct fallback priority', () => {
   it('restores a retained direct source when its plan ties the queued grant', async () => {
@@ -41,7 +41,7 @@ describe('direct fallback priority', () => {
     const grantSku = await createTestSku({ plan: 'plus' })
     const queued = await grantMembership(admin.id, member.id, 'plus', grantSku.id, 30)
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: current.id, status: 'cancelled', terminalEffectiveAt: new Date() },
       async () => false,
     )
@@ -91,7 +91,7 @@ describe('direct fallback priority', () => {
     const grantSku = await createTestSku({ plan: 'pro' })
     const queued = await grantMembership(admin.id, member.id, 'pro', grantSku.id, 30)
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: current.id, status: 'cancelled', terminalEffectiveAt: new Date() },
       async () => false,
     )

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { createTranslator, loadMessages } from '@ts-shared/ui-messages'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { PostAuthorAside } from '@/components/posts/post-author-aside'
 import { PostDetailView as PostDetail } from '@/components/posts/post-detail-view'
 import { PostDetailTabs } from '@/components/posts/post-detail-tabs'
@@ -18,7 +19,7 @@ import {
 } from './entity-story-frame'
 import { posts, postsResponse, topics, publicUsers } from './entity-fixtures'
 
-const t = createTranslator('en', await loadMessages('en'))
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const meta = {
   title: 'Entities/Posts',
@@ -107,6 +108,7 @@ function PostAsides() {
   return (
     <AsideStack>
       <PostAuthorAside
+        t={t}
         author={{
           __entity_type: 'user',
           id: publicUsers[0]!.id,
@@ -123,7 +125,10 @@ function PostAsides() {
         postType='review'
       />
       <EntityStorySection title='Referral programs'>
-        <ReviewReferralPrograms post={posts[1]!} />
+        <ReviewReferralPrograms
+          t={t}
+          post={posts[1]!}
+        />
       </EntityStorySection>
       <ReferralLinksAsideContent
         topicId='referral-program-1'

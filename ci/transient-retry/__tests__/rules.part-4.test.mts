@@ -20,7 +20,7 @@ describe('RULES catalogue', () => {
     const storybookJobName = 'storybook-build / storybook'
     const matchingLog = [
       'VITEST_STORYBOOK_BROWSER: 1',
-      'RUN /home/jong/actions-runner/2/_work/filaments/filaments',
+      'RUN /home/runner/actions-runner/2/_work/filaments/filaments',
       '\u001B[36m\u001B[1m[vite]\u001B[22m\u001B[39m \u001B[90m\u001B[2m(client)\u001B[22m\u001B[39m [optimizer] scanning dependencies...',
       "##[error]The action 'Run Storybook browser tests' has timed out after 10 minutes.",
       'No files were found with the provided path: .vitest-reports/*.json',

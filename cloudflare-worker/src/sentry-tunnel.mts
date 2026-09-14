@@ -6,6 +6,7 @@
 //   https://docs.sentry.io/platforms/javascript/troubleshooting/#using-the-tunnel-option
 
 import { edgeErrorResponse, withFailureNoStoreHeaders } from './error-response.mts'
+import { getSentryDsnConfig, type SentryDsnConfig } from '@ts-shared/utils/sentry-deployment-gate'
 import { getSentryEnvelopeDiagnostics } from './sentry-envelope-diagnostics.mts'
 import {
   logSentryTunnelForwardFailure,
@@ -13,15 +14,7 @@ import {
   logSentryTunnelUpstreamResponse,
   type SentryTunnelRejectReason,
 } from './sentry-tunnel-diagnostics.mts'
-
-// Allowlisted Sentry ingest host and project IDs. Update when rotating DSNs.
-// - 4507688156856320: web/frontend project (browser events routed through tunnel to bypass ad-blockers)
-// - 4511154639077376: cloudflare-worker project (worker events routed through tunnel)
-// The backend project (4507721302736896) must send directly to Sentry. Allowing it here would make
-// backend error reporting depend on the Worker route whose origin is the backend, creating a
-// circular failure path. The project-ID rejection test structurally protects this boundary.
-const SENTRY_HOST = 'o4507688154824704.ingest.us.sentry.io'
-const SENTRY_PROJECT_IDS = new Set(['4507688156856320', '4511154639077376'])
+import type { Env } from './types.mts'
 
 // 1 MB cap — typical Sentry envelopes are a few KB; large payloads indicate
 // abuse or a misconfigured SDK. Checked via Content-Length before buffering.
@@ -80,7 +73,26 @@ async function readEnvelopeWithLimit(request: Request): Promise<ReadEnvelopeResu
   }
 }
 
-export async function handleSentryTunnel(request: Request): Promise<Response> {
+function getTrustedSentryDsns(env: Env): SentryDsnConfig[] {
+  const webDsn = getSentryDsnConfig(env.SENTRY_WEB_DSN)
+  const previousWebDsn =
+    webDsn === undefined ? undefined : getSentryDsnConfig(env.SENTRY_TUNNEL_PREVIOUS_WEB_DSN)
+  return [webDsn, previousWebDsn, getSentryDsnConfig(env.SENTRY_DSN)].filter(
+    (dsn): dsn is SentryDsnConfig => dsn !== undefined,
+  )
+}
+
+export async function handleSentryTunnel(request: Request, env: Env): Promise<Response> {
+  const trustedDsns = getTrustedSentryDsns(env)
+  if (trustedDsns.length === 0) {
+    return sentryTunnelErrorResponse(
+      request,
+      503,
+      'Service Unavailable',
+      'SERVICE_UNAVAILABLE',
+      'configuration_unavailable',
+    )
+  }
   const contentLength = request.headers.get('content-length')
   if (contentLength !== null && Number(contentLength) > MAX_ENVELOPE_BYTES) {
     return sentryTunnelErrorResponse(
@@ -138,25 +150,17 @@ export async function handleSentryTunnel(request: Request): Promise<Response> {
     return sentryTunnelErrorResponse(request, 400, 'Missing DSN', 'INVALID_INPUT', 'missing_dsn')
   }
 
-  let dsnUrl: URL
-  try {
-    dsnUrl = new URL(dsn)
-  } catch {
+  const envelopeDsn = getSentryDsnConfig(dsn)
+  if (!envelopeDsn) {
     return sentryTunnelErrorResponse(request, 400, 'Invalid DSN', 'INVALID_INPUT', 'invalid_dsn')
   }
 
-  // Validate host to prevent open-proxy abuse: only forward to the known Sentry instance.
-  if (dsnUrl.host !== SENTRY_HOST) {
-    return sentryTunnelErrorResponse(request, 403, 'Forbidden', 'FORBIDDEN', 'host_not_allowed')
+  const trustedDsn = trustedDsns.find(({ dsn: configuredDsn }) => configuredDsn === envelopeDsn.dsn)
+  if (!trustedDsn) {
+    return sentryTunnelErrorResponse(request, 403, 'Forbidden', 'FORBIDDEN', 'dsn_not_allowed')
   }
 
-  // Validate project ID against the allowlist.
-  const projectId = dsnUrl.pathname.replace(/^\//, '')
-  if (!SENTRY_PROJECT_IDS.has(projectId)) {
-    return sentryTunnelErrorResponse(request, 403, 'Forbidden', 'FORBIDDEN', 'project_not_allowed')
-  }
-
-  const sentryUrl = `https://${SENTRY_HOST}/api/${projectId}/envelope/`
+  const { envelopeUrl: sentryUrl, projectId } = trustedDsn
   let sentryRes: Response
   try {
     // Return a minimal response rather than forwarding Sentry's response verbatim.

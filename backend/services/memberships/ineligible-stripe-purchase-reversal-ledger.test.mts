@@ -40,7 +40,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
     expect(first?.reversals[0]?.id).not.toBe(second?.reversals[0]?.id)
   })
 
-  it('claims the cancellation with its refund intents under the same locked disposition', async () => {
+  it('claims the cancellation with its durable refund operations under the same locked disposition', async () => {
     const { options, target } = await createIneligiblePurchaseReversalFixture()
 
     const claimed = await claimIneligiblePurchaseReversals(options, [target], caseSnapshot(target))

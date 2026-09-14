@@ -13,8 +13,7 @@ Worst case: a rebase finalizes its last commit but fails the final ref-update st
 **Recovery for a stale 0-byte lock** (the most common case — left by a killed maintenance run). Run only when no other git operations are in flight, since git briefly holds a 0-byte lock during creation before writing index content:
 
 ```bash
-./dev/unstick-locks    # removes stale Git locks, a dead-owner resource-operation lock, and a
-                       # dead-owner ./dev/reset-worktree lock
+./dev/unstick-locks    # removes stale Git locks and a dead-owner resource-operation lock
 ```
 
 Or to clear a specific worktree's lock manually:
@@ -161,39 +160,31 @@ uncommitted work stranded when the corruption first occurred, not just build out
 `core.worktree` from the shared config on every init, the same way it already resets
 `core.bare` and `extensions.worktreeConfig`.
 
-## `./dev/reset-worktree` concurrency lock
+## `./dev/reset-worktree` concurrency guard
 
 ### Symptom
 
 ```
-Error: another ./dev/reset-worktree is already running for <worktree>
-  Lock: <worktree>/.local/reset-worktree.lock
-  Owner PID: <pid>
-  If no reset is actually running, run ./dev/unstick-locks.
+Error: another ./dev/reset-worktree is running for this worktree.
 ```
 
 ### Root Cause
 
-Two concurrent `./dev/reset-worktree` runs in the same worktree race: both tear down
-services, fetch and hard-reset the branch, and remove generated output, so a second
+Two concurrent `./dev/reset-worktree` runs in the same worktree race: both fetch,
+tear down services, hard-reset the branch, and remove generated output, so a second
 run started mid-reset can observe (or clobber) a half-completed reset ([#10849](https://github.com/jonathanong/filaments/issues/10849)).
-`./dev/reset-worktree` now takes a fail-closed, non-blocking, per-worktree advisory
-lock at `.local/reset-worktree.lock` (a symlink encoding the owning PID) before doing
-anything destructive, and holds it for the whole run via an EXIT/INT/TERM trap. A
-second run finds the symlink already present, refuses immediately, and never touches
-the first run's lock or resources.
-
-Unlike `index.lock`, this lock is never 0 bytes — the owner's liveness is checked
-directly (`kill -0 <pid>`) rather than inferred from file size.
+`./dev/reset-worktree` uses `.local/reset-worktree.lock` for an exclusive,
+non-blocking kernel lock through the entire reset. Linux `flock` locks an open
+descriptor; macOS `lockf` holds the named file while it runs the reset command. A second run fails before
+the dirty-tree check or any lifecycle mutation. The zero-byte file persists after
+the process exits; its existence alone does not mean a lock is held.
 
 ### Recovery
 
-```bash
-./dev/unstick-locks   # removes the lock only if its owner PID is no longer alive
-```
+Wait for the other reset to finish, then rerun `./dev/reset-worktree`.
 
-If the owner is still alive, the reset really is still running — wait for it, or
-inspect PID `<pid>` before doing anything more forceful.
+Kernel locks are released automatically when the owning process exits. There is
+no stale reset lock to clear with `./dev/unstick-locks`.
 
 ## See Also
 

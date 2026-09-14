@@ -1,4 +1,5 @@
 import type { PrivateUser } from '@services/users/types'
+import { isModerationStaff } from '@services/users'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { IDENTITY_REQUIRED } from '@modules/on-error/error-codes'
 import type { Community, CommunityMember } from './types.mts'
@@ -31,6 +32,18 @@ export function currentUserCanModerateCommunity(
   if (!currentUser) return false
   if (currentUser.roles.includes('administrator')) return true
   return membership?.role === 'owner' || membership?.role === 'moderator'
+}
+
+/** Site moderation staff can moderate publications, but not other community settings. */
+export function currentUserCanModerateCommunityPublication(
+  currentUser: PrivateUser | null,
+  community: Community,
+  membership?: CommunityMember | null,
+): boolean {
+  return (
+    isModerationStaff(currentUser) ||
+    currentUserCanModerateCommunity(currentUser, community, membership)
+  )
 }
 
 export function currentUserCanPostInCommunity(

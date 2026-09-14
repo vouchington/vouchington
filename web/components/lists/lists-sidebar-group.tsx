@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BookMarked, Plus } from 'lucide-react'
+import * as Sentry from '@sentry/nextjs'
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -38,9 +39,7 @@ export function ListsSidebarGroup() {
           })
         }
       })
-      .catch(() => {
-        // silently fail — sidebar is non-critical
-      })
+      .catch(Sentry.captureException)
     return () => {
       cancelled = true
     }

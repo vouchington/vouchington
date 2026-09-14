@@ -8,7 +8,7 @@ import {
   insertTestModerationMediaReveals,
   insertTestPost,
   insertTestPostImage,
-  setTestPostOmniModerationFlagged,
+  setPostOpenAIModerationFlaggedOnly,
 } from '../../../backend/test-helpers/index.mts'
 
 // ---------------------------------------------------------------------------
@@ -32,9 +32,10 @@ test.describe('Sensitive-media blur gate on post page', () => {
       slug: sensitivePostSlug,
       title: `Sensitive Post ${suffix}`,
       markdown: 'A post with disturbing media.',
+      clearanceStatus: 'in_review',
     })
 
-    await setTestPostOmniModerationFlagged(postId)
+    await setPostOpenAIModerationFlaggedOnly(postId, true)
 
     // Attach an image so PostDetailImages renders
     const imageId = await insertTestImage(mod.id)

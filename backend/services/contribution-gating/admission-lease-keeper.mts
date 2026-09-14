@@ -1,3 +1,5 @@
+import onError from '@modules/on-error'
+
 const LEASE_RENEWAL_INTERVAL_MS = 10_000
 
 export type AdmissionLeaseKeeper = {
@@ -39,9 +41,7 @@ export function startAdmissionLeaseKeeper(
         owned = result
         return undefined
       })
-      .catch(() => {
-        return undefined
-      })
+      .catch(onError)
       .finally(() => {
         renewal = null
       })

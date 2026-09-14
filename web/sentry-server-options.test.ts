@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveSentryEnablement } from '@ts-shared/utils/sentry-deployment-gate'
+import { resolveSentryDsnEnablement } from '@ts-shared/utils/sentry-deployment-gate'
 import { createSentryServerInitOptions } from './sentry-server-options'
 
 const createOtelSpanProcessors = () => ['otel-processor'] as never
@@ -8,6 +8,22 @@ const scrubSentrySpan = () => ({ scrubbedSpan: true }) as never
 const scrubSentryTransaction = () => ({ scrubbedTransaction: true }) as never
 
 describe('createSentryServerInitOptions', () => {
+  it('uses SENTRY_DSN and disables deployed reporting when it is missing or invalid', () => {
+    expect(
+      createSentryServerInitOptions({ ENVIRONMENT: 'production', NODE_ENV: 'production' }),
+    ).toMatchObject({
+      dsn: undefined,
+      enabled: false,
+    })
+    expect(
+      createSentryServerInitOptions({
+        ENVIRONMENT: 'production',
+        NODE_ENV: 'production',
+        SENTRY_DSN: 'https://public@example.test/123',
+      }),
+    ).toMatchObject({ dsn: 'https://public@example.test/123', enabled: true })
+  })
+
   it('enables local OTel without sending Sentry events', () => {
     const options = createSentryServerInitOptions(
       {
@@ -43,11 +59,15 @@ describe('createSentryServerInitOptions', () => {
     'enables reporting for the deployed environment %s',
     environment => {
       const options = createSentryServerInitOptions(
-        { ENVIRONMENT: environment, NODE_ENV: 'production' },
+        {
+          ENVIRONMENT: environment,
+          NODE_ENV: 'production',
+          SENTRY_DSN: 'https://public@example.test/123',
+        },
         { createOtelSpanProcessors, scrubSentryError, scrubSentrySpan, scrubSentryTransaction },
       )
 
-      expect(options.dsn).toContain('@o4507688154824704.ingest.us.sentry.io')
+      expect(options.dsn).toBe('https://public@example.test/123')
       expect(options.enabled).toBe(true)
       expect(options.environment).toBe(environment)
       expect(options.beforeSend).toBe(scrubSentryError)
@@ -60,10 +80,15 @@ describe('createSentryServerInitOptions', () => {
     const options = createSentryServerInitOptions({
       ENVIRONMENT: 'staging',
       NODE_ENV: 'production',
+      SENTRY_DSN: 'https://public@example.test/123',
     })
 
     expect(options.enabled).toBe(
-      resolveSentryEnablement({ environment: 'staging', otelEnabled: false }).enabled,
+      resolveSentryDsnEnablement({
+        dsn: 'https://public@example.test/123',
+        environment: 'staging',
+        otelEnabled: false,
+      }).enabled,
     )
   })
 })

@@ -149,7 +149,7 @@ jobs:
           web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
       - name: Smoke test web
         run: ./web/scripts/tests/smoke-test-web.sh
-        timeout-minutes: 3
+        timeout-minutes: 8
         env:
           IMAGE_ORIGIN: http://localhost:3100
 

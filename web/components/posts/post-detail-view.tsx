@@ -212,7 +212,9 @@ export function PostDetailView({
           <PostDetailImages
             heading={heading}
             isModerator={isStaffViewer}
-            isSensitive={post.openai_omni_moderation_flagged === true}
+            isSensitive={
+              post.clearance_status === 'rejected' || post.clearance_status === 'in_review'
+            }
             postId={post.id}
             images={(post.images ?? []).map(image => ({
               imageId: image.image_id,

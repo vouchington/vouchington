@@ -74,8 +74,6 @@ export interface Post {
   clearance_status: 'pending' | 'approved' | 'rejected' | 'in_review'
   clearance_reason?: string | null
   ai_summary_markdown?: string | null
-  openai_omni_moderation_flagged?: boolean | null
-  openai_omni_moderation_created_at?: string | null
   images?: Array<{ image_id: string; order_index: number; caption: string }>
   review_topic_ratings?: Array<{
     topic_id: string

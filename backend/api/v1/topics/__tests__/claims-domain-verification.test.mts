@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic, insertTestUrlHostname } from '@voucha/test-helpers'
 import { createTopicClaim } from '@services/topic-claims/create'
 import * as topicClaimsModule from '@services/topic-claims'

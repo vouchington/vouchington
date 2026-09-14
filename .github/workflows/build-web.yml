@@ -128,6 +128,9 @@ jobs:
       - name: Activate pnpm via corepack
         timeout-minutes: 2
         run: bash "$GITHUB_WORKSPACE/ci/activate-pnpm.sh"
+      - name: Install localization smoke dependencies
+        timeout-minutes: 5
+        run: bash ci/pnpm-install.sh --runner-lifecycle ephemeral-full --install-scripts true
       - name: Run Docker smoke test
         timeout-minutes: 5
         env:
@@ -135,14 +138,42 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE="$IMAGE_REPOSITORY/web:$IMAGE_TAG"
-          PORT=$(python3 ci/allocate-browser-safe-ports.py 1)
-          echo "BROWSER_ALLOCATED_PORTS=$PORT" >> "$GITHUB_ENV"
-          CONTAINER=$(docker run -d -p "$PORT:3000" -e HOSTNAME=eni-test-fargate.ecs.internal -e ALLOW_TURNSTILE_TEST_KEY=true -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION "$IMAGE")
+          PORTS=$(python3 ci/allocate-browser-safe-ports.py 2)
+          read -r PORT BACKEND_PORT <<< "$PORTS"
+          echo "BROWSER_ALLOCATED_PORTS=$PORTS" >> "$GITHUB_ENV"
+          SMOKE_TMP_DIR=$(mktemp -d "${RUNNER_TEMP}/web-image-smoke.XXXXXX")
           cleanup() {
-            docker stop "$CONTAINER" >/dev/null
-            docker rm "$CONTAINER" >/dev/null
+            if [ -n "${CONTAINER:-}" ]; then
+              docker stop "$CONTAINER" >/dev/null 2>&1 || true
+              docker rm "$CONTAINER" >/dev/null 2>&1 || true
+            fi
+            if [ -n "${BACKEND_PID:-}" ]; then
+              kill "$BACKEND_PID" 2>/dev/null || true
+              wait "$BACKEND_PID" 2>/dev/null || true
+            fi
+            rm -rf "$SMOKE_TMP_DIR"
           }
           trap cleanup EXIT
+          node web/test-helpers/compile-localization-smoke-catalog.mts "$SMOKE_TMP_DIR/catalog.sqlite"
+          LOCALIZATION_SQLITE_PATH="$SMOKE_TMP_DIR/catalog.sqlite" \
+            node web/test-helpers/localization-smoke-backend.mts "$BACKEND_PORT" 0.0.0.0 > "$SMOKE_TMP_DIR/backend.log" 2>&1 &
+          BACKEND_PID=$!
+          for i in $(seq 1 30); do
+            if curl --max-time 2 -fsS "http://127.0.0.1:$BACKEND_PORT/health" >/dev/null 2>&1; then break; fi
+            if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+              cat "$SMOKE_TMP_DIR/backend.log"
+              exit 1
+            fi
+            sleep 0.2
+          done
+          if ! curl --max-time 2 -fsS "http://127.0.0.1:$BACKEND_PORT/health" >/dev/null; then
+            cat "$SMOKE_TMP_DIR/backend.log"
+            exit 1
+          fi
+          CONTAINER=$(docker run -d -p "$PORT:3000" --add-host=host.docker.internal:host-gateway \
+            -e API_BASE_URL="http://host.docker.internal:$BACKEND_PORT" \
+            -e HOSTNAME=eni-test-fargate.ecs.internal -e ALLOW_TURNSTILE_TEST_KEY=true \
+            -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION "$IMAGE")
           echo "Waiting for web server to be ready (max 30s)..."
           for i in $(seq 1 60); do
             if curl -sf "http://localhost:$PORT/" >/dev/null 2>&1; then

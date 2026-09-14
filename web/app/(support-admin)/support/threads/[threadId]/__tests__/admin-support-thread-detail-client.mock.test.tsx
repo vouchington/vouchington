@@ -14,7 +14,7 @@ import {
   makeMessage,
   makeThread,
   page,
-} from '../test-helpers/admin-support-thread-detail-client-test-helpers'
+} from '../../../../../../test-helpers/app/(support-admin)/support/threads/[threadId]/admin-support-thread-detail-client-test-helpers'
 
 vi.mock(import('@/lib/api/client/support'), () => ({
   patchAdminSupportThread: vi.fn<VitestLooseMock>(),

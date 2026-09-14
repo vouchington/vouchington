@@ -7,7 +7,11 @@ import {
   OpenAIResponseStreamError,
   shouldLatchUnknownBilledOpenAIAttempt,
 } from './response-errors.mts'
-import { makeErrorEvent, makeResponseStream, makeSdkResponse } from './test-helpers/responses.mts'
+import {
+  makeErrorEvent,
+  makeResponseStream,
+  makeSdkResponse,
+} from '../../test-helpers/modules/openai-utils/responses.mts'
 
 describe('OpenAI response errors', () => {
   it('preserves structured OpenAI stream error metadata', async () => {

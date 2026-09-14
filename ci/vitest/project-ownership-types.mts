@@ -22,21 +22,19 @@ export type VitestShardPolicy =
   | {
       readonly mode: 'file-count'
       readonly reportPrefix: string
-      readonly defaultShards: number
       readonly filesPerShard: number
     }
   | {
       readonly mode: 'fixed'
       readonly reportPrefix: string
-      readonly defaultShards: number
+      readonly shards: number
     }
 
 export interface VitestJobOwnership {
   readonly orchestratorJob: string
   readonly workflow: string
   readonly jobLabel: string
-  // Shard report identity, default matrix width, and PR selection calibration. Omit for jobs
-  // that always run in one process.
+  // Shard report identity and matrix sizing policy. Omit for jobs that always run in one process.
   readonly sharding?: VitestShardPolicy
   // True only if this job's ci.yml caller must stay area-gated on detect-changes without the
   // `skip-test-<job>` guard — an always-run non-Vitest duty that must survive an empty Vitest

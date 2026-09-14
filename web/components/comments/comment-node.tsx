@@ -2,6 +2,7 @@
 'use client'
 
 import { useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import Link from 'next/link'
 import { CommentNodeHeader } from './comment-node-header'
 import { CommentNodeContent } from './comment-node-content'
@@ -62,7 +63,7 @@ export function CommentNode({
     setLocalHtml(null)
     previewMarkdown(updatedPost.markdown ?? '')
       .then(r => setLocalHtml(r.html))
-      .catch(() => {})
+      .catch(Sentry.captureException)
   }
 
   function handleDeleted() {

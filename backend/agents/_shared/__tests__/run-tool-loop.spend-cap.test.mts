@@ -6,7 +6,7 @@ import {
   makeTextResponse,
   makeToolCallResponse,
   makeToolCall,
-} from '../test-helpers/run-tool-loop-test-helpers.mts'
+} from '../../../test-helpers/agents/_shared/run-tool-loop-test-helpers.mts'
 
 // Round-16 regression (#9348): the per-iteration spend-cap recheck must actually stop a tool loop
 // mid-run, not just no-op inside assertSpendCapNotBreachedForIteration in isolation -- see

@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { createTranslator, loadMessages, type MessageKey } from './index.mts'
-import enMessages from './messages/en.ts'
-import esMessages from './messages/es.ts'
-import frMessages from './messages/fr.ts'
-import ptMessages from './messages/pt.ts'
+import { createTranslator, type MessageKey } from './index.mts'
+import { loadMessages } from './locale-loader.mts'
+import { enMessages, esMessages, frMessages, ptMessages } from './locale-catalogs.mts'
 
 describe('createTranslator', () => {
   const t = createTranslator('en', enMessages)
@@ -48,6 +46,28 @@ describe('createTranslator', () => {
       'Unknown select-plural case "fortnight" for "unit"',
     )
   })
+
+  it('degrades missing and non-leaf keys when onUnresolved is set', () => {
+    const unresolved: string[] = []
+    const degrading = createTranslator('en', enMessages, {
+      onUnresolved: key => {
+        unresolved.push(key)
+        return ''
+      },
+    })
+
+    expect(degrading('nav.doesNotExist' as MessageKey)).toBe('')
+    expect(degrading('settings.language' as MessageKey)).toBe('')
+    expect(unresolved).toEqual(['nav.doesNotExist', 'settings.language'])
+    expect(degrading('settings.language.title')).toBe('Language')
+  })
+
+  it('still throws unknown select-plural cases when onUnresolved is set', () => {
+    const degrading = createTranslator('en', enMessages, { onUnresolved: () => '' })
+    expect(() =>
+      degrading('shared.timeAgo.relativeDuration', { unit: 'fortnight', value: 2 }),
+    ).toThrow('Unknown select-plural case "fortnight" for "unit"')
+  })
 })
 
 describe('loadMessages', () => {
@@ -81,4 +101,14 @@ describe('loadMessages', () => {
       expect(t('settings.language.supportedCount', { count: 2 })).toBe('2 languages')
     },
   )
+})
+
+describe('web catalog size', () => {
+  it('is larger than one public API batch, so clients must select a route subset', async () => {
+    const { loadCatalogMessages } = await import('./load-catalog-json.mts')
+    const webCount = loadCatalogMessages().filter(message =>
+      message.consumers.includes('web'),
+    ).length
+    expect(webCount).toBeGreaterThan(2000)
+  })
 })

@@ -12,6 +12,7 @@ import { EditPostPage } from '@/components/posts/edit-post-page'
 import { ManagePostTags } from '@/components/tags/manage-post-tags'
 import { getPost } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { getTranslations } from '@/lib/i18n/get-translations'
 import { canCurrentUserSeeDownvotes } from '@/lib/permissions/can-see-downvotes'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { type EditablePostType, isEditablePostType } from '@/lib/post-editability'
@@ -67,11 +68,12 @@ export function createPostTagsPage(postType: PostType, slug: string) {
     const currentUser = await getCurrentUser()
     if (!currentUser) redirect('/login')
 
-    const postData = await getPost(id)
+    const [postData, t] = await Promise.all([getPost(id), getTranslations()])
     if (!postData || postData.post.post_type !== postType) notFound()
 
     return (
       <ManagePostTags
+        t={t}
         postData={postData}
         hideDownCount={!canCurrentUserSeeDownvotes(currentUser)}
         slug={slug}

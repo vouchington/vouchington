@@ -34,11 +34,24 @@ export function buildRecentAutomodActionsStatsQuery(
           WHEN mtf.source_type IN ('agent_moderation', 'community_prompt')
             AND NULLIF(am.results->>'confidence_score', '') ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
             THEN (am.results->>'confidence_score')::double precision
-          WHEN mtf.source_type = 'spam_detection' THEN p.spam_detection_score
+          WHEN mtf.source_type = 'spam_detection'
+            THEN NULLIF(spam_disposition.evidence->>'composite_score', '')::double precision
           ELSE NULL
         END AS confidence_score
       FROM moderation_training_feedbacks mtf
       LEFT JOIN posts p ON p.id = mtf.post_id
+      LEFT JOIN post_moderation_versions spam_version
+        ON spam_version.post_id = p.id
+       AND spam_version.content_sha256 = mtf.input_sha256
+       AND spam_version.policy_revision = '2026-09-09.1'
+      LEFT JOIN LATERAL (
+        SELECT evidence
+        FROM post_moderation_dispositions
+        WHERE version_id = spam_version.id
+          AND source = 'spam_detection'
+        ORDER BY id DESC
+        LIMIT 1
+      ) spam_disposition ON true
       LEFT JOIN agent_moderations am ON am.id = mtf.agent_moderation_id
       LEFT JOIN agents__moderators mod ON mod.agent_id = am.agent_id
       WHERE mtf.community_id = ${communityId}

@@ -57,8 +57,7 @@ later call may retry it.
 [`worker-queue-policy.json`](../modules/worker-queue-inventory/worker-queue-policy.json) is the
 source of truth for canonical CPU-only, I/O-capable, and SQS-consumer queue classifications.
 Infrastructure owns worker service names, task definitions, capacity, and deployment routing.
-Local development starts both entrypoints: CPU-only queues run on `worker-cpu`, while I/O-capable
-queues run on `worker-io` unless `WORKER_CPU_EXTRA_QUEUES` explicitly moves them.
+Local development starts the merged `worker-cpu` entrypoint with every policy-managed queue.
 
 Every policy-managed definition must appear in exactly one queue class. The worker policy tests
 enforce class alignment, full coverage of the local entrypoints, and the invariant that

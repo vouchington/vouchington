@@ -9,7 +9,7 @@ import {
   createTopHashtagPostSourceForTest,
   archivePostForTopHashtagTest,
   suspendTestUser,
-  setPostModerationComplete,
+  setTestPostClearanceStatus,
   insertTestCommunity,
 } from '@voucha/test-helpers'
 import { createTopic } from './create.mts'
@@ -195,7 +195,7 @@ describe('metrics-batch', () => {
     // Excluded: moderation-flagged.
     const flaggedPost = await createTestPost({ user: author, post_type: 'discussion' })
     await insertScoredPostTopicCategoryRelation(flaggedPost.id, topicId, author.id)
-    await setPostModerationComplete(flaggedPost.id, true)
+    await setTestPostClearanceStatus(flaggedPost.id, 'in_review')
 
     // Excluded: archived.
     const archivedPost = await createTestPost({ user: author, post_type: 'discussion' })

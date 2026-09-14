@@ -87,8 +87,7 @@ export function defineWebApiFixture<Expected>() {
 
 export type CommunityModerationResultsFixture = {
   community_agent_moderations: Record<string, unknown>[]
-  openai_moderation: {
-    flagged: boolean | null
-    results: Record<string, unknown> | Record<string, unknown>[] | null
+  platform_moderation: {
+    status: 'pending' | 'approved' | 'in_review' | 'rejected'
   }
 }

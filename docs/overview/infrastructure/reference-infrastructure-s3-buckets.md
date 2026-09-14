@@ -46,19 +46,20 @@ For full lifecycle, encryption, and retention details see [S3 Buckets × Lifecyc
 
 ## Developer Access
 
-Human AWS developer access is managed with IAM Identity Center in the staging `vouchington-infra` OpenTofu stack. The stack creates a `voucha-developer` group and permission set in [the infrastructure definition](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/iam-developer-access.tf) for the configured Identity Center instance, then assigns that group to the configured staging/development AWS account IDs. Production applies do not create these shared Identity Center resources. Admins create users in IAM Identity Center and add them to the group; individual users and memberships are not stored in OpenTofu state. See [the developer-access guide](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/DEVELOPER_ACCESS.md) for the admin workflow.
+Human AWS developer access is managed with IAM Identity Center in the staging `vouchington-infra`
+stack. The private operator guide owns exact group names, permission-set identifiers, account
+assignments, and membership steps. Production does not create these shared developer-access
+resources, and individual users or memberships are not stored in application source.
 
 ## Cost Estimates
 
-[Deployment Costs](deployment-costs.md) is the canonical cost reference for the pre-launch
-baseline and current steady-state AWS estimates, CI/testing costs, and cross-environment
-SaaS costs. This page
-keeps the resource architecture details only; update cost rows in the canonical page so the
-checked totals stay in one place.
+Cost and unit-economics documentation — the pre-launch baseline and current steady-state AWS
+estimates, CI/testing costs, and cross-environment SaaS costs — lives in the private
+`vouchington/vouchington-docs` repository. This page keeps the resource architecture details
+only; update cost rows there so the checked totals stay in one place.
 
 ## Related
 
-- [Deployment Costs](deployment-costs.md) — full cost breakdown: pre-launch baseline vs steady-state (current), CI/testing, SaaS
 - [Deployment](deployment.md) — CI/CD flow, Docker images, traffic routing, provisioning checklist
 - [Backend rules](../../../backend/CLAUDE.md) — service and data conventions
 - [Web rules](../../../web/CLAUDE.md) — UI and routing conventions

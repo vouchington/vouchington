@@ -20,7 +20,6 @@ export async function reconcileRssFeedItemCategorySnapshots(
   snapshots: readonly RssFeedItemCategorySnapshot[],
 ): Promise<{ changedItemIds: string[] }> {
   if (snapshots.length === 0) return { changedItemIds: [] }
-  // ast-grep-ignore: no-three-sequential-awaits -- commit removals, discover surviving relations, then persist their writer-visible stats
   await using query = await beginTransaction()
   const { staleCategories } = await deleteStaleCategoriesAndRetractVotes(snapshots, query)
   await query.commit()

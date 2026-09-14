@@ -22,7 +22,7 @@ permissions:
 jobs:
   static-code-analysis:
     runs-on: [self-hosted]
-    timeout-minutes: 70
+    timeout-minutes: 50
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -81,13 +81,6 @@ jobs:
       - run: pnpm exec syncpack lint && pnpm exec syncpack format --check
         if: ${{ inputs.docs_only != true }}
         timeout-minutes: 2
-      - name: Run no-mistakes
-        run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json
-        timeout-minutes: 10
-      - name: Check live workflow topology
-        if: ${{ inputs.docs_only != true }}
-        run: node ci/check-live-workflow-topology.mts
-        timeout-minutes: 5
       - name: Repo Node static checks
         if: ${{ inputs.docs_only != true }}
         run: node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails
@@ -99,6 +92,10 @@ jobs:
       - name: Check native localization resources
         if: ${{ inputs.docs_only != true }}
         run: node dev/native-localization.mts --validate
+        timeout-minutes: 2
+      - name: Check localization catalog format
+        if: ${{ inputs.docs_only != true }}
+        run: pnpm exec vouchington-localization format --check --source localization/catalog
         timeout-minutes: 2
       - name: Check Vitest ownership table
         if: ${{ inputs.docs_only != true }}
@@ -136,6 +133,57 @@ jobs:
       - run: selene --config selene.toml backend/services/jwt-session/scripts
         if: ${{ inputs.docs_only != true }}
         timeout-minutes: 2
+      - name: Verify no dependency changes needed
+        timeout-minutes: 1
+        run: |
+          if ! git diff --exit-code; then
+            echo "::error::Static analysis produced changes. Run the documented local checks and commit the results."
+            git diff --stat
+            exit 1
+          fi
+
+  no-mistakes-owned:
+    needs: [static-code-analysis]
+    runs-on: [self-hosted]
+    timeout-minutes: 55
+    concurrency:
+      group: no-mistakes-invocation
+      cancel-in-progress: false
+      queue: max
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+      - uses: ./.github/actions/load-runner-env
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+        with:
+          runner-lifecycle: persistent
+      - name: Install CI tools via mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        # cache: false — actions/cache hangs on self-hosted runners (see RUNNERS.md);
+        # ~/.local/share/mise persists across runs via workspace preservation instead.
+        with:
+          cache: false
+        timeout-minutes: 3
+      - name: Run no-mistakes
+        run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json
+        timeout-minutes: 10
+      - name: Check live workflow topology
+        if: ${{ inputs.docs_only != true }}
+        run: node ci/check-live-workflow-topology.mts
+        timeout-minutes: 5
+      - name: Check web route localization selector map
+        if: ${{ inputs.docs_only != true }}
+        run: node static-code-analysis/i18n-extract/route-selector-map.mts --check
+        timeout-minutes: 25
       - name: Verify no dependency changes needed
         timeout-minutes: 1
         run: |

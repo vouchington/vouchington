@@ -1,23 +1,38 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import {
+  completePostModerationAttempt,
+  ensureCurrentPostModerationVersion,
+  recordPostModerationDisposition,
+  type PostModerationAttempt,
+} from '@services/post-clearance/moderation-ledger'
 import type { SpamDetectionResult } from './types.mts'
 
 export async function applyPostSpamDetectionResults(
   postId: string,
   inputSha256: Buffer,
   result: SpamDetectionResult,
+  attempt?: PostModerationAttempt,
 ): Promise<boolean> {
-  // Callers must pass the hash computed from the same primary-read post snapshot they analyzed.
-  const { rows } = await write(sql`/* applyPostSpamDetectionResults */
-    UPDATE posts
-    SET
-      spam_detection_flagged = ${result.flagged},
-      spam_detection_created_at = NOW(),
-      spam_detection_score = ${result.composite_score},
-      spam_detection_results = ${JSON.stringify(result.signals)}::jsonb
-    WHERE id = ${postId}
-      AND llm_moderation_content_sha256 = ${inputSha256}
-    RETURNING id
-  `)
-  return rows.length > 0
+  const version = attempt ?? (await ensureCurrentPostModerationVersion(postId))
+  if (!version.content_sha256.equals(inputSha256)) return false
+
+  const disposition = result.flagged ? 'review' : 'pass'
+  const reasonCode = result.flagged ? 'spam_signal' : 'provider_pass'
+  const evidence = {
+    composite_score: result.composite_score,
+    signals: result.signals.slice(0, 100).map(signal => ({
+      signal: signal.signal,
+      score: signal.score,
+      flagged: signal.flagged,
+    })),
+  }
+  if (attempt) {
+    return completePostModerationAttempt(attempt, { disposition, reasonCode, evidence })
+  }
+  return recordPostModerationDisposition({
+    versionId: 'version_id' in version ? version.version_id : version.id,
+    source: 'spam_detection',
+    disposition,
+    reasonCode,
+    evidence,
+  })
 }

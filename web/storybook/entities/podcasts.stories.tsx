@@ -1,12 +1,16 @@
 // oxlint-disable eslint/max-lines -- entity stories file covers many pod variants plus mini-player
 import { useRef } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { PodcastShowCard } from '@/components/podcasts/podcast-show-card'
 import { PodcastShowMetadataAside } from '@/components/podcasts/podcast-show-metadata-aside'
 import { PodcastPlayerProvider } from '@/lib/podcast-player/context'
 import { PodcastMiniPlayer } from '@/lib/podcast-player/mini-player'
 import type { ViewRssFeed } from '@/types/rss-feeds'
 import { EntityStoryFrame } from './entity-story-frame'
+
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const meta = {
   title: 'Entities/Podcasts',
@@ -131,8 +135,12 @@ export const ShowMetadataAside: Story = {
     <PodcastPlayerProvider>
       <EntityStoryFrame title='Podcast show metadata aside (source page sidebar)'>
         <div className='w-64 space-y-4'>
-          <PodcastShowMetadataAside feed={makePodcastFeed('aside-1')} />
           <PodcastShowMetadataAside
+            t={t}
+            feed={makePodcastFeed('aside-1')}
+          />
+          <PodcastShowMetadataAside
+            t={t}
             feed={makePodcastFeed('aside-2', {
               podcast_show: {
                 itunes_author: 'Crime Network',

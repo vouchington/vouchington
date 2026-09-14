@@ -15,11 +15,12 @@ test-support sources; its local configuration and command inventory are in
 [Static Code Analysis](../../.github/workflows/static-code-analysis.yml) runs directly on every
 `main` push and remains the reusable PR/manual workflow for cross-repo checks. The reusable
 `workflow_call` input `docs_only` defaults to `false`. Docs-only pull requests pass `true` so the
-job keeps checkout, `setup-node-pnpm`, mise (shellcheck for no-mistakes), full `no-mistakes check`,
-`oxfmt --check` (markdown formatting), and
+lint job keeps checkout, `setup-node-pnpm`, mise, `oxfmt --check` (markdown formatting), and
 `run-node-checks.mts --checks repo-file-policy,targeted-guardrails,config-inventory-policy`
-(Cloudflare Worker doc-sync plus env-var inventory docs). TypeScript, type-aware oxlint, ast-grep,
-syncpack, depcruise, knip, selene, localization, and the ownership-table check stay off. Direct
+(Cloudflare Worker doc-sync plus env-var inventory docs), while `no-mistakes-owned` still runs
+full `no-mistakes check` (shellcheck via mise). TypeScript, type-aware oxlint, ast-grep,
+syncpack, depcruise, knip, selene, localization, the no-write catalog format check, the web route selector-map check, and the
+ownership-table check stay off. Direct
 `push` to `main` has no input and stays full. Workspace-owned
 dependency, type, and SQL checks run in their reusable test workflows so they gate that unit's
 main build or deploy. The static-analysis job runs only the centralized tools listed below. Legacy policy rules that are not backed by
@@ -29,11 +30,18 @@ CI is the only always-on static-analysis matrix. Workspace typecheck and depende
 
 The root `pnpm run no-mistakes` script is the canonical local full-check entrypoint. Its command
 execution deadline remains 60 seconds and no-mistakes' separate default lock-wait timeout remains
-30 seconds. CI has exactly three production invocations: the static-analysis full check plus the
+30 seconds. CI has exactly three production CLI invocations: the static-analysis full check plus the
 centralized Vitest and Playwright selectors. All three disable both no-mistakes' execution deadline
-and its machine-wide lock-wait deadline so concurrent jobs serialize instead of failing from lock
-contention. Their workflow steps have no step-specific timeout; the existing job timeouts remain
-global safety backstops.
+and its machine-wide lock-wait deadline. Route-selector `--check` is a fourth production consumer
+through the Node `analyzeProject` API. The `no-mistakes-owned` job FIFO-serializes that check with
+the CLI check across pull requests (`concurrency.group: no-mistakes-invocation`, `queue: max`) so
+overlapping runs queue off the runner instead of waiting on one user-global `invocation.lock`.
+Oxlint, knip, and typecheck stay on the per-PR `static-code-analysis` job.
+
+Oxlint enforces `no-mistakes/no-inline-noop-promise-catch` for production `backend/**` and
+`web/**`, with test and test-helper paths excluded. The 2026-09-10 inventory found 116 diagnostics
+in 70 production files, remediated by #11567 and #11568; the scope and consumer fixture are owned
+by [Linters and Static Analysis](reference-tests-linters-and-static-analysis.md).
 
 | Tool                               | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | CI step                                                                                                                                                                                                                                                                                                                                                              | Config                                                                                       | Scope                                                                                                                                                            |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |

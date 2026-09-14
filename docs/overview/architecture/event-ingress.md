@@ -70,6 +70,12 @@ Model any new "external sender, auth needs a fetch" route on this file: self-con
 gate persistence and enqueue; the network-dependent verification happens after the job leaves the
 request path.
 
+Google Play RTDN uses the public Cloudflare ingress at
+`/api/v1/memberships/google-play/notifications`: the API verifies Pub/Sub OIDC against a Valkey
+snapshot of Google signing keys, stores encrypted evidence, and enqueues a worker job. Only the
+worker refreshes those keys or calls Play. A missing or stale signing-key snapshot returns a
+retryable response without accepting the notification.
+
 ## Real-time is required, not optional
 
 Every ingress path must be push or long-poll — never the sole reliance on interval polling. Cron

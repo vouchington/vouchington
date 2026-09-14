@@ -41,7 +41,6 @@ export async function insertTestDataPoint(data: {
       data_point_vertical,
       structured_data,
       bedrock_nova_multimodal_v1_content_sha256,
-      openai_omni_moderation_content_sha256,
       llm_moderation_content_sha256
     )
     VALUES (
@@ -52,7 +51,6 @@ export async function insertTestDataPoint(data: {
       ${data.createdById},
       ${vertical},
       ${JSON.stringify(structuredData)},
-      ${sha256},
       ${sha256},
       ${sha256}
     )

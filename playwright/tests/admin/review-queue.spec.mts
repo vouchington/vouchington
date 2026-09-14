@@ -87,7 +87,10 @@ test.describe('Admin review queue', () => {
       markForReviewButton.click(),
     ])
 
-    expect(request.postDataJSON()).toEqual({ status: 'in_review' })
+    expect(request.postDataJSON()).toEqual({
+      status: 'in_review',
+      reason_code: 'staff_reviewed',
+    })
     await expect(
       page.locator('[data-sonner-toast]').filter({ hasText: 'Post marked for re-review' }),
     ).toBeVisible()

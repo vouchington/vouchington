@@ -14,7 +14,7 @@ import {
 } from '@voucha/test-helpers'
 import { grantMembership } from '../../create.mts'
 import { getMembershipByUserId } from '../../get.mts'
-import { updateMembershipFromWebhook } from '../../update.mts'
+import { updateMembershipFromEvent } from '../../update.mts'
 import { restoreFallbackAfterCurrentAccessEndsInTransaction } from '../restore-after-current-access-ends.mts'
 
 describe('fallback after a family projection ends over an open grant', () => {
@@ -47,7 +47,7 @@ describe('fallback after a family projection ends over an open grant', () => {
     const remainingBefore = await getTestMembershipGrantRemainingMilliseconds(openGrantId!)
     const familyEndedAt = new Date()
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: family.id, status: 'expired', terminalEffectiveAt: familyEndedAt },
       async () => false,
     )
@@ -114,7 +114,7 @@ describe('fallback after a family projection ends over an open grant', () => {
     const remainingBefore = await getTestMembershipGrantRemainingMilliseconds(openGrantId!)
     const familyEndedAt = new Date()
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: family.id, status: 'expired', terminalEffectiveAt: familyEndedAt },
       async () => false,
     )

@@ -3,7 +3,7 @@ import { getWorkerConcurrency } from '@modules/queue-config'
 import { Worker, type Job } from 'glide-mq'
 import { handleOpenAIModerationOmniSingleJob } from '../processors/openai-moderation-omni-single.mts'
 
-type OpenAIModerationJobData = { id: string }
+type OpenAIModerationJobData = { id?: string }
 
 const openaiModerationOmniSingleWorkerRef: { current?: Worker } = {}
 let resolveOpenAIModerationOmniSingleWorker: (worker: Worker) => void = () => {}

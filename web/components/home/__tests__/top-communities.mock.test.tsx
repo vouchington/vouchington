@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { TopCommunities } from '../top-communities'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import {
   makeCommunitiesSearchResponse,
   makeCommunity,
@@ -9,7 +10,6 @@ import {
 } from '@/test-helpers/api-responses'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { seedMessages } from '@/lib/i18n/use-translations'
-import esMessages from '@ts-shared/ui-messages/messages/es'
 import { projectTopCommunities } from '@/lib/view-models/homepage-view-models'
 
 vi.mock(

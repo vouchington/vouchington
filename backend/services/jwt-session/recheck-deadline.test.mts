@@ -5,7 +5,11 @@ import { createTestUser, getTestPrivateUserById } from '@voucha/test-helpers'
 import { createDeviceAndSessionTokens } from './create.mts'
 import { refreshSessionState } from './flows.mts'
 import { markJwtStale } from './invalidation.mts'
-import { legacyUuidV4, signLegacyDeviceJwt, signLegacySessionJwt } from './test-helpers/index.mts'
+import {
+  legacyUuidV4,
+  signLegacyDeviceJwt,
+  signLegacySessionJwt,
+} from '../../test-helpers/services/jwt-session/index.mts'
 
 describe('authenticated session recheck deadline', () => {
   afterEach(() => vi.useRealTimers())

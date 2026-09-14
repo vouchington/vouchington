@@ -1,7 +1,7 @@
 import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { v7 } from 'uuid'
-import { createRequest, nextTestRequestIp } from '@voucha/api/test-helpers/server'
+import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 import {
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,

@@ -175,8 +175,8 @@ describe('moderation-training feedback coverage', () => {
     expect(await getTestPostClearanceState(multiFalsePostId)).toMatchObject({
       approved_at: expect.any(Date),
       rejected_at: null,
-      openai_omni_moderation_flagged: false,
-      spam_detection_flagged: false,
+      openai_omni_moderation_flagged: true,
+      spam_detection_flagged: true,
     })
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: multiFalsePostId }),

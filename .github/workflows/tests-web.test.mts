@@ -82,12 +82,13 @@ describe('Web Tests workflow', () => {
 
     expect(prep).toContain('runs-on: [self-hosted]')
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
-    expect(prep).toContain('total: ${{ inputs.shard_total_override || 2 }}')
+    expect(prep).toContain('node ci/vitest/shard-total.mts test-web')
+    expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
   })
 
-  it('runs two 7-worker Vitest shards by default on the self-hosted Docker Tests pool', () => {
+  it('runs dynamically sized 7-worker Vitest shards on the self-hosted Docker Tests pool', () => {
     const tests = jobSection('web-tests')
 
     expect(tests).toContain('needs: [prep]')

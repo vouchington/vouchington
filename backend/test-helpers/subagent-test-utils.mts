@@ -4,7 +4,7 @@
  * Shared by research-agent, profile-agent, and discovery-agent tool.mock.test.mts.
  * Not exported from the package index — test-only.
  *
- * setupSubagentFixtures lives in backend/agents/_shared/test-helpers/subagent-fixtures.mts
+ * setupSubagentFixtures lives in backend/test-helpers/agents/_shared/subagent-fixtures.mts
  * instead — it calls real conversations-messages service functions, and this package must
  * never depend on a service that already devDeps this package for its own tests.
  */

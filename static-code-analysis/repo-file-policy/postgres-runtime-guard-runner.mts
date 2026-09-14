@@ -12,8 +12,8 @@ const RUNTIME_FILE_RE = /^backend\/.*\.(?:mts|ts)$/
 // table.column pairs, checked once each against the current schema snapshot rather than parsed
 // per tracked file.
 const SCHEMA_ALLOWLIST_FILES = [
-  'backend/data-stores/psql/test-helpers/schema-static-analysis/uuid-allowlists.mts',
-  'backend/data-stores/psql/test-helpers/schema-static-analysis/timestamp-allowlists.mts',
+  'backend/test-helpers/data-stores/psql/schema-static-analysis/uuid-allowlists.mts',
+  'backend/test-helpers/data-stores/psql/schema-static-analysis/timestamp-allowlists.mts',
 ]
 
 /** Selects the backend TypeScript files this guard inspects (includes test code, deliberately). */

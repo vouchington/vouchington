@@ -33,11 +33,6 @@
       "import": "./v1/*/*.mts",
       "default": "./v1/*/*.mts"
     },
-    "./test-helpers/*": {
-      "types": "./test-helpers/*.mts",
-      "import": "./test-helpers/*.mts",
-      "default": "./test-helpers/*.mts"
-    },
     "./*": {
       "types": "./*.mts",
       "import": "./*.mts",
@@ -182,6 +177,7 @@
     "@services/jwt-session": "workspace:^",
     "@services/landing-page-analytics": "workspace:^",
     "@services/lists": "workspace:^",
+    "@services/localization": "workspace:^",
     "@services/markdown": "workspace:^",
     "@services/mcp-tools": "workspace:^",
     "@services/memberships": "workspace:^",
@@ -278,7 +274,6 @@
     "@types/http-errors": "^2.0.5",
     "@types/node": "^26.4.0",
     "@types/supertest": "^7.2.1",
-    "@voucha/ci": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "@workers/ai-agents": "workspace:^",
     "@workers/elections": "workspace:^",

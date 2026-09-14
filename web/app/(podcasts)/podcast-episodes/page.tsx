@@ -84,7 +84,7 @@ export default async function PodcastEpisodesPage({ searchParams }: PageProps) {
           })}
         />
         {breadcrumbItems.length > 0 && (
-          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
         )}
         <AnonymousStructuredDataScript
           data={createItemListSchema(

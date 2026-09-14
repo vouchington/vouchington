@@ -32,7 +32,7 @@
     "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/users": "workspace:^",
-    "openai": "^7.10.0",
+    "openai": "^7.15.0",
     "uuid": "^14.0.2"
   },
   "devDependencies": {

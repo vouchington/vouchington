@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { TopicFaqPostsAsideContent } from '../topic-faq-posts-aside-content'
 import type { Topic } from '@/types/topics'
 import type { EntityRelation } from '@/lib/api/entity-relations'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 const { mockManageTagsDialog } = vi.hoisted(() => ({
   mockManageTagsDialog: vi.fn<VitestLooseMock>(),
 }))

@@ -8,13 +8,13 @@ import {
   updateTestMembershipCancelAtPeriodEnd,
 } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
-import { cancelMembership, updateMembershipFromWebhook } from './update.mts'
+import { cancelMembership, updateMembershipFromEvent } from './update.mts'
 import { getMembershipHistory } from './get.mts'
 
 async function updateProjectionWithoutRecording(
-  options: Parameters<typeof updateMembershipFromWebhook>[0],
+  options: Parameters<typeof updateMembershipFromEvent>[0],
 ) {
-  return await updateMembershipFromWebhook(options, async () => {})
+  return await updateMembershipFromEvent(options, async () => {})
 }
 
 describe('update', () => {
@@ -23,7 +23,7 @@ describe('update', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  describe('updateMembershipFromWebhook', () => {
+  describe('updateMembershipFromEvent', () => {
     it('updates status field', async () => {
       const membership = await createTestMembership({ user_id: user.id })
       const before = (await getTestMembershipRaw(membership.id)) as Record<string, unknown>
@@ -72,7 +72,7 @@ describe('update', () => {
 
       const raw = await getTestMembershipRaw(membership.id)
       expect(raw!.status).toBe('active')
-      // Verify via full row since getTestMembershipRaw returns SELECT *
+      // Verify via the full stored row returned by getTestMembershipRaw.
       const fullRow = raw as Record<string, unknown>
       expect(fullRow.plan).toBe('pro')
       expect(fullRow.sku_id).toBe(newSku.id)
@@ -123,7 +123,7 @@ describe('update', () => {
       expect(raw!.cancel_at_period_end).toBe(false)
     })
 
-    it('ignores explicit scheduled cancellation when the webhook status is terminal', async () => {
+    it('ignores explicit scheduled cancellation when the event status is terminal', async () => {
       const terminalUser = await createTestUser()
       const membership = await createTestMembership({ user_id: terminalUser.id })
 

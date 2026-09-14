@@ -1,5 +1,5 @@
 import { ReferralLinkCard } from './referral-link-card'
-import { getTranslations } from '@/lib/i18n/get-translations'
+import type { getTranslations } from '@/lib/i18n/get-translations'
 import type { MessageKey } from '@ts-shared/ui-messages'
 import type {
   PrioritizedReferralLink,
@@ -7,6 +7,7 @@ import type {
 } from '@/types/api-responses'
 
 interface ReferralLinkListProps {
+  t: Awaited<ReturnType<typeof getTranslations>>
   response: PrioritizedReferralLinksResponse
 }
 
@@ -46,9 +47,7 @@ function ReferralLinkGroup({
   )
 }
 
-export async function ReferralLinkList({ response }: ReferralLinkListProps) {
-  const t = await getTranslations()
-
+export function ReferralLinkList({ t, response }: ReferralLinkListProps) {
   if (response.links.length === 0) {
     return (
       <p className='text-sm text-muted-foreground'>

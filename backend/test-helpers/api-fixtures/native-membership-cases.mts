@@ -92,6 +92,18 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     migratedFrom,
   },
   {
+    id: 'native.memberships.microsoft.service-tickets.default',
+    method: 'POST',
+    path: '/api/v1/memberships/microsoft-store/service-tickets',
+    route: { routeTemplate: '/api/v1/memberships/microsoft-store/service-tickets' },
+    requestBody: {},
+    auth: 'fixture-user',
+    status: 200,
+    body: responseBody('native.memberships.microsoft.service-tickets.default'),
+    consumers: ['dotnet-core'],
+    migratedFrom: ['https://github.com/jonathanong/filaments/issues/11535'],
+  },
+  {
     id: 'native.memberships.purchase-intent.stripe.default',
     method: 'POST',
     path: '/api/v1/membership-purchase-intents',

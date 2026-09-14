@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { decide } from '../decide.mts'
 import { RULES } from '../rules.mts'
-import { makeCtx } from '../test-helpers/helpers.mts'
+import { makeCtx } from '../../test-helpers/transient-retry/helpers.mts'
 
 describe('storybook-browser-session-connection-timeout', () => {
   const storybookJobName = 'storybook-build / storybook'

@@ -16,3 +16,4 @@ export {
 } from './cache-tags.mts'
 export type { CacheTagRouteContext } from './cache-tags.mts'
 export { CACHE_PURGE_SECRET_HEADER, MAX_TAGS_PER_REQUEST } from './purge.mts'
+export { isValidCacheTag, MAX_CACHE_TAG_BYTES } from './cache-tag-encoding.mts'

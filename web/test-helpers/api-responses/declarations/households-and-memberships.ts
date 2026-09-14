@@ -11,11 +11,43 @@ import nativeHouseholdsMemberPage2 from '../../../../api-fixtures/v1/responses/n
 import nativeHouseholdsMultiple from '../../../../api-fixtures/v1/responses/native.households.multiple.json'
 import nativeHouseholdsOwned from '../../../../api-fixtures/v1/responses/native.households.owned.json'
 import nativeHouseholdsSingleOwned from '../../../../api-fixtures/v1/responses/native.households.single-owned.json'
-import type { HouseholdResponseBody, ListResponse } from '@/types/api-responses'
+import webMembershipsRefundCompleted from '../../../../api-fixtures/v1/responses/web.memberships.refund.completed.json'
+import webMembershipsRefundReconciling from '../../../../api-fixtures/v1/responses/web.memberships.refund.reconciling.json'
+import type {
+  HouseholdResponseBody,
+  ListResponse,
+  MembershipRefundResponseBody,
+} from '@/types/api-responses'
 import type { Household, HouseholdMembership as Membership } from '@/types/my'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 export const HOUSEHOLDS_AND_MEMBERSHIPS_DECLARATIONS = [
+  defineWebApiFixture<MembershipRefundResponseBody>()(
+    'web.memberships.refund.completed',
+    webMembershipsRefundCompleted,
+    context =>
+      context.client.memberships.createMembershipRefund({
+        cancel: false,
+        charge_id: 'ch_fixture_refund',
+        idempotency_key: '00000000-0000-7000-8000-000000000901',
+        invoice_id: 'in_fixture_refund',
+        reason: 'goodwill',
+        user_id: '019fafb8-a44c-73e2-890a-497ff3dd27a6',
+      }),
+  ),
+  defineWebApiFixture<MembershipRefundResponseBody>()(
+    'web.memberships.refund.reconciling',
+    webMembershipsRefundReconciling,
+    context =>
+      context.client.memberships.createMembershipRefund({
+        cancel: false,
+        charge_id: 'ch_fixture_refund',
+        idempotency_key: '00000000-0000-7000-8000-000000000901',
+        invoice_id: 'in_fixture_refund',
+        reason: 'goodwill',
+        user_id: '019fafb8-a44c-73e2-890a-497ff3dd27a6',
+      }),
+  ),
   defineWebApiFixture<ListResponse<Household>>()(
     'native.households.empty',
     nativeHouseholdsEmpty,

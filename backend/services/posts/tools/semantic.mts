@@ -87,14 +87,8 @@ export async function toolsSearchPostsSemantic(
       AND posts.post_type != 'topic_recommendation'
   `
 
-  // Moderation filtering based on user permissions
+  // Clearance and audience filters preserve author and administrator access.
   if (currentUserId) {
-    // For authenticated users: hide flagged posts unless they're the owner
-    sqlQuery.append(sql` AND (
-      posts.openai_omni_moderation_flagged IS NOT TRUE
-      OR posts.openai_omni_moderation_created_at IS NULL
-      OR posts.created_by_id = ${currentUserId}
-    )`)
     sqlQuery.append(sql` AND `).append(
       buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
         currentUserId,
@@ -102,11 +96,6 @@ export async function toolsSearchPostsSemantic(
       }),
     )
   } else {
-    // For anonymous users: hide all flagged posts
-    sqlQuery.append(sql` AND (
-      posts.openai_omni_moderation_flagged IS NOT TRUE
-      OR posts.openai_omni_moderation_created_at IS NULL
-    )`)
     sqlQuery.append(sql` AND `).append(buildPublicPostEligibilityFilter('posts', 'root_post'))
   }
 

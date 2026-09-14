@@ -136,6 +136,7 @@ describe('communities client', () => {
 
     expect(mockPatch).toHaveBeenCalledWith('/api/v1/communities/test-community/posts/post-id', {
       status: 'unpublished',
+      reason_code: 'staff_unpublished',
     })
   })
 

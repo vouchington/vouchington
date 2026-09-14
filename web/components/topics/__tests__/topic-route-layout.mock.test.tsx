@@ -12,7 +12,7 @@ import {
   emptyRssFeeds,
   makeRssFeed,
   makeTopicData,
-} from '../test-helpers/topic-route-layout-fixtures'
+} from '../../../test-helpers/components/topics/topic-route-layout-fixtures'
 vi.mock(import('@/lib/api/server'), () => ({ getTopic: vi.fn<VitestLooseMock>() }))
 vi.mock(import('@/lib/api/server/rss-feeds'), () => ({ getRssFeeds: vi.fn<VitestLooseMock>() }))
 vi.mock(import('@/lib/api/server/hostnames'), () => ({ getHostnames: vi.fn<VitestLooseMock>() }))

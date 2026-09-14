@@ -83,8 +83,8 @@ fixed capacity. Ubicloud and CodeBuild runners are ephemeral and per-minute bill
 after confirming their environment fits the job, because queue relief trades against cold-start,
 cache, and direct-runtime cost.
 
-**CodeBuild image-build demand budget.** The private infrastructure repository owns the
-`voucha-ci-runner` CodeBuild project and sets its concurrent-build limit. The project is shared by
+**Managed image-build demand budget.** The private infrastructure repository owns the managed
+image-build runner and sets its concurrent-build limit. The runner is shared by
 Filaments artifact publication, ECR retention, image-build escape hatches, and private
 infrastructure jobs. Operators must verify the live quota and current receiver demand before
 opening an image-build validation window. Image builds default to Ubicloud, so at rest they add

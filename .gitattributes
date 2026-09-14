@@ -1,0 +1,7 @@
+# Merge localization rows by their stable table key. Run ./dev/initialize monorepo to configure
+# the path-aware driver in the clone's shared Git config.
+localization/catalog/*.json merge=vouchington-localization text eol=lf
+localization/catalog/translations/*.json merge=vouchington-localization text eol=lf
+localization/catalog/tags.json merge=text
+localization/normalized-fixture/*.json merge=vouchington-localization text eol=lf
+localization/normalized-fixture/translations/*.json merge=vouchington-localization text eol=lf

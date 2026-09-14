@@ -6,7 +6,7 @@ import { membershipBillingControls } from '@services/memberships/purchase-contro
 import { getStripePurchaseIntentOwner } from '@services/memberships'
 import { STRIPE_PROVIDER_ENVIRONMENT } from '@voucha/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestMembership,
   createTestNativeMembershipProviderProduct,

@@ -5837,6 +5837,24 @@
         "required": ["page_info", "results"],
         "type": "object"
       },
+      "GooglePubSubPushEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "type": "string"
+              },
+              "messageId": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
       "GrowthMetrics": {
         "additionalProperties": false,
         "properties": {
@@ -7661,10 +7679,6 @@
         "enum": ["apple_app_store", "google_play", "microsoft_store", "stripe"],
         "type": "string"
       },
-      "MembershipRefundCancellationStatus": {
-        "enum": ["completed", "not_requested", "pending"],
-        "type": "string"
-      },
       "MembershipRefundReason": {
         "enum": ["dispute", "goodwill", "other", "requested"],
         "type": "string"
@@ -7825,6 +7839,30 @@
       "MessageDirection": {
         "enum": ["inbound", "outbound"],
         "type": "string"
+      },
+      "MicrosoftStoreServiceTickets": {
+        "additionalProperties": false,
+        "properties": {
+          "collections_service_ticket": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "publisher_user_id": {
+            "type": "string"
+          },
+          "purchase_service_ticket": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "collections_service_ticket",
+          "expires_at",
+          "publisher_user_id",
+          "purchase_service_ticket"
+        ],
+        "type": "object"
       },
       "MigrationStatus": {
         "additionalProperties": false,
@@ -8571,44 +8609,19 @@
             },
             "type": "array"
           },
-          "openai_moderation": {
+          "platform_moderation": {
             "additionalProperties": false,
             "properties": {
-              "flagged": {
-                "anyOf": [
-                  {
-                    "const": false
-                  },
-                  {
-                    "const": true
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "results": {
-                "anyOf": [
-                  {
-                    "items": {
-                      "$ref": "#/components/schemas/Record_string_unknown"
-                    },
-                    "type": "array"
-                  },
-                  {
-                    "$ref": "#/components/schemas/Record_string_unknown"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+              "status": {
+                "enum": ["approved", "in_review", "pending", "rejected"],
+                "type": "string"
               }
             },
-            "required": ["flagged", "results"],
+            "required": ["status"],
             "type": "object"
           }
         },
-        "required": ["community_agent_moderations", "openai_moderation"],
+        "required": ["community_agent_moderations", "platform_moderation"],
         "type": "object"
       },
       "ModerationTrainingEventType": {
@@ -10820,22 +10833,6 @@
         "required": ["id", "name", "slug", "topic_type"],
         "type": "object"
       },
-      "OpenAIModerationContext": {
-        "additionalProperties": false,
-        "properties": {
-          "categories": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "flagged": {
-            "type": "boolean"
-          }
-        },
-        "required": ["flagged"],
-        "type": "object"
-      },
       "PageInfo": {
         "additionalProperties": false,
         "properties": {
@@ -11441,6 +11438,22 @@
         "required": ["post_id", "topic_slug", "topic_title"],
         "type": "object"
       },
+      "PlatformModerationContext": {
+        "additionalProperties": false,
+        "properties": {
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "flagged": {
+            "type": "boolean"
+          }
+        },
+        "required": ["flagged"],
+        "type": "object"
+      },
       "PlatformStats": {
         "additionalProperties": false,
         "properties": {
@@ -11810,29 +11823,6 @@
           "markdown": {
             "type": "string"
           },
-          "openai_omni_moderation_created_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "openai_omni_moderation_flagged": {
-            "anyOf": [
-              {
-                "const": false
-              },
-              {
-                "const": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "parent_id": {
             "anyOf": [
               {
@@ -12041,40 +12031,6 @@
               },
               {
                 "type": "string"
-              }
-            ]
-          },
-          "spam_detection_created_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "spam_detection_flagged": {
-            "anyOf": [
-              {
-                "const": false
-              },
-              {
-                "const": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "spam_detection_results": {},
-          "spam_detection_score": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
               }
             ]
           },
@@ -12344,10 +12300,6 @@
           "privacy",
           "rejected_at",
           "root_id",
-          "spam_detection_created_at",
-          "spam_detection_flagged",
-          "spam_detection_results",
-          "spam_detection_score",
           "title",
           "updated_at",
           "updated_by_id"
@@ -12538,10 +12490,10 @@
             },
             "type": "array"
           },
-          "openai_moderation": {
+          "platform_moderation": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/OpenAIModerationContext"
+                "$ref": "#/components/schemas/PlatformModerationContext"
               },
               {
                 "type": "null"
@@ -12549,7 +12501,7 @@
             ]
           }
         },
-        "required": ["agent_added_tags", "agent_moderations", "openai_moderation"],
+        "required": ["agent_added_tags", "agent_moderations", "platform_moderation"],
         "type": "object"
       },
       "PostPrivacy": {
@@ -15185,7 +15137,7 @@
           "markdown_preview": {
             "type": "string"
           },
-          "media_context": {
+          "media_reveal": {
             "additionalProperties": false,
             "properties": {
               "images": {
@@ -15214,20 +15166,51 @@
             "required": ["images", "requires_reveal"],
             "type": "object"
           },
-          "openai_omni_moderation_flagged": {
-            "anyOf": [
-              {
-                "const": false
+          "moderation_summary": {
+            "additionalProperties": false,
+            "properties": {
+              "disposition": {
+                "anyOf": [
+                  {
+                    "const": "incomplete"
+                  },
+                  {
+                    "const": "pass"
+                  },
+                  {
+                    "const": "reject"
+                  },
+                  {
+                    "const": "review"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
-              {
-                "const": true
+              "evidence_summary": {
+                "additionalProperties": false,
+                "properties": {
+                  "flagged_category_count": {
+                    "type": "number"
+                  },
+                  "signal_count": {
+                    "type": "number"
+                  }
+                },
+                "required": ["flagged_category_count", "signal_count"],
+                "type": "object"
               },
-              {
-                "type": "null"
+              "reason_codes": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               }
-            ]
+            },
+            "required": ["disposition", "evidence_summary", "reason_codes"],
+            "type": "object"
           },
-          "openai_omni_moderation_results": {},
           "post_type": {
             "type": "string"
           },
@@ -15271,30 +15254,6 @@
               }
             ]
           },
-          "spam_detection_flagged": {
-            "anyOf": [
-              {
-                "const": false
-              },
-              {
-                "const": true
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "spam_detection_results": {},
-          "spam_detection_score": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
           "title": {
             "type": "string"
           }
@@ -15308,16 +15267,13 @@
           "id",
           "lingua_rs_detected_language",
           "markdown_preview",
-          "openai_omni_moderation_flagged",
-          "openai_omni_moderation_results",
+          "media_reveal",
+          "moderation_summary",
           "post_type",
           "root_id",
           "root_post_type",
           "root_slug",
           "slug",
-          "spam_detection_flagged",
-          "spam_detection_results",
-          "spam_detection_score",
           "title"
         ],
         "type": "object"
@@ -32577,18 +32533,6 @@
                             "root_id": {
                               "type": "null"
                             },
-                            "spam_detection_created_at": {
-                              "type": "null"
-                            },
-                            "spam_detection_flagged": {
-                              "type": "null"
-                            },
-                            "spam_detection_results": {
-                              "type": "null"
-                            },
-                            "spam_detection_score": {
-                              "type": "null"
-                            },
                             "title": {
                               "type": "string"
                             },
@@ -32618,10 +32562,6 @@
                             "post_type",
                             "privacy",
                             "root_id",
-                            "spam_detection_created_at",
-                            "spam_detection_flagged",
-                            "spam_detection_results",
-                            "spam_detection_score",
                             "title",
                             "updated_at",
                             "updated_by_id"
@@ -32817,15 +32757,11 @@
               "schema": {
                 "additionalProperties": false,
                 "properties": {
-                  "reason": {
-                    "type": "string"
-                  },
-                  "status": {
-                    "enum": ["approved", "rejected", "unpublished"],
-                    "type": "string"
-                  }
+                  "private_note": {},
+                  "reason": {},
+                  "reason_code": {},
+                  "status": {}
                 },
-                "required": ["status"],
                 "type": "object"
               }
             }
@@ -42938,6 +42874,26 @@
         }
       }
     },
+    "/api/v1/localization": {
+      "get": {
+        "operationId": "get_api_v1_localization",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Record_string_unknown"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/markdown/preview": {
       "post": {
         "operationId": "post_api_v1_markdown_preview",
@@ -43593,6 +43549,59 @@
               }
             },
             "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/memberships/google-play/notifications": {
+      "post": {
+        "operationId": "post_api_v1_memberships_google-play_notifications",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GooglePubSubPushEnvelope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "received": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["received"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "received": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["received"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Accepted"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -44446,6 +44455,33 @@
         }
       }
     },
+    "/api/v1/memberships/microsoft-store/service-tickets": {
+      "post": {
+        "operationId": "post_api_v1_memberships_microsoft-store_service-tickets",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "service_tickets": {
+                      "$ref": "#/components/schemas/MicrosoftStoreServiceTickets"
+                    }
+                  },
+                  "required": ["service_tickets"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/memberships/plans": {
       "get": {
         "operationId": "get_api_v1_memberships_plans",
@@ -44512,6 +44548,7 @@
     "/api/v1/memberships/refunds": {
       "post": {
         "operationId": "post_api_v1_memberships_refunds",
+        "parameters": [],
         "requestBody": {
           "content": {
             "application/json": {
@@ -44529,7 +44566,11 @@
                   "additionalProperties": false,
                   "properties": {
                     "cancellation_status": {
-                      "$ref": "#/components/schemas/MembershipRefundCancellationStatus"
+                      "enum": ["completed", "not_requested", "pending"],
+                      "type": "string"
+                    },
+                    "outcome": {
+                      "const": "completed"
                     },
                     "refund": {
                       "additionalProperties": false,
@@ -44542,12 +44583,41 @@
                       "type": "object"
                     }
                   },
-                  "required": ["cancellation_status", "refund"],
+                  "required": ["cancellation_status", "outcome", "refund"],
                   "type": "object"
                 }
               }
             },
             "description": "Created"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "outcome": {
+                      "const": "reconciling"
+                    },
+                    "retry_after_seconds": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["outcome", "retry_after_seconds"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Refund reconciliation continues asynchronously.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before replaying the same idempotent refund request.",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -50864,18 +50934,6 @@
                             "root_id": {
                               "type": "null"
                             },
-                            "spam_detection_created_at": {
-                              "type": "null"
-                            },
-                            "spam_detection_flagged": {
-                              "type": "null"
-                            },
-                            "spam_detection_results": {
-                              "type": "null"
-                            },
-                            "spam_detection_score": {
-                              "type": "null"
-                            },
                             "title": {
                               "type": "string"
                             },
@@ -50905,10 +50963,6 @@
                             "post_type",
                             "privacy",
                             "root_id",
-                            "spam_detection_created_at",
-                            "spam_detection_flagged",
-                            "spam_detection_results",
-                            "spam_detection_score",
                             "title",
                             "updated_at",
                             "updated_by_id"
@@ -51217,11 +51271,10 @@
               "schema": {
                 "additionalProperties": false,
                 "properties": {
-                  "status": {
-                    "$ref": "#/components/schemas/ClearanceStatus"
-                  }
+                  "private_note": {},
+                  "reason_code": {},
+                  "status": {}
                 },
-                "required": ["status"],
                 "type": "object"
               }
             }
@@ -51235,7 +51288,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "clearance_status": {
-                      "$ref": "#/components/schemas/ClearanceStatus"
+                      "type": "string"
                     }
                   },
                   "required": ["clearance_status"],
@@ -57625,29 +57678,6 @@
                         "markdown": {
                           "type": "string"
                         },
-                        "openai_omni_moderation_created_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "openai_omni_moderation_flagged": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
                         "parent_id": {
                           "anyOf": [
                             {
@@ -57856,40 +57886,6 @@
                             },
                             {
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "spam_detection_created_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "spam_detection_flagged": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "spam_detection_results": {},
-                        "spam_detection_score": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number"
                             }
                           ]
                         },
@@ -58152,10 +58148,6 @@
                         "privacy",
                         "rejected_at",
                         "root_id",
-                        "spam_detection_created_at",
-                        "spam_detection_flagged",
-                        "spam_detection_results",
-                        "spam_detection_score",
                         "title",
                         "topic_recommendation",
                         "updated_at",
@@ -58638,29 +58630,6 @@
                         "markdown": {
                           "type": "string"
                         },
-                        "openai_omni_moderation_created_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "openai_omni_moderation_flagged": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
                         "parent_id": {
                           "anyOf": [
                             {
@@ -58869,40 +58838,6 @@
                             },
                             {
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "spam_detection_created_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "spam_detection_flagged": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "spam_detection_results": {},
-                        "spam_detection_score": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number"
                             }
                           ]
                         },
@@ -59165,10 +59100,6 @@
                         "privacy",
                         "rejected_at",
                         "root_id",
-                        "spam_detection_created_at",
-                        "spam_detection_flagged",
-                        "spam_detection_results",
-                        "spam_detection_score",
                         "title",
                         "topic_recommendation",
                         "updated_at",
@@ -59422,29 +59353,6 @@
                         "markdown": {
                           "type": "string"
                         },
-                        "openai_omni_moderation_created_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "openai_omni_moderation_flagged": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
                         "parent_id": {
                           "anyOf": [
                             {
@@ -59653,40 +59561,6 @@
                             },
                             {
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "spam_detection_created_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "spam_detection_flagged": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "spam_detection_results": {},
-                        "spam_detection_score": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number"
                             }
                           ]
                         },
@@ -59949,10 +59823,6 @@
                         "privacy",
                         "rejected_at",
                         "root_id",
-                        "spam_detection_created_at",
-                        "spam_detection_flagged",
-                        "spam_detection_results",
-                        "spam_detection_score",
                         "title",
                         "topic_recommendation",
                         "updated_at",
@@ -60231,29 +60101,6 @@
                         "markdown": {
                           "type": "string"
                         },
-                        "openai_omni_moderation_created_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "openai_omni_moderation_flagged": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
                         "parent_id": {
                           "anyOf": [
                             {
@@ -60462,40 +60309,6 @@
                             },
                             {
                               "type": "string"
-                            }
-                          ]
-                        },
-                        "spam_detection_created_at": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "spam_detection_flagged": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "spam_detection_results": {},
-                        "spam_detection_score": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number"
                             }
                           ]
                         },
@@ -60758,10 +60571,6 @@
                         "privacy",
                         "rejected_at",
                         "root_id",
-                        "spam_detection_created_at",
-                        "spam_detection_flagged",
-                        "spam_detection_results",
-                        "spam_detection_score",
                         "title",
                         "topic_recommendation",
                         "updated_at",

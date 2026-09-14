@@ -17,9 +17,9 @@ usage() {
 Usage: ./dev/reset-worktree [--force]
 
 Resets a worktree to a clean state for the next agent task:
+  - Fetches origin/main
   - Tears down only DB + Valkey + services proven to belong to this worktree
     (preserves .env so port reuse works)
-  - Fetches origin/main
   - Creates a new random branch, then hard-resets it to origin/main
   - Removes worktree-local generated build and test output
   - Runs ./dev/initialize monorepo so pnpm exec tools work immediately
@@ -57,26 +57,37 @@ done
 # shellcheck source=lib/refuse-on-main.sh
 source "$REPO_ROOT/dev/lib/refuse-on-main.sh"
 refuse_on_main "./dev/reset-worktree" "$REPO_ROOT"
+if [ ! -r "$REPO_ROOT/dev/lib/git-worktrees.sh" ]; then
+    echo "Error: worktree tooling is not installed. Run ./dev/initialize monorepo first." >&2
+    exit 1
+fi
 # shellcheck source=lib/worktree-resource-env.sh
 source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
-# shellcheck source=lib/reset-worktree-lock.sh
-source "$REPO_ROOT/dev/lib/reset-worktree-lock.sh"
 # shellcheck source=lib/git-index-lock.sh
 source "$REPO_ROOT/dev/lib/git-index-lock.sh"
 
-# Fail closed if another reset is already running for this worktree (#10849).
-# Acquired before the dirty-tree check so decide-and-mutate is one critical
-# section, and held through ./dev/initialize monorepo below via the EXIT trap.
-reset_worktree_lock_acquire "$REPO_ROOT" || exit 1
-release_reset_worktree_lock_and_exit() {
-    local status=$1
-    trap - EXIT INT TERM
-    reset_worktree_lock_release "$REPO_ROOT"
-    exit "$status"
-}
-trap 'release_reset_worktree_lock_and_exit $?' EXIT
-trap 'release_reset_worktree_lock_and_exit 130' INT
-trap 'release_reset_worktree_lock_and_exit 143' TERM
+# Keep the entire reset exclusive to this worktree (#10849). The lock file
+# can remain between runs and needs no stale-lock cleanup.
+mkdir -p "$REPO_ROOT/.local"
+if [ "${_RESET_WORKTREE_UNDER_LOCKF:-}" != "$REPO_ROOT" ]; then
+    if command -v flock >/dev/null 2>&1; then
+        exec 9>>"$REPO_ROOT/.local/reset-worktree.lock"
+        flock -n 9 || { echo "Error: another ./dev/reset-worktree is running for this worktree." >&2; exit 1; }
+    elif command -v lockf >/dev/null 2>&1; then
+        # macOS lockf runs a command while it owns the named file lock.
+        _RESET_WORKTREE_UNDER_LOCKF="$REPO_ROOT" lockf -s -k -t 0 "$REPO_ROOT/.local/reset-worktree.lock" "$REPO_ROOT/dev/reset-worktree" "$@" && exit 0
+        lockf_status=$?
+        if [ "$lockf_status" -eq 75 ]; then
+            echo "Error: another ./dev/reset-worktree is running for this worktree." >&2
+            exit 1
+        fi
+        exit "$lockf_status"
+    else
+        echo "Error: ./dev/reset-worktree requires flock or lockf." >&2
+        exit 1
+    fi
+fi
+unset _RESET_WORKTREE_UNDER_LOCKF
 
 # Refuse when the working tree is dirty unless --force
 if ! $FORCE; then
@@ -120,6 +131,11 @@ clear_stale_index_lock "$_git_dir"
 
 echo -e "${BLUE}=== Reset Worktree ===${NC}\n"
 
+# Fetch before teardown so a network failure leaves local services intact.
+echo -e "${YELLOW}Fetching origin/main...${NC}"
+git -C "$REPO_ROOT" fetch origin main
+echo -e "${GREEN}✓ Fetched${NC}\n"
+
 # Tear down services, DB, and Valkey container only when this worktree owns
 # them. The backend-level check is deliberately used here, not the stricter
 # web check: teardown removes DB + Valkey resources, which a backend-only
@@ -138,11 +154,6 @@ else
     echo -e "${YELLOW}Worktree resources are not initialized for this worktree; skipping teardown${NC}"
     echo -e "${YELLOW}Run ./dev/initialize backend (or web) to create worktree-owned DB and Valkey resources.${NC}\n"
 fi
-
-# Fetch origin/main
-echo -e "${YELLOW}Fetching origin/main...${NC}"
-git -C "$REPO_ROOT" fetch origin main
-echo -e "${GREEN}✓ Fetched${NC}\n"
 
 # Create a new random branch, then reset it to origin/main.
 RANDOM_SLUG=$(openssl rand -hex 4)

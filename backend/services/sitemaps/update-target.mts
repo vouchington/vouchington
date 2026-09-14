@@ -5,7 +5,7 @@ import type { SitemapPostType } from './types.mts'
 import type { Post } from '@voucha/types/entities/post'
 
 type SitemapProcessorPost = Pick<Post, 'post_type' | 'created_at'> &
-  Partial<Pick<Post, 'broadcast' | 'privacy' | 'deleted_at' | 'openai_omni_moderation_flagged'>> & {
+  Partial<Pick<Post, 'broadcast' | 'privacy' | 'deleted_at' | 'approved_at'>> & {
     slug?: string | null
   }
 
@@ -35,11 +35,11 @@ function isSupportedSitemapPostType(postType: string): postType is SitemapPostTy
 function hasEligibilityFields(
   post: SitemapProcessorPost,
 ): post is SitemapProcessorPost &
-  Pick<Post, 'broadcast' | 'privacy' | 'deleted_at' | 'openai_omni_moderation_flagged'> {
+  Pick<Post, 'broadcast' | 'privacy' | 'deleted_at' | 'approved_at'> {
   return !(
     post.broadcast === undefined ||
     post.privacy === undefined ||
     post.deleted_at === undefined ||
-    post.openai_omni_moderation_flagged === undefined
+    post.approved_at === undefined
   )
 }

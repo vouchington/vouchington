@@ -112,6 +112,7 @@ export const REVISION_PARTITION_TABLES: string[] = ['post_revisions']
  */
 export const DEFERRED_LEDGER_PARTITION_TABLES: string[] = [
   'ai_usage_records',
+  'community_post_review_changes',
   'post_clearance_changes',
   'session_referral_attributions',
 ]

@@ -8,7 +8,7 @@ import * as jose from 'jose'
 import { v7 } from 'uuid'
 import { isUUIDv7 } from '@ts-shared/session-jwt'
 import { isSessionRevoked } from '../revocation.mts'
-import { legacyUuidV4 } from '../test-helpers/index.mts'
+import { legacyUuidV4 } from '../../../test-helpers/services/jwt-session/index.mts'
 
 describe('index.creation', () => {
   const DEVICE_TOKEN_EXPIRATION_SECONDS = 2_592_000 // matches jose's "30 days" duration

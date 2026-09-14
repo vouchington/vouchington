@@ -90,8 +90,8 @@ export const createBatch = async (
     }
     throw error
   } finally {
-    await unlink(filePath).catch(() => {})
-    await unlink(entityIdsFilePath).catch(() => {})
+    await unlink(filePath).catch(onError)
+    await unlink(entityIdsFilePath).catch(onError)
   }
   return batchId
 }
@@ -152,7 +152,7 @@ async function uploadBatchInput(filePath: string, key: string): Promise<void> {
     )
   } finally {
     body.destroy()
-    await finished(body).catch(() => {})
+    await finished(body).catch(onError)
   }
 }
 

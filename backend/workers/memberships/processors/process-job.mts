@@ -5,12 +5,25 @@ import {
   deliverPendingMembershipEntitlementEffects,
   expireElapsedMembershipsBatch,
   reconcileStripeMembershipCatalog,
+  dispatchDueRefundReconciliations,
+  reconcileMembershipRefundOperation,
 } from '@services/memberships'
-import { processMembershipVerification } from '@services/memberships/apple'
+import { enqueueReconcileMembershipRefundOperation } from '@queues/memberships/enqueues'
+import { processMembershipVerification } from '@services/memberships/process-verification'
 import { recoverAppleNotifications } from './apple-notification-recovery.mts'
+import {
+  processGooglePlayNotification,
+  recoverGooglePlayNotifications,
+  recoverGooglePlayActiveSources,
+  processGooglePlayActiveSource,
+  processGooglePlayAcknowledgement,
+  recoverGooglePlayAcknowledgements,
+  refreshConfiguredGoogleOidcTrustMaterial,
+} from './google-play.mts'
 import { processRenewalNotificationCheckDispatcher } from './renewal-notification-check.mts'
+import { processMicrosoftStoreSource, recoverMicrosoftStoreSources } from './microsoft-store.mts'
 import { processSendRenewalPriceIncreaseEmail } from './send-renewal-price-increase-email.mts'
-import { processStripeWebhook, recoverStripeWebhooks } from './stripe-webhook.mts'
+import { processStripeEvent, recoverStripeEvents } from './stripe-event.mts'
 import { recoverMembershipVerifications } from './verification-recovery.mts'
 
 type MembershipJobProcessors = {
@@ -20,11 +33,22 @@ type MembershipJobProcessors = {
   processMembershipVerification: typeof processMembershipVerification
   processRenewalNotificationCheckDispatcher: typeof processRenewalNotificationCheckDispatcher
   processSendRenewalPriceIncreaseEmail: typeof processSendRenewalPriceIncreaseEmail
-  processStripeWebhook: typeof processStripeWebhook
+  processStripeEvent: typeof processStripeEvent
   recoverMembershipVerifications: typeof recoverMembershipVerifications
   recoverAppleNotifications: typeof recoverAppleNotifications
-  recoverStripeWebhooks: typeof recoverStripeWebhooks
+  processGooglePlayNotification: typeof processGooglePlayNotification
+  recoverGooglePlayNotifications: typeof recoverGooglePlayNotifications
+  recoverGooglePlayActiveSources: typeof recoverGooglePlayActiveSources
+  processGooglePlayActiveSource: typeof processGooglePlayActiveSource
+  processGooglePlayAcknowledgement: typeof processGooglePlayAcknowledgement
+  recoverGooglePlayAcknowledgements: typeof recoverGooglePlayAcknowledgements
+  refreshGooglePlayOidcTrust: typeof refreshConfiguredGoogleOidcTrustMaterial
+  recoverMicrosoftStoreSources: typeof recoverMicrosoftStoreSources
+  reconcileMicrosoftStoreSource: typeof processMicrosoftStoreSource
+  recoverStripeEvents: typeof recoverStripeEvents
   reconcileStripeMembershipCatalog: typeof reconcileStripeMembershipCatalog
+  dispatchMembershipRefundReconciliation: typeof dispatchMembershipRefundReconciliation
+  reconcileMembershipRefundOperation: typeof reconcileMembershipRefundOperation
 }
 
 const PROCESSORS: MembershipJobProcessors = {
@@ -34,11 +58,34 @@ const PROCESSORS: MembershipJobProcessors = {
   processMembershipVerification,
   processRenewalNotificationCheckDispatcher,
   processSendRenewalPriceIncreaseEmail,
-  processStripeWebhook,
+  processStripeEvent,
   recoverMembershipVerifications,
   recoverAppleNotifications,
-  recoverStripeWebhooks,
+  processGooglePlayNotification,
+  recoverGooglePlayNotifications,
+  recoverGooglePlayActiveSources,
+  processGooglePlayActiveSource,
+  processGooglePlayAcknowledgement,
+  recoverGooglePlayAcknowledgements,
+  refreshGooglePlayOidcTrust: refreshConfiguredGoogleOidcTrustMaterial,
+  recoverMicrosoftStoreSources,
+  reconcileMicrosoftStoreSource: processMicrosoftStoreSource,
+  recoverStripeEvents,
   reconcileStripeMembershipCatalog,
+  dispatchMembershipRefundReconciliation,
+  reconcileMembershipRefundOperation,
+}
+
+async function dispatchMembershipRefundReconciliation(): Promise<void> {
+  const leases = await dispatchDueRefundReconciliations()
+  await Promise.all(
+    leases.map(lease =>
+      enqueueReconcileMembershipRefundOperation({
+        operationId: lease.id,
+        leaseToken: lease.leaseToken,
+      }),
+    ),
+  )
 }
 
 export async function processMembershipJob(job: Job, processors = PROCESSORS): Promise<void> {
@@ -61,14 +108,41 @@ export async function processMembershipJob(job: Job, processors = PROCESSORS): P
     case 'recoverAppleNotifications':
       await processors.recoverAppleNotifications()
       return
-    case 'processStripeWebhook':
-      await processors.processStripeWebhook(
+    case 'processGooglePlayNotification':
+      await processors.processGooglePlayNotification(job.data)
+      return
+    case 'recoverGooglePlayNotifications':
+      await processors.recoverGooglePlayNotifications()
+      return
+    case 'recoverGooglePlayActiveSources':
+      await processors.recoverGooglePlayActiveSources()
+      return
+    case 'reconcileGooglePlayActiveSource':
+      await processors.processGooglePlayActiveSource(job.data)
+      return
+    case 'acknowledgeGooglePlayPurchase':
+      await processors.processGooglePlayAcknowledgement(job.data)
+      return
+    case 'recoverGooglePlayAcknowledgements':
+      await processors.recoverGooglePlayAcknowledgements()
+      return
+    case 'refreshGooglePlayOidcTrust':
+      await processors.refreshGooglePlayOidcTrust()
+      return
+    case 'recoverMicrosoftStoreSources':
+      await processors.recoverMicrosoftStoreSources()
+      return
+    case 'reconcileMicrosoftStoreSource':
+      await processors.reconcileMicrosoftStoreSource(job.data)
+      return
+    case 'processStripeEvent':
+      await processors.processStripeEvent(
         job.data,
         job.attemptsMade + 1 >= (job.opts.attempts ?? 1),
       )
       return
-    case 'recoverStripeWebhooks':
-      await processors.recoverStripeWebhooks()
+    case 'recoverStripeEvents':
+      await processors.recoverStripeEvents()
       return
     case 'reconcileStripeMembershipCatalog':
       await processors.reconcileStripeMembershipCatalog()
@@ -78,6 +152,15 @@ export async function processMembershipJob(job: Job, processors = PROCESSORS): P
       return
     case 'processSendRenewalPriceIncreaseEmail':
       await processors.processSendRenewalPriceIncreaseEmail(job.data)
+      return
+    case 'dispatchMembershipRefundReconciliation':
+      await processors.dispatchMembershipRefundReconciliation()
+      return
+    case 'reconcileMembershipRefundOperation':
+      await processors.reconcileMembershipRefundOperation({
+        id: (job.data as { operationId: string }).operationId,
+        leaseToken: (job.data as { leaseToken: string }).leaseToken,
+      })
       return
     default:
       throw new Error(`Unknown job name: ${job.name}`)

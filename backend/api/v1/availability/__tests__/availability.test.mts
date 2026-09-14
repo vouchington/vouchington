@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createRandomString } from '@voucha/test-helpers'
 import { createTopic } from '@services/topics/create'
 

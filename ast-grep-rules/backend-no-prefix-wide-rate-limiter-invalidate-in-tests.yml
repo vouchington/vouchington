@@ -109,7 +109,7 @@ examples:
     file: 'backend/test-helpers/entities/attributions.mts'
   - code: 'await invalidateRateLimitCounters()'
     isValid: false
-    file: 'backend/api/test-helpers/server.mts'
+    file: 'backend/test-helpers/api/server.mts'
   - code: 'await helpers.invalidateEmailLoginVerifyRateLimiter()'
     isValid: false
     file: 'integration-tests/web/helpers/client.mts'

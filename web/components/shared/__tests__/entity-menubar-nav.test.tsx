@@ -1,8 +1,10 @@
 import type { MouseEventHandler, ReactNode } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { configure, fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EntityMenubarNav } from '../entity-menubar-nav'
-import { consumePreservedScrollPathname } from '@/lib/navigation/scroll-preservation'
+import { consumePreservedScrollPosition } from '@/lib/navigation/scroll-preservation'
+
+configure({ testIdAttribute: 'data-pw' })
 
 interface LinkStubProps {
   children: ReactNode
@@ -29,7 +31,7 @@ function LinkStub({ children, href, onClick, scroll: _scroll, 'data-pw': dataPw 
 
 describe('EntityMenubarNav scroll preservation', () => {
   beforeEach(() => {
-    consumePreservedScrollPathname('/__test_reset__')
+    consumePreservedScrollPosition('/__test_reset__')
   })
 
   it('records preserve intent for opted-in internal links', () => {
@@ -55,7 +57,7 @@ describe('EntityMenubarNav scroll preservation', () => {
 
     fireEvent.click(screen.getByText('Direct'))
 
-    expect(consumePreservedScrollPathname('/target')).toBe(true)
+    expect(consumePreservedScrollPosition('/target')).not.toBeNull()
   })
 
   it('does not record preserve intent when the nav is not opted in', () => {
@@ -80,6 +82,43 @@ describe('EntityMenubarNav scroll preservation', () => {
 
     fireEvent.click(screen.getByText('Direct'))
 
-    expect(consumePreservedScrollPathname('/target')).toBe(false)
+    expect(consumePreservedScrollPosition('/target')).toBeNull()
+  })
+
+  it('keeps focus from returning to the trigger after a portaled preserve-scroll link', () => {
+    render(
+      <EntityMenubarNav
+        ariaLabel='Example navigation'
+        preserveScrollOnNavigation
+        items={[
+          {
+            key: 'dropdown',
+            content: <button type='button'>Open</button>,
+            dropdownItems: [
+              {
+                key: 'target',
+                content: (
+                  <LinkStub
+                    href='/target'
+                    data-pw='dropdown-link'
+                  >
+                    Target
+                  </LinkStub>
+                ),
+              },
+            ],
+          },
+        ]}
+      />,
+    )
+
+    const trigger = screen.getByText('Open')
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+    const triggerFocus = vi.spyOn(trigger, 'focus')
+    fireEvent.click(screen.getByTestId('dropdown-link'))
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(consumePreservedScrollPosition('/target')).not.toBeNull()
+    expect(triggerFocus).not.toHaveBeenCalled()
   })
 })

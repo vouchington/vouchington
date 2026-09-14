@@ -39,9 +39,11 @@ function policySubjectFiles(): string[] {
 }
 
 const LIVE_ANALYSIS_IMPORTS = new Set([
+  'analyzeProject',
   'check',
   'ciTopology',
   'ciTopologyImpact',
+  'resolveCheck',
   'testsPlan',
   'validateMermaidMarkdown',
 ])
@@ -126,6 +128,12 @@ describe('no-mistakes CI contention policy', () => {
     expect(playwrightPlanOptions(process.cwd(), 'main')).toEqual(
       expect.objectContaining({ lockTimeout: 0, timeout: 0 }),
     )
+  })
+
+  it('keeps route-selector unit tests off the live graph', () => {
+    expect(
+      readRepoFile('static-code-analysis/i18n-extract/route-selector-map.test.mts'),
+    ).not.toMatch(/\bcomputeRouteAliasMap\b/)
   })
 
   it('does not invoke live no-mistakes analysis from Vitest tests', () => {

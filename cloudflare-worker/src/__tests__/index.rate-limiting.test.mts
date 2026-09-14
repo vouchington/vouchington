@@ -3,15 +3,17 @@ import { mintUUIDv7 } from '@ts-shared/session-jwt'
 import { createSignedDeviceJwt, createSignedSessionJwt } from '../auth/test-jwt-fixtures.mts'
 import worker from '../index.mts'
 import { fetchInner } from '../request-handler.mts'
-import { createContext, restoreGlobals, setupMemoryCaches } from '../test-helpers/mock-env.mts'
+import {
+  createContext,
+  restoreGlobals,
+  setupMemoryCaches,
+} from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
+const SENTRY_WEB_DSN = 'https://web_public@web.example.test/123'
+
 function makeSentryEnvelope(): string {
-  return [
-    '{"dsn":"https://7a947dd8dc8d498c5b9d212113b1a44c@o4507688154824704.ingest.us.sentry.io/4507688156856320"}',
-    '{"type":"event"}',
-    '{}',
-  ].join('\n')
+  return [`{"dsn":"${SENTRY_WEB_DSN}"}`, '{"type":"event"}', '{}'].join('\n')
 }
 
 describe('rate limiting', () => {
@@ -60,15 +62,12 @@ describe('rate limiting', () => {
     ) as unknown as typeof fetch
     globalThis.fetch = sentryFetch
 
-    const validEnvelope = [
-      '{"dsn":"https://7a947dd8dc8d498c5b9d212113b1a44c@o4507688154824704.ingest.us.sentry.io/4507688156856320"}',
-      '{"type":"event"}',
-      '{}',
-    ].join('\n')
+    const validEnvelope = makeSentryEnvelope()
 
     const env: Env = {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
+      SENTRY_WEB_DSN,
       RATE_LIMITER_MUTATING: {
         limit: () => ({ success: false }),
       },
@@ -125,15 +124,12 @@ describe('rate limiting', () => {
     ) as unknown as typeof fetch
     globalThis.fetch = sentryFetch
 
-    const validEnvelope = [
-      '{"dsn":"https://7a947dd8dc8d498c5b9d212113b1a44c@o4507688154824704.ingest.us.sentry.io/4507688156856320"}',
-      '{"type":"event"}',
-      '{}',
-    ].join('\n')
+    const validEnvelope = makeSentryEnvelope()
 
     const env: Env = {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
+      SENTRY_WEB_DSN,
     }
 
     const response = await fetchInner(
@@ -151,7 +147,7 @@ describe('rate limiting', () => {
 
     expect(response.status).toBe(200)
     expect(sentryFetch).toHaveBeenCalledWith(
-      'https://o4507688154824704.ingest.us.sentry.io/api/4507688156856320/envelope/',
+      'https://web.example.test/api/123/envelope/',
       expect.objectContaining({ method: 'POST' }),
     )
   })
@@ -170,16 +166,13 @@ describe('rate limiting', () => {
       sid: mintUUIDv7(),
     })
 
-    const validEnvelope = [
-      '{"dsn":"https://7a947dd8dc8d498c5b9d212113b1a44c@o4507688154824704.ingest.us.sentry.io/4507688156856320"}',
-      '{"type":"event"}',
-      '{}',
-    ].join('\n')
+    const validEnvelope = makeSentryEnvelope()
 
     const env: Env = {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
       PRODUCTION: 'true',
+      SENTRY_WEB_DSN,
     }
 
     const response = await worker.fetch(
@@ -196,7 +189,7 @@ describe('rate limiting', () => {
 
     expect(response.status).toBe(200)
     expect(sentryFetch).toHaveBeenCalledWith(
-      'https://o4507688154824704.ingest.us.sentry.io/api/4507688156856320/envelope/',
+      'https://web.example.test/api/123/envelope/',
       expect.objectContaining({ method: 'POST' }),
     )
     expect(errorSpy).not.toHaveBeenCalledWith(

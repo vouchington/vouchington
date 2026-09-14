@@ -1,4 +1,5 @@
 import { addGracefulShutdownDrainCallback } from '@data-stores/graceful-shutdown'
+import onError from '@modules/on-error'
 import {
   EXTERNAL_DISPATCHER_BODY_TIMEOUT_MS,
   EXTERNAL_DISPATCHER_CONNECT_TIMEOUT_MS,
@@ -128,7 +129,7 @@ export function getApiEgressProxyUrl(): string {
 export async function closeApiEgressProxyTransport(): Promise<void> {
   if (closePromise) return await closePromise
   closePromise = Promise.all(
-    Object.values(proxyDispatchers).map(dispatcher => dispatcher.close().catch(() => undefined)),
+    Object.values(proxyDispatchers).map(dispatcher => dispatcher.close().catch(onError)),
   ).then(() => undefined)
   return await closePromise
 }
@@ -138,7 +139,7 @@ export async function resetApiEgressProxyTransportForTest(): Promise<void> {
   proxyDispatchers = {}
   closePromise = undefined
   providerRoutingResolver = undefined
-  await Promise.all(previous.map(dispatcher => dispatcher.close().catch(() => undefined)))
+  await Promise.all(previous.map(dispatcher => dispatcher.close().catch(onError)))
 }
 
 addGracefulShutdownDrainCallback(closeApiEgressProxyTransport)

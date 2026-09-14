@@ -27,6 +27,12 @@ async function makeRepo({ withEnv = true, withValkeyPort = true } = {}) {
   testDirs.push(dir)
 
   await mkdir(join(dir, 'dev', 'lib'), { recursive: true })
+  const publishedHelper = 'node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh'
+  await mkdir(join(dir, 'node_modules/vouchington-tooling/scripts/worktree'), { recursive: true })
+  await writeFile(
+    join(dir, publishedHelper),
+    await readFile(join(scriptDir, '..', publishedHelper), 'utf8'),
+  )
   await mkdir(join(dir, 'backend'), { recursive: true })
   await copyExecutable(dir, 'reset-worktree')
   await copyExecutable(dir, 'teardown')
@@ -35,8 +41,8 @@ async function makeRepo({ withEnv = true, withValkeyPort = true } = {}) {
   await copyLib(dir, 'refuse-on-main.sh')
   await copyLib(dir, 'db-name-from-url.sh')
   await copyLib(dir, 'db-target.sh')
+  await copyLib(dir, 'git-worktrees.sh')
   await copyLib(dir, 'worktree-resource-env.sh')
-  await copyLib(dir, 'reset-worktree-lock.sh')
   await copyLib(dir, 'git-index-lock.sh')
 
   await writeFile(

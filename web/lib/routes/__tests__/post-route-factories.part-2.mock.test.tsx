@@ -27,6 +27,9 @@ vi.mock(import('@/lib/auth/get-current-user'), () => ({
 vi.mock(import('@/lib/permissions/can-see-downvotes'), () => ({
   canCurrentUserSeeDownvotes: vi.fn<VitestLooseMock>(() => true),
 }))
+vi.mock(import('@/lib/i18n/get-translations'), () => ({
+  getTranslations: vi.fn<VitestLooseMock>(() => Promise.resolve({})),
+}))
 vi.mock(import('@/components/tags/manage-post-tags'), () => ({
   ManagePostTags: () => <div data-testid='manage-post-tags' />,
 }))

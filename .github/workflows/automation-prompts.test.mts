@@ -55,19 +55,13 @@ describe('Harness automation prompt contracts', () => {
   })
 
   it('documents default-off scheduled dispatch and its enabled session volume', () => {
-    const costModel = readFileSync('docs/overview/architecture/openai-cost-model.md', 'utf8')
-    const deploymentCosts = readFileSync(
-      'docs/overview/infrastructure/reference-deployment-costs-ci-testing-costs.md',
-      'utf8',
-    )
+    const harnessGuide = readFileSync('.github/workflows/reference-harness-automation.md', 'utf8')
 
-    for (const text of [costModel, deploymentCosts]) {
-      expect(text).toContain('default-off')
-      expect(text).toContain('HARNESS_DISPATCH_ENABLED')
-      expect(text).toMatch(/six[^.]*daily|six daily/u)
-      expect(text).toContain('provider session')
-      expect(text).not.toContain('auth_mode=chatgpt')
-    }
+    expect(harnessGuide).toContain('default-off')
+    expect(harnessGuide).toContain('HARNESS_DISPATCH_ENABLED')
+    expect(harnessGuide).toMatch(/six[^.]*daily|six daily/u)
+    expect(harnessGuide).toContain('provider session')
+    expect(harnessGuide).not.toContain('auth_mode=chatgpt')
   })
 
   it('keeps renamed automation provenance and activation documentation synchronized', () => {

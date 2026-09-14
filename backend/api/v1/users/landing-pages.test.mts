@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { createMyLandingPage, replaceMyLandingPageItems } from '@services/my'
 import { createProfileLink } from '@services/my/profile-links'

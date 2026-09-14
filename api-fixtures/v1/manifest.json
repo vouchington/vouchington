@@ -7175,7 +7175,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderation-queue": {
       "bodyKind": "content",
-      "hash": "46f9897789eaeec3cf7d1ae64f906173dafd138fbb604c9f280a939e9362facb",
+      "hash": "8df3012f005bc9639e0cf1d57170f44ef5b198d196305652be1284679880de00",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -7383,7 +7383,7 @@
             },
             "type": "object"
           },
-          "OpenAIModerationContext": {
+          "PlatformModerationContext": {
             "additionalProperties": false,
             "properties": {
               "categories": {
@@ -7426,13 +7426,13 @@
                   "type": "array"
                 }
               },
-              "openai_moderation": {
+              "platform_moderation": {
                 "required": true,
                 "schema": {
                   "type": "union",
                   "variants": [
                     {
-                      "name": "OpenAIModerationContext",
+                      "name": "PlatformModerationContext",
                       "type": "ref"
                     },
                     {
@@ -9331,7 +9331,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/posts/:postId/moderation-results": {
       "bodyKind": "content",
-      "hash": "c43d47ade7c52f37191055822795855fb0587d541b4a8caa9c6a31f0a37f69c0",
+      "hash": "bf3ed7c94a5242e5185c56fbbb98efaa80abebddf34fe2057c3e3a69a5a68e7b",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -9461,48 +9461,31 @@
                   "type": "array"
                 }
               },
-              "openai_moderation": {
+              "platform_moderation": {
                 "required": true,
                 "schema": {
                   "additionalProperties": false,
                   "properties": {
-                    "flagged": {
+                    "status": {
                       "required": true,
                       "schema": {
                         "type": "union",
                         "variants": [
                           {
                             "type": "literal",
-                            "value": false
+                            "value": "approved"
                           },
                           {
                             "type": "literal",
-                            "value": true
+                            "value": "in_review"
                           },
                           {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    },
-                    "results": {
-                      "required": true,
-                      "schema": {
-                        "type": "union",
-                        "variants": [
-                          {
-                            "items": {
-                              "name": "Record<string,unknown>",
-                              "type": "ref"
-                            },
-                            "type": "array"
+                            "type": "literal",
+                            "value": "pending"
                           },
                           {
-                            "name": "Record<string,unknown>",
-                            "type": "ref"
-                          },
-                          {
-                            "type": "null"
+                            "type": "literal",
+                            "value": "rejected"
                           }
                         ]
                       }
@@ -9512,13 +9495,6 @@
                 }
               }
             },
-            "type": "object"
-          },
-          "Record<string,unknown>": {
-            "additionalProperties": {
-              "type": "unknown"
-            },
-            "properties": {},
             "type": "object"
           }
         },
@@ -28589,7 +28565,7 @@
     },
     "GET:/api/v1/posts": {
       "bodyKind": "content",
-      "hash": "e4ab1206712cd8249abda13d65a6f50ce0f6ce2d669779ef02a88baea3365ec6",
+      "hash": "48a5242ebdd9dfbdfc48c33c42b45290aabd3ee484195a09d23b6f265d50beea",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -29629,39 +29605,6 @@
                   "type": "string"
                 }
               },
-              "openai_omni_moderation_created_at": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "openai_omni_moderation_flagged": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": false
-                    },
-                    {
-                      "type": "literal",
-                      "value": true
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
               "parent_id": {
                 "required": false,
                 "schema": {
@@ -29980,59 +29923,6 @@
                     },
                     {
                       "type": "string"
-                    }
-                  ]
-                }
-              },
-              "spam_detection_created_at": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "spam_detection_flagged": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": false
-                    },
-                    {
-                      "type": "literal",
-                      "value": true
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "spam_detection_results": {
-                "required": true,
-                "schema": {
-                  "type": "unknown"
-                }
-              },
-              "spam_detection_score": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "number"
                     }
                   ]
                 }
@@ -31464,7 +31354,7 @@
     },
     "GET:/api/v1/posts/review-queue": {
       "bodyKind": "content",
-      "hash": "4b66793d5b390fb2753c043f9bfadc136c5b0464fcf5043818be2de80fe61685",
+      "hash": "d6153e066ff619f840f8d1b3065a969bf37a229cea1d49f5ad1bf2584f669499",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -31594,8 +31484,8 @@
                   "type": "string"
                 }
               },
-              "media_context": {
-                "required": false,
+              "media_reveal": {
+                "required": true,
                 "schema": {
                   "additionalProperties": false,
                   "properties": {
@@ -31639,29 +31529,70 @@
                   "type": "object"
                 }
               },
-              "openai_omni_moderation_flagged": {
+              "moderation_summary": {
                 "required": true,
                 "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": false
+                  "additionalProperties": false,
+                  "properties": {
+                    "disposition": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "literal",
+                            "value": "incomplete"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "pass"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "reject"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "review"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
                     },
-                    {
-                      "type": "literal",
-                      "value": true
+                    "evidence_summary": {
+                      "required": true,
+                      "schema": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "flagged_category_count": {
+                            "required": true,
+                            "schema": {
+                              "type": "number"
+                            }
+                          },
+                          "signal_count": {
+                            "required": true,
+                            "schema": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "type": "object"
+                      }
                     },
-                    {
-                      "type": "null"
+                    "reason_codes": {
+                      "required": true,
+                      "schema": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      }
                     }
-                  ]
-                }
-              },
-              "openai_omni_moderation_results": {
-                "required": true,
-                "schema": {
-                  "type": "unknown"
+                  },
+                  "type": "object"
                 }
               },
               "post_type": {
@@ -31722,45 +31653,6 @@
                     },
                     {
                       "type": "string"
-                    }
-                  ]
-                }
-              },
-              "spam_detection_flagged": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": false
-                    },
-                    {
-                      "type": "literal",
-                      "value": true
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "spam_detection_results": {
-                "required": true,
-                "schema": {
-                  "type": "unknown"
-                }
-              },
-              "spam_detection_score": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "number"
                     }
                   ]
                 }
@@ -32787,7 +32679,7 @@
     },
     "GET:/api/v1/reports#clustered": {
       "bodyKind": "content",
-      "hash": "08c53c459eddfa8f5b3619d903ecab5345d1fd45c2260e441b1f5f0a8b091a30",
+      "hash": "5ff239d70347a12aa364adca708a49bbbf09eef383b64b0718bc3a4ef8101bae",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -33360,7 +33252,7 @@
             },
             "type": "object"
           },
-          "OpenAIModerationContext": {
+          "PlatformModerationContext": {
             "additionalProperties": false,
             "properties": {
               "categories": {
@@ -33403,13 +33295,13 @@
                   "type": "array"
                 }
               },
-              "openai_moderation": {
+              "platform_moderation": {
                 "required": true,
                 "schema": {
                   "type": "union",
                   "variants": [
                     {
-                      "name": "OpenAIModerationContext",
+                      "name": "PlatformModerationContext",
                       "type": "ref"
                     },
                     {
@@ -34076,7 +33968,7 @@
     },
     "GET:/api/v1/reports#member": {
       "bodyKind": "content",
-      "hash": "f81375d216c274f21498499197ce49c31f7602922a842e2fff01f8a40040a176",
+      "hash": "6d961d7349a0d990cf01ac52958366dad74c07ecf7dc679ef822dff4ed4914cd",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -34389,7 +34281,7 @@
             },
             "type": "object"
           },
-          "OpenAIModerationContext": {
+          "PlatformModerationContext": {
             "additionalProperties": false,
             "properties": {
               "categories": {
@@ -34432,13 +34324,13 @@
                   "type": "array"
                 }
               },
-              "openai_moderation": {
+              "platform_moderation": {
                 "required": true,
                 "schema": {
                   "type": "union",
                   "variants": [
                     {
-                      "name": "OpenAIModerationContext",
+                      "name": "PlatformModerationContext",
                       "type": "ref"
                     },
                     {
@@ -34522,7 +34414,7 @@
     },
     "GET:/api/v1/reports#staff": {
       "bodyKind": "content",
-      "hash": "ddc44b8585f513bb4f1bb380449960f835120068d16eeb8dc6378ba916f5bd11",
+      "hash": "e18172b0f77b83d43f157b58bf6cd1d4663050b5774ad0a0af1dabc59e6f08b6",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -35071,7 +34963,7 @@
             },
             "type": "object"
           },
-          "OpenAIModerationContext": {
+          "PlatformModerationContext": {
             "additionalProperties": false,
             "properties": {
               "categories": {
@@ -35114,13 +35006,13 @@
                   "type": "array"
                 }
               },
-              "openai_moderation": {
+              "platform_moderation": {
                 "required": true,
                 "schema": {
                   "type": "union",
                   "variants": [
                     {
-                      "name": "OpenAIModerationContext",
+                      "name": "PlatformModerationContext",
                       "type": "ref"
                     },
                     {
@@ -46617,7 +46509,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/posts/:listType": {
       "bodyKind": "content",
-      "hash": "e255e1cc4a70c56a99ac92cad2bf501ea89683443161928ec70d4ea832d53e90",
+      "hash": "3719a80e8bebd229970b7e0785494b59d347ff8d3e7e6b1bd3421e3605c39a50",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -47188,39 +47080,6 @@
                   "type": "string"
                 }
               },
-              "openai_omni_moderation_created_at": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "openai_omni_moderation_flagged": {
-                "required": false,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": false
-                    },
-                    {
-                      "type": "literal",
-                      "value": true
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
               "parent_id": {
                 "required": false,
                 "schema": {
@@ -47539,59 +47398,6 @@
                     },
                     {
                       "type": "string"
-                    }
-                  ]
-                }
-              },
-              "spam_detection_created_at": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "spam_detection_flagged": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "literal",
-                      "value": false
-                    },
-                    {
-                      "type": "literal",
-                      "value": true
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "spam_detection_results": {
-                "required": true,
-                "schema": {
-                  "type": "unknown"
-                }
-              },
-              "spam_detection_score": {
-                "required": true,
-                "schema": {
-                  "type": "union",
-                  "variants": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "number"
                     }
                   ]
                 }
@@ -64174,6 +63980,158 @@
       "statusCodes": [200, 202],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/memberships/microsoft-store/service-tickets": {
+      "bodyKind": "content",
+      "hash": "e7aeff5b24c1c937ca71f50369e69eda4be30cc9dfb91d9b7cafd20db022996c",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/memberships/microsoft-store/service-tickets",
+      "schema": {
+        "definitions": {
+          "MicrosoftStoreServiceTickets": {
+            "additionalProperties": false,
+            "properties": {
+              "collections_service_ticket": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "expires_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "publisher_user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "purchase_service_ticket": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "service_tickets": {
+              "required": true,
+              "schema": {
+                "name": "MicrosoftStoreServiceTickets",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/memberships/microsoft-store-service-tickets.mts",
+      "statusKnowledge": "default"
+    },
+    "POST:/api/v1/memberships/refunds#completed": {
+      "bodyKind": "content",
+      "hash": "74cf9fc138c438331ee8f7bbaa59daf3742c6b4c925912179111f514bf48b99d",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/memberships/refunds",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "cancellation_status": {
+              "required": true,
+              "schema": {
+                "type": "union",
+                "variants": [
+                  {
+                    "type": "literal",
+                    "value": "completed"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "not_requested"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "pending"
+                  }
+                ]
+              }
+            },
+            "outcome": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": "completed"
+              }
+            },
+            "refund": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/memberships/refund.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/memberships/refunds#reconciling": {
+      "bodyKind": "content",
+      "hash": "0482ac6ca486017142229b99bae900b7424c45c23406cad6c291139ccb5aec8f",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/memberships/refunds",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "outcome": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": "reconciling"
+              }
+            },
+            "retry_after_seconds": {
+              "required": true,
+              "schema": {
+                "type": "number"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/memberships/refund.mts",
+      "statusCodes": [202],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/moderation/reveals": {
       "bodyKind": "content",
       "hash": "3b207898e38f139fc31949bb9c487dcf748accd4888a2e2ffdc1b1ce407db9a2",
@@ -66070,43 +66028,20 @@
     },
     "POST:/api/v1/posts/:idOrSlug/clearances": {
       "bodyKind": "content",
-      "hash": "c50267d3c1ab98efdbc5f0b0e3aae1932a6103e88f005e1ef0de96715b31fda4",
+      "hash": "79f81039e91739dc83819cf9551cc8f6018c2a2fa0e441cf4661a3444e655774",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
       "routeTemplate": "/api/v1/posts/:idOrSlug/clearances",
       "schema": {
-        "definitions": {
-          "ClearanceStatus": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "approved"
-              },
-              {
-                "type": "literal",
-                "value": "in_review"
-              },
-              {
-                "type": "literal",
-                "value": "pending"
-              },
-              {
-                "type": "literal",
-                "value": "rejected"
-              }
-            ]
-          }
-        },
+        "definitions": {},
         "root": {
           "additionalProperties": false,
           "properties": {
             "clearance_status": {
               "required": true,
               "schema": {
-                "name": "ClearanceStatus",
-                "type": "ref"
+                "type": "string"
               }
             }
           },
@@ -71251,6 +71186,64 @@
       "status": 200
     },
     {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/memberships/refunds#completed",
+      "bodyFile": "responses/web.memberships.refund.completed.json",
+      "consumers": ["web"],
+      "id": "web.memberships.refund.completed",
+      "method": "POST",
+      "migratedFrom": ["web/lib/api/client/memberships.ts"],
+      "path": "/api/v1/memberships/refunds",
+      "requestBody": {
+        "cancel": false,
+        "charge_id": "ch_fixture_refund",
+        "idempotency_key": "00000000-0000-7000-8000-000000000901",
+        "invoice_id": "in_fixture_refund",
+        "reason": "goodwill",
+        "user_id": "019fafb8-a44c-73e2-890a-497ff3dd27a6"
+      },
+      "responseSchema": {
+        "hash": "d50ef5d80253906ce57f9546960950bceee3dd9366cf8ae7cd70f9d8171e0efd",
+        "key": "web.memberships.refund.completed"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/memberships/refunds"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 201
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/memberships/refunds#reconciling",
+      "bodyFile": "responses/web.memberships.refund.reconciling.json",
+      "consumers": ["web"],
+      "id": "web.memberships.refund.reconciling",
+      "method": "POST",
+      "migratedFrom": ["web/lib/api/client/memberships.ts"],
+      "path": "/api/v1/memberships/refunds",
+      "requestBody": {
+        "cancel": false,
+        "charge_id": "ch_fixture_refund",
+        "idempotency_key": "00000000-0000-7000-8000-000000000901",
+        "invoice_id": "in_fixture_refund",
+        "reason": "goodwill",
+        "user_id": "019fafb8-a44c-73e2-890a-497ff3dd27a6"
+      },
+      "responseSchema": {
+        "hash": "ae5a6ec7c34dd480b8c56080de416580de44e1d3d642d5568093e5f3641a2c56",
+        "key": "web.memberships.refund.reconciling"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/memberships/refunds"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 202
+    },
+    {
       "auth": "fixture-user",
       "backendResponseContractKey": "POST:/api/v1/auth/oauth/authorizations/:flowId/complete#acknowledged",
       "bodyFile": "responses/web.oauth.authorization.complete.acknowledged.json",
@@ -71438,7 +71431,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "91882696eb656b3c54e8c7fd4892b134c73000639e6274b6672f36e836328188",
+        "hash": "c10d0f56866ebfff252ad23fe218f120c52e1179eb73c3be1ea1f1885c17c7b9",
         "key": "web.communities.posts.default"
       },
       "route": {
@@ -71546,7 +71539,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "de8c83b535124ea254211337622996d3090ed6a6c17ee93d8c5b175b9e2ad1e5",
+        "hash": "fe62fdf344f1f05e15f3fd2e2f2d9dc72fbe6ee04c3790394e9730dd895d1eb3",
         "key": "web.communities.list-items.posts.default"
       },
       "route": {
@@ -72269,7 +72262,7 @@
       "migratedFrom": ["backend/api/v1/communities/moderation-results.mts"],
       "path": "/api/v1/communities/test-community/posts/post-1/moderation-results",
       "responseSchema": {
-        "hash": "d5fa5d884dd89e005faea8e81530c4148a33112a937915c7bdb0adc638eba4ec",
+        "hash": "5f6a88f44998409be073e64e2e741096acabe11b7c1c562b1a528ddf3c41a752",
         "key": "web.communities.moderation-results.default"
       },
       "route": {
@@ -73071,7 +73064,7 @@
       ],
       "path": "/api/v1/topic-recommendations/recommendation-1",
       "responseSchema": {
-        "hash": "823c22f67c0669f9e6713f109fb7b5de64def4f0d407ac74e410ad5ff79de0d0",
+        "hash": "744c193d49b24ab11372e7cd854339b3ce469b5c1012ba5419f2bd9a298fd043",
         "key": "native.topic-recommendation.detail.default"
       },
       "route": {
@@ -73129,7 +73122,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "092c98794f5e3567a5202f2e279d6f937a15278d1ee148e196b1460137e3d057",
+        "hash": "b050a97b3555d92c4f51dd64670aba9a66a5ff18c4113123736d17c6120a0a86",
         "key": "native.bookmarks.posts.saved.default"
       },
       "route": {
@@ -73161,7 +73154,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "9d92b73e997d8a2338571056a63e6cf6786a0112d4e3ec64fc0ed87cb66aab5b",
+        "hash": "1d4851f57b1eccff6c88589ca7eab917f431253dfa0e826333170529d12716f1",
         "key": "native.bookmarks.posts.saved.next-page"
       },
       "route": {
@@ -73945,7 +73938,7 @@
         "sort": "hot"
       },
       "responseSchema": {
-        "hash": "3430be063a4aa8daeae82a5431f4a68a7ca7bd85a3d08464a21694ed89b539ca",
+        "hash": "e0098b7566ae434483e8df24391f2240d68a21d088b168e2180745d9b3afaa70",
         "key": "swift.posts.feed.default"
       },
       "route": {
@@ -74583,7 +74576,7 @@
       "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6573"],
       "path": "/api/v1/posts/comment-root",
       "responseSchema": {
-        "hash": "ba974a79f5c1a149b350931945f10f9a23c851379d30ff7d1094185d6f4e8c1a",
+        "hash": "ad284243cc726c5b31e0144107a074cc427dc479949b919bfbffbd9af470a3ca",
         "key": "native.comments.post-detail.default"
       },
       "route": {
@@ -74611,7 +74604,7 @@
         "limit": "2"
       },
       "responseSchema": {
-        "hash": "71ed86a6d4d8a08c7ee20765c634d04f52871b899fb33e39ccc822bf7288535d",
+        "hash": "6c3444278c04018e7e25553f5eeed722cf6e53748fd6b48daa999f2e80940f46",
         "key": "native.comments.descendants.default"
       },
       "route": {
@@ -74635,7 +74628,7 @@
       "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6573"],
       "path": "/api/v1/posts/comment-b/ancestors",
       "responseSchema": {
-        "hash": "699c88ab17b7d6073ca6842a78a5b3c59377bd25c75261824dfa3fb6dd55134e",
+        "hash": "7533d398ee6dec840635221f4e3695dd8fb95d9a91c20454bde2138437252146",
         "key": "native.comments.ancestors.permalink"
       },
       "route": {
@@ -74662,7 +74655,7 @@
         "limit": "5"
       },
       "responseSchema": {
-        "hash": "19ca04cf141b8fb6695731f1a83f05cd3b9ced76d215c94bb8bd39dc084cb53b",
+        "hash": "09aef8ada4394efc812465d6a3a1ce04840d62821565587b68a3965a368e446f",
         "key": "native.comments.ancestors.bounded.shallow"
       },
       "route": {
@@ -74689,7 +74682,7 @@
         "limit": "5"
       },
       "responseSchema": {
-        "hash": "fd338b7c7edd20e0714078fc196e4cc08080579b64f44b8b3e6a0b589d68e2e0",
+        "hash": "71b75c44b06118160f7020bc33265d5f9508df70926cad487984af658b6881bf",
         "key": "native.comments.ancestors.bounded.deep-initial"
       },
       "route": {
@@ -74717,7 +74710,7 @@
         "limit": "5"
       },
       "responseSchema": {
-        "hash": "ea4ede3fe741378681a34159e2c1aef66fb98b87bba8856075f9cc80b856ea30",
+        "hash": "22a4367ec189c366c40d89b77b9c211acdd47cfacb8bc06be14232bb2f86cb88",
         "key": "native.comments.ancestors.bounded.deep-continuation"
       },
       "route": {
@@ -75873,6 +75866,28 @@
         "caseFile": "backend/test-helpers/api-fixtures/native-membership-cases.mts"
       },
       "status": 201
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/memberships/microsoft-store/service-tickets",
+      "bodyFile": "responses/native.memberships.microsoft.service-tickets.default.json",
+      "consumers": ["dotnet-core"],
+      "id": "native.memberships.microsoft.service-tickets.default",
+      "method": "POST",
+      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/11535"],
+      "path": "/api/v1/memberships/microsoft-store/service-tickets",
+      "requestBody": {},
+      "responseSchema": {
+        "hash": "bc74cfb26410cdeac372749a35bfcc51f9addc9f18cf8364c03033eeb8790868",
+        "key": "native.memberships.microsoft.service-tickets.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/memberships/microsoft-store/service-tickets"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-membership-cases.mts"
+      },
+      "status": 200
     },
     {
       "auth": "fixture-user",
@@ -77354,7 +77369,7 @@
         "limit": "2"
       },
       "responseSchema": {
-        "hash": "85e4a45ce4bd5cfda09980a40025b121d6f64aaee20a967f6bdd3291d2ad5aff",
+        "hash": "0500448b7bf921514405b9c1f7db11af3916f94ef8efb4277453090134c4ecf7",
         "key": "native.moderation.review-queue.default"
       },
       "route": {
@@ -77379,7 +77394,7 @@
         "limit": "2"
       },
       "responseSchema": {
-        "hash": "8b96b06e276377f8fb1ddc31ed79dce62c86396591598469af6161402ee81485",
+        "hash": "55ec893ffef08a1663d6fec10c0cd72a5592db6314128dd45b02bf4a4bf5e694",
         "key": "native.moderation.review-queue.page-2"
       },
       "route": {
@@ -77400,6 +77415,7 @@
       "migratedFrom": ["backend/api/v1/posts/post-routes/post-mutation-routes.mts"],
       "path": "/api/v1/posts/019e8300-5e60-7000-8000-000000000000/clearances",
       "requestBody": {
+        "reason_code": "staff_approved",
         "status": "approved"
       },
       "responseSchema": {
@@ -77427,6 +77443,7 @@
       "migratedFrom": ["backend/api/v1/posts/post-routes/post-mutation-routes.mts"],
       "path": "/api/v1/posts/019e8300-5e60-7000-8000-000000000000/clearances",
       "requestBody": {
+        "reason_code": "staff_rejected",
         "status": "rejected"
       },
       "responseSchema": {
@@ -77454,6 +77471,7 @@
       "migratedFrom": ["backend/api/v1/posts/post-routes/post-mutation-routes.mts"],
       "path": "/api/v1/posts/019e82f2-a2c0-7000-8000-000000000000/clearances",
       "requestBody": {
+        "reason_code": "staff_reviewed",
         "status": "in_review"
       },
       "responseSchema": {
@@ -78470,7 +78488,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "fbf6f674678e7f2b81d152ad47bb33d21f86f4d230dfc765ba461ccd780430f0",
+        "hash": "acf299276c631db6367462e4c4f577d35de19379ddf7df7011a665e39ea31b8b",
         "key": "native.users.profile.posts.all"
       },
       "route": {
@@ -78497,7 +78515,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "5b19af5632dd8a5053cf512ca34f99ba11b3bf5747c541bc616b1bb30e69281a",
+        "hash": "5d8812d616bc69cc259d2d3d54b1079ffc61d60dd2faa6744b67c6a30d2df2ac",
         "key": "native.users.profile.posts.reviews"
       },
       "route": {
@@ -78524,7 +78542,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "a46c9f7d2545c8994666f6ba726a8645845d2af2c7c774dc1c64f031e0eb2339",
+        "hash": "018d6c723394a4b1b7bfdbb7cf7fec15ef57531a93c5e47e8e30480af48e8cfa",
         "key": "native.users.profile.posts.discussions"
       },
       "route": {
@@ -78551,7 +78569,7 @@
         "sort": "new"
       },
       "responseSchema": {
-        "hash": "eb8f77c527fda1ddc9fc295f66b921311c33f48922c8ad67c673db0abe6609ab",
+        "hash": "a121b81bb3946f0e7ddd3fba86b4556a58a68df8cba008b754e3a3cc1cd9f9ac",
         "key": "native.users.profile.posts.comments"
       },
       "route": {

@@ -16,10 +16,14 @@ import {
   enqueueDeliverMembershipEntitlementEffects,
   enqueueExpireElapsedMemberships,
   enqueueRecoverAppleNotifications,
+  enqueueRefreshGooglePlayOidcTrust,
   enqueueRecoverMembershipVerifications,
   enqueueRenewalNotificationCheck,
   enqueueReconcileStripeMembershipCatalog,
 } from '../enqueues.mts'
+import { googlePlaySchedules } from './google-play-schedules.mts'
+import { microsoftStoreSchedules } from './microsoft-store-schedules.mts'
+import { refundReconciliationSchedule } from './refund-reconciliation.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   {
@@ -46,6 +50,9 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
       },
     ],
   },
+  ...googlePlaySchedules,
+  ...microsoftStoreSchedules,
+  refundReconciliationSchedule,
   {
     schedulerId: 'stripeCatalogReconciliation',
     repeat: { every: STRIPE_CATALOG_RECONCILIATION_INTERVAL_MS },
@@ -167,10 +174,10 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
   {
-    schedulerId: 'stripeWebhookRecovery',
+    schedulerId: 'stripeEventRecovery',
     repeat: { every: 300_000 },
     template: {
-      name: 'recoverStripeWebhooks',
+      name: 'recoverStripeEvents',
       opts: {
         attempts: 3,
         backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
@@ -179,11 +186,14 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         priority: PRIORITY_DISPATCHER,
       } satisfies JobOptions,
     },
-    operatorSurfaces: [{ kind: 'backfill', backfillId: 'stripe-webhook-recovery' }],
+    operatorSurfaces: [{ kind: 'backfill', backfillId: 'stripe-event-recovery' }],
   },
 ])
 
 export async function upsertSchedules(): Promise<void> {
   await upsertScheduledJobManifest(memberships, scheduledJobManifest)
-  await enqueueReconcileStripeMembershipCatalog()
+  await Promise.all([
+    enqueueReconcileStripeMembershipCatalog(),
+    enqueueRefreshGooglePlayOidcTrust(),
+  ])
 }

@@ -71,4 +71,3 @@ only renders literal repeats today.
 - [Backend queue checklist](../../../docs/checklists/backend-queues.md)
 - [Message Queue API](../../api/v1/mq/README.md)
 - [Worker queue inventory](../worker-queue-inventory/README.md)
-- [Deployment costs — cost controls already in place](../../../docs/overview/infrastructure/reference-deployment-costs-cost-controls-already-in-place.md)

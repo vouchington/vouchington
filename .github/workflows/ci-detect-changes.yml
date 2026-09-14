@@ -154,10 +154,12 @@ jobs:
       - name: Check for docs-only changes
         id: docs-check
         run: |
-          if [ -n "$PR_BASE" ]; then
-            CHANGED=$(git diff --name-only "$PR_BASE"..."$HEAD")
+          # Pair 2: origin/<base_ref>...HEAD after the merge checkout. Do not mix
+          # the recorded PR base SHA with the merge commit (#11711).
+          if [ -n "$PR_BASE_REF" ]; then
+            CHANGED=$(git diff --name-only "origin/${PR_BASE_REF}...HEAD")
           else
-            CHANGED=$(git diff --name-only "$HEAD"~1 "$HEAD" 2>/dev/null || git ls-tree -r --name-only "$HEAD")
+            CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git ls-tree -r --name-only HEAD)
           fi
           NON_DOCS=$(echo "$CHANGED" | grep -vE '\.mdx?$' || true)
           TEST_FIXTURE_DOCS=$(echo "$CHANGED" | grep -E '^(\.github/workflows/(README|VITEST|CLAUDE|RUNNERS|WORKFLOWS|AUTHORING|reference-step-timeouts|reference-runner-types|reference-artifact-rerun-safety|reference-runner-fleet-capacity|reference-aws-codebuild-service-quotas-and-concurrency|reference-harness-automation-accepted-risk|reference-self-hosted-runner-caching|reference-self-hosted-runner-secret-isolation|reference-self-hosted-runner-secret-isolation-accepted-residuals-7572|reference-fixed-branch-automation-prs|reference-fix-main-dependency-policy|reference-workflow-automation-map|reference-core-ci|reference-vitest|reference-playwright-and-storybook|reference-deploy-and-release|reference-harness-automation|reference-workflow-change-preflight|reference-maintenance-security-and-utilities)\.md|\.agents/skills/.+\.mdx?|CLAUDE\.md|docs/development/(ci|reference-ci-classifying-transient-infrastructure-failures|reference-ci-ci-job-conditions|reference-ci-ci-job-timeout-budgets|reference-ci-test-workflows|reference-ci-standalone-workflow-checks|dependency-updates|first-party-dependencies|reference-dependency-updates-(first-party-release-gate-exemptions|frozen-install-policy|supply-chain-policy))\.md|docs/checklists/github-actions\.md|docs/prompts/.+\.mdx?|dev/(README|reference-bedrock-embeddings-local|reference-command-catalog)\.md|backend/README\.md|backend/agents/(CLAUDE|README|reference-tests)\.md|backend/data-stores/psql/(reference-migrations-views-and-config-driven|schema-snapshot/README)\.md|docs/overview/architecture/agent-tools/.+|docs/overview/infrastructure/reference-deployment-ci-cd-flow\.md)$' || true)
@@ -169,8 +171,7 @@ jobs:
             echo "docs-only=false" >> "$GITHUB_OUTPUT"
           fi
         env:
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.sha }}
+          PR_BASE_REF: ${{ github.base_ref }}
       - name: Check for trusted secret context
         id: trusted-context
         run: |

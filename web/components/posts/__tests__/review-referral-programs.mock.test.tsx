@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeAll, describe, it, expect, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { ReviewReferralPrograms } from '../review-referral-programs'
 import type { Post } from '@/types/posts'
 
@@ -53,9 +55,20 @@ function makeReviewPost(overrides?: Partial<Post>): Post {
 }
 
 describe('ReviewReferralPrograms', () => {
-  it('renders nothing for non-review posts', async () => {
+  let t: ReturnType<typeof createTranslator>
+
+  beforeAll(() => {
+    t = createTranslator('en', enMessages)
+  })
+
+  it('renders nothing for non-review posts', () => {
     const post = makeReviewPost({ post_type: 'discussion' })
-    const { container } = render(await ReviewReferralPrograms({ post }))
+    const { container } = render(
+      <ReviewReferralPrograms
+        t={t}
+        post={post}
+      />,
+    )
     expect(container).toBeEmptyDOMElement()
   })
 
@@ -80,7 +93,12 @@ describe('ReviewReferralPrograms', () => {
         },
       ],
     })
-    const { container } = render(await ReviewReferralPrograms({ post }))
+    const { container } = render(
+      <ReviewReferralPrograms
+        t={t}
+        post={post}
+      />,
+    )
     expect(container).toBeEmptyDOMElement()
   })
 
@@ -105,7 +123,12 @@ describe('ReviewReferralPrograms', () => {
         },
       ],
     })
-    render(await ReviewReferralPrograms({ post }))
+    render(
+      <ReviewReferralPrograms
+        t={t}
+        post={post}
+      />,
+    )
     expect(screen.getByText('Referral Links')).toBeInTheDocument()
     const link = screen.getByRole('link', { name: /Chase Sapphire referral links/i })
     expect(link).toHaveAttribute('href', '/referral-program/rp-1/referral-links')
@@ -132,7 +155,12 @@ describe('ReviewReferralPrograms', () => {
         },
       ],
     })
-    render(await ReviewReferralPrograms({ post }))
+    render(
+      <ReviewReferralPrograms
+        t={t}
+        post={post}
+      />,
+    )
     const link = screen.getByRole('link', { name: /Chase Referral referral links/i })
     expect(link).toHaveAttribute('href', '/referral-program/chase-referral/referral-links')
   })
@@ -174,7 +202,12 @@ describe('ReviewReferralPrograms', () => {
         },
       ],
     })
-    render(await ReviewReferralPrograms({ post }))
+    render(
+      <ReviewReferralPrograms
+        t={t}
+        post={post}
+      />,
+    )
     // Only one link should be rendered despite two topics sharing the same referral program
     const links = screen.getAllByRole('link')
     expect(links).toHaveLength(1)
@@ -182,7 +215,12 @@ describe('ReviewReferralPrograms', () => {
 
   it('renders nothing when review has no topic_ratings', async () => {
     const post = makeReviewPost({ review_topic_ratings: [] })
-    const { container } = render(await ReviewReferralPrograms({ post }))
+    const { container } = render(
+      <ReviewReferralPrograms
+        t={t}
+        post={post}
+      />,
+    )
     expect(container).toBeEmptyDOMElement()
   })
 })

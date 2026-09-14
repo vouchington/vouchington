@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 
 describe('Topic PATCH Routes', () => {

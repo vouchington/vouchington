@@ -1,8 +1,9 @@
 # @services/ai-usage
 
 Records and aggregates OpenAI token usage and cost across **every** agent call site, not only
-per-community moderation. See [OpenAI Cost Model](../../../docs/overview/architecture/openai-cost-model.md)
-for the full pricing matrix, production forecast, and what this ledger does and doesn't cover.
+per-community moderation. The full pricing matrix, the production forecast, and the statement of
+what this ledger does and doesn't cover live in the private `vouchington/vouchington-docs`
+repository.
 
 ## Data Model
 

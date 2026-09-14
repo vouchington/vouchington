@@ -183,12 +183,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
       results.flagged,
     )
     expect(moderationId).not.toBeNull()
-    const postWithModerationData = {
-      ...post,
-      openai_omni_moderation_created_at: new Date(),
-      openai_omni_moderation_flagged: false,
-    } as Post
-    const result = await runModeratorOnPost(postWithModerationData, moderator.slug, {
+    const result = await runModeratorOnPost(post as Post, moderator.slug, {
       promptId: prompt.id,
     })
     expect(result.skipped).toBe(true)
@@ -196,18 +191,18 @@ describe('runModeratorOnPost config and skip behaviors', () => {
     expect(result.flagged).toBe(true)
   })
 
-  it('runModeratorOnPost skips when OpenAI moderation already flagged', async () => {
+  it('runModeratorOnPost skips when the coarse clearance state requires review', async () => {
     const { moderator } = await setupModeratorAndPrompt()
     const post = await createPost(user, {
-      title: `OpenAI flagged post ${randomSuffix()}`,
-      markdown: `OpenAI flagged content ${randomSuffix()}`,
+      title: `In-review post ${randomSuffix()}`,
+      markdown: `In-review content ${randomSuffix()}`,
       post_type: 'discussion',
     })
-    const flaggedPost = { ...post, openai_omni_moderation_flagged: true } as Post
-    const result = await runModeratorOnPost(flaggedPost, moderator.slug)
+    const inReviewPost = { ...post, in_review_at: new Date() } as Post
+    const result = await runModeratorOnPost(inReviewPost, moderator.slug)
     expect(result.skipped).toBe(true)
     expect(result.moderation_id).toBeNull()
-    expect(result.error).toBe('Skipped: OpenAI moderation already flagged')
+    expect(result.error).toBe('Skipped: post is not cleared for publication')
   })
 
   it('runModeratorOnPost tags self-promotion topic when flagged', async () => {

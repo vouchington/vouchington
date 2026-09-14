@@ -69,7 +69,7 @@ export async function fetchInner(
   if (geoBlockedResponse) return geoBlockedResponse
   if (canaryFault === 'unexpected-throw') throw new Error('Injected staging canary failure')
   // Serve Worker-owned responses before session, cache-dispatch, and rate-limit decisions.
-  const staticInlineResponse = getStaticInlineResponse(url, env)
+  const staticInlineResponse = getStaticInlineResponse(request, url, env)
   if (staticInlineResponse) return staticInlineResponse
   // Rate-limited early interceptions: handled in-worker, not proxied to origin, so each must
   // run before getRouteTarget()'s routing below. /infra/cache-purge is unlike any other /infra/*
@@ -77,7 +77,7 @@ export async function fetchInner(
   const getInterceptResponse = async (handler: () => Promise<Response>) =>
     (await getRejection(false)) ?? handler()
   if (pathname === '/monitoring' && method === 'POST') {
-    return getInterceptResponse(() => handleSentryTunnel(request))
+    return getInterceptResponse(() => handleSentryTunnel(request, env))
   }
   if (pathname === '/infra/cache-purge' && method === 'POST') {
     // Secret-gated (CF_WORKER_SECRET, validated inside handleCachePurgeRequest) internal-only

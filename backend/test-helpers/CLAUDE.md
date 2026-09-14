@@ -10,6 +10,8 @@ and dirty-database patterns live in [README.md](README.md).
   randomized, ownership-scoped fixture patterns in [README.md](README.md).
 - Tests must not import raw PostgreSQL helpers or `sql-template-strings`; expose focused setup and
   assertion functions here without re-exporting SQL methods.
+- Keep backend helpers under this first-layer root; do not recreate feature-local helper
+  directories or forwarding modules after moving a helper here.
 - Keep entity-specific helpers in `entities/*.mts` and generic helpers in their narrow package owner.
 - Keep test output clean: close resources and remove unexpected `console.*` output before handoff.
 

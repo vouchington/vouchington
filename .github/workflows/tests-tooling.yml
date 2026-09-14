@@ -80,7 +80,9 @@ jobs:
           # self-hosted runner shells are not guaranteed to be bash 4+.
           FILES=()
           while IFS= read -r file; do
-            if [ -n "$file" ]; then FILES+=("$file"); fi
+            if [ -n "$file" ] && [ "$file" != 'static-code-analysis/i18n-extract/route-bounds.test.mts' ]; then
+              FILES+=("$file")
+            fi
           done <<< "$VITEST_SELECTED_FILES"
           node ci/tooling-test-runner.mts --workflow-projects --bail=3 "${FILES[@]}"
         timeout-minutes: 8
@@ -173,3 +175,40 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+
+  i18n-route-bounds:
+    runs-on: [self-hosted, Linux, Docker, Tests]
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          clean: false
+          fetch-depth: 1
+      - name: Restore workspace cleaner
+        shell: bash
+        run: |
+          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
+          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
+      - uses: ./.github/actions/clean-workspace
+        with:
+          deepen: 'false'
+      - uses: ./.github/actions/load-runner-env
+        with:
+          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
+      - uses: ./.github/actions/setup-backend
+        timeout-minutes: 10
+        with:
+          runner-lifecycle: persistent
+      - name: Run i18n route bounds
+        env:
+          VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}
+        run: |
+          if [ -n "$VITEST_SELECTED_FILES" ] && ! printf '%s\n' "$VITEST_SELECTED_FILES" | grep -Fxq 'static-code-analysis/i18n-extract/route-bounds.test.mts'; then
+            exit 0
+          fi
+          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project i18n-route-bounds
+        timeout-minutes: 8

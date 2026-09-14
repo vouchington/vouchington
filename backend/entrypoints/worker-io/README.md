@@ -1,13 +1,14 @@
 # worker-io Entrypoint
 
 Entry point for the IO-bound worker container. It handles queue workers that depend only on
-PostgreSQL, Valkey, and external HTTP. Local development always runs this process.
+PostgreSQL, Valkey, and external HTTP. Production may run this process separately; local
+development uses the merged worker-cpu process.
 
 ## Queues
 
 IO-capable queues are listed in
 [`../../modules/worker-queue-inventory/worker-queue-policy.json`](../../modules/worker-queue-inventory/worker-queue-policy.json).
-Local-development queue selection remains split. CPU-only queues must not be added here.
+Local development does not start this process. CPU-only queues must not be added here.
 
 ## Files
 

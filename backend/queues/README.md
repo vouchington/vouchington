@@ -3,8 +3,8 @@
 All active workers, classified by
 [`worker-queue-policy.json`](../modules/worker-queue-inventory/worker-queue-policy.json), plus a
 processor reference with default priorities. Infrastructure decides the deployed worker topology;
-local development runs separate [`worker-cpu`](../entrypoints/worker-cpu/README.md) and
-[`worker-io`](../entrypoints/worker-io/README.md) processes.
+local development runs one [`worker-cpu`](../entrypoints/worker-cpu/README.md) process for all
+policy-managed queues.
 
 ## Contents
 
@@ -14,6 +14,7 @@ local development runs separate [`worker-cpu`](../entrypoints/worker-cpu/README.
 - <a id="queue-configuration-reference"></a>[Queue Configuration Reference](reference-queue-configuration-reference.md)
 - <a id="flowproducers"></a>[FlowProducers](reference-flowproducers.md)
 - <a id="member-draft-intent-recovery"></a>[Member Draft-Intent Recovery](ai-agents/reference-member-draft-intent-recovery.md)
+- <a id="membership-refund-reconciliation"></a>[Membership Refund Reconciliation](memberships/reference-refund-reconciliation.md)
 - <a id="related"></a>[Related](reference-related.md)
 
 ## Post publication reconciliation

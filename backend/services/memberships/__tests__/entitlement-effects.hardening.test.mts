@@ -10,7 +10,7 @@ import {
 import { recordMembershipChange } from '../changes.mts'
 import { createMembership } from '../create.mts'
 import { getMembershipHistory } from '../get.mts'
-import { updateMembershipFromWebhook } from '../update.mts'
+import { updateMembershipFromEvent } from '../update.mts'
 
 describe('membership projection entitlement-effect transaction', () => {
   it('rolls back the projection and its entitlement handoff when change recording fails', async () => {
@@ -19,7 +19,7 @@ describe('membership projection entitlement-effect transaction', () => {
     const before = await getTestMembershipRaw(membership.id)
 
     await expect(
-      updateMembershipFromWebhook(
+      updateMembershipFromEvent(
         { membershipId: membership.id, status: 'past_due' },
         async (updated, query) => {
           await recordMembershipChange({

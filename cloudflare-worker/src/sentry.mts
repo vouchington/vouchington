@@ -8,7 +8,7 @@
 // and never throw, so they never reach captureWorkerException().
 
 import { captureException, type CloudflareOptions } from '@sentry/cloudflare'
-import { resolveSentryEnablement } from '@ts-shared/utils/sentry-deployment-gate'
+import { resolveSentryDsnEnablement } from '@ts-shared/utils/sentry-deployment-gate'
 import {
   composeSentryBeforeSend,
   scrubSentryEvent,
@@ -26,12 +26,13 @@ type SentryTransactionHint = Parameters<NonNullable<CloudflareOptions['beforeSen
 // (staging/production). The Worker has no local OTel path, so otelEnabled is
 // always false here.
 export function createSentryOptions(env: Env): CloudflareOptions {
-  const { enabled, environment } = resolveSentryEnablement({
+  const { enabled, environment, sentryDsn } = resolveSentryDsnEnablement({
+    dsn: env.SENTRY_DSN,
     environment: env.ENVIRONMENT,
     otelEnabled: false,
   })
   return {
-    dsn: 'https://66b5c8c708ff98c9c2f5b79306578ab7@o4507688154824704.ingest.us.sentry.io/4511154639077376',
+    dsn: sentryDsn?.dsn,
     environment: environment ?? 'development',
     release: env.GIT_COMMIT ?? undefined,
     enabled,

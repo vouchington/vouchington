@@ -68,6 +68,19 @@ describe('TagItem — topic', () => {
     )
     expect(screen.getByText('Topic')).toBeDefined()
   })
+
+  it('renders the generic Topic badge for an unknown relation topic type', () => {
+    const relation = makeRelation({
+      object_data: { id: 'topic-unknown', name: 'Misc', topic_type: 'unknown_type' },
+    })
+    render(
+      <TagItem
+        relation={relation}
+        objectType='topic'
+      />,
+    )
+    expect(screen.getByText('Topic')).toBeInTheDocument()
+  })
 })
 
 describe('TagItem — post', () => {

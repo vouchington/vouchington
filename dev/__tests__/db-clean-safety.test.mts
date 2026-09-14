@@ -16,6 +16,12 @@ const flushValkeyPath = fileURLToPath(new URL('../lib/flush-valkey.sh', import.m
 const worktreeResourceEnvPath = fileURLToPath(
   new URL('../lib/worktree-resource-env.sh', import.meta.url),
 )
+const publishedGitWorktreesPath = fileURLToPath(
+  new URL(
+    '../../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
+    import.meta.url,
+  ),
+)
 const testDirs: string[] = []
 
 async function makeRepo(databaseUrl: string) {
@@ -33,6 +39,10 @@ async function makeRepo(databaseUrl: string) {
     await readFile(dbNameFromUrlPath, 'utf8'),
   )
   await writeFile(join(dir, 'dev', 'lib', 'db-target.sh'), await readFile(dbTargetPath, 'utf8'))
+  await writeFile(
+    join(dir, 'dev', 'lib', 'git-worktrees.sh'),
+    await readFile(publishedGitWorktreesPath, 'utf8'),
+  )
   await writeFile(
     join(dir, 'dev', 'lib', 'flush-valkey.sh'),
     await readFile(flushValkeyPath, 'utf8'),

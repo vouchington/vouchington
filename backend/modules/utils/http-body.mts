@@ -1,4 +1,5 @@
 import { HttpNoBodyError, HttpResponseSizeError } from '@modules/on-error/errors'
+import onError from '@modules/on-error'
 import type { Response as UndiciResponse } from 'undici'
 import {
   MissingResponseBodyError,
@@ -52,10 +53,7 @@ function responseWithCompatibleBody(
   }
 
   function cancel(reason: unknown): Promise<void> {
-    return reader
-      .cancel(reason)
-      .catch(() => undefined)
-      .finally(release)
+    return reader.cancel(reason).catch(onError).finally(release)
   }
 
   if (signal) {

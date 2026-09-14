@@ -1,6 +1,6 @@
 # Infrastructure
 
-AWS resources, networking, deployment, and cost for Voucha.
+AWS resources, networking, and deployment for Voucha.
 
 ## Documents
 
@@ -13,7 +13,6 @@ AWS resources, networking, deployment, and cost for Voucha.
 | [S3 Buckets × Lifecycle Matrix](./s3-buckets.md)    | Bucket purposes, encryption, and lifecycle/retention rules                            |
 | [Env Var Contract](./env-var-contract.md)           | Filaments-owned typed env-var metadata and private deployment handoff                 |
 | [Environment Variables](./environment-variables.md) | Complete inventory of all env vars by category                                        |
-| [Deployment Costs](./deployment-costs.md)           | Monthly cost breakdown across staging, production, and CI/testing                     |
 
 ## Sync Rule
 

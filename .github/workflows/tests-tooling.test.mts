@@ -41,6 +41,14 @@ function runToolingTestsStep(): WorkflowStep {
   return runToolingTests!
 }
 
+function runI18nRouteBoundsStep(): WorkflowStep {
+  const runRouteBounds = workflow.jobs?.['i18n-route-bounds']?.steps?.find(
+    step => step.name === 'Run i18n route bounds',
+  )
+  expect(runRouteBounds).toBeDefined()
+  return runRouteBounds!
+}
+
 function numberField(value: unknown, label: string): number {
   if (typeof value !== 'number') {
     throw new Error(`${label} must be a number`)
@@ -101,5 +109,29 @@ describe('tests-tooling.yml setup timing', () => {
     expect(runStep.env?.VITEST_SELECTED_FILES).toContain('inputs.selected_test_files')
 
     expect(setupBackendStep().with).toEqual({ 'runner-lifecycle': 'persistent' })
+  })
+
+  it('isolates route bounds from regular tooling coverage and artifacts', () => {
+    const regularRun = runToolingTestsStep()
+    const routeBoundsJob = workflow.jobs?.['i18n-route-bounds']
+    const routeBoundsRun = runI18nRouteBoundsStep()
+
+    expect(regularRun.run).toContain(
+      '"$file" != \'static-code-analysis/i18n-extract/route-bounds.test.mts\'',
+    )
+    expect(regularRun.run).not.toContain('exit 0')
+    expect(routeBoundsJob?.['timeout-minutes']).toBeDefined()
+    expect(routeBoundsRun.run).toContain('--project i18n-route-bounds')
+    expect(routeBoundsRun['timeout-minutes']).toBeGreaterThanOrEqual(5)
+    expect(routeBoundsRun.env?.VITEST_SELECTED_FILES).toContain('inputs.selected_test_files')
+    expect(routeBoundsRun.run).toContain(
+      "grep -Fxq 'static-code-analysis/i18n-extract/route-bounds.test.mts'",
+    )
+    expect(
+      routeBoundsJob?.steps?.some(step => step.uses === './.github/actions/upload-coverage-pair'),
+    ).toBe(false)
+    expect(
+      routeBoundsJob?.steps?.some(step => step.uses === './.github/actions/upload-vitest-blob'),
+    ).toBe(false)
   })
 })

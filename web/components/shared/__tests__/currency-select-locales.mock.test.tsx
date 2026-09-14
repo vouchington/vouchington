@@ -2,11 +2,13 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
 import { seedMessages } from '@/lib/i18n/use-translations'
-import enMessages from '@ts-shared/ui-messages/messages/en'
-import esMessages from '@ts-shared/ui-messages/messages/es'
-import frMessages from '@ts-shared/ui-messages/messages/fr'
-import ptMessages from '@ts-shared/ui-messages/messages/pt'
 import { CurrencySelect } from '../currency-select'
+import {
+  enMessages,
+  esMessages,
+  frMessages,
+  ptMessages,
+} from '@ts-shared/ui-messages/locale-catalogs'
 
 vi.mock(import('@/lib/api/client/currencies'), () => ({
   fetchCurrencies: vi.fn<VitestLooseMock>().mockResolvedValue({ results: [] }),

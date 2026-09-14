@@ -29,7 +29,7 @@
     "@services/users": "workspace:^",
     "@services/wikipedia-topic-recommendations": "workspace:^",
     "@voucha/tools": "workspace:^",
-    "openai": "^7.10.0"
+    "openai": "^7.15.0"
   },
   "devDependencies": {
     "@services/openai-agents": "workspace:^"

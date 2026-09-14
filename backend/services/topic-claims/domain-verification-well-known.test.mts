@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UnsafeUrlError } from 'ssrf-guard/node'
 import { fetchWellKnownToken } from './domain-verification-well-known.mts'
 
@@ -19,6 +19,21 @@ function fetchWithTimeoutResult(response: Response) {
   return { response, responseSignal: new AbortController().signal }
 }
 
+function abortedFetchWithRejectedCancellation(error: Error) {
+  const controller = new AbortController()
+  controller.abort()
+  return {
+    response: new Response(
+      new ReadableStream({
+        cancel() {
+          return Promise.reject(error)
+        },
+      }),
+    ),
+    responseSignal: controller.signal,
+  }
+}
+
 describe('well-known', () => {
   const fetchWithTimeout = vi.fn<VitestLooseMock>()
   const validateUrl = vi.fn<VitestLooseMock>()
@@ -26,6 +41,10 @@ describe('well-known', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     validateUrl.mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   function dependencies() {
@@ -113,5 +132,17 @@ describe('well-known', () => {
 
     expect(result).toBeNull()
     expect(fetchWithTimeout).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed aborted-body cancellation while preserving the null verification outcome', async () => {
+    const cancellationError = new Error('reader cancellation failed')
+    const reportError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubEnv('NODE_ENV', 'development')
+    fetchWithTimeout.mockResolvedValueOnce(abortedFetchWithRejectedCancellation(cancellationError))
+
+    await expect(fetchWellKnownToken('example.com', dependencies())).resolves.toBeNull()
+    await new Promise<void>(queueMicrotask)
+
+    expect(reportError).toHaveBeenCalledWith(cancellationError)
   })
 })

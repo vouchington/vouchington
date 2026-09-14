@@ -3,24 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { ReviewQueueMedia } from './review-queue-media'
 
 describe('ReviewQueueMedia', () => {
-  it('renders nothing for an old response without media context', () => {
-    const { container } = render(
-      <ReviewQueueMedia
-        postId='post-1'
-        mediaContext={undefined}
-        onReveal={vi.fn<(postId: string) => void>()}
-        revealDisabled={false}
-      />,
-    )
-
-    expect(container).toBeEmptyDOMElement()
-  })
-
   it('renders nothing when the post has no images', () => {
     const { container } = render(
       <ReviewQueueMedia
         postId='post-1'
-        mediaContext={{ requires_reveal: false, images: [] }}
+        mediaReveal={{ requires_reveal: false, images: [] }}
         onReveal={vi.fn<(postId: string) => void>()}
         revealDisabled={false}
       />,
@@ -33,7 +20,7 @@ describe('ReviewQueueMedia', () => {
     render(
       <ReviewQueueMedia
         postId='post-1'
-        mediaContext={{
+        mediaReveal={{
           requires_reveal: false,
           images: [{ image_id: 'image-1', order_index: 0, caption: 'Evidence' }],
         }}
@@ -51,7 +38,7 @@ describe('ReviewQueueMedia', () => {
     render(
       <ReviewQueueMedia
         postId='post-1'
-        mediaContext={{
+        mediaReveal={{
           requires_reveal: true,
           images: [
             { image_id: 'image-1', order_index: 0, caption: 'First' },
@@ -76,7 +63,7 @@ describe('ReviewQueueMedia', () => {
     render(
       <ReviewQueueMedia
         postId='post-1'
-        mediaContext={{
+        mediaReveal={{
           requires_reveal: true,
           images: [{ image_id: 'image-1', order_index: 0, caption: 'Sensitive' }],
         }}

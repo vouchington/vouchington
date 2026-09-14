@@ -4,7 +4,8 @@ AWS infrastructure for staging and production environments is managed by OpenTof
 [`vouchington-infra`](https://github.com/vouchington/vouchington-infra) repository. Filaments owns
 the application and publishes immutable deployment artifacts; it does not apply infrastructure or
 mutate AWS or Cloudflare providers.
-Canonical staging and production estimates are in [Deployment Costs](deployment-costs.md).
+Cost and unit-economics documentation — including the canonical staging and production
+estimates — lives in the private `vouchington/vouchington-docs` repository.
 
 > **Status (as of 2026-06-14):** The compute/data plane (ALB, ECS, Aurora, Valkey,
 > service discovery, monitoring) is **now enabled** — this PR renames all 9

@@ -60,6 +60,7 @@ export async function updateStoryPostAgentResult(
           JOIN images ON images.id = post_images.image_id
             AND images.deleted_at IS NULL
             AND images.upload_completed_at IS NOT NULL
+            AND images.quarantine_pending_at IS NULL
           WHERE post_images.post_id = posts.id
         ), '[]'::json) AS images
       FROM posts
@@ -87,11 +88,7 @@ export async function updateStoryPostAgentResult(
     UPDATE posts
     SET ai_summary_markdown = ${aiSummaryMarkdown},
         bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha},
-        openai_omni_moderation_content_sha256 = ${moderationContentSha},
         llm_moderation_content_sha256 = ${moderationContentSha},
-        openai_omni_moderation_results = NULL,
-        openai_omni_moderation_flagged = NULL,
-        openai_omni_moderation_created_at = NULL,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = ${postId} AND post_type = 'story'
     RETURNING updated_at`)

@@ -6,7 +6,7 @@ import { parseSideloadRequest } from '../parse-sideload.mts'
 
 import { RequestParseError } from '../../errors.mts'
 
-import { toBase64Url } from '../../test-helpers/index.mts'
+import { toBase64Url } from '../../../test-helpers/image-resize/index.mts'
 
 import { signPath, SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
 

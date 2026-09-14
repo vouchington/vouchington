@@ -48,6 +48,7 @@ export function createTopicLatestPage(slug: string) {
     const [topicData, t] = await Promise.all([getTopic(id), getTranslations()])
     if (!topicData) notFound()
     const structuredData = createTopicSectionStructuredData(
+      t,
       topicData.topic,
       slug,
       { label: t('extracted.routes.topicNavigationFactories.latest_8730d3c2'), path: 'latest' },
@@ -97,6 +98,7 @@ export function createTopicNewsPage(slug: string) {
     const [topicData, t] = await Promise.all([getTopic(id), getTranslations()])
     if (!topicData) notFound()
     const structuredData = createTopicSectionStructuredData(
+      t,
       topicData.topic,
       slug,
       { label: t('extracted.routes.topicNavigationFactories.news_69752f23'), path: 'news' },

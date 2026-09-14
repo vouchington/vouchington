@@ -202,6 +202,16 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
     expect(filterNames.size).toBeGreaterThan(0)
   })
 
+  it('compiles the localization catalog before credentialed Playwright starts the API', () => {
+    const compile = credentialedWorkflowText.indexOf('Compile localization catalog')
+    const run = credentialedWorkflowText.indexOf('Run Playwright credentialed tests')
+    expect(compile).toBeGreaterThan(-1)
+    expect(compile).toBeLessThan(run)
+    expect(credentialedWorkflowText).toContain('compile-cli.mts')
+    expect(credentialedWorkflowText).toContain('/dev/shm')
+    expect(credentialedWorkflowText).toContain('LOCALIZATION_SQLITE_PATH')
+  })
+
   it.each(trustedJobEntries)(
     '%s: all detect-changes outputs in if-condition have a matching filter',
     (jobName, job) => {

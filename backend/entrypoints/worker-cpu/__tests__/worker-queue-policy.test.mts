@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  allWorkerQueueNames,
-  devWorkerCpuQueues,
-  devWorkerIoQueues,
-  formatQueueSelection,
-  parseWorkerCpuExtraQueues,
-  workerQueuePolicy,
-} from '@backend/worker-runtime'
+import { allWorkerQueueNames, workerQueuePolicy } from '@backend/worker-runtime'
 import { allLiveWorkerQueueNames, SQS_CONSUMER_QUEUE_NAMES } from '@modules/worker-queue-inventory'
 import { WORKER_DEFINITIONS as IO_WORKER_DEFINITIONS } from '@entrypoints/worker-io/worker-definitions'
 import { SQS_CONSUMER_DEFINITIONS as IO_SQS_CONSUMER_DEFINITIONS } from '@entrypoints/worker-io/sqs-consumer-definitions'
@@ -41,13 +34,6 @@ describe('worker queue policy', () => {
     )
   })
 
-  it('moves only IO-capable queues into a local CPU selection', () => {
-    expect(parseWorkerCpuExtraQueues('emails,rss-feeds,emails')).toEqual(['emails', 'rss-feeds'])
-    expect(devWorkerCpuQueues(['emails'])).toContain('emails')
-    expect(devWorkerIoQueues(['emails'])).not.toContain('emails')
-    expect(() => parseWorkerCpuExtraQueues('crawl_urls')).toThrow('CPU-only')
-  })
-
   it('keeps worker-cpu registered schedules a duplicate-free superset of worker-io schedules', () => {
     const cpuScheduleQueueNames = new Set(queueNames(CPU_SCHEDULE_DEFINITIONS))
     const ioScheduleQueueNames = queueNames(IO_SCHEDULE_DEFINITIONS)
@@ -69,37 +55,6 @@ describe('worker queue policy', () => {
       expect(allLiveWorkerQueueNames()).toContain(queueName)
     }
   })
-
-  it('covers every queue exactly once in local development defaults', () => {
-    expect([...devWorkerCpuQueues(), ...devWorkerIoQueues()].sort()).toEqual(
-      allWorkerQueueNames().sort(),
-    )
-    expect(intersection(devWorkerCpuQueues(), devWorkerIoQueues())).toEqual([])
-    expect(devWorkerCpuQueues()).toContain('crawl_urls')
-    expect(devWorkerCpuQueues()).toContain('crawl_browser')
-  })
-
-  it('moves IO-capable extras while preserving the exact CPU policy order', () => {
-    const extras = parseWorkerCpuExtraQueues('emails,rss-feeds,emails')
-
-    expect(devWorkerCpuQueues(extras)).toEqual([
-      ...workerQueuePolicy.cpuOnlyQueues,
-      'emails',
-      'rss-feeds',
-    ])
-    expect(devWorkerIoQueues(extras)).not.toContain('emails')
-  })
-
-  it('formats empty queue selections as exclude-all lists', () => {
-    expect(formatQueueSelection([], ['emails', 'rss-feeds'])).toBe('-emails,-rss-feeds')
-    expect(formatQueueSelection(['emails'], ['emails', 'rss-feeds'])).toBe('emails')
-  })
-
-  it('rejects unknown, CPU-only, and empty extra-queue entries', () => {
-    expect(() => parseWorkerCpuExtraQueues('missing-queue')).toThrow('unknown queue')
-    expect(() => parseWorkerCpuExtraQueues('crawl_urls')).toThrow('CPU-only')
-    expect(() => parseWorkerCpuExtraQueues('emails,,rss-feeds')).toThrow('empty entries')
-  })
 })
 
 function queueNames(definitions: readonly { queueName: string }[]): string[] {
@@ -112,9 +67,4 @@ function alwaysRunQueueNames(
   return definitions
     .filter(definition => definition.alwaysRun)
     .map(definition => definition.queueName)
-}
-
-function intersection(left: readonly string[], right: readonly string[]): string[] {
-  const rightSet = new Set(right)
-  return left.filter(value => rightSet.has(value)).sort()
 }

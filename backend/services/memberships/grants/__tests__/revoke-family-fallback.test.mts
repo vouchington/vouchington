@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership, grantMembership } from '../../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../../get.mts'
-import { updateMembershipFromWebhook } from '../../update.mts'
+import { updateMembershipFromEvent } from '../../update.mts'
 import { revokeMembershipGrant } from '../revoke.mts'
 
 describe('revokeMembershipGrant family fallback', () => {
@@ -122,7 +122,7 @@ describe('revokeMembershipGrant family fallback', () => {
     const grantSku = await createTestSku({ plan: 'plus', interval: 'yearly' })
     const grant = await grantMembership(admin.id, member.id, 'plus', grantSku.id, 30)
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
       async () => false,
     )

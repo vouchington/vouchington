@@ -45,7 +45,7 @@ Next.js, or HTTPS certs. See [development/tests.md](tests.md) for the DB/Valkey-
 ./dev/initialize web   # creates DB, starts Valkey container, installs deps/tooling, runs migrations, configures Web Push keys
 
 # Start development
-./dev/tmux                 # services and assistant CLIs in single-pane windows
+./dev/tmux                 # one managed session with five service windows
 # Open https://localhost:8787 in browser (CF Worker is the entry point for browser-grade validation)
 ```
 
@@ -59,13 +59,13 @@ For working on a separate branch in parallel:
 git worktree add ../worktrees/my-feature -b feature/my-feature
 cd ../worktrees/my-feature
 ./dev/initialize web
-./dev/tmux                 # all services + assistant windows
+./dev/tmux                 # one managed session with five service windows
 # Open the CF Worker URL printed by ./dev/tmux; use HTTPS for browser-grade validation
 ```
 
 Agent-created temporary or subagent worktrees are not this path; they go under the OS tmpdir per [Start Of Work](../../.agents/skills/agent-workflow/start-of-work.md).
 
-Run `./dev/tmux` from outside tmux. It creates windows in this order: `nextjs`, `backend`, `workers-io`, `worker-cpu`, `cloudflare`, `lambdas`, `claude`, `codex`.
+Run `./dev/tmux` from outside tmux. It creates one session per canonical worktree with windows in this order: `nextjs`, `backend`, `worker`, `cloudflare`, `lambdas`.
 
 See [dev/CLAUDE.md](../../dev/CLAUDE.md) for all commands (`./dev/stop-services`, `./dev/status`, `./dev/reset`, `./dev/teardown`, `./dev/cleanup`).
 

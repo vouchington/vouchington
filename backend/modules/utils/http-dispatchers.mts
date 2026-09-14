@@ -1,6 +1,7 @@
 // This alias satisfies both the backend fetch guard and oxlint's no-duplicate-imports rule.
 import { Agent, Dispatcher, fetch as undiciFetch } from 'undici'
 import { addGracefulShutdownDrainCallback } from '@data-stores/graceful-shutdown'
+import onError from '@modules/on-error'
 import {
   createPinnedDispatcherCache,
   type PinnedDispatcherCache,
@@ -140,7 +141,7 @@ export async function resetHttpDispatchersForTest(): Promise<void> {
 }
 
 function closeDispatcherIgnoringErrors(dispatcher: Dispatcher): Promise<void> {
-  return dispatcher.close().catch(() => undefined)
+  return dispatcher.close().catch(onError)
 }
 
 function getGuardedDispatcher(dispatcher: Dispatcher): Dispatcher {

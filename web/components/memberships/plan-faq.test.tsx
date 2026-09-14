@@ -1,9 +1,9 @@
 import { beforeAll, describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createTranslator, type Translator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { PlanFAQ } from './plan-faq'
 import { getPlanFaqItems } from './plan-faq-items'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 describe('PlanFAQ', () => {
   let t: Translator

@@ -37,95 +37,36 @@ if [ -n "${TMUX:-}" ] && [ "$NO_ATTACH" = "false" ]; then
     exit 1
 fi
 
-if [ ! -f "$REPO_ROOT/.env" ]; then
-    echo "Error: .env not found. Run ./dev/initialize web first."
+# The package-backed helper exists after initialization installs dependencies.
+if [ ! -f "$REPO_ROOT/.env" ] || [ ! -f "$REPO_ROOT/.initialized" ] || [ "$(tr -d '[:space:]' < "$REPO_ROOT/.initialized")" != "web" ]; then
+    echo "Error: web initialization not found. Run ./dev/initialize web first."
     exit 1
 fi
+
+# shellcheck source=lib/git-worktrees.sh
+source "$REPO_ROOT/dev/lib/git-worktrees.sh"
 
 set -a
 source "$REPO_ROOT/.env"
 set +a
 
-# Ensure Valkey container is running
+SESSION="voucha-$(git_worktree_canonical_path_hash "$REPO_ROOT")"
+MANAGED_WINDOWS=(nextjs backend worker cloudflare lambdas)
+
+# Restore Valkey before reusing a running session, including after Docker restarts.
 if [ -n "${VALKEY_CONTAINER:-}" ]; then
     if ! docker ps --format '{{.Names}}' | grep -qx "$VALKEY_CONTAINER"; then
         echo "Starting Valkey container..."
         docker start "$VALKEY_CONTAINER" >/dev/null 2>&1 || {
-            echo "Error: Failed to start Valkey container $VALKEY_CONTAINER."
-            echo "Run ./dev/initialize web to recreate it."
-            exit 1
+            if ! docker ps --format '{{.Names}}' | grep -qx "$VALKEY_CONTAINER"; then
+                echo "Error: Failed to start Valkey container $VALKEY_CONTAINER."
+                echo "Run ./dev/initialize web to recreate it."
+                exit 1
+            fi
         }
     fi
 fi
 
-SESSION="voucha-$(basename "$REPO_ROOT")"
-WORKER_PORT="${WORKER_PORT:?WORKER_PORT not set — run ./dev/initialize web first}"
-IMAGE_LAMBDA_PORT="${IMAGE_LAMBDA_PORT:?IMAGE_LAMBDA_PORT not set — run ./dev/initialize web first}"
-BACKEND_PORT="${PORT:?PORT not set — run ./dev/initialize web first}"
-NEXT_PORT="${NEXT_PORT:?NEXT_PORT not set — run ./dev/initialize web first}"
-
-# Reuse an existing session before startup-only discovery and window setup.
-if tmux has-session -t "$SESSION" 2>/dev/null; then
-    if [ "$NO_ATTACH" = "true" ]; then
-        echo "Services already running in tmux session '$SESSION'."
-        exit 0
-    fi
-    echo "Reattaching to existing tmux session '$SESSION'..."
-    tmux attach -t "$SESSION"
-    exit 0
-fi
-
-# Detect HTTPS support (mkcert certs present)
-HAS_CERTS=false
-if [ -f "$REPO_ROOT/dev/certs/localhost.pem" ] && [ -f "$REPO_ROOT/dev/certs/localhost-key.pem" ]; then
-    HAS_CERTS=true
-fi
-
-WORKER_QUEUE_POLICY_CLI="$REPO_ROOT/backend/modules/worker-queue-inventory/worker-queue-policy-cli.mts"
-WORKER_CPU_QUEUES="$(node "$WORKER_QUEUE_POLICY_CLI" dev-cpu-queues)"
-WORKER_IO_QUEUES="$(node "$WORKER_QUEUE_POLICY_CLI" dev-io-queues)"
-
-# crawl_browser connects to the Lightpanda cloud SaaS (no local binary/port); used
-# only for banner and CMD_CLAUDE prompt text below.
-HAS_CRAWL_BROWSER=false
-if [[ ",$WORKER_CPU_QUEUES," == *",crawl_browser,"* ]]; then
-    HAS_CRAWL_BROWSER=true
-fi
-
-if $HAS_CERTS; then
-    echo "Entry point (HTTPS):     https://localhost:${WORKER_PORT}"
-else
-    echo "Entry point (HTTP):      http://localhost:${WORKER_PORT}"
-fi
-echo "Backend API:             http://localhost:${BACKEND_PORT}"
-echo "Backend Workers (IO):    (window 'workers-io' — IO job queue workers)"
-if $HAS_CRAWL_BROWSER; then
-    echo "Backend Workers (CPU):   (window 'worker-cpu' — CPU queues including crawl_browser via Lightpanda cloud)"
-else
-    echo "Backend Workers (CPU):   (window 'worker-cpu' — CPU queues)"
-fi
-echo "Lambdas (image resize):  http://localhost:${IMAGE_LAMBDA_PORT}"
-echo "Next.js:                 http://localhost:${NEXT_PORT}"
-echo "Claude Code:             (window 'claude' — interactive session with tmux log access)"
-echo "Codex:                   (window 'codex' — interactive session with tmux log access)"
-echo "Cursor:                  (window 'cursor' — Cursor CLI when \`agent\` or \`cursor-agent\` is installed)"
-echo "Shell:                   (window 'shell' — plain interactive shell)"
-if [ "${OTEL_ENABLED:-}" = "1" ]; then
-    echo "OpenTelemetry:           ENABLED — exporting to ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318} (run ./dev/otel-up first)"
-fi
-echo ""
-
-# OTel: when OTEL_ENABLED is set, preload the zero-code register --import hook before
-# app modules so auto-instrumentation patches express, pg, undici, and Valkey.
-# Evaluated here (not inside each window's bash -lc) so it is embedded at CMD build time.
-OTEL_NODE_IMPORT=""
-if [ "${OTEL_ENABLED:-}" = "1" ]; then
-  OTEL_NODE_IMPORT="--import \"$REPO_ROOT/dev/otel-register.mts\""
-fi
-
-# --- Window commands ---
-# LOG_LEVEL is embedded at string-construction time so each window inherits the flag.
-# With --verbose the value is "info" (full output); without it "error" (errors only).
 quote_shell_arg() {
   local value="$1"
   value=${value//\'/\'\\\'\'}
@@ -139,126 +80,249 @@ bash_lc_command() {
   printf 'bash -lc %s' "$quoted_body"
 }
 
-NODE_OPTIONS_INIT='case " ${NODE_OPTIONS:-} " in *" --disable-warning=DEP0205 "*) ;; *) export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--disable-warning=DEP0205" ;; esac'
-# Dev uses larger caps than production (worker-io prod: --max-old-space-size=384, UV_THREADPOOL_SIZE=4)
-# because local dev is not memory-constrained like ECS tasks.
-WORKER_NODE_OPTIONS_INIT='case " ${NODE_OPTIONS:-} " in *" --max-old-space-size="*) ;; *) export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--max-old-space-size=3072" ;; esac'
-BODY_BACKEND="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; OTEL_SERVICE_NAME=voucha-api LOG_LEVEL=$LOG_LEVEL node $OTEL_NODE_IMPORT --watch \"$REPO_ROOT/backend/entrypoints/api/serve.mts\"; read"
-BODY_WORKERS_IO="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; $WORKER_NODE_OPTIONS_INIT; OTEL_SERVICE_NAME=voucha-worker-io LOG_LEVEL=$LOG_LEVEL QUEUES=$WORKER_IO_QUEUES UV_THREADPOOL_SIZE=\${UV_THREADPOOL_SIZE:-8} node $OTEL_NODE_IMPORT --watch \"$REPO_ROOT/backend/entrypoints/worker-io/serve.mts\"; read"
-BODY_WORKER_CPU="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; $WORKER_NODE_OPTIONS_INIT; OTEL_SERVICE_NAME=voucha-worker-cpu LOG_LEVEL=$LOG_LEVEL QUEUES=$WORKER_CPU_QUEUES UV_THREADPOOL_SIZE=\${UV_THREADPOOL_SIZE:-8} node $OTEL_NODE_IMPORT --watch \"$REPO_ROOT/backend/entrypoints/worker-cpu/serve.mts\"; read"
-BODY_NEXTJS="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; cd \"$REPO_ROOT/web\" && pnpm run dev; read"
-BODY_LAMBDAS="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; LOG_LEVEL=$LOG_LEVEL node --watch \"$REPO_ROOT/lambdas/dev-server.mts\"; read"
-CMD_BACKEND="$(bash_lc_command "$BODY_BACKEND")"
-CMD_WORKERS_IO="$(bash_lc_command "$BODY_WORKERS_IO")"
-CMD_WORKER_CPU="$(bash_lc_command "$BODY_WORKER_CPU")"
-CMD_NEXTJS="$(bash_lc_command "$BODY_NEXTJS")"
-CMD_LAMBDAS="IMAGE_LAMBDA_PORT=$(quote_shell_arg "$IMAGE_LAMBDA_PORT") $(bash_lc_command "$BODY_LAMBDAS")"
-# When mkcert certs exist, serve HTTPS directly from wrangler (no separate proxy needed).
-# Map LOG_LEVEL to wrangler's --log-level flag.
-WRANGLER_LOG_LEVEL="$LOG_LEVEL"
-if $HAS_CERTS; then
-    BODY_CF_WORKER="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; cd \"$REPO_ROOT/cloudflare-worker\" && node scripts/wrangler/dev.mts --local --port \"$WORKER_PORT\" --ip 127.0.0.1 --local-protocol https --https-cert-path ../dev/certs/localhost.pem --https-key-path ../dev/certs/localhost-key.pem --log-level=$WRANGLER_LOG_LEVEL; read"
-else
-    BODY_CF_WORKER="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; cd \"$REPO_ROOT/cloudflare-worker\" && node scripts/wrangler/dev.mts --local --port \"$WORKER_PORT\" --ip 127.0.0.1 --log-level=$WRANGLER_LOG_LEVEL; read"
-fi
-CMD_CF_WORKER="$(bash_lc_command "$BODY_CF_WORKER")"
+window_cwd() {
+  case "$1" in
+    nextjs) printf '%s\n' "$REPO_ROOT/web" ;;
+    cloudflare) printf '%s\n' "$REPO_ROOT/cloudflare-worker" ;;
+    *) printf '%s\n' "$REPO_ROOT" ;;
+  esac
+}
 
-# Claude Code session with tmux layout awareness.
-# Session name is resolved at pane startup via tmux display-message so the system prompt
-# is correct for the created session.
-if $HAS_CRAWL_BROWSER; then
-    WORKER_CPU_DESC="CPU queues + crawl_browser via Lightpanda cloud"
+window_exists() {
+  local window="$1"
+  local names
+  names="$(tmux list-windows -t "=$SESSION" -F '#{window_name}' 2>/dev/null || true)"
+  case $'\n'"$names"$'\n' in
+    *$'\n'"$window"$'\n'*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+window_is_live() {
+  local window="$1"
+  local pane_pid
+  if ! window_exists "$window"; then
+    return 1
+  fi
+  while IFS= read -r pane_pid; do
+    case "$pane_pid" in
+      ''|*[!0-9]*) continue ;;
+    esac
+    if pgrep -P "$pane_pid" . >/dev/null 2>&1; then
+      return 0
+    fi
+  done < <(tmux list-panes -t "=$SESSION:$window" -F '#{pane_pid}' 2>/dev/null || true)
+  return 1
+}
+
+prepare_service_commands() {
+  local need_catalog="$1"
+  WORKER_PORT="${WORKER_PORT:?WORKER_PORT not set — run ./dev/initialize web first}"
+  IMAGE_LAMBDA_PORT="${IMAGE_LAMBDA_PORT:?IMAGE_LAMBDA_PORT not set — run ./dev/initialize web first}"
+  BACKEND_PORT="${PORT:?PORT not set — run ./dev/initialize web first}"
+  NEXT_PORT="${NEXT_PORT:?NEXT_PORT not set — run ./dev/initialize web first}"
+
+  HAS_CERTS=false
+  if [ -f "$REPO_ROOT/dev/certs/localhost.pem" ] && [ -f "$REPO_ROOT/dev/certs/localhost-key.pem" ]; then
+    HAS_CERTS=true
+  fi
+
+  OTEL_NODE_IMPORT=""
+  if [ "${OTEL_ENABLED:-}" = "1" ]; then
+    OTEL_NODE_IMPORT="--import \"$REPO_ROOT/dev/otel-register.mts\""
+  fi
+
+  NODE_OPTIONS_INIT='case " ${NODE_OPTIONS:-} " in *" --disable-warning=DEP0205 "*) ;; *) export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--disable-warning=DEP0205" ;; esac'
+  WORKER_NODE_OPTIONS_INIT='case " ${NODE_OPTIONS:-} " in *" --max-old-space-size="*) ;; *) export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--max-old-space-size=3072" ;; esac'
+  WRANGLER_LOG_LEVEL="$LOG_LEVEL"
+
+  if [ "$need_catalog" = 1 ]; then
+    LOCALIZATION_SQLITE_PATH="$(node --experimental-strip-types "$REPO_ROOT/dev/localization/local-catalog.mts")"
+    WORKER_QUEUE_POLICY_CLI="$REPO_ROOT/backend/modules/worker-queue-inventory/worker-queue-policy-cli.mts"
+    WORKER_QUEUES="$(node "$WORKER_QUEUE_POLICY_CLI" dev-all-queues)"
+    BODY_BACKEND="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; LOCALIZATION_SQLITE_PATH=$(quote_shell_arg "$LOCALIZATION_SQLITE_PATH") OTEL_SERVICE_NAME=voucha-api LOG_LEVEL=$LOG_LEVEL node $OTEL_NODE_IMPORT --watch \"$REPO_ROOT/backend/entrypoints/api/serve.mts\"; read"
+    BODY_WORKER="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; $WORKER_NODE_OPTIONS_INIT; LOCALIZATION_SQLITE_PATH=$(quote_shell_arg "$LOCALIZATION_SQLITE_PATH") OTEL_SERVICE_NAME=voucha-worker-cpu LOG_LEVEL=$LOG_LEVEL QUEUES=$WORKER_QUEUES UV_THREADPOOL_SIZE=\${UV_THREADPOOL_SIZE:-8} node $OTEL_NODE_IMPORT --watch \"$REPO_ROOT/backend/entrypoints/worker-cpu/serve.mts\"; read"
+    CMD_BACKEND="$(bash_lc_command "$BODY_BACKEND")"
+    CMD_WORKER="$(bash_lc_command "$BODY_WORKER")"
+  fi
+
+  BODY_NEXTJS="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; cd \"$REPO_ROOT/web\" && pnpm run dev; read"
+  BODY_LAMBDAS="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; LOG_LEVEL=$LOG_LEVEL node --watch \"$REPO_ROOT/lambdas/dev-server.mts\"; read"
+  CMD_NEXTJS="$(bash_lc_command "$BODY_NEXTJS")"
+  CMD_LAMBDAS="IMAGE_LAMBDA_PORT=$(quote_shell_arg "$IMAGE_LAMBDA_PORT") $(bash_lc_command "$BODY_LAMBDAS")"
+  if $HAS_CERTS; then
+    BODY_CF_WORKER="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; cd \"$REPO_ROOT/cloudflare-worker\" && node scripts/wrangler/dev.mts --local --port \"$WORKER_PORT\" --ip 127.0.0.1 --local-protocol https --https-cert-path ../dev/certs/localhost.pem --https-key-path ../dev/certs/localhost-key.pem --log-level=$WRANGLER_LOG_LEVEL; read"
+  else
+    BODY_CF_WORKER="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; cd \"$REPO_ROOT/cloudflare-worker\" && node scripts/wrangler/dev.mts --local --port \"$WORKER_PORT\" --ip 127.0.0.1 --log-level=$WRANGLER_LOG_LEVEL; read"
+  fi
+  CMD_CF_WORKER="$(bash_lc_command "$BODY_CF_WORKER")"
+}
+
+window_command() {
+  case "$1" in
+    nextjs) printf '%s' "$CMD_NEXTJS" ;;
+    backend) printf '%s' "$CMD_BACKEND" ;;
+    worker) printf '%s' "$CMD_WORKER" ;;
+    cloudflare) printf '%s' "$CMD_CF_WORKER" ;;
+    lambdas) printf '%s' "$CMD_LAMBDAS" ;;
+    *) return 1 ;;
+  esac
+}
+
+decorate_window() {
+  local name="$1"
+  tmux select-pane -T "$name" -t "=$SESSION:$name"
+  tmux set-option -w -t "=$SESSION:$name" pane-border-status top
+}
+
+restore_dead_managed_windows() {
+  local dead=()
+  local window
+  local need_catalog=0
+  for window in "${MANAGED_WINDOWS[@]}"; do
+    if ! window_is_live "$window"; then
+      dead+=("$window")
+      case "$window" in
+        backend|worker) need_catalog=1 ;;
+      esac
+    fi
+  done
+  if [ "${#dead[@]}" -eq 0 ]; then
+    return 0
+  fi
+  prepare_service_commands "$need_catalog"
+  for window in "${dead[@]}"; do
+    if window_exists "$window"; then
+      tmux respawn-pane -k -t "=$SESSION:$window.0" -c "$(window_cwd "$window")" "$(window_command "$window")" || return 1
+    else
+      tmux new-window -t "=$SESSION" -n "$window" -c "$(window_cwd "$window")" "$(window_command "$window")" || return 1
+    fi
+    decorate_window "$window" || return 1
+  done
+  return 0
+}
+
+finish_existing_session() {
+  if [ "$NO_ATTACH" = "true" ]; then
+    echo "Services already running in tmux session '$SESSION'."
+    return 0
+  fi
+  echo "Reattaching to existing tmux session '$SESSION'..."
+  tmux attach -t "=$SESSION"
+}
+
+reuse_existing_session() {
+  local allow_restore="${1:-1}"
+  local already_ready=false
+  local attempt
+  local ready
+  ready="$(tmux show-options -qv -t "=$SESSION:" @voucha-ready 2>/dev/null || true)"
+  if [ "$ready" = 1 ]; then
+    already_ready=true
+  else
+    for ((attempt = 0; attempt < 99; attempt++)); do
+      if ! tmux has-session -t "=$SESSION" 2>/dev/null; then
+        echo "Error: tmux session '$SESSION' disappeared during startup." >&2
+        return 1
+      fi
+      sleep 0.1
+      ready="$(tmux show-options -qv -t "=$SESSION:" @voucha-ready 2>/dev/null || true)"
+      if [ "$ready" = 1 ]; then
+        break
+      fi
+    done
+    if [ "$ready" != 1 ]; then
+      echo "Error: tmux session '$SESSION' did not finish startup." >&2
+      return 1
+    fi
+  fi
+
+  if $already_ready && [ "$allow_restore" = 1 ]; then
+    if ! restore_dead_managed_windows; then
+      echo "Error: failed to restore managed tmux windows; recreating session." >&2
+      tmux kill-session -t "=$SESSION" 2>/dev/null || true
+      return 2
+    fi
+  fi
+  finish_existing_session
+}
+
+if tmux has-session -t "=$SESSION" 2>/dev/null; then
+  reuse_status=0
+  reuse_existing_session || reuse_status=$?
+  if [ "$reuse_status" -eq 0 ]; then
+    exit 0
+  fi
+  if [ "$reuse_status" -ne 2 ]; then
+    exit "$reuse_status"
+  fi
+fi
+
+prepare_service_commands 1
+
+if $HAS_CERTS; then
+    echo "Entry point (HTTPS):     https://localhost:${WORKER_PORT}"
 else
-    WORKER_CPU_DESC="CPU queues"
+    echo "Entry point (HTTP):      http://localhost:${WORKER_PORT}"
 fi
-BODY_CLAUDE="source \"$REPO_ROOT/.env\"; _S=\$(tmux display-message -p \"#S\"); cd \"$REPO_ROOT\" && claude --append-system-prompt \"Tmux session: \$_S. Service windows — \${_S}:nextjs.0=nextjs (Next.js dev server), \${_S}:backend.0=backend (backend API), \${_S}:workers-io.0=workers-io (IO job queue workers), \${_S}:worker-cpu.0=worker-cpu ($WORKER_CPU_DESC), \${_S}:cloudflare.0=cloudflare (Cloudflare Worker), \${_S}:lambdas.0=lambdas (image+crawl lambda). Tail any window (last 500 lines): tmux capture-pane -t \${_S}:backend.0 -p -S -500\"; read"
-BODY_CODEX="source \"$REPO_ROOT/.env\"; cd \"$REPO_ROOT\" && codex; read"
-CURSOR_BIN=""
-if command -v cursor-agent &>/dev/null; then
-    CURSOR_BIN="cursor-agent"
-elif command -v agent &>/dev/null; then
-    CURSOR_BIN="agent"
+echo "Backend API:             http://localhost:${BACKEND_PORT}"
+echo "Backend Workers:         (window 'worker' — all policy-managed queues)"
+echo "Lambdas (image resize):  http://localhost:${IMAGE_LAMBDA_PORT}"
+echo "Next.js:                 http://localhost:${NEXT_PORT}"
+if [ "${OTEL_ENABLED:-}" = "1" ]; then
+    echo "OpenTelemetry:           ENABLED — exporting to ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318} (run ./dev/otel-up first)"
 fi
-BODY_CURSOR="source \"$REPO_ROOT/.env\"; cd \"$REPO_ROOT\" && ${CURSOR_BIN:-cursor-agent}; read"
-CMD_CLAUDE="$(bash_lc_command "$BODY_CLAUDE")"
-CMD_CODEX="$(bash_lc_command "$BODY_CODEX")"
-CMD_CURSOR="$(bash_lc_command "$BODY_CURSOR")"
+echo ""
 
 # Layout: one pane per window, in this order:
 #   1. nextjs
 #   2. backend
-#   3. workers-io
-#   4. worker-cpu
-#   5. cloudflare
-#   6. lambdas
-#   7. claude (optional)
-#   8. codex (optional)
-#   9. cursor (optional)
+#   3. worker
+#   4. cloudflare
+#   5. lambdas
 
 # Create a new session outside tmux.
-tmux new-session -d -s "$SESSION" -n "nextjs" -c "$REPO_ROOT/web" "$CMD_NEXTJS"
-tmux select-pane -T "nextjs" -t "$SESSION:nextjs"
-tmux set-option -w -t "$SESSION:nextjs" pane-border-status top
-
-tmux new-window -t "$SESSION" -n "backend" -c "$REPO_ROOT" "$CMD_BACKEND"
-tmux select-pane -T "backend" -t "$SESSION:backend"
-tmux set-option -w -t "$SESSION:backend" pane-border-status top
-
-tmux new-window -t "$SESSION" -n "workers-io" -c "$REPO_ROOT" "$CMD_WORKERS_IO"
-tmux select-pane -T "workers-io" -t "$SESSION:workers-io"
-tmux set-option -w -t "$SESSION:workers-io" pane-border-status top
-
-tmux new-window -t "$SESSION" -n "worker-cpu" -c "$REPO_ROOT" "$CMD_WORKER_CPU"
-tmux select-pane -T "worker-cpu" -t "$SESSION:worker-cpu"
-tmux set-option -w -t "$SESSION:worker-cpu" pane-border-status top
-
-tmux new-window -t "$SESSION" -n "cloudflare" -c "$REPO_ROOT/cloudflare-worker" "$CMD_CF_WORKER"
-tmux select-pane -T "cloudflare" -t "$SESSION:cloudflare"
-tmux set-option -w -t "$SESSION:cloudflare" pane-border-status top
-
-tmux new-window -t "$SESSION" -n "lambdas" -c "$REPO_ROOT" "$CMD_LAMBDAS"
-tmux select-pane -T "lambdas" -t "$SESSION:lambdas"
-tmux set-option -w -t "$SESSION:lambdas" pane-border-status top
-
-FOCUS_WINDOW="nextjs"
-
-if command -v claude &>/dev/null; then
-    tmux new-window -t "$SESSION" -n "claude" -c "$REPO_ROOT" "$CMD_CLAUDE"
-    tmux select-pane -T "claude" -t "$SESSION:claude"
-    tmux set-option -w -t "$SESSION:claude" pane-border-status top
-    FOCUS_WINDOW="claude"
-else
-    echo "Note: 'claude' CLI not found — skipping Claude Code window. Install Claude Code to enable it."
+# The launcher owns cleanup only if tmux recorded its PID at session creation.
+# Install traps before creation so a signal during new-session cannot strand it.
+cleanup_partial_session() {
+    if [ "$(tmux show-environment -t "=$SESSION" VOUCHA_LAUNCHER_PID 2>/dev/null || true)" = "VOUCHA_LAUNCHER_PID=$$" ]; then
+        tmux kill-session -t "=$SESSION" 2>/dev/null || true
+    fi
+}
+trap cleanup_partial_session EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+if ! tmux new-session -d -s "$SESSION" -e "VOUCHA_LAUNCHER_PID=$$" -n "nextjs" -c "$REPO_ROOT/web" "$CMD_NEXTJS"; then
+    trap - EXIT INT TERM
+    if tmux has-session -t "=$SESSION" 2>/dev/null; then
+        reuse_existing_session 0
+        exit $?
+    fi
+    echo "Error: failed to create tmux session '$SESSION'." >&2
+    exit 1
 fi
+decorate_window nextjs
 
-if command -v codex &>/dev/null; then
-    tmux new-window -t "$SESSION" -n "codex" -c "$REPO_ROOT" "$CMD_CODEX"
-    tmux select-pane -T "codex" -t "$SESSION:codex"
-    tmux set-option -w -t "$SESSION:codex" pane-border-status top
-    FOCUS_WINDOW="codex"
-else
-    echo "Note: 'codex' CLI not found — skipping Codex window. Install Codex to enable it."
-fi
+tmux new-window -t "=$SESSION" -n "backend" -c "$REPO_ROOT" "$CMD_BACKEND"
+decorate_window backend
 
-if [ -n "$CURSOR_BIN" ]; then
-    tmux new-window -t "$SESSION" -n "cursor" -c "$REPO_ROOT" "$CMD_CURSOR"
-    tmux select-pane -T "cursor" -t "$SESSION:cursor"
-    tmux set-option -w -t "$SESSION:cursor" pane-border-status top
-    FOCUS_WINDOW="cursor"
-else
-    echo "Note: Cursor CLI not found — skipping Cursor window. Install the Cursor CLI (\`agent\` or \`cursor-agent\`) to enable it."
-fi
+tmux new-window -t "=$SESSION" -n "worker" -c "$REPO_ROOT" "$CMD_WORKER"
+decorate_window worker
 
-tmux new-window -t "$SESSION" -n "shell" -c "$REPO_ROOT"
-tmux select-pane -T "shell" -t "$SESSION:shell"
-tmux set-option -w -t "$SESSION:shell" pane-border-status top
+tmux new-window -t "=$SESSION" -n "cloudflare" -c "$REPO_ROOT/cloudflare-worker" "$CMD_CF_WORKER"
+decorate_window cloudflare
 
-tmux select-window -t "$SESSION:$FOCUS_WINDOW"
+tmux new-window -t "=$SESSION" -n "lambdas" -c "$REPO_ROOT" "$CMD_LAMBDAS"
+decorate_window lambdas
+
+tmux select-window -t "=$SESSION:nextjs"
+tmux set-option -t "=$SESSION:" @voucha-ready 1
+trap - EXIT INT TERM
 
 if [ "$NO_ATTACH" = "true" ]; then
     echo "Services started in tmux session '$SESSION'."
     echo "To attach: tmux attach -t '$SESSION'"
 else
     echo "Attaching to tmux session '$SESSION'..."
-    tmux attach -t "$SESSION"
+    tmux attach -t "=$SESSION"
 fi

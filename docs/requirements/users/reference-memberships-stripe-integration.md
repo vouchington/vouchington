@@ -17,7 +17,7 @@ store purchases are verified through the common membership verification pipeline
 | canceled, unpaid               | cancelled       |
 | incomplete, incomplete_expired | expired         |
 
-Implemented in `mapStripeWebhookStatus()` in `backend/services/stripe/webhook-utils.mts`.
+Implemented in `mapStripeSubscriptionStatus()` in `backend/services/stripe/event-utils.mts`.
 
 ### Purchase intent and verification flow
 
@@ -99,7 +99,7 @@ A dispute event is likewise only a trigger. The worker refetches the dispute and
 uses the immutable reversal case to calculate the exact remaining refund. Duplicate, concurrent,
 and reordered deliveries converge on one dispute-scoped operation; non-won disputes are no-ops.
 
-The complete list of events to subscribe to (including Stripe Identity events) is in [`docs/checklists/stripe-webhook-events.md`](../../checklists/stripe-webhook-events.md).
+The complete list of events to subscribe to (including Stripe Identity events) is in [`docs/checklists/stripe-events.md`](../../checklists/stripe-events.md).
 
 ### Provider-owned management
 
@@ -108,13 +108,13 @@ uses `POST /api/v1/memberships/billing-portal-sessions`; Apple, Google Play, and
 members manage renewal, cancellation, and payment through their provider-owned subscriptions
 surfaces. Voucha does not expose a provider-neutral cancellation mutation.
 
-### Administrative Webhook Setup
+### Administrative Event Setup
 
 Administrators must configure Stripe with:
 
 - `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY`
 - The Stripe EventBridge partner event source per environment (see [`vouchington-infra` OpenTofu](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/stripe-eventbridge.tf))
-- The event set listed in [`docs/checklists/stripe-webhook-events.md`](../../checklists/stripe-webhook-events.md)
+- The event set listed in [`docs/checklists/stripe-events.md`](../../checklists/stripe-events.md)
 - Customer records that keep `metadata.userId` populated if subscriptions are created or edited outside Voucha
 
 Operational notes:

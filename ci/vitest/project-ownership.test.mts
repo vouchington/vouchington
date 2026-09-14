@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { countJobSuiteFiles } from './job-suite-count.mts'
 import { VITEST_OWNERSHIP } from './project-ownership.mts'
 import {
   allOwnedProjects,
@@ -12,11 +11,9 @@ import {
 } from './project-ownership-registry.mts'
 
 describe('VITEST_OWNERSHIP', () => {
-  it('gives every job a unique orchestratorJob and workflow', () => {
-    const jobs = VITEST_OWNERSHIP.map(job => job.orchestratorJob)
-    const workflows = VITEST_OWNERSHIP.map(job => job.workflow)
+  it('gives every concrete workflow job a unique ownership row', () => {
+    const jobs = VITEST_OWNERSHIP.map(job => `${job.workflow}#${job.jobLabel}`)
     expect(new Set(jobs).size).toBe(jobs.length)
-    expect(new Set(workflows).size).toBe(workflows.length)
   })
 
   it('gives every job at least one project', () => {
@@ -71,47 +68,29 @@ describe('project-ownership-registry derivations', () => {
     )
   })
 
-  it('owns the sharding defaults and selection budgets in the registry', () => {
+  it('owns intentional sharding policy in the registry', () => {
     expect(shardedJobPolicies()).toEqual({
       'test-backend-unit': {
-        defaultShards: 5,
         filesPerShard: 520,
         mode: 'file-count',
         reportPrefix: 'backend-shard',
       },
       'test-web': {
-        defaultShards: 2,
         filesPerShard: 800,
         mode: 'file-count',
         reportPrefix: 'web-shard',
       },
       'test-web-api': {
-        defaultShards: 1,
         filesPerShard: 64,
         mode: 'file-count',
         reportPrefix: 'web-api-shard',
       },
       'test-web-integration': {
-        defaultShards: 1,
         mode: 'fixed',
         reportPrefix: 'web-integration-shard',
+        shards: 1,
       },
     })
-  })
-
-  it('keeps defaultShards consistent with ceil(live file count / filesPerShard) for every file-count job', () => {
-    // Prevents the test-backend-unit drift this policy fixed: the registry previously claimed
-    // defaultShards: 8 while filesPerShard: 300 against the real suite implied 9, and the push-path
-    // workflow YAML's own `|| 8` fallback (not this formula) was silently the one actually governing
-    // production. Re-deriving defaultShards from filesPerShard here means the two can never diverge.
-    const counts = countJobSuiteFiles(process.cwd())
-    for (const job of VITEST_OWNERSHIP) {
-      if (job.sharding?.mode !== 'file-count') continue
-      const fileCount = counts.get(job.orchestratorJob)
-      expect(fileCount).toBeGreaterThan(0)
-      const expectedShards = Math.ceil((fileCount ?? 0) / job.sharding.filesPerShard)
-      expect(job.sharding.defaultShards).toBe(expectedShards)
-    }
   })
 
   it('sideDutyJobs matches the jobs flagged sideDuty in the model', () => {

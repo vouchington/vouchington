@@ -56,8 +56,6 @@ export async function getPostNotificationSnapshot(
         includeRegisteredAudience: true,
       }),
     ).append(sql` AND posts.post_type <> 'comment'
-      AND posts.openai_omni_moderation_flagged IS NOT TRUE
-      AND root_posts.openai_omni_moderation_flagged IS NOT TRUE
       AS is_manual_send_content_eligible,
       posts.parent_id,
       posts.root_id,

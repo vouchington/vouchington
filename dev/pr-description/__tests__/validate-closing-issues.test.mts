@@ -5,7 +5,7 @@ import type {
   IssueReferenceLookup,
   ReferencedIssue,
 } from '../closing-refs.mts'
-import { VALID_PROVENANCE_BLOCK } from '../test-helpers/valid-pr-body.mts'
+import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { validatePrBodyWithIssueReferences, type ClosingIssueForAudit } from '../validate.mts'
 
 const BASE_BODY = `## Summary

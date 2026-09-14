@@ -10,8 +10,8 @@ import {
   Text,
   render,
 } from './react-email-runtime.mts'
+import { emailCopy, emailOptional, type EmailTranslator } from './catalog-copy.mts'
 import { MarketingFooter, VouchaHeader } from './components.tsx'
-import { postReferralLinkCopyByLocale } from './post-referral-link-copy.mts'
 import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
 import { borderRadius, colors, styles } from './styles.mts'
 import type {
@@ -52,11 +52,8 @@ const linkStyle = {
   textDecoration: 'underline',
 }
 
-function formatLinkCount(
-  copy: (typeof postReferralLinkCopyByLocale)[keyof typeof postReferralLinkCopyByLocale],
-  linkCount?: number,
-): string {
-  return linkCount === undefined ? copy.fallbackCount : copy.activeLinks(linkCount)
+function formatLinkCount(t: EmailTranslator, linkCount?: number): string {
+  return linkCount === undefined ? t('fallbackCount') : t('activeLinks', { count: linkCount })
 }
 
 const PostReferralLinkEmail: PreviewableEmailComponent<PostReferralLinkEmailProps> = ({
@@ -69,17 +66,19 @@ const PostReferralLinkEmail: PreviewableEmailComponent<PostReferralLinkEmailProp
 }) =>
   (() => {
     const locale = resolveUiLocale(uiLocale)
-    const copy = postReferralLinkCopyByLocale[locale]
+    const t = emailCopy(locale, 'post-referral-link')
     return (
       <Html>
         <Head />
-        <Preview>{copy.preview}</Preview>
+        <Preview>{t('preview')}</Preview>
         <Body style={styles.main}>
           <Container style={styles.container}>
             <VouchaHeader />
             <Section style={styles.section}>
-              <Text style={styles.heading}>{copy.heading}</Text>
-              <Text style={styles.paragraph}>{`${copy.greeting(userName)} ${copy.body}`}</Text>
+              <Text style={styles.heading}>{t('heading')}</Text>
+              <Text style={styles.paragraph}>
+                {`${emailOptional(t, 'greeting', userName)} ${t('body')}`}
+              </Text>
 
               {referralPrograms.length > 0 ? (
                 referralPrograms.map(program => (
@@ -88,17 +87,17 @@ const PostReferralLinkEmail: PreviewableEmailComponent<PostReferralLinkEmailProp
                     style={card}
                   >
                     <Text style={cardHeading}>{program.name}</Text>
-                    <Text style={cardText}>{formatLinkCount(copy, program.linkCount)}</Text>
+                    <Text style={cardText}>{formatLinkCount(t, program.linkCount)}</Text>
                     <Button
                       href={program.url}
                       style={itemButton}
                     >
-                      {copy.itemButton}
+                      {t('itemButton')}
                     </Button>
                   </Section>
                 ))
               ) : (
-                <Text style={styles.paragraph}>{copy.empty}</Text>
+                <Text style={styles.paragraph}>{t('empty')}</Text>
               )}
 
               <Section style={styles.buttonContainer}>
@@ -106,7 +105,7 @@ const PostReferralLinkEmail: PreviewableEmailComponent<PostReferralLinkEmailProp
                   href={settingsUrl}
                   style={styles.button}
                 >
-                  {copy.manage}
+                  {t('manage')}
                 </Button>
               </Section>
 
@@ -115,7 +114,7 @@ const PostReferralLinkEmail: PreviewableEmailComponent<PostReferralLinkEmailProp
                   href={unsubscribeUrl}
                   style={linkStyle}
                 >
-                  {copy.unsubscribe}
+                  {t('unsubscribe')}
                 </Link>
               </Text>
             </Section>
@@ -152,24 +151,24 @@ async function renderPostReferralLinkEmail(
   props: PostReferralLinkEmailProps,
 ): EmailRenderResultPromise {
   const locale = resolveUiLocale(props.uiLocale)
-  const copy = postReferralLinkCopyByLocale[locale]
+  const t = emailCopy(locale, 'post-referral-link')
   return {
-    subject: copy.subject,
+    subject: t('subject'),
     html: await render(<PostReferralLinkEmail {...props} />, { pretty: true }),
     text: [
-      copy.greeting(props.userName),
+      emailOptional(t, 'greeting', props.userName),
       '',
-      copy.bodyText,
+      t('bodyText'),
       '',
       ...props.referralPrograms.flatMap(program => [
         program.name,
-        formatLinkCount(copy, program.linkCount),
-        `${copy.itemButton}: ${program.url}`,
+        formatLinkCount(t, program.linkCount),
+        `${t('itemButton')}: ${program.url}`,
         '',
       ]),
-      `${copy.manage}: ${props.settingsUrl}`,
+      `${t('manage')}: ${props.settingsUrl}`,
       '',
-      `${copy.unsubscribe}: ${props.unsubscribeUrl}`,
+      `${t('unsubscribe')}: ${props.unsubscribeUrl}`,
       '',
       getLocalizedSignoff(locale),
       '',

@@ -63,6 +63,7 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   // Memberships — sensitive: purchase, verification, and billing-management operations
   'POST:/api/v1/membership-purchase-intents': { category: 'sensitive' },
   'POST:/api/v1/membership-verifications': { category: 'sensitive' },
+  'POST:/api/v1/memberships/microsoft-store/service-tickets': { category: 'sensitive' },
   'POST:/api/v1/memberships/billing-portal-sessions': { category: 'sensitive' },
 
   // Identity verification — status read is read-only (fetched on render); billing/Stripe ops stay sensitive

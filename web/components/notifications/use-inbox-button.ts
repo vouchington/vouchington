@@ -95,7 +95,7 @@ function subscribeInboxStore(listener: () => void) {
   listeners.add(listener)
   if (!initialized) {
     initialized = true
-    refreshInboxStore({ showError: false }).catch(() => undefined)
+    void refreshInboxStore({ showError: false })
   }
   return () => {
     listeners.delete(listener)

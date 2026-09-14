@@ -18,17 +18,16 @@ export async function seedComments(): Promise<void> {
     for (let i = 0; i < 5; i++) {
       const id = seedUuidAtTimestamp(l1TimestampMs, i)
       const markdown = `Seed comment L1-${i}`
-      l1Values.push(id, userId, markdown, rootPostId, rootPostId, hash, hash, hash)
-      const base = l1Values.length - 7
+      l1Values.push(id, userId, markdown, rootPostId, rootPostId, hash, hash)
+      const base = l1Values.length - 6
       l1Rows.push(
-        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7})`,
+        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6})`,
       )
     }
     await query(
       `/* seedExplainData */ INSERT INTO posts (
         id, post_type, created_by_id, markdown, parent_id, root_id,
         bedrock_nova_multimodal_v1_content_sha256,
-        openai_omni_moderation_content_sha256,
         llm_moderation_content_sha256
       ) VALUES ${l1Rows.join(', ')} ON CONFLICT DO NOTHING`,
       l1Values,
@@ -39,17 +38,16 @@ export async function seedComments(): Promise<void> {
       const id = seedUuidAtTimestamp(l2TimestampMs, i)
       const parentId = seedUuidAtTimestamp(l1TimestampMs, i)
       const markdown = `Seed comment L2-${i}`
-      l2Values.push(id, userId, markdown, parentId, rootPostId, hash, hash, hash)
-      const base = l2Values.length - 7
+      l2Values.push(id, userId, markdown, parentId, rootPostId, hash, hash)
+      const base = l2Values.length - 6
       l2Rows.push(
-        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7})`,
+        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6})`,
       )
     }
     await query(
       `/* seedExplainData */ INSERT INTO posts (
         id, post_type, created_by_id, markdown, parent_id, root_id,
         bedrock_nova_multimodal_v1_content_sha256,
-        openai_omni_moderation_content_sha256,
         llm_moderation_content_sha256
       ) VALUES ${l2Rows.join(', ')} ON CONFLICT DO NOTHING`,
       l2Values,
@@ -60,17 +58,16 @@ export async function seedComments(): Promise<void> {
       const id = seedUuidAtTimestamp(l3TimestampMs, i)
       const parentId = seedUuidAtTimestamp(l2TimestampMs, i % 5)
       const markdown = `Seed comment L3-${i}`
-      l3Values.push(id, userId, markdown, parentId, rootPostId, hash, hash, hash)
-      const base = l3Values.length - 7
+      l3Values.push(id, userId, markdown, parentId, rootPostId, hash, hash)
+      const base = l3Values.length - 6
       l3Rows.push(
-        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7})`,
+        `($${base}, 'comment'::post_types, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6})`,
       )
     }
     await query(
       `/* seedExplainData */ INSERT INTO posts (
         id, post_type, created_by_id, markdown, parent_id, root_id,
         bedrock_nova_multimodal_v1_content_sha256,
-        openai_omni_moderation_content_sha256,
         llm_moderation_content_sha256
       ) VALUES ${l3Rows.join(', ')} ON CONFLICT DO NOTHING`,
       l3Values,

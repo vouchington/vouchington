@@ -21,6 +21,7 @@ import {
 } from '@/lib/api/server'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { getTranslations } from '@/lib/i18n/get-translations'
 import { canCurrentUserSeeDownvotes } from '@/lib/permissions/can-see-downvotes'
 import { isIndexableForSeo } from '@/lib/seo/indexability'
 import { createExcerpt, createNoIndexMetadata, createPageMetadata } from '@/lib/seo/metadata'
@@ -115,11 +116,12 @@ export function createPostDetailPage(postType: PostType, slug: string) {
       })
     })
 
-    const [descendants, currentUser, communityData, pinnedPostsData] = await Promise.all([
+    const [descendants, currentUser, communityData, pinnedPostsData, t] = await Promise.all([
       descendantsPromise,
       currentUserPromise,
       communityDataPromise,
       pinnedPostsPromise,
+      getTranslations(),
     ])
     const communityViewerRole =
       communityData?.membership?.removed_at == null ? communityData?.membership?.role : null
@@ -168,6 +170,7 @@ export function createPostDetailPage(postType: PostType, slug: string) {
       <PageWithAside
         aside={
           <PostDetailAside
+            t={t}
             post={post}
             authorAside={authorAside}
             sourceUrls={[postResponse.link_embed?.source_url]}
@@ -197,7 +200,7 @@ export function createPostDetailPage(postType: PostType, slug: string) {
             })}
           />
           {breadcrumbItems.length > 0 && (
-            <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+            <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
           )}
           <Breadcrumbs items={breadcrumbItems} />
           <PostDetail
@@ -213,7 +216,10 @@ export function createPostDetailPage(postType: PostType, slug: string) {
             isPostPinned={isPostPinned}
             linkEmbed={postResponse.link_embed}
           />
-          <ReviewReferralPrograms post={post} />
+          <ReviewReferralPrograms
+            t={t}
+            post={post}
+          />
           {currentUser != null && reviewedTopics.length > 0 && (
             <Suspense fallback={null}>
               <ReviewDisputeEntry

@@ -334,6 +334,19 @@ CREATE TABLE IF NOT EXISTS community_post_reviews (
   rejection_reason TEXT,
   unpublished_at TIMESTAMPTZ,
   unpublished_by_id UUID REFERENCES users ON DELETE SET NULL,
+  platform_override_at TIMESTAMPTZ,
+  platform_override_by_id UUID REFERENCES users ON DELETE SET NULL,
+  platform_override_action TEXT CHECK (
+    platform_override_action IN ('approve', 'reject', 'unpublish', 'restore')
+  ),
+  platform_override_reason_code TEXT CHECK (
+    platform_override_reason_code IS NULL
+    OR char_length(platform_override_reason_code) BETWEEN 1 AND 100
+  ),
+  platform_override_private_note TEXT CHECK (
+    platform_override_private_note IS NULL
+    OR char_length(platform_override_private_note) <= 4000
+  ),
   -- Escalation: a moderator can escalate a pending post review for senior-mod review.
   escalated_at TIMESTAMPTZ,
   escalated_by_id UUID REFERENCES users ON DELETE SET NULL,
@@ -342,8 +355,18 @@ CREATE TABLE IF NOT EXISTS community_post_reviews (
   CHECK ((approved_at IS NULL AND rejected_at IS NULL) OR reviewed_at IS NOT NULL),
   CHECK (rejection_reason IS NULL OR char_length(rejection_reason) <= 1000),
   CHECK (rejection_reason IS NULL OR rejection_reason = TRIM(rejection_reason)),
-  CHECK (escalated_at IS NOT NULL OR escalated_by_id IS NULL)
+  CHECK (escalated_at IS NOT NULL OR escalated_by_id IS NULL),
+  CHECK (
+    (platform_override_at IS NULL AND platform_override_by_id IS NULL AND platform_override_action IS NULL)
+    OR
+    (platform_override_at IS NOT NULL AND platform_override_by_id IS NOT NULL AND platform_override_action IS NOT NULL)
+  ),
+  CHECK (platform_override_at IS NOT NULL OR platform_override_reason_code IS NULL),
+  CHECK (platform_override_at IS NOT NULL OR platform_override_private_note IS NULL)
 );
+
+CREATE INDEX IF NOT EXISTS idx_community_post_reviews__platform_override_by_id
+ON community_post_reviews (platform_override_by_id);
 
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__community ON community_post_reviews (community_id, post_id);
 CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__pending ON community_post_reviews (community_id) WHERE approved_at IS NULL AND rejected_at IS NULL;
@@ -371,6 +394,11 @@ COMMENT ON COLUMN community_post_reviews.unpublished_at IS 'When the post was re
 COMMENT ON COLUMN community_post_reviews.unpublished_by_id IS 'User who removed the post from the community.';
 COMMENT ON COLUMN community_post_reviews.escalated_at IS 'When a moderator escalated this pending post review for senior-mod attention. NULL means not escalated.';
 COMMENT ON COLUMN community_post_reviews.escalated_by_id IS 'The moderator who escalated this pending post review.';
+COMMENT ON COLUMN community_post_reviews.platform_override_at IS 'When platform moderation staff last overrode the community publication projection; while present community moderators cannot replace it.';
+COMMENT ON COLUMN community_post_reviews.platform_override_by_id IS 'Platform administrator or site moderator who applied the currently controlling override.';
+COMMENT ON COLUMN community_post_reviews.platform_override_action IS 'The currently controlling platform publication action.';
+COMMENT ON COLUMN community_post_reviews.platform_override_reason_code IS 'Stable public-safe reason code for the controlling platform action.';
+COMMENT ON COLUMN community_post_reviews.platform_override_private_note IS 'Private staff-only note for the controlling platform action.';
 
 -- FK for posts.community_id (column defined in 0010-00-00-posts.sql without FK due to table ordering)
 

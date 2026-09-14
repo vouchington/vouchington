@@ -7,6 +7,7 @@ import {
 } from '../../../test-helpers/vitest.setup.data-stores.mts'
 import { seedPlaywrightTestData } from '../../../backend/scripts/seeds/playwright-test-data.mts'
 import { invalidate } from '../../../backend/services/entity-cache/index.mts'
+import { compileCatalogForProcess } from '../../../backend/services/localization/compile-catalog.mts'
 import { createTraceProxy, type TraceProxyHandle } from './backend-trace-proxy.mts'
 import { ensureBuildArtifactsExist } from './build-state.mts'
 import { allocateReservedPorts, type ReservedPort } from './ports.mts'
@@ -43,6 +44,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
 
   try {
     ensureBuildArtifactsExist()
+    await compileCatalogForProcess()
 
     console.log('\n[web-integration] Preparing data stores...')
     process.env.WEB_INTEGRATION_TEST_USER_EMAIL = testUserEmail
@@ -126,6 +128,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       cwd: resolve(WEB_DIR, '.next', 'standalone', 'web'),
       env: {
         NODE_ENV: 'test',
+        VITEST: '',
         PORT: String(nextPort),
         HOSTNAME: '127.0.0.1',
         API_BASE_URL: traceOrigin,

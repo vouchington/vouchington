@@ -8,7 +8,7 @@ import {
   createOAuthAccount,
   insertCompletionReadyAuthorization,
   registerCleanup,
-} from '../test-helpers/authorization-completion.mts'
+} from '../../../test-helpers/services/oauth/authorization-completion.mts'
 
 describe('OAuth authorization completion MFA', () => {
   it('creates a private MFA attempt only after native completion proof succeeds', async () => {

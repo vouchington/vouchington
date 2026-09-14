@@ -1,0 +1,8 @@
+{
+  "service_tickets": {
+    "collections_service_ticket": "fixture-collections-ticket",
+    "expires_at": "2027-01-01T00:00:00.000Z",
+    "publisher_user_id": "00000000-0000-7000-8000-000000000001",
+    "purchase_service_ticket": "fixture-purchase-ticket"
+  }
+}

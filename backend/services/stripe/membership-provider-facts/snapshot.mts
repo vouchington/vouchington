@@ -1,7 +1,7 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import type Stripe from 'stripe'
 import sql from 'sql-template-strings'
-import { getStripeObjectNumber, mapStripeWebhookStatus } from '../webhook-utils.mts'
+import { getStripeObjectNumber, mapStripeSubscriptionStatus } from '../event-utils.mts'
 
 export class StripeProviderFactVerdictError extends Error {
   constructor(message: string) {
@@ -61,7 +61,7 @@ export async function getAuthoritativeStripeMembershipSnapshot(
     getTimestamp(subscription, 'start_date') ??
     getTimestamp(subscription, 'current_period_start') ??
     fact.effective_at
-  const status = mapStripeWebhookStatus(subscription.status)
+  const status = mapStripeSubscriptionStatus(subscription.status)
   const recoverableCancellation = subscription.status === 'unpaid'
   const recoverableExpiration = subscription.status === 'incomplete'
   const cancelledAt =

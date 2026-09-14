@@ -34,7 +34,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_05 = [
   { key: 'native.dotnet.csharpCommunities.newsItem', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.noStateChange', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.open', consumers: ['dotnet'] },
-  { key: 'native.dotnet.csharpCommunities.openAiModeration', consumers: ['dotnet'] },
+  { key: 'native.dotnet.csharpCommunities.platformModeration', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.order', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.pauseDigests', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.pendingReports', consumers: ['dotnet'] },

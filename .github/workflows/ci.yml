@@ -366,8 +366,8 @@ jobs:
       upload_vitest_blob_artifact: true
       full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-web-api == 'true' }}
       run_tests: ${{ needs.select-ci.outputs.run-tests-test-web-api != 'false' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-web-api || '' }}
       shard_total_override: ${{ needs.select-ci.outputs.shard-total-test-web-api || '' }}
+      selected_test_files: ${{ needs.select-ci.outputs.files-test-web-api || '' }}
     permissions:
       contents: read
       actions: read
@@ -632,7 +632,10 @@ jobs:
       select-vitest-outputs-run-tests-test-backend-modules: ${{ needs.select-ci.outputs.run-tests-test-backend-modules }}
       select-vitest-outputs-run-tests-test-cloudflare-worker: ${{ needs.select-ci.outputs.run-tests-test-cloudflare-worker }}
       select-vitest-outputs-run-tests-test-lambdas: ${{ needs.select-ci.outputs.run-tests-test-lambdas }}
-      select-vitest-outputs-coverage-plan: ${{ needs.select-ci.outputs.coverage-plan }}
+      test-backend-unit-shard-total: ${{ needs.test-backend-unit.outputs.shard-total }}
+      test-web-shard-total: ${{ needs.test-web.outputs.shard-total }}
+      test-web-api-shard-total: ${{ needs.test-web-api.outputs.shard-total }}
+      test-web-integration-shard-total: ${{ needs.test-web-integration.outputs.shard-total }}
       select-vitest-outputs-storybook-browser-mode: ${{ needs.select-ci.outputs.storybook-browser-mode }}
       test-ts-shared-result: ${{ needs.test-ts-shared.result }}
       test-tooling-result: ${{ needs.test-tooling.result }}

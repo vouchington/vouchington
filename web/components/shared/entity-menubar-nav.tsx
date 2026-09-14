@@ -1,6 +1,6 @@
 'use client'
 
-import type { MouseEvent, ReactElement } from 'react'
+import { useRef, type MouseEvent, type ReactElement } from 'react'
 import {
   Menubar,
   MenubarContent,
@@ -38,10 +38,11 @@ interface EntityMenubarNavProps {
 function preserveScrollFromClickTarget(
   event: MouseEvent<HTMLElement>,
   preserveScrollOnNavigation: boolean,
-) {
-  if (!preserveScrollOnNavigation) return
+): boolean {
+  if (!preserveScrollOnNavigation) return false
   const target = event.target instanceof Element ? event.target : null
-  preserveScrollForInternalHrefClick(event, target?.closest<HTMLAnchorElement>('a[href]')?.href)
+  const href = target?.closest<HTMLAnchorElement>('a[href]')?.href
+  return preserveScrollForInternalHrefClick(event, href)
 }
 
 export function EntityMenubarNav({
@@ -50,6 +51,8 @@ export function EntityMenubarNav({
   className,
   preserveScrollOnNavigation = false,
 }: EntityMenubarNavProps) {
+  const preventDropdownCloseAutoFocusRef = useRef(false)
+
   return (
     <Menubar
       aria-label={ariaLabel}
@@ -72,9 +75,17 @@ export function EntityMenubarNav({
               {item.content}
             </MenubarTrigger>
             <MenubarContent
-              onClickCapture={event =>
-                preserveScrollFromClickTarget(event, preserveScrollOnNavigation)
-              }
+              onClickCapture={event => {
+                preventDropdownCloseAutoFocusRef.current = preserveScrollFromClickTarget(
+                  event,
+                  preserveScrollOnNavigation,
+                )
+              }}
+              onCloseAutoFocus={event => {
+                if (!preventDropdownCloseAutoFocusRef.current) return
+                preventDropdownCloseAutoFocusRef.current = false
+                event.preventDefault()
+              }}
             >
               {item.dropdownItems.map(dropdownItem => (
                 <MenubarItem

@@ -12,8 +12,15 @@ type ReviewQueuePage = {
   results: Array<{
     created_at: string
     id: string
-    openai_omni_moderation_flagged: boolean | null
-    media_context: {
+    moderation_summary: {
+      disposition: 'pass' | 'review' | 'reject' | 'incomplete' | null
+      evidence_summary: {
+        flagged_category_count: number
+        signal_count: number
+      }
+      reason_codes: string[]
+    }
+    media_reveal: {
       requires_reveal: boolean
       images: Array<{ image_id: string; order_index: number; caption: string }>
     }
@@ -30,8 +37,13 @@ describe('native moderation review queue fixtures', () => {
 
     for (const post of posts) {
       expect(getDateFromUUIDv7(post.id)?.toISOString()).toBe(post.created_at)
-      expect(post.media_context.requires_reveal).toBe(post.openai_omni_moderation_flagged === true)
-      expect(post.media_context.images.length).toBeLessThanOrEqual(20)
+      expect(post.media_reveal.requires_reveal).toBe(
+        post.media_reveal.images.length > 0 &&
+          (post.moderation_summary.disposition === 'review' ||
+            post.moderation_summary.disposition === 'reject'),
+      )
+      expect(post.media_reveal.images.length).toBeLessThanOrEqual(20)
+      expect(post.moderation_summary.reason_codes).toEqual(expect.any(Array))
     }
 
     expect(firstPage.results.map(post => post.id)).toEqual(

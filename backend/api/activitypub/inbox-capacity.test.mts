@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { activitypubInbox } from '@queues/activitypub-inbox/queues'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   insertApprovedTestFediverseInstance,
   resetActivityPubInboxDeliveryStorageForTest,

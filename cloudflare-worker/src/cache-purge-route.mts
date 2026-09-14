@@ -16,14 +16,19 @@ import { timingSafeCredentialMatch } from './basic-auth.mts'
 import { edgeErrorResponse } from './error-response.mts'
 import type { EdgeExecutionContext, Env } from './types.mts'
 import { CACHE_PURGE_SECRET_HEADER, MAX_TAGS_PER_REQUEST } from '@ts-shared/cache/purge'
+import { isValidCacheTag } from '@ts-shared/cache/cache-tag-encoding'
 import type { StagingCanaryFault } from './staging-canary.mts'
 
+// Cloudflare fails an entire purge batch when any single tag is over-long or carries a byte
+// outside printable ASCII, and reports it only as a generic rejection. Rejecting such a batch
+// here turns that opaque 502 — which the backend's retry policy treats as transient and retries
+// three times — into a 400 the caller records as unrecoverable.
 function isValidTagList(value: unknown): value is string[] {
   return (
     Array.isArray(value) &&
     value.length > 0 &&
     value.length <= MAX_TAGS_PER_REQUEST &&
-    value.every(tag => typeof tag === 'string' && tag.length > 0)
+    value.every(tag => typeof tag === 'string' && isValidCacheTag(tag))
   )
 }
 

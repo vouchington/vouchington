@@ -51,15 +51,23 @@ const EXPECTED_SCHEDULED_JOBS = [
   'heartbeat/publish-glidemq-stats',
   'images/cleanup-abandoned-uploads-schedule',
   'kagi-smallweb/kagi-smallweb-sync',
+  'memberships/dispatchMembershipRefundReconciliation',
   'memberships/membershipEntitlementEffects',
   'memberships/membershipGrantExpiry',
   'memberships/appleNotificationRecovery',
+  'memberships/googlePlayNotificationRecovery',
+  'memberships/googlePlayAcknowledgementRecovery',
+  'memberships/googlePlayActiveSourceRecovery',
+  'memberships/googlePlayOidcTrustRefresh',
+  'memberships/microsoftStoreSourceRecovery',
   'memberships/membershipVerificationRecovery',
   'memberships/renewalNotificationCheck',
   'memberships/stripeCatalogReconciliation',
-  'memberships/stripeWebhookRecovery',
+  'memberships/stripeEventRecovery',
   'notifications/community-activity-digest-weekly',
   'notifications/notification-push-intent-recovery',
+  'openai_moderation_omni_single/reconcile-image-quarantines',
+  'openai_moderation_omni_single/reconcile-post-moderation',
   'oauth-authorization-exchange/oauthAuthorizationExchangeDispatcher',
   'post-publication/reconcile-post-publication',
   'psql/cleanup-partitions-daily',
@@ -86,8 +94,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 30 manifests and 66 runtime schedulers', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(30)
+  it('imports the exact 31 manifests and 74 runtime schedulers', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(31)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),
@@ -133,7 +141,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface, including runtime generation recovery', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(50)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(58)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

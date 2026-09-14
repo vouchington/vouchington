@@ -1,4 +1,7 @@
+/* oxlint-disable max-lines -- referral stories cover form, card, list, aside, and feed surfaces together */
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { ReferralLinkForm } from '@/components/referral-links/referral-link-form'
 import { ReferralLinkCard } from '@/components/referral-links/referral-link-card'
 import { ReferralLinkFeedCard } from '@/components/feed/referral-link-feed-card'
@@ -19,6 +22,8 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const sampleUser = {
   id: storyCurrentUser.id,
@@ -134,7 +139,10 @@ export const CardWithReview: Story = {
 export const LinkList: Story = {
   render: () => (
     <EntityStoryFrame title='Referral link list'>
-      <ReferralLinkList response={sampleResponse} />
+      <ReferralLinkList
+        t={t}
+        response={sampleResponse}
+      />
     </EntityStoryFrame>
   ),
 }
@@ -142,7 +150,10 @@ export const LinkList: Story = {
 export const EmptyList: Story = {
   render: () => (
     <EntityStoryFrame title='Referral link list — empty'>
-      <ReferralLinkList response={emptyResponse} />
+      <ReferralLinkList
+        t={t}
+        response={emptyResponse}
+      />
     </EntityStoryFrame>
   ),
 }

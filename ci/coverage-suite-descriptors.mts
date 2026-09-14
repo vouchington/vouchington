@@ -4,9 +4,17 @@ import { coverageConfigForScope } from '../test-helpers/vitest-config/coverage-c
 import { VITEST_OWNERSHIP } from './vitest/project-ownership.mts'
 import type { VitestJobOwnership, VitestShardPolicy } from './vitest/project-ownership-types.mts'
 
-export const projectsByJob = Object.fromEntries(
-  VITEST_OWNERSHIP.map(job => [job.orchestratorJob, job.projects.map(({ project }) => project)]),
-) as Record<string, readonly string[]>
+const projectsByCoverageJob = new Map<string, string[]>()
+for (const job of VITEST_OWNERSHIP) {
+  const projects = projectsByCoverageJob.get(job.orchestratorJob) ?? []
+  projects.push(...job.projects.map(({ project }) => project))
+  projectsByCoverageJob.set(job.orchestratorJob, projects)
+}
+
+export const projectsByJob = Object.fromEntries(projectsByCoverageJob) as Record<
+  string,
+  readonly string[]
+>
 
 export interface ShardedCoverageJob {
   readonly job: VitestJobOwnership

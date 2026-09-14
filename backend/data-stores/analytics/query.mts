@@ -50,10 +50,7 @@ let queryQueue: Promise<unknown> = Promise.resolve()
 
 function enqueue<T>(task: () => Promise<T>): Promise<T> {
   const result = queryQueue.then(task, task)
-  queryQueue = result.then(
-    () => undefined,
-    () => undefined,
-  )
+  queryQueue = result.then(() => undefined, onError)
   return result
 }
 

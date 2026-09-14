@@ -111,7 +111,7 @@ stdio `@sentry/mcp-server`.
 Required secret:
 
 - `SENTRY_ACCESS_TOKEN` injected by the environment, never committed
-- organization: `voucha`
+- organization: `SENTRY_ORG` from the environment
 - scopes: read-only project/event/issue access sufficient for querying issues
   and events
 

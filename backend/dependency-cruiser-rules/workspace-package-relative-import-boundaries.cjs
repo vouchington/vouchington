@@ -33,11 +33,13 @@ const path = require('node:path')
 const backendDir = path.join(__dirname, '..')
 const repoRoot = path.join(backendDir, '..')
 
-// Test files and declaration files never ship in the runtime image, so an
-// escaping relative import in one cannot cause a production ERR_MODULE_NOT_FOUND.
+// The dedicated test-helper workspace, test files, and declaration files never ship in the
+// runtime image, so an escaping relative import in one cannot cause a production
+// ERR_MODULE_NOT_FOUND.
 // dependency-cruiser reports `from.path` as a POSIX repo-relative path regardless of
 // host OS, so this pattern is POSIX-only (`/`) by design — no `[\\/]` alternation needed.
-const TEST_FILE_PATTERN = '(?:^|/)__tests__/|\\.test\\.|\\.d\\.[mc]?ts$'
+const NON_RUNTIME_SOURCE_PATTERN =
+  '^backend/test-helpers/|(?:^|/)__tests__/|\\.test\\.|\\.d\\.[mc]?ts$'
 
 function toRepoRelativePosix(absoluteDir) {
   return path.relative(repoRoot, absoluteDir).split(path.sep).join('/')
@@ -98,7 +100,7 @@ module.exports = discoverWorkspacePackageRoots().map(packageRoot => {
     severity: 'error',
     from: {
       path: `^${escapedPrefix}`,
-      pathNot: TEST_FILE_PATTERN,
+      pathNot: NON_RUNTIME_SOURCE_PATTERN,
     },
     to: {
       pathNot: `^${escapedPrefix}`,

@@ -6,7 +6,6 @@ files:
   - 'backend/**/*.test.mts'
   - 'backend/**/__tests__/**/*.mts'
 ignores:
-  - 'backend/data-stores/psql/**'
   - 'backend/test-helpers/**'
 rule:
   any:
@@ -51,5 +50,20 @@ examples:
     isValid: false
     file: 'backend/services/auth/auth.test.mts'
   - code: "import { read } from '@data-stores/psql'"
-    isValid: true
+    isValid: false
     file: 'backend/data-stores/psql/index.test.mts'
+  - code: "const db = require('@data-stores/psql')"
+    isValid: false
+    file: 'backend/data-stores/psql/index.test.mts'
+  - code: "const db = await import('@data-stores/psql')"
+    isValid: false
+    file: 'backend/data-stores/psql/index.test.mts'
+  - code: "const sql = require('sql-template-strings')"
+    isValid: false
+    file: 'backend/data-stores/psql/index.test.mts'
+  - code: "const sql = await import('sql-template-strings')"
+    isValid: false
+    file: 'backend/data-stores/psql/index.test.mts'
+  - code: "import { read } from '@data-stores/psql'"
+    isValid: true
+    file: 'backend/test-helpers/data-stores/psql/schema.mts'

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { FEDIVERSE_LEMMY_HOST, FEDIVERSE_MASTODON_HOST } from '@voucha/config'
 import { decodeFediverseCursor } from '@services/fediverse-search'
 

@@ -148,6 +148,50 @@ describe('warnIfCspAssetOriginInvalid', () => {
   })
 })
 
+describe('warnIfSentryConfigurationInvalid', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('warns once only for missing or invalid deployed Sentry configuration', async () => {
+    const { warnIfSentryConfigurationInvalid } = await importEnvValidation()
+    warnIfSentryConfigurationInvalid({ ENVIRONMENT: 'production', SENTRY_DSN: 'not-a-dsn' })
+    warnIfSentryConfigurationInvalid({ ENVIRONMENT: 'production', SENTRY_DSN: 'not-a-dsn' })
+
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Sentry is disabled because its required DSN configuration is missing or invalid.',
+    )
+  })
+
+  it('stays quiet outside deployed environments', async () => {
+    const { warnIfSentryConfigurationInvalid } = await importEnvValidation()
+    warnIfSentryConfigurationInvalid({ ENVIRONMENT: 'development' })
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  it('warns without exposing an invalid retiring browser DSN', async () => {
+    const { warnIfSentryConfigurationInvalid } = await importEnvValidation()
+    warnIfSentryConfigurationInvalid({
+      ENVIRONMENT: 'production',
+      SENTRY_DSN: 'https://worker_public@worker.example.test/456',
+      SENTRY_TUNNEL_PREVIOUS_WEB_DSN: 'invalid-retiring-value',
+      SENTRY_WEB_DSN: 'https://web_public@web.example.test/123',
+    })
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Sentry tunnel rotation overlap is disabled because the previous browser DSN is invalid.',
+    )
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('invalid-retiring-value'))
+  })
+})
+
 describe('isCachePlaceholderNonceValid', () => {
   it('rejects undefined', async () => {
     const { isCachePlaceholderNonceValid } = await importEnvValidation()

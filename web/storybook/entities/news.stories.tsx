@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { createTranslator, loadMessages } from '@ts-shared/ui-messages'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { CategoryChips } from '@/components/feed/category-chips'
 import { NewsItemCard } from '@/components/feed/news-item-card'
 import { NewsItemHeader } from '@/components/news/news-item-header'
@@ -11,7 +12,7 @@ import { YoutubeRssMetadataRow } from '@/components/news/youtube-rss-metadata-ro
 import { EntityStoryFrame, AsideStack, StoryCard, StoryGrid } from './entity-story-frame'
 import { newsItems, newsResponse, posts } from './entity-fixtures'
 
-const t = createTranslator('en', await loadMessages('en'))
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const newsResponseNoStoryPost = {
   ...newsResponse,

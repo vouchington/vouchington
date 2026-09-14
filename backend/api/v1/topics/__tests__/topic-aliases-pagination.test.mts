@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { v7 } from 'uuid'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createTestTopic } from '@voucha/test-helpers'
 import { encodeScopedUuidCursor, encodeScopedAliasCursor } from '@modules/pagination'
 import { createTopicAliases } from '@services/topics/aliases'

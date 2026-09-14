@@ -9,6 +9,7 @@ Not partitioned — growth: unbounded.
 | Column                      | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                           |
 | --------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
 | `id`                        | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                   |
+| `membership_operation_id`   | `uuid`                      | yes      |                              |          |           |           | Operation that reconciled this refund.                                            |
 | `membership_id`             | `uuid`                      | no       |                              |          |           |           | Membership projection against which the refund was issued.                        |
 | `membership_source_id`      | `uuid`                      | no       |                              |          |           |           | Immutable entitlement source whose provider lineage supplied the refunded charge. |
 | `user_id`                   | `uuid`                      | yes      |                              |          |           |           | Member recorded as refunded; retained after final account purge.                  |
@@ -23,7 +24,7 @@ Not partitioned — growth: unbounded.
 | `revoked_access`            | `boolean`                   | no       | `false`                      |          |           |           | Whether this refund also revoked membership access.                               |
 | `issued_by_id`              | `uuid`                      | yes      |                              |          |           |           | Administrator identity retained without an FK for audit persistence.              |
 | `source`                    | `membership_refund_sources` | no       |                              |          |           |           | Whether the refund was administrator initiated or dashboard reconciled.           |
-| `stripe_event_id`           | `text`                      | yes      |                              |          |           |           | Stripe webhook event that created this reconciliation receipt.                    |
+| `stripe_event_id`           | `text`                      | yes      |                              |          |           |           | Stripe event that created this reconciliation receipt.                            |
 | `note`                      | `text`                      | yes      |                              |          |           |           | Optional bounded administrative refund note.                                      |
 | `created_at`                | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                   |
 
@@ -41,12 +42,15 @@ _none_
 
 **Foreign keys:**
 
-- `fk_mrefunds__intent_source`: `FOREIGN KEY (stripe_idempotency_key, membership_source_id) REFERENCES membership_refund_intents(stripe_idempotency_key, membership_source_id) ON DELETE RESTRICT`
+- `fk_membership_refunds__administrator_request`: `FOREIGN KEY (membership_operation_id, stripe_idempotency_key) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id, administrator_request_key) ON DELETE RESTRICT`
+- `fk_membership_refunds__operation_source`: `FOREIGN KEY (membership_operation_id, membership_source_id) REFERENCES membership_operations(id, membership_source_id) ON DELETE RESTRICT`
 - `membership_refunds_membership_source_id_fkey`: `FOREIGN KEY (membership_source_id) REFERENCES membership_sources(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `idx_mrefunds__membership_id`: `CREATE INDEX idx_mrefunds__membership_id ON public.membership_refunds USING btree (membership_id)`
+- `idx_mrefunds__operation_id`: `CREATE INDEX idx_mrefunds__operation_id ON public.membership_refunds USING btree (membership_operation_id, id DESC) WHERE (membership_operation_id IS NOT NULL)`
+- `idx_mrefunds__operation_receipt`: `CREATE UNIQUE INDEX idx_mrefunds__operation_receipt ON public.membership_refunds USING btree (membership_operation_id) WHERE (membership_operation_id IS NOT NULL)`
 - `idx_mrefunds__source_id`: `CREATE INDEX idx_mrefunds__source_id ON public.membership_refunds USING btree (membership_source_id)`
 - `idx_mrefunds__stripe_charge_id`: `CREATE INDEX idx_mrefunds__stripe_charge_id ON public.membership_refunds USING btree (stripe_charge_id)`
 - `idx_mrefunds__stripe_idempotency_key`: `CREATE UNIQUE INDEX idx_mrefunds__stripe_idempotency_key ON public.membership_refunds USING btree (stripe_idempotency_key) WHERE (stripe_idempotency_key IS NOT NULL)`

@@ -32,13 +32,14 @@ import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { topicHref } from '@/lib/links/entity-href'
 import { getContentLanguageDir } from '@ts-shared/languages/content-languages'
+import type { ReportMenuItem as ReportMenuItemComponent } from '@/components/shared/report-menu-item'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const FollowerShareActions = dynamic(() =>
   import('@/components/shared/follower-share-actions').then(mod => mod.FollowerShareActions),
 )
 
-const ReportMenuItem = dynamic(
+const ReportMenuItem = dynamic<Parameters<typeof ReportMenuItemComponent>[0]>(
   () => import('@/components/shared/report-menu-item').then(mod => mod.ReportMenuItem),
   { ssr: false },
 )

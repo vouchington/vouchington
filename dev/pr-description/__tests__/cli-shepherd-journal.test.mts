@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { VALID_PROVENANCE_BLOCK } from '../test-helpers/valid-pr-body.mts'
+import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
 
 describe('dev/pr-description.mts canonical Shepherd Journal update', () => {
   const execFileAsync = promisify(execFile)

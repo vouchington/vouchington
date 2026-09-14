@@ -133,6 +133,7 @@ Cross-link related docs bidirectionally instead of duplicating their content, an
 - [Translation Catalog and Locale Checks](development/reference-tests-translation-catalog-and-locale-checks.md)
 - [Vitest Mock Typing](development/reference-tests-vitest-mock-typing.md)
 - [Vitest Projects](development/reference-tests-vitest-projects.md)
+- [Vitest 5 Pool and Isolate Matrix](development/reference-tests-vitest-5-pool-matrix.md)
 - [Explain test selection and Vitest ownership](development/reference-explain-test-selection-and-vitest-ownership.md)
 - [DynamicConfig cleanup](development/reference-dynamicconfig-cleanup.md)
 - [Project name reference](development/reference-project-name-reference.md)
@@ -186,7 +187,6 @@ How the system works — architecture, pipelines, and infrastructure.
 - [AI Agents](overview/architecture/ai-agents.md) — LLM moderation pipeline, semantic embeddings, agent conversations
   - [Shared agent utilities](../backend/agents/_shared/README.md) — `runToolLoop`, `createSubagentTool`, `buildAgentTools` API reference
   - [Spam detection service](../backend/services/spam-detection/README.md) — ML-based spam detection pipeline
-- [OpenAI Cost Model](overview/architecture/openai-cost-model.md) — Model policy, pricing matrix, production forecast, retry budgets, and usage ledger coverage
 - [Bedrock Embeddings](overview/architecture/bedrock-embeddings.md) — Dual-pipeline embeddings architecture: real-time single queue and Bedrock batch API, dedup contract, race outcomes
 - [Event Ingress Routing](overview/architecture/event-ingress.md) — Canonical rule for routing inbound AWS events and webhooks: in-VPC enqueue-only Lambda vs. public endpoint, the self-contained-auth test, and the real-time (push/long-poll only) requirement
 - [.NET Deep Linking](https://github.com/vouchington/vouchington-clients/blob/main/docs/architecture/dotnet-deep-linking.md) — MAUI protocol activation, shell routing, and native login-link handling
@@ -220,7 +220,6 @@ How the system works — architecture, pipelines, and infrastructure.
 - [S3 Buckets × Lifecycle Matrix](overview/infrastructure/s3-buckets.md) — Bucket purposes, encryption, and lifecycle/retention rules
 - [Deployment](overview/infrastructure/deployment.md) — Platform, Docker images, CI/CD flow, traffic routing, provisioning checklist
 - [SOCI Lazy Loading](overview/infrastructure/soci-lazy-loading.md) — Infra-side SOCI v2 index generation for Fargate lazy loading, decision rationale, architecture, and operations
-- [Deployment Costs](overview/infrastructure/deployment-costs.md) — Monthly cost breakdown across staging, production, and CI/testing
 - [Networking](overview/infrastructure/networking.md) — VPC topology, public IPv4 cost model, and egress design decisions
 - [Env Var Contract](overview/infrastructure/env-var-contract.md) — Filaments-owned typed env-var metadata for config-inventory and deployment handoffs
 - [Environment Variables](overview/infrastructure/environment-variables.md) — Complete inventory of all env vars by category
@@ -290,15 +289,6 @@ How the system works — architecture, pipelines, and infrastructure.
 ### Focused infrastructure references
 
 - [CI/CD Flow](overview/infrastructure/reference-deployment-ci-cd-flow.md)
-- [CI / Testing Costs](overview/infrastructure/reference-deployment-costs-ci-testing-costs.md)
-- [Cost Controls Already in Place](overview/infrastructure/reference-deployment-costs-cost-controls-already-in-place.md)
-- [Cross-Environment SaaS](overview/infrastructure/reference-deployment-costs-cross-environment-saas.md)
-- [Per-Environment AWS Costs](overview/infrastructure/reference-deployment-costs-per-environment-aws-costs.md)
-- [Pre-launch baseline deployment costs](overview/infrastructure/reference-deployment-costs-per-environment-pre-launch-baseline.md)
-- [Steady-state deployment costs](overview/infrastructure/reference-deployment-costs-per-environment-steady-state.md)
-- [Public IPv4 subtotal](overview/infrastructure/reference-deployment-costs-per-environment-public-ipv4-subtotal.md)
-- [ECS Fargate sizing](overview/infrastructure/reference-deployment-costs-per-environment-ecs-fargate-sizing.md)
-- [Optional deployment add-ons and environment differences](overview/infrastructure/reference-deployment-costs-per-environment-optional-add-ons.md)
 - [First-Time Provisioning Checklist](overview/infrastructure/reference-deployment-first-time-provisioning-checklist.md)
 - [Platform](overview/infrastructure/reference-deployment-platform.md)
 - [S3 Static Assets](overview/infrastructure/reference-deployment-s3-static-assets.md)
@@ -318,6 +308,9 @@ How the system works — architecture, pipelines, and infrastructure.
 - [OAuth Providers](overview/infrastructure/reference-environment-variables-oauth-providers.md)
 - [Payments (Stripe)](overview/infrastructure/reference-environment-variables-payments-stripe.md)
 - [Payments (Apple App Store)](overview/infrastructure/reference-environment-variables-payments-apple-app-store.md)
+- [Payments (Google Play)](overview/infrastructure/reference-environment-variables-payments-google-play.md)
+- [Google Play recovery](../backend/queues/memberships/reference-google-play-recovery.md)
+- [Payments (Microsoft Store)](overview/infrastructure/reference-environment-variables-payments-microsoft-store.md)
 - [Push Notifications](overview/infrastructure/reference-environment-variables-push-notifications.md)
 - [Server Configuration](overview/infrastructure/reference-environment-variables-server-configuration.md)
 - [Sideload Image Security](overview/infrastructure/reference-environment-variables-sideload-image-security.md)

@@ -1,5 +1,13 @@
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   [
+    'membership_google_play_recovery_cursors',
+    'One durable high-water mark per named Google Play recovery scan.',
+  ],
+  [
+    'membership_microsoft_store_recovery_cursors',
+    'One durable high-water mark per named Microsoft Store recovery scan.',
+  ],
+  [
     'membership_ineligible_purchase_reversal_refund_scan_cycles',
     'The reversal-case foreign-key primary key permits exactly one reusable verification-cycle row per immutable reversal case; later passes rotate its generation in place.',
   ],

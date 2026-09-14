@@ -22,8 +22,8 @@ export const OPENAI_SPEND_CAP_MAX_VALUES: Record<OpenAiSpendCapNumberField, numb
 
 // DynamicConfig over an env var deliberately: the point of a spend cap is lowering it *now*,
 // without a deploy. $10/day default in scale-six USD microunits (MONEY_SCALE, @ts-shared/money) --
-// conservative headroom over the modeled ~$77/month (~$2.60/day) production forecast (see
-// docs/overview/architecture/openai-cost-model.md), well under the ~$2,160/month OPENAI_TPM
+// conservative headroom over the modeled ~$77/month (~$2.60/day) production forecast (kept in
+// the private vouchington/vouchington-docs repository), well under the ~$2,160/month OPENAI_TPM
 // structurally permits today.
 //
 // This figure is a pre-launch estimate, not a measurement against real billing (#8773: production

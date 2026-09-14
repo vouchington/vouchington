@@ -15,12 +15,15 @@ import { getTranslations } from '@/lib/i18n/get-translations'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TopHashtags } from '@/components/topic-recommendations/top-hashtags'
 import { ListSearchError } from '@/components/shared/list-search-error'
+import type { TopicRecommendationsTable as TopicRecommendationsTableComponent } from '@/components/topic-recommendations/topic-recommendations-table'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = createNoIndexMetadata('New Topic Recommendations')
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const TopicRecommendationsTable = nextDynamic(() =>
+const TopicRecommendationsTable = nextDynamic<
+  Parameters<typeof TopicRecommendationsTableComponent>[0]
+>(() =>
   import('@/components/topic-recommendations/topic-recommendations-table').then(
     mod => mod.TopicRecommendationsTable,
   ),

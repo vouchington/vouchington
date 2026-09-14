@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { R2Bucket, R2ObjectBody } from '@cloudflare/workers-types/index.ts'
 import { createWorker } from '../index.mts'
-import { createContext } from '../test-helpers/mock-env.mts'
+import { createContext } from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 function createFakeBucket(objects: Record<string, string>): R2Bucket {

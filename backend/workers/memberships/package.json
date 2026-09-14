@@ -26,7 +26,7 @@
     "@services/email-classification": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/stripe": "workspace:^",
-    "@services/stripe-webhook-processing": "workspace:^",
+    "@services/stripe-event-processing": "workspace:^",
     "@services/users": "workspace:^",
     "glide-mq": "^0.15.5"
   },

@@ -950,6 +950,20 @@
       }
     ],
     "no-mistakes/async-call-disposition": "off",
+    // #11568: production backend and web are remediated and enforced. Keep the four test-only
+    // exclusions mechanically covered by the installed-rule fixture and CI config contract.
+    "no-mistakes/no-inline-noop-promise-catch": [
+      "error",
+      {
+        "checkedPathPatterns": ["backend/**", "web/**"],
+        "allowedPathPatterns": [
+          "**/*.test.*",
+          "**/*.spec.*",
+          "**/__tests__/**",
+          "**/test-helpers/**"
+        ]
+      }
+    ],
     "no-mistakes/async-try-catch-return-await": [
       "error",
       {
@@ -1124,7 +1138,7 @@
       }
     },
     {
-      "files": ["**/ts-shared/ui-messages/messages/{en,es,fr,pt}.ts"],
+      "files": ["**/localization/catalog/**"],
       "rules": {
         "max-lines": "off"
       }

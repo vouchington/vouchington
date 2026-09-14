@@ -24,6 +24,7 @@
     "@data-stores/psql": "workspace:^",
     "@modules/activitypub-uris": "workspace:^",
     "@modules/http-signatures": "workspace:^",
+    "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/remote-actors": "workspace:^",
     "http-errors": "^2.0.1",

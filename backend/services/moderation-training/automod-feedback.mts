@@ -13,7 +13,6 @@ import {
   lockAutomodFeedbackPostRow,
   lockAutomodFeedbackSource,
 } from './automod-feedback-context.mts'
-import { clearFalsePositivePostLevelFlags } from './post-level-flags.mts'
 import { recordModerationTrainingFeedback } from './feedback.mts'
 import { parseAutomodActionSourceKey } from './recent-actions.mts'
 
@@ -146,12 +145,11 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
               AND (in_review_at IS NOT NULL OR rejected_at IS NOT NULL)
           ),
           inserted_change AS (
-            INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id, note, metadata)
+            INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id, metadata)
             SELECT
               target_post.id,
               'approve',
               ${input.actorUserId},
-              ${input.note ?? null},
               ${JSON.stringify({ source_key: input.sourceKey, moderation_training: true })}::jsonb
             FROM target_post
             RETURNING id, post_id, created_at
@@ -173,7 +171,6 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
           reason: 'post_clearance_changed',
           footprint: { priorCommunityId: input.communityId },
         })
-        await clearFalsePositivePostLevelFlags(context.post_id, query)
       }
     }
     if (appliedAction) {
@@ -196,7 +193,6 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
             post_id,
             change_type,
             changed_by_id,
-            note,
             metadata,
             moderation_transparency_categories
           )
@@ -204,15 +200,21 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
             ${context.post_id},
             'reject',
             ${input.actorUserId},
-            ${input.note ?? null},
             ${JSON.stringify({ source_key: input.sourceKey, moderation_training: true })}::jsonb,
-            array_remove(
-              ARRAY[
-                CASE WHEN p.openai_omni_moderation_flagged IS TRUE THEN 'openai_omni' END,
-                CASE WHEN p.spam_detection_flagged IS TRUE THEN 'spam_detection' END
-              ],
-              NULL
-            )
+            COALESCE((
+              SELECT array_agg(latest.source::text ORDER BY latest.source)
+              FROM post_moderation_versions version
+              JOIN LATERAL (
+                SELECT DISTINCT ON (source) source, disposition
+                FROM post_moderation_dispositions
+                WHERE version_id = version.id
+                  AND source IN ('openai_omni', 'spam_detection')
+                ORDER BY source, id DESC
+              ) latest ON latest.disposition IN ('review', 'reject')
+              WHERE version.post_id = p.id
+                AND version.content_sha256 = p.llm_moderation_content_sha256
+                AND version.policy_revision = '2026-09-09.1'
+            ), '{}'::text[])
           FROM posts p
           WHERE p.id = ${context.post_id}
             AND p.in_review_at IS NOT NULL

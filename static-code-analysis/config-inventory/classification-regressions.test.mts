@@ -20,6 +20,7 @@ describe('config inventory classification regressions', () => {
         'process.env.RSS_CACHE_TTL_SECONDS',
         'process.env.QUEUES',
         'process.env.ANALYTICS_BACKEND',
+        'process.env.DATABASE_PORT',
         'process.env.VALKEY_REQUEST_TIMEOUT_MS',
       ].join('\n'),
       'cloudflare-worker/src/rate-limit.mts': [
@@ -99,6 +100,11 @@ describe('config inventory classification regressions', () => {
           name: 'ANALYTICS_BACKEND',
           classifications: expect.not.arrayContaining(['dynamic-config-candidate']),
           reviewReason: expect.stringContaining('Analytics backend selector'),
+        }),
+        expect.objectContaining({
+          name: 'DATABASE_PORT',
+          classifications: expect.not.arrayContaining(['dynamic-config-candidate']),
+          reviewReason: expect.stringContaining('Postgres connection port'),
         }),
         expect.objectContaining({
           name: 'VALKEY_REQUEST_TIMEOUT_MS',

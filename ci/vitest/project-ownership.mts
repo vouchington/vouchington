@@ -10,7 +10,10 @@
 // `node ci/vitest/generate-ownership-table.mts` to refresh VITEST.md. The three consumers above
 // enforce that every surface stays in sync — see VITEST.md's "Single source of truth" section.
 import { VITEST_PROJECT_GROUPS } from '../run-vitest-project-group.mts'
-import { toolingWorkflowProjectNames } from '../../test-helpers/vitest-config/tooling-project-registry.mts'
+import {
+  dedicatedToolingWorkflowProjectNames,
+  toolingWorkflowProjectNames,
+} from '../../test-helpers/vitest-config/tooling-project-registry.mts'
 import { NONE, noCredential, type VitestJobOwnership } from './project-ownership-types.mts'
 
 export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
@@ -30,6 +33,14 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     // Derived from toolingWorkflowProjectNames, not re-enumerated — see tooling-project-registry.mts.
     invocation: 'tooling-registry',
     projects: noCredential(toolingWorkflowProjectNames),
+  },
+  {
+    orchestratorJob: 'test-tooling',
+    workflow: 'tests-tooling.yml',
+    jobLabel: 'i18n-route-bounds',
+    sideDuty: false,
+    invocation: 'literal',
+    projects: noCredential(dedicatedToolingWorkflowProjectNames),
   },
   {
     orchestratorJob: 'test-portability',
@@ -64,7 +75,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     sharding: {
       mode: 'file-count',
       reportPrefix: 'backend-shard',
-      defaultShards: 5,
       filesPerShard: 520,
     },
     sideDuty: false,
@@ -104,7 +114,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     sharding: {
       mode: 'file-count',
       reportPrefix: 'web-shard',
-      defaultShards: 2,
       filesPerShard: 800,
     },
     sideDuty: false,
@@ -134,7 +143,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     sharding: {
       mode: 'file-count',
       reportPrefix: 'web-api-shard',
-      defaultShards: 1,
       filesPerShard: 64,
     },
     sideDuty: false,
@@ -148,7 +156,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     sharding: {
       mode: 'fixed',
       reportPrefix: 'web-integration-shard',
-      defaultShards: 1,
+      shards: 1,
     },
     sideDuty: false,
     invocation: 'literal',

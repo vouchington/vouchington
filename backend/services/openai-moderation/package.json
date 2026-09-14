@@ -29,7 +29,7 @@
     "@services/analytics": "workspace:^",
     "@services/images": "workspace:^",
     "@services/moderator-actions": "workspace:^",
-    "@services/post-publication": "workspace:^",
+    "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/users": "workspace:^",
     "sql-template-strings": "^2.2.2"

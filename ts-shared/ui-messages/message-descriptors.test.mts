@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTranslator, type Catalog } from './index.mts'
 import { isMessageDescriptor, PLURAL_RULE_METADATA } from './message-descriptors.mts'
-import enMessages from './messages/en.ts'
-import esMessages from './messages/es.ts'
-import frMessages from './messages/fr.ts'
-import ptMessages from './messages/pt.ts'
+import { enMessages, esMessages, frMessages, ptMessages } from './locale-catalogs.mts'
 
 const CATALOGS_BY_LOCALE = { en: enMessages, es: esMessages, fr: frMessages, pt: ptMessages }
 

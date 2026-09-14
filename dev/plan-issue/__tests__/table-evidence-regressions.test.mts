@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { VALID_PLAN_BODY } from '../test-helpers/valid-plan-body.mts'
+import { VALID_PLAN_BODY } from '../../test-helpers/plan-issue/valid-plan-body.mts'
 import { validatePlanIssue } from '../validate.mts'
 
 function replaceAffectedFiles(body: string, evidence: string): string {

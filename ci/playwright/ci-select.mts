@@ -1,6 +1,7 @@
 import { appendFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+import { pair2BaseRef } from '../pr-revision-pairs.mts'
 import { isRunnablePlaywrightSpec, planTests } from '../test-plan.mts'
 import { writeSelectedFilesOutput } from 'vouchington-tooling/gha-selected-files'
 import {
@@ -19,7 +20,6 @@ function appendSummary(text: string): void {
   const f = process.env['GITHUB_STEP_SUMMARY']
   if (f) appendFileSync(f, text)
 }
-
 export const PLAN_JSON_ARTIFACT = 'playwright-test-plan.json'
 export const PLAN_MARKDOWN_ARTIFACT = 'playwright-test-plan.md'
 
@@ -40,7 +40,7 @@ export function playwrightPlanOptions(
     framework: 'playwright',
     worktreeRoot,
     environment: 'pullRequest',
-    base: `origin/${baseBranch}`,
+    base: pair2BaseRef(baseBranch),
     head: 'HEAD',
     timeout: 0,
     lockTimeout: 0,

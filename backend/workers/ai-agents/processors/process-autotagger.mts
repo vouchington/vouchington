@@ -26,7 +26,7 @@ export async function processAutotaggerPost(
   const runOnPost = dependencies?.runAutotaggerOnPost ?? runAutotaggerOnPost
   const post = await getPostByAny(job.data.id)
   if (!post) return null
-  if (post.openai_omni_moderation_flagged) return null
+  if (!post.approved_at || post.rejected_at || post.in_review_at) return null
 
   const limits = getAutotaggerPaidLimitsFields()
   if (!limits.enabled) return null

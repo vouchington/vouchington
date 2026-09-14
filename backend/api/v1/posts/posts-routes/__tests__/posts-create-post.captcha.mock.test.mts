@@ -3,7 +3,7 @@ import {
   deleteDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUserWithAge,
   createTestUrlWithHostname,

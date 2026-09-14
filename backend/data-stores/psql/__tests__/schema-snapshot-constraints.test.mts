@@ -6,7 +6,7 @@ import {
   getChildOwnedPartitionCheckConstraintRows,
   getDerivedPartitionConstraintRows,
   getDirectPartitionChildForeignKeyRows,
-} from '../test-helpers/schema-snapshot-constraints.mts'
+} from '../../../test-helpers/data-stores/psql/schema-snapshot-constraints.mts'
 
 describe('schema snapshot partition constraints', () => {
   afterAll(onGracefulShutdown)

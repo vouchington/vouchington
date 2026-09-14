@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, afterEach, beforeAll } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { TimeAgo } from '../time-ago'
 import { formatAbsolute, formatRelative } from '../time-ago-format'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 // ── formatAbsolute ──────────────────────────────────────────────────────────
 

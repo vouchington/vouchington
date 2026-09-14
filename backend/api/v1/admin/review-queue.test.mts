@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { insertTestPost, createTestUser } from '@voucha/test-helpers'
 import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
@@ -44,10 +44,10 @@ describe('review-queue', () => {
       await request.get('/api/v1/posts/review-queue').expect(403)
     })
 
-    it('returns 403 for site moderators (clearance is admin-only)', async () => {
+    it('allows site moderators to access the global review queue', async () => {
       const request = createRequest()
       await request.authenticateAs(moderatorUser)
-      await request.get('/api/v1/posts/review-queue').expect(403)
+      await request.get('/api/v1/posts/review-queue').expect(200)
     })
 
     it('returns rejected and in_review posts for admin', async () => {
@@ -159,7 +159,7 @@ describe('review-queue', () => {
       expect(ids).not.toContain(pendingId)
     })
 
-    it('includes spam detection and moderation fields in results', async () => {
+    it('includes a provider-neutral moderation summary in results', async () => {
       const suffix = randomSuffix()
       const { newerId: postId, afterId } = createAdjacentReviewQueueIds()
       await insertTestPost({
@@ -181,11 +181,12 @@ describe('review-queue', () => {
 
       const post = response.body.results.find((r: { id: string }) => r.id === postId)
       expect(post).toBeDefined()
-      expect(post).toHaveProperty('spam_detection_flagged')
-      expect(post).toHaveProperty('spam_detection_score')
-      expect(post).toHaveProperty('spam_detection_results')
-      expect(post).toHaveProperty('openai_omni_moderation_flagged')
-      expect(post).toHaveProperty('openai_omni_moderation_results')
+      expect(post).toHaveProperty('moderation_summary')
+      expect(post).toHaveProperty('moderation_summary.disposition')
+      expect(post).toHaveProperty('moderation_summary.reason_codes')
+      expect(post).toHaveProperty('moderation_summary.evidence_summary')
+      expect(post).not.toHaveProperty('spam_detection_results')
+      expect(post).not.toHaveProperty('openai_omni_moderation_results')
       expect(post).toHaveProperty('clearance_status')
       expect(post).toHaveProperty('created_at')
       expect(post).toHaveProperty('markdown_preview')

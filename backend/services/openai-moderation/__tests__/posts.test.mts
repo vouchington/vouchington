@@ -1,12 +1,13 @@
 import { describe, it, expect, afterEach, vi, beforeAll } from 'vitest'
-import { upsertPostOpenAIModeration } from '../posts.mts'
+import { findExistingPostOpenAIModeration, upsertPostOpenAIModeration } from '../posts.mts'
 import { getStoredPostOpenAIModeration } from '../stored-results.mts'
 import { createPost } from '@services/posts'
 import {
   createTestUser,
+  recordTestPostModerationDisposition,
+  setPostModerationContentSha256,
   updatePostModerationData,
   getPostModerationData,
-  setPostOpenAIModerationLegacyScalarResults,
 } from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
 import { createPostModerationContent } from '@services/posts/content'
@@ -106,13 +107,13 @@ describe('posts', () => {
       const result = await upsertPostOpenAIModeration(post2 as Post)
       expect(result.reused).toBe(true)
       expect(result.content_sha256).toEqual(content_sha256)
-      expect(result.results).toEqual(storedResults)
+      expect(result.results).toEqual([{ flagged: false, categories: {} }])
 
       const moderationData = (await getPostModerationData(post2.id)) as {
         openai_omni_moderation_content_sha256: Buffer
         openai_omni_moderation_input_sha256: Buffer
         openai_omni_moderation_flagged: boolean
-        openai_omni_moderation_results: unknown[]
+        openai_omni_moderation_results: { flagged_categories: string[] }
         openai_omni_moderation_created_at: Date
       } | null
 
@@ -144,13 +145,13 @@ describe('posts', () => {
         openai_omni_moderation_content_sha256: Buffer
         openai_omni_moderation_input_sha256: Buffer
         openai_omni_moderation_flagged: boolean
-        openai_omni_moderation_results: unknown[]
+        openai_omni_moderation_results: { flagged_categories: string[] }
         openai_omni_moderation_created_at: Date
       } | null
 
       expect(moderationData).toBeDefined()
       expect(moderationData!.openai_omni_moderation_flagged).toBe(false)
-      expect(moderationData!.openai_omni_moderation_results).toEqual(mockResults)
+      expect(moderationData!.openai_omni_moderation_results).toEqual({ flagged_categories: [] })
     })
 
     it('skips moderation when content is already up to date', async () => {
@@ -209,26 +210,51 @@ describe('posts', () => {
 
       const moderationData = (await getPostModerationData(post.id)) as {
         openai_omni_moderation_flagged: boolean
-        openai_omni_moderation_results: unknown[]
+        openai_omni_moderation_results: { flagged_categories: string[] }
       } | null
 
       expect(moderationData).toBeDefined()
       expect(moderationData!.openai_omni_moderation_flagged).toBe(true)
-      expect(moderationData!.openai_omni_moderation_results).toEqual(mockResults)
+      expect(moderationData!.openai_omni_moderation_results).toEqual({ flagged_categories: [] })
     })
   })
 
-  it('normalizes malformed legacy moderation results to null at the API boundary', async () => {
+  it('reconstructs a bounded stored result instead of exposing provider output', async () => {
     const post = await createPost(user, {
       title: `Malformed moderation ${randomSuffix()}`,
       markdown: 'Malformed moderation result fixture',
       post_type: 'discussion',
     })
-    await setPostOpenAIModerationLegacyScalarResults(post.id)
+    const { content_sha256 } = createPostModerationContent(post as Post)
+    await updatePostModerationData(post.id, content_sha256, 'untrusted-provider-shape', true)
 
     await expect(getStoredPostOpenAIModeration(post.id)).resolves.toEqual({
       flagged: true,
-      results: null,
+      results: [{ flagged: true, categories: {} }],
+    })
+  })
+
+  it('filters non-string stored category values when reusing a ledger disposition', async () => {
+    const post = await createPost(user, {
+      title: `Mixed stored categories ${randomSuffix()}`,
+      markdown: 'Stored result category fixture',
+      post_type: 'discussion',
+    })
+    const { content_sha256 } = createPostModerationContent(post as Post)
+    await setPostModerationContentSha256(post.id, content_sha256)
+    await recordTestPostModerationDisposition({
+      postId: post.id,
+      source: 'openai_omni',
+      disposition: 'review',
+      reasonCode: 'provider_flagged',
+      evidence: { flagged_categories: ['harassment', 42, null] },
+    })
+
+    await expect(
+      findExistingPostOpenAIModeration(content_sha256, { readOnly: false }),
+    ).resolves.toEqual({
+      flagged: true,
+      results: [{ flagged: true, categories: { harassment: true } }],
     })
   })
 })

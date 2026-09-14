@@ -13,10 +13,9 @@ describe('web integration workflow', () => {
     const workflow = readFileSync('.github/workflows/tests-web-integration.yml', 'utf8')
     const manualInputs = workflow.slice(workflow.indexOf('workflow_dispatch:'))
 
-    expect(workflow).toContain('total: ${{ inputs.shard_total_override || 1 }}')
-    expect(manualInputs).toContain(
-      "description: 'Shard count to use instead of the web-integration default'",
-    )
+    expect(workflow).toContain('node ci/vitest/shard-total.mts test-web-integration')
+    expect(workflow).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
+    expect(manualInputs).toContain("description: 'Explicit shard count for a selected run'")
     expect(workflow).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
     expect(workflow).toContain('runs-on: [self-hosted, Linux, Docker, Tests, CPU]')
     expect(workflow).toContain('uses: ./.github/actions/build-web-targets')

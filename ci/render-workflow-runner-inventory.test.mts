@@ -147,6 +147,42 @@ describe('workflow job & runner inventory', () => {
       )
     })
 
+    it('redacts managed image-build runner topology from the public inventory', async () => {
+      const managedImageBuild = makeJob({
+        id: '.github/workflows/build.yml#build',
+        runsOn:
+          "${{ format('codebuild-private-runner-{0}', github.run_id) || 'ubicloud-standard-4-arm' }}",
+      })
+      const output = await renderJobsInventoryDoc(
+        FIXTURE,
+        makeTopology({ jobs: [...topology.jobs, managedImageBuild], edges: topology.edges }),
+      )
+
+      expect(output).toContain('optional managed build-image runner')
+      expect(output).not.toContain('codebuild-private-runner')
+      expect(output).not.toContain('ubicloud-standard-4-arm')
+    })
+
+    it('validates a managed image-build runner expression before redacting it', async () => {
+      const malformedManagedImageBuild = makeJob({
+        id: '.github/workflows/build.yml#build',
+        runsOn:
+          "${{ format('codebuild-private-runner-{0}', github.run_id) || 'ubicloud-standard-2' }}",
+      })
+
+      await expect(
+        renderJobsInventoryDoc(
+          FIXTURE,
+          makeTopology({
+            jobs: [...topology.jobs, malformedManagedImageBuild],
+            edges: topology.edges,
+          }),
+        ),
+      ).rejects.toThrow(
+        /build\.yml#build mixes a codebuild- runner with an unrecognized Ubicloud fallback/,
+      )
+    })
+
     it('renders a job with no declared timeout-minutes as the 360-minute default', async () => {
       const output = await renderJobsInventoryDoc(FIXTURE, topology)
 

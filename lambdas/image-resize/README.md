@@ -89,7 +89,8 @@ Private IPv4 ranges, loopback, link-local (including AWS metadata at `169.254.16
 ## Sentry Error Monitoring
 
 - Package: `@sentry/aws-serverless` (via `@lambdas/shared`)
-- DSN: hardcoded in [`lambdas/shared/sentry.mts`](../shared/sentry.mts)
+- DSN: set the public `SENTRY_DSN` environment value in deployed environments; missing or invalid
+  configuration disables Sentry and emits a value-free warning
 - Auto-instrumentation: set `NODE_OPTIONS="--import @sentry/aws-serverless/awslambda-auto"`
 - Release tracking: set `GIT_COMMIT` env var at deploy time
 - 4xx errors (`RequestParseError` 400, `S3OperationError` 404) are filtered via `beforeSend`

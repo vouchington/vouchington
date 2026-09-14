@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { StatusPage } from '../status-page'
 import type { useTranslations } from '@/lib/i18n/use-translations'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 describe('StatusPage', () => {
   let t: ReturnType<typeof useTranslations>

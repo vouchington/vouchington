@@ -325,6 +325,7 @@
 - `automatic_refund`
 - `ineligible_purchase_reversal`
 - `collision_resolution`
+- `administrator_refund`
 
 ## `membership_plan_slugs`
 

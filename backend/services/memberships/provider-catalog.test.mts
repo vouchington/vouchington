@@ -9,6 +9,7 @@ describe('membership provider catalog', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   it('requires each native provider application id in production', () => {
+    vi.stubEnv('ENVIRONMENT', 'production')
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('APPLE_APP_STORE_APPLICATION_ID', undefined)
 
@@ -18,6 +19,7 @@ describe('membership provider catalog', () => {
   })
 
   it('returns only active-context provider mappings and preserves native price absence', async () => {
+    vi.stubEnv('ENVIRONMENT', 'staging')
     vi.stubEnv('NODE_ENV', 'test')
     const stripe = await createTestSku({
       provider_environment: STRIPE_PROVIDER_ENVIRONMENT,
@@ -66,5 +68,12 @@ describe('membership provider catalog', () => {
     expect(product?.providers.map(provider => provider.product_id)).not.toContain(
       inactiveGoogleProductId,
     )
+  })
+
+  it('uses test store environments in staging even when NODE_ENV is production', () => {
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    vi.stubEnv('NODE_ENV', 'production')
+    expect(getMembershipProviderContext('google_play').environment).toBe('test')
+    expect(getMembershipProviderContext('microsoft_store').environment).toBe('test')
   })
 })

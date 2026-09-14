@@ -1,6 +1,7 @@
 import path from 'node:path'
 import type fs from 'node:fs/promises'
 import type { PlaywrightBlocker } from '@ghostery/adblocker-playwright'
+import onError from '@modules/on-error'
 
 const ADBLOCKER_CACHE_PATH =
   process.env.ADBLOCKER_CACHE_PATH ??
@@ -44,7 +45,7 @@ async function readBlockerFromDisk(
     cachedBlocker = dependencies.deserializeBlocker(diskData)
     return cachedBlocker
   } catch {
-    await dependencies.unlink(ADBLOCKER_CACHE_PATH).catch(() => {})
+    await dependencies.unlink(ADBLOCKER_CACHE_PATH).catch(onError)
     return null
   }
 }
@@ -88,7 +89,7 @@ async function writeBlockerToDisk(
     await dependencies.rename(tmpPath, ADBLOCKER_CACHE_PATH)
   } catch (err: unknown) {
     console.error('Failed to write adblocker cache', err)
-    await dependencies.unlink(tmpPath).catch(() => {})
+    await dependencies.unlink(tmpPath).catch(onError)
   }
 }
 

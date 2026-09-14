@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import * as providerCatalog from '@services/memberships/provider-catalog'
 
 describe('GET /api/v1/memberships/plans', () => {

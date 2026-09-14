@@ -15,7 +15,7 @@ async function approvePostClearance(page: import('../../helpers/test.mts').Page,
     const res = await fetch(`/api/v1/posts/${slug}/clearances`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'approved' }),
+      body: JSON.stringify({ status: 'approved', reason_code: 'playwright_staff_approved' }),
       credentials: 'same-origin',
     })
     return res.ok

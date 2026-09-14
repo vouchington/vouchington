@@ -13,7 +13,7 @@ const shutdownOnlyMarkers = [
 const backendCredentialedCleanShutdownLog = [
   'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-stripe --coverage',
   '  CI_PROJECT: backend-credentialed',
-  ' RUN  v4.1.9 /home/jong/actions-runner/4/_work/filaments/filaments',
+  ' RUN  v4.1.9 /home/runner/actions-runner/4/_work/filaments/filaments',
   'Coverage enabled with v8',
   '##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled.',
   'undefined',

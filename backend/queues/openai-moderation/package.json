@@ -16,6 +16,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/scheduled-job-manifest": "workspace:^",
     "glide-mq": "^0.15.5"
   },
   "devDependencies": {}

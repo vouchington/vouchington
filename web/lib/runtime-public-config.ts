@@ -1,4 +1,5 @@
 import type { OAuthProvider } from '@/types/user'
+export { RUNTIME_PUBLIC_CONFIG_READY_EVENT } from '@ts-shared/utils/runtime-sentry-config-script'
 
 export interface RuntimePublicConfig {
   appleClientId?: string
@@ -12,6 +13,7 @@ export interface RuntimePublicConfig {
   microsoftClientId?: string
   microsoftTenantId?: string
   recaptchaSiteKey?: string
+  sentryDsn?: string
   turnstileSiteKey?: string
   webPushPublicKey?: string
   xClientId?: string
@@ -24,9 +26,13 @@ declare global {
 }
 
 export function getBrowserRuntimePublicConfig(): RuntimePublicConfig {
-  if (typeof window === 'undefined') return {}
+  return getBrowserRuntimePublicConfigIfAvailable() ?? {}
+}
+
+export function getBrowserRuntimePublicConfigIfAvailable(): RuntimePublicConfig | undefined {
+  if (typeof window === 'undefined') return undefined
   // eslint-disable-next-line no-underscore-dangle -- HTML bootstrap namespace for runtime public config.
-  return window.__VOUCHA_PUBLIC_CONFIG__ ?? {}
+  return window.__VOUCHA_PUBLIC_CONFIG__
 }
 
 export function getOAuthProviders(config: RuntimePublicConfig): OAuthProvider[] {

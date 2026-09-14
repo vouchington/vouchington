@@ -9,9 +9,10 @@ import { getImageUrl } from '@/lib/utils/image-url'
 import { communityHref } from '@/lib/links/entity-href'
 import type { Community, CommunityMember, CommunityMetrics } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import type JoinButtonComponent from './join-button'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const JoinButton = dynamic(() => import('./join-button'))
+const JoinButton = dynamic<Parameters<typeof JoinButtonComponent>[0]>(() => import('./join-button'))
 
 interface CommunityCardProps {
   community: Pick<Community, 'slug' | 'name' | 'visibility' | 'markdown' | 'profile_image_id'>

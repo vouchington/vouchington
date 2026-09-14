@@ -2,13 +2,29 @@ import { describe, it, expect } from 'vitest'
 import { createSentryOptions, scrubSentrySpan, scrubSentryTransaction } from '../sentry.mts'
 
 describe('createSentryOptions', () => {
+  it('uses SENTRY_DSN and disables deployed reporting when it is missing or invalid', () => {
+    expect(createSentryOptions({ ENVIRONMENT: 'production' })).toMatchObject({
+      dsn: undefined,
+      enabled: false,
+    })
+    expect(
+      createSentryOptions({
+        ENVIRONMENT: 'production',
+        SENTRY_DSN: 'https://public@example.test/123',
+      }),
+    ).toMatchObject({ dsn: 'https://public@example.test/123', enabled: true })
+  })
+
   it.each(['staging', 'production'] as const)(
     'returns enabled=true for the deployed environment %s',
     environment => {
-      const opts = createSentryOptions({ ENVIRONMENT: environment })
+      const opts = createSentryOptions({
+        ENVIRONMENT: environment,
+        SENTRY_DSN: 'https://public@example.test/123',
+      })
       expect(opts.enabled).toBe(true)
       expect(opts.environment).toBe(environment)
-      expect(opts.dsn).toContain('4511154639077376')
+      expect(opts.dsn).toBe('https://public@example.test/123')
       expect(opts.tracesSampleRate).toBe(0.1)
     },
   )

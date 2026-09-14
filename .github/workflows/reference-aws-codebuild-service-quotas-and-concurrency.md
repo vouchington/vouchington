@@ -2,8 +2,8 @@
 
 [Back to Workflow Runners](RUNNERS.md#aws-codebuild-service-quotas-and-concurrency)
 
-Filaments uses the private infrastructure repository's `voucha-ci-runner` CodeBuild project only
-as an opt-in escape hatch for pull-request image validation.
+Filaments uses the private infrastructure repository's managed CodeBuild runner only as an opt-in
+escape hatch for pull-request image validation.
 
 | Compute type | Filaments consumer               |
 | ------------ | -------------------------------- |

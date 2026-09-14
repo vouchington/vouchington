@@ -13,13 +13,11 @@ import {
 } from '@services/community-agent-prompts/moderations'
 import { getPostByAny } from '@services/posts/get'
 import { getCommunityPostReview } from '@services/communities/publications/get'
-import { getStoredPostOpenAIModeration } from '@services/openai-moderation'
 
 type ModerationResultsResponse = {
   community_agent_moderations: CommunityAgentModerationResult[]
-  openai_moderation: {
-    flagged: boolean | null
-    results: Record<string, unknown> | Array<Record<string, unknown>> | null
+  platform_moderation: {
+    status: 'pending' | 'approved' | 'in_review' | 'rejected'
   }
 }
 
@@ -67,12 +65,9 @@ app
     const isVisible = isModerator ? !!review : !!review?.approved_at && !review?.unpublished_at
     ctx.assert(isVisible, 404, 'Post not found in this community')
 
-    const openaiModeration = await getStoredPostOpenAIModeration(post.id)
-    ctx.assert(openaiModeration, 404, 'Post not found')
-
     const responseBody: ModerationResultsResponse = {
       community_agent_moderations: moderations,
-      openai_moderation: openaiModeration,
+      platform_moderation: { status: post.clearance_status },
     }
     ctx.json(responseBody)
   })

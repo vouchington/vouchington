@@ -1,5 +1,5 @@
 import { createTopicAliases } from '@services/topics/aliases'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 

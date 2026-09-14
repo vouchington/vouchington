@@ -6,21 +6,26 @@ Tracks the single community review state for community-scoped posts.
 
 Not partitioned — growth: unbounded.
 
-| Column              | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                 |
-| ------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------- |
-| `community_id`      | `uuid`                     | no       |                     |          |           |           | The community the post belongs to.                                                                      |
-| `post_id`           | `uuid`                     | no       |                     |          |           |           | The community-scoped post under review.                                                                 |
-| `submitted_by_id`   | `uuid`                     | yes      |                     |          |           |           | User who submitted the post to the community.                                                           |
-| `created_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                         |
-| `reviewed_at`       | `timestamp with time zone` | yes      |                     |          |           |           | When a moderator reviewed the community post.                                                           |
-| `reviewed_by_id`    | `uuid`                     | yes      |                     |          |           |           | Moderator who reviewed the community post.                                                              |
-| `approved_at`       | `timestamp with time zone` | yes      |                     |          |           |           | When the community post was approved. Mutually exclusive with rejected_at.                              |
-| `rejected_at`       | `timestamp with time zone` | yes      |                     |          |           |           | When the community post was rejected. Mutually exclusive with approved_at.                              |
-| `rejection_reason`  | `text`                     | yes      |                     |          |           |           | Optional reason provided on rejection.                                                                  |
-| `unpublished_at`    | `timestamp with time zone` | yes      |                     |          |           |           | When the post was removed from the community.                                                           |
-| `unpublished_by_id` | `uuid`                     | yes      |                     |          |           |           | User who removed the post from the community.                                                           |
-| `escalated_at`      | `timestamp with time zone` | yes      |                     |          |           |           | When a moderator escalated this pending post review for senior-mod attention. NULL means not escalated. |
-| `escalated_by_id`   | `uuid`                     | yes      |                     |          |           |           | The moderator who escalated this pending post review.                                                   |
+| Column                           | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                                  |
+| -------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `community_id`                   | `uuid`                     | no       |                     |          |           |           | The community the post belongs to.                                                                                                       |
+| `post_id`                        | `uuid`                     | no       |                     |          |           |           | The community-scoped post under review.                                                                                                  |
+| `submitted_by_id`                | `uuid`                     | yes      |                     |          |           |           | User who submitted the post to the community.                                                                                            |
+| `created_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                          |
+| `reviewed_at`                    | `timestamp with time zone` | yes      |                     |          |           |           | When a moderator reviewed the community post.                                                                                            |
+| `reviewed_by_id`                 | `uuid`                     | yes      |                     |          |           |           | Moderator who reviewed the community post.                                                                                               |
+| `approved_at`                    | `timestamp with time zone` | yes      |                     |          |           |           | When the community post was approved. Mutually exclusive with rejected_at.                                                               |
+| `rejected_at`                    | `timestamp with time zone` | yes      |                     |          |           |           | When the community post was rejected. Mutually exclusive with approved_at.                                                               |
+| `rejection_reason`               | `text`                     | yes      |                     |          |           |           | Optional reason provided on rejection.                                                                                                   |
+| `unpublished_at`                 | `timestamp with time zone` | yes      |                     |          |           |           | When the post was removed from the community.                                                                                            |
+| `unpublished_by_id`              | `uuid`                     | yes      |                     |          |           |           | User who removed the post from the community.                                                                                            |
+| `platform_override_at`           | `timestamp with time zone` | yes      |                     |          |           |           | When platform moderation staff last overrode the community publication projection; while present community moderators cannot replace it. |
+| `platform_override_by_id`        | `uuid`                     | yes      |                     |          |           |           | Platform administrator or site moderator who applied the currently controlling override.                                                 |
+| `platform_override_action`       | `text`                     | yes      |                     |          |           |           | The currently controlling platform publication action.                                                                                   |
+| `platform_override_reason_code`  | `text`                     | yes      |                     |          |           |           | Stable public-safe reason code for the controlling platform action.                                                                      |
+| `platform_override_private_note` | `text`                     | yes      |                     |          |           |           | Private staff-only note for the controlling platform action.                                                                             |
+| `escalated_at`                   | `timestamp with time zone` | yes      |                     |          |           |           | When a moderator escalated this pending post review for senior-mod attention. NULL means not escalated.                                  |
+| `escalated_by_id`                | `uuid`                     | yes      |                     |          |           |           | The moderator who escalated this pending post review.                                                                                    |
 
 **Primary key:** `PRIMARY KEY (post_id)`
 
@@ -32,6 +37,12 @@ _none_
 - `community_post_reviews_check`: `CHECK ((NOT ((approved_at IS NOT NULL) AND (rejected_at IS NOT NULL))))`
 - `community_post_reviews_check1`: `CHECK ((((approved_at IS NULL) AND (rejected_at IS NULL)) OR (reviewed_at IS NOT NULL)))`
 - `community_post_reviews_check2`: `CHECK (((escalated_at IS NOT NULL) OR (escalated_by_id IS NULL)))`
+- `community_post_reviews_check3`: `CHECK ((((platform_override_at IS NULL) AND (platform_override_by_id IS NULL) AND (platform_override_action IS NULL)) OR ((platform_override_at IS NOT NULL) AND (platform_override_by_id IS NOT NULL) AND (platform_override_action IS NOT NULL))))`
+- `community_post_reviews_check4`: `CHECK (((platform_override_at IS NOT NULL) OR (platform_override_reason_code IS NULL)))`
+- `community_post_reviews_check5`: `CHECK (((platform_override_at IS NOT NULL) OR (platform_override_private_note IS NULL)))`
+- `community_post_reviews_platform_override_action_check`: `CHECK ((platform_override_action = ANY (ARRAY['approve'::text, 'reject'::text, 'unpublish'::text, 'restore'::text])))`
+- `community_post_reviews_platform_override_private_note_check`: `CHECK (((platform_override_private_note IS NULL) OR (char_length(platform_override_private_note) <= 4000)))`
+- `community_post_reviews_platform_override_reason_code_check`: `CHECK (((platform_override_reason_code IS NULL) OR ((char_length(platform_override_reason_code) >= 1) AND (char_length(platform_override_reason_code) <= 100))))`
 - `community_post_reviews_rejection_reason_check`: `CHECK (((rejection_reason IS NULL) OR (char_length(rejection_reason) <= 1000)))`
 - `community_post_reviews_rejection_reason_check1`: `CHECK (((rejection_reason IS NULL) OR (rejection_reason = TRIM(BOTH FROM rejection_reason))))`
 
@@ -39,6 +50,7 @@ _none_
 
 - `community_post_reviews_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
 - `community_post_reviews_escalated_by_id_fkey`: `FOREIGN KEY (escalated_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `community_post_reviews_platform_override_by_id_fkey`: `FOREIGN KEY (platform_override_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `community_post_reviews_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `community_post_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `community_post_reviews_submitted_by_id_fkey`: `FOREIGN KEY (submitted_by_id) REFERENCES users(id) ON DELETE SET NULL`
@@ -51,6 +63,7 @@ _none_
 - `idx_comm_post_reviews__community`: `CREATE INDEX idx_comm_post_reviews__community ON public.community_post_reviews USING btree (community_id, post_id)`
 - `idx_comm_post_reviews__pending`: `CREATE INDEX idx_comm_post_reviews__pending ON public.community_post_reviews USING btree (community_id) WHERE ((approved_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_comm_post_reviews__user_removed`: `CREATE INDEX idx_comm_post_reviews__user_removed ON public.community_post_reviews USING btree (submitted_by_id, unpublished_at DESC, post_id DESC) WHERE (unpublished_at IS NOT NULL)`
+- `idx_community_post_reviews__platform_override_by_id`: `CREATE INDEX idx_community_post_reviews__platform_override_by_id ON public.community_post_reviews USING btree (platform_override_by_id)`
 
 **Triggers:**
 _none_

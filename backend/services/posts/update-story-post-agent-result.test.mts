@@ -194,7 +194,7 @@ describe('updateStoryPostAgentResult', () => {
       openai_omni_moderation_input_sha256: originalHash,
       openai_omni_moderation_created_at: expect.any(Date),
       openai_omni_moderation_flagged: true,
-      openai_omni_moderation_results: [{ category: 'old' }],
+      openai_omni_moderation_results: { flagged_categories: [] },
     })
     const waiting = await spam_detection.getJobs('waiting')
     expect(waiting).toHaveLength(0)

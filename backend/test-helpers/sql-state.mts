@@ -1,6 +1,7 @@
 /* eslint-disable max-lines */
 import { read, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { recordTestPostModerationDisposition } from './entities/post-moderation.mts'
 
 export { beginBoundedTransaction, beginTransaction } from '@data-stores/psql'
 
@@ -351,9 +352,17 @@ export async function setPostModerationFlaggedForTest(params: {
   postId: string
   flagged: boolean
 }): Promise<void> {
+  await recordTestPostModerationDisposition({
+    postId: params.postId,
+    source: 'openai_omni',
+    disposition: params.flagged ? 'review' : 'pass',
+    reasonCode: params.flagged ? 'provider_flagged' : 'provider_pass',
+  })
   await write(sql`/* setPostModerationFlaggedForTest */
     UPDATE posts
-    SET openai_omni_moderation_flagged = ${params.flagged}
+    SET approved_at = CASE WHEN ${params.flagged} THEN NULL ELSE CURRENT_TIMESTAMP END,
+      rejected_at = NULL,
+      in_review_at = CASE WHEN ${params.flagged} THEN CURRENT_TIMESTAMP ELSE NULL END
     WHERE id = ${params.postId}
   `)
 }
@@ -619,7 +628,6 @@ export async function insertLanguageDetectionPostForTest(params: {
     INSERT INTO posts (
       post_type, title, markdown, declared_language, created_by_id, broadcast, privacy, is_anonymous,
       bedrock_nova_multimodal_v1_content_sha256,
-      openai_omni_moderation_content_sha256,
       llm_moderation_content_sha256,
       lingua_rs_input_sha256,
       deleted_at
@@ -630,7 +638,6 @@ export async function insertLanguageDetectionPostForTest(params: {
       ${params.declaredLanguage ?? null},
       ${params.createdById},
       'everyone', 'public', false,
-      ${`\\x${'0'.repeat(64)}`},
       ${`\\x${'0'.repeat(64)}`},
       ${`\\x${'0'.repeat(64)}`},
       ${params.inputSha256 ?? null},

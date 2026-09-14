@@ -18,8 +18,12 @@ function isExcluded(relativePath: string): boolean {
   return false
 }
 
-/** Lists git-tracked `.tsx` files under the given repo-relative directories/pathspecs. */
-export async function listCandidateFiles(repoRoot: string, pathspecs: string[]): Promise<string[]> {
+/** Lists git-tracked source files. Extraction stays `.tsx`; route discovery also reads `.ts`. */
+export async function listCandidateFiles(
+  repoRoot: string,
+  pathspecs: string[],
+  extensions: readonly string[] = ['.tsx'],
+): Promise<string[]> {
   const output = await new Promise<string>((resolve, reject) => {
     const proc = spawn('git', ['-C', repoRoot, 'ls-files', '-z', '--', ...pathspecs], {
       env: gitEnv(),
@@ -44,6 +48,6 @@ export async function listCandidateFiles(repoRoot: string, pathspecs: string[]):
   return output
     .split('\0')
     .filter(Boolean)
-    .filter(path => path.endsWith('.tsx'))
+    .filter(path => extensions.some(extension => path.endsWith(extension)))
     .filter(path => !isExcluded(path))
 }

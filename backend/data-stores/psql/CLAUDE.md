@@ -31,7 +31,7 @@ Choose among fixed migrations, config-driven objects, and managed views using [S
 - Prefer timestamps over booleans. Avoid `status` columns — derive state from lifecycle timestamps.
 - Non-terminal moderation/toggle state is an append-only history table (`lifted_at`), never a mutable parent column. Canonical: `community_bans`. Enforced by `moderation-history-guard.mts`. Details: [postgres-schema-rules.md](../../../docs/development/postgres-schema-rules.md).
 - After relaxing a single-row assumption, re-audit that table's query sites for leftover `LIMIT 1`.
-- Keep SAVEPOINT transaction-state probes; do not replace them with `client.getTransactionStatus()`. See [Transactions](reference-transactions.md).
+- Keep SAVEPOINT transaction-state probes on borrowed/caller-supplied clients; do not replace them with `client.getTransactionStatus()`. See [Transactions](reference-transactions.md).
 
 ## Partitioning Rules
 

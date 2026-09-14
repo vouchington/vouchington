@@ -141,11 +141,10 @@ other worker replica runs its own independent 60s window on top of that -- so th
 overshoot in a window scales with (per-replica concurrency × per-job spend × replica count), not a
 single job's cost. The rare releasing-registry rejection path bypasses a resolved cache entry and
 coalesces concurrent refreshes before choosing between one prompt retry and the midnight fallback.
-Acceptable at the current pre-launch scale and worker-fleet size, see
-[OpenAI Cost Model](../../../docs/overview/architecture/openai-cost-model.md) for the tradeoff. See
-[`@services/ai-usage`](../../services/ai-usage/README.md#functions) for the underlying query and
-[OpenAI Cost Model](../../../docs/overview/architecture/openai-cost-model.md) for the production
-forecast this closes the gap on.
+Acceptable at the current pre-launch scale and worker-fleet size; the tradeoff and the production
+forecast this closes the gap on are documented in the private `vouchington/vouchington-docs`
+repository. See [`@services/ai-usage`](../../services/ai-usage/README.md#functions) for the
+underlying query.
 
 ## Performance
 

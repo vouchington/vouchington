@@ -8,7 +8,7 @@ import {
   sendHttpRequest,
   sendRawRequest,
   startListening,
-} from './test-helpers/http-boundary.mts'
+} from '../test-helpers/api/http-boundary.mts'
 
 const BODY_LIMIT_BYTES = VOUCHA_API_SERVER_OPTIONS.bodyLimit
 const EXPECTED_SECURITY_HEADERS = {

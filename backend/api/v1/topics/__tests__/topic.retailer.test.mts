@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { insertTestRetailer, getTestCountryId } from '@voucha/test-helpers/entities/retailers'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'

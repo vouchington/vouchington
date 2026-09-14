@@ -11,7 +11,7 @@ import {
   emptyHostnames,
   emptyRssFeeds,
   makeTopicData,
-} from '../test-helpers/topic-route-layout-fixtures'
+} from '../../../test-helpers/components/topics/topic-route-layout-fixtures'
 
 const capturedDetailProps: TopicDetailLayoutProps[] = []
 

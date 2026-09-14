@@ -2,11 +2,12 @@ import { feedRouteConfigs } from '@/lib/feed-route-configs'
 import { FeedReferralLinksListPage } from '@/components/feed/feed-referral-links-list-page'
 import type { Metadata } from 'next'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
-import { defaultTranslator } from '@ts-shared/ui-messages/default-translator'
+import { getTranslations } from '@/lib/i18n/get-translations'
 
-export const metadata: Metadata = createNoIndexMetadata(
-  defaultTranslator(feedRouteConfigs['referral-links'].title),
-)
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations()
+  return createNoIndexMetadata(t(feedRouteConfigs['referral-links'].title))
+}
 
 export const dynamic = 'force-dynamic'
 

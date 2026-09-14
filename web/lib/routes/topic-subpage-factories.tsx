@@ -1,10 +1,4 @@
-/**
- * Factory functions for topic subpage routes.
- *
- * Each factory closes over a hardcoded topicType/slug constant, eliminating the
- * runtime getTopicTypeFromSlug() check that was needed in the old catch-all
- * [topicType] dynamic segment.
- */
+/** Topic subpage route factories. Each closes over a hardcoded topicType/slug. */
 
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
@@ -72,6 +66,7 @@ export function createTopicPostsPage(slug: string) {
     if (!topicData) notFound()
     const resolvedSearchParams = await searchParams
     const structuredData = createTopicSectionStructuredData(
+      t,
       topicData.topic,
       slug,
       { label: t('extracted.routes.topicSubpageFactories.posts_a80811cf'), path: 'posts' },
@@ -124,6 +119,7 @@ export function createTopicReviewsPage(slug: string) {
     if (!topicData) notFound()
     if (!topicData.topic.allow_reviews) notFound()
     const structuredData = createTopicReviewSectionStructuredData(
+      t,
       topicData.topic,
       slug,
       topicData.topic_metrics ?? null,
@@ -172,6 +168,7 @@ export function createTopicDataPointsPage(slug: string) {
     const [topicData, t] = await Promise.all([getTopic(id), getTranslations()])
     if (!topicData) notFound()
     const structuredData = createTopicSectionStructuredData(
+      t,
       topicData.topic,
       slug,
       {

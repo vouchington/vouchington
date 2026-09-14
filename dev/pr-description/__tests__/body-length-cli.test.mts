@@ -8,8 +8,8 @@ import { promisify } from 'node:util'
 import { GITHUB_BODY_MAX_CHARACTERS, validateGitHubBodyLength } from 'vouchington-tooling/gh-cli'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { writeFakeGh } from '../test-helpers/fake-cli.mts'
-import { VALID_PR_BODY } from '../test-helpers/valid-pr-body.mts'
+import { writeFakeGh } from '../../test-helpers/pr-description/fake-cli.mts'
+import { VALID_PR_BODY } from '../../test-helpers/pr-description/valid-pr-body.mts'
 
 function oversizedBody(): string {
   const currentLength = validateGitHubBodyLength(VALID_PR_BODY).characterCount

@@ -26,6 +26,11 @@ escaped for the HTML script context before it is assigned to `window.__IMAGE_ORI
 Runtime-public browser config uses the same bootstrap path via
 `window.__VOUCHA_PUBLIC_CONFIG__`, assembled by `web/lib/runtime-public-config-server.ts` in the
 server layout and consumed by client hooks through `web/lib/runtime-public-config-context.tsx`.
+The standalone root-error document cannot render that layout, so it loads the minimal Sentry
+bootstrap from the uncached, same-origin response. The Cloudflare Worker owns the steady-state
+response in `cloudflare-worker/src/runtime-sentry-config.mts`; the matching
+`web/app/runtime-sentry-config.js/route.ts` fallback preserves either web-first or Worker-first
+deployment order.
 `NEXT_PUBLIC_NOINDEX` is also intentionally excluded from the Docker build args because the web
 image is promoted between environments; baking a staging noindex flag into the image could de-index
 production.

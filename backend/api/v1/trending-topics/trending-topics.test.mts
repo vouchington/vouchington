@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { createTrendingTopicData } from '@voucha/test-helpers/entities/trending-topics'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'

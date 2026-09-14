@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { getImportBatch, getImportRowsByBatchId } from '@services/admin-imports'
 import type { PrivateUser } from '@services/users/types'

@@ -11,7 +11,7 @@ import {
 } from './events.mts'
 import { claimRecoverableStripeEvents } from './recovery.mts'
 
-describe('Stripe webhook recovery', () => {
+describe('Stripe event recovery', () => {
   it('reuses unstarted attempt tokens and rotates failed or stale attempts', async () => {
     const event = await insertStripeEvent(makeEvent({ subscriptionId: `sub_${randomUUID()}` }))
     await makeStripeEventRecoverableForTest(event.id, 'unstarted')

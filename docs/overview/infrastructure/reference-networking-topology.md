@@ -70,11 +70,11 @@ AWS has charged for public IPv4 addresses since 2024-02-01. Fargate always uses
 that ENI gets one public IPv4. **All containers in a task share it** — cost is
 per-task, not per-container.
 
-[Deployment Costs](reference-deployment-costs-per-environment-aws-costs.md#public-ipv4-subtotal) is the canonical source for the
-current ECS task public IPv4 subtotal. The ALB uses `dualstack-without-public-ipv4`, so its base
+The private `vouchington/vouchington-docs` repository is the canonical source for the current
+ECS task public IPv4 subtotal. The ALB uses `dualstack-without-public-ipv4`, so its base
 LCU-hours remain billed but it no longer adds public IPv4 address charges. `web` and `api` moved off
 public IPv4 entirely by running IPv6-only (see [Topology](#topology) above); only
-`worker-cpu` still incurs the per-task charge below. Worker-io incurs the same cost only when
+`worker-cpu` still incurs the per-task charge. Worker-io incurs the same cost only when
 private infrastructure re-enables its task, since a worker task needs to reach
 the IPv4-only Bedrock Runtime endpoint directly (see the [AWS Application Endpoint
 Inventory](reference-networking-aws-application-endpoint-inventory.md#aws-application-endpoint-inventory)).

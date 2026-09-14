@@ -1,9 +1,20 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
-import { MODERATION_OMNI_SINGLE_QUEUE_NAME, PRIORITY_DEFAULT } from './config.mts'
+import {
+  IMAGE_QUARANTINE_RECONCILIATION_DEDUPLICATION_ID,
+  POST_MODERATION_RECONCILIATION_DEDUPLICATION_ID,
+  MODERATION_OMNI_SINGLE_QUEUE_NAME,
+  PRIORITY_DEFAULT,
+  PRIORITY_RECONCILIATION,
+} from './config.mts'
 import { openai_moderation_omni_single } from './queues.mts'
 
 const ONE_MINUTE_MS = 60_000
+const SINGLE_ATTEMPT_DEFAULTS = {
+  attempts: 1,
+  removeOnComplete: 100,
+  removeOnFail: 100,
+} satisfies Partial<JobOptions>
 
 type EnqueuePostModerationOptions = {
   deduplicationKey?: string
@@ -14,12 +25,14 @@ const enqueueCreatePostModerationJob = createEnqueueFunction<{ id: string }, 'po
   queue: openai_moderation_omni_single,
   queueName: MODERATION_OMNI_SINGLE_QUEUE_NAME,
   jobName: 'post',
+  defaults: SINGLE_ATTEMPT_DEFAULTS,
 })
 
 const enqueueCreateImageModerationJob = createEnqueueFunction<{ id: string }, 'image'>({
   queue: openai_moderation_omni_single,
   queueName: MODERATION_OMNI_SINGLE_QUEUE_NAME,
   jobName: 'image',
+  defaults: SINGLE_ATTEMPT_DEFAULTS,
 })
 
 export const enqueueCreatePostModeration = (
@@ -65,6 +78,7 @@ export const enqueueCreatePostModerationBatch = createBulkEnqueueFunction<
   buildJob: (postId: string) => ({
     data: { id: postId },
     opts: {
+      ...SINGLE_ATTEMPT_DEFAULTS,
       priority: PRIORITY_DEFAULT,
       deduplication: { id: `post_moderation_${postId}`, mode: 'debounce', ttl: ONE_MINUTE_MS },
     } satisfies Partial<JobOptions>,
@@ -82,6 +96,7 @@ export const enqueueCreateImageModerationBatch = createBulkEnqueueFunction<
   buildJob: (imageId: string) => ({
     data: { id: imageId },
     opts: {
+      ...SINGLE_ATTEMPT_DEFAULTS,
       priority: PRIORITY_DEFAULT,
       deduplication: { id: `image_moderation_${imageId}`, mode: 'debounce', ttl: ONE_MINUTE_MS },
     } satisfies Partial<JobOptions>,
@@ -95,6 +110,7 @@ const enqueueBackfillPostModerationJob = createEnqueueFunction<
   queue: openai_moderation_omni_single,
   queueName: MODERATION_OMNI_SINGLE_QUEUE_NAME,
   jobName: 'backfill_posts',
+  defaults: SINGLE_ATTEMPT_DEFAULTS,
 })
 
 const enqueueBackfillImageModerationJob = createEnqueueFunction<
@@ -104,6 +120,7 @@ const enqueueBackfillImageModerationJob = createEnqueueFunction<
   queue: openai_moderation_omni_single,
   queueName: MODERATION_OMNI_SINGLE_QUEUE_NAME,
   jobName: 'backfill_images',
+  defaults: SINGLE_ATTEMPT_DEFAULTS,
 })
 
 export function enqueueBackfillPostModeration(): ReturnType<
@@ -128,4 +145,52 @@ export function enqueueBackfillImageModeration(): ReturnType<
       deduplication: { id: 'backfill_openai_moderation_images', mode: 'throttle', ttl: 3_600_000 },
     },
   )
+}
+
+const enqueueReconcileImageQuarantinesJob = createEnqueueFunction<
+  Record<string, never>,
+  'reconcile_image_quarantines'
+>({
+  queue: openai_moderation_omni_single,
+  queueName: MODERATION_OMNI_SINGLE_QUEUE_NAME,
+  jobName: 'reconcile_image_quarantines',
+})
+
+/** Re-derives interrupted CSAM transfers exclusively from pending PostgreSQL rows. */
+export function enqueueReconcileImageQuarantines() {
+  return enqueueReconcileImageQuarantinesJob({}, {
+    attempts: 1,
+    removeOnComplete: 100,
+    removeOnFail: 100,
+    priority: PRIORITY_RECONCILIATION,
+    deduplication: {
+      id: IMAGE_QUARANTINE_RECONCILIATION_DEDUPLICATION_ID,
+      mode: 'throttle',
+      ttl: ONE_MINUTE_MS,
+    },
+  } satisfies JobOptions)
+}
+
+const enqueueReconcilePostModerationJob = createEnqueueFunction<
+  Record<string, never>,
+  'reconcile_post_moderation'
+>({
+  queue: openai_moderation_omni_single,
+  queueName: MODERATION_OMNI_SINGLE_QUEUE_NAME,
+  jobName: 'reconcile_post_moderation',
+})
+
+/** Re-derives retries and hard-deadline review transitions from PostgreSQL. */
+export function enqueueReconcilePostModeration() {
+  return enqueueReconcilePostModerationJob({}, {
+    attempts: 1,
+    removeOnComplete: 100,
+    removeOnFail: 100,
+    priority: PRIORITY_RECONCILIATION,
+    deduplication: {
+      id: POST_MODERATION_RECONCILIATION_DEDUPLICATION_ID,
+      mode: 'throttle',
+      ttl: ONE_MINUTE_MS,
+    },
+  } satisfies JobOptions)
 }

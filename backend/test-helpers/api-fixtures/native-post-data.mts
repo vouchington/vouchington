@@ -36,10 +36,6 @@ export function completeNativePost(overrides: PostFixtureOverrides) {
     clearance_status: 'pending',
     clearance_reason: null,
     clearance_updated_at: null,
-    spam_detection_flagged: null,
-    spam_detection_created_at: null,
-    spam_detection_score: null,
-    spam_detection_results: null,
     ...overrides,
   }
 }

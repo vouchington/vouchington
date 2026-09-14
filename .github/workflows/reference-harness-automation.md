@@ -97,6 +97,12 @@ Fix Main has the additional `HARNESS_AGENT_DISPATCH_ENABLED` publication gate. E
 unset by default. Enable one staffed surface at a time only after its workflow is present on the
 default branch.
 
+Scheduled dispatch is default-off: both `HARNESS_DISPATCH_ENABLED` and `HARNESS_SCHEDULED_ENABLED`
+must be enabled before `scheduled-prompts.yml`'s entry job does anything. When both are enabled,
+its six daily cron events (every two hours from 08:00 through 18:00 UTC) can each create one
+provider session, in addition to independently gated event-driven repair sessions. Those providers
+use externally managed subscriptions, so no dollar estimate is tracked here.
+
 The reusable workflow checks out `github.workflow_sha` without persisted credentials, installs the
 persistent workspace, and invokes `ci/harness-session-dispatch.mts`, which delegates transport to
 the first-party `auto-harness-client` npm library. It sends a fixed, bounded metadata schema and an

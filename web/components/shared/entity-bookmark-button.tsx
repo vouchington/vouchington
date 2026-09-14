@@ -1,6 +1,7 @@
 /* eslint-disable max-lines, react-you-might-not-need-an-effect/no-adjust-state-on-prop-change */
 'use client'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { bookmarkEntity, getEntityBookmarks, unbookmarkEntity } from '@/lib/api/client/bookmarks'
@@ -147,7 +148,7 @@ export function EntityBookmarkButton({
               : state,
           )
         })
-        .catch(() => {})
+        .catch(Sentry.captureException)
     })
     return () => {
       unsubscribe()

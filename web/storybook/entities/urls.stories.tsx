@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { CrawlMetaTags } from '@/components/urls/crawl-meta-tags'
 import { UrlAdminAside } from '@/components/urls/url-admin-aside'
 import { UrlCrawlsPage } from '@/components/urls/url-crawls-page'
@@ -14,6 +16,8 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const publicUrl: PublicUrl = {
   __entity_type: 'url',
@@ -59,6 +63,7 @@ export const MainPageContent: Story = {
       aside={UrlAsides}
     >
       <CrawlMetaTags
+        t={t}
         lang='en'
         meta={{
           title: 'Best cards guide',
@@ -106,6 +111,7 @@ function UrlAsides() {
   return (
     <AsideStack>
       <UrlAdminAside
+        t={t}
         url={publicUrl}
         canTriggerCrawl
         urlType='url'

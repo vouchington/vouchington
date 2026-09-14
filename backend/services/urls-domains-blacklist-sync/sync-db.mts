@@ -7,6 +7,7 @@ import {
 import { from as copyFrom } from 'pg-copy-streams'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
+import onError from '@modules/on-error'
 import { readNormalizedDomains } from './sync-utils.mts'
 import {
   enqueueUrlBlocklistRebuild,
@@ -56,7 +57,7 @@ export async function syncDomainsWithDatabase(
     result = await applyDesiredDomains(transaction, sourceId)
     await transaction.commit()
   } finally {
-    await dropSyncTempTables(client).catch(() => {})
+    await dropSyncTempTables(client).catch(onError)
     client.release()
   }
 

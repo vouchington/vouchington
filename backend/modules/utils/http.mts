@@ -5,6 +5,7 @@ import {
   parseRetryAfter,
 } from '@jongleberry/api-server/http-retry'
 import { HttpRateLimitError, HttpServerError } from '@modules/on-error/errors'
+import onError from '@modules/on-error'
 import undici from 'undici'
 import { getExternalRequestDispatcher, getPinnedRequestDispatcher } from './http-dispatchers.mts'
 export {
@@ -151,9 +152,8 @@ export interface HandleHttpErrorsOptions {
 function cancelResponseBody(response: Response): void {
   const cancellation = response.body?.cancel()
   if (cancellation) {
-    void cancellation.catch(() => {
-      // Cancellation is best-effort cleanup; preserve the HTTP error outcome.
-    })
+    // Cancellation is best-effort cleanup; preserve the HTTP error outcome.
+    void cancellation.catch(onError)
   }
 }
 

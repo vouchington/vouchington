@@ -71,9 +71,8 @@ export async function checkContentHashDuplicate(
   const { rows } = await read(sql`/* checkContentHashDuplicate */
     SELECT 1
     FROM posts
-    WHERE openai_omni_moderation_content_sha256 = ${contentSha256}
+    WHERE llm_moderation_content_sha256 = ${contentSha256}
       AND created_by_id != ${userId}
-      AND openai_omni_moderation_content_sha256 IS NOT NULL
     LIMIT 1
   `)
 

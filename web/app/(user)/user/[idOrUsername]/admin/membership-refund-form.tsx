@@ -36,7 +36,7 @@ export function MembershipRefundForm({
   )
   return (
     <MembershipRefundFormStateful
-      key={`${actorUserId}:${userId}:${restored?.attempt.requestFingerprint ?? 'new'}:${restored?.isCancellationPending ?? false}`}
+      key={`${actorUserId}:${userId}:${restored?.attempt.requestFingerprint ?? 'new'}:${restored?.reconciliationRetryAt ?? 'ready'}`}
       actorUserId={actorUserId}
       userId={userId}
       charges={charges}
@@ -62,8 +62,8 @@ function MembershipRefundFormStateful({
   const revokeId = useId()
   const refundAttemptRef = useRef(restored?.attempt ?? null)
   const [selectedChargeKey, setSelectedChargeKey] = useState(restored?.selectedChargeKey ?? null)
-  const [isCancellationPending, setIsCancellationPending] = useState(
-    restored?.isCancellationPending ?? false,
+  const [reconciliationRetryAt, setReconciliationRetryAt] = useState(
+    restored?.reconciliationRetryAt ?? null,
   )
   const [formState, setFormState] = useState<MembershipRefundFormState>(
     restored?.formState ?? { reason: 'goodwill', cancel: false, amountStr: '', note: '' },
@@ -77,16 +77,16 @@ function MembershipRefundFormStateful({
     userId,
     selectedCharge,
     formState,
-    cancellationPending: isCancellationPending,
+    reconciliationRetryAt,
     attemptRef: refundAttemptRef,
-    setCancellationPending: setIsCancellationPending,
+    setReconciliationRetryAt,
     resetForm: () => {
       setSelectedChargeKey(null)
       setFormState({ reason: 'goodwill', cancel: false, amountStr: '', note: '' })
     },
     onReload,
   })
-  const intentLocked = isBusy || isCancellationPending
+  const intentLocked = isBusy || reconciliationRetryAt !== null
   return (
     <form
       className='flex max-w-2xl flex-col gap-4'
@@ -188,8 +188,8 @@ function MembershipRefundFormStateful({
       </div>
       <MembershipRefundSubmitButton
         cancel={formState.cancel}
-        cancellationPending={isCancellationPending}
-        disabled={isBusy || !selectedCharge}
+        reconciliationPending={reconciliationRetryAt !== null}
+        disabled={intentLocked || !selectedCharge}
       />
     </form>
   )

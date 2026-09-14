@@ -4,7 +4,7 @@ import type { SitemapPostType } from './types.mts'
 
 type SitemapEligibilityPost = Pick<
   Post,
-  'post_type' | 'broadcast' | 'privacy' | 'deleted_at' | 'openai_omni_moderation_flagged'
+  'post_type' | 'broadcast' | 'privacy' | 'deleted_at' | 'approved_at'
 > & {
   slug?: string | null
 }
@@ -21,7 +21,7 @@ export function isPostPotentiallySitemapEligible(
     !post.deleted_at &&
     post.broadcast === 'everyone' &&
     post.privacy === 'public' &&
-    !post.openai_omni_moderation_flagged &&
+    Boolean(post.approved_at) &&
     Boolean(post.slug)
   )
 }

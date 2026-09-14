@@ -1,10 +1,10 @@
 import { render } from '@testing-library/react'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { YoutubeRssMetadataRow } from './youtube-rss-metadata-row'
 import type { useTranslations } from '@/lib/i18n/use-translations'
 import type { RssFeedItem } from '@/types/rss-feed-items'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 describe('YoutubeRssMetadataRow', () => {
   let t: ReturnType<typeof useTranslations>

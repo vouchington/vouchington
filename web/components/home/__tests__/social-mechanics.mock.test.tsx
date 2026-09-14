@@ -3,8 +3,8 @@ import { mockLucideReact } from '@/test-helpers/lucide-icons'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { SocialMechanics } from '../social-mechanics'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 type Translate = ReturnType<typeof createTranslator>
 

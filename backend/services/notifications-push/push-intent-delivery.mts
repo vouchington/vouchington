@@ -126,8 +126,6 @@ async function getEligibleNotification(
         intent.user_id,
       ),
     ).append(sql`))
-          AND candidate_post.openai_omni_moderation_flagged IS NOT TRUE
-          AND root_post.openai_omni_moderation_flagged IS NOT TRUE
         ))
       AND (n.entity_type <> 'rss_feed_item' OR (n.publication_rss_feed_item_id IS NOT NULL AND EXISTS (
         SELECT 1 FROM rss_feed_items item WHERE item.id = n.publication_rss_feed_item_id

@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
 import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
-import { findFirstGeneratedDdlViolation } from '../../test-helpers/config-driven/generated-ddl-guard-helpers.mts'
+import { findFirstGeneratedDdlViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
 import { buildCatalogGuardedNullableColumnRepairSql } from '../utils/nullable-column-repair.mts'
 
 const table = 'nullable_column_repair_test'

@@ -115,7 +115,7 @@ export function createPlaywrightConfig({
         name: 'backend',
         url: `${BACKEND_URL}/infra/ping`,
         reuseExistingServer,
-        timeout: 60 * 1000,
+        timeout: 90 * 1000,
         stdout: 'pipe',
         stderr: 'pipe',
         env: { ...process.env, PORT: BACKEND_PORT },

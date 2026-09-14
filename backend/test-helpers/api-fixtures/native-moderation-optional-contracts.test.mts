@@ -10,7 +10,7 @@ describe('native moderation optional additive contracts', () => {
     contracts = buildApiFixtureManifest().backendResponseContracts
   }, COLD_BACKEND_PROGRAM_TIMEOUT_MS)
 
-  it('keeps appeal, dispute, and review-media additions optional for old backends', () => {
+  it('keeps appeal and dispute additions optional for old backends', () => {
     expect(
       requiredFlagsForProperty(contracts['GET:/api/v1/appeals#staff'].schema, 'target_context'),
     ).toEqual([false])
@@ -21,7 +21,7 @@ describe('native moderation optional additive contracts', () => {
       requiredFlagsForProperty(contracts['GET:/api/v1/disputes#staff'].schema, 'staff_context'),
     ).toEqual([false])
     expect(
-      requiredFlagsForProperty(contracts['GET:/api/v1/posts/review-queue'].schema, 'media_context'),
-    ).toEqual([false])
+      requiredFlagsForProperty(contracts['GET:/api/v1/posts/review-queue'].schema, 'media_reveal'),
+    ).toEqual([true])
   })
 })

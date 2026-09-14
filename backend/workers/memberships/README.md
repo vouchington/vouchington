@@ -1,6 +1,6 @@
 # Memberships Worker
 
-Worker package for membership billing, Stripe webhook, renewal notification, and durable entitlement-effect delivery.
+Worker package for membership billing, Stripe event processing, renewal notification, and durable entitlement-effect delivery.
 
 ## Exports
 
@@ -15,6 +15,17 @@ Worker package for membership billing, Stripe webhook, renewal notification, and
   family notifications without a claimed recipient source remain durable observations and are not
   refetched; a later recipient proof attaches its own signed transaction to the correct family
   source. Provider ordering prevents stale retries from regressing a newer source state.
+- Google Play notification processing reads persisted, OIDC-authenticated Pub/Sub messages and
+  re-fetches subscription state in the worker. A verified pending acknowledgement commits before
+  its immediate durable-ID enqueue; five-minute recovery re-enqueues unfinished evidence and
+  acknowledgement operations after queue loss. The acknowledgement worker re-fetches eligibility
+  before calling Play. An hourly bounded sweep refetches known active sources when RTDN delivery is missing;
+  its child jobs carry source IDs, not purchase tokens. A separate three-hour worker refreshes cached
+  OIDC signing keys, keeping ingress offline.
+- Microsoft Store source recovery freezes a durable upper source-ID bound for each hourly pass and
+  serializes immediate continuations after full 500-source pages. This drains a finite backlog even
+  while newer direct sources continue to arrive; cursor and page reads use the writer so replica lag
+  cannot abandon a continuation. Each child job still reloads durable credentials.
 - Entitlement-effect delivery claims bounded Postgres rows with `SKIP LOCKED`; a stale five-minute
   lease is reclaimable and the claim token fences late completion.
 - Grant expiry scans elapsed administrator-grant projections every minute. Candidate discovery is

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { isMeaningfulEvidence, isMeaningfulOrJustifiedAbsence } from '../evidence-values.mts'
-import { VALID_PLAN_BODY } from '../test-helpers/valid-plan-body.mts'
+import { VALID_PLAN_BODY } from '../../test-helpers/plan-issue/valid-plan-body.mts'
 import { validatePlanIssue } from '../validate.mts'
 
 describe('isMeaningfulEvidence', () => {

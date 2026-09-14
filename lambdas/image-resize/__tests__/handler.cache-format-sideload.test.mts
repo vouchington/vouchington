@@ -9,7 +9,7 @@ const mockPutImageToCache = vi.fn<VitestLooseMock>()
 const mockTransformImage = vi.fn<VitestLooseMock>()
 const mockFetchImageFromUrl = vi.fn<VitestLooseMock>()
 import { S3OperationError } from '../errors.mts'
-import { toBase64Url } from '../test-helpers/index.mts'
+import { toBase64Url } from '../../test-helpers/image-resize/index.mts'
 
 describe('handler.cache-format', () => {
   const mockEnvConfig: EnvironmentConfig = {

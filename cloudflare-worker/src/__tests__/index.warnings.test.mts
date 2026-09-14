@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createContext, restoreGlobals, setupMemoryCaches } from '../test-helpers/mock-env.mts'
+import {
+  createContext,
+  restoreGlobals,
+  setupMemoryCaches,
+} from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 // vi.resetModules() resets the cfWorkerSecretEmptyLogged / cfWorkerSecretTooShortLogged

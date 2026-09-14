@@ -20,22 +20,15 @@ Schema catalog assertions own declared foreign-key actions. Runtime lifecycle ef
 their service or integration suites instead of redundant direct `DELETE FROM users` probes: each
 such delete traverses the full high-fanout inbound foreign-key graph.
 
-### SQL and helper ownership during the staged rollout
+### SQL and helper ownership
 
-The target state is one first-layer helper boundary: the repository `test-helpers/**` root and each
+The repository enforces one first-layer helper boundary: the repository `test-helpers/**` root and each
 top-level workspace's `<top-level>/test-helpers/**` root. The only selected helper alias is the
 literal `test-helpers` directory at that layer. Do not add nested `test-helpers` directories,
 `test-support` or other alternate aliases, or forwarding modules. PostgreSQL schema tests retain their observable
 constraint and view contracts, but their setup and assertions move behind focused typed APIs in
 the approved helper roots; raw SQL executors and SQL statement types remain implementation details
 of those APIs.
-
-During PR1, SQL enforcement is warning-scoped for PostgreSQL-owned tests and nested-helper findings
-use the exact tracked-file baseline configured in `.no-mistakes.yml` and tracked by
-[Plan issue #11565](https://github.com/jonathanong/filaments/issues/11565). PR2 removes that staging
-baseline and warning companion after all 25 affected PostgreSQL test files are migrated, then
-enables blocking repository-wide enforcement. This paragraph describes the temporary migration
-window and should be removed with the rollout artifacts in PR2.
 
 After rebasing schema work, a local database can be stale when an already-recorded migration file
 gained safe idempotent DDL upstream or an edited-in-place pre-launch migration gained new columns

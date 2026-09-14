@@ -162,7 +162,6 @@ async function insertTopicRecommendationPost(
         privacy,
         is_anonymous,
         bedrock_nova_multimodal_v1_content_sha256,
-        openai_omni_moderation_content_sha256,
         llm_moderation_content_sha256
       )
       VALUES (
@@ -176,7 +175,6 @@ async function insertTopicRecommendationPost(
         'private',
         false,
         ${materialized.embedding_content_sha},
-        ${moderationContentSha},
         ${moderationContentSha}
       )
       RETURNING id

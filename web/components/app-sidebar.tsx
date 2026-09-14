@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { PanelLeft } from 'lucide-react'
@@ -20,27 +20,32 @@ import { useIsMac } from '@/hooks/use-is-mac'
 import { AppSidebarNavGroup } from './app-sidebar/nav-section'
 import { IntentSwitcher } from './navbar/intent-switcher'
 import { useFeatureFlags } from '@/lib/feature-flags/use-feature-flags'
+import type { ChatsSidebarGroup as ChatsSidebarGroupComponent } from './chat/chats-sidebar-group'
+import type { CommunitiesSidebarGroup as CommunitiesSidebarGroupComponent } from './communities/communities-sidebar-group'
+import type { ListsSidebarGroup as ListsSidebarGroupComponent } from './lists/lists-sidebar-group'
+import type { MessagesSidebarGroup as MessagesSidebarGroupComponent } from './messages/messages-sidebar-group'
 
-const ChatsSidebarGroup = dynamic(
+const ChatsSidebarGroup = dynamic<ComponentProps<typeof ChatsSidebarGroupComponent>>(
   () => import('./chat/chats-sidebar-group').then(m => ({ default: m.ChatsSidebarGroup })),
   { ssr: false },
 )
 
-const MessagesSidebarGroup = dynamic(
+const MessagesSidebarGroup = dynamic<ComponentProps<typeof MessagesSidebarGroupComponent>>(
   () =>
     import('./messages/messages-sidebar-group').then(m => ({ default: m.MessagesSidebarGroup })),
   { ssr: false },
 )
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const CommunitiesSidebarGroup = dynamic(() =>
-  import('./communities/communities-sidebar-group').then(m => ({
-    default: m.CommunitiesSidebarGroup,
-  })),
+const CommunitiesSidebarGroup = dynamic<ComponentProps<typeof CommunitiesSidebarGroupComponent>>(
+  () =>
+    import('./communities/communities-sidebar-group').then(m => ({
+      default: m.CommunitiesSidebarGroup,
+    })),
 )
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const ListsSidebarGroup = dynamic(() =>
+const ListsSidebarGroup = dynamic<ComponentProps<typeof ListsSidebarGroupComponent>>(() =>
   import('./lists/lists-sidebar-group').then(m => ({ default: m.ListsSidebarGroup })),
 )
 

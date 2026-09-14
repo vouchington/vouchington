@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, vi, beforeEach } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, createTestMembership } from '@voucha/test-helpers'
 import * as stripeInvoices from '@modules/stripe/invoices'
-import { recordMembershipRefundWebhook } from '@services/memberships/refunds'
+import { recordMembershipRefundEvent } from '@services/memberships/refunds'
 import type { PrivateUser } from '@services/users/types'
 
 function fakeInvoiceList(
@@ -132,7 +132,7 @@ describe('GET /api/v1/memberships/refundable-charges', () => {
     vi.spyOn(stripeInvoices, 'listStripeSubscriptionInvoices').mockResolvedValue(
       fakeInvoiceList(invoiceId, chargeId, 1000),
     )
-    await recordMembershipRefundWebhook({
+    await recordMembershipRefundEvent({
       membershipId: membership.id,
       membershipSourceId: membership.membership_source_id,
       userId: target.id,
@@ -180,7 +180,7 @@ describe('GET /api/v1/memberships/refundable-charges', () => {
         },
       ],
     } as never)
-    await recordMembershipRefundWebhook({
+    await recordMembershipRefundEvent({
       membershipId: membership.id,
       membershipSourceId: membership.membership_source_id,
       userId: target.id,

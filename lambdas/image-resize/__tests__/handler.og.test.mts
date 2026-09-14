@@ -5,7 +5,7 @@ import sharp from 'sharp'
 import { createLambdaHandler, type LambdaHandlerDependencies } from '../handler.mts'
 import type { EnvironmentConfig, SideloadConfig } from '../config.mts'
 import { S3OperationError } from '../errors.mts'
-import { toBase64Url } from '../test-helpers/index.mts'
+import { toBase64Url } from '../../test-helpers/image-resize/index.mts'
 import { SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
 
 // 1x1 transparent PNG — stands in for an avatar original fetched from S3.

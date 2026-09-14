@@ -58,6 +58,7 @@ export type CreateRefundPayload = {
   paymentIntentId?: string
   amountMinorUnits?: number
   idempotencyKey: string
+  metadata?: Record<string, string>
 }
 export type CancelSubscriptionImmediatelyPayload = { subscriptionId: string }
 export type SanitizeCustomerPayload = { customerId: string; idempotencyKey: string }

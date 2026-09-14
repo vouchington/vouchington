@@ -67,7 +67,8 @@ existing callers.
 
 Post report clusters show duplicate and brigade indicators from existing stored signals:
 
-- `content_hash_duplicate` and `embeddings_similarity` come from `posts.spam_detection_results`.
+- `content_hash_duplicate` and `embeddings_similarity` come from bounded spam-detection evidence on
+  the current `post_moderation_dispositions` row.
 - Duplicate-wave cards appear when at least 3 returned post clusters match within 24 hours by stored
   content hash or stored post embedding similarity.
 - The brigade badge appears when the reported post has an unresolved

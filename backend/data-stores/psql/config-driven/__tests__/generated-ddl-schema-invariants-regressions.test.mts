@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
 import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
-import { findFirstUuidv7CreatedAtViolation } from '../../test-helpers/config-driven/generated-ddl-schema-invariants.mts'
+import { findFirstUuidv7CreatedAtViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-schema-invariants.mts'
 
 describe('config-driven generated DDL schema invariant regressions', () => {
   beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))

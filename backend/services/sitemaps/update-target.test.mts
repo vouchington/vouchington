@@ -10,7 +10,7 @@ describe('getPostSitemapUpdateTarget', () => {
         broadcast: 'everyone',
         privacy: 'public',
         deleted_at: null,
-        openai_omni_moderation_flagged: false,
+        approved_at: new Date('2026-03-04T12:01:00.000Z'),
         slug: 'hello-world',
       }),
     ).toEqual({
@@ -45,7 +45,6 @@ describe('getPostSitemapUpdateTarget', () => {
         broadcast: 'users',
         privacy: 'public',
         deleted_at: null,
-        openai_omni_moderation_flagged: false,
         slug: 'hello-world',
       }),
     ).toBeNull()

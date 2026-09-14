@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
   insertTestPost,
   insertTestUserWarning,
-  setTestLatestPostClearanceNote,
+  appendTestPlatformRejectionNote,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
@@ -138,7 +138,7 @@ describe('GET /api/v1/appeals — list behavior', () => {
       markdown: 'Removed content',
       clearanceStatus: 'rejected',
     })
-    await setTestLatestPostClearanceNote(postId, internalRemovalNote)
+    await appendTestPlatformRejectionNote(postId, internalRemovalNote)
     const input = parseCreateModerationAppealInput({
       target_type: 'removal',
       target_id: postId,

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import sql from 'sql-template-strings'
+import onError from '@modules/on-error'
 import type { QueryInput } from './types.mts'
 import { connectWithRetry } from './connect-with-retry.mts'
 import { readPool } from './setup.mts'
@@ -94,9 +95,9 @@ export async function explainAnalyze(
     await client.query(sql`/* explainAnalyze */ ROLLBACK`)
     rows = queryResult.rows as Array<Record<string, unknown>>
   } catch (err) {
-    await client.query(sql`/* explainAnalyze */ ROLLBACK`).catch(() => {})
+    await client.query(sql`/* explainAnalyze */ ROLLBACK`).catch(onError)
     if (prepared) {
-      await client.query(`/* explainAnalyze */ DEALLOCATE ${preparedStatementName}`).catch(() => {})
+      await client.query(`/* explainAnalyze */ DEALLOCATE ${preparedStatementName}`).catch(onError)
     }
     throw err
   } finally {

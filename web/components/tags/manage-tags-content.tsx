@@ -10,9 +10,12 @@ import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { fetchEntityRelations } from '@/lib/api/client/entity-relations'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { mergeEntityRelationPages } from '@/lib/api/merge-entity-relations'
+import type { AddTagForm as AddTagFormComponent } from './add-tag-form'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const AddTagForm = dynamic(() => import('./add-tag-form').then(m => ({ default: m.AddTagForm })))
+const AddTagForm = dynamic<Parameters<typeof AddTagFormComponent>[0]>(() =>
+  import('./add-tag-form').then(m => ({ default: m.AddTagForm })),
+)
 
 interface ManageTagsContentProps {
   entityType: string

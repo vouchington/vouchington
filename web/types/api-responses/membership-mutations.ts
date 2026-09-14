@@ -34,6 +34,15 @@ export interface MembershipVerificationResponseBody {
   }
 }
 
+export interface MicrosoftStoreServiceTicketsResponseBody {
+  service_tickets: {
+    collections_service_ticket: string
+    purchase_service_ticket: string
+    publisher_user_id: string
+    expires_at: string
+  }
+}
+
 export interface BillingPortalSessionResponseBody {
   portal_session: { url: string }
 }

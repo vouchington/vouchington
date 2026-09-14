@@ -10,12 +10,12 @@ import { afterEach, describe, expect, it } from 'vitest'
 const execFileAsync = promisify(execFile)
 const scriptDir = fileURLToPath(new URL('..', import.meta.url))
 const testDirs: string[] = []
-
 async function copyLib(dir: string, name: string) {
-  await writeFile(
-    join(dir, 'dev', 'lib', name),
-    await readFile(join(scriptDir, 'lib', name), 'utf8'),
-  )
+  const source =
+    name === 'git-worktrees.sh'
+      ? '../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh'
+      : `lib/${name}`
+  await writeFile(join(dir, 'dev', 'lib', name), await readFile(join(scriptDir, source), 'utf8'))
 }
 
 async function makeRepo(databaseUrl: string) {
@@ -28,6 +28,7 @@ async function makeRepo(databaseUrl: string) {
   await copyLib(dir, 'db-name-from-url.sh')
   await copyLib(dir, 'db-target.sh')
   await copyLib(dir, 'flush-valkey.sh')
+  await copyLib(dir, 'git-worktrees.sh')
   await copyLib(dir, 'worktree-resource-env.sh')
   await writeFile(join(dir, '.git'), 'gitdir: /fake/.git/worktrees/test\n')
   const physicalDir = await realpath(dir)

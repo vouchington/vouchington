@@ -12,7 +12,12 @@ const teardownPath = fileURLToPath(new URL('../teardown', import.meta.url))
 const refuseOnMainPath = fileURLToPath(new URL('../lib/refuse-on-main.sh', import.meta.url))
 const dbNameFromUrlPath = fileURLToPath(new URL('../lib/db-name-from-url.sh', import.meta.url))
 const dbTargetPath = fileURLToPath(new URL('../lib/db-target.sh', import.meta.url))
-const gitWorktreesPath = fileURLToPath(new URL('../lib/git-worktrees.sh', import.meta.url))
+const gitWorktreesPath = fileURLToPath(
+  new URL(
+    '../../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
+    import.meta.url,
+  ),
+)
 const worktreeResourceEnvPath = fileURLToPath(
   new URL('../lib/worktree-resource-env.sh', import.meta.url),
 )

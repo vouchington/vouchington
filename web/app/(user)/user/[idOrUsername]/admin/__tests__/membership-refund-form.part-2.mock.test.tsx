@@ -100,6 +100,7 @@ describe('MembershipRefundForm behavior', () => {
     vi.clearAllMocks()
     sessionStorage.clear()
     mockCreateMembershipRefund.mockResolvedValue({
+      outcome: 'completed',
       refund: { id: 're_test' },
       cancellation_status: 'not_requested',
     })
@@ -176,6 +177,7 @@ describe('MembershipRefundForm behavior', () => {
 
   it('shows revoke button text and submits revoke refund when cancel is checked', async () => {
     mockCreateMembershipRefund.mockResolvedValue({
+      outcome: 'completed',
       refund: { id: 're_test' },
       cancellation_status: 'completed',
     })
@@ -193,10 +195,12 @@ describe('MembershipRefundForm behavior', () => {
     expect(mockToastSuccess).toHaveBeenCalledWith('Refund issued and access revoked')
   })
 
-  it('restores pending access revocation and completes an exact retry', async () => {
-    mockCreateMembershipRefund
-      .mockResolvedValueOnce({ refund: { id: 're_pending' }, cancellation_status: 'pending' })
-      .mockResolvedValueOnce({ refund: { id: 're_pending' }, cancellation_status: 'completed' })
+  it('restores and locks a pending access-revocation reconciliation', async () => {
+    mockCreateMembershipRefund.mockResolvedValueOnce({
+      outcome: 'completed',
+      refund: { id: 're_pending' },
+      cancellation_status: 'pending',
+    })
     const firstRender = renderRefundForm()
 
     fireEvent.click(screen.getByRole('checkbox'))
@@ -210,29 +214,24 @@ describe('MembershipRefundForm behavior', () => {
 
     await waitFor(() =>
       expect(mockToastWarning).toHaveBeenCalledWith(
-        'Refund issued, but access could not be revoked.',
+        'Refund reconciliation is continuing automatically.',
       ),
     )
     expect(mockCreateMembershipRefund).toHaveBeenCalledOnce()
     expect(mockToastError).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: 'Retry Access Revocation' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Reconciling Refund' })).toBeDisabled()
 
     firstRender.unmount()
     const freshRender = renderRefundForm([paymentIntentOnlyCharge, fakeCharge])
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Retry Access Revocation' })).toBeEnabled(),
+      expect(screen.getByRole('button', { name: 'Reconciling Refund' })).toBeDisabled(),
     )
     expect(screen.getByPlaceholderText(/For example, 5\.00/)).toBeDisabled()
     expect(screen.getByPlaceholderText(/Internal note/)).toBeDisabled()
-    fireEvent.submit(freshRender.container.querySelector('form')!)
-
-    await waitFor(() => expect(mockCreateMembershipRefund).toHaveBeenCalledTimes(2))
-    expect(mockCreateMembershipRefund.mock.calls[1]![0]).toEqual(
-      mockCreateMembershipRefund.mock.calls[0]![0],
-    )
-    expect(mockToastSuccess).toHaveBeenCalledWith('Refund issued and access revoked')
-    expect(onReload).toHaveBeenCalledOnce()
-    expect(mockRefresh).toHaveBeenCalledOnce()
+    expect(freshRender.container.querySelector('form')).toBeInTheDocument()
+    expect(mockCreateMembershipRefund).toHaveBeenCalledOnce()
+    expect(onReload).not.toHaveBeenCalled()
+    expect(mockRefresh).not.toHaveBeenCalled()
   })
 
   it('normalizes the optional amount and note fields', async () => {

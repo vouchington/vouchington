@@ -86,7 +86,6 @@ before the web change that starts requesting it).
 - [Environment Variables](environment-variables.md) — runtime configuration inventory
 - [Local Env Vars](../../development/local-env-vars.md) — local setup matrix for credentials and config
 - [Infrastructure](infrastructure.md) — AWS and edge resource overview
-- [Deployment Costs](deployment-costs.md) — monthly cost breakdown across staging, production, and CI/testing
 - [Cloudflare Worker rules](../../../cloudflare-worker/CLAUDE.md) — edge routing, auth, and cache policy
 - [Backend rules](../../../backend/CLAUDE.md) — service startup and production checks
 - [Web rules](../../../web/CLAUDE.md) — Next.js build and runtime conventions

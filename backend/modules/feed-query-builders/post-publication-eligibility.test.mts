@@ -72,8 +72,6 @@ describe('buildPublicPostEligibilityFilter', () => {
     expect(statement.text).toContain('access_post.deleted_at IS NULL')
     expect(statement.text).toContain('candidate_post.approved_at IS NOT NULL')
     expect(statement.text).toContain('access_post.approved_at IS NOT NULL')
-    expect(statement.text).toContain('candidate_post.openai_omni_moderation_flagged IS NOT TRUE')
-    expect(statement.text).toContain('access_post.openai_omni_moderation_flagged IS NOT TRUE')
     expect(statement.text).toContain('candidate_post.archived_at IS NULL')
     expect(statement.text).toContain("access_post.privacy = 'public'")
     expect(statement.text).toContain("access_post.broadcast = 'everyone'")
@@ -99,13 +97,9 @@ describe('buildPublicPostEligibilityFilter', () => {
     expect(statement.text).not.toContain("access_post.broadcast = 'everyone'")
   })
 
-  it('keeps candidate and root moderation gates in the managed eligibility view', () => {
-    expect(publicEligibilityViewSql).toContain(
-      'candidate_post.openai_omni_moderation_flagged IS NOT TRUE',
-    )
-    expect(publicEligibilityViewSql).toContain(
-      'root_post.openai_omni_moderation_flagged IS NOT TRUE',
-    )
+  it('keeps candidate and root clearance gates in the managed eligibility view', () => {
+    expect(publicEligibilityViewSql).toContain('candidate_post.approved_at IS NOT NULL')
+    expect(publicEligibilityViewSql).toContain('root_post.approved_at IS NOT NULL')
   })
 })
 

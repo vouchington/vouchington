@@ -2,16 +2,30 @@
 // logic is unit-testable: that file's top-level `await` has no valid non-network code path to
 // exercise in CI, so it stays a thin, coverage-ignored process entrypoint that calls back in here.
 import { resolve4, resolve6 } from 'node:dns/promises'
+import { isIP } from 'node:net'
 import { networkInterfaces } from 'node:os'
+import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 import { getExternalFetch } from '@modules/utils/http-dispatchers'
-import { IPV6_ALLOWLIST } from '@modules/utils/ipv6-allowlist'
+import { getConfiguredSentryHost, IPV6_ALLOWLIST } from '@modules/utils/ipv6-allowlist'
 
 // Mirrors @modules/aws/config's default; not imported directly to keep this diagnostic entrypoint
 // free of the AWS SDK client dependency surface it does not otherwise need.
-const AWS_REGION = process.env.AWS_REGION ?? 'us-west-2'
-const S3_DUALSTACK_HOST = `s3.dualstack.${AWS_REGION}.amazonaws.com`
-export const HOSTS: readonly string[] = [...IPV6_ALLOWLIST, S3_DUALSTACK_HOST]
 const TLS_TIMEOUT_MS = 5_000
+
+export function getIpv6VerificationHosts(env: NodeJS.ProcessEnv = process.env): readonly string[] {
+  const awsRegion = env.AWS_REGION ?? 'us-west-2'
+  const sentryHost = getConfiguredSentryHost(env)
+  if (isDeployedEnvironment(env) && sentryHost === undefined) {
+    throw new Error(
+      'SENTRY_DSN is required and must be valid for deployed IPv6 egress verification.',
+    )
+  }
+  return [
+    ...(sentryHost === undefined ? [] : [sentryHost]),
+    ...IPV6_ALLOWLIST,
+    `s3.dualstack.${awsRegion}.amazonaws.com`,
+  ]
+}
 
 export type HostResult = {
   host: string
@@ -74,9 +88,14 @@ export function reportRouteEvidence(): void {
 }
 
 export async function resolveRecords(host: string): Promise<Pick<HostResult, 'a' | 'aaaa'>> {
+  const hostname = new URL(`https://${host}`).hostname
+  const literalHost =
+    hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname
+  if (isIP(literalHost) === 6) return { a: [], aaaa: [literalHost] }
+
   const [a, aaaa] = await Promise.all([
-    resolve4(host).catch(() => []),
-    resolve6(host).catch(() => []),
+    resolve4(hostname).catch(() => []),
+    resolve6(hostname).catch(() => []),
   ])
   return { a, aaaa }
 }
@@ -99,11 +118,13 @@ export async function checkTlsReachable(
   }
 }
 
-export async function runIpv6EgressVerification(): Promise<VerificationOutcome> {
+export async function runIpv6EgressVerification(
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<VerificationOutcome> {
   reportRouteEvidence()
 
   const results: HostResult[] = []
-  for (const host of HOSTS) {
+  for (const host of getIpv6VerificationHosts(env)) {
     // oxlint-disable-next-line no-await-in-loop -- sequential, human-readable evidence output; this is a one-off diagnostic task, not a hot path
     const [records, tls] = await Promise.all([resolveRecords(host), checkTlsReachable(host)])
     results.push({ host, ...records, ...tls })

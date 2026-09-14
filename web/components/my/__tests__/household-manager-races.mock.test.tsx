@@ -22,7 +22,11 @@ vi.mock(import('@/lib/api/client'), () => ({
 
 import { HouseholdManager as HouseholdManagerComponent } from '../household-manager'
 import type { HouseholdSection } from '@/types/my'
-import { deferred, makeMembership, makeSection } from '../test-helpers/household-manager'
+import {
+  deferred,
+  makeMembership,
+  makeSection,
+} from '../../../test-helpers/components/my/household-manager'
 
 function HouseholdManager({ initialSections }: { initialSections: HouseholdSection[] }) {
   return (

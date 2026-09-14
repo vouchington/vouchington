@@ -22,6 +22,10 @@ const storybookMockAliases = {
   '@/components/notifications/inbox-button': 'inbox-button.tsx',
   '@/components/topics/settings/referral-validations-settings': 'referral-validations-settings.tsx',
   '@/hooks/use-turnstile-token': 'use-turnstile-token.ts',
+  '@/lib/i18n/get-resolved-ui-locale': 'get-resolved-ui-locale.ts',
+  '@/lib/i18n/get-translations': 'get-translations.ts',
+  '@/lib/i18n/load-server-messages': 'load-server-messages.ts',
+  'next/script': 'next-script.tsx',
 } as const
 
 export const storybookMockResolveAliases: Array<{ find: string | RegExp; replacement: string }> = [
@@ -38,4 +42,5 @@ export const storybookMockResolveAliases: Array<{ find: string | RegExp; replace
     replacement: storybookMock('api-keys-manager.tsx'),
   },
   { find: 'next/image', replacement: storybookMock('next-image.tsx') },
+  { find: 'next/headers', replacement: storybookMock('next-headers.ts') },
 ]

@@ -6,7 +6,7 @@ import {
   claimTestDelivery,
   rejectTestDelivery,
 } from '@services/ap-inbox-activities/durable-delivery-transitions.test-support'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { activityPubInboxDeliveryExistsOnPrimaryForTest } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createRemoteActorFixture, randomSuffix } from './inbox.test-helpers.mts'

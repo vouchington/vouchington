@@ -10,17 +10,17 @@ import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
 import {
   findFirstGeneratedDdlViolation,
   loadGeneratedConfigDrivenSql,
-} from '../../test-helpers/config-driven/generated-ddl-guard-helpers.mts'
-import { findFirstUnguardedInsertViolation } from '../../test-helpers/config-driven/generated-ddl-insert-invariants.mts'
-import { findFirstUuidv7CreatedAtViolation } from '../../test-helpers/config-driven/generated-ddl-schema-invariants.mts'
+} from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-guard-helpers.mts'
+import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
+import { findFirstUuidv7CreatedAtViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-schema-invariants.mts'
 import {
   readDollarQuoteDelimiter,
   readSqlLiteralAt,
-} from '../../test-helpers/config-driven/sql-literal-readers.mts'
+} from '../../../../test-helpers/data-stores/psql/config-driven/sql-literal-readers.mts'
 import {
   maskSqlLiterals,
   stripSqlComments,
-} from '../../test-helpers/config-driven/sql-text-scanner-helpers.mts'
+} from '../../../../test-helpers/data-stores/psql/config-driven/sql-text-scanner-helpers.mts'
 
 const configDrivenDir = fileURLToPath(new URL('..', import.meta.url))
 

@@ -112,6 +112,8 @@ export class CachedOrigin extends WorkerEntrypoint<Env, CachedOriginProps> {
             browserUploadOrigins: env.CSP_BROWSER_UPLOAD_ORIGINS,
             production: isProduction,
             nonce: placeholderNonce,
+            sentryTunnelPreviousWebDsn: env.SENTRY_TUNNEL_PREVIOUS_WEB_DSN,
+            sentryWebDsn: env.SENTRY_WEB_DSN,
           })
         : ''
 

@@ -8,7 +8,7 @@ import {
   legacyUuidV4,
   signLegacyDeviceJwt,
   signLegacySessionJwt,
-} from '@services/jwt-session/test-helpers/index'
+} from '@voucha/test-helpers/services/jwt-session/index'
 import { cacheBootstrapDeviceId } from '@modules/request-client-info'
 import { ATTESTED_SESSION_EXPIRATION_SECONDS, isUUIDv7 } from '@ts-shared/session-jwt'
 import {

@@ -23,10 +23,6 @@ export type IdentityVerificationProvider = {
   }) => Promise<CreatedVerificationSession>
   getVerificationSessionUrl: (sessionId: string) => Promise<string | null>
   getVerificationResult: (sessionId: string) => Promise<VerificationResult>
-  parseWebhookEvent: (
-    payload: string,
-    signature: string,
-  ) => Promise<{ type: string; sessionId: string } | null>
 }
 
 export type StripeVerificationSessionResult = {
@@ -148,12 +144,5 @@ export const stripeIdentityProvider: IdentityVerificationProvider = {
       issuingCountry,
       documentType,
     }
-  },
-
-  parseWebhookEvent(
-    _payload: string,
-    _signature: string,
-  ): Promise<{ type: string; sessionId: string } | null> {
-    return Promise.resolve(null)
   },
 }

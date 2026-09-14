@@ -44,7 +44,6 @@
     "@services/moderation-training": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/notifications": "workspace:^",
-    "@services/post-clearance": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/languages": "workspace:^",

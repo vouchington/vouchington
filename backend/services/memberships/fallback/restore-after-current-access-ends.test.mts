@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership, grantMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
-import { updateMembershipFromWebhook } from '../update.mts'
+import { updateMembershipFromEvent } from '../update.mts'
 
 describe('fallback access after current direct or administrator-grant access ends', () => {
   it.each(['cancelled', 'expired', 'paused'] as const)(
@@ -38,7 +38,7 @@ describe('fallback access after current direct or administrator-grant access end
         stripeSubscriptionId: `sub_restore_family_${status}_${randomUUID()}`,
       })
 
-      await updateMembershipFromWebhook(
+      await updateMembershipFromEvent(
         {
           membershipId: direct.id,
           status,
@@ -98,7 +98,7 @@ describe('fallback access after current direct or administrator-grant access end
     const grantSku = await createTestSku({ plan: 'plus', interval: 'yearly' })
     await grantMembership(admin.id, user.id, 'plus', grantSku.id, 30)
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
       async () => false,
     )
@@ -142,7 +142,7 @@ describe('fallback access after current direct or administrator-grant access end
       stripeSubscriptionId: `sub_restore_highest_family_${randomUUID()}`,
     })
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
       async () => false,
     )
@@ -177,7 +177,7 @@ describe('fallback access after current direct or administrator-grant access end
       stripeSubscriptionId: `sub_expired_family_${randomUUID()}`,
     })
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
       async () => false,
     )
@@ -210,7 +210,7 @@ describe('fallback access after current direct or administrator-grant access end
       stripeSubscriptionId: `sub_rejected_family_${randomUUID()}`,
     })
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
       async () => false,
     )
@@ -244,7 +244,7 @@ describe('fallback access after current direct or administrator-grant access end
       stripeSubscriptionId: `sub_future_family_${randomUUID()}`,
     })
 
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
       async () => false,
     )

@@ -3,21 +3,13 @@ import {
   getMembershipSourceIdByMembershipId,
   getStripeSubscriptionIdByMembershipSourceId,
 } from './get.mts'
-import {
-  mapMembershipRefundRequestConflict,
-  MembershipRefundRequestConflictError,
-} from './refund-errors.mts'
-import type { MembershipRefundIntent } from './refund-intents.mts'
-import {
-  createRefundRequestFingerprint,
-  type MembershipRefundRequestIntent,
-} from './refund-idempotency.mts'
+import { type MembershipRefundRequestIntent } from './refund-idempotency.mts'
 import {
   listRefundableChargesForSubscription,
   matchesRefundRequest,
   type MembershipStripeOperations,
 } from './refund-stripe-operations.mts'
-import type { Membership, RefundableCharge } from './types.mts'
+import type { RefundableCharge } from './types.mts'
 
 export async function getValidatedRefundableCharge(
   membershipSourceId: string,
@@ -33,34 +25,6 @@ export async function getValidatedRefundableCharge(
     throw createHttpError(400, 'Refund currency must match the refundable charge currency')
   }
   return { match, stripeSubscriptionId }
-}
-
-export async function resolveMembershipRefundIntent(
-  currentUserId: string,
-  options: MembershipRefundRequestIntent,
-  existingIntent: MembershipRefundIntent,
-): Promise<{
-  membership: Pick<Membership, 'id'>
-  membershipSourceId: string
-  requestFingerprint: string
-}> {
-  const requestFingerprint = createRefundRequestFingerprint(existingIntent.membershipId, options)
-  await mapMembershipRefundRequestConflict(() => {
-    if (
-      existingIntent.issuedById !== currentUserId ||
-      existingIntent.requestFingerprint !== requestFingerprint
-    ) {
-      throw new MembershipRefundRequestConflictError()
-    }
-  })
-  if (existingIntent.replayState === 'outcome_unknown') {
-    throw createHttpError(
-      409,
-      'Refund outcome is unknown; reconciliation is required before retrying',
-    )
-  }
-  const membership = { id: existingIntent.membershipId }
-  return { membership, membershipSourceId: existingIntent.membershipSourceId, requestFingerprint }
 }
 
 export async function requireMembershipSourceId(membershipId: string): Promise<string> {

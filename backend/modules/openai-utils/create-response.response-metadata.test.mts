@@ -5,7 +5,7 @@ import {
   makeSdkResponse,
   makeSdkTextResponse,
   makeStreamEvent,
-} from './test-helpers/responses.mts'
+} from '../../test-helpers/modules/openai-utils/responses.mts'
 
 describe('streamOpenAIResponseEvents response metadata', () => {
   it.each(['queued', 'in_progress', 'cancelled', undefined] as const)(

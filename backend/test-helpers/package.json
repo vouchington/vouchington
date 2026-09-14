@@ -26,7 +26,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/s3-request-presigner": "^3.1129.0",
+    "@aws-sdk/s3-request-presigner": "^3.1131.0",
     "@data-stores/analytics": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/psql": "workspace:^",
@@ -35,25 +35,30 @@
     "@data-stores/valkey-pubsub": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@jongleberry/vurst-markdown": "^0.4.3",
+    "@libpg-query/parser": "^18.0.0",
     "@modules/agents": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/search-utils": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@sentry/node": "10.71.0",
+    "@sentry/node": "10.74.0",
     "@ts-shared/money": "workspace:^",
     "@valkey/valkey-glide": "^2.5.2",
     "@voucha/api-fixtures": "workspace:^",
     "@voucha/types": "workspace:^",
+    "jose": "^6.2.12",
+    "openai": "^7.15.0",
     "otpauth": "^9.5.2",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
+    "supertest": "^7.2.2",
     "uuid": "^14.0.2",
-    "vouchington-tooling": "^0.16.0"
+    "vouchington-tooling": "^0.16.1"
   },
   "devDependencies": {
     "@ts-shared/utils": "workspace:^",
+    "@types/supertest": "^7.2.1",
     "@voucha/ci": "workspace:^"
   }
 }

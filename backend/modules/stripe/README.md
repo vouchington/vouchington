@@ -10,7 +10,7 @@ and subscription updates carry caller-generated idempotency keys. Immediate subs
 DELETE endpoint, which does not support provider idempotency; after any failed DELETE, the module
 retrieves the same subscription and treats an observed `canceled` terminal state as convergence.
 Membership refunds persist their caller-token-derived refund key and exact request fingerprint so a
-later HTTP retry cannot duplicate an ambiguous timed-out refund. Worker-originated webhook and
+later HTTP retry cannot duplicate an ambiguous timed-out refund. Worker-originated event and
 identity work calls this module directly.
 
 The catalog adapter resolves only the four versioned membership Price lookup keys. A missing Price

@@ -2,16 +2,16 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { loadMessages } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { seedMessages } from '@/lib/i18n/use-translations'
 
 // Pre-seeds the client-side translation cache before any mock test mounts a component, so
 // `useTranslations()` resolves synchronously instead of suspending on the first render. Without
-// this, any codemod-migrated component suspends on `loadMessages('en')` — production closes this
-// window via a server-rendered bootstrap script (`seedFromWindowBootstrap`), which jsdom has no
-// equivalent for. 'en' is hardcoded (not `DEFAULT_UI_LOCALE`) to mirror the Storybook `preview.ts`
+// this, any codemod-migrated component suspends on `loadJsonMessages('en')` — production closes
+// this window via a server-rendered bootstrap script (`seedFromWindowBootstrap`), which jsdom has
+// no equivalent for. 'en' is hardcoded (not `DEFAULT_UI_LOCALE`) to mirror the Storybook preview
 // seed: every mock test's default `UiLocaleProvider` context value renders English.
-seedMessages('en', await loadMessages('en'))
+seedMessages('en', await loadJsonMessages('en'))
 
 // Next.js treats `server-only` as a compile/runtime boundary marker. Vitest imports server
 // components directly in jsdom, so mock the marker module while preserving production imports.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, safeUsername, suspendTestUser } from '@voucha/test-helpers'
 import { CONFLICT } from '@modules/on-error/error-codes'
 

@@ -158,4 +158,40 @@ export async function withTestMembershipUserLocked<T>(
   }
 }
 
+export async function holdTestMembershipRowLock(
+  membershipId: string,
+  locked: PromiseWithResolvers<void>,
+  release: PromiseWithResolvers<void>,
+): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* holdTestMembershipRowLock */
+    SELECT id FROM memberships WHERE id = ${membershipId} FOR UPDATE`)
+  locked.resolve()
+  await release.promise
+  await transaction.commit()
+}
+
+export async function holdTestMembershipSourceStateLock(
+  membershipSourceId: string,
+  locked: PromiseWithResolvers<void>,
+  release: PromiseWithResolvers<void>,
+): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* holdTestMembershipSourceStateLock */
+    SELECT membership_source_id FROM membership_source_states
+    WHERE membership_source_id = ${membershipSourceId} FOR UPDATE`)
+  locked.resolve()
+  await release.promise
+  await transaction.commit()
+}
+
+export async function probeTestUserLock(userId: string): Promise<void> {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* probeTestUserLock:setTimeout */ SET LOCAL lock_timeout = '50ms'`)
+  await transaction(sql`/* probeTestUserLock */
+    SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
+  await transaction.commit()
+}
+
 export { runTestActionWhileMembershipUserLocked } from './locks/action-while-user-locked.mts'
+export { runTestStripeCatalogReconciliationWhileProductReferenced } from './locks/stripe-catalog-fk-hold.mts'

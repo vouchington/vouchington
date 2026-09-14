@@ -1,3 +1,4 @@
+import { defaultTranslator as t } from '@ts-shared/ui-messages/default-translator'
 import { describe, expect, it } from 'vitest'
 import {
   createBreadcrumbSchema,
@@ -83,11 +84,14 @@ describe('structured data helpers — page schemas', () => {
   })
 
   it('builds breadcrumb schema with correct positions', () => {
-    const schema = createBreadcrumbSchema([
-      { name: 'Home', path: '/' },
-      { name: 'Reviews', path: '/reviews' },
-      { name: 'Amex Gold', path: '/review/amex-gold' },
-    ])
+    const schema = createBreadcrumbSchema(
+      [
+        { name: 'Home', path: '/' },
+        { name: 'Reviews', path: '/reviews' },
+        { name: 'Amex Gold', path: '/review/amex-gold' },
+      ],
+      t,
+    )
 
     expect(schema['@type']).toBe('BreadcrumbList')
     const items = schema.itemListElement as Array<{ position: number; name: string }>

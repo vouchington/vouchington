@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { LandingPageAnalyticsCard } from '../landing-page-analytics-card'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 // LandingPageAnalyticsCard calls getTranslations(); mock the boundary with a real-catalog
 // translator so the render stays synchronous in tests while still resolving keys against the

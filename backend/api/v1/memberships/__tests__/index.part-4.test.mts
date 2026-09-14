@@ -1,11 +1,11 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestMembership, createTestSku, createTestUser } from '@voucha/test-helpers'
 import * as stripePortal from '@modules/stripe/portal'
 import {
   getMembershipByUserId,
   grantMembership,
-  updateMembershipFromWebhook,
+  updateMembershipFromEvent,
 } from '@services/memberships'
 import type { PrivateUser } from '@services/users/types'
 import { STRIPE_PROVIDER_ENVIRONMENT } from '@voucha/config'
@@ -35,7 +35,7 @@ describe('retained direct subscription management', () => {
       provider_environment: STRIPE_PROVIDER_ENVIRONMENT,
       provider_application_id: DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT.applicationId,
     })
-    await updateMembershipFromWebhook(
+    await updateMembershipFromEvent(
       { membershipId: direct.id, status: 'paused' },
       async () => false,
     )

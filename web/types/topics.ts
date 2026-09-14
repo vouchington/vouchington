@@ -105,13 +105,8 @@ export const NON_SOURCE_TOPIC_TYPE_OPTIONS: TopicTypeOption[] = TOPIC_TYPE_OPTIO
   opt => opt.value !== 'rss_feed' && opt.value !== 'fediverse_instance',
 )
 
-// Falls back to the raw (unrecognized) topic type value when there is no config entry — this
-// is a defensive edge case that should not occur with backend-enum-constrained data. The cast
-// keeps the signature MessageKey for every real call site; an actually-malformed value would
-// throw in t(), which matches this catalog's fail-loud-on-a-real-bug design (see createTranslator
-// in @ts-shared/ui-messages).
 export function getTopicTypeLabel(topicType: string): MessageKey {
-  return topicTypes[topicType as TopicTypes]?.label ?? (topicType as MessageKey)
+  return topicTypes[topicType as TopicTypes]?.label ?? topicTypes.topic.label
 }
 
 export function getTopicTypeSlug(topicType: string) {

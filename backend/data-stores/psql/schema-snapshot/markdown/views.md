@@ -417,7 +417,7 @@ UNION ALL
         END AS clearance_status,
     COALESCE(posts.approved_at, posts.rejected_at, posts.in_review_at, post_clearance_changes.created_at) AS clearance_updated_at,
         CASE
-            WHEN (posts.rejected_at IS NOT NULL) THEN post_clearance_changes.note
+            WHEN ((posts.rejected_at IS NOT NULL) OR (posts.in_review_at IS NOT NULL)) THEN post_clearance_changes.public_reason_code
             ELSE NULL::text
         END AS clearance_reason
    FROM (posts
@@ -499,7 +499,7 @@ UNION ALL
                   WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::text))) explicit_categories), '[]'::json) AS post_explicit_categories,
     COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg
            FROM (post_images
-             JOIN images ON (((images.id = post_images.image_id) AND (images.deleted_at IS NULL) AND (images.upload_completed_at IS NOT NULL))))
+             JOIN images ON (((images.id = post_images.image_id) AND (images.deleted_at IS NULL) AND (images.upload_completed_at IS NOT NULL) AND (images.quarantine_pending_at IS NULL))))
           WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,
     posts.community_id,
     posts.data_point_vertical,
@@ -508,13 +508,12 @@ UNION ALL
     posts.updated_by_id,
     posts.deleted_at,
     posts.deleted_by_id,
-    posts.openai_omni_moderation_flagged,
+        CASE
+            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean
+            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)
+        END AS openai_omni_moderation_flagged,
     clearance.clearance_status,
     clearance.clearance_updated_at,
-    posts.spam_detection_flagged,
-    posts.spam_detection_created_at,
-    posts.spam_detection_score,
-    posts.spam_detection_results,
         CASE
             WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb
                        FROM view_url_hostnames vuh
@@ -548,8 +547,14 @@ UNION ALL
     pl.locked_at,
     pl.locked_by_id,
     clearance.clearance_reason
-   FROM ((posts
+   FROM (((posts
      JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))
+     LEFT JOIN LATERAL ( SELECT disposition.disposition
+           FROM (post_moderation_versions version
+             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))
+          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))
+          ORDER BY disposition.id DESC
+         LIMIT 1) openai_moderation ON (true))
      LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,
             post_locks.locked_by_id
            FROM post_locks
@@ -570,7 +575,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
      JOIN posts root_post ON ((root_post.id = COALESCE(candidate_post.root_id, candidate_post.id))))
      LEFT JOIN user_suspensions root_suspension ON (((root_suspension.user_id = root_post.created_by_id) AND (root_suspension.lifted_at IS NULL))))
      LEFT JOIN user_suspensions candidate_suspension ON (((candidate_suspension.user_id = candidate_post.created_by_id) AND (candidate_suspension.lifted_at IS NULL))))
-  WHERE ((candidate_post.deleted_at IS NULL) AND (candidate_post.approved_at IS NOT NULL) AND (candidate_post.openai_omni_moderation_flagged IS NOT TRUE) AND (candidate_post.archived_at IS NULL) AND (candidate_suspension.user_id IS NULL) AND (root_post.deleted_at IS NULL) AND (root_post.approved_at IS NOT NULL) AND (root_post.openai_omni_moderation_flagged IS NOT TRUE) AND (root_post.archived_at IS NULL) AND (root_post.privacy = 'public'::privacy_types) AND (root_post.broadcast = 'everyone'::broadcast_types) AND ((root_post.community_id IS NULL) OR (EXISTS ( SELECT 1
+  WHERE ((candidate_post.deleted_at IS NULL) AND (candidate_post.approved_at IS NOT NULL) AND (candidate_post.archived_at IS NULL) AND (candidate_suspension.user_id IS NULL) AND (root_post.deleted_at IS NULL) AND (root_post.approved_at IS NOT NULL) AND (root_post.archived_at IS NULL) AND (root_post.privacy = 'public'::privacy_types) AND (root_post.broadcast = 'everyone'::broadcast_types) AND ((root_post.community_id IS NULL) OR (EXISTS ( SELECT 1
            FROM (communities publication_community
              JOIN community_post_reviews publication_review ON (((publication_review.community_id = publication_community.id) AND (publication_review.post_id = root_post.id) AND (publication_review.approved_at IS NOT NULL) AND (publication_review.rejected_at IS NULL) AND (publication_review.unpublished_at IS NULL))))
           WHERE ((publication_community.id = root_post.community_id) AND (publication_community.deleted_at IS NULL) AND (publication_community.archived_at IS NULL) AND (publication_community.visibility = 'public'::community_visibility_types))

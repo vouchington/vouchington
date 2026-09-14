@@ -4,7 +4,7 @@ import {
 } from '@voucha/test-helpers/dynamic-config'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-import { createRequest, nextTestRequestIp, request } from '@voucha/api/test-helpers/server'
+import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
 import {
   createUniqueTestEmail,
   invalidateEmailDomainCaches,

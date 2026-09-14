@@ -57,7 +57,7 @@ export async function getPodcastEpisodeChaptersById(
         signal: abortController.signal,
       })
       if (!response.ok) {
-        await response.body?.cancel().catch(() => undefined)
+        await response.body?.cancel().catch(onError)
         return []
       }
       const body = await deps.readResponseBodyAsBuffer({

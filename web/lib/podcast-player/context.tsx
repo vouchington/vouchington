@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { useAuth } from '@/lib/auth/context'
 import { fetchPlaybackPosition, reportPlaybackPosition } from '@/lib/api/client/podcast-playback'
 import { PodcastMiniPlayer } from './mini-player'
@@ -41,10 +42,14 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           ? reportPlaybackPosition(episode.episodeId, {
               position_seconds: positionSeconds,
               completed,
-            }).catch(() => {})
+            }).catch(error => {
+              Sentry.captureException(error)
+            })
           : Promise.resolve()
       const nextReport = reportChainRef.current.then(report, report)
-      reportChainRef.current = nextReport.catch(() => {})
+      reportChainRef.current = nextReport.catch(error => {
+        Sentry.captureException(error)
+      })
       return nextReport
     },
     [],
@@ -57,7 +62,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const playEpisode = useCallback(
     (episode: PodcastEpisode) => {
       if (currentEpisode?.episodeId === episode.episodeId) {
-        audioRef.current?.play().catch(() => {})
+        audioRef.current?.play().catch(Sentry.captureException)
         return
       }
       if (!queueRef.current.some(e => e.episodeId === episode.episodeId)) {

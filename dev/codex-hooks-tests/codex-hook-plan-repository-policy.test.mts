@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { findPreToolUseBlock } from '../codex-hooks/policy.mts'
-import { VALID_PLAN_BODY } from '../plan-issue/test-helpers/valid-plan-body.mts'
+import { VALID_PLAN_BODY } from '../test-helpers/plan-issue/valid-plan-body.mts'
 import { withTestTempDir } from './test-temp-root.mts'
 
 describe('Codex hook Plan repository policy', () => {

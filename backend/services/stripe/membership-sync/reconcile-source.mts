@@ -1,7 +1,7 @@
 import {
   DirectMembershipSourceRejectedError,
   getRetainedDirectMembershipSourceByStripeIdentity,
-  updateMembershipFromWebhook,
+  updateMembershipFromEvent,
 } from '@services/memberships'
 import type { Membership } from '@services/memberships/types'
 import type { StripeMembershipSourceIdentity } from '@services/memberships/create-types'
@@ -150,7 +150,7 @@ async function syncExistingMembership(
   membershipProviderEvidenceId?: string,
   acceptedObservation?: AcceptedStripeMembershipObservation,
 ): Promise<MembershipUpdateResult | null> {
-  return updateMembershipFromWebhook(
+  return updateMembershipFromEvent(
     {
       membershipId: membership.id,
       status: values.status,

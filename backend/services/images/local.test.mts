@@ -5,7 +5,6 @@ import { getPostByAny } from '@services/posts/get'
 import {
   createTestUser,
   getPostLLMModerationContentSha256,
-  getPostModerationData,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
@@ -37,11 +36,6 @@ describe('local', () => {
     const post = await getPostByAny(postId, { readOnly: false })
     assert(post)
     const { content_sha256 } = createPostModerationContent(post)
-    const postModerationData = (await getPostModerationData(postId)) as {
-      openai_omni_moderation_content_sha256: Buffer | null
-    } | null
-
-    expect(postModerationData?.openai_omni_moderation_content_sha256).toEqual(content_sha256)
     await expect(getPostLLMModerationContentSha256(postId)).resolves.toEqual(content_sha256)
   })
 

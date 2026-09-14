@@ -1,4 +1,3 @@
-import sql from 'sql-template-strings'
 import { afterEach, describe, expect, it } from 'vitest'
 import { stopTestQueryCapture } from '../../test-helpers/query-capture.mts'
 
@@ -7,9 +6,16 @@ import {
   disableQueryCapture,
   enableQueryCapture,
   getCapturedQueries,
-  maybeCaptureQuery,
 } from './query-capture.mts'
-import type { QueryInput } from './types.mts'
+import {
+  captureQueryAfterDisable,
+  captureQueryAfterStop,
+  captureQueryBeforeStop,
+  captureSqlTemplateQuery,
+  captureStringQuery,
+  captureUncloneableValuesQuery,
+  captureUnsupportedQueryInput,
+} from '../../test-helpers/data-stores/psql/query-capture.mts'
 
 describe('query capture', () => {
   afterEach(() => {
@@ -18,21 +24,21 @@ describe('query capture', () => {
   })
 
   it('ignores queries until capture is enabled', () => {
-    maybeCaptureQuery('/* skipped */ SELECT 1')
+    captureQueryAfterDisable()
     expect(getCapturedQueries()).toEqual([])
   })
 
   it('records strings, SQL statements, and ignores unknown input', () => {
     enableQueryCapture()
-    maybeCaptureQuery('/* fromString */ SELECT $1', [1])
-    maybeCaptureQuery(sql`/* fromSql */ SELECT ${2}`)
-    maybeCaptureQuery({} as QueryInput)
+    captureStringQuery()
+    captureSqlTemplateQuery()
+    captureUnsupportedQueryInput()
     expect(getCapturedQueries()).toEqual([
       expect.objectContaining({ text: '/* fromString */ SELECT $1', values: [1] }),
       expect.objectContaining({ text: expect.stringContaining('/* fromSql */ SELECT') }),
     ])
     disableQueryCapture()
-    maybeCaptureQuery('/* afterDisable */ SELECT 1')
+    captureQueryAfterDisable()
     expect(getCapturedQueries()).toHaveLength(2)
     clearCapturedQueries()
     expect(getCapturedQueries()).toEqual([])
@@ -40,7 +46,7 @@ describe('query capture', () => {
 
   it('stops test capture with a returned snapshot and no residual state', () => {
     enableQueryCapture()
-    maybeCaptureQuery('/* capturedBeforeStop */ SELECT $1', [1])
+    captureQueryBeforeStop()
     const capturedBeforeStop = getCapturedQueries()
 
     const stoppedQueries = stopTestQueryCapture()
@@ -51,7 +57,7 @@ describe('query capture', () => {
     expect(stoppedQueries[0]?.values).not.toBe(capturedBeforeStop[0]?.values)
     expect(getCapturedQueries()).toEqual([])
 
-    maybeCaptureQuery('/* capturedAfterStop */ SELECT 2')
+    captureQueryAfterStop()
     expect(getCapturedQueries()).toEqual([])
   })
 
@@ -63,12 +69,12 @@ describe('query capture', () => {
       },
     })
     enableQueryCapture()
-    maybeCaptureQuery('/* cloneFailure */ SELECT $1', values)
+    captureUncloneableValuesQuery(values)
 
     expect(() => stopTestQueryCapture()).toThrow('values clone failed')
     expect(getCapturedQueries()).toEqual([])
 
-    maybeCaptureQuery('/* afterCloneFailure */ SELECT 2')
+    captureQueryAfterStop()
     expect(getCapturedQueries()).toEqual([])
   })
 })

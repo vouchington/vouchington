@@ -37,13 +37,26 @@ describe('build-web workflow', () => {
       step => step.name === 'Run Docker smoke test',
     )
 
-    expect(smoke?.run).toContain('PORT=$(python3 ci/allocate-browser-safe-ports.py 1)')
+    expect(smoke?.run).toContain('PORTS=$(python3 ci/allocate-browser-safe-ports.py 2)')
     const steps = readBuildWebWorkflow().jobs?.build?.steps ?? []
     const activate = steps.findIndex(step => step.name === 'Activate pnpm via corepack')
     const smokeIndex = steps.findIndex(step => step.name === 'Run Docker smoke test')
     expect(activate).toBeGreaterThan(-1)
     expect(smokeIndex).toBeGreaterThan(activate)
     expect(steps[activate]?.run).toContain('ci/activate-pnpm.sh')
+  })
+
+  it('serves Docker smoke copy from the real localization backend', () => {
+    const steps = readBuildWebWorkflow().jobs?.build?.steps ?? []
+    const install = steps.findIndex(step => step.name === 'Install localization smoke dependencies')
+    const smoke = steps.findIndex(step => step.name === 'Run Docker smoke test')
+    expect(install).toBeGreaterThan(-1)
+    expect(smoke).toBeGreaterThan(install)
+    expect(steps[install]?.run).toContain('ci/pnpm-install.sh --runner-lifecycle ephemeral-full')
+    expect(steps[smoke]?.run).toContain('compile-localization-smoke-catalog.mts')
+    expect(steps[smoke]?.run).toContain('localization-smoke-backend.mts')
+    expect(steps[smoke]?.run).toContain('--add-host=host.docker.internal:host-gateway')
+    expect(steps[smoke]?.run).toContain('API_BASE_URL="http://host.docker.internal:$BACKEND_PORT"')
   })
 
   it('uses a fail-fast Docker build budget', () => {

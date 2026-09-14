@@ -1,4 +1,4 @@
-import { coverageProducerPartition } from '../coverage-suites.mts'
+import { coverageProducerGroup } from '../coverage-suites.mts'
 
 function selectedCoverageSuites(log: string): string[] {
   return [...log.matchAll(/\[optional-run-artifacts\] selected artifact=coverage-([\w-]+)\n/g)].map(
@@ -10,7 +10,7 @@ export function hasCoverageArtifactSelection(log: string, producerGroup: string)
   return selectedCoverageSuites(log).some(suite => {
     if (suite === producerGroup) return true
     try {
-      return coverageProducerPartition(suite).group === producerGroup
+      return coverageProducerGroup(suite) === producerGroup
     } catch {
       return false
     }

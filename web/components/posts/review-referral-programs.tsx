@@ -3,16 +3,16 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { topicHref } from '@/lib/links/entity-href'
-import { getTranslations } from '@/lib/i18n/get-translations'
+import type { getTranslations } from '@/lib/i18n/get-translations'
 import type { Post } from '@/types/posts'
 
 interface ReviewReferralProgramsProps {
+  t: Awaited<ReturnType<typeof getTranslations>>
   post: Post
 }
 
-export async function ReviewReferralPrograms({ post }: ReviewReferralProgramsProps) {
+export function ReviewReferralPrograms({ t, post }: ReviewReferralProgramsProps) {
   if (post.post_type !== 'review') return null
-  const t = await getTranslations()
   const ReferralLinkIcon = EntityActionIcons.referralLink
 
   const ratings = post.review_topic_ratings ?? []

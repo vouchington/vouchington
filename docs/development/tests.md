@@ -2,9 +2,12 @@
 
 Run the cheap before-push commands in [commit.md](../checklists/commit.md#before-pushing), then push. GitHub Actions is the full gate. See [ci.md](ci.md) for CI workflow, config, and coverage details.
 
+The staged production no-op Promise-catch rule, its inventory, and its remediation/promotion
+sequence are part of [Linters and Static Analysis](reference-tests-linters-and-static-analysis.md).
+
 **Init column:** `monorepo` = `./dev/initialize monorepo` is sufficient. `web` = requires `./dev/initialize web` (Docker, DB, Valkey, `.env`, HTTPS certs, CF Worker env). A row marked `web` here is the tested/documented baseline, not necessarily a hard floor — some `web`-tagged commands only need DB/Valkey and would also pass under `./dev/initialize backend`; when in doubt, initialize `web`.
 
-**Sourcing `.env`:** `./dev/initialize` writes `.env` but does not export it into your shell. `./dev/tmux`'s service and assistant windows source it automatically, but its plain `shell` window does not. Before running a DB/Valkey-backed command there, or in any other shell you opened yourself, run `source .env`; otherwise the data-store globalSetup fails with `DATABASE_URL is not set in the current shell`.
+**Sourcing `.env`:** `./dev/initialize` writes `.env` but does not export it into your shell. `./dev/tmux`'s service windows source it automatically. Before running a DB/Valkey-backed command in your own shell, run `source .env`; otherwise the data-store globalSetup fails with `DATABASE_URL is not set in the current shell`.
 
 ## Contents
 
@@ -14,6 +17,7 @@ Run the cheap before-push commands in [commit.md](../checklists/commit.md#before
 - <a id="linters-and-static-analysis"></a>[Linters and Static Analysis](reference-tests-linters-and-static-analysis.md)
 - <a id="claudemd-and-agentsmd-size-cap"></a>[CLAUDE.md and AGENTS.md Size Cap](reference-tests-claude-md-and-agents-md-size-cap.md)
 - <a id="vitest-projects"></a>[Vitest Projects](reference-tests-vitest-projects.md)
+- <a id="pools-isolation-and-vitest-5"></a>[Pools, Isolation, and Vitest 5](reference-tests-vitest-projects.md#pools-isolation-and-vitest-5)
 - <a id="parallel-safety-and-test-root-hygiene"></a>[Parallel-Safety and Test-Root Hygiene](reference-tests-parallel-safety-and-test-root-hygiene.md)
 - <a id="local-patch-coverage-preview"></a>[Local Patch Coverage Preview](reference-tests-local-patch-coverage-preview.md)
 - <a id="test-value-and-safe-reduction"></a>[Test Value and Safe Reduction](reference-tests-value-and-reduction.md)

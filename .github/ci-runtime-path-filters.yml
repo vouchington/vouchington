@@ -108,7 +108,7 @@ build-web:
   - '!web/**/*.stories.ts'
   - '!web/**/*.stories.tsx'
 build-backend:
-  - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml,.github/worker-io-automation.env,ci/prepare-trivy-db.sh,backend/**,email-templates/**,static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts,static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts,ts-shared/**,backend/Dockerfile,.dockerignore,.hadolint.yaml}'
+  - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml,.github/worker-io-automation.env,ci/prepare-trivy-db.sh,backend/**,email-templates/**,localization/**,dev/localization/**,static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts,static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts,ts-shared/**,backend/Dockerfile,.dockerignore,.hadolint.yaml}'
   - '!**/*.md'
   - '!**/*.mdx'
   - '!**/*.test.mts'

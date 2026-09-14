@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import worker from '../index.mts'
-import { createContext } from '../test-helpers/mock-env.mts'
+import { createContext } from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 describe('OAuth callback COOP', () => {

@@ -20,8 +20,8 @@ const FLEX_RESOURCE_UNAVAILABLE_PATTERN = /resource[\s_-]*unavailable/i
  * Unavailable"). Unlike a quota/RPM rate limit or a 5xx, this specific 429 is **not billed** —
  * OpenAI never started processing the request. #8155 asks for this distinction to be a named
  * predicate rather than left implicit in a comment, because it changes the queue-attempt ×
- * per-request-retry compounding math in docs/overview/architecture/openai-cost-model.md: retries
- * against this error are free, retries against every other rate-limit/server error are not.
+ * per-request-retry compounding math in the private vouchington/vouchington-docs repository:
+ * retries against this error are free, retries against any other rate-limit/server error are not.
  *
  * The exact error-body shape isn't documented by OpenAI beyond the tier-availability guidance
  * page, so this checks both the parsed `code` field and a case-insensitive match on the message

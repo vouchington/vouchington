@@ -2,7 +2,7 @@ import { rm } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { collectConfigInventory } from './collect.mts'
-import { makeRepoFixture } from './test-helpers/repo-fixture.mts'
+import { makeRepoFixture } from '../test-helpers/config-inventory/repo-fixture.mts'
 
 describe('collectConfigInventory shared reader', () => {
   const testDirs: string[] = []

@@ -41,8 +41,6 @@ const BEGIN = '<!-- BEGIN GENERATED: workflow-job-runner-inventory -->'
 const END = '<!-- END GENERATED -->'
 
 const WORKFLOWS_PREFIX = '.github/workflows/'
-// GitHub's own default when a job declares no `timeout-minutes` -- matches the doc comment on
-// WorkflowJobNode.timeoutMinutes in no-mistakes's workflow-topology-types.d.ts.
 const DEFAULT_TIMEOUT_MINUTES = 360
 
 export function shortWorkflowPath(workflowId: string): string {
@@ -92,7 +90,11 @@ function indexCallEdgeTargets(edges: WorkflowTopology['edges']): Map<string, str
  * loudly rather than render a misleading blank cell.
  */
 function renderRunner(job: WorkflowJobNode, callEdgeTargets: Map<string, string>): string {
-  if (job.runsOn !== undefined) return renderRunsOn(job.runsOn)
+  if (job.runsOn !== undefined) {
+    if (typeof job.runsOn === 'string' && job.runsOn.includes('codebuild-'))
+      return '`optional managed build-image runner`'
+    return renderRunsOn(job.runsOn)
+  }
   const target = callEdgeTargets.get(job.id)
   if (target === undefined) {
     throw new Error(
@@ -110,10 +112,17 @@ function generateInventoryTable(topology: WorkflowTopology): string {
       const kind = job.kind === 'matrix-template' ? 'matrix' : 'job'
       const timeout = job.timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES
       const runner = renderRunner(job, callEdgeTargets)
-      const { category, rationale } = classifyRunner(job)
+      const inferredClassification = classifyRunner(job)
+      const classification =
+        typeof job.runsOn === 'string' && job.runsOn.includes('codebuild-')
+          ? {
+              category: 'Optional managed runner / ephemeral',
+              rationale: `Optional managed runner for image builds; otherwise ephemeral runner.`,
+            }
+          : inferredClassification
       return (
         `| \`${shortWorkflowPath(job.workflowId)}\` | \`${job.key}\` | ${kind} | ${runner} | ` +
-        `${markdownTableCell(category)} | ${markdownTableCell(rationale)} | ${timeout} |`
+        `${markdownTableCell(classification.category)} | ${markdownTableCell(classification.rationale)} | ${timeout} |`
       )
     })
   return [

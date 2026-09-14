@@ -148,10 +148,9 @@ jobs:
         if: ${{ !cancelled() }}
         working-directory: backend
         env:
-          # Empty on a non-pull_request trigger (e.g. workflow_dispatch on main); the script's own
-          # `?.trim() || 'origin/main'` fallback handles that by comparing HEAD against itself, a
-          # no-op check rather than a broken one.
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          # Pair 2: origin/<base branch> vs HEAD after the PR merge checkout. Do not pass
+          # pull_request.base.sha: that SHA can lag the merge parent (#11711).
+          PR_BASE_SHA: "${{ github.base_ref && format('origin/{0}', github.base_ref) || 'origin/main' }}"
         run: node data-stores/psql/schema-snapshot/check-index-renames.mts
         timeout-minutes: 1
       - name: Upload postgres-schema vitest blob to GitHub (fallback)

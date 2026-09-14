@@ -26,7 +26,7 @@ export async function resolveAppealTargetPost(
     community_unpublished_at: Date | null
     community_rejection_reason: string | null
     community_unpublished_by_id: string | null
-    platform_rejection_reason: string | null
+    platform_internal_reason: string | null
     platform_rejected_by_id: string | null
   }>(
     sql`/* resolveAppealTarget:getPost */
@@ -35,7 +35,7 @@ export async function resolveAppealTargetPost(
            community_removal.unpublished_at AS community_unpublished_at,
            community_removal.rejection_reason AS community_rejection_reason,
            community_removal.unpublished_by_id AS community_unpublished_by_id,
-           platform_removal.note AS platform_rejection_reason,
+           platform_removal.private_note AS platform_internal_reason,
            platform_removal.changed_by_id AS platform_rejected_by_id
     FROM posts p
     LEFT JOIN post_clearance_changes platform_removal
@@ -98,7 +98,7 @@ export async function resolveAppealTargetPost(
           decidedAt: row.community_unpublished_at,
         }
       : {
-          reason: row.platform_rejection_reason,
+          reason: row.platform_internal_reason,
           actorId: row.platform_rejected_by_id,
           decidedAt: row.rejected_at,
         }

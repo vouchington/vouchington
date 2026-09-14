@@ -5,10 +5,12 @@ set -euo pipefail
 # Usage: ./dev/check-worktree-ports
 # Called by dev/playwright-server-check and available for other scripts.
 
-GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+# shellcheck source=lib/worktree-resource-env.sh
+source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
 
 # Main worktree uses fixed entrypoint ports intentionally
-if [ "$GIT_DIR" = ".git" ]; then
+if worktree_resource_is_main "$REPO_ROOT"; then
   exit 0
 fi
 

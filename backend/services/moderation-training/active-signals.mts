@@ -9,13 +9,26 @@ export async function hasOtherActiveAutomodSignals(input: {
 }): Promise<boolean> {
   const { rows } = await input.query(sql`/* hasOtherActiveAutomodSignals */
     WITH active_signal AS (
-      SELECT 'openai_omni:' || p.id::text || ':' || COALESCE(encode(p.openai_omni_moderation_input_sha256, 'hex'), 'legacy-null-input') AS source_key
+      SELECT 'openai_omni:' || p.id::text || ':' || encode(version.content_sha256, 'hex') AS source_key
       FROM posts p
+      JOIN post_moderation_versions version
+        ON version.post_id = p.id
+       AND version.content_sha256 = p.llm_moderation_content_sha256
+       AND version.policy_revision = '2026-09-09.1'
+      JOIN LATERAL (
+        SELECT 1
+        FROM (
+          SELECT disposition
+          FROM post_moderation_dispositions
+          WHERE version_id = version.id AND source = 'openai_omni'
+          ORDER BY id DESC LIMIT 1
+        ) latest
+        WHERE latest.disposition IN ('review', 'reject')
+      ) disposition ON true
       WHERE p.id = ${input.postId}
         AND p.community_id = ${input.communityId}
         AND p.deleted_at IS NULL
         AND p.rejected_at IS NOT NULL
-        AND p.openai_omni_moderation_flagged IS TRUE
         AND NOT EXISTS (
           SELECT 1
           FROM moderation_training_feedbacks mtf
@@ -23,16 +36,29 @@ export async function hasOtherActiveAutomodSignals(input: {
             AND mtf.event_type = 'automod_reviewed'
             AND mtf.label = 'false_positive'
             AND mtf.post_id = p.id
-            AND mtf.input_sha256 IS NOT DISTINCT FROM p.openai_omni_moderation_input_sha256
+            AND mtf.input_sha256 IS NOT DISTINCT FROM version.content_sha256
         )
       UNION ALL
-      SELECT 'spam_detection:' || p.id::text || ':' || encode(p.llm_moderation_content_sha256, 'hex') AS source_key
+      SELECT 'spam_detection:' || p.id::text || ':' || encode(version.content_sha256, 'hex') AS source_key
       FROM posts p
+      JOIN post_moderation_versions version
+        ON version.post_id = p.id
+       AND version.content_sha256 = p.llm_moderation_content_sha256
+       AND version.policy_revision = '2026-09-09.1'
+      JOIN LATERAL (
+        SELECT 1
+        FROM (
+          SELECT disposition
+          FROM post_moderation_dispositions
+          WHERE version_id = version.id AND source = 'spam_detection'
+          ORDER BY id DESC LIMIT 1
+        ) latest
+        WHERE latest.disposition IN ('review', 'reject')
+      ) disposition ON true
       WHERE p.id = ${input.postId}
         AND p.community_id = ${input.communityId}
         AND p.deleted_at IS NULL
         AND p.rejected_at IS NOT NULL
-        AND p.spam_detection_flagged IS TRUE
         AND NOT EXISTS (
           SELECT 1
           FROM moderation_training_feedbacks mtf
@@ -40,7 +66,7 @@ export async function hasOtherActiveAutomodSignals(input: {
             AND mtf.event_type = 'automod_reviewed'
             AND mtf.label = 'false_positive'
             AND mtf.post_id = p.id
-            AND mtf.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
+            AND mtf.input_sha256 IS NOT DISTINCT FROM version.content_sha256
         )
       UNION ALL
       SELECT 'agent_moderation:' || am.id::text AS source_key

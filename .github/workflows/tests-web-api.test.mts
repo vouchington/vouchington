@@ -7,10 +7,9 @@ const workflow = readFileSync('.github/workflows/tests-web-api.yml', 'utf8')
 describe('web API workflow', () => {
   it('runs API-only shards with database services and no web build', () => {
     const manualInputs = workflow.slice(workflow.indexOf('workflow_dispatch:'))
-    expect(manualInputs).toContain(
-      "description: 'Shard count to use instead of the web-api default'",
-    )
-    expect(workflow).toContain('total: ${{ inputs.shard_total_override || 1 }}')
+    expect(manualInputs).toContain("description: 'Explicit shard count for a selected run'")
+    expect(workflow).toContain('node ci/vitest/shard-total.mts test-web-api')
+    expect(workflow).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(workflow).toContain('runs-on: [self-hosted, Linux, Docker, Tests]')
     expect(workflow).not.toContain('CPU]')
     expect(workflow).toContain('postgres:')

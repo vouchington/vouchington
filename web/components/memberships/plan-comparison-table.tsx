@@ -44,7 +44,10 @@ export function PlanComparisonTable({
         {t('extracted.memberships.planComparisonTable.comparePlans_3c2bc4a1')}
       </h2>
       <div className='overflow-x-auto scrollbar-hide rounded-lg border'>
-        <table className='w-full text-sm'>
+        <table
+          data-pw='plan-comparison-table'
+          className='w-full text-sm'
+        >
           <thead>
             <tr className='border-b bg-muted/50'>
               <th className='px-4 py-3 text-left font-medium text-muted-foreground'>

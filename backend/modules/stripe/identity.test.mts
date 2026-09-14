@@ -240,10 +240,4 @@ describe('stripe identity module', () => {
       expand: ['verified_outputs', 'last_verification_report.document'],
     })
   })
-
-  it('currently ignores Stripe Identity webhooks', async () => {
-    await expect(
-      stripeIdentityProvider.parseWebhookEvent('payload', 'signature'),
-    ).resolves.toBeNull()
-  })
 })

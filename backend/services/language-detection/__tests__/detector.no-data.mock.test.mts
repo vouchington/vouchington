@@ -2,30 +2,40 @@
  * Tests for detector.mts.
  *
  * The module uses a module-level `cachedMod` that is populated on first call.
- * We mock 'lingua-rs' at the vi.mock level so the dynamic import inside
- * getLinguaMod() receives our stub.  Because the cache is module-level, each
- * test file gets a fresh module (isolate: true in backend-mocks project).
+ * Reset the module registry and register the mock before dynamically importing
+ * detector.mts so its module-level cache cannot retain a real native addon from
+ * an earlier import.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 
-vi.mock<typeof import('lingua-rs')>(import('lingua-rs'), () => ({
-  detectLanguage: vi.fn<typeof import('lingua-rs').detectLanguage>().mockResolvedValue({
-    detector: 'lingua',
-    detectorModelVersion: '1.0.0',
-    languages: [{ iso6391: 'en', iso6393: 'eng', confidence: 0.99 }],
-  }),
-  detectLanguageMany: vi.fn<typeof import('lingua-rs').detectLanguageMany>().mockResolvedValue([
+const detectLanguageMock = vi.fn<typeof import('lingua-rs').detectLanguage>().mockResolvedValue({
+  detector: 'lingua',
+  detectorModelVersion: '1.0.0',
+  languages: [{ iso6391: 'en', iso6393: 'eng', confidence: 0.99 }],
+})
+const detectLanguageManyMock = vi
+  .fn<typeof import('lingua-rs').detectLanguageMany>()
+  .mockResolvedValue([
     {
       detector: 'lingua',
       detectorModelVersion: '1.0.0',
       languages: [{ iso6391: 'de', iso6393: 'deu', confidence: 0.97 }],
     },
-  ]),
+  ])
+
+vi.resetModules()
+vi.doMock<typeof import('lingua-rs')>(import('lingua-rs'), () => ({
+  detectLanguage: detectLanguageMock,
+  detectLanguageMany: detectLanguageManyMock,
 }))
 
-import { detectLanguage, detectLanguageMany } from '../detector.mts'
+const { detectLanguage, detectLanguageMany } = await import('../detector.mts')
 
 describe('detector', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   describe('detectLanguage', () => {
     it('returns detection result from the lingua-rs module', async () => {
       const result = await detectLanguage(Buffer.from('Hello world', 'utf8'))
@@ -36,12 +46,10 @@ describe('detector', () => {
     })
 
     it('passes options through to the underlying module', async () => {
-      const result = await detectLanguage(Buffer.from('Bonjour monde', 'utf8'), {
-        minConfidence: 0.8,
-      })
-      // The mock always returns the same value; just ensure it doesn't throw
-      expect(result).toBeDefined()
-      expect(Array.isArray(result.languages)).toBe(true)
+      const input = Buffer.from('Bonjour monde', 'utf8')
+      await detectLanguage(input, { minConfidence: 0.8 })
+
+      expect(detectLanguageMock).toHaveBeenCalledWith(input, { minConfidence: 0.8 })
     })
   })
 
@@ -55,10 +63,10 @@ describe('detector', () => {
     })
 
     it('passes options through to the underlying module', async () => {
-      const results = await detectLanguageMany([Buffer.from('test', 'utf8')], {
-        lowAccuracy: true,
-      })
-      expect(Array.isArray(results)).toBe(true)
+      const inputs = [Buffer.from('test', 'utf8')]
+      await detectLanguageMany(inputs, { lowAccuracy: true })
+
+      expect(detectLanguageManyMock).toHaveBeenCalledWith(inputs, { lowAccuracy: true })
     })
   })
 })

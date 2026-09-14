@@ -53,6 +53,7 @@ export async function setPostImages(
         WHERE id = ANY(${imageIds}::uuid[])
           AND upload_completed_at IS NOT NULL
           AND deleted_at IS NULL
+          AND quarantine_pending_at IS NULL
         FOR SHARE
       `)
         assert(imageRows.length === imageIds.length, 400, 'Image not found or not complete')
@@ -64,18 +65,15 @@ export async function setPostImages(
         markdown,
         structured_data,
         ai_summary_markdown,
-        openai_omni_moderation_content_sha256,
         llm_moderation_content_sha256,
         latest_clearance_change_id,
         approved_at,
         rejected_at,
         in_review_at,
-        spam_detection_flagged,
-        spam_detection_created_at,
-        spam_detection_score,
-        spam_detection_results,
-        openai_omni_moderation_flagged,
-        openai_omni_moderation_created_at,
+        clearance_changed_by_id,
+        clearance_public_reason_code,
+        clearance_private_note,
+        clearance_platform_override,
       } = postState
       const { rows: previousImages } = await query<PostImage>(sql`/* setPostImages */
       SELECT image_id, order_index, caption
@@ -108,8 +106,7 @@ export async function setPostImages(
 
       await query(sql`/* setPostImages */
       UPDATE posts
-      SET openai_omni_moderation_content_sha256 = ${moderationSha},
-          llm_moderation_content_sha256 = ${moderationSha},
+      SET llm_moderation_content_sha256 = ${moderationSha},
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${post.id}
     `)
@@ -148,22 +145,17 @@ export async function setPostImages(
           revisionId: revision.id,
           currentImages: rows,
           images: previousImages,
-          currentOpenaiModerationContentSha256: moderationSha,
           currentLlmModerationContentSha256: moderationSha,
-          changedById: currentUser.id,
-          openaiModerationContentSha256: openai_omni_moderation_content_sha256,
           llmModerationContentSha256: llm_moderation_content_sha256,
           currentLatestClearanceChangeId,
           latestClearanceChangeId: latest_clearance_change_id,
           approvedAt: approved_at,
           rejectedAt: rejected_at,
           inReviewAt: in_review_at,
-          spamDetectionFlagged: spam_detection_flagged,
-          spamDetectionCreatedAt: spam_detection_created_at,
-          spamDetectionScore: spam_detection_score,
-          spamDetectionResults: spam_detection_results,
-          openaiModerationFlagged: openai_omni_moderation_flagged,
-          openaiModerationCreatedAt: openai_omni_moderation_created_at,
+          clearanceChangedById: clearance_changed_by_id,
+          clearancePublicReasonCode: clearance_public_reason_code,
+          clearancePrivateNote: clearance_private_note,
+          clearancePlatformOverride: clearance_platform_override,
         },
       }
     }
@@ -193,6 +185,7 @@ export async function getPostImages(postId: string): Promise<PostImage[]> {
     JOIN images ON images.id = pi.image_id
       AND images.deleted_at IS NULL
       AND images.upload_completed_at IS NOT NULL
+      AND images.quarantine_pending_at IS NULL
     WHERE pi.post_id = ${postId}
     ORDER BY pi.order_index
   `)

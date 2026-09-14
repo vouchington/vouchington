@@ -9,7 +9,7 @@ import {
   makeMessage,
   makeThread,
   page,
-} from '../test-helpers/admin-support-thread-detail-client-test-helpers'
+} from '../../../../../../test-helpers/app/(support-admin)/support/threads/[threadId]/admin-support-thread-detail-client-test-helpers'
 
 vi.mock(import('@/hooks/use-paginated-list'), () => ({
   usePaginatedList: vi.fn<VitestLooseMock>(),

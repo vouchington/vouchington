@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { PostAuthorAside } from '../post-author-aside'
 import type { AuthorAside } from '@/types/posts'
 import type { ProfileLink } from '@/types/user'
@@ -89,13 +91,20 @@ const makeAside = (overrides: Partial<AuthorAside> = {}): AuthorAside => ({
 })
 
 describe('PostAuthorAside', () => {
-  it('renders linked username', async () => {
+  let t: ReturnType<typeof createTranslator>
+
+  beforeAll(() => {
+    t = createTranslator('en', enMessages)
+  })
+
+  it('renders linked username', () => {
     render(
-      await PostAuthorAside({
-        author,
-        aside: makeAside(),
-        postType: 'discussion',
-      }),
+      <PostAuthorAside
+        t={t}
+        author={author}
+        aside={makeAside()}
+        postType='discussion'
+      />,
     )
     const link = screen.getByRole('link', { name: /story-teller/i })
     expect(link).toBeDefined()
@@ -104,11 +113,12 @@ describe('PostAuthorAside', () => {
 
   it('renders bio and Read more when about_html non-empty', async () => {
     render(
-      await PostAuthorAside({
-        author,
-        aside: makeAside({ about_html: '<p>Hello world</p>' }),
-        postType: 'discussion',
-      }),
+      <PostAuthorAside
+        t={t}
+        author={author}
+        aside={makeAside({ about_html: '<p>Hello world</p>' })}
+        postType='discussion'
+      />,
     )
     expect(screen.getByText('Hello world')).toBeDefined()
     expect(screen.getByText('Read more →')).toBeDefined()
@@ -116,11 +126,12 @@ describe('PostAuthorAside', () => {
 
   it('adds outbound UTM params to external links in the bio', async () => {
     render(
-      await PostAuthorAside({
-        author,
-        aside: makeAside({ about_html: '<p><a href="https://example.com/me">Profile</a></p>' }),
-        postType: 'discussion',
-      }),
+      <PostAuthorAside
+        t={t}
+        author={author}
+        aside={makeAside({ about_html: '<p><a href="https://example.com/me">Profile</a></p>' })}
+        postType='discussion'
+      />,
     )
 
     const link = screen.getByRole('link', { name: 'Profile' })
@@ -134,33 +145,36 @@ describe('PostAuthorAside', () => {
 
   it('hides Read more when about_html empty', async () => {
     render(
-      await PostAuthorAside({
-        author,
-        aside: makeAside(),
-        postType: 'discussion',
-      }),
+      <PostAuthorAside
+        t={t}
+        author={author}
+        aside={makeAside()}
+        postType='discussion'
+      />,
     )
     expect(screen.queryByText('Read more →')).toBeNull()
   })
 
   it('shows FollowButton for other viewers', async () => {
     render(
-      await PostAuthorAside({
-        author,
-        aside: makeAside(),
-        postType: 'discussion',
-      }),
+      <PostAuthorAside
+        t={t}
+        author={author}
+        aside={makeAside()}
+        postType='discussion'
+      />,
     )
     expect(await screen.findByRole('button', { name: 'Follow' })).toBeDefined()
   })
 
   it('hides FollowButton when viewing own post', async () => {
     render(
-      await PostAuthorAside({
-        author,
-        aside: makeAside(),
-        postType: 'discussion',
-      }),
+      <PostAuthorAside
+        t={t}
+        author={author}
+        aside={makeAside()}
+        postType='discussion'
+      />,
     )
     expect(screen.queryByRole('button', { name: 'Follow' })).toBeNull()
   })
@@ -181,11 +195,12 @@ describe('PostAuthorAside', () => {
       },
     ]
     render(
-      await PostAuthorAside({
-        author,
-        aside: makeAside({ profile_links: links }),
-        postType: 'discussion',
-      }),
+      <PostAuthorAside
+        t={t}
+        author={author}
+        aside={makeAside({ profile_links: links })}
+        postType='discussion'
+      />,
     )
     const githubLink = screen.getByRole('link', { name: 'GitHub' })
     expect(githubLink).toBeDefined()
@@ -194,11 +209,12 @@ describe('PostAuthorAside', () => {
 
   it('hides social section for empty profile_links', async () => {
     render(
-      await PostAuthorAside({
-        author,
-        aside: makeAside(),
-        postType: 'discussion',
-      }),
+      <PostAuthorAside
+        t={t}
+        author={author}
+        aside={makeAside()}
+        postType='discussion'
+      />,
     )
     expect(screen.queryByRole('link', { name: 'GitHub' })).toBeNull()
   })

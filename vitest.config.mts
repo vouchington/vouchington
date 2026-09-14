@@ -10,6 +10,7 @@ import {
   coverageConfig,
   parseVitestMaxWorkers,
   storybookBrowserConnectionTimeoutMs,
+  vitestFsModuleCachePath,
   vitestViteCacheDir,
 } from './test-helpers/vitest-config/environment.mts'
 import { toolingProjects } from './test-helpers/vitest-config/tooling-projects.mts'
@@ -35,6 +36,12 @@ export default defineConfig({
     // banned (see dev/vitest-config.test.mts) and non-functional whenever the env var is set.
     fileParallelism: true,
     maxWorkers: parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS),
+    // Persist transformed modules across `vitest run` processes. Path stays under the
+    // workspace `.cache/vite/` tree that self-hosted runners already preserve — not the
+    // default `node_modules/.vitest-cache`, which `./dev/reset` deletes. Browser Mode
+    // ignores this option. Does not go through `actions/cache`.
+    fsModuleCache: true,
+    fsModuleCachePath: vitestFsModuleCachePath,
     // Root-level only (not per-project): bounds the whole close sequence after tests
     // complete — globalSetup teardown() plus pool/worker close — across every pool type.
     // Backend forks-pool projects run globalSetup teardown in the main process to close

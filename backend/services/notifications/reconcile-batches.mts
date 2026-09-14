@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { writePool, type PoolClient } from '@data-stores/psql'
+import onError from '@modules/on-error'
 
 export type CreatedNotification = { user_id: string; id: string }
 
@@ -65,7 +66,7 @@ export async function reconcileNotificationBatches(
     await dispatchCreatedNotificationBatches(client, createdTable, batchSize, options)
     return { created, pruned }
   } finally {
-    await dropTempTables(client, recipientTable, createdTable).catch(() => {})
+    await dropTempTables(client, recipientTable, createdTable).catch(onError)
     client.release()
   }
 }

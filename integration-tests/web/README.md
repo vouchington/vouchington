@@ -25,6 +25,10 @@ retains the built Worker → Next.js → backend contract and its CPU runner. Bo
 and matrix/report identities independently; integration stays at one shard by default because its
 build/setup is the dominant cost.
 
+Global setup clears Vitest's inherited `VITEST` marker for the standalone Next.js child. In-process
+Vitest may read catalog JSON, but the live test server fetches copy from the backend; the OAuth
+callback baseline checks for a successful localization request in the backend trace.
+
 The shared readiness helpers intentionally run probes serially: a probe settles, its result is
 checked, and only a failed result is followed by the configured delay. Poll callbacks must never
 overlap because many callers inspect stateful local services.

@@ -4,9 +4,13 @@ import {
   DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
   parseFeatureFlagCookieMaxLength,
 } from '@ts-shared/feature-flags'
+import { getSentryDsnConfig } from '@ts-shared/utils/sentry-deployment-gate'
 import { TURNSTILE_TEST_SITE_KEY, TURNSTILE_TEST_SITE_KEYS } from './turnstile-config'
 import { escapeInlineScriptJson } from './utils/inline-script-json'
-import type { RuntimePublicConfig } from './runtime-public-config'
+import {
+  RUNTIME_PUBLIC_CONFIG_READY_EVENT,
+  type RuntimePublicConfig,
+} from './runtime-public-config'
 
 type RuntimeEnv = Record<string, string | undefined>
 
@@ -53,6 +57,7 @@ export function getServerRuntimePublicConfig(
       env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY,
       env.GOOGLE_RECAPTCHA_SITE_KEY,
     ),
+    sentryDsn: getSentryDsnConfig(env.SENTRY_WEB_DSN)?.dsn,
     // Local/dev may expose the bare server-side Turnstile secret, but the browser site key must
     // come from the explicit runtime-public variable; otherwise the server secret could leak.
     turnstileSiteKey:
@@ -98,5 +103,5 @@ export function assertRuntimePublicConfig(
 
 export function serializeRuntimePublicConfigBootstrapScript(config: RuntimePublicConfig): string {
   const serializedConfig = escapeInlineScriptJson(JSON.stringify(config))
-  return `window.__VOUCHA_PUBLIC_CONFIG__=${serializedConfig}`
+  return `window.__VOUCHA_PUBLIC_CONFIG__=${serializedConfig};window.dispatchEvent(new Event(${JSON.stringify(RUNTIME_PUBLIC_CONFIG_READY_EVENT)}))`
 }

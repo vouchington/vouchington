@@ -16,6 +16,7 @@ find_available_port() {
     if node - "$port" <<'NODE'
 const net = require('node:net')
 const server = net.createServer()
+setTimeout(() => process.exit(1), 2000).unref()
 server.once('error', () => process.exit(1))
 server.listen(Number(process.argv[2]), '0.0.0.0', () => {
   server.close(() => process.exit(0))
@@ -30,11 +31,45 @@ NODE
   exit 1
 }
 
+echo "Selecting web smoke port..."
 WEB_PORT=$(find_available_port)
 
 # Check if build exists
 if [ ! -d "$WEB_DIR/.next" ]; then
   echo "✗ Error: Next.js build not found. Run 'pnpm --dir web build' first."
+  exit 1
+fi
+
+SMOKE_TMP_DIR=$(mktemp -d)
+cleanup() {
+  if [ -n "${WEB_PID:-}" ]; then kill "$WEB_PID" 2>/dev/null || true; fi
+  if [ -n "${BACKEND_PID:-}" ]; then kill "$BACKEND_PID" 2>/dev/null || true; fi
+  if [ -n "${BACKEND_PID:-}" ]; then wait "$BACKEND_PID" 2>/dev/null || true; fi
+  rm -rf "$SMOKE_TMP_DIR"
+}
+trap cleanup EXIT
+
+# The live web server always requests copy over HTTP. Serve that request through the real
+# backend localization resolver and a freshly compiled catalog during this standalone smoke.
+echo "Preparing localization smoke backend..."
+BACKEND_PORT=$(find_available_port)
+while [ "$BACKEND_PORT" = "$WEB_PORT" ]; do BACKEND_PORT=$(find_available_port); done
+cd "$WEB_DIR/.."
+echo "Compiling localization catalog for smoke test..."
+node web/test-helpers/compile-localization-smoke-catalog.mts "$SMOKE_TMP_DIR/catalog.sqlite"
+LOCALIZATION_SQLITE_PATH="$SMOKE_TMP_DIR/catalog.sqlite" \
+  node web/test-helpers/localization-smoke-backend.mts "$BACKEND_PORT" > "$SMOKE_TMP_DIR/backend.log" 2>&1 &
+BACKEND_PID=$!
+for i in {1..30}; do
+  if curl --max-time 5 -fsS "http://127.0.0.1:$BACKEND_PORT/health" >/dev/null 2>&1; then break; fi
+  if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+    cat "$SMOKE_TMP_DIR/backend.log"
+    exit 1
+  fi
+  sleep 0.2
+done
+if ! curl --max-time 5 -fsS "http://127.0.0.1:$BACKEND_PORT/health" >/dev/null; then
+  cat "$SMOKE_TMP_DIR/backend.log"
   exit 1
 fi
 
@@ -47,6 +82,7 @@ bash scripts/copy-standalone-assets.sh
 
 # Start node directly (matches Dockerfile production pattern) so signals propagate correctly
 ALLOW_TURNSTILE_TEST_KEY="${ALLOW_TURNSTILE_TEST_KEY:-true}" \
+  API_BASE_URL="http://127.0.0.1:$BACKEND_PORT" \
   IMAGE_ORIGIN="${IMAGE_ORIGIN:-http://localhost:$WEB_PORT}" \
   NODE_ENV=production \
   PORT=$WEB_PORT \
@@ -105,7 +141,7 @@ fi
 # Test the homepage
 echo "Testing homepage on http://localhost:$WEB_PORT..."
 TMPFILE=$(mktemp)
-HTTP_CODE=$(curl -s -o "$TMPFILE" -w "%{http_code}" "http://localhost:$WEB_PORT/")
+HTTP_CODE=$(curl --max-time 30 -s -o "$TMPFILE" -w "%{http_code}" "http://localhost:$WEB_PORT/")
 
 if [ "$HTTP_CODE" != "200" ]; then
   echo "✗ Error: Homepage returned HTTP $HTTP_CODE, expected 200"

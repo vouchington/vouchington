@@ -127,7 +127,6 @@ export async function handleRssFeedRedirect(params: {
  * Only marks the topic deleted if its topic_type is 'rss_feed' (avoids hiding manually-created topics).
  */
 export async function disableAndHideSource(rssFeedId: string): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const systemUserId = await getRssFeedAutoUpdaterUserId()
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects

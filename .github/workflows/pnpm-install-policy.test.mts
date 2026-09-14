@@ -80,7 +80,7 @@ function containsDirectInstall(body: string | undefined): boolean {
 
 describe('pnpm install workflow policy', () => {
   it('classifies every setup-node-pnpm and setup-backend caller by runner lifecycle', () => {
-    expect(setupCalls).toHaveLength(43)
+    expect(setupCalls).toHaveLength(48)
     for (const call of setupCalls) {
       const lifecycle = call.step.with?.['runner-lifecycle']
       expect([callerId(call), lifecycle]).toEqual([callerId(call), expectedLifecycle(call)])

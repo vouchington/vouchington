@@ -14,6 +14,12 @@ const refuseOnMainPath = fileURLToPath(new URL('../lib/refuse-on-main.sh', impor
 const dbNameFromUrlPath = fileURLToPath(new URL('../lib/db-name-from-url.sh', import.meta.url))
 const dbTargetPath = fileURLToPath(new URL('../lib/db-target.sh', import.meta.url))
 const flushValkeyPath = fileURLToPath(new URL('../lib/flush-valkey.sh', import.meta.url))
+const publishedGitWorktreesPath = fileURLToPath(
+  new URL(
+    '../../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
+    import.meta.url,
+  ),
+)
 const testDirs: string[] = []
 
 async function makeRepo({ isMainWorktree = false, withEnv = true } = {}) {
@@ -37,6 +43,10 @@ async function makeRepo({ isMainWorktree = false, withEnv = true } = {}) {
     await readFile(dbNameFromUrlPath, 'utf8'),
   )
   await writeFile(join(dir, 'dev', 'lib', 'db-target.sh'), await readFile(dbTargetPath, 'utf8'))
+  await writeFile(
+    join(dir, 'dev', 'lib', 'git-worktrees.sh'),
+    await readFile(publishedGitWorktreesPath, 'utf8'),
+  )
   await writeFile(
     join(dir, 'dev', 'lib', 'flush-valkey.sh'),
     await readFile(flushValkeyPath, 'utf8'),

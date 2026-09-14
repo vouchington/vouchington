@@ -56,10 +56,7 @@ export async function enqueueOpenAiSpendCapRecheckBestEffort(
     onError(error instanceof Error ? error : new Error(String(error), { cause: error }))
     return
   }
-  await enqueued.then(
-    () => undefined,
-    () => undefined,
-  )
+  await enqueued.then(() => undefined, onError)
 }
 
 export function openAiSpendCapRecheckDeduplicationId(day: string, generation: string): string {

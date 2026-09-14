@@ -16,7 +16,7 @@ import {
   makeMissingPreviousResponseError,
   makeResult,
   suppressLogging,
-} from '../test-helpers/stream-recovery.mts'
+} from '../../../test-helpers/agents/chat/stream-recovery.mts'
 
 describe('streamChatResponse OpenAI continuation recovery', () => {
   it('clears a stale cursor and retries once with full typed history', async () => {

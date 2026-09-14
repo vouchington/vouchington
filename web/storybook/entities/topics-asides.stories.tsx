@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { createTranslator, loadMessages } from '@ts-shared/ui-messages'
+import { createTranslator } from '@ts-shared/ui-messages'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { TopicActionsAside } from '@/components/topics/topic-actions-aside'
 import { TopicDescriptionAside } from '@/components/topics/topic-description-aside'
 import { EntityStoryFrame, AsideStack } from './entity-story-frame'
@@ -12,7 +13,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const t = createTranslator('en', await loadMessages('en'))
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const storyContentUpdate = {
   updated_at: '2026-05-05T00:00:00.000Z',

@@ -114,7 +114,7 @@ export function DiscussInCommunityAction({ postId, source }: DiscussInCommunityA
       open={open}
       onOpenChange={nextOpen => {
         setOpen(nextOpen)
-        if (nextOpen) loadCommunities().catch(() => undefined)
+        if (nextOpen) void loadCommunities()
       }}
     >
       <DialogTrigger asChild>

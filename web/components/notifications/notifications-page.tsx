@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import type {
   NotificationsResponseBody,
@@ -43,7 +44,7 @@ export function NotificationsPage({
   async function handleMarkRead(notification: NotificationListNotification) {
     const readAt = readAtById[notification.id] ?? notification.read_at ?? new Date().toISOString()
     setReadAtById(prev => ({ ...prev, [notification.id]: readAt }))
-    markMyNotificationReadKeepalive(notification.id).catch(() => undefined)
+    markMyNotificationReadKeepalive(notification.id).catch(Sentry.captureException)
     const target = resolveNotificationTarget(notification, notifications.communities)
     if (target) navigateToTarget(target)
   }

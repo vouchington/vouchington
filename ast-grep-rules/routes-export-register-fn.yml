@@ -22,7 +22,7 @@ ignores:
   - '**/response-types/**'
   # App-assembly context extensions and test support — not route modules.
   - 'backend/api/context/**'
-  - 'backend/api/test-helpers/**'
+  - 'backend/test-helpers/api/**'
   # List specific top-level api files explicitly: the glob 'backend/api/*.mts'
   # cannot be used because ast-grep's glob '*' matches path separators, which
   # would inadvertently ignore all nested route files too.
@@ -73,7 +73,7 @@ examples:
     file: 'backend/api/v1/users/shared.mts'
   - code: 'export const createRequest = () => {}'
     isValid: true
-    file: 'backend/api/test-helpers/server.mts'
+    file: 'backend/test-helpers/api/server.mts'
   - code: 'export const SCHEDULED_JOB_MANIFESTS = []'
     isValid: true
     file: 'backend/api/v1/mq/scheduled-job-manifests.mts'

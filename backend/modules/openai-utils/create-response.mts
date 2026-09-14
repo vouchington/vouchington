@@ -34,8 +34,8 @@ export type OpenAIResponseInput = string | ResponseInput
 export type OpenAIResponseInputItem = ResponseInputItem
 // `background` is deliberately not part of the caller-visible params (#8836): streamOpenAIResponse
 // always creates in the foreground (chat's TTFT budget can't absorb the ~4.5s background queueing
-// delay measured in the background-mode spike — see
-// docs/overview/architecture/openai-cost-model.md) and createOpenAIResponse always creates in the
+// delay measured in the background-mode spike, written up in the private
+// vouchington/vouchington-docs repository) and createOpenAIResponse always creates in the
 // background (durability against worker crashes/redeploys). Which one runs where is a two-call-site
 // fact baked into this file, not a per-caller choice that could silently drift.
 export type CreateResponseParams = Omit<RawCreateParams, 'input' | 'background'> & {

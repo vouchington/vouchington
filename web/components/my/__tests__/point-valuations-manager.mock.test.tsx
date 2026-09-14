@@ -7,7 +7,7 @@ import { PointValuationsManager } from '../point-valuations-manager'
 import type { PointValuation } from '@/types/my'
 import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
 import { seedMessages } from '@/lib/i18n/use-translations'
-import esMessages from '@ts-shared/ui-messages/messages/es'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 // Mock on-error helpers
 vi.mock(import('@/lib/on-error'), () => ({

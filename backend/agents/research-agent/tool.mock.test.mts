@@ -9,7 +9,7 @@ import type { PrivateUser } from '@services/users/types'
 import { streamOpenAIResponse, type OpenAIResponse } from '@modules/openai-utils/create-response'
 import { CHAT_SUBAGENT_RETRY_POLICY, type SubagentToolCurryArgs } from '@agents/_shared'
 import type { SubagentStepEvent, SubagentResult } from '../_shared/subagent-tool.mts'
-import { setupSubagentFixtures } from '../_shared/test-helpers/subagent-fixtures.mts'
+import { setupSubagentFixtures } from '../../test-helpers/agents/_shared/subagent-fixtures.mts'
 import {
   createMockTextResponse,
   createMockFunctionCallResponse,

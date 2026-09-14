@@ -5,9 +5,10 @@ Durable registry and crash-recovery sweeper for OpenAI `background: true` respon
 background internally — see that module's README — so every OpenAI call that goes through it can
 be cancelled and its usage recovered even if the process that started it crashes, OOM-kills, or is
 replaced mid-call by an ECS rolling deploy. `streamOpenAIResponse()` (chat's streamed assistant
-response) is the one call that stays foreground and is out of scope for this registry — see
-[OpenAI Cost Model § What the ledger covers — and what it doesn't](../../../docs/overview/architecture/openai-cost-model.md#what-the-ledger-covers--and-what-it-doesnt)
-for that accepted gap. This package owns the durable side of the background-mode guarantee; it never calls
+response) is the one call that stays foreground and is out of scope for this registry; that
+accepted gap is recorded with the usage-ledger coverage notes in the private
+`vouchington/vouchington-docs` repository.
+This package owns the durable side of the background-mode guarantee; it never calls
 `openai.responses.create()` itself (that stays in `backend/agents/*`, per
 [`backend/agents/CLAUDE.md`](../../agents/CLAUDE.md)) — only `retrieveOpenAIResponse` /
 `cancelOpenAIResponse`.
@@ -110,7 +111,6 @@ Future changes to this deployed protocol require an explicit expand/contract tra
 
 ## See Also
 
-- OpenAI cost model and pricing: [docs/overview/architecture/openai-cost-model.md](../../../docs/overview/architecture/openai-cost-model.md)
 - `create-response.mts` boundary (background-mode create/stream, cancel, retrieve): [`@modules/openai-utils`](../../modules/openai-utils/README.md)
 - Normal-completion claim path: [`backend/agents/_shared/record-response-usage.mts`](../../agents/_shared/record-response-usage.mts)
 - Sweeper scheduling and worker wiring: [`backend/queues/ai-agents/README.md`](../../queues/ai-agents/README.md)

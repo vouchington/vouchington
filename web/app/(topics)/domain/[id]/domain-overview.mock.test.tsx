@@ -2,9 +2,9 @@ import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { DomainOverview } from './domain-overview'
 import type { ViewRssFeed } from '@/types/rss-feeds'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 // DomainOverview calls getTranslations(); mock the boundary with a real-catalog translator so the
 // render stays synchronous in tests while still resolving keys against the real en catalog.

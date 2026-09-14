@@ -9,6 +9,7 @@ import DomainModerationPanel from '@/components/domains/domain-moderation-panel'
 import DomainCrawlersPanel from '@/components/domains/domain-crawlers-panel'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getHostname } from '@/lib/api/server/hostnames'
+import { getTranslations } from '@/lib/i18n/get-translations'
 import { createNoIndexMetadata, createPageMetadata } from '@/lib/seo/metadata'
 import { createBreadcrumbSchema, type BreadcrumbNavItem } from '@/lib/seo/structured-data'
 import { PageWithAside } from '@/components/page-with-aside'
@@ -18,14 +19,16 @@ import { domainHref, topicHref } from '@/lib/links/entity-href'
 import { topicTypes } from '@/types/topics'
 import { topicRouteConfigs, type TopicRouteConfig } from '@/lib/route-configs'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
+import type { DomainActionsAside as DomainActionsAsideComponent } from '@/components/domains/domain-actions-aside'
+import type { DomainDetailTabs as DomainDetailTabsComponent } from '@/components/domains/domain-detail-tabs'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const DomainDetailTabs = nextDynamic(() =>
+const DomainDetailTabs = nextDynamic<Parameters<typeof DomainDetailTabsComponent>[0]>(() =>
   import('@/components/domains/domain-detail-tabs').then(m => ({ default: m.DomainDetailTabs })),
 )
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const DomainActionsAside = nextDynamic(() =>
+const DomainActionsAside = nextDynamic<Parameters<typeof DomainActionsAsideComponent>[0]>(() =>
   import('@/components/domains/domain-actions-aside').then(m => ({
     default: m.DomainActionsAside,
   })),
@@ -51,7 +54,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function DomainDetailPage({ params }: PageProps) {
   const { id } = await params
-  const [currentUser, data] = await Promise.all([getCurrentUser(), getHostname(id)])
+  const [currentUser, data, t] = await Promise.all([
+    getCurrentUser(),
+    getHostname(id),
+    getTranslations(),
+  ])
 
   if (!data) notFound()
 
@@ -91,7 +98,7 @@ export default async function DomainDetailPage({ params }: PageProps) {
     >
       <div className='space-y-4'>
         {breadcrumbItems.length > 0 && (
-          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
         )}
         <Breadcrumbs items={breadcrumbItems} />
         <div className='rounded-md border bg-card p-4'>

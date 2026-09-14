@@ -51,7 +51,7 @@ public JSON shape. Catalog data never authorizes a request; domain services rema
   Stripe purchase adapter exposes billing
 - `getMembershipByUserId(userId)` — active/past_due/paused membership with SKU
 - `createMembership(opts)` / `grantMembership(admin, user, plan, sku)` — create with optional Stripe or admin grant
-- `updateMembershipFromWebhook(opts)` — partial updates from Stripe events
+- `updateMembershipFromEvent(opts)` — partial updates from Stripe events
 - `recordMembershipChange(opts)` — append-only audit log
 - `deliverPendingMembershipEntitlementEffects()` — claims the durable change-keyed outbox, marks
   JWT state stale, queues forced vote-weight recalculation, then token-fences durable completion
@@ -64,10 +64,13 @@ public JSON shape. Catalog data never authorizes a request; domain services rema
 - `getUsersApproachingRenewalWithPriceIncrease()` — renewal notification candidates whose
   source-bound provider observation proves the current billed price
 - `listRefundableCharges(currentUserId, targetUserId)` — lists Stripe charges eligible for refund from the user's active subscription
-- `refundMembership(currentUserId, opts)` — issues a Stripe refund and records it in the ledger; `opts.cancel=true` also immediately cancels the subscription (revoke mode)
-- `claimMembershipRefundIntent(opts)` — append-only pre-Stripe claim that rejects reuse of a token for changed intent
-- `recordAdminMembershipRefund(opts)` — inserts an identity-complete admin receipt, claims a matching webhook-only row, or returns an exact existing receipt; conflicting identities are rejected
-- `recordMembershipRefundWebhook(opts)` — inserts a `membership_refunds` row from a `charge.refunded` webhook; `ON CONFLICT DO NOTHING` (never overwrites admin rows)
+- `startAdministratorRefundReconciliation(currentUserId, opts)` — persists an immutable request and
+  begins lease-fenced provider reconciliation; exact requests replay one operation, while changed
+  requests conflict
+- `dispatchDueRefundReconciliations()` / `reconcileMembershipRefundOperation()` — schedule-owned
+  durable recovery for administrator and automatic reversal policies
+- `recordMembershipRefundEvent(opts)` — persists a `charge.refunded` receipt, validates matching
+  operation/attempt metadata, and makes only that durable operation due for best-effort wakeup
 - `getMembershipRefunds(userId)` — lists refund ledger rows for a user
 
 `@vouchington/memberships` owns the generic benefit-catalog validation, product grouping, terminal-status
@@ -86,17 +89,17 @@ Refund requests must match exactly one refundable invoice payment. When both a S
 payment-intent ID are supplied, both identifiers must belong to the same refundable payment record;
 otherwise the service rejects the request before calling Stripe.
 
-Admin refunds persist a Stripe idempotency key derived from the caller and client request token,
-plus an exact request fingerprint. Exact replays return the durable receipt without another Stripe
-refund; reuse of the token for changed intent is rejected. A replay resumes an unfinished requested
-subscription cancellation for the same subscription. Immediate cancellation is convergence-based:
-Stripe DELETE has no provider-idempotency option, so a failed DELETE succeeds only when retrieving
-that exact subscription confirms its terminal `canceled` state.
+Admin refunds persist an immutable operation request and exact fingerprint. The shared coordinator
+records append-only provider attempts, enriches a provider ID only from null to known, and retries
+from durable due state. Exact replays return the same completed receipt or `202` without another
+Stripe refund; changed intent conflicts. A `charge.refunded` receipt with matching provider metadata
+can recover a lost create reply, while the five-minute schedule remains authoritative. After 23
+hours without a provider ID, metadata discovery scans bounded Stripe pages before a later attempt.
 
-Client-token retries resolve their durable intent by Stripe idempotency key before selecting a
-membership. Actor and request fingerprint are validated against the stored membership, and an
-active receiptless retry lists invoices, refunds, and cancels against that original subscription.
-Only a request without an intent selects the latest membership.
+Client-token retries resolve their durable administrator-refund operation before selecting a
+membership. Actor and request fingerprint are validated against its immutable request context, and
+reconciliation resumes from the stored payment and subscription targets without selecting or
+validating a newer membership. Only a request without an operation selects the latest membership.
 
 An ineligible Stripe purchase collision creates one immutable reversal case for its lineage binding.
 The case captures the original invoice's qualifying amount, currency, final refund cap, winning
@@ -131,7 +134,7 @@ If Stripe has accepted the refund but immediate subscription cancellation fails,
 is committed and the request returns it with `cancellation_status: 'pending'` instead of falsely
 reporting revoked access. The client retains its token; retry returns the receipt, skips refund
 creation, and resumes cancellation. Once terminal-state verification succeeds, the service updates
-the local membership and refund receipt to cancelled/revoked without waiting for a webhook.
+the local membership and refund receipt to cancelled/revoked without waiting for an event.
 
 ## Status Lifecycle
 
@@ -163,6 +166,22 @@ the lifecycle constraint valid and allows the next queued grant to become the ef
 A paused or terminal direct source is non-entitling, so an administrator grant may become the
 effective projection. The retained source remains provider-authoritative: an authoritative active
 Stripe subscription update restores direct precedence and pauses the active grant again.
+Google Play purchase verification matches the configured product, base plan, and offer together.
+It validates the current token's account and product before traversing linked predecessors.
+For a deferred replacement, a purchase intent pins the target mapping; the target remains pending
+and non-entitling until Play supplies an effective target line item with an expiry. A deferred
+product alone cannot select among multiple base plans or offers. Every Play fetch receives an
+order before the network call, including permanent lookup losses, so a slower, older response
+cannot revive or revoke newer access. Only the first newly linked successor may advance that order
+after the canonical lineage lock to supersede a predecessor's terminal observation.
+Its authoritative `startTime` anchors the membership start; when Play omits that timestamp, later
+observations preserve the lineage's earliest recorded start while respecting an earlier terminal
+expiry. A Play account hold or pause restores a retained fallback at the observed access-loss time,
+even when Play reports a later renewal expiry, and a later active observation
+retires that fallback before reactivating the direct projection. Delayed RTDN for an old purchase
+token rechecks the newest known successor token before changing access.
+RTDN replay uses its persisted package and environment; a known unbound token family stays pending
+without refetching Play until a signed-in direct proof binds it.
 Stripe lifecycle reconciliation identifies that source by provider, test/live environment,
 application, and subscription ID together. Retired prices remain resolvable for an already-bound
 source, but retirement still prevents the product from admitting a new source.
@@ -182,7 +201,10 @@ prices, then invalidates derived catalog caches. Any provider, database, or cach
 every active mapping for the configured environment/application, invalidates the caches, and leaves
 Stripe purchase mappings unavailable until the next successful reconciliation. Purchase routes read
 the authoritative mappings instead of trusting a cache across this boundary. Retired mappings
-remain available only to an already-bound lifecycle source.
+remain available only to an already-bound lifecycle source. The canonical-product and mapping row
+locks use `FOR NO KEY UPDATE`, which serializes catalog publication and retirement without
+conflicting with the foreign-key `KEY SHARE` locks that membership, purchase-intent, and
+provider-observation inserts acquire on the same rows.
 
 Initial access is provisioned from successful billing events (`invoice.paid`) rather than relying only on checkout completion. Checkout events are still persisted and used for correlation.
 

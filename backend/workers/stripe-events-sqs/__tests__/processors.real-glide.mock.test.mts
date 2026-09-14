@@ -52,8 +52,8 @@ function createStripeEvent(overrides: Partial<StripeEvent> = {}): StripeEvent {
   } as unknown as StripeEvent
 }
 
-async function findStripeWebhookJobsFor(stripeEventRecordId: string) {
-  // enqueueProcessStripeWebhook sets opts.priority (PRIORITY_DEFAULT), and glide-mq's `add()`
+async function findStripeEventJobsFor(stripeEventRecordId: string) {
+  // enqueueProcessStripeEvent sets opts.priority (PRIORITY_DEFAULT), and glide-mq's `add()`
   // enqueues any prioritized job to its scheduled ZSet rather than the plain FIFO stream --
   // getJobs() reports that ZSet as the 'delayed' state even though no opts.delay is set, so a
   // freshly enqueued job here legitimately never appears in 'waiting'.
@@ -76,11 +76,11 @@ describe('processStripeEventsSqsMessage', () => {
     // production queue: other parallel test runs against the same isolated real-glide-mq Valkey
     // prefix may have jobs in flight, and obliterate() would delete those too.
     const recordIds = createdRecordIds.splice(0)
-    const jobs = (await Promise.all(recordIds.map(id => findStripeWebhookJobsFor(id)))).flat()
+    const jobs = (await Promise.all(recordIds.map(id => findStripeEventJobsFor(id)))).flat()
     await Promise.all(jobs.map(job => job.remove()))
   })
 
-  it('unwraps the EventBridge envelope, inserts the stripe_events row, and enqueues processStripeWebhook', async () => {
+  it('unwraps the EventBridge envelope, inserts the stripe_events row, and enqueues processStripeEvent', async () => {
     const subscriptionId = `sub_test_${randomUUID()}`
     const event = createStripeEvent({
       type: 'invoice.paid',
@@ -100,9 +100,9 @@ describe('processStripeEventsSqsMessage', () => {
     expect(stored).toMatchObject({ stripe_event_id: event.id, status: 'received' })
     createdRecordIds.push(stored!.id)
 
-    const jobs = await findStripeWebhookJobsFor(stored!.id)
+    const jobs = await findStripeEventJobsFor(stored!.id)
     expect(jobs).toHaveLength(1)
-    const jobId = `stripe-webhook__${stored!.id}__${stored!.processing_attempt_id}`
+    const jobId = `stripe-event__${stored!.id}__${stored!.processing_attempt_id}`
     expect(jobs[0]?.id).toBe(jobId)
     expect(jobs[0]?.data).toEqual({
       stripeEventRecordId: stored!.id,
@@ -123,7 +123,7 @@ describe('processStripeEventsSqsMessage', () => {
     const stored = await getStripeEventByStripeEventId(event.id)
     createdRecordIds.push(stored!.id)
 
-    const [job] = await findStripeWebhookJobsFor(stored!.id)
+    const [job] = await findStripeEventJobsFor(stored!.id)
     expect(job?.data).toMatchObject({ stripeSubscriptionId: null, livemode: false })
     expect(job?.opts.ordering).toBeUndefined()
   })
@@ -146,7 +146,7 @@ describe('processStripeEventsSqsMessage', () => {
     const stored = await getStripeEventByStripeEventId(event.id)
     expect(stored).toMatchObject({ invoice_id: invoiceId, subscription_id: null })
     createdRecordIds.push(stored!.id)
-    const [job] = await findStripeWebhookJobsFor(stored!.id)
+    const [job] = await findStripeEventJobsFor(stored!.id)
     expect(job?.data).toMatchObject({ stripeSubscriptionId: null })
     expect(job?.opts.ordering).toBeUndefined()
   })
@@ -162,7 +162,7 @@ describe('processStripeEventsSqsMessage', () => {
     const stored = await getStripeEventByStripeEventId(event.id)
     createdRecordIds.push(stored!.id)
 
-    const jobs = await findStripeWebhookJobsFor(stored!.id)
+    const jobs = await findStripeEventJobsFor(stored!.id)
     expect(jobs).toHaveLength(1)
   })
 

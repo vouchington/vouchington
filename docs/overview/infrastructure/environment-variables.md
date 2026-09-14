@@ -38,6 +38,8 @@ section notes.
 - <a id="bluesky-at-protocol"></a>[Bluesky (AT Protocol)](reference-environment-variables-bluesky-at-protocol.md)
 - <a id="payments-stripe"></a>[Payments (Stripe)](reference-environment-variables-payments-stripe.md)
 - <a id="payments-apple-app-store"></a>[Payments (Apple App Store)](reference-environment-variables-payments-apple-app-store.md)
+- <a id="payments-google-play"></a>[Payments (Google Play)](reference-environment-variables-payments-google-play.md)
+- <a id="payments-microsoft-store"></a>[Payments (Microsoft Store)](reference-environment-variables-payments-microsoft-store.md)
 - <a id="email-ses"></a>[Email (SES)](reference-environment-variables-email-ses.md)
 - <a id="ai--ml"></a>[AI / ML](reference-environment-variables-ai-ml.md)
 - <a id="analytics-pipeline"></a>[Analytics Pipeline](reference-environment-variables-analytics-pipeline.md)

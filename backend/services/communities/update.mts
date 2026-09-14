@@ -6,6 +6,7 @@ import createHttpError from 'http-errors'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
+import onError from '@modules/on-error'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { validateCommunitySlug } from './slugs.mts'
@@ -149,6 +150,7 @@ export async function updateCommunity(
     ])
     if (community.visibility !== updated.visibility) void enqueueRefreshTopHashtags()
   }
-  void enqueueLanguageDetection('community', updated.id).catch(() => undefined)
+  // Language detection is asynchronous enrichment; the committed community update remains durable.
+  void enqueueLanguageDetection('community', updated.id).catch(onError)
   return updated
 }

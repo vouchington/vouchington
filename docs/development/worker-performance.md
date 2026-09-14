@@ -6,7 +6,7 @@ The deployed backend uses one **`worker-cpu`** service for every queue. It runs 
 sanitize, markdown render, chunking, AI), sharp (images), Lightpanda cloud browser crawling (a thin
 Playwright client over a CDP WebSocket — no local browser process), and the DB/Valkey/HTTP queues
 that can also run in `worker-io`. Local development deliberately keeps the
-`worker-cpu` and `worker-io` processes split. Each worker has its own queue concurrency knob. Native
+`worker-cpu` process with every policy-managed queue. The worker has its own queue concurrency knob. Native
 addons also have their own thread pools, so this page documents the knobs that shape each process's
 resource envelope.
 

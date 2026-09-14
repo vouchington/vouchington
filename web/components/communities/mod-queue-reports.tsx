@@ -351,7 +351,7 @@ export function ModQueueReports({
                       disabled={claimingId === report.id}
                       loading={claimingId === report.id}
                       onClick={() => {
-                        handleRelease(report.id).catch(() => {})
+                        void handleRelease(report.id)
                       }}
                       data-pw='release-report-button'
                     >
@@ -364,7 +364,7 @@ export function ModQueueReports({
                       disabled={claimingId === report.id}
                       loading={claimingId === report.id}
                       onClick={() => {
-                        handleClaim(report.id).catch(() => {})
+                        void handleClaim(report.id)
                       }}
                       data-pw='claim-report-button'
                     >
@@ -377,7 +377,7 @@ export function ModQueueReports({
                     disabled={discussingId === report.id}
                     loading={discussingId === report.id}
                     onClick={() => {
-                      handleDiscuss(report.id).catch(() => {})
+                      void handleDiscuss(report.id)
                     }}
                     data-pw='discuss-report-button'
                   >
@@ -391,7 +391,7 @@ export function ModQueueReports({
                       disabled={escalatingId === report.id}
                       loading={escalatingId === report.id}
                       onClick={() => {
-                        handleDeEscalate(report.id).catch(() => {})
+                        void handleDeEscalate(report.id)
                       }}
                       data-pw='de-escalate-report-button'
                     >
@@ -405,7 +405,7 @@ export function ModQueueReports({
                       disabled={escalatingId === report.id}
                       loading={escalatingId === report.id}
                       onClick={() => {
-                        handleEscalate(report.id).catch(() => {})
+                        void handleEscalate(report.id)
                       }}
                       data-pw='escalate-report-button'
                     >
@@ -420,9 +420,7 @@ export function ModQueueReports({
                       disabled={sendingModmail === report.id}
                       loading={sendingModmail === report.id}
                       onClick={() => {
-                        handleSendModmail(report).catch(() => {
-                          // error handled in handleSendModmail
-                        })
+                        void handleSendModmail(report)
                       }}
                       data-pw='send-modmail-button'
                     >

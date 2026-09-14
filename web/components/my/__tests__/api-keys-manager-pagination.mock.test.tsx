@@ -1,10 +1,10 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ListResponse } from '@/types/api-responses'
 import type { ApiKey } from '@/types/api-keys'
 import { ApiKeysManager } from '../api-keys-manager'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 let translate!: (key: MessageKey, params?: Record<string, unknown>) => string
 

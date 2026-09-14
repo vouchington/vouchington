@@ -1,6 +1,6 @@
 import { beforeAll, describe, it, expect, afterEach, vi } from 'vitest'
 import createHttpError from 'http-errors'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import * as bloomFilterEnqueues from '@queues/bloom-filters/enqueues'

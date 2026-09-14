@@ -1,13 +1,17 @@
+import type { Metadata } from 'next'
 import { TopicListPage } from '@/components/topics/topic-list-page'
 import { topicRouteConfigs } from '@/lib/route-configs'
 import { createPageMetadata } from '@/lib/seo/metadata'
-import { defaultTranslator } from '@ts-shared/ui-messages/default-translator'
+import { getTranslations } from '@/lib/i18n/get-translations'
 
-export const metadata = createPageMetadata({
-  title: defaultTranslator(topicRouteConfigs['rewards-programs'].title),
-  description: defaultTranslator(topicRouteConfigs['rewards-programs'].description),
-  path: '/rewards-programs',
-})
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations()
+  return createPageMetadata({
+    title: t(topicRouteConfigs['rewards-programs'].title),
+    description: t(topicRouteConfigs['rewards-programs'].description),
+    path: '/rewards-programs',
+  })
+}
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>

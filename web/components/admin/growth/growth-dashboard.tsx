@@ -19,7 +19,10 @@ interface Props {
 export default function GrowthDashboard({ metrics }: Props) {
   const t = useTranslations()
   return (
-    <div className='space-y-8'>
+    <div
+      className='space-y-8'
+      data-pw='localization-growth-dashboard'
+    >
       <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
         <div>
           <h1

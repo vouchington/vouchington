@@ -8,7 +8,7 @@ import {
   HOSTED_ENV,
   sessionFixture,
   sessionsClientFixture,
-} from '../../blackboard/test-helpers/client-fixtures.mts'
+} from '../../test-helpers/blackboard/client-fixtures.mts'
 import { counterPath } from '../failure-counter.mts'
 import { runToolCheckpoint } from '../tool.mts'
 

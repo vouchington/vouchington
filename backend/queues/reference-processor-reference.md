@@ -99,8 +99,8 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | images                                       | cleanup-abandoned-uploads                      | —                                         | 10               |
 | images                                       | extract-metadata                               | —                                         | 5                |
 | kagi-smallweb                                | sync                                           | —                                         | 10               |
-| memberships                                  | processStripeWebhook                           | —                                         | 10               |
-| memberships                                  | recoverStripeWebhooks                          | —                                         | 100              |
+| memberships                                  | processStripeEvent                             | —                                         | 10               |
+| memberships                                  | recoverStripeEvents                            | —                                         | 100              |
 | memberships                                  | processMembershipVerification                  | —                                         | 10               |
 | memberships                                  | recoverMembershipVerifications                 | —                                         | 100              |
 | memberships                                  | reconcileStripeMembershipCatalog               | `stripe-catalog:voucha-web`               | 100              |
@@ -108,6 +108,8 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | memberships                                  | expireElapsedMemberships                       | —                                         | 100              |
 | memberships                                  | processRenewalNotificationCheck                | —                                         | 100              |
 | memberships                                  | processSendRenewalPriceIncreaseEmail           | —                                         | 10               |
+| memberships                                  | dispatchMembershipRefundReconciliation         | —                                         | 100              |
+| memberships                                  | reconcileMembershipRefundOperation             | —                                         | 10               |
 | notifications                                | processReconcilePostNotifications              | —                                         | 10               |
 | notifications                                | processReconcileRssFeedItemNotifications       | —                                         | 10               |
 | notifications                                | processDeliverNotificationPushIntent           | —                                         | 10               |
@@ -131,6 +133,8 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | bedrock_embeddings_nova_multimodal_v1_single | rss_feed_item                                  | —                                         | 10               |
 | openai_moderation_omni_single                | post                                           | —                                         | 10               |
 | openai_moderation_omni_single                | image                                          | —                                         | 10               |
+| openai_moderation_omni_single                | reconcile_image_quarantines                    | —                                         | 100              |
+| openai_moderation_omni_single                | reconcile_post_moderation                      | —                                         | 100              |
 | post-mentions                                | processPostMentions                            | —                                         | 10               |
 | psql                                         | runMigrations                                  | —                                         | 10               |
 | psql                                         | runViews                                       | —                                         | 10               |

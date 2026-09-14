@@ -118,7 +118,7 @@ export default async function CommunitiesPage({ searchParams }: PageProps) {
           })}
         />
         {breadcrumbItems.length > 0 && (
-          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems)} />
+          <AnonymousStructuredDataScript data={createBreadcrumbSchema(breadcrumbItems, t)} />
         )}
         <AnonymousStructuredDataScript
           data={createItemListSchema(communityItemListItems, 'Communities')}

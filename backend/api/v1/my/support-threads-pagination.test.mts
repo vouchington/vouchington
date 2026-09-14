@@ -5,7 +5,7 @@ import {
   insertTestSupportThread,
   insertTestSupportMessage,
 } from '@voucha/test-helpers'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import type { PrivateUser } from '@services/users/types'
 
 describe('support-threads detail pagination', () => {

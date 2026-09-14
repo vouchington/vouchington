@@ -36,20 +36,18 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
   ],
   ['ap_inbox_delivery_storage_counters', 'A true primary key limits the ledger to one row.'],
 ])
-export const NON_DEFAULT_ID_EXCEPTIONS = new Map<
-  string,
-  { policy: 'uuidv7' | 'natural-or-provider'; rationale: string }
->([
-  [
-    'bedrock_embeddings_batches',
-    { policy: 'natural-or-provider', rationale: 'Bedrock owns the batch job identifier.' },
-  ],
+type NonDefaultIdException = { policy: 'uuidv7' | 'natural-or-provider'; rationale: string }
+const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
+  policy: 'natural-or-provider',
+  rationale,
+})
+export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>([
+  ['membership_google_play_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
+  ['membership_microsoft_store_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
+  ['bedrock_embeddings_batches', naturalOrProviderId('Bedrock owns the batch job identifier.')],
   ['community_agent_prompts', sharedParentUuidv7('agent_prompts')],
   ['rss_feed_items', sharedParentUuidv7('rss_feed_item_ids')],
-  [
-    'migrations',
-    { policy: 'natural-or-provider', rationale: 'The checked-in migration filename is the key.' },
-  ],
+  ['migrations', naturalOrProviderId('The checked-in migration filename is the key.')],
   ['user_metrics', sharedParentUuidv7('users')],
   [
     'user_sessions',
@@ -89,7 +87,8 @@ const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'membership_ineligible_purchase_reversal_refund_scans',
   'membership_ineligible_purchase_reversal_refund_observations',
   'membership_purchase_intents',
-  'membership_refund_intents',
+  'membership_refund_operation_attempts',
+  'membership_refund_operation_attempt_metadata_scans',
   'membership_refunds',
   'membership_verifications',
   'moderation_appeal_lifecycle_changes',

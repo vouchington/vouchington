@@ -27,7 +27,7 @@
     "@services/moderation-appeals": "workspace:^",
     "@services/user-warnings": "workspace:^",
     "@services/users": "workspace:^",
-    "openai": "^7.10.0"
+    "openai": "^7.15.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

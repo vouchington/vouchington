@@ -56,7 +56,7 @@ in a modern browser.
 ## Exemptions
 
 External webhook/infra endpoints authenticate via cryptographic signatures or shared keys, not
-cookies, so they are not CSRF targets. SES bounce/complaint notifications and Stripe webhook events
+cookies, so they are not CSRF targets. SES bounce/complaint notifications and Stripe events
 no longer hairpin through a public endpoint: both arrive over SQS (SNS→SQS for SES,
 EventBridge→SQS for Stripe) that a backend worker consumes directly (see
 [event-ingress.md](../../overview/architecture/event-ingress.md)), so there is nothing to exempt

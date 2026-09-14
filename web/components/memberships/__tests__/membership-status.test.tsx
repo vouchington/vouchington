@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { seedMessages } from '@/lib/i18n/use-translations'
 import type { SubscriptionMembership } from '@/types/api-responses'
-import esMessages from '@ts-shared/ui-messages/messages/es'
 import { MembershipStatus } from '../membership-status'
+import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 const membership: SubscriptionMembership = {
   __entity_type: 'membership',

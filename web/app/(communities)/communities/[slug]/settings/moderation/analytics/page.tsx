@@ -13,11 +13,12 @@ import { ApiError } from '@/lib/api/error'
 import type { ModerationAnalyticsRange } from '@/types/moderation-analytics'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { getSupplementaryTransparency } from './supplementary-transparency'
+import type ModerationAnalyticsDashboardComponent from '@/components/admin/moderation-analytics/moderation-analytics-dashboard'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
-const ModerationAnalyticsDashboard = nextDynamic(
-  () => import('@/components/admin/moderation-analytics/moderation-analytics-dashboard'),
-)
+const ModerationAnalyticsDashboard = nextDynamic<
+  Parameters<typeof ModerationAnalyticsDashboardComponent>[0]
+>(() => import('@/components/admin/moderation-analytics/moderation-analytics-dashboard'))
 
 const VALID_RANGES = new Set<ModerationAnalyticsRange>(['today', '7d', '30d', '90d', 'all'])
 

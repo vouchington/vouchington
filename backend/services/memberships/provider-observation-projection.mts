@@ -3,11 +3,10 @@ import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/me
 import { recordMembershipChange } from './changes.mts'
 import type { MembershipProviderSourceIdentity } from './create-types.mts'
 import { getFamilyMembershipSourceProjectionAdmission } from './create/prepare-source.mts'
-import { createProviderMembershipSource } from './create-source.mts'
-import { assertDirectMembershipSourceAdmission } from './direct-source-authority.mts'
+import { retainRejectedDirectObservation } from './provider-observation-projection-admission.mts'
+import { lockAndCreateProviderObservationSource } from './provider-observation-projection-source.mts'
 import { restoreFallbackAfterCurrentAccessEndsInTransaction } from './fallback/restore-after-current-access-ends.mts'
 import { membershipProjectionWithEntitlementEffects } from './entitlement-effects-after-commit.mts'
-import { lockMembershipUser } from './lock-user.mts'
 import { insertMembershipProjection, upsertMembershipSourceState } from './projections/create.mts'
 import { reconcileSourceProjection, type PriorMembership } from './reconcile-source-projection.mts'
 import { retireCurrentMembershipProjection } from './create/retire-current-projection.mts'
@@ -23,8 +22,8 @@ export type ProjectVerifiedProviderMembershipObservationOptions = {
   userId: string
   membershipProviderObservationId: string
   sourceIdentity?: MembershipProviderSourceIdentity
+  retainWhenDirectAdmissionRejected?: boolean
 }
-
 type ProjectDependencies = {
   enqueueEntitlementEffects?: typeof enqueueDeliverMembershipEntitlementEffectsBestEffort
   query?: QueryExecutor
@@ -42,21 +41,23 @@ export async function projectVerifiedProviderMembershipObservation(
   if (result.projected) void enqueue()
   return result
 }
-
 async function projectWithQuery(
   options: ProjectVerifiedProviderMembershipObservationOptions,
   query: QueryExecutor,
   enqueue: typeof enqueueDeliverMembershipEntitlementEffectsBestEffort,
 ): Promise<{ membershipId: string | null; projected: boolean }> {
   const observation = await getVerifiedProviderObservation(options, query)
-  const source = await lockUserAndCreateProviderSource(options.userId, observation, query)
-  if (observation.sourceKind === 'direct' && !isTerminalMembershipStatus(observation.status))
-    await assertDirectMembershipSourceAdmission(
-      options.userId,
-      observation.plan,
-      observation.sourceIdentity,
-      query,
-    )
+  const source = await lockAndCreateProviderObservationSource(options.userId, observation, query)
+  const directAdmissionRejected =
+    observation.sourceKind === 'direct' && !isTerminalMembershipStatus(observation.status)
+      ? await retainRejectedDirectObservation({
+          userId: options.userId,
+          plan: observation.plan,
+          sourceIdentity: observation.sourceIdentity,
+          enabled: options.retainWhenDirectAdmissionRejected,
+          query,
+        })
+      : false
   const sourceState = await upsertMembershipSourceState(
     { ...source, membershipProviderObservationId: options.membershipProviderObservationId },
     observation.membershipProductId,
@@ -66,23 +67,8 @@ async function projectWithQuery(
     query,
   )
   if (!sourceState.advanced) return { membershipId: null, projected: false }
+  if (directAdmissionRejected) return { membershipId: null, projected: false }
   return projectAdvancedProviderObservation(options, observation, source.id, query, enqueue)
-}
-
-async function lockUserAndCreateProviderSource(
-  userId: string,
-  observation: VerifiedProviderObservation,
-  query: QueryExecutor,
-) {
-  await lockMembershipUser(userId, query)
-  return createProviderMembershipSource(
-    {
-      userId,
-      sourceKind: observation.sourceKind,
-      sourceIdentity: observation.sourceIdentity,
-    },
-    query,
-  )
 }
 
 async function projectAdvancedProviderObservation(
@@ -156,11 +142,10 @@ async function projectAdvancedProviderObservation(
     membershipProviderEvidenceId: observation.membershipProviderEvidenceId,
     query,
   })
-  if (isTerminalMembershipStatus(observation.status))
+  if (isTerminalMembershipStatus(observation.status) || observation.status === 'paused')
     await restoreFallbackAfterCurrentAccessEndsInTransaction(options.userId, membership.id, query)
   return membershipProjectionWithEntitlementEffects(query, enqueue, membership.id, project)
 }
-
 async function reconcileProviderSourceProjection(
   options: ProjectVerifiedProviderMembershipObservationOptions,
   prior: PriorMembership,
@@ -171,6 +156,8 @@ async function reconcileProviderSourceProjection(
 ): Promise<{ membershipId: string; projected: boolean }> {
   const entitles =
     !isTerminalMembershipStatus(observation.status) && observation.status !== 'paused'
+  if (entitles && prior.projection_ended_at !== null)
+    await retireCurrentMembershipProjection(options.userId, query)
   const membership = await reconcileSourceProjection(
     {
       prior,
@@ -189,7 +176,7 @@ async function reconcileProviderSourceProjection(
     },
     query,
   )
-  if (isTerminalMembershipStatus(observation.status))
+  if (isTerminalMembershipStatus(observation.status) || observation.status === 'paused')
     await restoreFallbackAfterCurrentAccessEndsInTransaction(options.userId, membership.id, query)
   return membershipProjectionWithEntitlementEffects(
     query,

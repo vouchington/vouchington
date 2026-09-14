@@ -1,3 +1,4 @@
+import { defaultTranslator as t } from '@ts-shared/ui-messages/default-translator'
 import { describe, expect, it } from 'vitest'
 import {
   computeRatingStats,
@@ -36,7 +37,7 @@ const topic: Topic = {
 
 describe('topic page seo helpers', () => {
   it('builds section breadcrumbs with topic and section paths', () => {
-    const data = createTopicSectionStructuredData(topic, 'card', {
+    const data = createTopicSectionStructuredData(t, topic, 'card', {
       label: 'Reviews',
       path: 'reviews',
     })

@@ -1,0 +1,1 @@
+export const GITHUB_MATRIX_MAX_JOBS = 256

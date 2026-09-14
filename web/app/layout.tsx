@@ -25,16 +25,17 @@ import { getServerImageOrigin } from '@/lib/utils/image-origin'
 import { serializeUiMessagesBootstrapScript } from '@/lib/utils/ui-messages-bootstrap'
 import { getResolvedUiLocale } from '@/lib/i18n/get-resolved-ui-locale'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
+import { UiMessagesHydrator } from '@/lib/i18n/ui-messages-hydrator'
 import {
   assertRuntimePublicConfig,
   getServerRuntimePublicConfig,
   serializeRuntimePublicConfigBootstrapScript,
 } from '@/lib/runtime-public-config-server'
-import { loadMessages } from '@ts-shared/ui-messages'
 import { serializeCatalog } from '@ts-shared/ui-messages/catalog-bootstrap'
 import { RootAppShell } from './root-app-shell'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { getGlobalServerFeatureFlags } from '@/lib/feature-flags/server'
+import { loadServerMessages } from '@/lib/i18n/load-server-messages'
 
 export async function generateMetadata(): Promise<Metadata> {
   // A cache-fill render's HTML is frozen into the shared anon edge cache and replayed to every
@@ -86,9 +87,9 @@ export default async function RootLayout({
   // Docker image can deploy to staging and production with different values.
   const imageOrigin = getServerImageOrigin()
   const imageOriginScript = serializeImageOriginBootstrapScript(imageOrigin)
-  // Catalog leaves are strings or data-only plural descriptors, so the complete catalog can cross
+  // Catalog leaves are strings or data-only plural descriptors, so a route batch can cross
   // the RSC → Client boundary and seed the client cache without reconstructing executable leaves.
-  const uiMessages = await loadMessages(uiLocale)
+  const uiMessages = await loadServerMessages(uiLocale)
   const uiMessagesScript = serializeUiMessagesBootstrapScript({
     locale: uiLocale,
     catalog: serializeCatalog(uiMessages),
@@ -170,23 +171,26 @@ export default async function RootLayout({
           gtmId={gtmId}
           nonce={nonce}
         />
-        <UiLocaleProvider uiLocale={uiLocale}>
-          <CookieConsentBanner />
-        </UiLocaleProvider>
+        <UiMessagesHydrator
+          locale={uiLocale}
+          catalog={uiMessages}
+        >
+          <UiLocaleProvider uiLocale={uiLocale}>
+            <CookieConsentBanner />
+          </UiLocaleProvider>
+        </UiMessagesHydrator>
         <ServiceWorkerRegistrar currentUserId={user?.id} />
         <ScrollToTop />
-        {/*
-          Siblings above (GtmConsentLoader, CookieConsentBanner, ServiceWorkerRegistrar,
-          ScrollToTop, SEO scripts) render outside RuntimePublicConfigProvider. Anything
-          that calls useRuntimePublicConfig must live inside RootAppShell.
-        */}
+        {/* Siblings above render outside RuntimePublicConfigProvider; config consumers belong in RootAppShell. */}
         <RootAppShell
           currentUser={user}
           globalFeatureFlags={globalFeatureFlags}
           isStandaloneLandingPage={isStandaloneLandingPage}
+          initialPathname={pathname ?? '/'}
           mainContent={mainContent}
           runtimePublicConfig={runtimePublicConfig}
           uiLocale={uiLocale}
+          uiMessages={uiMessages}
         />
       </body>
     </html>

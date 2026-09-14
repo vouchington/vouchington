@@ -41,7 +41,10 @@ describe('posts.openai', () => {
       if (!Array.isArray(result.results)) {
         throw new TypeError('Moderation results not an array')
       }
-      const moderationResults = result.results as Array<{ flagged: boolean }>
+      const moderationResults = result.results as Array<{
+        flagged: boolean
+        categories: Record<string, boolean>
+      }>
       expect(moderationResults.length).toBeGreaterThan(0)
       for (const moderationResult of moderationResults) {
         expect(moderationResult).toBeDefined()
@@ -52,7 +55,7 @@ describe('posts.openai', () => {
         openai_omni_moderation_content_sha256: Buffer
         openai_omni_moderation_input_sha256: Buffer
         openai_omni_moderation_flagged: boolean
-        openai_omni_moderation_results: unknown[]
+        openai_omni_moderation_results: { flagged_categories: string[] }
         openai_omni_moderation_created_at: Date
       } | null
 
@@ -65,12 +68,17 @@ describe('posts.openai', () => {
       expect(moderationData!.openai_omni_moderation_content_sha256).toEqual(result.content_sha256)
       expect(moderationData!.openai_omni_moderation_input_sha256).toEqual(result.content_sha256)
 
-      const flagged = result.results!.some((r: any) => r.flagged)
+      const flagged = moderationResults.some(result => result.flagged)
       expect(moderationData!.openai_omni_moderation_flagged).toBe(flagged)
-
-      const savedResults = moderationData!.openai_omni_moderation_results as unknown[]
-      expect(Array.isArray(savedResults)).toBe(true)
-      expect(savedResults.length).toBe(result.results!.length)
+      expect(moderationData!.openai_omni_moderation_results).toEqual({
+        flagged_categories: moderationResults
+          .flatMap(result =>
+            Object.entries(result.categories)
+              .filter(([, categoryFlagged]) => categoryFlagged)
+              .map(([category]) => category),
+          )
+          .toSorted(),
+      })
 
       // Second call should skip (same content already moderated)
       const result2 = await upsertPostOpenAIModeration(post as Post)

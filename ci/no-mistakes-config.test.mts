@@ -8,7 +8,7 @@ import { parse as parseYaml } from 'yaml'
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
 type NoMistakesConfig = {
-  rules?: Array<{ name?: string; options?: { policies?: unknown[] } }>
+  rules?: Array<{ exclude?: string[]; name?: string; options?: { policies?: unknown[] } }>
 }
 
 function readRepoFile(path: string): string {
@@ -32,6 +32,12 @@ function expectNoMistakesCurrentRange(version: string | undefined): void {
 }
 
 describe('no-mistakes config', () => {
+  it('limits the Next route exception to the deployment-order Sentry bootstrap', () => {
+    const config = parseYaml(readRepoFile('.no-mistakes.yml')) as NoMistakesConfig
+    const policy = config.rules?.find(rule => rule.name === 'web no Next.js API routes')
+    expect(policy?.exclude).toEqual(['web/app/runtime-sentry-config.js/route.ts'])
+  })
+
   it('pins no-mistakes to the current version range and configures expected scripts', () => {
     const pkg = JSON.parse(readRepoFile('package.json')) as {
       scripts: Record<string, string>
@@ -155,6 +161,18 @@ describe('no-mistakes config', () => {
       expect.objectContaining({ baseline: expect.any(Array) }),
     ])
     expect(oxlint.rules['no-mistakes/async-call-disposition']).toBe('off')
+    expect(oxlint.rules['no-mistakes/no-inline-noop-promise-catch']).toEqual([
+      'error',
+      {
+        allowedPathPatterns: [
+          '**/*.test.*',
+          '**/*.spec.*',
+          '**/__tests__/**',
+          '**/test-helpers/**',
+        ],
+        checkedPathPatterns: ['backend/**', 'web/**'],
+      },
+    ])
     expect(JSON.stringify(oxlint.overrides)).toContain(
       '"no-mistakes/async-call-disposition":["error"',
     )

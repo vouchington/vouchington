@@ -55,10 +55,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_17 = [
     consumers: ['dotnet', 'swift'],
   },
   {
-    key: 'native.swift.moderationReports.reviewQueueOpenAiModeration',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
     key: 'native.swift.moderationReports.reviewQueuePostType',
     consumers: ['dotnet', 'swift'],
   },

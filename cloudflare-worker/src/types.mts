@@ -66,10 +66,20 @@ export interface Env {
   PRODUCTION?: string
   /**
    * Deployed-environment label for the shared fail-closed Sentry gate
-   * (`resolveSentryEnablement`). Set to 'staging' or 'production' per environment;
+   * (`resolveSentryDsnEnablement`). Set to 'staging' or 'production' per environment;
    * unset in local dev, CI, and tests, which keeps Sentry disabled there.
    */
   ENVIRONMENT?: string
+  /** Public Worker Sentry identifier. */
+  SENTRY_DSN?: string
+  /** Public browser Sentry DSN, used for tunnel authorization and the web CSP. */
+  SENTRY_WEB_DSN?: string
+  /**
+   * Optional public browser Sentry DSN that the tunnel and web CSP accept only during a DSN
+   * rotation. Set this to the retiring browser DSN while SENTRY_WEB_DSN contains its replacement,
+   * then remove it after the browser rollout completes.
+   */
+  SENTRY_TUNNEL_PREVIOUS_WEB_DSN?: string
   /**
    * Set to 'true' (case-insensitive) to include the `preload` directive in the HSTS header.
    * Requires PRODUCTION=true. Opt-in is separate because preload list submission is

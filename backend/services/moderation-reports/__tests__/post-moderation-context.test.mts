@@ -48,7 +48,7 @@ describe('getPostModerationContextBatch', () => {
     expect(result.has(postId2)).toBe(true)
   })
 
-  it('returns null openai_moderation when no moderation data exists', async () => {
+  it('returns null platform_moderation when no moderation data exists', async () => {
     const postId = await insertTestPost({
       createdById: author.id,
       slug: `mod-ctx-no-mod-${crypto.randomUUID().slice(0, 8)}`,
@@ -58,7 +58,7 @@ describe('getPostModerationContextBatch', () => {
     const result = await getPostModerationContextBatch([postId])
     const ctx = result.get(postId)
     expect(ctx).toBeDefined()
-    expect(ctx!.openai_moderation).toBeNull()
+    expect(ctx!.platform_moderation).toBeNull()
     expect(ctx!.agent_moderations).toEqual([])
     expect(ctx!.agent_added_tags).toEqual([])
   })
@@ -68,7 +68,7 @@ describe('getPostModerationContextBatch', () => {
     const result = await getPostModerationContextBatch([nonExistentId])
     const ctx = result.get(nonExistentId)
     expect(result.has(nonExistentId)).toBe(true)
-    expect(ctx!.openai_moderation).toBeNull()
+    expect(ctx!.platform_moderation).toBeNull()
     expect(ctx!.agent_moderations).toEqual([])
     expect(ctx!.agent_added_tags).toEqual([])
   })
@@ -83,7 +83,7 @@ describe('getPostModerationContextBatch', () => {
     const result = await getPostModerationContextBatch([postId], 'staff')
     const ctx = result.get(postId)
     expect(ctx).toBeDefined()
-    expect(ctx!.openai_moderation).toBeNull()
+    expect(ctx!.platform_moderation).toBeNull()
     expect(Array.isArray(ctx!.agent_added_tags)).toBe(true)
   })
 
@@ -97,7 +97,7 @@ describe('getPostModerationContextBatch', () => {
     const result = await getPostModerationContextBatch([postId], 'public')
     const ctx = result.get(postId)
     expect(ctx).toBeDefined()
-    expect(ctx!.openai_moderation).toBeNull()
+    expect(ctx!.platform_moderation).toBeNull()
     expect(Array.isArray(ctx!.agent_added_tags)).toBe(true)
   })
 
@@ -153,15 +153,15 @@ describe('getPostModerationContextBatch', () => {
       await mergeTopicForTest(mergedTopicId, mergeDestinationTopicId, author.id)
     })
 
-    it('staff tier: openai_moderation has flagged=true and populated categories', async () => {
+    it('staff tier: platform_moderation has flagged=true and populated categories', async () => {
       const result = await getPostModerationContextBatch([postId], 'staff')
-      const oai = result.get(postId)!.openai_moderation
-      expect(oai).not.toBeNull()
-      expect(oai!.flagged).toBe(true)
-      expect(Array.isArray(oai!.categories)).toBe(true)
-      expect(oai!.categories).toContain('violence')
-      expect(oai!.categories).toContain('hate')
-      expect(oai!.categories).not.toContain('harassment')
+      const platform = result.get(postId)!.platform_moderation
+      expect(platform).not.toBeNull()
+      expect(platform!.flagged).toBe(true)
+      expect(Array.isArray(platform!.categories)).toBe(true)
+      expect(platform!.categories).toContain('violence')
+      expect(platform!.categories).toContain('hate')
+      expect(platform!.categories).not.toContain('harassment')
     })
 
     it('staff tier: agent_moderations has slug, flagged, and categories', async () => {
@@ -180,12 +180,12 @@ describe('getPostModerationContextBatch', () => {
       expect(result.get(postId)!.agent_added_tags).toEqual([topicSlug])
     })
 
-    it('public tier: openai_moderation has flagged but no categories key', async () => {
+    it('public tier: platform_moderation has flagged but no categories key', async () => {
       const result = await getPostModerationContextBatch([postId], 'public')
-      const oai = result.get(postId)!.openai_moderation
-      expect(oai).not.toBeNull()
-      expect(oai!.flagged).toBe(true)
-      expect('categories' in oai!).toBe(false)
+      const platform = result.get(postId)!.platform_moderation
+      expect(platform).not.toBeNull()
+      expect(platform!.flagged).toBe(true)
+      expect('categories' in platform!).toBe(false)
     })
 
     it('public tier: agent_moderations has no categories key', async () => {
@@ -212,8 +212,8 @@ describe('getPostModerationContextBatch', () => {
       })
       await setPostOpenAIModerationFlaggedOnly(postId, true)
       const ctx = (await getPostModerationContextBatch([postId], 'staff')).get(postId)!
-      expect(ctx.openai_moderation!.flagged).toBe(true)
-      expect(ctx.openai_moderation!.categories).toEqual([])
+      expect(ctx.platform_moderation!.flagged).toBe(true)
+      expect(ctx.platform_moderation!.categories).toEqual([])
     })
 
     it('openai: empty categories when results has no categories key', async () => {
@@ -225,8 +225,8 @@ describe('getPostModerationContextBatch', () => {
       })
       await setPostOpenAIModerationResultsNoCategoryKey(postId, false)
       const ctx = (await getPostModerationContextBatch([postId], 'staff')).get(postId)!
-      expect(ctx.openai_moderation!.flagged).toBe(false)
-      expect(ctx.openai_moderation!.categories).toEqual([])
+      expect(ctx.platform_moderation!.flagged).toBe(false)
+      expect(ctx.platform_moderation!.categories).toEqual([])
     })
 
     it('agent: empty categories when results has no categories key', async () => {

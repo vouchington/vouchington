@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@modules/on-error": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/users": "workspace:^",

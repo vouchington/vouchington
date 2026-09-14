@@ -329,7 +329,7 @@ export function ModQueuePosts({
                       disabled={claimingId === post.id}
                       loading={claimingId === post.id}
                       onClick={() => {
-                        handleRelease(post.id).catch(() => {})
+                        void handleRelease(post.id)
                       }}
                       data-pw='release-post-button'
                     >
@@ -342,7 +342,7 @@ export function ModQueuePosts({
                       disabled={claimingId === post.id}
                       loading={claimingId === post.id}
                       onClick={() => {
-                        handleClaim(post.id).catch(() => {})
+                        void handleClaim(post.id)
                       }}
                       data-pw='claim-post-button'
                     >
@@ -355,7 +355,7 @@ export function ModQueuePosts({
                     disabled={discussingId === post.id}
                     loading={discussingId === post.id}
                     onClick={() => {
-                      handleDiscuss(post.id).catch(() => {})
+                      void handleDiscuss(post.id)
                     }}
                     data-pw='discuss-post-button'
                   >
@@ -369,7 +369,7 @@ export function ModQueuePosts({
                       disabled={escalatingId === post.id}
                       loading={escalatingId === post.id}
                       onClick={() => {
-                        handleDeEscalate(post.id).catch(() => {})
+                        void handleDeEscalate(post.id)
                       }}
                       data-pw='de-escalate-post-button'
                     >
@@ -383,7 +383,7 @@ export function ModQueuePosts({
                       disabled={escalatingId === post.id}
                       loading={escalatingId === post.id}
                       onClick={() => {
-                        handleEscalate(post.id).catch(() => {})
+                        void handleEscalate(post.id)
                       }}
                       data-pw='escalate-post-button'
                     >

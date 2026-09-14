@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
 import { loadSqlParserModule } from '../../migration-runner/sql-statements.mts'
-import { findFirstUnguardedInsertViolation } from '../../test-helpers/config-driven/generated-ddl-insert-invariants.mts'
+import { findFirstUnguardedInsertViolation } from '../../../../test-helpers/data-stores/psql/config-driven/generated-ddl-insert-invariants.mts'
 
 describe('config-driven generated DDL insert invariant: PREPARE/EXPLAIN wrappers', () => {
   beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))

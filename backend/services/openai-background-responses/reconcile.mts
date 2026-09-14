@@ -45,8 +45,8 @@ export type ReconcileBackgroundResponseResult =
  * drainBackgroundOpenAIResponse (backend/modules/openai-utils/create-response.mts) whose original
  * caller never claimed it -- a crash or rolling deploy killed the process before it could
  * cancel/record/delete, or an abort's cancel() call already ran but usage hadn't settled yet (the
- * ~10s cancel()-to-usage lag documented in the background-mode spike, see
- * docs/overview/architecture/openai-cost-model.md).
+ * ~10s cancel()-to-usage lag documented in the background-mode spike, written up in the private
+ * vouchington/vouchington-docs repository).
  */
 export async function reconcileExpiredBackgroundResponse(
   candidate: ExpiredBackgroundResponse,

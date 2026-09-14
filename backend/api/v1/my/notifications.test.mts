@@ -1,6 +1,6 @@
 import { onceEntityListenerCompleted } from '@workers/entity-listeners/test-support'
 import { describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, assertValidIsoDateString } from '@voucha/test-helpers'
 // Real, service-calling fixture (not the raw `@voucha/test-helpers` one) — this file waits on
 // `processPostCreated` via `onceEntityListenerCompleted`, which only fires for posts created

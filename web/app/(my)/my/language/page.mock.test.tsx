@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import enMessages from '@ts-shared/ui-messages/messages/en'
 import type { User } from '@/types/user'
 import LanguagePage, { metadata } from './page'
+import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 // LanguagePage calls getTranslations(), which resolves the request's UI locale via
 // getResolvedUiLocale() (headers()/getCurrentUser() — no request context in this test). Mocking

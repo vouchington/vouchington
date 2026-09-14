@@ -6,8 +6,8 @@ import {
   countLocalUserRoleAssignments,
   countAllLocalUserRoleAssignments,
   localSafeUsername,
-} from '../../test-helpers/users.mts'
-import { isLocalPrimaryEmailForUser } from '../../test-helpers/email-addresses.mts'
+} from '../../../../test-helpers/data-stores/psql/users.mts'
+import { isLocalPrimaryEmailForUser } from '../../../../test-helpers/data-stores/psql/email-addresses.mts'
 import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
 import { buildSystemUserUpsertSQL } from '../utils/system-user-seed.mts'
 import generateSeedAdminUserSQL from '../0010-00-02-seed-admin-user.mts'

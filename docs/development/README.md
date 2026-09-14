@@ -24,7 +24,7 @@ All of the above, plus:
 - [Docker Desktop](https://docs.docker.com/desktop/) — for Valkey (with Bloom, JSON, Search modules)
 - PostgreSQL 18+ — for UUIDv7
 - tmux — for `./dev/tmux`
-- Claude Code CLI (`claude`), Codex CLI (`codex`), Grok CLI (`grok`), Cursor CLI (`agent` / `cursor-agent`), and OpenCode CLI (`opencode`) — optional; `./dev/tmux` opens `claude`, `codex`, and `cursor` windows when those CLIs are installed. A dedicated `grok` or `opencode` window is not wired yet; run `grok --sandbox workspace-write` or `opencode` in a shell pane. See [agent-harness-parity.md](agent-harness-parity.md), [`.cursor/README.md`](../../.cursor/README.md), and [`.opencode/README.md`](../../.opencode/README.md).
+- Claude Code CLI (`claude`), Codex CLI (`codex`), Grok CLI (`grok`), Cursor CLI (`agent` / `cursor-agent`), and OpenCode CLI (`opencode`) are optional development tools. Run them from a separate terminal or an ad hoc tmux window when needed. See [agent-harness-parity.md](agent-harness-parity.md), [`.cursor/README.md`](../../.cursor/README.md), and [`.opencode/README.md`](../../.opencode/README.md).
 
 Provision host dependencies with
 [vouchington-machines](https://github.com/vouchington/vouchington-machines),
@@ -64,7 +64,7 @@ cd voucha
 ./dev/initialize            # full setup (alias for ./dev/initialize web)
 
 # 2. Start all services
-./dev/tmux                 # single-pane windows for services and assistants
+./dev/tmux                 # one managed session with five service windows
 
 # 3. Open the site
 open https://localhost:8787   # CF Worker is the entry point for browser-grade validation
@@ -136,7 +136,7 @@ Use git worktrees to work on multiple branches simultaneously. Each worktree get
 git worktree add ../worktrees/my-feature -b feature/my-feature
 cd ../worktrees/my-feature
 ./dev/initialize web
-./dev/tmux                 # all services + assistant windows
+./dev/tmux                 # one managed session with five service windows
 # Open the CF Worker URL printed by ./dev/tmux; use HTTPS for browser-grade validation
 ```
 
@@ -148,7 +148,7 @@ retained for explicit removal after verifying every ordinary clone has migrated.
 
 Agent-created temporary or subagent worktrees are not this path; they go under the OS tmpdir per [Start Of Work](../../.agents/skills/agent-workflow/start-of-work.md).
 
-Run `./dev/tmux` from outside tmux. It creates windows in this order: `nextjs`, `backend`, `workers-io`, `worker-cpu`, `cloudflare`, `lambdas`, `claude`, `codex`.
+Run `./dev/tmux` from outside tmux. It creates one session per canonical worktree with windows in this order: `nextjs`, `backend`, `worker`, `cloudflare`, `lambdas`. The `worker` window runs every queue in the worker policy.
 
 See [../../dev/CLAUDE.md](../../dev/CLAUDE.md) for full worktree documentation.
 Agents should also follow [CLAUDE.md](../../CLAUDE.md) for initialization, validation, git, and PR completion rules.
@@ -204,11 +204,11 @@ pnpm --dir backend db:migrate -- --forced
 
 See [git-worktree-locks.md](git-worktree-locks.md) — caused by git auto-maintenance racing with foreground git commands. Recovery: `git rebase --quit`.
 
-**`another ./dev/reset-worktree is already running`:**
+**`another ./dev/reset-worktree is running`:**
 
-A previous `./dev/reset-worktree` in this worktree is still running, or was killed without releasing
-its lock. See [git-worktree-locks.md](git-worktree-locks.md). Recovery: `./dev/unstick-locks` if the
-owner PID is dead; otherwise wait for or inspect that PID.
+Another `./dev/reset-worktree` in this worktree is still running. Wait for it to
+finish; the kernel releases its lock automatically if the process exits. See
+[git-worktree-locks.md](git-worktree-locks.md).
 
 ## Dependency Updates
 

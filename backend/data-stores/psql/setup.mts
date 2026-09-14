@@ -60,26 +60,23 @@ export async function withTransactionOptions<Result>(
   options: QueryOptions,
   handler: (query: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
-  const activeClient =
-    !options.query && isPoolClient(options.client) && (await isTransactionActive(options.client))
-  if (options.query || activeClient) {
-    const owner = options.query
-      ? postCommitActionOwners.get(options.query)
-      : postCommitActionOwnersByClient.get(options.client as PoolClient)
-    const parentScope = postCommitActionScopes.getStore()
-    const scope: PostCommitActionScope | undefined = owner
-      ? { owner, actions: [], parent: parentScope?.owner === owner ? parentScope : undefined }
+  const owner = options.query
+    ? postCommitActionOwners.get(options.query)
+    : isPoolClient(options.client)
+      ? postCommitActionOwnersByClient.get(options.client)
       : undefined
-    const result = await runWithTransactionOptions(options, async query => {
-      const captureAwareQuery = captureQuery(query)
-      return scope
-        ? postCommitActionScopes.run(scope, () => handler(captureAwareQuery))
-        : handler(captureAwareQuery)
-    })
-    if (scope) commitPostCommitActionScope(scope)
-    return result
-  }
-  return runWithTransactionOptions(options, query => handler(captureQuery(query)))
+  const parentScope = postCommitActionScopes.getStore()
+  const scope: PostCommitActionScope | undefined = owner
+    ? { owner, actions: [], parent: parentScope?.owner === owner ? parentScope : undefined }
+    : undefined
+  const result = await runWithTransactionOptions(options, async query => {
+    const captureAwareQuery = captureQuery(query)
+    return scope
+      ? postCommitActionScopes.run(scope, () => handler(captureAwareQuery))
+      : handler(captureAwareQuery)
+  })
+  if (scope) commitPostCommitActionScope(scope)
+  return result
 }
 async function runPostCommitActions(query: QueryExecutor): Promise<void> {
   const actions = postCommitActions.get(query)
@@ -100,15 +97,19 @@ function ownTransaction(transaction: OwnedTransaction): OwnedTransaction {
   const commit = transaction.commit
   const rollback = transaction.rollback
   const dispose = transaction[Symbol.asyncDispose]
+  const detachClientOwnership = () => {
+    if (postCommitActionOwnersByClient.get(ownedTransaction.client) === ownedTransaction)
+      postCommitActionOwnersByClient.delete(ownedTransaction.client)
+  }
   const clearOwnership = () => {
     postCommitActions.delete(ownedTransaction)
     postCommitActionOwners.delete(ownedTransaction)
-    if (postCommitActionOwnersByClient.get(ownedTransaction.client) === ownedTransaction)
-      postCommitActionOwnersByClient.delete(ownedTransaction.client)
+    detachClientOwnership()
   }
 
   Object.assign(ownedTransaction, {
     commit: async () => {
+      detachClientOwnership()
       try {
         await commit()
         await runPostCommitActions(ownedTransaction)
@@ -117,6 +118,7 @@ function ownTransaction(transaction: OwnedTransaction): OwnedTransaction {
       }
     },
     rollback: async () => {
+      detachClientOwnership()
       try {
         await rollback()
       } finally {
@@ -124,6 +126,7 @@ function ownTransaction(transaction: OwnedTransaction): OwnedTransaction {
       }
     },
     [Symbol.asyncDispose]: async () => {
+      detachClientOwnership()
       try {
         await dispose()
       } finally {
@@ -154,15 +157,5 @@ function commitPostCommitActionScope(scope: PostCommitActionScope): void {
 }
 function isPoolClient(client: QueryOptions['client']): client is PoolClient {
   return Boolean(client && 'release' in client)
-}
-async function isTransactionActive(client: PoolClient): Promise<boolean> {
-  try {
-    await client.query('/* isTransactionActive */ SAVEPOINT psql_post_commit_action_probe')
-    await client.query('/* isTransactionActive */ RELEASE SAVEPOINT psql_post_commit_action_probe')
-    return true
-  } catch (error) {
-    if ((error as { code?: string }).code === '25P01') return false
-    throw error
-  }
 }
 export * from './runtime.mts'

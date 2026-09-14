@@ -12,9 +12,8 @@ traces out to a Jaeger all-in-one UI. On AWS, you swap the same collector image 
 
 ```
 voucha-api  ─┐
-worker-io   ─┤  OTLP/HTTP :4318   ┌─ Jaeger UI :16686   [LOCAL]
-worker-cpu  ─┼──────────────────▶ OTel Collector
-voucha-web  ─┘                     └─ (swap) ADOT → X-Ray + CloudWatch  [AWS]
+worker-cpu  ─┼──────────────────▶ OTel Collector ──▶ Jaeger UI :16686 [LOCAL]
+voucha-web  ─┘                    OTLP/HTTP :4318
 ```
 
 ## Setup (local)
@@ -53,7 +52,7 @@ Open **http://localhost:16686**. After exercising the app through the CF Worker
 
 - `voucha-web` — Next.js server
 - `voucha-api` — backend API (express, pg, undici spans)
-- `voucha-worker-io` / `voucha-worker-cpu` — job queue workers
+- `voucha-worker-cpu` — the local job queue worker
 
 A web→API request will show a single connected trace if W3C trace-context propagation
 is working end-to-end.

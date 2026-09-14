@@ -15,7 +15,7 @@ import {
   createOAuthAccount,
   insertCompletionReadyAuthorization,
   registerCleanup,
-} from '../test-helpers/authorization-completion.mts'
+} from '../../../test-helpers/services/oauth/authorization-completion.mts'
 
 describe('OAuth authorization completion', () => {
   it('persists an authentication result and safely replays a lost response', async () => {

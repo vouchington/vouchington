@@ -96,15 +96,21 @@ async function makeRepo() {
   const repo = await mkdtemp(join(tmpdir(), 'voucha-reset-build-'))
   testDirs.push(repo)
   await mkdir(join(repo, 'dev', 'lib'), { recursive: true })
+  const publishedHelper = 'node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh'
+  await mkdir(join(repo, 'node_modules/vouchington-tooling/scripts/worktree'), { recursive: true })
+  await writeFile(
+    join(repo, publishedHelper),
+    await readFile(join(devDir, '..', publishedHelper), 'utf8'),
+  )
   await writeFile(join(repo, '.git'), 'gitdir: /fake/.git/worktrees/test\n')
 
   for (const relativePath of [
     'reset-worktree',
     'tmux-name',
     'lib/refuse-on-main.sh',
+    'lib/git-worktrees.sh',
     'lib/worktree-resource-env.sh',
     'lib/db-name-from-url.sh',
-    'lib/reset-worktree-lock.sh',
     'lib/git-index-lock.sh',
   ]) {
     const destination = join(repo, 'dev', relativePath)

@@ -2,6 +2,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Users, Compass, Plus } from 'lucide-react'
@@ -42,9 +43,7 @@ export function CommunitiesSidebarGroup() {
           })
         }
       })
-      .catch(() => {
-        // silently fail — sidebar is non-critical
-      })
+      .catch(Sentry.captureException)
     return () => {
       cancelled = true
     }

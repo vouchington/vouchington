@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/api/test-helpers/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { countDynamicConfigAuditRows, createTestUser } from '@voucha/test-helpers'
 import {
   closeScopedDynamicConfigContext,

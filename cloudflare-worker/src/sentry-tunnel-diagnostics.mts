@@ -5,8 +5,8 @@ export type SentryTunnelRejectReason =
   | 'invalid_envelope_header'
   | 'missing_dsn'
   | 'invalid_dsn'
-  | 'host_not_allowed'
-  | 'project_not_allowed'
+  | 'configuration_unavailable'
+  | 'dsn_not_allowed'
 
 type SentryTunnelDiagnosticDetails = {
   envelopeItemCount?: number

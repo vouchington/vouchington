@@ -9,7 +9,7 @@ import {
   makeToolCall,
   makeToolCallResponse,
   makeToolResult,
-} from '../test-helpers/run-tool-loop-test-helpers.mts'
+} from '../../../test-helpers/agents/_shared/run-tool-loop-test-helpers.mts'
 
 // Round-16 regression (#9348): the streaming tool loop's per-iteration spend-cap recheck must
 // actually stop it mid-run -- see spend-cap-check.test.mts for the shared helper's own unit

@@ -1,6 +1,7 @@
 'use client'
 
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import * as Sentry from '@sentry/nextjs'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
@@ -23,7 +24,7 @@ export function FollowerShareMenuItems({
     <>
       <DropdownMenuItem
         disabled={isSharePending}
-        onSelect={() => onShare().catch(() => undefined)}
+        onSelect={() => onShare().catch(Sentry.captureException)}
         title={t('extracted.posts.followerShareMenuItems.shareAppearsInYourFollowersFeed_3bcbcbb1')}
         data-pw='post-detail-share-button'
       >

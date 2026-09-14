@@ -44,7 +44,7 @@ describe('shouldBypassProxyPath', () => {
   it('returns true for Next.js internals', () => {
     expect(shouldBypassProxyPath('/_next/static/chunks/app.js')).toBe(true)
     expect(shouldBypassProxyPath('/_next/image')).toBe(true)
-    expect(shouldBypassProxyPath('/_next/webpack-hmr')).toBe(true)
+    expect(shouldBypassProxyPath('/_next/hmr')).toBe(true)
   })
 
   it('returns true for non-backend static assets', () => {

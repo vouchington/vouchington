@@ -5,11 +5,11 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 
 export function MembershipRefundSubmitButton({
   cancel,
-  cancellationPending,
+  reconciliationPending,
   disabled,
 }: {
   cancel: boolean
-  cancellationPending: boolean
+  reconciliationPending: boolean
   disabled: boolean
 }) {
   const t = useTranslations()
@@ -21,8 +21,8 @@ export function MembershipRefundSubmitButton({
       disabled={disabled}
       data-pw='membership-refund-submit-button'
     >
-      {cancellationPending
-        ? t('extracted.admin.membershipRefundForm.retryAccessRevocation_046f1af8')
+      {reconciliationPending
+        ? t('extracted.admin.membershipRefundForm.reconcilingRefund_4a9345c2')
         : cancel
           ? t('extracted.admin.membershipRefundForm.refundRevokeAccess_4c8a2f19')
           : t('extracted.admin.membershipRefundForm.issueRefund_e91b3d55')}

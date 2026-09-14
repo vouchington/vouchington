@@ -38,7 +38,7 @@ self.addEventListener('push', event => {
 
 function enqueuePushWork(work) {
   const next = pushWork.then(work, work)
-  pushWork = next.catch(() => {})
+  pushWork = next.catch(console.error)
   return next
 }
 

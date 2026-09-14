@@ -11,7 +11,7 @@ import {
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
 import { createMembership, grantMembership } from '../../create.mts'
 import { getMembershipByUserId } from '../../get.mts'
-import { updateMembershipFromWebhook } from '../../update.mts'
+import { updateMembershipFromEvent } from '../../update.mts'
 
 describe('delayed direct termination with an elapsed queued grant', () => {
   it('retains family access and does not enqueue child removal', async () => {
@@ -42,7 +42,7 @@ describe('delayed direct termination with an elapsed queued grant', () => {
     await setTestMembershipGrantRemainingMilliseconds(queuedGrantId!, 0.5)
     const terminalEffectiveAt = new Date()
 
-    const terminal = await updateMembershipFromWebhook(
+    const terminal = await updateMembershipFromEvent(
       {
         membershipId: direct.id,
         status: 'cancelled',
