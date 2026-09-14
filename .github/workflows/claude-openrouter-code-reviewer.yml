@@ -34,7 +34,7 @@ jobs:
       # harness-dispatch-fleet-admission in fix-issue.yml and its siblings.
       queue: max
       cancel-in-progress: false
-    uses: vouchington/vouchington-tooling/.github/workflows/code-review.yml@63a35ab37df9c53f5df316f9bda92e35a995a467 # v0.16.0
+    uses: vouchington/vouchington-tooling/.github/workflows/code-review.yml@37587cbcd959b9f94ae3efe254d422890b0c15c8 # v0.16.1
     permissions:
       actions: read
       contents: read
