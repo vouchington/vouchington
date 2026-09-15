@@ -26,6 +26,12 @@ function getSQSClient(): CreateSQSClient {
       credentials: getSqsClientCredentials(),
       region: AWS_REGION,
       ...AWS_DUALSTACK_CLIENT_CONFIG,
+      // QueueUrls are provisioned with the IPv4 sqs.<region>.amazonaws.com host. The SDK defaults
+      // useQueueUrlAsEndpoint to true, which overrides the resolved dual-stack endpoint with that
+      // host on every call — silently defeating AWS_DUALSTACK_CLIENT_CONFIG and warning twice per
+      // call. The JSON protocol carries the QueueUrl in the request body, so the endpoint and the
+      // queue identifier are independent: keeping the resolved endpoint loses nothing.
+      useQueueUrlAsEndpoint: false,
     })
   }
 

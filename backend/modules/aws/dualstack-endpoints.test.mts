@@ -8,6 +8,7 @@ import { SESClient } from '@aws-sdk/client-ses'
 import { SQSClient } from '@aws-sdk/client-sqs'
 import { describe, expect, it } from 'vitest'
 import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION, BEDROCK_AWS_REGION } from './config.mts'
+import { SQSClient as LazySQSClient } from './sqs.mts'
 
 type EndpointProviderConfig = {
   endpointProvider: (params: Record<string, boolean | string>) => { url: URL }
@@ -59,6 +60,13 @@ describe('AWS SDK endpoint selection', () => {
           : `${service}.${AWS_REGION}.api.aws`,
       )
     }
+  })
+
+  it('keeps the SQS client on its resolved dual-stack endpoint instead of the QueueUrl host', () => {
+    // useQueueUrlAsEndpoint defaults to true, which would override the dual-stack endpoint with
+    // the IPv4 host baked into every provisioned QueueUrl and warn twice per call.
+    const config = LazySQSClient.config as unknown as { useQueueUrlAsEndpoint: boolean }
+    expect(config.useQueueUrlAsEndpoint).toBe(false)
   })
 
   it('keeps Bedrock control and runtime clients on their supported IPv4 endpoints', async () => {
