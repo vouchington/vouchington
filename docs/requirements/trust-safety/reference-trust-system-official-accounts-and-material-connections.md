@@ -22,4 +22,3 @@ Staff or other affiliated people may use separate non-role personal accounts for
 | Admin moderation vote                             | ✅ Allowed        | Internal tooling     |
 | Moderator agent: tag post + move to review queue  | ✅ Allowed        | Structural           |
 | Following / commenting / reporting                | ✅ Not restricted | Social               |
-
