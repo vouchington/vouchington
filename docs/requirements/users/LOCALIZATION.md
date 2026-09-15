@@ -113,8 +113,9 @@ then format and compile.
   membership-derived selector ID and whether it has route-local copy, while generated
   `localization/catalog/routes.json` maps each pattern to the exact aliases it renders. A selector
   ID changes only when that selector's aliases change. `static-code-analysis/i18n-extract/route-selector-map.mts` regenerates both
-  artifacts from no-mistakes dependency closures plus recursively resolved dynamic imports,
-  then a lexical scan of known alias literals; it does not parse source with an AST.
+  artifacts from no-mistakes dependency closures, which already follow dynamic imports (including
+  `next/dynamic`) recursively, then a lexical scan of known alias literals; it does not parse source
+  with an AST.
   CI runs `--check` and fails if either artifact drifts; the local check is optional. Regenerate
   and commit both artifacts after changing routes, their imports, shared chrome, or web aliases in
   a way that changes route membership. Translation-text-only edits do not need the graph command.

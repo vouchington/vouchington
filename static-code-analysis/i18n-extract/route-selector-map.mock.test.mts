@@ -9,8 +9,6 @@ import type {
   AnalyzeProjectReportRequest,
   AnalyzeProjectResult,
   DependencyResult,
-  ResolveCheckBatchResult,
-  ResolveCheckFilesOptions,
   WithInvocationOptions,
 } from 'no-mistakes'
 
@@ -18,10 +16,6 @@ const noMistakes = vi.hoisted(() => ({
   analyzeProject:
     vi.fn<
       (options: WithInvocationOptions<AnalyzeProjectOptions>) => Promise<AnalyzeProjectResult>
-    >(),
-  resolveCheck:
-    vi.fn<
-      (options: WithInvocationOptions<ResolveCheckFilesOptions>) => Promise<ResolveCheckBatchResult>
     >(),
 }))
 
@@ -36,16 +30,16 @@ vi.mock<typeof import('no-mistakes')>(
 
 import { computeRouteAliasMap } from './route-selector-map.mts'
 
-const STATIC_EXTRAS: Readonly<Record<string, readonly string[]>> = {
-  'web/app/registry/page.tsx': ['web/lib/registry.ts', 'web/lib/labels.ts'],
-}
-
-const DYNAMIC_EDGES: Readonly<Record<string, readonly string[]>> = {
-  'web/app/registry/page.tsx': ['web/lib/dynamic.ts'],
-  'web/app/login/page.tsx': ['web/components/mfa.tsx'],
-  'web/components/mfa.tsx': ['web/components/recovery.tsx'],
+/** `no-mistakes` resolves the whole graph (re-exports, plus recursive/nested dynamic imports) in
+ * one `analyzeProject` call, so each seed file's mocked closure already includes its dynamic-import
+ * targets, transitively (e.g. registry's `import()`, login's nested `next/dynamic` chain). */
+const CLOSURE_EXTRAS: Readonly<Record<string, readonly string[]>> = {
+  'web/app/registry/page.tsx': ['web/lib/registry.ts', 'web/lib/labels.ts', 'web/lib/dynamic.ts'],
+  'web/app/login/page.tsx': ['web/components/mfa.tsx', 'web/components/recovery.tsx'],
   'web/components/navbar.tsx': ['web/components/keyboard-shortcuts-dialog.tsx'],
 }
+
+const DEPENDENCY_RELATIONSHIPS = ['import-static', 'import-dynamic', 'import-type', 'workspace']
 
 const GRAPH_FILES: Readonly<Record<string, string>> = {
   'web/app/layout.ts': "export const shell = t('nav.home')\n",
@@ -102,22 +96,7 @@ function installGraphMocks(): void {
     reports: options.reports.map(report => ({
       id: report.id,
       type: report.type,
-      result: dependencyResult(requestedFiles(report).flatMap(file => STATIC_EXTRAS[file] ?? [])),
-    })),
-  }))
-  noMistakes.resolveCheck.mockImplementation(async options => ({
-    allResolve: true,
-    unresolvedFiles: [],
-    results: options.files.map(file => ({
-      file,
-      allResolve: true,
-      unresolved: [],
-      imports: (DYNAMIC_EDGES[file] ?? []).map(resolved => ({
-        specifier: resolved,
-        kind: 'dynamic' as const,
-        status: 'resolved' as const,
-        resolved,
-      })),
+      result: dependencyResult(requestedFiles(report).flatMap(file => CLOSURE_EXTRAS[file] ?? [])),
     })),
   }))
 }
@@ -149,27 +128,16 @@ async function withRoutes(
   }
 }
 
-function expectGraphHops(): void {
-  const resolveFiles = noMistakes.resolveCheck.mock.calls.flatMap(([options]) => options.files)
-  expect(resolveFiles).toEqual(
-    expect.arrayContaining([
-      'web/app/registry/page.tsx',
-      'web/app/login/page.tsx',
-      'web/components/mfa.tsx',
-      'web/components/navbar.tsx',
-    ]),
-  )
-  const analyzeIds = noMistakes.analyzeProject.mock.calls.flatMap(([options]) =>
-    options.reports.map(report => report.id),
-  )
-  expect(analyzeIds).toEqual(
-    expect.arrayContaining([
-      'web/lib/dynamic.ts',
-      'web/components/mfa.tsx',
-      'web/components/recovery.tsx',
-      'web/components/keyboard-shortcuts-dialog.tsx',
-    ]),
-  )
+function expectGraphRequests(): void {
+  const reports = noMistakes.analyzeProject.mock.calls.flatMap(([options]) => options.reports)
+  for (const report of reports) expect(report.relationships).toEqual(DEPENDENCY_RELATIONSHIPS)
+  const requestedRoots = new Set(reports.flatMap(report => requestedFiles(report)))
+  for (const file of [
+    'web/app/registry/page.tsx',
+    'web/app/login/page.tsx',
+    'web/components/navbar.tsx',
+  ])
+    expect(requestedRoots.has(file)).toBe(true)
 }
 
 async function expectGraphMembership(root: string): Promise<void> {
@@ -193,7 +161,6 @@ async function expectGraphMembership(root: string): Promise<void> {
 describe('mocked web route graph closures', () => {
   beforeEach(() => {
     noMistakes.analyzeProject.mockReset()
-    noMistakes.resolveCheck.mockReset()
     installGraphMocks()
   })
 
@@ -201,7 +168,7 @@ describe('mocked web route graph closures', () => {
     expect.hasAssertions()
     await withRoutes({ ...GRAPH_FILES }, async root => {
       await expectGraphMembership(root)
-      expectGraphHops()
+      expectGraphRequests()
     })
   })
 
@@ -211,7 +178,6 @@ describe('mocked web route graph closures', () => {
       withRoutes({ ...GRAPH_FILES }, expectGraphMembership),
     ])
     expect(noMistakes.analyzeProject).toHaveBeenCalled()
-    expect(noMistakes.resolveCheck).toHaveBeenCalled()
-    expectGraphHops()
+    expectGraphRequests()
   })
 })
