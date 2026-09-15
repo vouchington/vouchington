@@ -44,10 +44,11 @@ describe('OpenCode OpenRouter code review integration', () => {
     expect(on.pull_request.types).toContain('converted_to_draft')
   })
 
-  it('grants actions:read, contents:read, issues:read, and pull-requests:write, with a repo-level read-only default', () => {
+  it('grants actions:read, checks:write, contents:read, issues:read, and pull-requests:write, with a repo-level read-only default', () => {
     expect(workflow.permissions).toEqual({ contents: 'read' })
     expect(workflow.jobs['opencode-openrouter-review'].permissions).toEqual({
       actions: 'read',
+      checks: 'write',
       contents: 'read',
       issues: 'read',
       'pull-requests': 'write',
