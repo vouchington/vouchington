@@ -61,7 +61,7 @@ env:
 
 jobs:
   prep:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
       contents: read
@@ -103,7 +103,7 @@ jobs:
 
   backend-tests:
     needs: [prep]
-    runs-on: [self-hosted, Linux, Docker, Tests]
+    runs-on: ubuntu-latest
     timeout-minutes: 29
     permissions:
       actions: read

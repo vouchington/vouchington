@@ -5,9 +5,9 @@ import { describe, expect, it } from 'vitest'
 const workflow = readFileSync('.github/workflows/tests-backend-modules.yml', 'utf8')
 
 describe('backend module test workflow', () => {
-  it('runs the backend module projects on the self-hosted Docker Tests pool', () => {
+  it('runs the backend module projects on ubuntu-latest', () => {
     expect(workflow).toContain('name: Backend Module Tests')
-    expect(workflow).toContain('    runs-on: [self-hosted, Linux, Docker, Tests]')
+    expect(workflow).toContain('    runs-on: ubuntu-latest')
     expect(workflow).toContain('- uses: ./.github/actions/setup-backend')
     expect(workflow).toContain('runner-lifecycle: persistent')
     expect(workflow).toContain(

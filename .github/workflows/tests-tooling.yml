@@ -34,7 +34,7 @@ permissions:
 
 jobs:
   tooling:
-    runs-on: [self-hosted, Linux, Docker, Tests]
+    runs-on: ubuntu-latest
     timeout-minutes: 32
     permissions:
       actions: read
@@ -177,7 +177,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
 
   i18n-route-bounds:
-    runs-on: [self-hosted, Linux, Docker, Tests]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       actions: read

@@ -42,7 +42,7 @@ permissions:
 
 jobs:
   lambdas-tests:
-    runs-on: [self-hosted, Linux, Docker, Tests]
+    runs-on: ubuntu-latest
     timeout-minutes: 37
     permissions:
       actions: read

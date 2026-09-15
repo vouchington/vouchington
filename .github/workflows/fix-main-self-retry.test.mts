@@ -65,8 +65,8 @@ describe('fix-main-self-retry workflow', () => {
     expect(retryJob?.if).toContain('github.event.workflow_run.run_attempt < 3')
   })
 
-  it('runs on the shared self-hosted pool with a bounded timeout and explicit permissions', () => {
-    expect(retryJob?.['runs-on']).toEqual(['self-hosted'])
+  it('runs on ubuntu-latest with a bounded timeout and explicit permissions', () => {
+    expect(retryJob?.['runs-on']).toEqual('ubuntu-latest')
     expect(retryJob?.['timeout-minutes']).toBeLessThanOrEqual(10)
     expect(retryJob?.permissions).toEqual({
       actions: 'write',

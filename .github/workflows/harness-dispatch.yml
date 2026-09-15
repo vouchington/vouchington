@@ -77,7 +77,7 @@ jobs:
     # GitHub, not branch-controlled workflow YAML, enforces that only main can
     # start this credential-bearing job. See the auto-harness Environment branch policy.
     environment: auto-harness
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 8
     concurrency:
       group: harness-dispatch-fleet-admission

@@ -77,10 +77,10 @@ describe('Web Tests workflow', () => {
     })
   })
 
-  it('prepares a configurable web test shard matrix on a self-hosted utility runner', () => {
+  it('prepares a configurable web test shard matrix on ubuntu-latest', () => {
     const prep = jobSection('prep')
 
-    expect(prep).toContain('runs-on: [self-hosted]')
+    expect(prep).toContain('runs-on: ubuntu-latest')
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
     expect(prep).toContain('node ci/vitest/shard-total.mts test-web')
     expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
@@ -88,11 +88,11 @@ describe('Web Tests workflow', () => {
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
   })
 
-  it('runs dynamically sized 7-worker Vitest shards on the self-hosted Docker Tests pool', () => {
+  it('runs dynamically sized 7-worker Vitest shards on ubuntu-latest', () => {
     const tests = jobSection('web-tests')
 
     expect(tests).toContain('needs: [prep]')
-    expect(tests).toContain('runs-on: [self-hosted, Linux, Docker, Tests]')
+    expect(tests).toContain('runs-on: ubuntu-latest')
     expect(tests).toContain('fail-fast: false')
     expect(tests).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
     expect(tests).toContain(

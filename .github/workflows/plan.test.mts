@@ -156,7 +156,7 @@ describe('plan workflow', () => {
     )
     const renderStep = renderJob?.steps?.find(step => step.id === 'render')
 
-    expect(renderJob?.['runs-on']).toEqual(['self-hosted'])
+    expect(renderJob?.['runs-on']).toEqual('ubuntu-latest')
     expect(renderJob?.outputs?.['prompt']).toBe('${{ steps.render.outputs.prompt }}')
     expect(setupStep).toBeDefined()
     expect(renderStep?.uses).toContain('jonathanong/auto-harness/actions/harness-render-prompt@')

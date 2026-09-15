@@ -1,216 +1,176 @@
 import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { assertNoWorkflowViolations } from './workflow-test-helpers.mts'
+import { assertNoWorkflowViolations, type WorkflowStep } from './workflow-test-helpers.mts'
+import { ALLOWED_LABELS, classifyRunsOnValue } from './runner-policy-classify.mts'
 
-type Workflow = {
-  jobs?: Record<
-    string,
-    {
-      'runs-on'?: string | string[]
-      uses?: string
-      with?: Record<string, unknown>
-      steps?: Array<{
-        run?: string
-        uses?: string
-      }>
-    }
-  >
+type Job = {
+  'runs-on'?: unknown
+  uses?: string
+  if?: string
+  services?: Record<string, unknown>
+  strategy?: { matrix?: Record<string, unknown> }
+  steps?: WorkflowStep[]
 }
 
-const workflowPaths = readdirSync('.github/workflows').flatMap(path =>
-  path.endsWith('.yml') || path.endsWith('.yaml') ? [`.github/workflows/${path}`] : [],
+type Workflow = { jobs?: Record<string, Job> }
+
+const workflowFileNames = readdirSync('.github/workflows').filter(
+  file => file.endsWith('.yml') || file.endsWith('.yaml'),
 )
 
-function readWorkflow(path: string): Workflow {
-  return load(readFileSync(path, 'utf8')) as Workflow
+function readWorkflow(fileName: string): Workflow {
+  return load(readFileSync(join('.github/workflows', fileName), 'utf8')) as Workflow
 }
 
-describe('workflow runner policy', () => {
-  it('pins broad portable test jobs to deterministic Linux test runners', () => {
-    const portableTestJobs = [
-      ['.github/workflows/tests-tooling.yml', 'tooling'],
-      ['.github/workflows/tests-lambdas.yml', 'lambdas-tests'],
-      ['.github/workflows/tests-cloudflare-worker.yml', 'cloudflare-worker-tests'],
-      ['.github/workflows/tests-ts-shared.yml', 'ts-shared'],
-    ] as const
-    for (const [path, job] of portableTestJobs) {
-      expect(readWorkflow(path).jobs?.[job]?.['runs-on']).toEqual([
-        'self-hosted',
-        'Linux',
-        'Docker',
-        'Tests',
-      ])
+type JobEntry = { file: string; jobName: string; job: Job }
+
+function allJobEntries(): JobEntry[] {
+  return workflowFileNames.flatMap(file => {
+    const jobs = readWorkflow(file).jobs ?? {}
+    return Object.entries(jobs).map(([jobName, job]) => ({ file, jobName, job }))
+  })
+}
+
+describe('classifyRunsOnValue (synthetic)', () => {
+  it('allows each literal label in the closed set', () => {
+    for (const label of ALLOWED_LABELS) {
+      expect(classifyRunsOnValue(label)).toMatchObject({ kind: 'literal', allowed: true })
     }
   })
 
-  it('pins focused portability jobs to one audited runner per operating system', () => {
-    const jobs = readWorkflow('.github/workflows/tests-portability.yml').jobs
-    expect(jobs?.['portability-linux']?.['runs-on']).toEqual([
-      'self-hosted',
-      'Linux',
-      'Docker',
-      'Tests',
-    ])
-    expect(jobs?.['portability-macos']?.['runs-on']).toEqual(['self-hosted', 'macOS', 'Tests'])
+  it('rejects a literal label outside the closed set', () => {
+    expect(classifyRunsOnValue('self-hosted')).toMatchObject({ kind: 'literal', allowed: false })
+    expect(classifyRunsOnValue('ubicloud-standard-4-arm')).toMatchObject({
+      kind: 'literal',
+      allowed: false,
+    })
   })
 
-  it('pins portable Playwright support jobs to [self-hosted, Playwright]', () => {
-    const expected = ['self-hosted', 'Playwright']
-    expect(
-      readWorkflow('.github/workflows/storybook.yml').jobs?.['storybook']?.['runs-on'],
-    ).toEqual(expected)
+  it('resolves a matrix expression whose every candidate is allowed', () => {
+    const result = classifyRunsOnValue('${{ matrix.os }}', {
+      os: ['ubuntu-latest', 'ubuntu-slim'],
+    })
+    expect(result).toMatchObject({ kind: 'matrix', allowed: true })
+    expect(result.resolvedLabels).toEqual(['ubuntu-latest', 'ubuntu-slim'])
   })
 
-  it('pins aggregator and utility jobs to bare [self-hosted]', () => {
-    const utilityJobs = [
-      ['.github/workflows/ci-detect-changes.yml', 'detect-changes'],
-      ['.github/workflows/ci-record-state.yml', 'record-state'],
-      ['.github/workflows/ci-test-coverage.yml', 'test-coverage'],
-      ['.github/workflows/ci.yml', 'tests'],
-      ['.github/workflows/tests-playwright.yml', 'select'],
-      ['.github/workflows/static-code-analysis.yml', 'static-code-analysis'],
-      ['.github/workflows/static-code-analysis.yml', 'no-mistakes-owned'],
-      ['.github/workflows/checks-static.yml', 'static-backend'],
-      ['.github/workflows/checks-static.yml', 'static-lambdas'],
-      ['.github/workflows/checks-static.yml', 'static-cloudflare'],
-    ] as const
-    for (const [path, job] of utilityJobs) {
-      expect(readWorkflow(path).jobs?.[job]?.['runs-on']).toEqual(['self-hosted'])
-    }
+  it('rejects a matrix expression with any disallowed candidate', () => {
+    const result = classifyRunsOnValue('${{ matrix.os }}', {
+      os: ['ubuntu-latest', 'self-hosted'],
+    })
+    expect(result).toMatchObject({ kind: 'matrix', allowed: false })
   })
 
-  it('pins static-web to [self-hosted, Linux] since it shares the build-web-targets artifact-shape contract (#10990)', () => {
-    expect(
-      readWorkflow('.github/workflows/checks-static.yml').jobs?.['static-web']?.['runs-on'],
-    ).toEqual(['self-hosted', 'Linux'])
+  it('rejects a matrix expression with no matrix context to resolve it', () => {
+    expect(classifyRunsOnValue('${{ matrix.os }}')).toMatchObject({
+      kind: 'matrix',
+      allowed: false,
+    })
+    expect(classifyRunsOnValue('${{ matrix.os }}', { other: ['ubuntu-latest'] })).toMatchObject({
+      kind: 'matrix',
+      allowed: false,
+    })
   })
 
-  it('pins service-container test jobs to [self-hosted, Linux, Docker, Tests]', () => {
-    const dockerTestJobs = [
-      ['.github/workflows/tests-backend-unit.yml', 'backend-tests'],
-      ['.github/workflows/checks-backend-smoke.yml', 'smoke'],
-      ['.github/workflows/tests-backend-credentialed.yml', 'backend-credentialed-tests'],
-      ['.github/workflows/tests-backend-modules.yml', 'backend-modules'],
-      ['.github/workflows/tests-web.yml', 'web-tests'],
-      ['.github/workflows/tests-web-api.yml', 'web-api-tests'],
-    ] as const
-    for (const [path, job] of dockerTestJobs) {
-      expect(readWorkflow(path).jobs?.[job]?.['runs-on']).toEqual([
-        'self-hosted',
-        'Linux',
-        'Docker',
-        'Tests',
-      ])
-    }
+  it('treats a missing runs-on as a reusable-workflow delegate', () => {
+    expect(classifyRunsOnValue(undefined)).toEqual({ kind: 'delegate', allowed: true })
   })
 
-  it('pins the Next.js-building service-container job to include the CPU label', () => {
-    const runner = readWorkflow('.github/workflows/tests-web-integration.yml').jobs?.[
-      'web-integration-tests'
-    ]?.['runs-on']
-    expect(runner).toEqual(['self-hosted', 'Linux', 'Docker', 'Tests', 'CPU'])
+  it('rejects an array label set and a non-matrix computed expression', () => {
+    expect(classifyRunsOnValue(['self-hosted', 'Linux'])).toMatchObject({
+      kind: 'invalid',
+      allowed: false,
+    })
+    expect(classifyRunsOnValue({ group: 'default' })).toMatchObject({
+      kind: 'invalid',
+      allowed: false,
+    })
+    expect(classifyRunsOnValue('${{ inputs.runner }}')).toMatchObject({
+      kind: 'invalid',
+      allowed: false,
+    })
   })
+})
 
-  it('sizes workflow prep jobs as lightweight self-hosted utility jobs', () => {
-    for (const path of ['tests-web.yml', 'tests-backend-unit.yml'] as const) {
-      expect(readWorkflow(`.github/workflows/${path}`).jobs?.prep?.['runs-on']).toEqual([
-        'self-hosted',
-      ])
-    }
-    expect(readWorkflow('.github/workflows/tests-web.yml').jobs?.['web-checks']).toBeUndefined()
-  })
-
-  it('pins service-container non-test jobs to [self-hosted, Linux, Docker]', () => {
-    const dockerNonTestJobs = [
-      ['.github/workflows/explain-analyze.yml', 'explain-analyze'],
-      ['.github/workflows/initialize-smoke-test.yml', 'initialize-smoke-test'],
-    ] satisfies [string, string][]
-
-    const expected = ['self-hosted', 'Linux', 'Docker']
-    for (const [path, job] of dockerNonTestJobs) {
-      expect(readWorkflow(path).jobs?.[job]?.['runs-on']).toEqual(expected)
-    }
-  })
-
-  it('does not pin self-hosted jobs to macOS directly (use Tests to reach macOS)', () => {
-    const macosExemptWorkflows = new Set(['.github/workflows/tests-portability.yml'])
-    for (const path of workflowPaths) {
-      if (macosExemptWorkflows.has(path)) continue
-      const workflow = readWorkflow(path)
-      for (const job of Object.values(workflow.jobs ?? {})) {
-        const runsOn = job['runs-on']
-        if (!Array.isArray(runsOn)) continue
-        expect(runsOn).not.toContain('macOS')
-      }
-    }
-  })
-
-  it('pins Playwright E2E jobs to [self-hosted, Linux, Docker, Playwright]', () => {
-    const playwrightE2eJobs = [
-      ['.github/workflows/tests-playwright.yml', 'playwright-tests'],
-      ['.github/workflows/tests-playwright-credentialed.yml', 'playwright-credentialed-tests'],
-    ] as const
-    for (const [path, job] of playwrightE2eJobs) {
-      expect(readWorkflow(path).jobs?.[job]?.['runs-on']).toEqual([
-        'self-hosted',
-        'Linux',
-        'Docker',
-        'Playwright',
-      ])
-    }
-  })
-
-  it('does not use GitHub-hosted runners', () => {
-    const githubHostedLabel = /^(ubuntu|windows|macos)-/
+describe('workflow runner policy (real workflows)', () => {
+  it('every job runs on the closed GitHub-hosted allowlist or delegates cleanly', () => {
     const violations: string[] = []
 
-    for (const path of workflowPaths) {
-      const workflow = readWorkflow(path)
-      for (const [jobId, job] of Object.entries(workflow.jobs ?? {})) {
-        const runsOn = job['runs-on']
-        const labels = Array.isArray(runsOn) ? runsOn : typeof runsOn === 'string' ? [runsOn] : []
-        const hostedLabels = labels.filter(label => githubHostedLabel.test(label))
-        if (hostedLabels.length > 0) {
-          violations.push(
-            `${path.replace(/^\.github\/workflows\//, '')}#${jobId}: ${hostedLabels.join(', ')}`,
-          )
+    for (const { file, jobName, job } of allJobEntries()) {
+      const label = `${file}#${jobName}`
+      const isDelegate = typeof job.uses === 'string'
+      const runsOn = job['runs-on']
+
+      if (isDelegate) {
+        if (runsOn !== undefined) {
+          violations.push(`${label}: reusable-workflow call must not also set its own runs-on`)
+        }
+        continue
+      }
+
+      const result = classifyRunsOnValue(runsOn, job.strategy?.matrix)
+      if (!result.allowed) {
+        violations.push(
+          `${label}: runs-on ${JSON.stringify(runsOn)} is not in the closed allowlist ` +
+            `(${ALLOWED_LABELS.join(', ')})`,
+        )
+      }
+    }
+
+    assertNoWorkflowViolations(violations, 'workflow runs-on policy violations')
+  })
+
+  it('pins the two required Main merge-gate aggregators to ubuntu-latest', () => {
+    const jobs = readWorkflow('ci.yml').jobs
+    expect(jobs?.['tests']?.['runs-on']).toBe('ubuntu-latest')
+    expect(jobs?.['build']?.['runs-on']).toBe('ubuntu-latest')
+  })
+
+  it('restricts ubuntu-24.04-arm to the two native ARM64 image builds', () => {
+    const armJobs = allJobEntries()
+      .filter(({ job }) => job['runs-on'] === 'ubuntu-24.04-arm')
+      .map(({ file, jobName }) => `${file}#${jobName}`)
+      .sort()
+
+    expect(armJobs).toEqual(['build-backend.yml#build', 'build-web.yml#build'])
+  })
+
+  it('restricts macos-latest to the gated portability-macos job', () => {
+    const macJobs = allJobEntries().filter(({ job }) => job['runs-on'] === 'macos-latest')
+    expect(macJobs.map(({ file, jobName }) => `${file}#${jobName}`)).toEqual([
+      'tests-portability.yml#portability-macos',
+    ])
+    expect(macJobs[0]?.job.if).toBe("vars.CI_PORTABILITY_MACOS_ENABLED == 'true'")
+  })
+
+  it('never gives an ubuntu-slim job Docker, services, or Node/pnpm setup', () => {
+    const violations: string[] = []
+
+    for (const { file, jobName, job } of allJobEntries()) {
+      if (job['runs-on'] !== 'ubuntu-slim') continue
+      const label = `${file}#${jobName}`
+
+      if (job.services && Object.keys(job.services).length > 0) {
+        violations.push(`${label}: ubuntu-slim job must not declare services:`)
+      }
+
+      for (const step of job.steps ?? []) {
+        const uses = step.uses
+        if (typeof uses !== 'string') continue
+        if (uses.startsWith('docker/') || uses.includes('/docker/')) {
+          violations.push(`${label}: ubuntu-slim job must not use a Docker action (${uses})`)
+        }
+        if (uses === './.github/actions/setup-node-pnpm') {
+          violations.push(`${label}: ubuntu-slim job must not use setup-node-pnpm`)
+        }
+        if (uses === './.github/actions/setup-backend') {
+          violations.push(`${label}: ubuntu-slim job must not use setup-backend`)
         }
       }
     }
 
-    assertNoWorkflowViolations(violations)
-  })
-
-  it('runs actual Codex invocations on the shared self-hosted runner pool', () => {
-    for (const path of workflowPaths) {
-      const workflow = readWorkflow(path)
-      for (const [, job] of Object.entries(workflow.jobs ?? {})) {
-        const invokesCodex = job.steps?.some(step => /\bcodex exec\b/.test(step.run ?? '')) ?? false
-        if (!invokesCodex) continue
-        expect(job['runs-on']).toEqual(['self-hosted'])
-      }
-    }
-  })
-
-  it('keeps Harness automation jobs on the shared self-hosted runner pool', () => {
-    const automationWorkflows = new Set([
-      '.github/workflows/fix-dependabot.yml',
-      '.github/workflows/fix-issue.yml',
-      '.github/workflows/fix-main.yml',
-      '.github/workflows/fix-main-self-retry.yml',
-      '.github/workflows/harness-dispatch.yml',
-      '.github/workflows/plan.yml',
-      '.github/workflows/scheduled-prompts.yml',
-      '.github/workflows/shepherd.yml',
-    ])
-    for (const path of workflowPaths) {
-      if (!automationWorkflows.has(path)) continue
-      const workflow = readWorkflow(path)
-      for (const job of Object.values(workflow.jobs ?? {})) {
-        if (job.uses) continue
-        expect(job['runs-on']).toEqual(['self-hosted'])
-      }
-    }
+    assertNoWorkflowViolations(violations, 'ubuntu-slim exclusion violations')
   })
 })

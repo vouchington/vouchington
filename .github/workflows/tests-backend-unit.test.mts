@@ -80,9 +80,9 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(backendJob).not.toContain('Check backend dependencies')
     expect(backendJob).not.toContain('Typecheck backend and email templates')
   })
-  it('prepares a demand-neutral configurable backend test shard matrix on a self-hosted runner', () => {
+  it('prepares a demand-neutral configurable backend test shard matrix on ubuntu-latest', () => {
     const prep = jobSection('prep')
-    expect(prep).toContain('runs-on: [self-hosted]')
+    expect(prep).toContain('runs-on: ubuntu-latest')
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
     expect(prep).toContain('node ci/vitest/shard-total.mts test-backend-unit')
     expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')

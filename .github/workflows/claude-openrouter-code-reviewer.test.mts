@@ -79,7 +79,7 @@ describe('Claude OpenRouter code review integration', () => {
       anthropic_default_opus_model: 'thinkingmachines/inkling:free',
       anthropic_default_sonnet_model: 'thinkingmachines/inkling:free',
       anthropic_default_haiku_model: 'thinkingmachines/inkling:free',
-      runs_on: '["self-hosted","Linux","X64","Docker","Code Review"]',
+      runs_on: '["ubuntu-latest"]',
     })
   })
 

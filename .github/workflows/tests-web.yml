@@ -57,7 +57,7 @@ permissions:
 
 jobs:
   prep:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
       contents: read
@@ -99,7 +99,7 @@ jobs:
 
   web-tests:
     needs: [prep]
-    runs-on: [self-hosted, Linux, Docker, Tests]
+    runs-on: ubuntu-latest
     timeout-minutes: 24
     permissions:
       actions: read

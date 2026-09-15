@@ -44,7 +44,7 @@ jobs:
   cleanup-run:
     if: inputs.run_id != ''
     name: Cleanup producer artifacts
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     continue-on-error: true
     permissions:
@@ -80,7 +80,7 @@ jobs:
   cleanup-sweep:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     name: Sweep stale artifacts
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     # Job ceiling must exceed the sum of step budgets: setup-node-pnpm (5 min) + the sweep engine
     # itself (20 min), plus headroom for checkout/workspace-restore.
     timeout-minutes: 26

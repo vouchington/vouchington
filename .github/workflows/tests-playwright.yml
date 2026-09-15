@@ -41,7 +41,7 @@ concurrency:
 
 jobs:
   select:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
@@ -105,7 +105,7 @@ jobs:
   playwright-tests:
     needs: [select]
     if: needs.select.outputs.skip != 'true'
-    runs-on: [self-hosted, Linux, Docker, Playwright]
+    runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
       actions: read

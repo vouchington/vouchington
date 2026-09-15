@@ -26,7 +26,7 @@ jobs:
       contains(github.event.comment.body, '/fix') &&
       contains(fromJSON('["OWNER","COLLABORATOR"]'),
                github.event.comment.author_association)
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
       contents: read
@@ -166,7 +166,7 @@ jobs:
     name: Render automation prompt
     needs: [gate]
     if: needs.gate.outputs.accepted == 'true'
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
@@ -284,7 +284,7 @@ jobs:
         needs.render-prompt.result == 'cancelled' ||
         (needs.dispatch.result == 'failure' || needs.dispatch.result == 'cancelled')
       )
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
       issues: write

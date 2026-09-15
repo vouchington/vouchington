@@ -30,7 +30,7 @@ jobs:
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.conclusion == 'failure' &&
       github.event.workflow_run.run_attempt < 3
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       actions: write
@@ -142,7 +142,7 @@ jobs:
     name: Escalate unconfirmed self-retry
     needs: [retry]
     if: always() && needs.retry.result != 'skipped' && needs.retry.outputs.disposition != 'handled'
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     permissions:
       issues: write

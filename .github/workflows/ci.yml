@@ -697,7 +697,7 @@ jobs:
     name: tests
     if: ${{ !cancelled() }}
     needs: [tests-processing]
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 2
     env:
       BASH_ENV: /dev/null
@@ -814,7 +814,7 @@ jobs:
     name: build
     if: ${{ !cancelled() }}
     needs: [tests, build-backend, build-web]
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 1
     env:
       BASH_ENV: /dev/null

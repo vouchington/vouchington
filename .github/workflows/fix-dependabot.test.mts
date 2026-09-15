@@ -23,7 +23,7 @@ describe('fix-dependabot workflow', () => {
     const dedupJob = parsed.jobs?.['check-duplicates']
 
     expect(dedupJob).toBeDefined()
-    expect(dedupJob?.['runs-on']).toEqual(['self-hosted'])
+    expect(dedupJob?.['runs-on']).toEqual('ubuntu-latest')
     expect(dedupJob?.needs).toContain('triage-and-rerun')
     expect(dedupJob?.if).toContain("needs.triage-and-rerun.outputs.should_dispatch == 'true'")
 

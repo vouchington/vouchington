@@ -11,7 +11,7 @@ Filaments app code, dev scripts, `.env.example`, and CI/deploy workflows. Search
 
 ### 1. Unique concurrency group
 
-Every reusable workflow must declare its own `concurrency.group`. The group name must be unique across all workflows — include the workflow name and `github.event.pull_request.number || github.sha`. See the [GitHub Actions checklist](../checklists/github-actions.md) and [runner concurrency topology](../../.github/workflows/reference-aws-codebuild-service-quotas-and-concurrency.md#github-actions-concurrency-locks).
+Every reusable workflow must declare its own `concurrency.group`. The group name must be unique across all workflows — include the workflow name and `github.event.pull_request.number || github.sha`. See the [GitHub Actions checklist](../checklists/github-actions.md) and [runner concurrency topology](../../.github/workflows/reference-github-actions-concurrency-locks.md).
 
 ### 2. Path filters in both places
 

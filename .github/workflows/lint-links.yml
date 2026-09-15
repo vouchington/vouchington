@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   lint-links:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 10
 
     steps:

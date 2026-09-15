@@ -23,11 +23,7 @@ permissions:
 jobs:
   build:
     if: ${{ inputs.trusted_secret_context }}
-    runs-on: >-
-      ${{ (vars.CI_IMAGE_BUILDS_ON_CODEBUILD == 'true'
-            || contains(github.event.pull_request.labels.*.name, 'codebuild:images'))
-          && format('codebuild-voucha-ci-runner-{0}-{1} image:arm-3.0 instance-size:large', github.run_id, github.run_attempt)
-          || 'ubicloud-standard-4-arm' }}
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     env:
       IMAGE_REPOSITORY: voucha-validation

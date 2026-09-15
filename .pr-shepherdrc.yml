@@ -1,14 +1,10 @@
 # ignoreChecks entries must be the RAW name — either a Checks API check_run `name`
-# (e.g. 'Kilo Code Review') or a Statuses API commit status `context` (e.g.
-# 'CodeRabbit', 'AWS CodeBuild us-west-2 (voucha-ci-runner)') — not the composite
-# display name shown in the PR UI.
+# (e.g. 'Kilo Code Review') or a Statuses API commit status `context` (e.g. 'CodeRabbit')
+# — not the composite display name shown in the PR UI.
 # pr-shepherd matches against the raw name; composite-name entries silently never match.
 ignoreChecks:
   - 'Kilo Code Review'
   - 'CodeRabbit'
-  # External AWS CodeBuild commit status (region + CodeBuild project name).
-  # This is the raw StatusContext context string — do not shorten to 'AWS CodeBuild'.
-  - 'AWS CodeBuild us-west-2 (voucha-ci-runner)'
   # Advisory-only AI code review: these are reusable-workflow-call check runs, formatted as
   # "<caller job id> / <callee job id>". They can sit pending in a FIFO queue for up to an hour
   # without ever going red, and must never block a merge — see opencode-code-review.yml.

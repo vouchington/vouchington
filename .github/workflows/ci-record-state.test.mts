@@ -12,7 +12,7 @@ type Workflow = {
   jobs?: Record<
     string,
     {
-      'runs-on'?: string[]
+      'runs-on'?: string
       permissions?: Record<string, string>
       env?: Record<string, string>
       steps?: Array<{
@@ -41,7 +41,7 @@ describe('CI state recorder', () => {
     expect(workflow.permissions).toEqual({})
 
     const job = workflow.jobs?.['record-state']
-    expect(job?.['runs-on']).toEqual(['self-hosted'])
+    expect(job?.['runs-on']).toEqual('ubuntu-slim')
     expect(job?.permissions).toEqual({})
     expect(job?.env).toEqual({ BASH_ENV: '/dev/null' })
 

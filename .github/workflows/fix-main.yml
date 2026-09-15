@@ -44,7 +44,7 @@ jobs:
       github.event.workflow_run.head_repository.full_name == github.repository &&
       contains(fromJSON('["failure", "timed_out", "cancelled"]'),
                github.event.workflow_run.conclusion)
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       actions: write
@@ -128,7 +128,7 @@ jobs:
     name: Find related open PRs or issues
     needs: [triage-and-rerun]
     if: needs.triage-and-rerun.outputs.should_dispatch == 'true'
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
@@ -169,7 +169,7 @@ jobs:
     if: >-
       !cancelled() &&
       needs.triage-and-rerun.outputs.should_dispatch == 'true'
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       actions: read
@@ -270,7 +270,7 @@ jobs:
         needs.dispatch.result == 'failure' ||
         needs.dispatch.result == 'cancelled'
       )
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       actions: read
@@ -333,7 +333,7 @@ jobs:
         needs.dispatch.result == 'cancelled'
       ) &&
       needs.classify-self-failure.outputs.retry_pending != 'true'
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     permissions:
       actions: read

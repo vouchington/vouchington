@@ -17,7 +17,7 @@ describe('web integration workflow', () => {
     expect(workflow).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(manualInputs).toContain("description: 'Explicit shard count for a selected run'")
     expect(workflow).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
-    expect(workflow).toContain('runs-on: [self-hosted, Linux, Docker, Tests, CPU]')
+    expect(workflow).toContain('runs-on: ubuntu-latest')
     expect(workflow).toContain('uses: ./.github/actions/build-web-targets')
     expect(workflow).toContain('--project web-integration --shard ${{ matrix.shard }}')
     expect(workflow).not.toContain('--project web-api')

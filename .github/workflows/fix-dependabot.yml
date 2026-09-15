@@ -26,7 +26,7 @@ jobs:
       github.event.workflow_run.actor.login == 'dependabot[bot]' &&
       contains(fromJSON('["failure", "timed_out", "cancelled"]'),
                github.event.workflow_run.conclusion)
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       actions: write
@@ -186,7 +186,7 @@ jobs:
     needs: [triage-and-rerun]
     if: >-
       needs.triage-and-rerun.outputs.should_dispatch == 'true'
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
@@ -223,7 +223,7 @@ jobs:
     if: >-
       needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
       needs.check-duplicates.outputs.skip != 'true'
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       actions: read
@@ -281,7 +281,7 @@ jobs:
     if: >-
       needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
       needs.check-duplicates.outputs.skip != 'true'
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
       actions: read
@@ -422,7 +422,7 @@ jobs:
           (needs.dispatch.result == 'failure' || needs.dispatch.result == 'cancelled')
         )
       )
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
       actions: read

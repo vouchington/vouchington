@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   static-code-analysis:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 50
 
     steps:
@@ -144,7 +144,7 @@ jobs:
 
   no-mistakes-owned:
     needs: [static-code-analysis]
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 55
     concurrency:
       group: no-mistakes-invocation

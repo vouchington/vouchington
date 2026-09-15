@@ -21,7 +21,7 @@ jobs:
       contains(github.event.comment.body, '/shepherd') &&
       contains(fromJSON('["OWNER","COLLABORATOR"]'),
                github.event.comment.author_association)
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
       actions: read
@@ -189,7 +189,7 @@ jobs:
     name: Render automation prompt
     needs: [gate]
     if: needs.gate.outputs.should_dispatch == 'true'
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
       group: harness-dispatch-fleet-admission
@@ -276,7 +276,7 @@ jobs:
       always() && needs.gate.result == 'success' &&
       needs.gate.outputs.should_dispatch == 'true' &&
       (needs.dispatch.result == 'success' || needs.dispatch.result == 'failure')
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
       contents: read
@@ -340,7 +340,7 @@ jobs:
         (needs.dispatch.result == 'failure' || needs.dispatch.result == 'cancelled') ||
         (needs.checkpoint-dispatch.result == 'failure' || needs.checkpoint-dispatch.result == 'cancelled')
       )
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
       issues: write

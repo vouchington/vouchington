@@ -104,7 +104,7 @@ jobs:
       inputs.detect-changes-outputs-skip-settled-producers != 'true' &&
       (inputs.detect-changes-outputs-docs-only != 'true' ||
         inputs.detect-changes-outputs-has-vitest-full == 'true')
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 14
     # id-token is omitted: this job checks out and runs PR-controlled code.
     permissions:

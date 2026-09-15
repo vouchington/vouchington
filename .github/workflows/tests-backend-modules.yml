@@ -46,7 +46,7 @@ env:
 
 jobs:
   backend-modules:
-    runs-on: [self-hosted, Linux, Docker, Tests]
+    runs-on: ubuntu-latest
     timeout-minutes: 22
     permissions:
       actions: read

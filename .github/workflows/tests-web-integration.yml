@@ -59,7 +59,7 @@ env:
 
 jobs:
   prep:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
       contents: read
@@ -95,7 +95,7 @@ jobs:
 
   web-integration-tests:
     needs: [prep]
-    runs-on: [self-hosted, Linux, Docker, Tests, CPU]
+    runs-on: ubuntu-latest
     timeout-minutes: 26
     strategy:
       fail-fast: false
