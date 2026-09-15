@@ -37,6 +37,7 @@ jobs:
     uses: vouchington/vouchington-tooling/.github/workflows/opencode-code-review.yml@37587cbcd959b9f94ae3efe254d422890b0c15c8 # v0.16.1
     permissions:
       actions: read
+      checks: write # both callee jobs declare it; a caller cannot grant less than the callee requests
       contents: read
       issues: read
       pull-requests: write
