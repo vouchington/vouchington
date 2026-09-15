@@ -24,9 +24,9 @@ const FIXTURE = [
   '',
   '<!-- BEGIN GENERATED: workflow-job-runner-inventory -->',
   '',
-  '| Workflow | Job | Kind | Runner | Category | Exception Rationale | Timeout (min) |',
-  '| --- | --- | --- | --- | --- | --- | --- |',
-  '| `stale.yml` | `stale-job` | job | `self-hosted` | Self-hosted | — | 5 |',
+  '| Workflow | Job | Kind | Runner | Timeout (min) |',
+  '| --- | --- | --- | --- | --- |',
+  '| `stale.yml` | `stale-job` | job | `self-hosted` | 5 |',
   '',
   '<!-- END GENERATED -->',
   '',
@@ -110,7 +110,7 @@ describe('workflow job & runner inventory', () => {
       const output = await renderJobsInventoryDoc(FIXTURE, topology)
 
       expect(output).toMatch(
-        /^\|\s*`ci\.yml`\s*\|\s*`build-backend`\s*\|\s*job\s*\|\s*→\s*`build-backend\.yml`\s*\|\s*—\s*\|\s*—\s*\|\s*360\s*\|$/m,
+        /^\|\s*`ci\.yml`\s*\|\s*`build-backend`\s*\|\s*job\s*\|\s*→\s*`build-backend\.yml`\s*\|\s*360\s*\|$/m,
       )
     })
 
@@ -147,42 +147,6 @@ describe('workflow job & runner inventory', () => {
       )
     })
 
-    it('redacts managed image-build runner topology from the public inventory', async () => {
-      const managedImageBuild = makeJob({
-        id: '.github/workflows/build.yml#build',
-        runsOn:
-          "${{ format('codebuild-private-runner-{0}', github.run_id) || 'ubicloud-standard-4-arm' }}",
-      })
-      const output = await renderJobsInventoryDoc(
-        FIXTURE,
-        makeTopology({ jobs: [...topology.jobs, managedImageBuild], edges: topology.edges }),
-      )
-
-      expect(output).toContain('optional managed build-image runner')
-      expect(output).not.toContain('codebuild-private-runner')
-      expect(output).not.toContain('ubicloud-standard-4-arm')
-    })
-
-    it('validates a managed image-build runner expression before redacting it', async () => {
-      const malformedManagedImageBuild = makeJob({
-        id: '.github/workflows/build.yml#build',
-        runsOn:
-          "${{ format('codebuild-private-runner-{0}', github.run_id) || 'ubicloud-standard-2' }}",
-      })
-
-      await expect(
-        renderJobsInventoryDoc(
-          FIXTURE,
-          makeTopology({
-            jobs: [...topology.jobs, malformedManagedImageBuild],
-            edges: topology.edges,
-          }),
-        ),
-      ).rejects.toThrow(
-        /build\.yml#build mixes a codebuild- runner with an unrecognized Ubicloud fallback/,
-      )
-    })
-
     it('renders a job with no declared timeout-minutes as the 360-minute default', async () => {
       const output = await renderJobsInventoryDoc(FIXTURE, topology)
 
@@ -206,10 +170,10 @@ describe('workflow job & runner inventory', () => {
       const output = await renderJobsInventoryDoc(FIXTURE, overridden)
 
       expect(output).toMatch(
-        /^\|\s*`synthetic\.yml`\s*\|\s*`group-only`\s*\|\s*job\s*\|\s*group: `my-runner-group`\s*\|\s*Runner group\s*\|\s*—\s*\|/m,
+        /^\|\s*`synthetic\.yml`\s*\|\s*`group-only`\s*\|\s*job\s*\|\s*group: `my-runner-group`\s*\|/m,
       )
       expect(output).toMatch(
-        /^\|\s*`synthetic\.yml`\s*\|\s*`group-labeled`\s*\|\s*job\s*\|\s*group: `my-runner-group` \(labels: `label-a`, `label-b`\)\s*\|\s*Runner group\s*\|\s*—\s*\|/m,
+        /^\|\s*`synthetic\.yml`\s*\|\s*`group-labeled`\s*\|\s*job\s*\|\s*group: `my-runner-group` \(labels: `label-a`, `label-b`\)\s*\|/m,
       )
     })
 
@@ -219,14 +183,6 @@ describe('workflow job & runner inventory', () => {
 
       await expect(renderJobsInventoryDoc(FIXTURE, overridden)).rejects.toThrow(
         /synthetic\.yml#orphaned has no runs-on and no reusable-workflow call edge/,
-      )
-    })
-
-    it('renders the Category and Exception Rationale columns for a self-hosted job', async () => {
-      const output = await renderJobsInventoryDoc(FIXTURE, topology)
-
-      expect(output).toMatch(
-        /^\|\s*`ci\.yml`\s*\|\s*`gitleaks`\s*\|.*\|\s*Self-hosted\s*\|\s*—\s*\|/m,
       )
     })
   })

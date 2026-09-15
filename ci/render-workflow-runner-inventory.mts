@@ -9,11 +9,9 @@
  *
  * WORKFLOWS.md and its reference-*.md siblings are hand-curated, workflow-level summaries
  * ("inherited via uses + `[self-hosted]`"). JOBS.md is the generated, job-level ground truth --
- * the exact `runs-on` and `timeout-minutes` no-mistakes resolved for every job, plus a runner
- * category and exception rationale derived from that same `runs-on` value (see classifyRunner) --
- * never by re-deriving category/rationale from workflow YAML either. Remote reusable-workflow
- * call targets omit the `@ref` pin so a Dependabot SHA bump does not require regenerating
- * markdown; pins stay in the workflow YAML.
+ * the exact `runs-on` and `timeout-minutes` no-mistakes resolved for every job. Remote
+ * reusable-workflow call targets omit the `@ref` pin so a Dependabot SHA bump does not require
+ * regenerating markdown; pins stay in the workflow YAML.
  *
  * Usage:
  *   node ci/render-workflow-runner-inventory.mts          # write
@@ -31,7 +29,6 @@ import { format } from 'oxfmt'
 import type { WorkflowJobNode, WorkflowRunsOn, WorkflowTopology } from 'no-mistakes'
 
 import { loadRepoTopology } from './repo-topology.mts'
-import { classifyRunner } from './runner-classification.mts'
 
 const __filename = fileURLToPath(import.meta.url)
 const ROOT = path.join(import.meta.dirname, '..')
@@ -91,8 +88,6 @@ function indexCallEdgeTargets(edges: WorkflowTopology['edges']): Map<string, str
  */
 function renderRunner(job: WorkflowJobNode, callEdgeTargets: Map<string, string>): string {
   if (job.runsOn !== undefined) {
-    if (typeof job.runsOn === 'string' && job.runsOn.includes('codebuild-'))
-      return '`optional managed build-image runner`'
     return renderRunsOn(job.runsOn)
   }
   const target = callEdgeTargets.get(job.id)
@@ -112,22 +107,11 @@ function generateInventoryTable(topology: WorkflowTopology): string {
       const kind = job.kind === 'matrix-template' ? 'matrix' : 'job'
       const timeout = job.timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES
       const runner = renderRunner(job, callEdgeTargets)
-      const inferredClassification = classifyRunner(job)
-      const classification =
-        typeof job.runsOn === 'string' && job.runsOn.includes('codebuild-')
-          ? {
-              category: 'Optional managed runner / ephemeral',
-              rationale: `Optional managed runner for image builds; otherwise ephemeral runner.`,
-            }
-          : inferredClassification
-      return (
-        `| \`${shortWorkflowPath(job.workflowId)}\` | \`${job.key}\` | ${kind} | ${runner} | ` +
-        `${markdownTableCell(classification.category)} | ${markdownTableCell(classification.rationale)} | ${timeout} |`
-      )
+      return `| \`${shortWorkflowPath(job.workflowId)}\` | \`${job.key}\` | ${kind} | ${runner} | ${timeout} |`
     })
   return [
-    '| Workflow | Job | Kind | Runner | Category | Exception Rationale | Timeout (min) |',
-    '| --- | --- | --- | --- | --- | --- | --- |',
+    '| Workflow | Job | Kind | Runner | Timeout (min) |',
+    '| --- | --- | --- | --- | --- |',
     ...rows,
   ].join('\n')
 }
