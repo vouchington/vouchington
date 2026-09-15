@@ -2,18 +2,19 @@ import type { TestProjectConfiguration } from 'vitest/config'
 import { isolatedSetupFile, worktreeDbSetupFile } from './tooling-project-policies.mts'
 
 const toolingTestBudget = {
-  // Child-process-heavy tests are timeout-sensitive under runner CPU contention. Run at the
-  // root's parallel maxWorkers, but keep generous test/hook budgets so slow child-process spawns
-  // and coverage reporting can still finish cleanly. 120s (previously 30s) reflects GitHub-hosted
-  // ubuntu-latest's 2-vCPU ceiling: coverage-rules-scope's suite was observed with a 63.6s single
-  // slowest case and a 124.4s overall Duration on GitHub-hosted runners, versus 72.05s (whole
-  // suite) self-hosted, so 30s was no longer enough headroom even before accounting for
-  // run-to-run variance. 120s keeps comfortable margin under the "Run tooling tests" step's
-  // 8-minute (480s) ceiling even if two hooks or tests in the same file both approach the new
-  // ceiling back to back.
-  hookTimeout: 120_000,
+  // Child-process-heavy tests are timeout-sensitive under self-hosted runner CPU contention.
+  // Run at the root's parallel maxWorkers, but keep generous 30s test/hook budgets so
+  // slow child-process spawns and coverage reporting can still finish cleanly.
+  //
+  // Do not raise these project-level budgets for a single slow file (dev/vitest-config.test.mts's
+  // "Vitest timeout policy (#10762, #8078)" ceiling test hard-caps every project's testTimeout at
+  // 60s and hookTimeout at 90s, and its own comment says a genuinely slower test belongs a
+  // targeted per-test override, not a bump to these ceilings). ci/coverage-rules-scope.test.mts's
+  // two whole-repo-scanning tests use exactly that per-test override — see the inline timeout
+  // arguments there.
+  hookTimeout: 30_000,
   isolate: true,
-  testTimeout: 120_000,
+  testTimeout: 30_000,
 }
 
 const defaultExcludes = ['**/node_modules/**', '**/.git/**']
