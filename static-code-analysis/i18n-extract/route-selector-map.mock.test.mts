@@ -130,7 +130,11 @@ async function withRoutes(
 
 function expectGraphRequests(): void {
   const reports = noMistakes.analyzeProject.mock.calls.flatMap(([options]) => options.reports)
-  for (const report of reports) expect(report.relationships).toEqual(DEPENDENCY_RELATIONSHIPS)
+  for (const report of reports) {
+    expect(report.type).toBe('dependencies')
+    if (report.type !== 'dependencies') continue
+    expect(report.relationships).toEqual(DEPENDENCY_RELATIONSHIPS)
+  }
   const requestedRoots = new Set(reports.flatMap(report => requestedFiles(report)))
   for (const file of [
     'web/app/registry/page.tsx',
