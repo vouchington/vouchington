@@ -57,7 +57,7 @@ from exceeding Pro. An unlimited sentinel is greater than every finite limit.
 
 Subscription status remains one private factor in vote-weight calculation. Paid members may have more
 ranking influence, but clients and member APIs must not disclose multipliers, effective weights, or a
-factor breakdown. Exact values live only in the admin/internal [vote-weight reference](../trust-safety/vote-weight.md).
+factor breakdown. Exact values live only in admin-internal tooling.
 
 Contribution access is not purchased trust. Email verification, identity verification, account age,
 connected authentication, abuse controls, penalties, suspensions, CAPTCHA, and action-specific limits
@@ -120,7 +120,6 @@ public catalog only after its service enforcement and client behavior ship.
 - [Membership feature limits](reference-memberships-feature-limits.md)
 - [Contribution limits](../trust-safety/CONTRIBUTION-LIMITS.md)
 - [Contribution gating and anti-bot rules](reference-memberships-contribution-gating-anti-bot.md)
-- [Vote weight](../trust-safety/vote-weight.md)
 - [Membership and Stripe lifecycle](reference-memberships-stripe-integration.md)
 - [Referral-link anatomy](../anatomy/referral-link.md)
 - [RSS crawling](../content/RSS-FEED-CRAWLING.md)

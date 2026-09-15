@@ -100,4 +100,3 @@ This is a user-facing prose rework only. These must not change:
 ## Related
 
 - [Product strategy](product-strategy.md) — the strategic definition this positioning is derived from
-- [Go-to-market strategy](go-to-market.md) — per-segment application of this voice (`## Segment-Specific Messaging`)

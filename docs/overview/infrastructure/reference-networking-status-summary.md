@@ -24,6 +24,4 @@
 - [`vouchington-infra` ALB](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/alb.tf) — ALB configuration
 - [`vouchington-infra` ECS definitions](https://github.com/vouchington/vouchington-infra/tree/main/opentofu) — task definitions and `assign_public_ip`
 - [`vouchington-infra` OpenTofu overview](https://github.com/vouchington/vouchington-infra/tree/main/opentofu) — environment model and cost estimates
-- [Voucha — Product Overview (investor deck, Google Drive)](https://docs.google.com/document/d/1xfS0uGxV66sDyUvZk20TyVDvz43V5ZJXR5W5DKgEyvI/edit) — Cost narrative
-  (note: reflects pre-split service count; cost estimates will drift as the stack scales)
 - [Runtime Timeouts](../../development/runtime-timeouts.md#principle-sse--long-lived-connection-duration-under-fargate-spot) — the Fargate Spot capacity-provider strategy (`vouchington-infra/opentofu/locals.tf`) grounds the principle that SSE/long-lived connections must degrade within a short, bounded window

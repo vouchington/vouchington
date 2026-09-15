@@ -34,4 +34,3 @@ When `vote_weight_admin_set_at` is set, `recalculateUserVoteWeight` returns the 
 
 - [backend/queues/vote-weight/README.md](../../queues/vote-weight/README.md)
 - [backend/services/vote-integrity/README.md](../vote-integrity/README.md)
-- [docs/requirements/trust-safety/vote-weight.md](../../../docs/requirements/trust-safety/vote-weight.md)

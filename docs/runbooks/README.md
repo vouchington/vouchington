@@ -7,9 +7,6 @@ See also: [Moderation Policy Matrix](../requirements/moderation/MODERATION-POLIC
 
 ## Runbooks
 
-- [CSAM / Child-Safety Escalation](./csam-child-safety-escalation.md) — Detection, containment,
-  legal reporting obligations, and after-action for child sexual abuse material and child-safety
-  incidents.
 - [Native TLS Pinning](./native-tls-pinning.md) — Cloudflare edge SPKI pin rollout, rotation, and
   failure handling for native API clients.
 - [Product-Safety / Recall Handling](./product-safety-recall.md) — Intake, triage, cross-functional

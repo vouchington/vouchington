@@ -131,10 +131,9 @@ cutover. This inventory records current endpoint facts without claiming that cut
 The ALB uses `ip_address_type = "dualstack-without-public-ipv4"`: Cloudflare connects to the ALB
 over IPv6, while end-user IPv4 terminates at Cloudflare's edge. This removes roughly $7/mo in ALB
 public IPv4 charges without changing the proxied Cloudflare CNAME. The `backend`/`web` target
-groups were later replaced with `ip_address_type = "ipv6"` (see
-[Topology](reference-networking-topology.md#topology)) to match `api`/`web` moving to IPv6-only ECS
-subnets — a separate change from this address-type flip, but noted here since both touch the same
-target groups.
+groups were later replaced with `ip_address_type = "ipv6"` to match `api`/`web` moving to IPv6-only
+ECS subnets — a separate change from this address-type flip, but noted here since both touch the
+same target groups.
 
 After an address-type change applies to staging, follow
 [`vouchington-infra` operator checklist Step 29](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/reference-human_checklist-phase-10-first-deploy.md#step-29--smoke-tests) to verify

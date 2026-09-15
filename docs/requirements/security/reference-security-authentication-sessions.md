@@ -82,9 +82,9 @@ VOUCHA_OTP_TOKEN_HASH_SECRET=<random HMAC secret>
 VOUCHA_STORED_SECRET_ENCRYPTION_KEYS=<kid:base64url-32-byte-key>
 ```
 
-`VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64` is intentionally omitted from deployed backend ECS
-task definitions until the backend edge-anon public-key rollout is wired in OpenTofu. Until then,
-deployed Worker edge-anon minting with a distinct keypair must stay off: backend flows treat
+`VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64` is not yet populated in deployed environments while
+the edge-anon public-key rollout is pending. Until then, deployed Worker edge-anon minting with a
+distinct keypair must stay off: backend flows treat
 Worker-minted `dt`/`st` cookies as invalid unless the backend has that public key. The backend still
 tries legacy session public keys as fallback candidates; for exact candidate resolution, see
 [`verify.mts`](../../../backend/services/jwt-session/verify.mts).
@@ -110,8 +110,7 @@ examples do not look like real secrets.
 ## Native TLS Pinning
 
 Swift and .NET native clients can enforce SPKI public-key pins for the public API hosts derived from
-the OpenTofu topology: `voucha.ai` and `staging.voucha.ai`. Pin enforcement is disabled by default
-until those hosts use controlled Cloudflare edge certificate keys with a prepared backup pin.
+the OpenTofu topology: `voucha.ai` and `staging.voucha.ai`.
 
 Native clients connect to the Cloudflare edge, not directly to the ALB. Therefore native API pins
 must match the Cloudflare edge certificate SPKI. Do not pin `aws_acm_certificate.alb`; that ACM

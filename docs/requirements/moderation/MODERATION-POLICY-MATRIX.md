@@ -65,10 +65,10 @@ Severity values are PROPOSED pending product sign-off.
 Operational procedures for incidents that require legal action or cross-functional coordination. These
 are staff-only documents; see [Operational Runbooks](../../runbooks/README.md) for the index.
 
-| Runbook                                                                          | Relevant rows                       | Notes                                                                                                     |
-| -------------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| [CSAM / Child-Safety Escalation](../../runbooks/csam-child-safety-escalation.md) | `illegal_content`, `sexual_content` | Covers CSAM and any `sexual_content` incident involving a minor. Legal reporting obligations (US §2258A). |
-| [Product-Safety / Recall Handling](../../runbooks/product-safety-recall.md)      | _(no row yet — forward-looking)_    | Applies as marketplace surfaces ship; no `product_safety` entry exists in the matrix today.               |
+| Runbook                                                                     | Relevant rows                       | Notes                                                                                                     |
+| --------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| CSAM / Child-Safety Escalation                                              | `illegal_content`, `sexual_content` | Covers CSAM and any `sexual_content` incident involving a minor. Legal reporting obligations (US §2258A). |
+| [Product-Safety / Recall Handling](../../runbooks/product-safety-recall.md) | _(no row yet — forward-looking)_    | Applies as marketplace surfaces ship; no `product_safety` entry exists in the matrix today.               |
 
 Note: "CSAM" is not a literal policy row — it is described under `illegal_content` ("including CSAM,
 fraud, or incitement"). There is no `recall` row; that runbook is anticipatory.

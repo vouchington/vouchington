@@ -84,8 +84,6 @@ Public subnets with `assign_public_ip = true`. Each task gets one public IPv4 (~
 - Multiple services or roles need individually scoped, IAM-managed DB access with per-role revocation.
 - You need break-glass revocation of app DB access without a DB password reset.
 
-**If re-enabling:** Set `iam_database_authentication_enabled = true` in `vouchington-infra/opentofu/aurora.tf`; add an `rds-db:connect` statement to `api_task_policy` and `worker_task_policy` in `vouchington-infra/opentofu/iam-ecs.tf` (use `aws_rds_cluster.main.cluster_resource_id` — already available — and `dbuser` segment = `voucha_iam`, not the `voucha` master user); manually run `CREATE USER voucha_iam; GRANT rds_iam TO voucha_iam; GRANT <required privileges> TO voucha_iam;` as the master user against the Aurora cluster (out-of-band step — cannot be done by Terraform or the migration runner); wire an async password callback + SSL into all three connection sites in `backend/data-stores/psql/setup.mts` (both pools and the `registerPgVectorTypes` client); add `@aws-sdk/rds-signer`.
-
 ## Valkey Strategy
 
 ### Phase 1 (Launch): Single Node-Based Instance

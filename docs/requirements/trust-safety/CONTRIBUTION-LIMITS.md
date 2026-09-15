@@ -35,18 +35,6 @@ Limit values:
 | `pro`         | Active Pro member                                           |
 | `admin`       | Administrator or verified system actor; exempt from budgets |
 
-## Default Matrix
-
-| Bucket                | Safety         | Pro           | Plus          | Free          | Just joined |
-| --------------------- | -------------- | ------------- | ------------- | ------------- | ----------- |
-| All authored posts    | 1/5m, 50/day   | 1/5m, 50/day  | 1/10m, 25/day | 1/15m, 10/day | blocked     |
-| Reviews               | 1/10m, 3/day   | 1/10m, 3/day  | 1/30m, 2/day  | 1/60m, 1/day  | blocked     |
-| Comments/replies      | 1/5m, 50/day   | 1/5m, 50/day  | 1/10m, 25/day | 1/15m, 10/day | blocked     |
-| Discussions/links     | 1/15m, 10/day  | 1/15m, 10/day | 1/30m, 5/day  | 1/60m, 3/day  | blocked     |
-| Topic recommendations | 1/15m, 10/day  | 1/15m, 10/day | 1/30m, 5/day  | 1/60m, 3/day  | blocked     |
-| Data points           | 1/15m, 20/day  | 1/15m, 20/day | 1/30m, 10/day | 1/60m, 5/day  | blocked     |
-| Articles/blog posts   | not configured | forbidden     | forbidden     | forbidden     | forbidden   |
-
 ## Covered Actions
 
 - Safety applies only to `authored_post`, `discussion`, `review`, `comment`, `data_point`, and

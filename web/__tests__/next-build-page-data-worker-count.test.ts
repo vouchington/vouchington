@@ -40,13 +40,11 @@ describe('nextBuildPageDataWorkerCount', () => {
   })
 
   it('uses the cgroup memory limit when it is lower than physical memory', () => {
-    // jong-Z890-EAGLE-WIFI7-PLUS-32GB: real MemoryHigh=9_891_975_168, MemoryMax=13_189_304_320
+    // A 30.71 GiB self-hosted runner: real MemoryHigh=9_891_975_168, MemoryMax=13_189_304_320
     // (both verified via systemctl; runner-resource-controls.sh resolves MemoryHigh=30%/
     // MemoryMax=40% against this host's 30.71 GiB physical RAM). `process.constrainedMemory()`
     // returns min(memory.max, memory.high) on cgroup v2 (verified empirically — see
-    // web/next.config.ts), which is MemoryHigh here, not MemoryMax. See
-    // docs/development/reference-host-locks-nextjs-build-worker-reserve.md fleet table; this is
-    // the 1-worker row in the build-duration table there.
+    // web/next.config.ts), which is MemoryHigh here, not MemoryMax.
     expect(
       nextBuildPageDataWorkerCount({
         physicalMemoryBytes: 30.71 * 1024 ** 3,
@@ -106,14 +104,12 @@ describe('nextBuildPageDataWorkerCount', () => {
     ).toBe(1)
   })
 
-  it('computes the 62 GiB Z890 worker count seen in the fleet table', () => {
-    // jong-Z890-EAGLE-WIFI7-PLUS: 24 CPUs, 62.16 GiB physical, real MemoryHigh=20_023_885_824,
+  it('computes the 62 GiB capped-host worker count', () => {
+    // A 62.16 GiB / 24-CPU self-hosted runner: real MemoryHigh=20_023_885_824,
     // MemoryMax=26_698_514_432 (both verified via systemctl; runner-resource-controls.sh resolves
     // MemoryHigh=30%/MemoryMax=40% against this host's physical RAM).
     // `process.constrainedMemory()` returns min(memory.max, memory.high) on cgroup v2 (verified
-    // empirically — see web/next.config.ts), which is MemoryHigh here, not MemoryMax. See
-    // docs/development/reference-host-locks-nextjs-build-worker-reserve.md fleet table; this is
-    // the 5-worker row in the build-duration table there.
+    // empirically — see web/next.config.ts), which is MemoryHigh here, not MemoryMax.
     expect(
       nextBuildPageDataWorkerCount({
         physicalMemoryBytes: 62.16 * 1024 ** 3,
@@ -123,12 +119,10 @@ describe('nextBuildPageDataWorkerCount', () => {
     ).toBe(5)
   })
 
-  it('computes the 27.15 GiB A6 worker count seen in the fleet table', () => {
-    // jonathan-ong-A6: 16 CPUs, 27.15 GiB physical, no cgroup cap (MemoryHigh/MemoryMax both ∞ —
+  it('computes the 27.15 GiB uncapped-host worker count', () => {
+    // A 27.15 GiB / 16-CPU self-hosted runner with no cgroup cap (MemoryHigh/MemoryMax both ∞ —
     // real uncapped hosts report the cgroup v2 unlimited sentinel, not 0). Memory-bound, unlike the
-    // CPU-bound 64 GiB/16-CPU case above. See
-    // docs/development/reference-host-locks-nextjs-build-worker-reserve.md fleet table; this is
-    // the 11-worker row in the build-duration table there.
+    // CPU-bound 64 GiB/16-CPU case above.
     expect(
       nextBuildPageDataWorkerCount({
         physicalMemoryBytes: 27.15 * 1024 ** 3,

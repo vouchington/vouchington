@@ -50,11 +50,6 @@ Two-phase SSRF protection in `crawlUrl`:
 > crawled page can never register one to bypass `page.route()`/`page.routeWebSocket()` interception —
 > Playwright enforces this itself via a client-side init script, independent of whether Lightpanda
 > implements Service Workers of its own.
->
-> `page.routeWebSocket()` only sees dials from the page or an iframe; a page-created Dedicated/Shared
-> Web Worker that dials its own WebSocket bypasses the app-level guard and falls back to Lightpanda
-> cloud's network-level blocking alone. This is an inherent limit of Playwright's interception model,
-> not something the app layer can close.
 
 ### Image Resize Sideloads
 
@@ -72,16 +67,12 @@ The image-resize Lambda validates sideload URL hosts with the same shared SSRF p
   which applies allowed-protocol policy, re-validation, and DNS pinning at every redirect hop.
 - `validateUrl(url: string, options): Promise<ResolvedSafeAddress[]>` — async API;
   only calls `isPrivateIp` on IP literals and DNS-resolved addresses (not domain names).
-  Returns validated addresses for DNS pinning. **`ssrf-guard@1.0.0`'s `validateUrl` has no DNS/SSRF
-  resolution timeout at all unless the caller passes `signal` or `timeoutMs`** — every direct call
-  site (the crawler's `safety.mts`, `fetch-remote-actor-document.mts`,
-  `domain-verification-well-known.mts`, `deliver-activity.mts`, and `embed-resolver.mts`) passes an
+  Returns validated addresses for DNS pinning. Every direct call site (the crawler's
+  `safety.mts`, `fetch-remote-actor-document.mts`, `domain-verification-well-known.mts`,
+  `deliver-activity.mts`, and `embed-resolver.mts`) passes an
   explicit `timeoutMs` (or a forwarded `signal`), typically 5,000ms (#10833; see [Runtime Timeouts
   classification](../../development/reference-runtime-timeouts-classification.md#hard-constraints-externalprotocol-driven)
-  for the full table). This bounds only the caller's wait, not the underlying
-  `dns.promises.lookup` call itself — a sustained black-holed-DNS target can still hold a libuv
-  threadpool slot until Node's own DNS resolver times out, even though every caller above returns
-  promptly. The import-provenance-aware Oxlint
+  for the full table). The import-provenance-aware Oxlint
   `no-mistakes/require-options-on-imported-call` rule enforces every `validateUrl` import from
   `ssrf-guard/node`, including aliased and namespace imports, has a second options argument
   containing `timeoutMs` or `signal`. The companion
