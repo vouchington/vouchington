@@ -115,7 +115,11 @@ then format and compile.
   ID changes only when that selector's aliases change. `static-code-analysis/i18n-extract/route-selector-map.mts` regenerates both
   artifacts from no-mistakes dependency closures plus recursively resolved dynamic imports,
   then a lexical scan of known alias literals; it does not parse source with an AST.
-  `--check` fails CI when either artifact drifts from source. Each web load requests the exact
+  CI runs `--check` and fails if either artifact drifts; the local check is optional. Regenerate
+  and commit both artifacts after changing routes, their imports, shared chrome, or web aliases in
+  a way that changes route membership. Translation-text-only edits do not need the graph command.
+  Module reachability does not prove every runtime value of `t(variable)`; see
+  [#11647](https://github.com/jonathanong/filaments/issues/11647). Each web load requests the exact
   chrome and current-route selector IDs in one batch. Vitest
   can assemble the committed JSON directly; live Next servers, including local development and
   Playwright, use the backend. The standalone production web smoke test
