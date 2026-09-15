@@ -95,6 +95,13 @@ describe('classifyRunsOnValue (synthetic)', () => {
 })
 
 describe('workflow runner policy (real workflows)', () => {
+  it('discovers a non-trivial number of workflow files and jobs', () => {
+    // Regression guard: a broken glob or directory move would make every other test in this
+    // file vacuously pass by iterating over zero jobs.
+    expect(workflowFileNames.length).toBeGreaterThan(40)
+    expect(allJobEntries().length).toBeGreaterThan(100)
+  })
+
   it('every job runs on the closed GitHub-hosted allowlist or delegates cleanly', () => {
     const violations: string[] = []
 
