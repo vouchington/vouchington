@@ -164,6 +164,6 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-web-integration.yml`           | `prep`                            | job    | `ubuntu-latest`                                                                | 8             |
 | `tests-web-integration.yml`           | `web-integration-tests`           | matrix | `ubuntu-latest`                                                                | 26            |
 | `tests-web.yml`                       | `prep`                            | job    | `ubuntu-latest`                                                                | 8             |
-| `tests-web.yml`                       | `web-tests`                       | matrix | `ubuntu-latest`                                                                | 24            |
+| `tests-web.yml`                       | `web-tests`                       | matrix | `ubuntu-latest`                                                                | 32            |
 
 <!-- END GENERATED -->

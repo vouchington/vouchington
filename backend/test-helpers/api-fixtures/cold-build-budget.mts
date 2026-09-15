@@ -17,7 +17,7 @@
  * intentionally force or permit multiple full builds compose this per-build budget by their exact
  * expected or maximum permitted build count.
  */
-export const COLD_BACKEND_PROGRAM_TIMEOUT_MS = 60_000
+export const COLD_BACKEND_PROGRAM_TIMEOUT_MS = 120_000
 
 /**
  * One virtual/string-source ts.Program per test file via buildVirtualProgramMatrix() — a matrix of
@@ -32,4 +32,4 @@ export const COLD_VIRTUAL_PROGRAM_TIMEOUT_MS = 15_000
  * — strictly more work than COLD_BACKEND_PROGRAM_TIMEOUT_MS alone, plus (for the spec-validation
  * case) shelling out to `redocly lint`. The most expensive tier.
  */
-export const COLD_OPENAPI_BUILD_TIMEOUT_MS = 90_000
+export const COLD_OPENAPI_BUILD_TIMEOUT_MS = 180_000

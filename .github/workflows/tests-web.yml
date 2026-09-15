@@ -100,7 +100,7 @@ jobs:
   web-tests:
     needs: [prep]
     runs-on: ubuntu-latest
-    timeout-minutes: 24
+    timeout-minutes: 32
     permissions:
       actions: read
       contents: read
@@ -160,9 +160,14 @@ jobs:
           fi
           pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web --maxWorkers=7 --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
-        # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
-        # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
-        timeout-minutes: 10
+        # test-execution time higher than the old <5m-per-shard target tolerated. On GitHub-hosted
+        # ubuntu-latest (2 vCPUs) with coverage instrumentation enabled, real failing shards were
+        # observed being killed at this step's prior 10m ceiling without ever completing (no
+        # observed-completion basis for a tighter number yet), so this is a generous watchdog value
+        # rather than a measured one; tune it down once a passing run reports a real per-shard
+        # duration. 20m keeps 12m of headroom under the job's 32m ceiling for setup-node-pnpm plus
+        # the coverage/blob upload and report-persistence steps that follow.
+        timeout-minutes: 20
       - if: failure()
         timeout-minutes: 1
         continue-on-error: true

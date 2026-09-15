@@ -2377,10 +2377,14 @@ rules:
         # pre-revert coverage-transport budget.
         - job: '.github/workflows/tests-web-integration.yml#web-integration-tests'
           maxMinutes: 26
-        # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
-        # pre-revert coverage-transport budget.
+        # Raised from 24m alongside the "Run web tests" step's 10m -> 20m watchdog bump: on
+        # GitHub-hosted ubuntu-latest (2 vCPUs) with coverage instrumentation enabled, real failing
+        # shards were killed at the step's prior 10m ceiling without ever completing, so neither
+        # number has an observed-completion basis yet. 32m leaves 12m of headroom over the 20m step
+        # for setup-node-pnpm plus the coverage/blob upload and report-persistence steps that
+        # follow; tune both down once a passing run reports a real per-shard duration.
         - job: '.github/workflows/tests-web.yml#web-tests'
-          maxMinutes: 24
+          maxMinutes: 32
 
   - name: tracked TypeScript files belong to a tsconfig program
     rule: tsconfig-file-coverage
