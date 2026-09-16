@@ -16,11 +16,11 @@ function jobSection(workflow: string, jobName: string): string {
 }
 
 describe('main-web workflow', () => {
-  it('pins the main Playwright suite to four shards', () => {
+  it('leaves the main Playwright suite on the shared hosted-calibrated shard formula', () => {
     const playwrightTests = jobSection(mainWeb, 'playwright-tests')
 
     expect(playwrightTests).toContain('uses: ./.github/workflows/tests-playwright.yml')
-    expect(playwrightTests).toContain("shard_total_override: '4'")
+    expect(playwrightTests).not.toContain('shard_total_override')
   })
 
   it('runs web API and full-stack integration as siblings after web unit tests', () => {
