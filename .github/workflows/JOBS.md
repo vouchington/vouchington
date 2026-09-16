@@ -121,7 +121,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `main-web.yml`                        | `playwright-credentialed-tests`   | job    | → `tests-playwright-credentialed.yml`                                          | 360           |
 | `main-web.yml`                        | `playwright-tests`                | job    | → `tests-playwright.yml`                                                       | 360           |
 | `main-web.yml`                        | `static-checks`                   | job    | → `checks-static.yml`                                                          | 360           |
-| `main-web.yml`                        | `store-playwright-otel`           | job    | `ubuntu-latest`                                                                | 8             |
+| `main-web.yml`                        | `store-playwright-otel`           | job    | `ubuntu-slim`                                                                  | 8             |
 | `main-web.yml`                        | `test-web`                        | job    | → `tests-web.yml`                                                              | 360           |
 | `main-web.yml`                        | `test-web-api`                    | job    | → `tests-web-api.yml`                                                          | 360           |
 | `main-web.yml`                        | `test-web-integration`            | job    | → `tests-web-integration.yml`                                                  | 360           |

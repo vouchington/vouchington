@@ -171,7 +171,7 @@ jobs:
       !cancelled() &&
       vars.OTEL_TRACE_UPLOAD_ENABLED == 'true' &&
       (needs.playwright-tests.result == 'success' || needs.playwright-tests.result == 'failure')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 8
     permissions:
       actions: read
