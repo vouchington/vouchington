@@ -55,7 +55,9 @@ describe('tests-playwright.yml', () => {
         type: string
         required: false
         default: ''`)
-    expect(workflow).toContain('SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override }}')
+    expect(workflow).toContain(
+      'SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override || vars.PLAYWRIGHT_SHARD_TOTAL }}',
+    )
     expect(workflow).not.toContain('PLAYWRIGHT_FILES_PER_SHARD')
     expect(workflow).not.toContain('PLAYWRIGHT_TEST_SHARDS')
   })
