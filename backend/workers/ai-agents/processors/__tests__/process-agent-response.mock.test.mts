@@ -80,10 +80,12 @@ describe('processAgentResponse durable claim', () => {
         error: { message: 'The response could not start. Please try again.' },
         termination_reason: 'error',
       })
-      expect(events).toContainEqual({
-        type: 'error',
-        error: 'The response could not start. Please try again.',
-      })
+      await vi.waitFor(() =>
+        expect(events).toContainEqual({
+          type: 'error',
+          error: 'The response could not start. Please try again.',
+        }),
+      )
     } finally {
       await subscription.close()
     }
