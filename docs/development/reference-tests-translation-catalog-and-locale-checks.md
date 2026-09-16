@@ -66,10 +66,13 @@ checks guard that request-selection contract instead of catalog content:
   selectors and pattern-keyed alias membership for every real `web/app` route) and fails if either committed
   artifact is stale. It follows no-mistakes dependency closures and recursively resolves dynamic
   import targets, then lexically matches known alias literals. It does not parse source with an
-  AST. Run without `--check` to write both artifacts after adding or moving a route. Costly and
-  serialized by the dependency graph: a CI-tier operation, wired into
-  `.github/workflows/static-code-analysis.yml` as "Check web route localization selector map"
-  rather than run per-commit locally.
+  AST. The local `--check` is optional; CI owns this costly freshness check in
+  `.github/workflows/static-code-analysis.yml` as "Check web route localization selector map".
+  Run without `--check` and commit both artifacts when a route, its imports, shared chrome, or a
+  web alias change alters route membership. Translation-text edits that leave web aliases and
+  route membership unchanged need no local graph command. This closure check does not prove every
+  possible value of `t(variable)`; [#11647](https://github.com/jonathanong/filaments/issues/11647)
+  tracks that separate guardrail gap.
 
 The catalog and native-resource tests run as the `ts-shared` Vitest project:
 
