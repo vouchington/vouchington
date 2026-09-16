@@ -19,6 +19,7 @@ flowchart TD
     trigger --> sync-articles["sync-articles\n(source completion)"]
     trigger --> docs-publish["docs-publish\n(source completion)"]
     artifact-cleanup-sweep-trigger["0 */6 * * * / manual dispatch"] --> cleanup-artifacts["cleanup-artifacts\n(reusable producer cleanup + stale sweep)"]
+    ghcr-cleanup-trigger["0 4 * * 1 / manual dispatch"] --> ghcr-cleanup["ghcr-cleanup\n(prunes published container package versions)"]
     trigger --> actionlint["actionlint\n(workflow lint + security audit)"]
     trigger --> lint-links["lint-links\n(repository link check)"]
     trigger --> label-pr["label-pr\n(PR labeling)"]
