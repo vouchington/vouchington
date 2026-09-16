@@ -83,6 +83,7 @@ describe('Web Tests workflow', () => {
     expect(prep).toContain('runs-on: ubuntu-latest')
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
     expect(prep).toContain('node ci/vitest/shard-total.mts test-web')
+    expect(prep).toContain('FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_WEB_FILES_PER_SHARD }}')
     expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')

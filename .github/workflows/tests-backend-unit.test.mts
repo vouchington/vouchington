@@ -75,7 +75,6 @@ describe('backend uncredentialed Docker test workflow', () => {
   })
   it('leaves Docker-free static checks to the backend module workflow', () => {
     const backendJob = jobSection('backend-tests')
-
     expect(workflow).toContain('name: Backend Uncredentialed Docker Tests')
     expect(backendJob).not.toContain('Check backend dependencies')
     expect(backendJob).not.toContain('Typecheck backend and email templates')
@@ -85,6 +84,9 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(prep).toContain('runs-on: ubuntu-latest')
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
     expect(prep).toContain('node ci/vitest/shard-total.mts test-backend-unit')
+    expect(prep).toContain(
+      'FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_BACKEND_UNIT_FILES_PER_SHARD }}',
+    )
     expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
@@ -114,7 +116,6 @@ describe('backend uncredentialed Docker test workflow', () => {
   it('combines service-backed backend Vitest projects in one sharded command', () => {
     const backendCommand =
       'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"'
-
     expect(workflow).toContain(backendCommand)
     expect(workflow).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
@@ -139,7 +140,6 @@ describe('backend uncredentialed Docker test workflow', () => {
     const stamp = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(
       step => step.name === 'Stamp backend-shard-${{ matrix.shard }} coverage provenance',
     )
-
     expect(stamp?.env).toMatchObject({
       CI_SHARD: '${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}',
       PR_BASE_SHA: '${{ github.event.pull_request.base.sha }}',

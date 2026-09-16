@@ -91,6 +91,7 @@ jobs:
         id: shard-total
         env:
           SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override }}
+          FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_WEB_FILES_PER_SHARD }}
         run: node ci/vitest/shard-total.mts test-web
       - uses: ./.github/actions/make-shard-matrix
         id: shards
