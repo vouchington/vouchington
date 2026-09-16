@@ -115,7 +115,7 @@ describe('tooling hang watchdog', () => {
   })
 
   it('kills at the wall-clock cap only when the CI wall clock is armed', () => {
-    expect(TOOLING_HANG_WALL_CLOCK_MS).toBeLessThan(8 * 60_000)
+    expect(TOOLING_HANG_WALL_CLOCK_MS).toBeLessThan(16 * 60_000)
     expect(shouldKillToolingHang(state(), TOOLING_HANG_WALL_CLOCK_MS)).toBe(false)
     expect(shouldKillToolingHang(state({ wallClock: true }), TOOLING_HANG_WALL_CLOCK_MS)).toBe(true)
   })

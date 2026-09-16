@@ -35,7 +35,7 @@ describe('.coverage-rules.yml scope', () => {
   // Scans every reachable file in the repo, so it inherently scales with repo size and CPU
   // headroom rather than the 30s tooling-project default. Observed on GitHub-hosted ubuntu-latest
   // (2 vCPUs): 63.6s single slowest case. 120s (~2x) stays well under the "Run tooling tests"
-  // step's 8-minute (480s) ceiling. A project-wide budget bump is the wrong mechanism here — see
+  // step's 16-minute (960s) ceiling. A project-wide budget bump is the wrong mechanism here — see
   // the comment on toolingTestBudget in test-helpers/vitest-config/tooling-projects.mts.
   it('never throws executableLineNumbers on a real file reachable by a positive-threshold rule', () => {
     const files = reachableFiles()

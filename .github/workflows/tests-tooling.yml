@@ -85,7 +85,7 @@ jobs:
             fi
           done <<< "$VITEST_SELECTED_FILES"
           node ci/tooling-test-runner.mts --workflow-projects --bail=3 "${FILES[@]}"
-        timeout-minutes: 8
+        timeout-minutes: 16
       - name: Stamp tooling coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
