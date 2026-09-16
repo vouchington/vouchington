@@ -141,6 +141,12 @@ const nextConfig: NextConfig = {
         destination: '/',
         permanent: true,
       },
+      // Routing-layer redirect so this is a real HTTP 307, not a page-level redirect() call.
+      {
+        source: '/feed',
+        destination: '/feed/posts',
+        permanent: false,
+      },
       {
         source: '/keyboard-shortcuts',
         destination: '/article/keyboard-shortcuts',
