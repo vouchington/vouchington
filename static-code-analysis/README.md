@@ -8,15 +8,21 @@ in [CLAUDE.md](CLAUDE.md).
 
 ## Web route localization map
 
-[`i18n-extract/route-selector-map.mts`](i18n-extract/route-selector-map.mts) uses
-`no-mistakes` dependency reports for each tracked `web/app` page and ancestor layout, then resolves
-and follows dynamic import targets recursively, including `next/dynamic` wrappers. Re-exports,
-type imports, and workspace dependencies remain in the closure. It then
-lexically matches known catalog aliases in each closure; it does not use AST parsing. It writes the
-committed route selector map and the catalog's generated pattern-keyed route membership
-(`localization/catalog/routes.json`). Alias-less rows retain routes with no route-local copy.
-Run it without flags to regenerate both artifacts and with
-`--check` to verify them. The latter runs in
+[`i18n-extract/route-selector-map.mts`](i18n-extract/route-selector-map.mts) requests one
+`no-mistakes` `analyzeProject` dependency report per tracked `web/app` page (with ancestor layouts)
+and per global-chrome file, with `relationships: ['import-static', 'import-dynamic', 'import-type',
+'workspace']`. `no-mistakes` follows dynamic import targets recursively in that same graph pass,
+including nested/transitive `next/dynamic` wrappers, re-exports, and type imports — there is no
+separate JS-side dynamic-import worklist. `workspace` is load-bearing, not a legacy leftover:
+dropping it (verified empirically) silently expands the closure and changes the generated catalog
+membership for hundreds of routes, so it must stay even though `import-dynamic` alone looks like it
+should cover proven dynamic imports. It then lexically matches known catalog aliases in each
+closure; it does not use AST parsing. It writes the committed route selector map and the catalog's
+generated pattern-keyed route membership (`localization/catalog/routes.json`). Alias-less rows
+retain routes with no route-local copy. Run it without flags to regenerate both artifacts, with
+`--check` to verify them, and add `--diagnostics` for stderr-only phase timings and a computed-
+closure count (never affects the generated artifacts; the closures themselves are not dumped, since
+a full closure listing can reach megabytes). The `--check` form runs in
 [`static-code-analysis.yml`](../.github/workflows/static-code-analysis.yml). The companion
 [`route-bounds.test.mts`](i18n-extract/route-bounds.test.mts) resolves every generated route
 against the real catalog compiler in all four web locales and all public request limits. See

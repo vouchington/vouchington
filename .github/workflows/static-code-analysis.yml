@@ -182,8 +182,8 @@ jobs:
         timeout-minutes: 5
       - name: Check web route localization selector map
         if: ${{ inputs.docs_only != true }}
-        run: node static-code-analysis/i18n-extract/route-selector-map.mts --check
-        timeout-minutes: 25
+        run: node static-code-analysis/i18n-extract/route-selector-map.mts --check --diagnostics
+        timeout-minutes: 5
       - name: Verify no dependency changes needed
         timeout-minutes: 1
         run: |

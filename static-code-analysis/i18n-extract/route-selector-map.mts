@@ -7,10 +7,10 @@ import { analyzeProject, type Relationship } from 'no-mistakes'
 import { format, type FormatConfig } from 'oxfmt'
 import { withI18nAnalysisBudget, type AnalysisBudgetOptions } from './analysis-budget.mts'
 import {
-  dependencyPaths,
-  dependencyResult,
-  dynamicImportClosure,
-} from './dynamic-import-closure.mts'
+  createDiagnosticsCollector,
+  writeDiagnostics,
+  type I18nDiagnosticsCollector,
+} from './diagnostics.mts'
 import { globalChromeFiles } from './global-chrome-files.mts'
 import {
   assembleRouteAliasMap,
@@ -19,7 +19,7 @@ import {
 } from './route-alias-map-assembly.mts'
 import { renderSource } from './route-selector-output.mts'
 import { discoverRoutes } from './route-tree.mts'
-import { aliasesFromDependencyResult } from './route-usage.mts'
+import { aliasesFromDependencyResult, dependencyPaths, dependencyResult } from './route-usage.mts'
 const ROOT = path.join(import.meta.dirname, '../..')
 const APP_ROOT = 'web/app'
 const GENERATED = path.join(ROOT, 'web/lib/i18n/route-selectors.generated.mts')
@@ -28,7 +28,6 @@ const FORMAT = JSON.parse(readFileSync(path.join(ROOT, '.oxfmtrc.json'), 'utf8')
 const NAVBAR = 'web/components/navbar.tsx'
 
 const DEPENDENCY_RELATIONSHIPS: Relationship[] = [
-  'import',
   'import-static',
   'import-dynamic',
   'import-type',
@@ -47,16 +46,21 @@ export async function computeRouteAliasMap(
   repoRoot: string = ROOT,
   appRoot: string = APP_ROOT,
   budget: AnalysisBudgetOptions = {},
+  diagnostics?: I18nDiagnosticsCollector,
 ): Promise<RouteAliasMap> {
   if (budget.budgetMs !== undefined) budget.startedAt ??= performance.now()
+  const discoverStart = performance.now()
   const [discovered, globalFiles] = await Promise.all([
     discoverRoutes(repoRoot, appRoot),
     globalChromeFiles(repoRoot, appRoot, NAVBAR),
   ])
+  diagnostics?.phase('discover-routes', performance.now() - discoverStart)
+  const analysisStart = performance.now()
   const analysis = await withI18nAnalysisBudget(
     'analyzeProject',
     analyzeProject({
       root: repoRoot,
+      jobs: 0,
       reports: discovered
         .map((route, index) => ({
           id: String(index),
@@ -75,6 +79,7 @@ export async function computeRouteAliasMap(
     }),
     budget,
   )
+  diagnostics?.phase('analyze-project', performance.now() - analysisStart)
   const reports = new Map<string, unknown>()
   for (const report of analysis.reports) {
     if (!report.id) throw new Error('Missing route dependency report id')
@@ -96,13 +101,14 @@ export async function computeRouteAliasMap(
         ]),
       ),
   )
-  const dynamicFiles = await dynamicImportClosure(repoRoot, initialFiles, budget)
   const textCache = new Map<string, Promise<string>>()
   const routeAliases: RouteAliasSource[] = []
   for (const [index, route] of discovered.entries()) {
+    const files = initialFiles.get(route.pattern) ?? route.files
+    diagnostics?.closureComputed()
     const candidates = await aliasesFromDependencyResult(
       repoRoot,
-      dynamicFiles.get(route.pattern) ?? route.files,
+      files,
       dependencyResult(reports.get(String(index)), route.pattern),
       textCache,
     )
@@ -113,9 +119,11 @@ export async function computeRouteAliasMap(
   }
   const globalAliases = new Set<string>()
   for (const [index, file] of globalFiles.entries()) {
+    const files = initialFiles.get(`global:${file}`) ?? [file]
+    diagnostics?.closureComputed()
     const aliases = await aliasesFromDependencyResult(
       repoRoot,
-      dynamicFiles.get(`global:${file}`) ?? [file],
+      files,
       dependencyResult(reports.get(`global:${index}`), file),
       textCache,
     )
@@ -127,11 +135,12 @@ export async function renderRouteAliasArtifacts(
   repoRoot: string = ROOT,
   appRoot: string = APP_ROOT,
   generatedPath: string = GENERATED,
+  diagnostics?: I18nDiagnosticsCollector,
 ): Promise<{ source: string; membership: string }> {
   const { catalog } = await loadCatalogDirectory(path.join(repoRoot, 'localization/catalog'))
   const aliases = new Set<string>()
   for (const row of catalog.aliases) if (row.consumer === 'web') aliases.add(row.alias)
-  const result = await computeRouteAliasMap(aliases, repoRoot, appRoot)
+  const result = await computeRouteAliasMap(aliases, repoRoot, appRoot, {}, diagnostics)
   const formatted = await format(
     generatedPath,
     renderSource(result.chromeSelector, result.routes),
@@ -151,8 +160,18 @@ export async function renderRouteAliasArtifacts(
   ])
   return { source: formatted.code, membership }
 }
-export async function writeRouteAliasArtifacts(check = false): Promise<void> {
-  const rendered = await renderRouteAliasArtifacts()
+export async function writeRouteAliasArtifacts(
+  check = false,
+  diagnosticsEnabled = false,
+): Promise<void> {
+  const diagnostics = diagnosticsEnabled ? createDiagnosticsCollector() : undefined
+  const totalStart = performance.now()
+  const rendered = await renderRouteAliasArtifacts(
+    ROOT,
+    APP_ROOT,
+    GENERATED,
+    diagnostics?.collector,
+  )
   for (const [file, content] of [
     [GENERATED, rendered.source],
     [ROUTES, rendered.membership],
@@ -161,8 +180,13 @@ export async function writeRouteAliasArtifacts(check = false): Promise<void> {
       if (readFileSync(file, 'utf8') !== content) throw new Error(`${file} is stale; regenerate it`)
     } else writeFileSync(file, content)
   }
+  diagnostics?.collector.phase('total', performance.now() - totalStart)
+  if (diagnostics) writeDiagnostics(diagnostics.summary())
 }
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  await writeRouteAliasArtifacts(process.argv.includes('--check'))
+  await writeRouteAliasArtifacts(
+    process.argv.includes('--check'),
+    process.argv.includes('--diagnostics'),
+  )
   console.log('Web route selectors and catalog membership are up to date.')
 }
