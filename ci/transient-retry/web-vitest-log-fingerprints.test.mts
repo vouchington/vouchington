@@ -15,13 +15,13 @@ const matchingLog = [
   'RUN vX.Y.Z /Users/dev/actions-runners/1/_work/filaments/filaments',
   'VITEST_COVERAGE_ENABLED: true',
   'undefined',
-  "ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL Command was killed with SIGSEGV (Segmentation fault): vitest run '--bail=3' --project web --maxWorkers=7 --shard 1/3 --passWithNoTests",
+  "ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL Command was killed with SIGSEGV (Segmentation fault): vitest run '--bail=3' --project web --shard 1/3 --passWithNoTests",
   '##[error]Process completed with exit code 1.',
 ].join('\n')
 const workerStartTimeoutLog = [
   'VITEST_COVERAGE_ENABLED: false',
-  'Run pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web --maxWorkers=7 --shard 1/3 --passWithNoTests',
-  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web --maxWorkers=7 --shard 1/3 --passWithNoTests',
+  'Run pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web --shard 1/3 --passWithNoTests',
+  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web --shard 1/3 --passWithNoTests',
   'Vitest caught 1 unhandled error during the test run.',
   'Error: [vitest-pool]: Failed to start threads worker for test files /home/runner/work/filaments/filaments/web/components/topic-claims/domain-verification-panel.mock.test.tsx.',
   'Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond',
@@ -70,9 +70,7 @@ describe('web-vitest-sigsegv', () => {
 
   it('fails closed for the removed unsharded coverage command', () => {
     expect(
-      hasWebVitestSegfault(
-        matchingLog.replace('--maxWorkers=7 --shard 1/3 --passWithNoTests', '--coverage'),
-      ),
+      hasWebVitestSegfault(matchingLog.replace('--shard 1/3 --passWithNoTests', '--coverage')),
     ).toBe(false)
   })
 

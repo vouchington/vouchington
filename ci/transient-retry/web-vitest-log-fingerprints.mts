@@ -1,8 +1,12 @@
 function hasCurrentWebVitestShardCommand(log: string): boolean {
+  // Worker count is no longer a CLI flag (tests-web.yml previously hardcoded --maxWorkers=7;
+  // it now comes from the VITEST_MAX_WORKERS repo variable via load-runner-env, consumed by
+  // the root vitest.config.mts, and never appears on the command line). Phase 6 preview: keep
+  // this in sync with tests-web.yml's "Run web tests" invocation if that command changes again.
   return (
     log.includes('vitest run') &&
+    log.includes('--bail=3') &&
     log.includes('--project web') &&
-    log.includes('--maxWorkers=7') &&
     /--shard(?:\s+|=)['"]?\d+\/\d+/.test(log) &&
     log.includes('--passWithNoTests')
   )
