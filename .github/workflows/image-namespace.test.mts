@@ -174,6 +174,52 @@ describe('validation image invariants', () => {
   })
 })
 
+type CallerJob = {
+  uses?: string
+  with?: Record<string, unknown>
+  permissions?: Record<string, string>
+}
+type Caller = { id: string; job: CallerJob }
+
+const PUBLISHER_ID = 'main-backend.yml#publish-backend-images'
+
+const publisher = (): Caller => ({
+  id: PUBLISHER_ID,
+  job: { with: { publish: true }, permissions: { packages: 'write' } },
+})
+
+function buildBackendCallers(): Caller[] {
+  return readdirSync('.github/workflows')
+    .filter(file => file.endsWith('.yml'))
+    .flatMap(file => {
+      const parsed = parseYaml(read(`.github/workflows/${file}`)) as {
+        jobs?: Record<string, CallerJob>
+      }
+      return Object.entries(parsed.jobs ?? {})
+        .filter(([, job]) => job?.uses === './.github/workflows/build-backend.yml')
+        .map(([id, job]) => ({ id: `${file}#${id}`, job }))
+    })
+}
+
+// Publication is gated twice over, and both directions are enforced. Only the main-branch job
+// may publish, and `packages: write` is granted if and only if a caller publishes -- so the
+// credential never sits on a pull-request run that has no use for it, and the publisher can
+// never be quietly stripped of the permission that makes its push work.
+function publicationCallerViolations(callers: Caller[]): string[] {
+  const violations: string[] = []
+  for (const { id, job } of callers) {
+    const publishes = job.with?.publish === true
+    const grantsPackagesWrite = job.permissions?.packages === 'write'
+    if (publishes && id !== PUBLISHER_ID) {
+      violations.push(`${id}: publishes outside the main-branch caller`)
+    }
+    if (publishes !== grantsPackagesWrite) {
+      violations.push(`${id}: packages: write must be granted if and only if it publishes`)
+    }
+  }
+  return violations
+}
+
 describe('backend image publication', () => {
   const source = read('.github/workflows/build-backend.yml')
   const workflow = parseYaml(source) as {
@@ -214,29 +260,40 @@ describe('backend image publication', () => {
     expect(condition).toContain('success()')
   })
 
-  it('is published by the main-branch caller alone', () => {
-    // Publication is gated twice over, and both gates are checked here rather than trusted:
-    // a caller must pass `publish: true` *and* grant `packages: write`. The pull-request
-    // callers do neither, so a validation run cannot reach a registry.
-    type Job = { uses?: string; with?: Record<string, unknown>; permissions?: Record<string, string> }
-    const callers = readdirSync('.github/workflows')
-      .filter(file => file.endsWith('.yml'))
-      .flatMap(file => {
-        const parsed = parseYaml(read(`.github/workflows/${file}`)) as { jobs?: Record<string, Job> }
-        return Object.entries(parsed.jobs ?? {})
-          .filter(([, job]) => job?.uses === './.github/workflows/build-backend.yml')
-          .map(([id, job]) => ({ id: `${file}#${id}`, job }))
-      })
+  it.each([
+    ['accepts the main-branch publisher', [publisher()], []],
+    [
+      'rejects a pull-request caller that publishes',
+      [{ id: 'ci.yml#build-backend', job: { with: { publish: true }, permissions: { packages: 'write' } } }],
+      ['ci.yml#build-backend: publishes outside the main-branch caller'],
+    ],
+    [
+      'rejects the publication credential on a caller that does not publish',
+      [{ id: 'ci.yml#build-backend', job: { permissions: { packages: 'write' } } }],
+      ['ci.yml#build-backend: packages: write must be granted if and only if it publishes'],
+    ],
+    [
+      'rejects publication without the credential that makes it work',
+      [{ id: PUBLISHER_ID, job: { with: { publish: true } } }],
+      [`${PUBLISHER_ID}: packages: write must be granted if and only if it publishes`],
+    ],
+    [
+      'accepts a plain validation caller',
+      [{ id: 'ci.yml#build-backend', job: { with: { trusted_secret_context: true } } }],
+      [],
+    ],
+  ] as [string, Caller[], string[]][])('%s', (_description, callers, expected) => {
+    expect(publicationCallerViolations(callers)).toEqual(expected)
+  })
+
+  it('has no publication-caller violations in the real workflows', () => {
+    const callers = buildBackendCallers()
 
     expect(callers.length, 'build-backend.yml must have callers').toBeGreaterThan(0)
-
-    const publishing = callers.filter(({ job }) => job.with?.publish === true)
-    expect(publishing.map(({ id }) => id)).toEqual(['main-backend.yml#publish-backend-images'])
-
-    for (const { id, job } of callers) {
-      const grantsPackagesWrite = job.permissions?.packages === 'write'
-      expect(grantsPackagesWrite, `${id} packages: write`).toBe(job.with?.publish === true)
-    }
+    expect(publicationCallerViolations(callers)).toEqual([])
+    expect(callers.filter(({ job }) => job.with?.publish === true).map(({ id }) => id)).toEqual([
+      PUBLISHER_ID,
+    ])
   })
 
   it('publishes only into the repository owner namespace', () => {
