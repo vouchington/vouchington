@@ -23,11 +23,7 @@ permissions:
 jobs:
   build:
     if: ${{ inputs.trusted_secret_context }}
-    runs-on: >-
-      ${{ (vars.CI_IMAGE_BUILDS_ON_CODEBUILD == 'true'
-            || contains(github.event.pull_request.labels.*.name, 'codebuild:images'))
-          && format('codebuild-voucha-ci-runner-{0}-{1} image:arm-3.0 instance-size:xlarge', github.run_id, github.run_attempt)
-          || 'ubicloud-standard-8-arm' }}
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     services:
       valkey:
@@ -98,9 +94,7 @@ jobs:
           buildkitd-config-inline: |
             [worker.oci]
               # Keep the proven parallelism ceiling for the api, worker-cpu, and
-              # optional worker-io immutable artifact builds.
-              # This one daemon config is shared by every runs-on branch — Ubicloud
-              # 8-arm (24 GiB) and the CodeBuild `xlarge` (64 GiB) escape hatch.
+              # optional worker-io immutable artifact builds on ubuntu-24.04-arm.
               max-parallelism = 3
 
       - name: Docker metadata (api)

@@ -10,6 +10,7 @@ export interface ExpectationOptions {
   readonly shardTotals?: Partial<Record<string, string>>
   readonly runnable?: Partial<Record<string, boolean>>
   readonly storybookBrowserMode?: string
+  readonly portabilityMacosEnabled?: boolean
 }
 
 export type ProducerResults = Record<string, { result: string; attempt?: string }>

@@ -214,6 +214,7 @@ describe('Filaments patch coverage artifact fan-in', () => {
           storybook: { result: 'success' },
         }),
         'empty',
+        false,
       ),
     ).toEqual(['tooling', 'web', 'web-storybook'])
     expect(
@@ -224,8 +225,26 @@ describe('Filaments patch coverage artifact fan-in', () => {
           storybook: { result: 'success' },
         }),
         'full',
+        false,
       ),
     ).toEqual(['web-storybook', 'web-storybook-browser'])
+  })
+
+  it('only expects a portability-macos group when the runner is enabled', () => {
+    expect(
+      expectedCoverageProducerGroups(
+        JSON.stringify({ 'test-portability': { result: 'success' } }),
+        'full',
+        false,
+      ),
+    ).toEqual(['portability-linux'])
+    expect(
+      expectedCoverageProducerGroups(
+        JSON.stringify({ 'test-portability': { result: 'success' } }),
+        'full',
+        true,
+      ),
+    ).toEqual(['portability-linux', 'portability-macos'])
   })
 
   it('rejects a successful producer without a group contract', () => {
@@ -233,6 +252,7 @@ describe('Filaments patch coverage artifact fan-in', () => {
       expectedCoverageProducerGroups(
         JSON.stringify({ 'test-new-producer': { result: 'success' } }),
         'full',
+        false,
       ),
     ).toThrowError('Successful coverage producer has no group contract: test-new-producer')
   })

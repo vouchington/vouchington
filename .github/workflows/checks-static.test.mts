@@ -74,14 +74,10 @@ describe('checks-static workflow', () => {
     expect(parsed.jobs?.['static-cloudflare']?.if).toBe('inputs.cloudflare-worker')
   })
 
-  it('runs the bare-[self-hosted] static-* jobs on bare [self-hosted]', () => {
-    for (const job of ['static-backend', 'static-lambdas', 'static-cloudflare']) {
-      expect(parsed.jobs?.[job]?.['runs-on']).toEqual(['self-hosted'])
+  it('runs every static-* job on ubuntu-latest', () => {
+    for (const job of ['static-backend', 'static-web', 'static-lambdas', 'static-cloudflare']) {
+      expect(parsed.jobs?.[job]?.['runs-on']).toEqual('ubuntu-latest')
     }
-  })
-
-  it('pins static-web to Linux since it shares the build-web-targets artifact-shape contract (#10990)', () => {
-    expect(parsed.jobs?.['static-web']?.['runs-on']).toEqual(['self-hosted', 'Linux'])
   })
 
   it('budgets each job above its serial critical step timeouts', () => {

@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   complete:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 1
     permissions: {}
     steps:

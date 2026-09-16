@@ -61,7 +61,7 @@ describe('OpenCode OpenRouter code review integration', () => {
       provider: 'openrouter',
       model: 'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free',
       pr_number: '${{ github.event.pull_request.number }}',
-      runs_on: '["self-hosted","Linux","X64","Docker","Code Review"]',
+      runs_on: '["ubuntu-latest"]',
       timeout_minutes: '15',
     })
   })

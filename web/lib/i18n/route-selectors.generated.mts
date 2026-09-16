@@ -127,7 +127,6 @@ export const ROUTE_SELECTORS = [
   { pattern: "/domains/compare", selectorId: "web.route.8a53d9b8f43b4183.c6d15ee89446e25b", hasMembership: true },
   { pattern: "/email/unsubscribe", selectorId: "web.route.8c904f5ae42b9d98.cbf29ce484222325", hasMembership: false },
   { pattern: "/fediverse", selectorId: "web.route.3c101cbf7c3ca9f5.b66a7923dd211d26", hasMembership: true },
-  { pattern: "/feed", selectorId: "web.route.e532f40b0ec7b036.1b44bfd8c3cf64c8", hasMembership: true },
   { pattern: "/feed/news", selectorId: "web.route.f86e50c91e09a9e8.117aad90de1746cc", hasMembership: true },
   { pattern: "/feed/news/friends", selectorId: "web.route.eb4438746e46665a.33eba3c8725214bd", hasMembership: true },
   { pattern: "/feed/news/sources", selectorId: "web.route.d86260e703c9cdf1.33eba3c8725214bd", hasMembership: true },

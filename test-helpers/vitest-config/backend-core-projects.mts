@@ -1,7 +1,6 @@
 import react from '@vitejs/plugin-react'
 import type { TestProjectConfiguration } from 'vitest/config'
 
-import { COLD_BACKEND_PROGRAM_TIMEOUT_MS } from '../../backend/test-helpers/api-fixtures/cold-build-budget.mts'
 import { forkCrashReportExecArgv } from './backend-data-projects.mts'
 
 export const backendCoreProjects: TestProjectConfiguration[] = [
@@ -83,8 +82,16 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       exclude: ['**/node_modules/**', '**/.git/**'],
       setupFiles: ['./test-helpers/vitest.setup.fork-exit-sentinel.mts'],
       execArgv: forkCrashReportExecArgv,
-      testTimeout: COLD_BACKEND_PROGRAM_TIMEOUT_MS,
-      hookTimeout: COLD_BACKEND_PROGRAM_TIMEOUT_MS,
+      // Backstop only, not the real per-test/per-hook budget: every it()/beforeAll() in these four
+      // files that needs more than this already carries its own explicit inline timeout override
+      // composed from cold-build-budget.mts's constants (COLD_BACKEND_PROGRAM_TIMEOUT_MS,
+      // COLD_OPENAPI_BUILD_TIMEOUT_MS, and multiples of them — see those call sites). This
+      // project-level default must stay within dev/vitest-config.test.mts's ceiling policy
+      // (#10762, #8078) rather than track COLD_BACKEND_PROGRAM_TIMEOUT_MS directly, since that
+      // constant (120s) now exceeds the 60s/90s ceiling. 60s matches this project's original,
+      // already-proven-sufficient backstop value.
+      testTimeout: 60_000,
+      hookTimeout: 60_000,
     },
   },
   {

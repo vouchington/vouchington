@@ -49,7 +49,7 @@ describe('fix-main workflow', () => {
     const relatedJob = parsedMain.jobs?.['related-candidates']
 
     expect(relatedJob).toBeDefined()
-    expect(relatedJob?.['runs-on']).toEqual(['self-hosted'])
+    expect(relatedJob?.['runs-on']).toEqual('ubuntu-latest')
     expect(relatedJob?.needs).toContain('triage-and-rerun')
     expect(relatedJob?.if).toBe("needs.triage-and-rerun.outputs.should_dispatch == 'true'")
     expect(relatedJob?.if).not.toContain("github.event.workflow_run.event == 'push'")

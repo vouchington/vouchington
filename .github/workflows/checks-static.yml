@@ -43,7 +43,7 @@ permissions:
 jobs:
   static-backend:
     if: inputs.backend
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       actions: read
@@ -88,7 +88,7 @@ jobs:
     # Pinned to Linux: it now shares the build-web-targets composite with the Playwright/web-
     # integration consumers (all Linux self-hosted), so its output must match their platform key
     # (#10990) rather than floating onto macOS overflow capacity.
-    runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
       contents: read
@@ -155,7 +155,7 @@ jobs:
 
   static-lambdas:
     if: inputs.lambdas
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 18
     permissions:
       contents: read
@@ -203,7 +203,7 @@ jobs:
 
   static-cloudflare:
     if: inputs.cloudflare-worker
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read

@@ -1114,7 +1114,29 @@ ensure_database_exists() {
             rm -f "$psql_err_file" "$createdb_err_file"
             exit 1
         fi
+        # The listing above didn't fail with a recognized connection error but also didn't
+        # include $DB_NAME, yet still wrote to stderr (e.g. a transient `psql -lqt` warning) —
+        # surface it so a run that falls through to createdb below explains why, instead of going
+        # quiet. This pipeline has no `pipefail`, so `$?` above reflects grep's exit status, not
+        # psql's; this note is the only signal of a non-fatal psql-side anomaly on this path.
+        if [ -s "$psql_err_file" ]; then
+            echo -e "${YELLOW}Note: 'psql -lqt' did not list $DB_NAME; its stderr was:${NC}" >&2
+            cat "$psql_err_file" >&2
+        fi
         if ! createdb "$DB_NAME" 2>"$createdb_err_file"; then
+            if grep -q "already exists" "$createdb_err_file" 2>/dev/null; then
+                # ensure_database_exists's post-condition ("the database exists") is already
+                # satisfied. The psql -lqt listing above is only an optimization to skip this
+                # createdb round-trip; createdb itself is authoritative on whether the database
+                # exists, regardless of why the listing missed it. Treating this as fatal broke
+                # the intentionally idempotent double-invocation across `./dev/initialize backend`
+                # then `./dev/initialize web` in the same worktree, both of which target the same
+                # worktree_resource_owned_db_name() and must both succeed.
+                echo -e "${YELLOW}Database $DB_NAME already exists (per createdb), skipping creation${NC}"
+                rm -f "$psql_err_file" "$createdb_err_file"
+                echo ""
+                return 0
+            fi
             if grep -q "No such file\|Connection refused\|could not connect" "$createdb_err_file" 2>/dev/null; then
                 print_database_connection_error "$mode"
             fi

@@ -18,7 +18,7 @@ keep each topic within one further link hop.
 ## Focused references
 
 - [Artifact rerun safety](reference-artifact-rerun-safety.md)
-- [AWS CodeBuild quotas and concurrency](reference-aws-codebuild-service-quotas-and-concurrency.md)
+- [GitHub Actions concurrency locks](reference-github-actions-concurrency-locks.md)
 - [Auto Harness automation security boundary](reference-harness-automation-accepted-risk.md)
 - [Auto Harness automation](reference-harness-automation.md)
 - [Codex Fix Main dependency policy](reference-fix-main-dependency-policy.md)

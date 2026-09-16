@@ -59,7 +59,7 @@ describe('scheduled-prompts workflow', () => {
     const selectStep = selectJob?.steps?.find(step => step.id === 'select')
     const renderStep = selectJob?.steps?.find(step => step.id === 'render')
 
-    expect(selectJob?.['runs-on']).toEqual(['self-hosted'])
+    expect(selectJob?.['runs-on']).toEqual('ubuntu-latest')
     expect(selectStep?.env?.['REQUESTED_PROMPT']).toBe('${{ inputs.prompt_file }}')
     expect(selectStep?.run).toContain('docs/prompts/scheduled/*.md')
     expect(selectStep?.run).toContain('shopt -s nullglob')

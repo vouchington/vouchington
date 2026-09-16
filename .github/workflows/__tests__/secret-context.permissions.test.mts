@@ -166,7 +166,7 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(coverageJob).toContain('storybook-result: ${{ needs.storybook.result }}')
     expect(testsJob).toContain('test-coverage')
     expect(storybookWorkflow).toContain('workflow_call:')
-    expect(storybookWorkflow).toContain('runs-on: [self-hosted, Playwright]')
+    expect(storybookWorkflow).toContain('runs-on: ubuntu-latest')
     expect(storybookWorkflow).toContain(
       'VITEST_COVERAGE_SCOPE=web-storybook pnpm exec ./ci/with-node-test-options vitest run --bail=3',
     )

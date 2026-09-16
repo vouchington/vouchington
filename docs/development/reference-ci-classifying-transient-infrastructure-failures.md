@@ -185,7 +185,7 @@ the same `test-tooling / tooling` job is #9766.
 is expected output from `ci/setup-web-integration.mock.test.mts` on every healthy tooling run. A
 production `writeTimingReport` `ENOSPC` (Node `code: 'ENOSPC'`, `, write`) is a real disk signal and
 must not be classified from that fixture string ([#11686](https://github.com/jonathanong/filaments/issues/11686)).
-A route-selector 30s timeout plus `Timeout terminating threads worker` plus an 8-minute step timeout
+A route-selector 30s timeout plus `Timeout terminating threads worker` plus a 16-minute step timeout
 is a repository test/hang defect (`dispatch`), not a known-transient. Every other
 non-aggregate failed leaf must independently satisfy the same contract or match the clean
 runner-shutdown classifier. The contract also requires GitHub step data to show the matching

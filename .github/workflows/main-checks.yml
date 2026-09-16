@@ -41,7 +41,7 @@ permissions:
 
 jobs:
   select-main-checks:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
       contents: read

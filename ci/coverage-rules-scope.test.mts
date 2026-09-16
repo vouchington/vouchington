@@ -32,6 +32,11 @@ function reachableFiles(): string[] {
 }
 
 describe('.coverage-rules.yml scope', () => {
+  // Scans every reachable file in the repo, so it inherently scales with repo size and CPU
+  // headroom rather than the 30s tooling-project default. Observed on GitHub-hosted ubuntu-latest
+  // (2 vCPUs): 63.6s single slowest case. 120s (~2x) stays well under the "Run tooling tests"
+  // step's 16-minute (960s) ceiling. A project-wide budget bump is the wrong mechanism here — see
+  // the comment on toolingTestBudget in test-helpers/vitest-config/tooling-projects.mts.
   it('never throws executableLineNumbers on a real file reachable by a positive-threshold rule', () => {
     const files = reachableFiles()
     expect(files.length).toBeGreaterThan(0)
@@ -44,7 +49,7 @@ describe('.coverage-rules.yml scope', () => {
       }
     }
     expect(failures).toEqual([])
-  })
+  }, 120_000)
 
   it('ignores generated, declaration, test, and fixture files that no suite ever instruments', () => {
     const files = repoFiles()
@@ -109,6 +114,8 @@ describe('.coverage-rules.yml scope', () => {
     expect(missing).toEqual([{ file, lines: [1], rule: 'ts-shared/**' }])
   })
 
+  // Scans every reachable file in the repo (see reachableFiles' single-slowest-case rationale
+  // above); shares the same 120s per-test override for the same reason.
   it('never marks a file ignored that the default Vitest coverage config would still instrument', () => {
     // Every positive-threshold rule below is backed by a suite running under
     // coverageConfigForScope(undefined) (see the file-level comment in .coverage-rules.yml). If
@@ -128,5 +135,5 @@ describe('.coverage-rules.yml scope', () => {
     )
 
     expect(wronglyIgnored).toEqual([])
-  })
+  }, 120_000)
 })

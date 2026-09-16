@@ -44,11 +44,9 @@ function workflowJobSection(body: string, jobName: string): string {
 }
 
 describe('tests-playwright.yml', () => {
-  it('runs the selector on bare self-hosted so planning does not occupy the Playwright pool', () => {
-    expect(workflowJobSection(workflow, 'select')).toContain('runs-on: [self-hosted]\n')
-    expect(workflowJobSection(workflow, 'playwright-tests')).toContain(
-      'runs-on: [self-hosted, Linux, Docker, Playwright]',
-    )
+  it('runs the selector and Playwright shards on ubuntu-latest', () => {
+    expect(workflowJobSection(workflow, 'select')).toContain('runs-on: ubuntu-latest\n')
+    expect(workflowJobSection(workflow, 'playwright-tests')).toContain('runs-on: ubuntu-latest')
   })
 
   it('accepts an optional shard-total override and transports it to the selector', () => {
@@ -57,7 +55,9 @@ describe('tests-playwright.yml', () => {
         type: string
         required: false
         default: ''`)
-    expect(workflow).toContain('SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override }}')
+    expect(workflow).toContain(
+      'SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override || vars.PLAYWRIGHT_SHARD_TOTAL }}',
+    )
     expect(workflow).not.toContain('PLAYWRIGHT_FILES_PER_SHARD')
     expect(workflow).not.toContain('PLAYWRIGHT_TEST_SHARDS')
   })

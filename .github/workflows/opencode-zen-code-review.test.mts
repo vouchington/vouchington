@@ -61,7 +61,7 @@ describe('OpenCode Zen code review integration', () => {
       provider: 'opencode-zen',
       model: 'opencode/muse-spark-1.3-contributor-free',
       pr_number: '${{ github.event.pull_request.number }}',
-      runs_on: '["self-hosted","Linux","X64","Docker","Code Review"]',
+      runs_on: '["ubuntu-latest"]',
       timeout_minutes: '10',
     })
   })

@@ -60,7 +60,8 @@ permissions:
 
 jobs:
   portability-macos:
-    runs-on: [self-hosted, macOS, Tests]
+    if: vars.CI_PORTABILITY_MACOS_ENABLED == 'true'
+    runs-on: macos-latest
     timeout-minutes: 17
     permissions:
       actions: read
@@ -199,7 +200,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
 
   portability-linux:
-    runs-on: [self-hosted, Linux, Docker, Tests]
+    runs-on: ubuntu-latest
     timeout-minutes: 17
     permissions:
       actions: read

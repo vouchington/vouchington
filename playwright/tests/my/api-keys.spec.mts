@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
+import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 
 test.describe('My API Keys Page', () => {
   test.use({ storageState: AUTH_STATE })
@@ -83,6 +84,11 @@ test.describe('My API Keys Page', () => {
     await page.getByTestId('api-keys-dismiss-raw-key-button').click()
     await expect(page.getByTestId('api-keys-created-alert')).toBeHidden()
     await page.reload()
+    // page.reload() only waits for the 'load' event; React hasn't necessarily
+    // hydrated yet, so the click below can fire before React attaches its
+    // onClick handler, silently dropping it. See navigateTo(), which does the
+    // same wait after every navigation.
+    await waitForBelowFoldHydration(page)
     await expect(page.getByTestId('api-key-active-row').filter({ hasText: label })).toBeVisible()
     await expect(page.getByTestId('api-keys-created-alert')).toBeHidden()
 

@@ -120,7 +120,13 @@ describe('findEscapeCommentClosingKeywordLeaks', () => {
     const body = `<!-- related-issues-validation: allow #1 because${' '.repeat(50_000)}`
     const start = Date.now()
     const leaks = findEscapeCommentClosingKeywordLeaks(body)
-    expect(Date.now() - start).toBeLessThan(1000)
+    // Wall-clock guard, not an algorithmic-complexity assertion: real catastrophic backtracking
+    // would take vastly longer than any CPU-contention jitter this ceiling needs to absorb, so
+    // this still catches a genuine regression. Observed on GitHub-hosted ubuntu-latest (2 vCPUs,
+    // shared across this project's parallel workers): 1478ms, vs. this test's original 1000ms
+    // ceiling tuned for faster/self-hosted hardware. 5000ms (~3.4x) absorbs run-to-run contention
+    // variance.
+    expect(Date.now() - start).toBeLessThan(5000)
     expect(leaks).toEqual([])
   })
 

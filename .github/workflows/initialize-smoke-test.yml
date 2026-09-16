@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   initialize-smoke-test:
-    runs-on: [self-hosted, Linux, Docker]
+    runs-on: ubuntu-latest
     # Chains three full ./dev/initialize passes (monorepo, backend, web) plus
     # PostgreSQL provisioning, each individually allowed up to 5 minutes below.
     # The backend pass repeats dependency/native-addon setup and runs database

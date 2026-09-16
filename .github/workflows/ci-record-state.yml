@@ -14,7 +14,7 @@ permissions: {}
 
 jobs:
   record-state:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 1
     permissions: {}
     env:

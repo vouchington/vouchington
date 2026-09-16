@@ -57,7 +57,7 @@ permissions:
 
 jobs:
   prep:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
       contents: read
@@ -91,6 +91,7 @@ jobs:
         id: shard-total
         env:
           SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override }}
+          FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_WEB_FILES_PER_SHARD }}
         run: node ci/vitest/shard-total.mts test-web
       - uses: ./.github/actions/make-shard-matrix
         id: shards
@@ -99,8 +100,8 @@ jobs:
 
   web-tests:
     needs: [prep]
-    runs-on: [self-hosted, Linux, Docker, Tests]
-    timeout-minutes: 24
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
     permissions:
       actions: read
       contents: read
@@ -122,6 +123,9 @@ jobs:
       - uses: ./.github/actions/clean-workspace
         with:
           deepen: ${{ inputs.publish_coverage && 'true' || 'false' }}
+      - uses: ./.github/actions/load-runner-env
+        with:
+          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
         with:
@@ -158,11 +162,21 @@ jobs:
               done <<< "$SELECTED_TEST_FILES"
             fi
           fi
-          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web --maxWorkers=7 --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"
+          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
-        # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
-        # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
-        timeout-minutes: 10
+        # test-execution time higher than the old <5m-per-shard target tolerated. On GitHub-hosted
+        # ubuntu-latest (2 vCPUs) with coverage instrumentation enabled, real failing shards were
+        # observed being killed at this step's prior 10m ceiling without ever completing (no
+        # observed-completion basis for a tighter number yet), so this is a generous watchdog value
+        # rather than a measured one; tune it down once a passing run reports a real per-shard
+        # duration. 20m keeps 12m of headroom under the job's 32m ceiling for setup-node-pnpm plus
+        # the coverage/blob upload and report-persistence steps that follow. Phase 6 preview: this
+        # step previously hardcoded a fixed 7-worker CLI flag on a 2-vCPU runner, oversubscribing
+        # the CPU and plausibly contributing to those slow/killed shards independent of the ceiling
+        # itself; worker count now comes from VITEST_MAX_WORKERS via load-runner-env below, so
+        # re-derive this number from real run data rather than assuming the old observations still
+        # apply.
+        timeout-minutes: 20
       - if: failure()
         timeout-minutes: 1
         continue-on-error: true

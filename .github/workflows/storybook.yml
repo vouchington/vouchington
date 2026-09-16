@@ -91,7 +91,7 @@ permissions:
 
 jobs:
   storybook:
-    runs-on: [self-hosted, Playwright]
+    runs-on: ubuntu-latest
     timeout-minutes: 94
     # No write permissions here: this job checks out and runs PR-controlled code.
     permissions:

@@ -79,18 +79,6 @@ longer-running shards, while 10 minutes is a hard performance ceiling. The sched
 for breaches; the budget does not impose a job timeout or turn an otherwise successful job red.
 
 Cost model: self-hosted `Tests`/`CPU`/`Playwright` runners preserve local caches but consume scarce
-fixed capacity. Ubicloud and CodeBuild runners are ephemeral and per-minute billed; use them only
-after confirming their environment fits the job, because queue relief trades against cold-start,
-cache, and direct-runtime cost.
-
-**Managed image-build demand budget.** The private infrastructure repository owns the managed
-image-build runner and sets its concurrent-build limit. The runner is shared by
-Filaments artifact publication, ECR retention, image-build escape hatches, and private
-infrastructure jobs. Operators must verify the live quota and current receiver demand before
-opening an image-build validation window. Image builds default to Ubicloud, so at rest they add
-zero CodeBuild demand; the budget matters only while the escape hatch is active. The
-`codebuild:images` PR label is self-limiting — one PR adds at most one `build-backend` (`xlarge`)
-and one `build-web` (`large`) CodeBuild build. `vars.CI_IMAGE_BUILDS_ON_CODEBUILD == 'true'` adds
-both builds for every open PR push and for `main`, on top of artifact-publication and private
-infrastructure demand. Prefer the label for routine validation; use the variable only for a
-deliberate, short, observed window, then unset it promptly.
+fixed capacity. Ubicloud runners are ephemeral and per-minute billed; use them only after confirming
+their environment fits the job, because queue relief trades against cold-start, cache, and
+direct-runtime cost.

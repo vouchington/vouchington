@@ -15,4 +15,4 @@ Narrative runner architecture and operational guidance. For the exact, generated
 - <a id="runner-level-concurrency-configuration"></a>[Runner-Level Concurrency Configuration](reference-runner-level-concurrency-configuration.md)
 - <a id="runner-types"></a>[Runner Types](reference-runner-types.md)
 - <a id="runner-fleet-capacity"></a>[Runner Fleet Capacity](reference-runner-fleet-capacity.md)
-- <a id="aws-codebuild-service-quotas-and-concurrency"></a>[AWS CodeBuild Service Quotas And Concurrency](reference-aws-codebuild-service-quotas-and-concurrency.md)
+- <a id="github-actions-concurrency-locks"></a>[GitHub Actions Concurrency Locks](reference-github-actions-concurrency-locks.md)

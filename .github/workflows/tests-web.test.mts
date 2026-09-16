@@ -77,27 +77,34 @@ describe('Web Tests workflow', () => {
     })
   })
 
-  it('prepares a configurable web test shard matrix on a self-hosted utility runner', () => {
+  it('prepares a configurable web test shard matrix on ubuntu-latest', () => {
     const prep = jobSection('prep')
 
-    expect(prep).toContain('runs-on: [self-hosted]')
+    expect(prep).toContain('runs-on: ubuntu-latest')
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
     expect(prep).toContain('node ci/vitest/shard-total.mts test-web')
+    expect(prep).toContain('FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_WEB_FILES_PER_SHARD }}')
     expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
   })
 
-  it('runs dynamically sized 7-worker Vitest shards on the self-hosted Docker Tests pool', () => {
+  it('runs dynamically sized Vitest shards on ubuntu-latest, worker count from load-runner-env', () => {
     const tests = jobSection('web-tests')
 
     expect(tests).toContain('needs: [prep]')
-    expect(tests).toContain('runs-on: [self-hosted, Linux, Docker, Tests]')
+    expect(tests).toContain('runs-on: ubuntu-latest')
     expect(tests).toContain('fail-fast: false')
     expect(tests).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
+    expect(tests).toContain('uses: ./.github/actions/load-runner-env')
+    expect(tests).toContain('VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}')
     expect(tests).toContain(
-      'vitest run --bail=3 --project web --maxWorkers=7 --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"',
+      'vitest run --bail=3 --project web --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"',
     )
+    // Worker count is never a CLI flag here — the root vitest.config.mts computes
+    // `maxWorkers: parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS)` for every project,
+    // and load-runner-env is what puts VITEST_MAX_WORKERS in the environment before this runs.
+    expect(tests).not.toMatch(/--maxWorkers/)
     expect(tests).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
     )

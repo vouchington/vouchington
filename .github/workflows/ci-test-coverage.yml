@@ -104,7 +104,7 @@ jobs:
       inputs.detect-changes-outputs-skip-settled-producers != 'true' &&
       (inputs.detect-changes-outputs-docs-only != 'true' ||
         inputs.detect-changes-outputs-has-vitest-full == 'true')
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 14
     # id-token is omitted: this job checks out and runs PR-controlled code.
     permissions:
@@ -160,6 +160,7 @@ jobs:
           WEB_API_SHARD_TOTAL: ${{ inputs.test-web-api-shard-total }}
           WEB_INTEGRATION_SHARD_TOTAL: ${{ inputs.test-web-integration-shard-total }}
           STORYBOOK_BROWSER_MODE: ${{ inputs.select-vitest-outputs-storybook-browser-mode || 'full' }}
+          PORTABILITY_MACOS_ENABLED: ${{ vars.CI_PORTABILITY_MACOS_ENABLED == 'true' }}
           VITEST_REPORT_ATTEMPTS_DIR: ./vitest-report-attempts
           RESULTS: |-
             {
@@ -193,6 +194,7 @@ jobs:
             --arg worker "$RUN_CLOUDFLARE_WORKER_TESTS" \
             --arg lambdas "$RUN_LAMBDA_TESTS" \
             --arg storybook "$STORYBOOK_BROWSER_MODE" \
+            --arg portability_macos "$PORTABILITY_MACOS_ENABLED" \
             '
               def ran($job):
                 ($results[$job].result // "skipped") as $result |
@@ -225,7 +227,8 @@ jobs:
                 if ran("test-web-integration") then shards("test-web-integration"; "web-integration-shard-"; $web_integration_total)[] else empty end,
                 if ran("test-cloudflare-worker") and $worker == "true" then suite("test-cloudflare-worker"; "cloudflare-worker") else empty end,
                 if ran("test-lambdas") and $lambdas == "true" then suite("test-lambdas"; "lambdas") else empty end,
-                if ran("test-portability") then suite("test-portability"; "portability-linux"), suite("test-portability"; "portability-macos") else empty end
+                if ran("test-portability") then suite("test-portability"; "portability-linux") else empty end,
+                if ran("test-portability") and $portability_macos == "true" then suite("test-portability"; "portability-macos") else empty end
               ] | unique_by(.suite) | {
                 version: "vitest-report-expectations:v2",
                 attempt: $attempt,
@@ -263,6 +266,7 @@ jobs:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           STORYBOOK_BROWSER_MODE: ${{ inputs.select-vitest-outputs-storybook-browser-mode || 'full' }}
+          CI_PORTABILITY_MACOS_ENABLED: ${{ vars.CI_PORTABILITY_MACOS_ENABLED == 'true' }}
           # Built from each job's `.result` directly instead of `toJSON(needs)`: that dumps every
           # job's full outputs, including select-vitest's files-test-* lists, which can be large
           # enough on big PRs that GitHub Actions fails to spawn this step's shell ("Argument list

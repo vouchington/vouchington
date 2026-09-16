@@ -36,6 +36,7 @@ const coverageProducerGroupsByJob: Readonly<Record<string, readonly string[]>> =
 export function expectedCoverageProducerGroups(
   rawResults: string | undefined,
   storybookBrowserMode: string,
+  portabilityMacosEnabled: boolean,
 ): readonly string[] {
   if (!rawResults) throw new Error('RESULTS is required')
   const results = JSON.parse(rawResults) as unknown
@@ -56,9 +57,9 @@ export function expectedCoverageProducerGroups(
     const groups = coverageProducerGroupsByJob[job]
     if (!groups) throw new Error(`Successful coverage producer has no group contract: ${job}`)
     for (const group of groups) {
-      if (group !== 'web-storybook-browser' || storybookBrowserMode !== 'empty') {
-        expected.add(group)
-      }
+      if (group === 'web-storybook-browser' && storybookBrowserMode === 'empty') continue
+      if (group === 'portability-macos' && !portabilityMacosEnabled) continue
+      expected.add(group)
     }
   }
   return [...expected].toSorted((left, right) => Buffer.from(left).compare(Buffer.from(right)))
@@ -126,6 +127,7 @@ async function main(): Promise<number> {
       expectedProducerGroups: expectedCoverageProducerGroups(
         process.env.RESULTS,
         process.env.STORYBOOK_BROWSER_MODE ?? 'full',
+        process.env.CI_PORTABILITY_MACOS_ENABLED === 'true',
       ),
     })
     for (const pair of result.selected) {

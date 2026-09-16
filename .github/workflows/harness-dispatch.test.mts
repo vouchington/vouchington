@@ -79,7 +79,7 @@ describe('Auto Harness dispatch boundary', () => {
     const job = workflow.jobs.dispatch
     expect(Object.keys(workflow.jobs)).toEqual(['dispatch'])
     expect(job?.environment).toBe('auto-harness')
-    expect(job?.['runs-on']).toEqual(['self-hosted'])
+    expect(job?.['runs-on']).toEqual('ubuntu-latest')
     const checkout = job?.steps.find(step => step.uses?.startsWith('actions/checkout@'))
     expect(job?.steps[0]?.uses).toMatch(/^actions\/checkout@[0-9a-f]{40}$/u)
     expect(job?.steps.indexOf(checkout!)).toBe(0)

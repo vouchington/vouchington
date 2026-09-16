@@ -132,5 +132,5 @@ families, reusable caller drift, required or forbidden routes, exact aggregate f
 ordering, and targeted-rerun downstream closure. Workflow-specific tests retain conditions, inputs,
 outputs, secrets, permissions, runners, scripts, and runtime mechanics instead of duplicating graph
 assertions. See
-[AWS CodeBuild Service Quotas And Concurrency § GitHub Actions concurrency locks](../../.github/workflows/reference-aws-codebuild-service-quotas-and-concurrency.md#github-actions-concurrency-locks)
+[GitHub Actions Concurrency Locks](../../.github/workflows/reference-github-actions-concurrency-locks.md)
 for authoring guidance.

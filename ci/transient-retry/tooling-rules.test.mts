@@ -82,7 +82,7 @@ describe('tooling teardown plus artifact upload timeout safety', () => {
                   'FAIL i18n-extract-codemod static-code-analysis/i18n-extract/route-selector-map.test.mts',
                   'Error: Test timed out in 30000ms.',
                   '[vitest-pool]: Timeout terminating threads worker for test files static-code-analysis/i18n-extract/route-selector-map.test.mts.',
-                  "##[error]The action 'Run tooling tests' has timed out after 8 minutes.",
+                  "##[error]The action 'Run tooling tests' has timed out after 16 minutes.",
                 ].join('\n'),
               ],
             ]),

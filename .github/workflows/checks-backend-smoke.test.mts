@@ -9,7 +9,7 @@ type SmokeWorkflow = {
   jobs?: Record<
     string,
     {
-      'runs-on'?: string[]
+      'runs-on'?: string
       'timeout-minutes'?: number
       services?: Record<string, { image?: string }>
       steps?: Array<{ name?: string; uses?: string; run?: string; env?: Record<string, string> }>
@@ -26,7 +26,7 @@ describe('checks-backend-smoke workflow', () => {
     expect(workflow).toMatchObject({ name: 'backend-smoke' })
     expect(workflow.permissions).toEqual({ contents: 'read' })
     expect(workflow.env).toEqual({ NODE_ENV: 'test' })
-    expect(smoke?.['runs-on']).toEqual(['self-hosted', 'Linux', 'Docker', 'Tests'])
+    expect(smoke?.['runs-on']).toEqual('ubuntu-latest')
     expect(smoke?.services?.postgres?.image).toMatch(/^pgvector\/pgvector:pg18@sha256:/)
     expect(smoke?.services?.valkey?.image).toMatch(
       /^valkey\/valkey-bundle:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$/u,

@@ -20,7 +20,7 @@ permissions: {}
 
 jobs:
   ready-dedupe:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 1
     permissions:
       actions: read
@@ -72,7 +72,7 @@ jobs:
     needs: ready-dedupe
     if: ${{ needs.ready-dedupe.outputs.reused-producers-json != '[]' }}
     name: ${{ matrix.producer }} reused
-    runs-on: [self-hosted]
+    runs-on: ubuntu-slim
     timeout-minutes: 1
     continue-on-error: true
     permissions: {}

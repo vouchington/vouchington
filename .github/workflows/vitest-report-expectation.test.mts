@@ -59,6 +59,7 @@ function runExpectationResolver(
       WEB_API_SHARD_TOTAL: options.shardTotals?.['test-web-api'] ?? '',
       WEB_INTEGRATION_SHARD_TOTAL: options.shardTotals?.['test-web-integration'] ?? '',
       STORYBOOK_BROWSER_MODE: options.storybookBrowserMode ?? 'full',
+      PORTABILITY_MACOS_ENABLED: String(options.portabilityMacosEnabled ?? false),
       RUN_WEB_TESTS: String(options.runnable?.['test-web'] ?? false),
       RUN_WEB_API_TESTS: String(options.runnable?.['test-web-api'] ?? false),
       RUN_BACKEND_UNIT_TESTS: String(options.runnable?.['test-backend-unit'] ?? false),
@@ -248,8 +249,11 @@ describe('Vitest report expectation fan-in', () => {
         { runnable: { 'test-web': true } },
       ).suites.map(expectation => expectation.suite),
     ).toEqual([])
+    const p: ProducerResults = { 'test-portability': { result: 'success' } }
+    const withMacos = resolveContext(p, { portabilityMacosEnabled: true })
+    expect(resolveContext(p).suites.map(e => e.suite)).toEqual(['portability-linux'])
+    expect(withMacos.suites.map(e => e.suite)).toEqual(['portability-linux', 'portability-macos'])
   })
-
   it.each(['failure', 'cancelled'])(
     'keeps suite-specific floors after aggregate %s',
     aggregateResult => {

@@ -3,8 +3,8 @@ import { formatTeardownOverrunDiagnostics } from '../test-helpers/vitest-teardow
 /** Root vitest.config.mts teardownTimeout. */
 export const TOOLING_TEARDOWN_TIMEOUT_MS = 20_000
 export const TOOLING_HANG_GRACE_MS = 10_000
-/** Well under tests-tooling.yml's 8-minute step. Local runs omit this cap. */
-export const TOOLING_HANG_WALL_CLOCK_MS = 6 * 60_000
+/** Well under tests-tooling.yml's 16-minute step. Local runs omit this cap. */
+export const TOOLING_HANG_WALL_CLOCK_MS = 12 * 60_000
 const PENDING_LIMIT = 512
 
 export const WORKER_TERMINATE_PATTERN = /Timeout terminating (?:threads|forks) worker/

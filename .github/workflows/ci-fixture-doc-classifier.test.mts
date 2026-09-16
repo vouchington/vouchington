@@ -65,7 +65,7 @@ const fixtureDocumentationPaths = [
   '.github/workflows/reference-runner-types.md',
   '.github/workflows/reference-artifact-rerun-safety.md',
   '.github/workflows/reference-runner-fleet-capacity.md',
-  '.github/workflows/reference-aws-codebuild-service-quotas-and-concurrency.md',
+  '.github/workflows/reference-github-actions-concurrency-locks.md',
   '.github/workflows/reference-harness-automation-accepted-risk.md',
   '.github/workflows/reference-self-hosted-runner-caching.md',
   '.github/workflows/reference-self-hosted-runner-secret-isolation.md',

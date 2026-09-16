@@ -28,7 +28,7 @@ jobs:
     if: >-
       vars.HARNESS_DISPATCH_ENABLED == 'true' &&
       vars.HARNESS_SCHEDULED_ENABLED == 'true'
-    runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
       group: harness-dispatch-fleet-admission

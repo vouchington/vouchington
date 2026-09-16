@@ -45,7 +45,7 @@ jobs:
       provider: openrouter
       model: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
       pr_number: ${{ github.event.pull_request.number }}
-      runs_on: '["self-hosted","Linux","X64","Docker","Code Review"]'
+      runs_on: '["ubuntu-latest"]'
       # Lowered from 60: successful runs complete in 1.5-8min, and failures (rate-limit) surface in
       # under 5 minutes. No longer sharing a workflow run with opencode-zen-review (#11267), so this
       # value only needs to cover this reviewer's own worst case.
