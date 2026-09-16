@@ -249,22 +249,11 @@ describe('Vitest report expectation fan-in', () => {
         { runnable: { 'test-web': true } },
       ).suites.map(expectation => expectation.suite),
     ).toEqual([])
+    const p: ProducerResults = { 'test-portability': { result: 'success' } }
+    const withMacos = resolveContext(p, { portabilityMacosEnabled: true })
+    expect(resolveContext(p).suites.map(e => e.suite)).toEqual(['portability-linux'])
+    expect(withMacos.suites.map(e => e.suite)).toEqual(['portability-linux', 'portability-macos'])
   })
-
-  it('only expects a portability-macos report when the runner is enabled', () => {
-    expect(
-      resolveContext({ 'test-portability': { result: 'success' } }).suites.map(
-        expectation => expectation.suite,
-      ),
-    ).toEqual(['portability-linux'])
-    expect(
-      resolveContext(
-        { 'test-portability': { result: 'success' } },
-        { portabilityMacosEnabled: true },
-      ).suites.map(expectation => expectation.suite),
-    ).toEqual(['portability-linux', 'portability-macos'])
-  })
-
   it.each(['failure', 'cancelled'])(
     'keeps suite-specific floors after aggregate %s',
     aggregateResult => {
