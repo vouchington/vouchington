@@ -69,10 +69,18 @@ describe('main-backend workflow', () => {
     expect(workflow).not.toContain('cleanup-artifacts.yml')
   })
 
-  it('does not build or publish artifacts in the source workflow', () => {
+  it('builds and publishes the deployable images without assembling deployment metadata', () => {
     const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
 
-    expect(workflow).not.toContain('build-backend')
+    // Reversed by vouchington/vouchington-infra#274. This workflow previously built nothing, so
+    // the only deployable build happened afterwards in the infrastructure repository and never
+    // passed through this repository's smoke tests or scans. It now builds and publishes the
+    // images that actually get deployed, making the tested image and the deployed image the
+    // same artifact.
+    expect(workflow).toContain('uses: ./.github/workflows/build-backend.yml')
+    expect(workflow).toContain('publish: true')
+
+    // Unchanged: assembling the deployment payload remains the completed-run receiver's job.
     expect(workflow).not.toContain('artifacts_json')
     expect(workflow).not.toContain('worker_io_enabled')
   })
