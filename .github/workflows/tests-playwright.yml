@@ -330,11 +330,10 @@ jobs:
           node --experimental-strip-types backend/services/localization/compile-cli.mts --source localization/catalog --output "$sqlite_path"
           echo "LOCALIZATION_SQLITE_PATH=$sqlite_path" >> "$GITHUB_ENV"
       - name: Run Playwright tests
-        # 10-minute hard-ceiling baseline (matches the vitest jobs' watchdog) plus a ~30s/shard
-        # build-time buffer specific to Playwright's per-shard Next.js build/browser warm-up
-        # variance, rounded up to a whole minute since GitHub Actions timeout-minutes literals
-        # in this repo stay integral.
-        timeout-minutes: 11
+        # Sized to PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-selection.mts): a
+        # 313s/shard execution budget plus a per-shard warm-up/variance buffer, rounded up to a
+        # whole minute since GitHub Actions timeout-minutes literals in this repo stay integral.
+        timeout-minutes: 9
         env:
           GIT_COMMIT: ${{ github.sha }}
           NEXT_PUBLIC_GIT_COMMIT: ${{ github.sha }}
