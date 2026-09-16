@@ -30,10 +30,11 @@ permissions:
 
 jobs:
   cleanup:
-    # Bare [self-hosted] is this repository's current utility-job pool. The hosted-runner
-    # migration sweeps every job, and this one is not special enough to flip ahead of it.
-    runs-on: [self-hosted]
-    timeout-minutes: 15
+    runs-on: ubuntu-slim
+    # 14, not 15: slim enforces a hard 15-minute platform cap, and a job that reaches it is
+    # killed by the platform rather than cancelled by GitHub, so nothing that runs on
+    # cancellation gets a chance to. The work here is a handful of API calls either way.
+    timeout-minutes: 14
     permissions:
       contents: read
       # Deleting a package version requires write, not read.
