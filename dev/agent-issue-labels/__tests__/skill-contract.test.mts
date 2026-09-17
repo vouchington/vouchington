@@ -74,7 +74,12 @@ describe('Vouchington workflow skill adapters', () => {
 
       expect(adapter).toContain(`${plugin}:${canonicalName}`)
       expect(adapter).toContain(installedCanonicalSkill)
-      expect(adapter).toMatch(/Filaments additions|Filaments-only SDLC and safety policy/i)
+      // Five adapters (github-issue, organize-github-issues, review-github-issue-taxonomy,
+      // planning, pr-description) were renamed from "Filaments" to "Vouchington" prose; the rest
+      // still say "Filaments additions". Both spellings are the same local-overlay heading.
+      expect(adapter).toMatch(
+        /Filaments additions|Vouchington additions|Filaments-only SDLC and safety policy/i,
+      )
       expect(lstatSync(claudePath).isSymbolicLink()).toBe(true)
       expect(readlinkSync(claudePath)).toBe(`../../.agents/skills/${name}`)
     },

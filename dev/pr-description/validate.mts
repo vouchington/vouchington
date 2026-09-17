@@ -46,14 +46,15 @@ export type ClosureLookup =
   | { error: string; ok: false }
 
 export type IssueClosureResolver = (ref: ClosingIssueReference) => Promise<ClosureLookup>
-
+type ClosingIssueAuditor = (
+  body: string,
+  closingRefs: ClosingIssueReference[],
+  closingIssues: ClosingIssueForAudit[],
+) => Promise<string[]>
 export type IssueReferenceValidationOptions = {
   closureResolver?: IssueClosureResolver
-  milestoneAuditor?: (
-    body: string,
-    closingRefs: ClosingIssueReference[],
-    closingIssues: ClosingIssueForAudit[],
-  ) => Promise<string[]>
+  milestoneAuditor?: ClosingIssueAuditor
+  projectAuditor?: ClosingIssueAuditor // fire-and-forget; see project-audit.mts, never touches errors
   supersessionAuditor?: (body: string, closingRefs: ClosingIssueReference[]) => Promise<string[]>
   targetPullRequest?: PullRequestIdentity
 }
@@ -189,8 +190,10 @@ export async function validatePrBodyWithIssueReferences(
   const auditErrors = await Promise.all([
     options.supersessionAuditor?.(body, refs) ?? Promise.resolve([]),
     options.milestoneAuditor?.(body, refs, closingIssues) ?? Promise.resolve([]),
+    // Result intentionally unused past this call — see the `projectAuditor` field comment above.
+    options.projectAuditor?.(body, refs, closingIssues) ?? Promise.resolve([]),
   ])
-  result.errors.push(...auditErrors.flat())
+  result.errors.push(...auditErrors[0], ...auditErrors[1])
 
   result.ok = result.errors.length === 0
   return result
