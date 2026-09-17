@@ -423,7 +423,13 @@ jobs:
           retention-days: 1
           if-no-files-found: warn
       - name: Upload JUnit test results
-        if: ${{ !cancelled() }}
+        # cleanup-artifacts (main-checks.yml/main-web.yml) fans in on the *whole run* going
+        # green, so a flaky test that fails then passes on retry -- exactly the case this
+        # upload exists to capture -- makes cleanup delete it right back out from under a
+        # bare `!cancelled()`. Gate on an actual failure or a confirmed retry (the
+        # `run-playwright` step's `retried` output) instead, so a clean run uploads nothing
+        # at all and has nothing for cleanup to race.
+        if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
         timeout-minutes: 1
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -434,7 +440,7 @@ jobs:
           retention-days: 1
           if-no-files-found: ignore
       - name: Upload Playwright test-results (traces, screenshots, videos)
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
         timeout-minutes: 1
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -445,7 +451,7 @@ jobs:
           retention-days: 1
           if-no-files-found: ignore
       - name: Upload wrangler logs
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
         timeout-minutes: 1
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

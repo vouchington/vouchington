@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest'
 // "Run Playwright tests" step's PW_FILES decode/quoting behavior specifically.
 const workflow = readFileSync('.github/workflows/tests-playwright.yml', 'utf8')
 const parsedWorkflow = load(workflow) as {
-  jobs?: Record<string, { steps?: Array<{ name?: string; run?: string }> }>
+  jobs?: Record<string, { steps?: Array<{ id?: string; name?: string; run?: string }> }>
 }
 const runPlaywrightTestsScript = parsedWorkflow.jobs?.['playwright-tests']?.steps?.find(
   step => step.name === 'Run Playwright tests',
@@ -187,9 +187,18 @@ describe('tests-playwright.yml PW_FILES selection', () => {
 })
 
 describe('tests-playwright.yml diagnostic upload conditions (issue #51)', () => {
-  it('uploads JUnit, test-results, and wrangler logs on cancellation too, not just failure', () => {
-    // A flaky test that fails then passes on retry makes the job exit 0, so a bare
-    // `failure()` guard never fires for these three steps and nothing gets uploaded.
+  const UPLOAD_CONDITION =
+    "if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}"
+
+  it('uploads JUnit, test-results, and wrangler logs on failure or a confirmed retry, never on a clean pass', () => {
+    // A flaky test that fails then passes on retry makes the job exit 0, so a bare `failure()`
+    // guard never fires for these three steps and nothing gets uploaded. But a bare
+    // `!cancelled()` reintroduces a different bug: cleanup-artifacts fans in whenever the whole
+    // run goes green and deletes these exact artifact names right back out, so a clean run
+    // would upload something only to have it deleted moments later. Gating on
+    // `failure() || retried == 'true'` means a clean run uploads nothing at all, while a failed
+    // or flaky-and-retried run still uploads and (per the cleanup-artifacts-patterns.json change
+    // in this same PR) survives the green-run cleanup sweep.
     const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
     expect(shardJob).not.toBeNull()
     const body = shardJob![0]
@@ -201,15 +210,16 @@ describe('tests-playwright.yml diagnostic upload conditions (issue #51)', () => 
     ]) {
       const index = body.indexOf(`name: ${stepName}`)
       expect(index).toBeGreaterThan(-1)
-      expect(body.slice(index, index + 200)).toContain('if: ${{ !cancelled() }}')
+      expect(body.slice(index, index + 700)).toContain(UPLOAD_CONDITION)
     }
 
-    // The only remaining `failure()` in this job must stay scoped to the port-collision
-    // diagnostic, which is only meaningful when the run actually failed.
-    expect((body.match(/failure\(\)/g) ?? []).length).toBe(1)
+    // The port-collision diagnostic keeps its own, narrower failure() guard, unrelated to the
+    // uploads' retried signal.
     const portDiagnosticIndex = body.indexOf('name: Diagnose browser port collision')
     expect(portDiagnosticIndex).toBeGreaterThan(-1)
-    expect(body.slice(portDiagnosticIndex, portDiagnosticIndex + 200)).toContain('failure()')
+    expect(body.slice(portDiagnosticIndex, portDiagnosticIndex + 200)).toContain(
+      'if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS',
+    )
   })
 
   it('keeps retention-days at 1 for the diagnostic uploads', () => {
@@ -219,16 +229,25 @@ describe('tests-playwright.yml diagnostic upload conditions (issue #51)', () => 
     const resultsIndex = body.indexOf('name: Upload Playwright test-results')
     const wranglerIndex = body.indexOf('name: Upload wrangler logs')
     for (const index of [junitIndex, resultsIndex, wranglerIndex]) {
-      expect(body.slice(index, index + 450)).toContain('retention-days: 1')
+      expect(body.slice(index, index + 1000)).toContain('retention-days: 1')
     }
   })
 
-  it('emits a run-playwright step id so the retried output is addressable', () => {
-    expect(
-      parsedWorkflow.jobs?.['playwright-tests']?.steps?.some(
-        step => step.name === 'Run Playwright tests',
-      ),
-    ).toBe(true)
-    expect(workflow).toContain('id: run-playwright')
+  it('references the run-playwright step id exactly, so the retried output actually resolves', () => {
+    // steps.<id>.outputs.<name> only resolves when <id> matches a real step's `id:` in the
+    // same job -- a typo here would silently evaluate to an empty string (never 'true'),
+    // which would look identical to "never retried" instead of failing loudly.
+    const runStep = parsedWorkflow.jobs?.['playwright-tests']?.steps?.find(
+      step => step.name === 'Run Playwright tests',
+    )
+    expect(runStep?.id).toBe('run-playwright')
+
+    const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
+    const body = shardJob![0]
+    const occurrences = body.match(/steps\.([a-zA-Z0-9_-]+)\.outputs\.retried/g) ?? []
+    expect(occurrences.length).toBeGreaterThan(0)
+    for (const occurrence of occurrences) {
+      expect(occurrence).toBe(`steps.${runStep?.id}.outputs.retried`)
+    }
   })
 })
