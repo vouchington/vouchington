@@ -33,6 +33,6 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
-    "vouchington-tooling": "^0.16.1"
+    "vouchington-tooling": "^0.17.0"
   }
 }

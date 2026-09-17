@@ -2,7 +2,9 @@
 
 import { fileURLToPath } from 'node:url'
 import { createPullRequest, getDiffAgainstBase, runGh, runGit } from 'vouchington-tooling/gh-cli'
+import { formatProjectAdvisoryReport } from 'vouchington-tooling/github-projects'
 
+import { failValidation } from './pr-description/fail-validation.mts'
 import { resolveBody } from './pr-description/body-source.mts'
 import { formatReferencedIssueSummary } from './pr-description/referenced-issue-summary.mts'
 import { parseBodyFileArg, parseCreateArgs } from './pr-description/argv.mts'
@@ -16,6 +18,7 @@ import {
   createGhPackageJsonReader,
   createLocalPackageJsonReader,
 } from './pr-description/package-json-source.mts'
+import { createProjectAuditor } from './pr-description/project-audit.mts'
 import {
   createIssueClosureResolver,
   createClosingIssueReferenceResolver,
@@ -36,12 +39,6 @@ import {
   type IssueReferenceValidationOptions,
   validatePrBodyWithIssueReferences,
 } from './pr-description/validate.mts'
-
-function failValidation(errors: string[]): never {
-  process.stderr.write('PR body validation failed:\n')
-  for (const error of errors) process.stderr.write(`  - ${error}\n`)
-  process.exit(1)
-}
 
 async function runValidate(argv: string[]): Promise<void> {
   const { bodyFile, remaining } = parseBodyFileArg(argv)
@@ -67,6 +64,7 @@ async function runValidate(argv: string[]): Promise<void> {
     validationOptions = {
       closureResolver: createIssueClosureResolver(runGh, target),
       milestoneAuditor: createMilestoneAuditor(runGh, repo),
+      projectAuditor: createProjectAuditor(runGh, repo),
       supersessionAuditor: createSupersessionAuditor(runGh, repo, patch, readPackageJson),
       targetPullRequest: target,
     }
@@ -75,6 +73,7 @@ async function runValidate(argv: string[]): Promise<void> {
   if (result.ok) {
     const summary = formatReferencedIssueSummary(result.referencedIssues)
     if (summary) process.stderr.write(summary)
+    process.stderr.write(formatProjectAdvisoryReport(result.advisories))
     process.stdout.write('PR body is valid.\n')
     return
   }

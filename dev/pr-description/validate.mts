@@ -16,6 +16,7 @@ import {
 import { githubBodyLengthError } from '../github-body-length.mts'
 
 export type PrBodyValidationResult = {
+  advisories: string[]
   errors: string[]
   referencedIssues: ReferencedIssue[]
   ok: boolean
@@ -54,6 +55,7 @@ export type IssueReferenceValidationOptions = {
     closingRefs: ClosingIssueReference[],
     closingIssues: ClosingIssueForAudit[],
   ) => Promise<string[]>
+  projectAuditor?: (closingIssues: ClosingIssueForAudit[]) => Promise<string[]>
   supersessionAuditor?: (body: string, closingRefs: ClosingIssueReference[]) => Promise<string[]>
   targetPullRequest?: PullRequestIdentity
 }
@@ -74,7 +76,8 @@ function extractRelatedIssuesSection(body: string): string {
 
 export function validatePrBody(body: string): PrBodyValidationResult {
   const bodyLengthError = githubBodyLengthError(body)
-  if (bodyLengthError) return { errors: [bodyLengthError], ok: false, referencedIssues: [] }
+  if (bodyLengthError)
+    return { advisories: [], errors: [bodyLengthError], ok: false, referencedIssues: [] }
 
   const errors: string[] = []
 
@@ -110,7 +113,7 @@ export function validatePrBody(body: string): PrBodyValidationResult {
 
   errors.push(...findEscapeCommentClosingKeywordLeaks(body))
 
-  return { errors, ok: errors.length === 0, referencedIssues: [] }
+  return { advisories: [], errors, ok: errors.length === 0, referencedIssues: [] }
 }
 
 export async function validatePrBodyWithIssueReferences(
@@ -119,9 +122,7 @@ export async function validatePrBodyWithIssueReferences(
   options: IssueReferenceValidationOptions = {},
 ): Promise<PrBodyValidationResult> {
   const result = validatePrBody(body)
-  if (!result.ok) {
-    return result
-  }
+  if (!result.ok) return result
 
   const refs = parseClosingIssueReferences(body)
   const lookups = new Map<string, IssueReferenceLookup>()
@@ -186,12 +187,13 @@ export async function validatePrBodyWithIssueReferences(
     }
   }
 
-  const auditErrors = await Promise.all([
+  const [supersessionErrors, milestoneErrors, projectAdvisories] = await Promise.all([
     options.supersessionAuditor?.(body, refs) ?? Promise.resolve([]),
     options.milestoneAuditor?.(body, refs, closingIssues) ?? Promise.resolve([]),
+    options.projectAuditor?.(closingIssues) ?? Promise.resolve([]),
   ])
-  result.errors.push(...auditErrors.flat())
-
+  result.errors.push(...supersessionErrors, ...milestoneErrors)
+  result.advisories = projectAdvisories
   result.ok = result.errors.length === 0
   return result
 }

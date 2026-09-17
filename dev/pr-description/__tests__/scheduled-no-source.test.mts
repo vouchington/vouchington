@@ -40,6 +40,7 @@ ${VALID_PROVENANCE_BLOCK}
 describe('scheduled no-source PR validation', () => {
   it('accepts the exact scheduled no-source representation', () => {
     expect(validatePrBody(VALID_SCHEDULED_NO_SOURCE_BODY)).toEqual({
+      advisories: [],
       errors: [],
       ok: true,
       referencedIssues: [],
@@ -140,6 +141,7 @@ example
 describe('Fix Main interim-classifier no-closing-ref PR validation', () => {
   it('accepts the exact Fix Main interim-classifier representation', () => {
     expect(validatePrBody(VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY)).toEqual({
+      advisories: [],
       errors: [],
       ok: true,
       referencedIssues: [],
