@@ -330,6 +330,7 @@ jobs:
           node --experimental-strip-types backend/services/localization/compile-cli.mts --source localization/catalog --output "$sqlite_path"
           echo "LOCALIZATION_SQLITE_PATH=$sqlite_path" >> "$GITHUB_ENV"
       - name: Run Playwright tests
+        id: run-playwright
         # Sized to PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-selection.mts): a
         # 313s/shard execution budget plus a per-shard warm-up/variance buffer, rounded up to a
         # whole minute since GitHub Actions timeout-minutes literals in this repo stay integral.
@@ -358,7 +359,7 @@ jobs:
           set -euo pipefail
           SHARD_ARG="--shard=${{ matrix.shard }}/${{ needs.select.outputs.shard-total }}"
           if [[ "$PW_FULL_SUITE" == "true" || -z "$PW_FILES" ]]; then
-            pnpm exec ./ci/with-node-test-options playwright test "$SHARD_ARG"
+            pnpm exec ./ci/with-node-test-options playwright test "$SHARD_ARG" && test_exit=0 || test_exit=$?
           else
             # PW_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
             # encodeSelectedFiles). A quoted read loop plus a quoted array expansion
@@ -370,8 +371,20 @@ jobs:
             while IFS= read -r file; do
               if [ -n "$file" ]; then FILES+=("$file"); fi
             done <<< "$PW_FILES"
-            pnpm exec ./ci/with-node-test-options playwright test "${FILES[@]}" "$SHARD_ARG"
+            pnpm exec ./ci/with-node-test-options playwright test "${FILES[@]}" "$SHARD_ARG" && test_exit=0 || test_exit=$?
           fi
+          # `trace: 'on-first-retry'` (playwright/config/shared-config.mts) writes a
+          # trace.zip only for a test's first retry attempt, so its presence under
+          # test-results/ is a direct signal that something retried in this shard —
+          # a flake if the retry then passed, a confirmed failure otherwise. Surface
+          # it as a step output so future alerting can key off retries directly
+          # instead of inferring them from the job's overall conclusion.
+          if find test-results -name 'trace.zip' -print -quit 2>/dev/null | grep -q .; then
+            echo "retried=true" >> "${GITHUB_OUTPUT:-/dev/null}"
+          else
+            echo "retried=false" >> "${GITHUB_OUTPUT:-/dev/null}"
+          fi
+          exit "$test_exit"
       - name: Stop port holder
         if: ${{ always() }}
         timeout-minutes: 1
@@ -410,7 +423,13 @@ jobs:
           retention-days: 1
           if-no-files-found: warn
       - name: Upload JUnit test results
-        if: failure()
+        # cleanup-artifacts (main-checks.yml/main-web.yml) fans in on the *whole run* going
+        # green, so a flaky test that fails then passes on retry -- exactly the case this
+        # upload exists to capture -- makes cleanup delete it right back out from under a
+        # bare `!cancelled()`. Gate on an actual failure or a confirmed retry (the
+        # `run-playwright` step's `retried` output) instead, so a clean run uploads nothing
+        # at all and has nothing for cleanup to race.
+        if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
         timeout-minutes: 1
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -421,7 +440,7 @@ jobs:
           retention-days: 1
           if-no-files-found: ignore
       - name: Upload Playwright test-results (traces, screenshots, videos)
-        if: failure()
+        if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
         timeout-minutes: 1
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -432,7 +451,7 @@ jobs:
           retention-days: 1
           if-no-files-found: ignore
       - name: Upload wrangler logs
-        if: failure()
+        if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
         timeout-minutes: 1
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

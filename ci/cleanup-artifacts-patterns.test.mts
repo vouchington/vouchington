@@ -11,6 +11,14 @@ const KEEP_NAMES = [
   // cleanup-run fires from the terminal *success* fan-in (main-web.yml, main-checks.yml), which
   // would otherwise destroy the healthy-but-slow case Phase 1 exists to capture.
   'web-build-timings-build-web-targets-123-1',
+  // Same reasoning as web-build-timings-* above, for issue #51: a flaky test that fails then
+  // passes on retry is exactly the case these diagnostics exist to capture, and that retry
+  // makes the job -- and therefore the terminal fan-in -- green, so cleanup-run would otherwise
+  // delete them on precisely the runs worth diagnosing.
+  'playwright-test-results-shard-2',
+  'playwright-junit-shard-2',
+  'playwright-credentialed-junit',
+  'wrangler-logs-2',
 ]
 
 const DELETE_NAMES = [
@@ -18,11 +26,7 @@ const DELETE_NAMES = [
   'vitest-blob-web',
   'coverage-web',
   'playwright-otel-output-shard-2',
-  'playwright-test-results-shard-2',
-  'playwright-junit-shard-2',
-  'playwright-credentialed-junit',
   'playwright-test-plan',
-  'wrangler-logs-2',
   'storybook-browser-debug-log',
   'web-integration-artifacts',
   'web-integration-shard-2-artifacts',
