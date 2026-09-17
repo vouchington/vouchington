@@ -58,6 +58,15 @@ jobs:
       - id: build
         uses: ./.github/actions/build-backend-images
 
+      - name: Diagnose browser port collision
+        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
+        continue-on-error: true
+        timeout-minutes: 2
+        uses: ./.github/actions/diagnose-browser-port-collision
+        with:
+          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
+          artifact-suffix: backend
+
       # Deliberately the last step in the job. Everything published here has already passed the
       # API, worker-cpu and worker-io smoke tests and the Trivy CRITICAL/HIGH gate, so the image
       # that reaches the registry is the image that was tested -- which is the whole point of

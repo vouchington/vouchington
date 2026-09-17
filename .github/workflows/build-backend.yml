@@ -49,3 +49,12 @@ jobs:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
 
       - uses: ./.github/actions/build-backend-images
+
+      - name: Diagnose browser port collision
+        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
+        continue-on-error: true
+        timeout-minutes: 2
+        uses: ./.github/actions/diagnose-browser-port-collision
+        with:
+          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
+          artifact-suffix: backend
