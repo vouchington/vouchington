@@ -154,22 +154,21 @@ describe('semantic CI dependency DAG', () => {
       expectHardStaticGate(backend?.[testJob], 'static-checks')
     }
 
+    // test-web, test-web-api, test-web-integration, playwright-tests, and
+    // playwright-credentialed-tests all fan out directly from static-checks: none of these
+    // needs: edges are real data/resource dependencies (no download-artifact, shared cache, or
+    // shared external resource between them), so there is nothing to gate but static-checks.
     const web = workflow('.github/workflows/main-web.yml').jobs
-    expectHardStaticGate(web?.['test-web'], 'static-checks')
-    expectHardStaticGate(web?.['test-web-api'], 'static-checks')
-    expectHardStaticGate(web?.['test-web-integration'], 'static-checks')
-    expectFailureTolerantTestGate(web?.['test-web-api'], 'test-web')
-    expectFailureTolerantTestGate(web?.['test-web-integration'], 'test-web')
-    expect(web?.['test-web-api']?.needs).not.toContain('test-web-integration')
-    expect(web?.['test-web-integration']?.needs).not.toContain('test-web-api')
-    for (const playwright of ['playwright-tests', 'playwright-credentialed-tests']) {
-      expectHardStaticGate(web?.[playwright], 'static-checks')
-      expectFailureTolerantTestGate(web?.[playwright], 'test-web')
-      expectFailureTolerantTestGate(web?.[playwright], 'test-web-api')
-      expectFailureTolerantTestGate(web?.[playwright], 'test-web-integration')
+    for (const testJob of [
+      'test-web',
+      'test-web-api',
+      'test-web-integration',
+      'playwright-tests',
+      'playwright-credentialed-tests',
+    ]) {
+      expectHardStaticGate(web?.[testJob], 'static-checks')
+      expect(web?.[testJob]?.needs).toEqual(['static-checks'])
     }
-    expect(web?.['playwright-tests']?.needs).not.toContain('playwright-credentialed-tests')
-    expect(web?.['playwright-credentialed-tests']?.needs).not.toContain('playwright-tests')
 
     expectHardStaticGate(
       workflow('.github/workflows/main-lambdas.yml').jobs?.['lambdas-tests'],

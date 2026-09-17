@@ -26,7 +26,13 @@ type Workflow = {
 
 const PRODUCER_FAN_INS = {
   '.github/workflows/main-checks.yml': ['tooling-tests', 'ts-shared-tests', 'explain-analyze'],
-  '.github/workflows/main-web.yml': ['store-playwright-otel', 'playwright-credentialed-tests'],
+  '.github/workflows/main-web.yml': [
+    'test-web',
+    'test-web-api',
+    'test-web-integration',
+    'store-playwright-otel',
+    'playwright-credentialed-tests',
+  ],
 } as const
 
 function readWorkflow(path: string): Workflow {
