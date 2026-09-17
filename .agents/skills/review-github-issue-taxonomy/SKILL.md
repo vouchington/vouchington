@@ -1,15 +1,15 @@
 ---
 name: review-github-issue-taxonomy
-description: Audit Filaments GitHub labels, milestones, descriptions, colors, and path-label automation using the portable taxonomy-review workflow.
+description: Audit Vouchington GitHub labels, milestones, projects, descriptions, colors, and path-label automation using the portable taxonomy-review workflow.
 ---
 
-# Filaments Taxonomy Review Adapter
+# Vouchington Taxonomy Review Adapter
 
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-workflow:review-github-issue-taxonomy`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/review-github-issue-taxonomy/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 Use [`.github/labeler.yml`](../../../.github/labeler.yml) only as an intentional subset of
 path-derived component labels. Remain read-only unless local labeler edits or live taxonomy mutation

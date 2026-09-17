@@ -1,9 +1,9 @@
 ---
 name: github-issue
-description: Search, create, classify, verify, update, link, and relate Filaments GitHub issues using the portable Vouchington workflow and local routing policy.
+description: Search, create, classify, verify, update, link, and relate Vouchington GitHub issues using the portable Vouchington workflow and local routing policy.
 ---
 
-# Filaments GitHub Issue Adapter
+# Vouchington GitHub Issue Adapter
 
 ## Canonical skill (required)
 
@@ -14,7 +14,7 @@ relative to that directory. If it cannot be read, stop before any `gh` call; rep
 The local routing decision is recorded in
 [Public repository issue routing](../../../docs/development/public-repository-issue-routing.md).
 
-## Filaments additions
+## Vouchington additions
 
 Invoke this workflow through the `github-issue-agent` subagent. It may inspect GitHub and make only
 the issue mutations explicitly authorized by the caller. It must not edit local files, push code,
@@ -40,42 +40,46 @@ always operate there. Default `TARGET_REPO` to `jonathanong/filaments`; set anot
 only from explicit human input. Delegate every repository authorization, mutation check, duplicate search,
 relationship, batch preflight, post-write verification, and label-creation decision to the canonical
 skill. Its `Mutation authority` gate re-fetches and re-verifies the exact canonical repository
-immediately before every write; transport helpers never grant authority. A denied request to create an issue outside Filaments becomes a Filaments tracking issue with
+immediately before every write; transport helpers never grant authority. A denied request to create an issue outside Vouchington becomes a Vouchington tracking issue with
 the copy-ready external report, unless the caller opts out. Pass `TARGET_REPO` to every issue call and
 `PR_REPO` to every PR call.
 
 Keep agent output bounded and stable: searches return at most five `#N: title -- url` lines, a
 near-duplicate returns `Duplicate of #N: <url>`, and mutations return action, URL, labels,
-milestone, and verification.
+milestone, project, and verification.
 
-Before filing in Filaments, verify every existing `## Files / areas` path against `HEAD`. Mark
+Before filing in Vouchington, verify every existing `## Files / areas` path against `HEAD`. Mark
 proposed paths as `New` and verify their owning parent/module. Reject absolute and parent-traversal
-paths. For an authorized non-Filaments target, verify only redacted remote metadata through the
+paths. For an authorized non-Vouchington target, verify only redacted remote metadata through the
 Contents API. Write enough context, goal, ownership,
 verified areas, approach, acceptance evidence, and out-of-scope boundary for a junior engineer to act.
 
 Before creating, load [organize-github-issues](../organize-github-issues/SKILL.md) for its live
 taxonomy rubric. Treat that organizer as read-only classification; only this separately authorized,
-gated workflow may create an issue. An ambiguous described milestone stays unassigned. Use
+gated workflow may create an issue. When filing, assign at most one existing, described, open org
+project for cross-repo initiative work, or an existing, described, open milestone for single-repo
+initiative work; an ambiguous case stays unassigned, and an issue never gets both. Use
 `dependencies` for
 dependency-owned work. Apply exactly one canonical `priority:` label that already exists and every
 clearly supported existing label. Derive component labels through
 [`.github/labeler.yml`](../../../.github/labeler.yml). A missing required priority, caller-required
 label, or path-derived label blocks creation. Existing labels need no separate approval; creating a
-label requires the canonical skill's exact approval. Never create milestones.
+label requires the canonical skill's exact approval. Never create milestones or projects — creating
+either, like creating a label, is a separate, explicitly authorized taxonomy operation this workflow
+does not perform.
 
-For another authorized repository, keep its taxonomy independent: do not apply the Filaments
-labeler or require Filaments priority/dependency policy.
+For another authorized repository, keep its taxonomy independent: do not apply the Vouchington
+labeler or require Vouchington priority/dependency policy.
 
 ## New-Issue Classification
 
-The rules above are the complete Filaments classification overlay.
+The rules above are the complete Vouchington classification overlay.
 
 Use `## Context`, `## Problem / Goal`, `## Suggested approach`, `## Files / areas`, and
-`## Originating session`. A dependency defect or feature tracked in Filaments must also include
+`## Originating session`. A dependency defect or feature tracked in Vouchington must also include
 `## Upstream issue (copy-paste ready)`: either a dependency-voice title plus minimal reproduction,
 expected behavior, actual behavior, and installed version, or an
-`Existing upstream tracker: <URL> — <state>` reference. Never include Filaments-internal paths,
+`Existing upstream tracker: <URL> — <state>` reference. Never include Vouchington-internal paths,
 links, or jargon in that report. Omit the block for non-dependency work or an issue created directly
 in its authorized owning repository.
 
