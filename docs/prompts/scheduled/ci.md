@@ -54,8 +54,6 @@ Review the latest CI runs. Pick exactly one concrete, bounded improvement that i
 - Use `pnpm run ci:topology --format json` or `--format mermaid` when a change depends on
   cross-workflow calls, `needs`, or concurrency; keep intent in the typed policy, not a duplicate
   workflow inventory.
-- Detect duplicate full-suite runs for an unchanged commit when `ready_for_review` follows another
-  `pull_request` event, and suppress only the provably redundant invocation.
 - Improve fail-fast behavior, reliability, or diagnostics without hiding real failures.
 - Before recommending any demand-increasing self-hosted change — including adding a job or widening
   an existing matrix, selector, or concurrency — complete the timestamped live-capacity procedure

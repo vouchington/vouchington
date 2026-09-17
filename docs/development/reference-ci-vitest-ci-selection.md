@@ -73,11 +73,9 @@ a second Git diff, so the safety routing and test selection cannot disagree abou
    `no-mistakes` 0.34+ resolves each import with the config that owns the importing file, so web's
    `@/*` alias and aliases in other workspaces can coexist without one global configuration
    shadowing another.
-3. **`vitest:full` PR label** — set this label when creating the PR to force the full Vitest suite
-   on its initial CI attempt, mirroring `playwright:full`. Adding it later does not trigger or rerun
-   CI; push a new commit only when another CI attempt is otherwise required. `ready-dedupe` reads
-   live labels through the pull-request API and passes `pr-labels-json` to the selector's label
-   guard. An API failure supplies both full labels instead of narrowing.
+3. **Full suite always runs** — CI does not read PR labels at all. The `vitest:full` and
+   `playwright:full` labels are no-ops; every pull-request CI attempt runs the full Vitest suite
+   unconditionally, so there is no narrowing behavior to opt out of.
 4. **`.no-mistakes.yml` `pullRequest` environment** — `test_plan.vitest.environments.pullRequest`
    defines `direct`, `dependencies`, and a 1% `sample` group (`sampleWhenLimited: true`), plus
    broad `fullSuiteTriggers` only for high-risk root configuration. Every current Vitest trigger

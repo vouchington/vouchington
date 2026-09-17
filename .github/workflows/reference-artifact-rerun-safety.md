@@ -5,9 +5,7 @@
 Before changing artifact handoffs, check failed-only reruns and full reruns explicitly:
 
 - Every `actions/upload-artifact@v7` upload should use `overwrite: true` and
-  `retention-days: 1`, including cross-run `ci-state-*` records. A ready-for-review transition
-  can reuse recorded producer state only while that one-day artifact remains available; after it
-  expires, CI safely runs the full suite. `artifact-retention-policy.test.mts` rejects omissions,
+  `retention-days: 1`. `artifact-retention-policy.test.mts` rejects omissions,
   expressions, and every other value. The repository-level artifact and log retention setting
   stays at three days so diagnostic logs remain available beyond workflow artifact lifetimes;
   verify the live value through the versioned

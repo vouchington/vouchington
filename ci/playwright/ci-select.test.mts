@@ -46,9 +46,9 @@ describe('no-mistakes CI Playwright planner', () => {
     expect(src).toContain('planCommentSummary(plan.comment)')
   })
 
-  it('keeps playwright:full label override outside the planner', () => {
-    expect(src).toContain("labels.includes('playwright:full')")
-    expect(src).toContain("fullOut('playwright:full label'")
+  it('does not read PR labels; label-driven full-suite override was removed', () => {
+    expect(src).not.toContain('labels.includes')
+    expect(src).not.toContain('PR_LABELS')
   })
 
   it('uses planner fallback results as full-suite selections', () => {
@@ -164,7 +164,7 @@ describe('full-suite shard selection', () => {
 
   it.each([
     ['manual full run', 'non-PR event (workflow_dispatch)'],
-    ['labelled full run', 'playwright:full label'],
+    ['configured full-suite trigger', 'Playwright config changed'],
     ['planner fallback full run', 'dependency graph fallback'],
   ])('returns complete full-suite outputs for a %s', (_scenario, reason) => {
     expect(

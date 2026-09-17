@@ -98,8 +98,7 @@ describe('build-web-targets composite action', () => {
     // Telemetry, not correctness evidence: a slow or unavailable artifact service must not turn a
     // successful build red.
     expect(uploadStep['continue-on-error']).toBe(true)
-    // Shape assertion, not an exact pin -- see .github/workflows/workflow-action-pinning.test.mts
-    // and the identical pattern in .github/workflows/ci-record-state.test.mts.
+    // Shape assertion, not an exact pin -- see .github/workflows/workflow-action-pinning.test.mts.
     expect(uploadStep.uses?.startsWith('actions/upload-artifact@')).toBe(true)
     expect(uploadStep.uses?.slice('actions/upload-artifact@'.length)).toMatch(/^[0-9a-f]{40}$/)
 

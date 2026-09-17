@@ -111,7 +111,6 @@ describe('CI topology-selection wiring', () => {
       'test-playwright-credentialed',
       'test-coverage',
       'tests-processing',
-      'ci-record-state',
     ]) {
       expect(workflow.jobs?.[jobName]?.needs).toContain('test-web-api')
     }

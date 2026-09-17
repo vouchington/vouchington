@@ -37,9 +37,7 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   `skipped`, so ordinary failures do not suppress downstream tests and only cancellation stops
   them. Both Playwright suites are siblings and exclude unrelated test roots. PR and grouped-main
   workflows keep the same semantic ordering where jobs share a workflow; cross-workflow main jobs
-  stay independent. Static, build, and deploy gates require explicit success. The PR ready-for-review
-  dedupe path may accept a skipped static/test prerequisite only when a recorded prior run settled
-  it. `.github/workflows/ci-expensive-deferral.test.mts` enforces that dedupe partition;
+  stay independent. Static, build, and deploy gates require explicit success.
   `.github/workflows/ci-semantic-dag.test.mts` and the topology policy enforce the DAG rules.
 - Treat runner labels, runner-demand budgets, and concurrency as shared-capacity contracts. Follow
   [the canonical checklist](../../docs/checklists/github-actions.md) and update its documented

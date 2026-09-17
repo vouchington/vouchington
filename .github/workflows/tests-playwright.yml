@@ -8,11 +8,6 @@ on:
         type: string
         required: false
         default: ''
-      pr-labels:
-        description: JSON array of PR label names
-        type: string
-        required: false
-        default: '[]'
       shard_total_override:
         description: Override the computed Playwright shard total
         type: string
@@ -73,7 +68,6 @@ jobs:
         id: select
         env:
           EVENT_NAME: ${{ inputs.event-name }}
-          PR_LABELS: ${{ inputs.pr-labels }}
           SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override || vars.PLAYWRIGHT_SHARD_TOTAL }}
         run: node ci/playwright/ci-select.mts
       - name: Build shard matrix

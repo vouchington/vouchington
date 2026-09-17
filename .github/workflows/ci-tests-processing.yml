@@ -3,10 +3,6 @@ name: CI tests processing
 on:
   workflow_call:
     inputs:
-      skip-ci-producers: { required: true, type: string }
-      skip-settled-producers: { required: true, type: string }
-      docs-only: { required: true, type: string }
-      has-vitest-full: { required: true, type: string }
       vitest-report-expectations: { required: true, type: string }
       postgres-result: { required: true, type: string }
       postgres-vitest-ran: { required: true, type: string }
@@ -43,13 +39,13 @@ jobs:
         with:
           deepen: 'true'
       - uses: ./.github/actions/setup-node-pnpm
-        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')"
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')"
         timeout-minutes: 5
         with:
           runner-lifecycle: persistent
       - name: Resolve merge Vitest report expectations
         id: merge-vitest-report-expectations
-        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')"
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')"
         env:
           BASE_CONTEXT: ${{ inputs.vitest-report-expectations }}
           POSTGRES_RESULT: ${{ inputs.postgres-result }}
@@ -102,14 +98,14 @@ jobs:
           echo "context=$context" >> "$GITHUB_OUTPUT"
       - name: Download Vitest blob reports from GitHub (fallback)
         id: vitest-blob-consumer-fallback
-        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')"
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')"
         timeout-minutes: 5
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./ci/download-optional-run-artifacts.sh --pattern 'vitest-blob-*' --dir './vitest-blob-fallback'
       - name: Merge Vitest reports
         id: merge-vitest-reports
-        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')"
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')"
         env:
           VITEST_REPORT_EXPECTATIONS: ${{ steps.merge-vitest-report-expectations.outputs.context }}
           VITEST_CI_REPORTERS: merge
@@ -119,7 +115,7 @@ jobs:
         id: all-checks-passed
         if: "!cancelled() && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')"
         env:
-          HAS_FAN_IN_DEPENDENCIES: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true') }}
+          HAS_FAN_IN_DEPENDENCIES: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
           # Explicit compact results avoid the ARG_MAX failure caused by toJSON(needs).
           RESULTS: ${{ inputs.results }}
         run: |
@@ -141,7 +137,7 @@ jobs:
             ./ci/check-needs-results.sh "required jobs"
           fi
       - name: Delete inter-job blob artifacts
-        if: steps.all-checks-passed.outcome == 'success' && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')
+        if: steps.all-checks-passed.outcome == 'success' && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')
         continue-on-error: true
         timeout-minutes: 2
         env:

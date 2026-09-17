@@ -2,25 +2,6 @@ name: CI detect changes
 
 on:
   workflow_call:
-    inputs:
-      skip-ci-producers:
-        required: true
-        type: string
-      skip-expensive-jobs:
-        required: true
-        type: string
-      skip-settled-producers:
-        required: true
-        type: string
-      pr-labels-json:
-        required: true
-        type: string
-      has-playwright-full:
-        required: true
-        type: string
-      has-vitest-full:
-        required: true
-        type: string
     outputs:
       backend:
         value: ${{ jobs.detect-changes.outputs.backend }}
@@ -64,18 +45,6 @@ on:
         value: ${{ jobs.detect-changes.outputs.playwright-credentialed }}
       docs-only:
         value: ${{ jobs.detect-changes.outputs.docs-only }}
-      skip-ci-producers:
-        value: ${{ jobs.detect-changes.outputs.skip-ci-producers }}
-      skip-expensive-jobs:
-        value: ${{ jobs.detect-changes.outputs.skip-expensive-jobs }}
-      skip-settled-producers:
-        value: ${{ jobs.detect-changes.outputs.skip-settled-producers }}
-      pr-labels-json:
-        value: ${{ jobs.detect-changes.outputs.pr-labels-json }}
-      has-playwright-full:
-        value: ${{ jobs.detect-changes.outputs.has-playwright-full }}
-      has-vitest-full:
-        value: ${{ jobs.detect-changes.outputs.has-vitest-full }}
       trusted-secret-context:
         value: ${{ jobs.detect-changes.outputs.trusted-secret-context }}
       dependency-bot-test-context:
@@ -112,33 +81,9 @@ jobs:
       portability: ${{ steps.filter.outputs.portability }}
       playwright-credentialed: ${{ steps.filter.outputs.playwright-credentialed }}
       docs-only: ${{ steps.docs-check.outputs.docs-only }}
-      skip-ci-producers: ${{ steps.ready-dedupe-forward.outputs.skip-ci-producers }}
-      skip-expensive-jobs: ${{ steps.ready-dedupe-forward.outputs.skip-expensive-jobs }}
-      skip-settled-producers: ${{ steps.ready-dedupe-forward.outputs.skip-settled-producers }}
-      pr-labels-json: ${{ steps.ready-dedupe-forward.outputs.pr-labels-json }}
-      has-playwright-full: ${{ steps.ready-dedupe-forward.outputs.has-playwright-full }}
-      has-vitest-full: ${{ steps.ready-dedupe-forward.outputs.has-vitest-full }}
       trusted-secret-context: ${{ steps.trusted-context.outputs.trusted }}
       dependency-bot-test-context: ${{ steps.trusted-context.outputs.dependency-bot-test }}
     steps:
-      - name: Forward CI producer skip decision
-        id: ready-dedupe-forward
-        env:
-          SKIP_CI_PRODUCERS: ${{ inputs.skip-ci-producers }}
-          SKIP_EXPENSIVE_JOBS: ${{ inputs.skip-expensive-jobs }}
-          SKIP_SETTLED_PRODUCERS: ${{ inputs.skip-settled-producers }}
-          PR_LABELS_JSON: ${{ inputs.pr-labels-json }}
-          HAS_PLAYWRIGHT_FULL: ${{ inputs.has-playwright-full }}
-          HAS_VITEST_FULL: ${{ inputs.has-vitest-full }}
-        run: |
-          {
-            echo "skip-ci-producers=$SKIP_CI_PRODUCERS"
-            echo "skip-expensive-jobs=$SKIP_EXPENSIVE_JOBS"
-            echo "skip-settled-producers=$SKIP_SETTLED_PRODUCERS"
-            echo "pr-labels-json=$PR_LABELS_JSON"
-            echo "has-playwright-full=$HAS_PLAYWRIGHT_FULL"
-            echo "has-vitest-full=$HAS_VITEST_FULL"
-          } >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0

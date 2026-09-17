@@ -8,8 +8,8 @@
 
 In CI, PRs run the Playwright specs selected by the `no-mistakes` N-API test-plan
 environment `pullRequest` (direct, coverage, dependency, and 1% sample groups), falling
-back to the full suite for configured high-risk dependency changes or the `playwright:full`
-PR label. Main pushes run the full suite when Playwright tests run at all — docs-only
+back to the full suite for configured high-risk dependency changes. Main pushes run the
+full suite when Playwright tests run at all — docs-only
 changes short-circuit CI and skip all test jobs. See [ci.md § Playwright CI Selection](ci.md#playwright-ci-selection) for the full rules and configuration variables.
 
 Inspect local planner behavior with:

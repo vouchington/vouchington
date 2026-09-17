@@ -7,13 +7,10 @@ import { describe, expect, it } from 'vitest'
 
 import {
   aggregateGateRun,
-  ciControlWorkflowText,
   ciWorkflowText,
   detectChangesWorkflow,
   gateScript,
   gateWrapper,
-  readyDedupeWorkflow,
-  readyDedupeScriptText,
   selectCiWorkflow,
   testCoverageWorkflow,
   testsProcessingWorkflow,
@@ -22,8 +19,6 @@ import {
 } from './ci-aggregate-gates-fixture.mts'
 
 const execFileAsync = promisify(execFile)
-
-const producerSkipGate = "needs.detect-changes.outputs.skip-ci-producers != 'true'"
 
 async function runDependencyFreeGate(results: string) {
   const emptyWorkspace = await mkdtemp(join(tmpdir(), 'ci-dependency-free-results-'))
@@ -46,11 +41,6 @@ describe('CI aggregate gates', () => {
     expect(workflow.permissions).not.toHaveProperty('issues')
 
     const detectChangesOutputs = detectChangesWorkflow.jobs?.['detect-changes']?.outputs ?? {}
-    const readyDedupeJob = readyDedupeWorkflow.jobs?.['ready-dedupe']
-    const readyDedupeStep = readyDedupeJob?.steps?.find(
-      step => step.name === 'Detect duplicate ready_for_review CI',
-    )
-    const testPlaywrightJob = workflow.jobs?.['test-playwright']
     const testCoverageJob = testCoverageWorkflow.jobs?.['test-coverage']
     const backendSmokeJob = workflow.jobs?.['backend-smoke']
     const testsJob = workflow.jobs?.tests
@@ -58,76 +48,46 @@ describe('CI aggregate gates', () => {
 
     expect(detectChangesOutputs).not.toHaveProperty('coverage-required')
     expect(detectChangesOutputs).not.toHaveProperty('build-required')
-    expect(detectChangesOutputs).toHaveProperty('skip-ci-producers')
-    expect(detectChangesOutputs).toHaveProperty('skip-expensive-jobs')
-    expect(detectChangesOutputs).toHaveProperty('skip-settled-producers')
-    expect(detectChangesOutputs).toHaveProperty('pr-labels-json')
-    expect(detectChangesOutputs).toHaveProperty('has-playwright-full')
-    expect(detectChangesOutputs).toHaveProperty('has-vitest-full')
-    expect(readyDedupeJob?.permissions).toEqual({
-      actions: 'read',
-      contents: 'read',
-      'pull-requests': 'read',
-    })
-    expect(readyDedupeJob?.steps?.some(step => step.uses?.includes('checkout'))).toBe(false)
-    expect(readyDedupeJob?.steps?.some(step => step.uses?.startsWith('./'))).toBe(false)
-    expect(readyDedupeJob?.steps).toHaveLength(1)
-    expect(readyDedupeStep?.env?.WORKFLOW_JOB).toBe('${{ toJson(job) }}')
-    expect(readyDedupeStep?.run).toContain('.workflow_repository // empty')
-    expect(readyDedupeStep?.run).toContain('.workflow_sha // empty')
-    expect(readyDedupeStep?.run).toContain(
-      'repos/$workflow_repository/contents/$script_path?ref=$workflow_sha',
-    )
-    expect(readyDedupeStep?.run).toContain("--header 'Accept: application/vnd.github.raw+json'")
-    expect(readyDedupeStep?.run).not.toContain('base64')
-    expect(readyDedupeStep?.run).toContain("script_path='ci/ready-dedupe.sh'")
-    expect(readyDedupeStep?.run).toContain(
-      'mktemp "${RUNNER_TEMP:?RUNNER_TEMP is required}/ready-dedupe.XXXXXX"',
-    )
-    expect(readyDedupeStep?.run).toContain('[ ! -s "$script_file" ]')
-    expect(readyDedupeStep?.run).not.toContain(':-/tmp')
-    expect(readyDedupeStep?.run).toContain('bash "$script_file"')
-    expect(readyDedupeStep?.run).not.toContain('duplicate=false')
+    // The ready_for_review CI-dedupe/reuse system (skip-ci-producers, skip-expensive-jobs,
+    // skip-settled-producers) and the PR-label-driven full-suite gates (pr-labels-json,
+    // has-playwright-full, has-vitest-full) were removed: full Playwright/Vitest suites now
+    // always run, and CI never skips work to reuse a prior run's recorded state.
+    expect(detectChangesOutputs).not.toHaveProperty('skip-ci-producers')
+    expect(detectChangesOutputs).not.toHaveProperty('skip-expensive-jobs')
+    expect(detectChangesOutputs).not.toHaveProperty('skip-settled-producers')
+    expect(detectChangesOutputs).not.toHaveProperty('pr-labels-json')
+    expect(detectChangesOutputs).not.toHaveProperty('has-playwright-full')
+    expect(detectChangesOutputs).not.toHaveProperty('has-vitest-full')
+    expect(workflow.jobs?.['ready-dedupe']).toBeUndefined()
+    expect(workflow.jobs?.['ci-record-state']).toBeUndefined()
+    // ready_for_review keeps disabling cancel-in-progress (a queued ready run must not cancel
+    // the in-flight draft run) even though the run-reuse mechanism that used to follow it is gone.
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(
       "${{ github.event_name == 'pull_request' && github.event.action != 'ready_for_review' }}",
     )
     expect(workflow.jobs?.['detect-changes']?.permissions).not.toHaveProperty('actions')
-    expect(ciControlWorkflowText).toContain('TESTED_SHA: ${{ github.sha }}')
-    expect(readyDedupeScriptText).toContain('pr-labels-json=$labels_json')
-    expect(readyDedupeScriptText).toContain('has-playwright-full=$has_playwright_full')
-    expect(readyDedupeScriptText).toContain('has-vitest-full=$has_vitest_full')
-    expect(readyDedupeScriptText).toContain('[ -n "$TESTED_SHA" ] &&')
-    expect(readyDedupeScriptText).toContain('[ "$has_playwright_full" != "true" ] &&')
-    expect(readyDedupeScriptText).toContain('[ "$has_vitest_full" != "true" ]; then')
-    expect(readyDedupeScriptText).toContain(
-      'Skipping ready_for_review dedupe because the vitest:full label requests a fresh full Vitest suite.',
-    )
-    expect(readyDedupeScriptText).toContain('actions/artifacts?name=ci-state-$TESTED_SHA')
-    expect(readyDedupeScriptText).toContain('.testedSha == $tested')
-    expect(readyDedupeScriptText).toContain('.headSha == $head')
-    expect(readyDedupeScriptText).toContain('.prNumber == $pr')
 
-    expect(testPlaywrightJob?.if).toContain("github.event_name == 'workflow_dispatch'")
-    expect(testPlaywrightJob?.if).toContain("needs.detect-changes.outputs.playwright == 'true'")
-    expect(testPlaywrightJob?.if).toContain(
-      "needs.detect-changes.outputs.has-playwright-full == 'true'",
-    )
-    expect(testPlaywrightJob?.if).toContain(
-      "needs.detect-changes.outputs.docs-only != 'true' || needs.detect-changes.outputs.has-playwright-full == 'true'",
-    )
-    expect(testPlaywrightJob?.if).not.toContain("github.event_name != 'pull_request'")
+    const testPlaywrightJob = workflow.jobs?.['test-playwright']
+    expect(testPlaywrightJob?.if).toContain('!cancelled()')
+    expect(testPlaywrightJob?.if).toContain("needs.static-code-analysis.result == 'success'")
+    // Path/topology selection (docs-only gate, select-ci wiring) is unrelated to the removed
+    // dedupe/label outputs and stays intact; only the has-playwright-full label override is gone.
+    expect(testPlaywrightJob?.if).toContain("needs.detect-changes.outputs.docs-only != 'true'")
+    expect(testPlaywrightJob?.if).toContain("needs.select-ci.outputs.run-test-playwright == 'true'")
+    expect(testPlaywrightJob?.if).not.toContain('has-playwright-full')
+    expect(testPlaywrightJob?.if).not.toContain('pr-labels-json')
 
-    expect(testCoverageJob?.if).toContain(
-      "inputs.detect-changes-outputs-skip-ci-producers != 'true'",
-    )
-    expect(testCoverageJob?.if).toContain("inputs.detect-changes-outputs-docs-only != 'true'")
-    expect(testCoverageJob?.if).toContain("inputs.detect-changes-outputs-has-vitest-full == 'true'")
+    expect(testCoverageJob?.if).toBe('!cancelled()')
+    expect(testCoverageJob?.if).not.toContain('skip-ci-producers')
+    expect(testCoverageJob?.if).not.toContain('docs-only')
+    expect(testCoverageJob?.if).not.toContain('has-vitest-full')
     expect(testCoverageJob?.outputs).toHaveProperty('vitest-report-expectations')
     expect(backendSmokeJob?.uses).toBe('./.github/workflows/checks-backend-smoke.yml')
-    expect(backendSmokeJob?.if).toContain("github.event_name == 'workflow_dispatch'")
-    expect(backendSmokeJob?.if).toContain("needs.select-ci.outputs.full-suite == 'true'")
-    expect(backendSmokeJob?.if).toContain("needs.detect-changes.outputs.backend == 'true'")
-    expect(backendSmokeJob?.if).toContain("needs.detect-changes.outputs.has-vitest-full == 'true'")
+    expect(backendSmokeJob?.if).toContain('!cancelled()')
+    expect(backendSmokeJob?.if).toContain(
+      "(needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped')",
+    )
+    expect(backendSmokeJob?.if).not.toContain('has-vitest-full')
     expect(workflow.jobs?.['tests-processing']?.needs).toContain('backend-smoke')
     expect(workflow.jobs?.['test-coverage']?.needs).not.toContain('backend-smoke')
     expect(ciWorkflowText).toContain(
@@ -143,54 +103,28 @@ describe('CI aggregate gates', () => {
     expect(gateScript).toContain('"result":\\s*"(failure|cancelled)"')
   })
 
-  it('skips expensive producer jobs for duplicate ready_for_review runs without hiding required gates', () => {
-    const producerSkippedJobs = [
-      'static-code-analysis',
-      'static-backend',
-      'static-web',
-      'static-lambdas',
-      'static-cloudflare-worker',
-      'initialize-smoke-test',
-      'test-ts-shared',
-      'test-tooling',
-      'test-backend-unit',
-      'backend-smoke',
-      'test-backend-modules',
-      'test-backend-credentialed',
-      'test-postgres-schema',
-      'test-web',
-      'test-web-api',
-      'storybook',
-      'test-web-integration',
-      'test-playwright',
-      'test-playwright-credentialed',
-      'test-cloudflare-worker',
-      'test-lambdas',
-      'test-explain-analyze',
-      'test-portability',
-      'test-coverage',
-      'build-backend',
-      'build-web',
-    ]
-
-    for (const jobName of producerSkippedJobs) {
-      expect(workflow.jobs?.[jobName]?.if).toContain(producerSkipGate)
+  it('never gates producer jobs on the removed ready_for_review dedupe outputs', () => {
+    // The dedupe/reuse system (skip-ci-producers, skip-expensive-jobs, skip-settled-producers)
+    // was removed entirely: no job may reference these outputs any more, and the aggregate
+    // fan-in jobs stay unconditional.
+    for (const [, job] of Object.entries(workflow.jobs ?? {})) {
+      const jobIf = job.if ?? ''
+      expect(jobIf).not.toContain('skip-ci-producers')
+      expect(jobIf).not.toContain('skip-expensive-jobs')
+      expect(jobIf).not.toContain('skip-settled-producers')
     }
 
     expect(workflow.jobs?.tests?.if).toBe('${{ !cancelled() }}')
     expect(workflow.jobs?.build?.if).toBe('${{ !cancelled() }}')
   })
 
-  it('skips select-ci and test-coverage on docs-only PRs unless vitest:full is set', () => {
-    expect(selectCiWorkflow.jobs?.['select-ci']?.if).toContain(
-      "inputs.detect-changes-outputs-docs-only != 'true'",
+  it('runs select-ci and test-coverage unconditionally on docs-only PRs (vitest:full removed)', () => {
+    expect(selectCiWorkflow.jobs?.['select-ci']?.if).toBe(
+      "!cancelled() && github.event_name == 'pull_request'",
     )
-    expect(selectCiWorkflow.jobs?.['select-ci']?.if).toContain(
-      "inputs.detect-changes-outputs-has-vitest-full == 'true'",
-    )
-    expect(workflow.jobs?.['test-coverage']?.if).toContain(
-      "needs.detect-changes.outputs.docs-only != 'true'",
-    )
+    expect(selectCiWorkflow.jobs?.['select-ci']?.if).not.toContain('docs-only')
+    expect(selectCiWorkflow.jobs?.['select-ci']?.if).not.toContain('has-vitest-full')
+    expect(workflow.jobs?.['test-coverage']?.if).not.toContain('docs-only')
     expect(workflow.jobs?.['static-code-analysis']?.if).not.toContain(
       "needs.detect-changes.outputs.docs-only != 'true'",
     )
@@ -212,16 +146,26 @@ describe('CI aggregate gates', () => {
       testsSteps.find(step => step.uses === './.github/actions/setup-node-pnpm'),
       testsSteps.find(step => step.name === 'Download Vitest blob reports from GitHub (fallback)'),
       testsSteps.find(step => step.name === 'Merge Vitest reports'),
-      testsSteps.find(step => step.name === 'Delete inter-job blob artifacts'),
     ]
 
+    // The dedupe/full-suite-label gates (skip-ci-producers, skip-settled-producers, docs-only,
+    // has-vitest-full) were removed: these steps now run on every PR/main run.
     for (const step of gatedSteps) {
-      expect(step?.if).toBeDefined()
-      expect(step?.if).toContain("inputs.skip-ci-producers != 'true'")
-      expect(step?.if).toContain("inputs.skip-settled-producers != 'true'")
-      expect(step?.if).toContain("inputs.docs-only != 'true'")
-      expect(step?.if).toContain("inputs.has-vitest-full == 'true'")
+      expect(step?.if).toBe(
+        "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')",
+      )
+      expect(step?.if).not.toContain('skip-ci-producers')
+      expect(step?.if).not.toContain('skip-settled-producers')
+      expect(step?.if).not.toContain('docs-only')
+      expect(step?.if).not.toContain('has-vitest-full')
     }
+
+    const deleteBlobArtifactsStep = testsSteps.find(
+      step => step.name === 'Delete inter-job blob artifacts',
+    )
+    expect(deleteBlobArtifactsStep?.if).toBe(
+      "steps.all-checks-passed.outcome == 'success' && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')",
+    )
 
     const checkoutStep = testsSteps.find(step => step.uses?.startsWith('actions/checkout@'))
     const cleanWorkspaceStep = testsSteps.find(
@@ -234,7 +178,9 @@ describe('CI aggregate gates', () => {
     expect(allChecksPassedStep?.if).toBe(
       "!cancelled() && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')",
     )
-    expect(allChecksPassedStep?.env?.HAS_FAN_IN_DEPENDENCIES).toContain('inputs.skip-ci-producers')
+    expect(allChecksPassedStep?.env?.HAS_FAN_IN_DEPENDENCIES).toBe(
+      "${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}",
+    )
     expect(allChecksPassedStep?.run).toContain('jq -e')
     expect(allChecksPassedStep?.run).toContain('.result == "success" or .result == "skipped"')
     expect(allChecksPassedStep?.run).toContain('./ci/check-needs-results.sh "required jobs"')

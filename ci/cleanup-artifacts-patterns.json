@@ -1,6 +1,5 @@
 {
   "keep": [
-    "ci-state-*",
     "next-static-*",
     "browser-port-diagnostics-*",
     "web-build-timings-*",

@@ -12,31 +12,14 @@ concurrency:
 permissions: {}
 
 jobs:
-  ready-dedupe:
-    uses: ./.github/workflows/ci-ready-dedupe.yml
-    permissions:
-      actions: read
-      contents: read
-      pull-requests: read
-
   detect-changes:
-    needs: [ready-dedupe]
     uses: ./.github/workflows/ci-detect-changes.yml
-    with:
-      skip-ci-producers: ${{ needs.ready-dedupe.outputs.skip-ci-producers }}
-      skip-expensive-jobs: ${{ needs.ready-dedupe.outputs.skip-expensive-jobs }}
-      skip-settled-producers: ${{ needs.ready-dedupe.outputs.skip-settled-producers }}
-      pr-labels-json: ${{ needs.ready-dedupe.outputs.pr-labels-json }}
-      has-playwright-full: ${{ needs.ready-dedupe.outputs.has-playwright-full }}
-      has-vitest-full: ${{ needs.ready-dedupe.outputs.has-vitest-full }}
     permissions:
       contents: read
       pull-requests: read
   static-code-analysis:
     needs: [detect-changes]
-    if: >-
-      !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true'
+    if: '!cancelled()'
     uses: ./.github/workflows/static-code-analysis.yml
     with:
       docs_only: ${{ needs.detect-changes.outputs.docs-only == 'true' }}
@@ -52,8 +35,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
@@ -72,8 +53,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
@@ -92,8 +71,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
@@ -112,8 +89,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
@@ -132,8 +107,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-initialize-smoke-test == 'true') || needs.detect-changes.outputs.shell-scripts == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success'
@@ -145,10 +118,7 @@ jobs:
     needs: [detect-changes]
     uses: ./.github/workflows/ci-select-vitest.yml
     with:
-      detect-changes-outputs-skip-ci-producers: ${{ needs.detect-changes.outputs.skip-ci-producers }}
       detect-changes-outputs-docs-only: ${{ needs.detect-changes.outputs.docs-only }}
-      detect-changes-outputs-has-vitest-full: ${{ needs.detect-changes.outputs.has-vitest-full }}
-      detect-changes-outputs-pr-labels-json: ${{ needs.detect-changes.outputs.pr-labels-json }}
     permissions:
       contents: read
 
@@ -156,8 +126,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-ts-shared == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-ts-shared == 'true' || (needs.detect-changes.outputs.ts-shared == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       needs.select-ci.outputs.skip-test-ts-shared != 'true'
@@ -175,8 +143,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-tooling == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-tooling == 'true' || (needs.detect-changes.outputs.tooling == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       needs.select-ci.outputs.skip-test-tooling != 'true'
@@ -195,8 +161,6 @@ jobs:
     if: >-
       always() &&
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-backend-modules == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-backend-modules == 'true' || (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
@@ -218,8 +182,6 @@ jobs:
     if: >-
       always() &&
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-backend-unit == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-backend-unit == 'true' || (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
@@ -241,14 +203,11 @@ jobs:
     needs: [detect-changes, static-backend, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-backend-smoke == 'true') || github.event_name == 'workflow_dispatch') ||
       needs.select-ci.outputs.full-suite == 'true' ||
       (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.docs-only != 'true') ||
-      (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false') ||
-      needs.detect-changes.outputs.has-vitest-full == 'true')
+      (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false'))
     uses: ./.github/workflows/checks-backend-smoke.yml
     permissions:
       contents: read
@@ -259,8 +218,6 @@ jobs:
     if: >-
       always() &&
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-backend-credentialed == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-backend-credentialed == 'true' || needs.detect-changes.outputs.docs-only != 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
@@ -288,8 +245,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, static-backend, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-postgres-schema == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-postgres-schema == 'true' || (needs.detect-changes.outputs.postgres-schema == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped')
@@ -307,8 +262,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, static-web, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-web == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-web == 'true' || (needs.detect-changes.outputs.web == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
@@ -329,8 +282,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-expensive-jobs != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-storybook == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-storybook == 'true' || (needs.detect-changes.outputs.storybook == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       (needs.detect-changes.outputs.trusted-secret-context == 'true' || needs.detect-changes.outputs.dependency-bot-test-context == 'true') &&
       needs.static-code-analysis.result == 'success'
@@ -353,8 +304,6 @@ jobs:
     if: >-
       always() &&
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-web-api == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-web-api == 'true' || (needs.detect-changes.outputs.web-integration == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
@@ -377,8 +326,6 @@ jobs:
     if: >-
       always() &&
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-expensive-jobs != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-web-integration == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-web-integration == 'true' || (needs.detect-changes.outputs.web-integration == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
@@ -419,9 +366,7 @@ jobs:
     if: >-
       always() &&
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-expensive-jobs != 'true' &&
-      (needs.detect-changes.outputs.docs-only != 'true' || needs.detect-changes.outputs.has-playwright-full == 'true') &&
+      needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
       (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
@@ -439,13 +384,11 @@ jobs:
       (
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-playwright == 'true') || github.event_name == 'workflow_dispatch') ||
         needs.detect-changes.outputs.playwright == 'true' ||
-        (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false') ||
-        needs.detect-changes.outputs.has-playwright-full == 'true'
+        (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
       )
     uses: ./.github/workflows/tests-playwright.yml
     with:
       event-name: ${{ github.event_name }}
-      pr-labels: ${{ needs.detect-changes.outputs.pr-labels-json || '[]' }}
       otel_enabled: ${{ vars.PLAYWRIGHT_OTEL_ENABLED == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.trusted-secret-context == 'true' }}
     permissions:
       actions: read
@@ -475,8 +418,6 @@ jobs:
     if: >-
       always() &&
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-expensive-jobs != 'true' &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       needs.static-code-analysis.result == 'success' &&
@@ -517,8 +458,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, static-cloudflare-worker, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-cloudflare-worker == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-cloudflare-worker == 'true' || (needs.detect-changes.outputs.cloudflare-worker == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-cloudflare-worker.result == 'success' || needs.static-cloudflare-worker.result == 'skipped') &&
@@ -538,8 +477,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, static-lambdas, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-lambdas == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-lambdas == 'true' || (needs.detect-changes.outputs.lambdas == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-lambdas.result == 'success' || needs.static-lambdas.result == 'skipped') &&
@@ -559,8 +496,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, static-backend, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-explain-analyze == 'true') || needs.detect-changes.outputs.explain-analyze == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
@@ -575,8 +510,6 @@ jobs:
     needs: [detect-changes, static-code-analysis, select-ci]
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-portability == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-portability == 'true' || (needs.detect-changes.outputs.portability == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       needs.select-ci.outputs.skip-test-portability != 'true'
@@ -600,11 +533,7 @@ jobs:
     name: Patch Coverage
     if: >-
       always() &&
-      !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true' &&
-      (needs.detect-changes.outputs.docs-only != 'true' ||
-        needs.detect-changes.outputs.has-vitest-full == 'true')
+      !cancelled()
     needs:
       - detect-changes
       - select-ci
@@ -622,10 +551,6 @@ jobs:
       - test-portability
     uses: ./.github/workflows/ci-test-coverage.yml
     with:
-      detect-changes-outputs-skip-ci-producers: ${{ needs.detect-changes.outputs.skip-ci-producers }}
-      detect-changes-outputs-skip-settled-producers: ${{ needs.detect-changes.outputs.skip-settled-producers }}
-      detect-changes-outputs-docs-only: ${{ needs.detect-changes.outputs.docs-only }}
-      detect-changes-outputs-has-vitest-full: ${{ needs.detect-changes.outputs.has-vitest-full }}
       select-vitest-outputs-run-tests-test-web: ${{ needs.select-ci.outputs.run-tests-test-web }}
       select-vitest-outputs-run-tests-test-web-api: ${{ needs.select-ci.outputs.run-tests-test-web-api }}
       select-vitest-outputs-run-tests-test-backend-unit: ${{ needs.select-ci.outputs.run-tests-test-backend-unit }}
@@ -679,10 +604,6 @@ jobs:
     if: ${{ always() && !cancelled() }}
     uses: ./.github/workflows/ci-tests-processing.yml
     with:
-      skip-ci-producers: ${{ needs.detect-changes.outputs.skip-ci-producers }}
-      skip-settled-producers: ${{ needs.detect-changes.outputs.skip-settled-producers }}
-      docs-only: ${{ needs.detect-changes.outputs.docs-only }}
-      has-vitest-full: ${{ needs.detect-changes.outputs.has-vitest-full }}
       vitest-report-expectations: ${{ needs.test-coverage.outputs.vitest-report-expectations }}
       postgres-result: ${{ needs.test-postgres-schema.result }}
       postgres-vitest-ran: ${{ needs.test-postgres-schema.outputs.vitest-ran }}
@@ -716,8 +637,6 @@ jobs:
     # any source that affects the image changes.
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-expensive-jobs != 'true' &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       (needs.tests.result == 'success' || needs.tests.result == 'skipped') &&
@@ -744,8 +663,6 @@ jobs:
     # any source that affects the image changes.
     if: >-
       !cancelled() &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-expensive-jobs != 'true' &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       (needs.tests.result == 'success' || needs.tests.result == 'skipped') &&
@@ -763,52 +680,6 @@ jobs:
       trusted_secret_context: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' }}
     secrets:
       AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
-
-  ci-record-state:
-    needs:
-      [
-        detect-changes,
-        tests-processing,
-        static-backend,
-        static-web,
-        static-lambdas,
-        static-cloudflare-worker,
-        initialize-smoke-test,
-        test-ts-shared,
-        test-tooling,
-        test-backend-modules,
-        test-backend-unit,
-        backend-smoke,
-        test-backend-credentialed,
-        test-postgres-schema,
-        test-web,
-        test-web-api,
-        test-cloudflare-worker,
-        test-lambdas,
-        test-explain-analyze,
-        test-portability,
-        test-coverage,
-        storybook,
-        test-web-integration,
-        test-playwright,
-        test-playwright-credentialed,
-        build-backend,
-        build-web,
-      ]
-    if: >-
-      always() && !cancelled() && github.event_name == 'pull_request' &&
-      needs.detect-changes.outputs.skip-ci-producers != 'true' &&
-      needs.detect-changes.outputs.skip-settled-producers != 'true'
-    uses: ./.github/workflows/ci-record-state.yml
-    with:
-      producer-results: >-
-        {"static-backend":{"result":"${{ needs.static-backend.result }}"},"static-web":{"result":"${{ needs.static-web.result }}"},"static-lambdas":{"result":"${{ needs.static-lambdas.result }}"},"static-cloudflare-worker":{"result":"${{ needs.static-cloudflare-worker.result }}"},"initialize-smoke-test":{"result":"${{ needs.initialize-smoke-test.result }}"},"test-ts-shared":{"result":"${{ needs.test-ts-shared.result }}"},"test-tooling":{"result":"${{ needs.test-tooling.result }}"},"test-backend-modules":{"result":"${{ needs.test-backend-modules.result }}"},"test-backend-unit":{"result":"${{ needs.test-backend-unit.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"test-backend-credentialed":{"result":"${{ needs.test-backend-credentialed.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"test-web":{"result":"${{ needs.test-web.result }}"},"test-web-api":{"result":"${{ needs.test-web-api.result }}"},"test-cloudflare-worker":{"result":"${{ needs.test-cloudflare-worker.result }}"},"test-lambdas":{"result":"${{ needs.test-lambdas.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"test-portability":{"result":"${{ needs.test-portability.result }}"},"test-coverage":{"result":"${{ needs.test-coverage.result }}"},"storybook":{"result":"${{ needs.storybook.result }}"},"test-web-integration":{"result":"${{ needs.test-web-integration.result }}"},"test-playwright":{"result":"${{ needs.test-playwright.result }}"},"test-playwright-credentialed":{"result":"${{ needs.test-playwright-credentialed.result }}"},"build-backend":{"result":"${{ needs.build-backend.result }}"},"build-web":{"result":"${{ needs.build-web.result }}"}}
-      tested-sha: ${{ github.sha }}
-      head-sha: ${{ github.event.pull_request.head.sha }}
-      pr-number: ${{ github.event.pull_request.number }}
-      processing-result: ${{ needs.tests-processing.result }}
-      deferred: ${{ needs.detect-changes.outputs.skip-expensive-jobs }}
-    permissions: {}
 
   build:
     name: build

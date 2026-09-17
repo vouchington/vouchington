@@ -43,17 +43,7 @@ const browserSafePortsScript = readFileSync('ci/allocate-browser-safe-ports.py',
 
 // For each trusted job, extract the detect-changes output names it references, excluding
 // well-known outputs that are computed by detect-changes steps instead of path filters.
-const knownOutputs = new Set([
-  'trusted-secret-context',
-  'dependency-bot-test-context',
-  'docs-only',
-  'skip-ci-producers',
-  'skip-expensive-jobs',
-  'skip-settled-producers',
-  'has-playwright-full',
-  'has-vitest-full',
-  'pr-labels-json',
-])
+const knownOutputs = new Set(['trusted-secret-context', 'dependency-bot-test-context', 'docs-only'])
 
 function extractFilterOutputs(ifCondition: string): string[] {
   const names: string[] = []

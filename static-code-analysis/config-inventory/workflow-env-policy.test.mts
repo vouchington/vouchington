@@ -39,24 +39,6 @@ describe('workflow env policy', () => {
         '          VITEST_REPORT_EXPECTATIONS: context',
         '        run: echo "$USED_BY_SHELL $PORT_NUMBER"',
       ].join('\n'),
-      '.github/workflows/ci-ready-dedupe.yml': [
-        'jobs:',
-        '  ready-dedupe:',
-        '    steps:',
-        '      - env:',
-        '          EVENT_ACTION: ready_for_review',
-        '          HEAD_SHA: head-sha',
-        '          TESTED_SHA: tested-sha',
-      ].join('\n'),
-      '.github/workflows/other.yml': [
-        'jobs:',
-        '  unrelated:',
-        '    steps:',
-        '      - env:',
-        '          EVENT_ACTION: opened',
-        '          HEAD_SHA: other-head',
-        '          TESTED_SHA: other-tested',
-      ].join('\n'),
       'backend/service.mts': 'process.env.CODE_ENV\n',
       'docs/overview/infrastructure/environment-variables.md': './dev/config-inventory\n',
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
@@ -86,14 +68,6 @@ describe('workflow env policy', () => {
     ]) {
       expect(errors).toContain(
         `workflow env ${name} in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
-      )
-    }
-    for (const name of ['EVENT_ACTION', 'HEAD_SHA', 'TESTED_SHA']) {
-      expect(errors).not.toContain(
-        `workflow env ${name} in .github/workflows/ci-ready-dedupe.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
-      )
-      expect(errors).toContain(
-        `workflow env ${name} in .github/workflows/other.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
       )
     }
     for (const name of [

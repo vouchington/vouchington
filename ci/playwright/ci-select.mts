@@ -113,17 +113,6 @@ async function main(): Promise<void> {
   // Use GITHUB_BASE_REF when available so PRs targeting release/feature branches work correctly.
   const baseBranch = process.env['GITHUB_BASE_REF'] || 'main'
 
-  let labels: string[] = []
-  try {
-    labels = JSON.parse(process.env['PR_LABELS'] ?? '[]') as string[]
-  } catch {
-    /* ignore malformed labels */
-  }
-  if (labels.includes('playwright:full')) {
-    fullOut('playwright:full label', '`playwright:full` label is set')
-    return
-  }
-
   let plan: Awaited<ReturnType<typeof planTests>>
   try {
     plan = await planTests(playwrightPlanOptions(worktreeRoot, baseBranch))

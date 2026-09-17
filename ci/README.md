@@ -52,11 +52,6 @@ CI-local reproduction and workflow support scripts. Run commands from the worktr
 
 CI scripts belong here when they reproduce or prepare GitHub Actions behavior.
 
-[`ready-dedupe.sh`](ready-dedupe.sh) owns checkout-free `ci-ready-dedupe.yml` behavior for live
-labels, draft deferral, and same-SHA ready-run reuse. The workflow fetches it from its own
-`job.workflow_repository` and `job.workflow_sha` through the Contents API, then fails closed if
-loading, non-empty validation, or execution fails.
-
 [`download-optional-run-artifacts.sh`](download-optional-run-artifacts.sh) is a thin wrapper over
 the published `vouchington download-optional-run-artifacts` GHA helper. The fan-in-only same-run
 GitHub artifact probe downloads one exact name or pattern, writes a typed `availability` output,

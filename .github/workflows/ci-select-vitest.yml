@@ -3,16 +3,7 @@ name: CI select-ci
 on:
   workflow_call:
     inputs:
-      detect-changes-outputs-skip-ci-producers:
-        required: true
-        type: string
       detect-changes-outputs-docs-only:
-        required: true
-        type: string
-      detect-changes-outputs-has-vitest-full:
-        required: true
-        type: string
-      detect-changes-outputs-pr-labels-json:
         required: true
         type: string
     outputs:
@@ -180,10 +171,7 @@ jobs:
   select-ci:
     if: >-
       !cancelled() &&
-      github.event_name == 'pull_request' &&
-      inputs.detect-changes-outputs-skip-ci-producers != 'true' &&
-      (inputs.detect-changes-outputs-docs-only != 'true' ||
-        inputs.detect-changes-outputs-has-vitest-full == 'true')
+      github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -289,7 +277,6 @@ jobs:
         id: select
         env:
           EVENT_NAME: ${{ github.event_name }}
-          PR_LABELS: ${{ inputs.detect-changes-outputs-pr-labels-json || '[]' }}
         run: node ci/vitest/ci-select.mts
       - name: Upload Vitest test plan
         if: ${{ !cancelled() }}

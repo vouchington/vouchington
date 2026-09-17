@@ -44,7 +44,11 @@ describe('Artifact retention policy', () => {
     ['expression retention', '      retention-days: ${{ inputs.retention_days }}', 'test-artifact'],
     ['nonnumeric retention', '      retention-days: one', 'test-artifact'],
     ['extended retention', '      retention-days: 2', 'test-artifact'],
-    ['extended CI state retention', '      retention-days: 3', 'ci-state-${{ github.sha }}'],
+    [
+      'extended interpolated-name retention',
+      '      retention-days: 3',
+      'test-artifact-${{ github.sha }}',
+    ],
   ])('rejects an upload-artifact step with %s', (_, retentionLine, artifactName) => {
     const source = `steps:
   - uses: ${SYNTHETIC_UPLOAD_ARTIFACT_REF}
@@ -61,7 +65,7 @@ ${retentionLine}
     ['bare', '1', 'test-artifact'],
     ['single-quoted', "'1'", 'test-artifact'],
     ['double-quoted', '"1"', 'test-artifact'],
-    ['CI state', '1', 'ci-state-${{ github.sha }}'],
+    ['interpolated name', '1', 'test-artifact-${{ github.sha }}'],
   ])('accepts %s literal retention', (_, retentionValue, artifactName) => {
     const source = `steps:
   - uses: ${SYNTHETIC_UPLOAD_ARTIFACT_REF}

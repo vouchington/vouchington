@@ -7,12 +7,7 @@ flowchart TD
     trigger["push / pull_request / dispatch"]
     static-trigger["main push / dispatch"]
     trigger --> ci["CI"]
-    ci --> ready-dedupe["ready-dedupe\n(live PR state + same-SHA draft reuse)"]
-    ready-dedupe -. "recorded successful producers" .-> reused-producers["<producer> reused\n(informational Checks rows; serial)"]
-    ready-dedupe --> detect["detect-changes"]
-    reused-producers --> detect
-    ci --> record-state["record CI state\n(producer-only map; 1 day)"]
-    record-state -. "same tested SHA" .-> ready-dedupe
+    ci --> detect["detect-changes"]
     ci --> sca["static-code-analysis\n(cross-repo lint + policy)"]
     static-trigger --> sca
     ci --> gitleaks["gitleaks\n(secret scan)"]
