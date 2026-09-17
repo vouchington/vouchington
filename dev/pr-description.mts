@@ -16,7 +16,6 @@ import {
   createGhPackageJsonReader,
   createLocalPackageJsonReader,
 } from './pr-description/package-json-source.mts'
-import { createProjectAuditor } from './pr-description/project-audit.mts'
 import {
   createIssueClosureResolver,
   createClosingIssueReferenceResolver,
@@ -68,7 +67,6 @@ async function runValidate(argv: string[]): Promise<void> {
     validationOptions = {
       closureResolver: createIssueClosureResolver(runGh, target),
       milestoneAuditor: createMilestoneAuditor(runGh, repo),
-      projectAuditor: createProjectAuditor(runGh, repo),
       supersessionAuditor: createSupersessionAuditor(runGh, repo, patch, readPackageJson),
       targetPullRequest: target,
     }
