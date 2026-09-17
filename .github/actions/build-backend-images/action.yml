@@ -4,14 +4,11 @@ description: >
   smoke tests against them, and gates on a Trivy CRITICAL/HIGH scan before generating SBOMs.
   Produces validated local images tagged sha-<sha> under the voucha-validation namespace; does
   not publish anywhere. The caller must run actions/checkout (fetch-depth 0, clean: false) before
-  invoking this action, must run the valkey service container, and must set job env
-  IMAGE_REPOSITORY and SHA_TAG. The caller job needs id-token: write for the AWS OIDC role
-  assumption this action performs.
-
-inputs:
-  aws-role-arn:
-    description: 'AWS OIDC role ARN to assume for the smoke tests (composite actions cannot read secrets.* directly)'
-    required: true
+  invoking this action, must run the valkey service container, must set job env
+  IMAGE_REPOSITORY and SHA_TAG, and must assume the AWS OIDC role (via
+  ./.github/actions/setup-aws) before invoking this action, so AWS_ACCESS_KEY_ID,
+  AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, and AWS_REGION are already in the job environment
+  for the smoke test steps.
 
 outputs:
   active_worker_images:
@@ -51,9 +48,6 @@ runs:
           echo "worker_io_automation_enabled=$worker_io_automation_enabled"
           echo "active_worker_images=$active_worker_images"
         } >> "$GITHUB_OUTPUT"
-    - uses: ./.github/actions/setup-aws
-      with:
-        role-arn: ${{ inputs.aws-role-arn }}
 
     - name: Lint Dockerfile
       uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0

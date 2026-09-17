@@ -43,6 +43,9 @@ jobs:
           fetch-depth: 0
           clean: false
 
-      - uses: ./.github/actions/build-backend-images
+      - uses: ./.github/actions/setup-aws
+        timeout-minutes: 2
         with:
-          aws-role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
+          role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
+
+      - uses: ./.github/actions/build-backend-images

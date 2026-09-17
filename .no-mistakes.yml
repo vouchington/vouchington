@@ -2304,6 +2304,20 @@ rules:
         # buffer for the unbounded checkout/workspace-restore steps ahead of them. See #11280.
         - job: '.github/workflows/cleanup-artifacts.yml#cleanup-sweep'
           maxMinutes: 26
+        # 14, not 15: ubuntu-slim enforces a hard 15-minute platform cap, and a job that reaches
+        # it is killed by the platform rather than cancelled by GitHub, so nothing that runs on
+        # cancellation gets a chance to. The work itself is a handful of GitHub API calls either
+        # way (checkout 2m + prune 10m budget).
+        - job: '.github/workflows/ghcr-cleanup.yml#cleanup'
+          maxMinutes: 14
+        # Same build path as build-backend.yml#build (20m, see above) plus an 8m-capped GHCR
+        # publish step; 30m adds checkout/runner-overhead buffer over that 28m sum. See #31.
+        - job: '.github/workflows/publish-backend-images.yml#build'
+          maxMinutes: 30
+        # Same build path as build-web.yml#build (15m, see above) plus an 8m-capped GHCR publish
+        # step; 25m adds checkout/runner-overhead buffer over that 23m sum.
+        - job: '.github/workflows/publish-web-images.yml#build'
+          maxMinutes: 25
         # Backend setup (5m), migration (3m), a 5m Vitest watchdog, report persistence, and headroom
         # for the GitHub-artifact coverage upload, retained from the pre-revert coverage-transport
         # budget. The outer cap is fail-safe, not a runtime target.

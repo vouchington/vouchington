@@ -50,10 +50,13 @@ jobs:
           fetch-depth: 0
           clean: false
 
+      - uses: ./.github/actions/setup-aws
+        timeout-minutes: 2
+        with:
+          role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
+
       - id: build
         uses: ./.github/actions/build-backend-images
-        with:
-          aws-role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
 
       # Deliberately the last step in the job. Everything published here has already passed the
       # API, worker-cpu and worker-io smoke tests and the Trivy CRITICAL/HIGH gate, so the image
