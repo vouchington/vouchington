@@ -40,6 +40,8 @@ jobs:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
 
       - uses: ./.github/actions/build-web-images
+        with:
+          next-public-asset-prefix: ${{ vars.NEXT_PUBLIC_ASSET_PREFIX }}
 
       - name: Diagnose browser port collision
         if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}

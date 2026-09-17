@@ -12,6 +12,15 @@ description: >
   env.BROWSER_ALLOCATED_PORTS, which this action sets via GITHUB_ENV during the Docker smoke test)
   directly after invoking this action, gated on failure() && env.BROWSER_ALLOCATED_PORTS != ''.
 
+inputs:
+  next-public-asset-prefix:
+    # Composite actions cannot read `vars.*` directly (fails at template-parse time), so the
+    # caller forwards the repo variable here -- mirrors build-web-targets's
+    # web-build-fs-cache-enabled input.
+    description: Forwarded value of the `NEXT_PUBLIC_ASSET_PREFIX` repo variable.
+    required: false
+    default: ''
+
 runs:
   using: composite
   steps:
@@ -65,7 +74,7 @@ runs:
         cache-to: type=gha,scope=web-arm64,mode=max
         build-args: |
           NEXT_PUBLIC_GIT_COMMIT=${{ github.sha }}
-          NEXT_PUBLIC_ASSET_PREFIX=${{ vars.NEXT_PUBLIC_ASSET_PREFIX }}
+          NEXT_PUBLIC_ASSET_PREFIX=${{ inputs.next-public-asset-prefix }}
           STRIP_TEST_IDS=true
       env:
         DOCKER_BUILD_SUMMARY: 'false'
