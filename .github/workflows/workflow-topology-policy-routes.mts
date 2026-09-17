@@ -29,11 +29,9 @@ export const routePolicy = {
     '.github/workflows/ci.yml#test-coverage',
     '.github/workflows/ci.yml#tests',
     '.github/workflows/ci.yml#build',
-    '.github/workflows/ci.yml#ready-dedupe',
   ],
   forbiddenJobs: [],
   requiredDirectEdges: [
-    edge('.github/workflows/ci.yml#ready-dedupe', '.github/workflows/ci.yml#detect-changes'),
     edge('.github/workflows/ci.yml#tests', '.github/workflows/ci.yml#build'),
     ...['static-backend', 'static-web', 'static-lambdas', 'static-cloudflare-worker'].map(job =>
       edge(ciJob('static-code-analysis'), ciJob(job)),
@@ -120,7 +118,7 @@ export const routePolicy = {
   ),
   exactFanIns: {
     ...reviewFanIns,
-    '.github/workflows/ci.yml#detect-changes': splitIds('.github/workflows/ci.yml#ready-dedupe'),
+    '.github/workflows/ci.yml#detect-changes': [],
     '.github/workflows/ci.yml#test-coverage': splitIds(
       '.github/workflows/ci.yml#detect-changes .github/workflows/ci.yml#select-ci .github/workflows/ci.yml#storybook .github/workflows/ci.yml#test-backend-credentialed .github/workflows/ci.yml#test-backend-modules .github/workflows/ci.yml#test-backend-unit .github/workflows/ci.yml#test-cloudflare-worker .github/workflows/ci.yml#test-lambdas .github/workflows/ci.yml#test-portability .github/workflows/ci.yml#test-tooling .github/workflows/ci.yml#test-ts-shared .github/workflows/ci.yml#test-web .github/workflows/ci.yml#test-web-api .github/workflows/ci.yml#test-web-integration',
     ),
@@ -131,7 +129,6 @@ export const routePolicy = {
     '.github/workflows/ci.yml#build': splitIds(
       '.github/workflows/ci.yml#build-backend .github/workflows/ci.yml#build-web .github/workflows/ci.yml#tests',
     ),
-    '.github/workflows/ci.yml#ready-dedupe': [],
   },
   exactCallerJobs,
   stepOrders: [],
@@ -142,7 +139,7 @@ export const routePolicy = {
       innerDownstreamJobs: [],
       outerCallers: {
         '.github/workflows/ci.yml#test-backend-unit': splitIds(
-          '.github/workflows/ci.yml#build .github/workflows/ci.yml#build-backend .github/workflows/ci.yml#build-web .github/workflows/ci.yml#ci-record-state .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing',
+          '.github/workflows/ci.yml#build .github/workflows/ci.yml#build-backend .github/workflows/ci.yml#build-web .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing',
         ),
         '.github/workflows/main-backend.yml#test-backend-unit': [],
       },

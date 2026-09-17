@@ -3,18 +3,6 @@ name: CI test coverage
 on:
   workflow_call:
     inputs:
-      detect-changes-outputs-skip-ci-producers:
-        required: true
-        type: string
-      detect-changes-outputs-skip-settled-producers:
-        required: true
-        type: string
-      detect-changes-outputs-docs-only:
-        required: true
-        type: string
-      detect-changes-outputs-has-vitest-full:
-        required: true
-        type: string
       select-vitest-outputs-run-tests-test-web:
         required: true
         type: string
@@ -98,12 +86,7 @@ jobs:
     name: Patch Coverage
     outputs:
       vitest-report-expectations: ${{ steps.vitest-report-expectation.outputs.context }}
-    if: >-
-      !cancelled() &&
-      inputs.detect-changes-outputs-skip-ci-producers != 'true' &&
-      inputs.detect-changes-outputs-skip-settled-producers != 'true' &&
-      (inputs.detect-changes-outputs-docs-only != 'true' ||
-        inputs.detect-changes-outputs-has-vitest-full == 'true')
+    if: '!cancelled()'
     runs-on: ubuntu-latest
     timeout-minutes: 14
     # id-token is omitted: this job checks out and runs PR-controlled code.

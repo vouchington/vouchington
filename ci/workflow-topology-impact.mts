@@ -19,9 +19,7 @@ export {
 // no-mistakes reports every ci.yml root, including prerequisite and aggregate jobs. Only the
 // selectable subset has selector outputs; validate against the complete graph first.
 export const CI_ROOT_JOB_NAMES = [
-  'ready-dedupe',
   'detect-changes',
-  'ci-record-state',
   'static-code-analysis',
   'static-backend',
   'static-web',

@@ -24,7 +24,7 @@ export function checkWorkflowEnvReferences(
     for (const name of matchWorkflowEnvMapNames(source)) {
       if (isWorkflowEnvReferenced(name, source)) continue
       if (hasNonWorkflowReference(rows.get(name))) continue
-      if (isWorkflowEnvAllowlisted(file, name)) continue
+      if (isWorkflowEnvAllowlisted(name)) continue
 
       errors.push(
         `workflow env ${name} in ${file} is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,

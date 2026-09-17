@@ -9,11 +9,9 @@ export const jobInventory = {
   ),
   '.github/workflows/checks-backend-smoke.yml': jobs('smoke'),
   '.github/workflows/ci.yml': jobs(
-    'backend-smoke build build-backend build-web ci-record-state detect-changes initialize-smoke-test ready-dedupe select-ci static-backend static-cloudflare-worker static-code-analysis static-lambdas static-web storybook test-backend-credentialed test-backend-modules test-backend-unit test-cloudflare-worker test-coverage test-explain-analyze test-lambdas test-playwright test-playwright-credentialed test-portability test-postgres-schema test-tooling test-ts-shared test-web test-web-api test-web-integration tests tests-processing',
+    'backend-smoke build build-backend build-web detect-changes initialize-smoke-test select-ci static-backend static-cloudflare-worker static-code-analysis static-lambdas static-web storybook test-backend-credentialed test-backend-modules test-backend-unit test-cloudflare-worker test-coverage test-explain-analyze test-lambdas test-playwright test-playwright-credentialed test-portability test-postgres-schema test-tooling test-ts-shared test-web test-web-api test-web-integration tests tests-processing',
   ),
   '.github/workflows/ci-detect-changes.yml': jobs('detect-changes'),
-  '.github/workflows/ci-ready-dedupe.yml': jobs('ready-dedupe report-reused-producers'),
-  '.github/workflows/ci-record-state.yml': jobs('record-state'),
   '.github/workflows/ci-select-vitest.yml': jobs('select-ci'),
   '.github/workflows/ci-test-coverage.yml': jobs('test-coverage'),
   '.github/workflows/ci-tests-processing.yml': jobs('tests-processing'),
@@ -74,8 +72,6 @@ export const jobInventory = {
 
 export const unlockedWorkflowReasons = {
   '.github/workflows/ci-detect-changes.yml': 'short-lived read-only CI classification',
-  '.github/workflows/ci-ready-dedupe.yml': 'short-lived read-only CI deduplication',
-  '.github/workflows/ci-record-state.yml': 'short-lived permissionless CI state recording',
   '.github/workflows/ci-select-vitest.yml': 'short-lived read-only test selection',
   '.github/workflows/ci-test-coverage.yml': 'short-lived coverage report evaluation',
   '.github/workflows/checks-backend-smoke.yml': 'parallel-safe idempotent manual tests',

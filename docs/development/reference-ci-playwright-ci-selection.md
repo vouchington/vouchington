@@ -2,11 +2,10 @@
 
 [Back to CI Reference](ci.md#playwright-ci-selection)
 
-Draft pull requests skip `test-playwright` unless `playwright:full` or `vitest:full` is live or
-the event is `workflow_dispatch`. Marking the PR ready re-runs Playwright for that SHA when a
-prior draft run deferred it. See [CI Job Conditions](reference-ci-ci-job-conditions.md).
+`test-playwright` runs on every pull request, draft or ready, and on `workflow_dispatch`. See
+[CI Job Conditions](reference-ci-ci-job-conditions.md).
 
-On pull requests that are not draft-deferred, `tests-playwright.yml` runs a `select` job (`ci/playwright/ci-select.mts`)
+On every triggering pull request, `tests-playwright.yml` runs a `select` job (`ci/playwright/ci-select.mts`)
 that calls `no-mistakes`' `planTests` with the `.no-mistakes.yml`
 `test_plan.playwright.environments.pullRequest` environment. The planner disables its execution
 and machine-wide lock-wait deadlines, so concurrent CI invocations serialize. It resolves the
@@ -23,7 +22,7 @@ flowchart TD
   A[PR files changed] --> B{Path filter matches Playwright-relevant paths?}
   B -- no --> Z[test-playwright job skipped]
   B -- yes --> C["select job: ci-select.mts"]
-  C --> D{"playwright:full label or broad config change?"}
+  C --> D{"Broad config change?"}
   D -- yes --> FULL["Full suite: all specs, sharded"]
   D -- no --> L{Dependency manifest or lock changed?}
   L -- yes --> BFS[Trace changed direct, transitive, and workspace packages]
@@ -34,10 +33,7 @@ flowchart TD
   F -- no --> H[Sharded Playwright run on selected files]
 ```
 
-1. **`playwright:full` PR label** — set this label when creating the PR to force the full suite on
-   its initial CI attempt. Adding the label later does not trigger or rerun CI; push a new commit
-   only when another CI attempt is otherwise required.
-2. **Configured full-suite triggers** — `.no-mistakes.yml` project dependency rules force
+1. **Configured full-suite triggers** — `.no-mistakes.yml` project dependency rules force
    the full suite for high-risk changes such as Playwright config, the Playwright-owning
    GitHub Actions workflows/actions, Playwright CI runtime tooling, Cloudflare Worker production
    source, Next.js config/proxy, Wrangler config, and `ci/setup-web-integration.mts`. Selector
@@ -56,15 +52,14 @@ flowchart TD
    missing comparison baseline or unsupported dependency syntax emits a typed warning and follows
    the environment policy. In this pull-request environment, `globalConfigFallback: false` means
    warning plus sample, not a full fallback. The setting also disables fallback for other global
-   configs like `tsconfig.json` — use the `playwright:full` label to force the
-   full suite manually when needed.
-3. **Configured test-plan groups** — direct specs, Playwright coverage-related specs,
+   configs like `tsconfig.json`.
+2. **Configured test-plan groups** — direct specs, Playwright coverage-related specs,
    dependency-related specs, and a 1% sample group that still samples when the selected
    set is otherwise limited.
-4. **Empty result** → `skip=true`, job short-circuits.
+3. **Empty result** → `skip=true`, job short-circuits.
 
 For targeted PRs, shard count is
-`max(1, ceil(selected runnable spec count × 2 seconds / 240 seconds))`. Labelled-full PRs,
+`max(1, ceil(selected runnable spec count × 2 seconds / 240 seconds))`. Full-suite selections,
 planner fail-open fallbacks, and manual runs use the same formula with the complete runnable
 Playwright spec count. Two seconds per spec is an allocation heuristic, not a measured duration;
 the 240-second Playwright execution budget leaves room for fixed per-shard build/startup overhead

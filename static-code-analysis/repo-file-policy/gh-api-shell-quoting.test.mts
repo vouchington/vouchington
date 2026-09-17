@@ -84,14 +84,14 @@ describe('gh api shell-quoting guard', () => {
     expect(shellScriptViolations(source)).toEqual([])
   })
 
-  it('stays silent on the real ci/ready-dedupe.sh artifact-lookup call', () => {
+  it('stays silent on a representative artifact-lookup call with a quoted variable', () => {
     const source =
       'artifacts_json=$(gh api --method GET ' +
-      '"repos/$GITHUB_REPOSITORY/actions/artifacts?name=ci-state-$TESTED_SHA")\n'
+      '"repos/$GITHUB_REPOSITORY/actions/artifacts?name=ci-state-$COMMIT_SHA")\n'
     expect(shellScriptViolations(source)).toEqual([])
   })
 
-  it('stays silent on the real ci/ready-dedupe.sh paginated-runs call', () => {
+  it('stays silent on a representative paginated-runs call', () => {
     const source =
       'prior_runs_pages=$(gh api --paginate --slurp --method GET ' +
       '"repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs' +

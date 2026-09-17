@@ -84,13 +84,6 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'VITEST_SELECTED_FILES',
 ])
 
-const READY_DEDUPE_WORKFLOW = '.github/workflows/ci-ready-dedupe.yml'
-const READY_DEDUPE_SCRIPT_ENV_ALLOWLIST = new Set(['EVENT_ACTION', 'HEAD_SHA', 'TESTED_SHA'])
-
-export function isWorkflowEnvAllowlisted(file: string, name: string): boolean {
-  if (EXTERNAL_WORKFLOW_ENV_ALLOWLIST.has(name)) return true
-
-  // Consumed by ci/ready-dedupe.sh, which this checkout-free workflow fetches from its immutable
-  // defining revision. The TypeScript-focused inventory does not trace workflow env into Bash.
-  return file === READY_DEDUPE_WORKFLOW && READY_DEDUPE_SCRIPT_ENV_ALLOWLIST.has(name)
+export function isWorkflowEnvAllowlisted(name: string): boolean {
+  return EXTERNAL_WORKFLOW_ENV_ALLOWLIST.has(name)
 }

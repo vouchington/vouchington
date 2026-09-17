@@ -343,12 +343,6 @@ export async function runVitestCiSelect(
   // Use GITHUB_BASE_REF when available so PRs targeting release/feature branches work correctly.
   const baseBranch = process.env['GITHUB_BASE_REF'] || 'main'
 
-  let labels: string[] = []
-  try {
-    labels = JSON.parse(process.env['PR_LABELS'] ?? '[]') as string[]
-  } catch {
-    /* ignore malformed labels */
-  }
   let plan: PlannedTests
   try {
     plan = await runPlanner(vitestPlanOptions(worktreeRoot, baseBranch))
@@ -377,11 +371,6 @@ export async function runVitestCiSelect(
       affectedRootJobIds: topology.affectedRootJobIds,
       fullCi: topology.fullCi,
     })
-    return
-  }
-
-  if (labels.includes('vitest:full')) {
-    fullOut('vitest:full label', '`vitest:full` label is set', topology)
     return
   }
 

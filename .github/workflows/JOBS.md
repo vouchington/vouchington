@@ -30,9 +30,6 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `checks-static.yml`                 | `static-lambdas`                | job    | `ubuntu-latest`                       | 18            |
 | `checks-static.yml`                 | `static-web`                    | job    | `ubuntu-latest`                       | 35            |
 | `ci-detect-changes.yml`             | `detect-changes`                | job    | `ubuntu-slim`                         | 3             |
-| `ci-ready-dedupe.yml`               | `ready-dedupe`                  | job    | `ubuntu-slim`                         | 1             |
-| `ci-ready-dedupe.yml`               | `report-reused-producers`       | matrix | `ubuntu-slim`                         | 1             |
-| `ci-record-state.yml`               | `record-state`                  | job    | `ubuntu-slim`                         | 1             |
 | `ci-select-vitest.yml`              | `select-ci`                     | job    | `ubuntu-latest`                       | 5             |
 | `ci-test-coverage.yml`              | `test-coverage`                 | job    | `ubuntu-latest`                       | 14            |
 | `ci-tests-processing.yml`           | `tests-processing`              | job    | `ubuntu-latest`                       | 14            |
@@ -40,10 +37,8 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci.yml`                            | `build`                         | job    | `ubuntu-latest`                       | 1             |
 | `ci.yml`                            | `build-backend`                 | job    | → `build-backend.yml`                 | 360           |
 | `ci.yml`                            | `build-web`                     | job    | → `build-web.yml`                     | 360           |
-| `ci.yml`                            | `ci-record-state`               | job    | → `ci-record-state.yml`               | 360           |
 | `ci.yml`                            | `detect-changes`                | job    | → `ci-detect-changes.yml`             | 360           |
 | `ci.yml`                            | `initialize-smoke-test`         | job    | → `initialize-smoke-test.yml`         | 360           |
-| `ci.yml`                            | `ready-dedupe`                  | job    | → `ci-ready-dedupe.yml`               | 360           |
 | `ci.yml`                            | `select-ci`                     | job    | → `ci-select-vitest.yml`              | 360           |
 | `ci.yml`                            | `static-backend`                | job    | → `checks-static.yml`                 | 360           |
 | `ci.yml`                            | `static-cloudflare-worker`      | job    | → `checks-static.yml`                 | 360           |

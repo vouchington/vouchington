@@ -136,7 +136,7 @@ describe('Vitest CI reporters', () => {
     )
     expect(testsProcessingWorkflow).toContain(`name: Merge Vitest reports
         id: merge-vitest-reports
-        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && inputs.skip-ci-producers != 'true' && inputs.skip-settled-producers != 'true' && (inputs.docs-only != 'true' || inputs.has-vitest-full == 'true')"
+        if: "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')"
         env:`)
     expect(testsProcessingWorkflow).not.toContain('merge-multiple: true')
     expect(testsProcessingWorkflow).toContain('VITEST_REPORT_EXPECTATIONS: ${{')

@@ -5,8 +5,6 @@ export const exactCallerJobs = {
     '.github/workflows/main-checks.yml#cleanup-artifacts .github/workflows/main-web.yml#cleanup-artifacts',
   ),
   '.github/workflows/ci-detect-changes.yml': splitIds('.github/workflows/ci.yml#detect-changes'),
-  '.github/workflows/ci-ready-dedupe.yml': splitIds('.github/workflows/ci.yml#ready-dedupe'),
-  '.github/workflows/ci-record-state.yml': splitIds('.github/workflows/ci.yml#ci-record-state'),
   '.github/workflows/ci-select-vitest.yml': splitIds('.github/workflows/ci.yml#select-ci'),
   '.github/workflows/ci-test-coverage.yml': splitIds('.github/workflows/ci.yml#test-coverage'),
   '.github/workflows/ci-tests-processing.yml': splitIds(
