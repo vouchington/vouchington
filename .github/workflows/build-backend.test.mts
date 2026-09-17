@@ -97,10 +97,7 @@ describe('build-backend workflow', () => {
   })
 
   it('builds the active worker images without reading deployment topology', () => {
-    const compositeAction = readFileSync(
-      '.github/actions/build-backend-images/action.yml',
-      'utf8',
-    )
+    const compositeAction = readFileSync('.github/actions/build-backend-images/action.yml', 'utf8')
     const steps = readBuildBackendImagesSteps()
     const images = steps.find(step => step.name === 'Set backend image set')
     expect(images?.run).toContain('active_worker_images=')

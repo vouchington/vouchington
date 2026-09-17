@@ -247,22 +247,15 @@ describe('backend image publication', () => {
     const workerCpuSmoke = compositeStepIndex('Run worker-cpu smoke test')
     const trivyScan = compositeStepIndex('Scan OS packages in images with Trivy')
 
-    expect(apiSmoke, 'Run API smoke test must exist').toBeGreaterThan(-1)
-    expect(workerCpuSmoke, 'Run worker-cpu smoke test must exist').toBeGreaterThan(apiSmoke)
-    expect(trivyScan, 'Scan OS packages in images with Trivy must exist').toBeGreaterThan(
-      workerCpuSmoke,
-    )
+    expect(apiSmoke).toBeGreaterThan(-1)
+    expect(workerCpuSmoke).toBeGreaterThan(apiSmoke)
+    expect(trivyScan).toBeGreaterThan(workerCpuSmoke)
   })
 
   it('publishes only after the composite action that runs the smoke tests and the Trivy gate', () => {
-    expect(
-      buildActionStepIndex,
-      'the build-backend-images composite action step must exist',
-    ).toBeGreaterThan(-1)
-    expect(publishStepIndex, `${publishStepName} must exist`).toBeGreaterThan(-1)
-    expect(publishStepIndex, 'publication must follow the composite action step').toBeGreaterThan(
-      buildActionStepIndex,
-    )
+    expect(buildActionStepIndex).toBeGreaterThan(-1)
+    expect(publishStepIndex).toBeGreaterThan(-1)
+    expect(publishStepIndex).toBeGreaterThan(buildActionStepIndex)
   })
 
   it('gates publication on an explicit success check', () => {
@@ -275,7 +268,7 @@ describe('backend image publication', () => {
   it('never grants packages: write to a build-backend.yml caller', () => {
     const callers = reusableCallers('./.github/workflows/build-backend.yml')
 
-    expect(callers.length, 'build-backend.yml must have callers').toBeGreaterThan(0)
+    expect(callers.length).toBeGreaterThan(0)
     expect(
       callers.filter(({ job }) => job.permissions?.packages === 'write').map(({ id }) => id),
     ).toEqual([])
@@ -294,6 +287,6 @@ describe('backend image publication', () => {
     // hardcoded account.
     expect(publishSource).toContain('ghcr.io/${{ github.repository_owner }}')
     const foreign = /ghcr\.io\/(?!\$\{\{ github\.repository_owner \}\})/u.exec(publishSource)
-    expect(foreign, `foreign GHCR namespace: ${foreign?.[0]}`).toBeNull()
+    expect(foreign).toBeNull()
   })
 })
