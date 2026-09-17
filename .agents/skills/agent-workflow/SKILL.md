@@ -41,8 +41,6 @@ Related local instructions:
 - Google Gemini — does not support privacy mode for personal accounts.
 - Z.AI — does not support privacy mode except for enterprise accounts.
 
-**Accepted CI exception:** OpenCode Zen PR reviews (`opencode/muse-spark-1.3-contributor-free`) may send prompts and completions to train future Meta models, per OpenCode Zen privacy docs. That exception is only for the advisory CI reviewer; it does not authorize Gemini or other disallowed local assistants.
-
 This repository keeps agent instructions in checked-in `CLAUDE.md` files. Codex reads those files through `project_doc_fallback_filenames = ["CLAUDE.md"]` in [.codex/config.toml](../../../.codex/config.toml). Grok and Cursor load `CLAUDE.md` natively. Do not add tracked generated `AGENTS.md` copies of repo or workspace agent instructions; `CLAUDE.md` is the shared project-instruction source for Claude, Codex, Grok, and Cursor.
 
 ## Feedback And Decision Hierarchy

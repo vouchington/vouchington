@@ -83,40 +83,6 @@ export const SECRET_INVENTORY = {
     provisioned: true,
     notes: 'OpenAI key for credentialed backend/Playwright tests (repo secret).',
   },
-  OPENCODE_FREE_API_KEY: {
-    provisioned: true,
-    notes:
-      'OpenCode Zen API key for the advisory OpenCode PR review (repo secret), forwarded to ' +
-      'the reusable opencode-code-review workflow via secrets: { code_review_api_key: ... }. ' +
-      'Not actually live yet on this personal-account repo (manual rollout step) — marked ' +
-      'true because the caller job is a stepless uses: job with no readiness step to add; ' +
-      'ci/check-live-workflow-topology.mts enforces this (confirmed empirically, false trips ' +
-      'unprovisionedSecretsWithoutReadinessStep here). The vars.*_CODE_REVIEW_ENABLED gate is ' +
-      'what actually keeps this never-red before the secret exists.',
-  },
-  OPENROUTER_FREE_API_KEY: {
-    provisioned: true,
-    notes:
-      'OpenRouter API key for the advisory OpenCode and Claude OpenRouter PR reviews (repo secret). ' +
-      'Forwarded to the reusable opencode-code-review workflow via secrets: { code_review_api_key: ... } ' +
-      'and to the reusable code-review workflow (the Claude-harness reviewer via ' +
-      "OpenRouter's Anthropic Skin, running thinkingmachines/inkling:free as of #11267; " +
-      'previously minimax/minimax-m3:free, retired after OpenRouter dropped its serving ' +
-      'endpoints) via secrets: ' +
-      '{ provider_api_token: ... } from claude-openrouter-code-reviewer.yml. Both reviewers draw from the ' +
-      'same OpenRouter free-tier quota/rate-limit pool, unlike the Zen + OpenRouter split across ' +
-      'providers/keys elsewhere in this file — a throttling event on that pool degrades both ' +
-      'reviewers together; re-split into separate keys if that correlated failure is observed in ' +
-      'practice. Marked provisioned: true because both caller jobs are stepless uses: jobs with ' +
-      'no readiness step to add; ci/check-live-workflow-topology.mts enforces this (confirmed ' +
-      'empirically, false trips unprovisionedSecretsWithoutReadinessStep here) regardless of ' +
-      'whether either gating var is currently on. Each reviewer is gated on its own ' +
-      'vars.*_CODE_REVIEW_ENABLED var, which is what actually keeps this never-red before or ' +
-      "after the secret is drawn on — gating lives in the workflow (vars.CLAUDE_OPENROUTER_CODE_REVIEW_ENABLED == 'true', " +
-      'unset by default); permanent enablement is via the repo var, confirmed live via a canary ' +
-      'run with vars.MINIMAX_CODE_REVIEW_ENABLED temporarily set (2026-09-06); the var is unset ' +
-      'by default and managed outside this repo.',
-  },
   S3_BUCKET_IMAGES: {
     provisioned: true,
     notes: 'S3 bucket used by credentialed image tests (repo secret).',

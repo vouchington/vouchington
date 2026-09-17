@@ -1,16 +1,12 @@
 # Code Review Batched Publishing Requirements
 
 [vouchington/vouchington-tooling](https://github.com/vouchington/vouchington-tooling)'s
-`code-review` and `opencode-code-review` composite actions both default `inline_prompt_path` to
-this file — verified against `code-review.yml@93bad61` and
-`opencode-code-review.yml@93bad61` (both v0.15.1) on 2026-09-09; re-verify against the pinned SHA
-on each pin bump, since nothing in this repo enforces that the tooling default stays this path. Each caller
+`code-review` composite action defaults `inline_prompt_path` to
+this file — verified against `code-review.yml@93bad61` (v0.15.1) on 2026-09-09; re-verify against the pinned SHA
+on each pin bump, since nothing in this repo enforces that the tooling default stays this path. The caller
 appends it after the shared
 [code-review-prompt.md](../../.agents/skills/agent-workflow/code-review-prompt.md) when building
-its review prompt. Consumed by
-[opencode-zen-code-review.yml](../../.github/workflows/opencode-zen-code-review.yml),
-[opencode-openrouter-code-review.yml](../../.github/workflows/opencode-openrouter-code-review.yml), and
-[claude-openrouter-code-reviewer.yml](../../.github/workflows/claude-openrouter-code-reviewer.yml); the `code-review`
+its review prompt. No workflow in this repository currently calls that reusable workflow; the `code-review`
 composite's poster validates the resulting `code-review-payload.json` against this contract.
 
 - This section overrides how findings are published, and which review event is used.

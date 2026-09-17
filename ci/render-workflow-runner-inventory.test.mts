@@ -117,7 +117,7 @@ describe('workflow job & runner inventory', () => {
     it('omits the git ref from a remote reusable-workflow call target', async () => {
       const remotePin = 'a'.repeat(40)
       const remoteCaller = makeJob({
-        id: '.github/workflows/opencode-zen-code-review.yml#opencode-zen-review',
+        id: '.github/workflows/synthetic-remote-caller.yml#synthetic-remote-job',
       })
       const overridden = makeTopology({
         jobs: [...topology.jobs, remoteCaller],
@@ -125,7 +125,7 @@ describe('workflow job & runner inventory', () => {
           ...topology.edges,
           makeCallEdge(
             remoteCaller.id,
-            `vouchington/vouchington-tooling/.github/workflows/opencode-code-review.yml@${remotePin}`,
+            `vouchington/vouchington-tooling/.github/workflows/synthetic-remote-callee.yml@${remotePin}`,
             { local: false },
           ),
         ],
@@ -134,7 +134,7 @@ describe('workflow job & runner inventory', () => {
       const output = await renderJobsInventoryDoc(FIXTURE, overridden)
 
       expect(output).toMatch(
-        /^\|\s*`opencode-zen-code-review\.yml`\s*\|\s*`opencode-zen-review`\s*\|\s*job\s*\|\s*→\s*`vouchington\/vouchington-tooling\/\.github\/workflows\/opencode-code-review\.yml`\s*\|/m,
+        /^\|\s*`synthetic-remote-caller\.yml`\s*\|\s*`synthetic-remote-job`\s*\|\s*job\s*\|\s*→\s*`vouchington\/vouchington-tooling\/\.github\/workflows\/synthetic-remote-callee\.yml`\s*\|/m,
       )
       expect(output).not.toContain(remotePin)
     })

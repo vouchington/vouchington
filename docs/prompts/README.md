@@ -6,7 +6,7 @@ Automation prompt text lives here so workflow YAML stays focused on triggers, pe
 
 | Surface                    | Source                                                             | Used by                                                                                                                                                                      |
 | -------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Code review inline overlay | [code-review-inline-comments.md](code-review-inline-comments.md)   | Default `inline_prompt_path` overlay for the `code-review` and `opencode-code-review` composite actions; see the file itself for the full contract and consumers             |
+| Code review inline overlay | [code-review-inline-comments.md](code-review-inline-comments.md)   | Default `inline_prompt_path` overlay for the `code-review` composite action; see the file itself for the full contract and consumers                                         |
 | Scheduled prompts          | [scheduled/](scheduled/) (indexed in [SCHEDULED.md](SCHEDULED.md)) | [scheduled-prompts.yml](../../.github/workflows/scheduled-prompts.yml) and the [workflow inventory](../../.github/workflows/README.md)                                       |
 | Automation templates       | [automation](automation/)                                          | Templates rendered by [ci/render-harness-prompt.mts](../../ci/render-harness-prompt.mts) before calling [harness-dispatch.yml](../../.github/workflows/harness-dispatch.yml) |
 
