@@ -140,16 +140,6 @@ export const concurrencyTopologyPolicy = {
   '.github/workflows/main-lambdas.yml': retained(['fixed-resource']),
   '.github/workflows/main-storybook.yml': retained(['fixed-resource']),
   '.github/workflows/main-web.yml': retained(['run']),
-  '.github/workflows/claude-openrouter-code-reviewer.yml': retained(['pull-request']),
-  '.github/workflows/claude-openrouter-code-reviewer.yml#claude-openrouter-code-reviewer': fifo([
-    'fixed-resource',
-  ]),
-  '.github/workflows/opencode-zen-code-review.yml': retained(['pull-request']),
-  '.github/workflows/opencode-zen-code-review.yml#opencode-zen-review': fifo(['fixed-resource']),
-  '.github/workflows/opencode-openrouter-code-review.yml': retained(['pull-request']),
-  '.github/workflows/opencode-openrouter-code-review.yml#opencode-openrouter-review': fifo([
-    'fixed-resource',
-  ]),
   '.github/workflows/pnpm-dedupe.yml': retained(['fixed-resource']),
   '.github/workflows/static-code-analysis.yml': conditional(['pull-request', 'ref']),
   '.github/workflows/static-code-analysis.yml#no-mistakes-owned': fifo(['fixed-resource']),

@@ -52,9 +52,6 @@ export const jobInventory = {
   '.github/workflows/main-web.yml': jobs(
     'cleanup-artifacts detect-web-deploy playwright-credentialed-tests playwright-tests static-checks store-playwright-otel test-web test-web-api test-web-integration web-deploy-intent',
   ),
-  '.github/workflows/claude-openrouter-code-reviewer.yml': jobs('claude-openrouter-code-reviewer'),
-  '.github/workflows/opencode-openrouter-code-review.yml': jobs('opencode-openrouter-review'),
-  '.github/workflows/opencode-zen-code-review.yml': jobs('opencode-zen-review'),
   '.github/workflows/pnpm-dedupe.yml': jobs('dedupe'),
   '.github/workflows/static-code-analysis.yml': jobs('no-mistakes-owned static-code-analysis'),
   '.github/workflows/storybook.yml': jobs('storybook'),
