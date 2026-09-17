@@ -13,17 +13,16 @@ type Step = {
   run?: string
 }
 
-type Workflow = {
-  env?: Record<string, string>
-  jobs?: { build?: { steps?: Step[] } }
+type CompositeAction = { runs?: { steps?: Step[] } }
+
+function readBuildBackendImagesAction(): CompositeAction {
+  return load(
+    readFileSync('.github/actions/build-backend-images/action.yml', 'utf8'),
+  ) as CompositeAction
 }
 
-function readWorkflow(): Workflow {
-  return load(readFileSync('.github/workflows/build-backend.yml', 'utf8')) as Workflow
-}
-
-function step(workflow: Workflow, name: string): Step {
-  const result = workflow.jobs?.build?.steps?.find(candidate => candidate.name === name)
+function step(action: CompositeAction, name: string): Step {
+  const result = action.runs?.steps?.find(candidate => candidate.name === name)
   expect(result).toBeDefined()
   return result ?? {}
 }
@@ -47,8 +46,8 @@ describe('worker-io backend automation flag', () => {
   })
 
   it('derives active images from the checked-in boolean flag', () => {
-    const workflow = readWorkflow()
-    const imageSet = step(workflow, 'Set backend image set')
+    const action = readBuildBackendImagesAction()
+    const imageSet = step(action, 'Set backend image set')
     const flagText = readFileSync('.github/worker-io-automation.env', 'utf8')
     const flagMatch = /^WORKER_IO_AUTOMATION_ENABLED=(true|false)\n$/.exec(flagText)
 
@@ -90,11 +89,11 @@ describe('worker-io backend automation flag', () => {
   })
 
   it('gates worker-io operations while preserving the true-state recovery path', () => {
-    const workflow = readWorkflow()
-    const metadata = step(workflow, 'Docker metadata (worker-io)')
-    const coreBake = step(workflow, 'Build core backend images')
-    const allBake = step(workflow, 'Build all backend images')
-    const smoke = step(workflow, 'Run worker-io smoke test')
+    const action = readBuildBackendImagesAction()
+    const metadata = step(action, 'Docker metadata (worker-io)')
+    const coreBake = step(action, 'Build core backend images')
+    const allBake = step(action, 'Build all backend images')
+    const smoke = step(action, 'Run worker-io smoke test')
 
     expect(metadata.if).toBe("${{ steps.images.outputs.worker_io_automation_enabled == 'true' }}")
     expect(coreBake.if).toBe("${{ steps.images.outputs.worker_io_automation_enabled != 'true' }}")
@@ -105,11 +104,11 @@ describe('worker-io backend automation flag', () => {
   })
 
   it('derives security artifact collections from active outputs', () => {
-    const workflow = readWorkflow()
+    const action = readBuildBackendImagesAction()
     const collections = [
-      step(workflow, 'Report Docker image sizes'),
-      step(workflow, 'Scan OS packages in images with Trivy'),
-      step(workflow, 'Generate Trivy SBOMs'),
+      step(action, 'Report Docker image sizes'),
+      step(action, 'Scan OS packages in images with Trivy'),
+      step(action, 'Generate Trivy SBOMs'),
     ]
 
     for (const candidate of collections) {

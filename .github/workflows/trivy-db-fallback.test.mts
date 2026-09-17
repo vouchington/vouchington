@@ -18,16 +18,21 @@ type Workflow = {
       steps?: WorkflowStep[]
     }
   }
+  runs?: {
+    steps?: WorkflowStep[]
+  }
 }
 
 function buildSteps(path: string): WorkflowStep[] {
   const workflow = load(readFileSync(path, 'utf8')) as Workflow
-  return workflow.jobs?.build?.steps ?? []
+  return workflow.jobs?.build?.steps ?? workflow.runs?.steps ?? []
 }
 
 describe('Trivy database fallback workflow contract', () => {
+  // build-backend.yml delegates its image build, smoke tests, and Trivy gate to this composite
+  // action, which is shared with publish-backend-images.yml.
   const buildWorkflowPaths = [
-    '.github/workflows/build-backend.yml',
+    '.github/actions/build-backend-images/action.yml',
     '.github/workflows/build-web.yml',
   ]
 

@@ -3,6 +3,7 @@ const jobs = (keys: string): readonly string[] => keys.split(' ')
 export const jobInventory = {
   '.github/workflows/actionlint.yml': jobs('actionlint'),
   '.github/workflows/build-backend.yml': jobs('build'),
+  '.github/workflows/publish-backend-images.yml': jobs('build'),
   '.github/workflows/build-web.yml': jobs('build'),
   '.github/workflows/checks-static.yml': jobs(
     'static-backend static-cloudflare static-lambdas static-web',
@@ -80,6 +81,8 @@ export const unlockedWorkflowReasons = {
   '.github/workflows/explain-analyze.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/initialize-smoke-test.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/label-pr.yml': 'idempotent PR labeling',
+  '.github/workflows/publish-backend-images.yml':
+    'sole caller main-backend.yml already serializes every run on main',
   '.github/workflows/tests-backend-credentialed.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/tests-backend-modules.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/tests-backend-unit.yml': 'parallel-safe idempotent manual tests',

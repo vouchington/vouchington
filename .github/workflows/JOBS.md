@@ -22,7 +22,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | Workflow                            | Job                             | Kind   | Runner                                | Timeout (min) |
 | ----------------------------------- | ------------------------------- | ------ | ------------------------------------- | ------------- |
 | `actionlint.yml`                    | `actionlint`                    | job    | `ubuntu-slim`                         | 8             |
-| `build-backend.yml`                 | `build`                         | job    | `ubuntu-24.04-arm`                    | 360           |
+| `build-backend.yml`                 | `build`                         | job    | `ubuntu-24.04-arm`                    | 20            |
 | `build-web.yml`                     | `build`                         | job    | `ubuntu-24.04-arm`                    | 15            |
 | `checks-backend-smoke.yml`          | `smoke`                         | job    | `ubuntu-latest`                       | 10            |
 | `checks-static.yml`                 | `static-backend`                | job    | `ubuntu-latest`                       | 15            |
@@ -97,7 +97,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `lint-links.yml`                    | `lint-links`                    | job    | `ubuntu-slim`                         | 10            |
 | `main-backend.yml`                  | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
 | `main-backend.yml`                  | `postgres-schema-tests`         | job    | → `tests-postgres-schema.yml`         | 360           |
-| `main-backend.yml`                  | `publish-backend-images`        | job    | → `build-backend.yml`                 | 360           |
+| `main-backend.yml`                  | `publish-backend-images`        | job    | → `publish-backend-images.yml`        | 360           |
 | `main-backend.yml`                  | `static-checks`                 | job    | → `checks-static.yml`                 | 360           |
 | `main-backend.yml`                  | `test-backend-credentialed`     | job    | → `tests-backend-credentialed.yml`    | 360           |
 | `main-backend.yml`                  | `test-backend-modules`          | job    | → `tests-backend-modules.yml`         | 360           |
@@ -127,6 +127,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `plan.yml`                          | `gate`                          | job    | `ubuntu-slim`                         | 5             |
 | `plan.yml`                          | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `pnpm-dedupe.yml`                   | `dedupe`                        | job    | `ubuntu-latest`                       | 8             |
+| `publish-backend-images.yml`        | `build`                         | job    | `ubuntu-24.04-arm`                    | 30            |
 | `scheduled-prompts.yml`             | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `scheduled-prompts.yml`             | `select-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `shepherd.yml`                      | `checkpoint-dispatch`           | job    | `ubuntu-latest`                       | 8             |
