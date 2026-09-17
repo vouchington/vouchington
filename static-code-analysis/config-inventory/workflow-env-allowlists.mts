@@ -84,6 +84,19 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'VITEST_SELECTED_FILES',
 ])
 
-export function isWorkflowEnvAllowlisted(name: string): boolean {
-  return EXTERNAL_WORKFLOW_ENV_ALLOWLIST.has(name)
+// Consumed by the build-backend-images / build-web-images composite actions, which read
+// env.IMAGE_REPOSITORY and env.SHA_TAG as inherited job env rather than declared `with:` inputs.
+// These callers no longer reference the names in their own file text (their build steps moved
+// into the composite action), and this checker only scans the workflow file it found the `env:`
+// map in — it does not trace into a `uses: ./.github/actions/*` step's own YAML.
+const IMAGE_BUILD_ENV_WORKFLOWS = new Set([
+  '.github/workflows/build-backend.yml',
+  '.github/workflows/build-web.yml',
+])
+const IMAGE_BUILD_ENV_ALLOWLIST = new Set(['IMAGE_REPOSITORY', 'SHA_TAG'])
+
+export function isWorkflowEnvAllowlisted(file: string, name: string): boolean {
+  if (EXTERNAL_WORKFLOW_ENV_ALLOWLIST.has(name)) return true
+
+  return IMAGE_BUILD_ENV_WORKFLOWS.has(file) && IMAGE_BUILD_ENV_ALLOWLIST.has(name)
 }

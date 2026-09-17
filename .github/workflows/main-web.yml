@@ -9,6 +9,9 @@ on:
       - 'ci/cleanup-artifacts-patterns.json'
       - 'ci/cleanup-run-artifacts.mjs'
       - '.github/workflows/main-web.yml'
+      - '.github/workflows/build-web.yml'
+      - '.github/workflows/publish-web-images.yml'
+      - '.github/actions/build-web-images/**'
       - '.github/workflows/tests-web.yml'
       - '.github/workflows/tests-web-api.yml'
       - '.github/workflows/tests-web-integration.yml'
@@ -103,6 +106,31 @@ jobs:
     permissions: {}
     steps:
       - run: ':'
+
+  # Builds the deployable web image and publishes it to GHCR via publish-web-images.yml, which
+  # reuses build-web-images/action.yml -- the same composite action ci.yml's build-web job uses to
+  # build and validate the same image without publishing it.
+  #
+  # Gated on detect-web-deploy's path detection in addition to static-checks, unlike
+  # publish-backend-images which runs unconditionally: a push here can be a web/backend-types/
+  # ts-shared source change (deploy-relevant) or a workflow/tooling-only change under the wider
+  # paths filter above (not deploy-relevant), and publishing on every tooling-only push would push
+  # a new "web" image to GHCR that nothing ever deploys.
+  publish-web-images:
+    needs: [detect-web-deploy, static-checks]
+    if: >-
+      !cancelled() &&
+      needs.detect-web-deploy.outputs.deploy == 'true' &&
+      needs.static-checks.result == 'success'
+    uses: ./.github/workflows/publish-web-images.yml
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: write
+    with:
+      trusted_secret_context: true
+    secrets: inherit
 
   test-web:
     needs: [static-checks]

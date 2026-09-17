@@ -3,7 +3,9 @@ const jobs = (keys: string): readonly string[] => keys.split(' ')
 export const jobInventory = {
   '.github/workflows/actionlint.yml': jobs('actionlint'),
   '.github/workflows/build-backend.yml': jobs('build'),
+  '.github/workflows/publish-backend-images.yml': jobs('build'),
   '.github/workflows/build-web.yml': jobs('build'),
+  '.github/workflows/publish-web-images.yml': jobs('build'),
   '.github/workflows/checks-static.yml': jobs(
     'static-backend static-cloudflare static-lambdas static-web',
   ),
@@ -34,12 +36,13 @@ export const jobInventory = {
   '.github/workflows/docs-publish.yml': jobs('complete'),
   '.github/workflows/dispatch-completed-deploy.yml': jobs('dispatch'),
   '.github/workflows/explain-analyze.yml': jobs('explain-analyze'),
+  '.github/workflows/ghcr-cleanup.yml': jobs('cleanup'),
   '.github/workflows/gitleaks.yml': jobs('gitleaks'),
   '.github/workflows/initialize-smoke-test.yml': jobs('initialize-smoke-test'),
   '.github/workflows/label-pr.yml': jobs('label'),
   '.github/workflows/lint-links.yml': jobs('lint-links'),
   '.github/workflows/main-backend.yml': jobs(
-    'backend-smoke postgres-schema-tests static-checks test-backend-credentialed test-backend-modules test-backend-unit',
+    'backend-smoke postgres-schema-tests publish-backend-images static-checks test-backend-credentialed test-backend-modules test-backend-unit',
   ),
   '.github/workflows/main-checks.yml': jobs(
     'cleanup-artifacts explain-analyze select-main-checks tooling-tests ts-shared-tests',
@@ -48,7 +51,7 @@ export const jobInventory = {
   '.github/workflows/main-lambdas.yml': jobs('lambdas-tests static-checks'),
   '.github/workflows/main-storybook.yml': jobs('storybook-build'),
   '.github/workflows/main-web.yml': jobs(
-    'cleanup-artifacts detect-web-deploy playwright-credentialed-tests playwright-tests static-checks store-playwright-otel test-web test-web-api test-web-integration web-deploy-intent',
+    'cleanup-artifacts detect-web-deploy playwright-credentialed-tests playwright-tests publish-web-images static-checks store-playwright-otel test-web test-web-api test-web-integration web-deploy-intent',
   ),
   '.github/workflows/pnpm-dedupe.yml': jobs('dedupe'),
   '.github/workflows/static-code-analysis.yml': jobs('no-mistakes-owned static-code-analysis'),
@@ -79,6 +82,10 @@ export const unlockedWorkflowReasons = {
   '.github/workflows/explain-analyze.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/initialize-smoke-test.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/label-pr.yml': 'idempotent PR labeling',
+  '.github/workflows/publish-backend-images.yml':
+    'sole caller main-backend.yml already serializes every run on main',
+  '.github/workflows/publish-web-images.yml':
+    'sole caller main-web.yml already serializes every run on main',
   '.github/workflows/tests-backend-credentialed.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/tests-backend-modules.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/tests-backend-unit.yml': 'parallel-safe idempotent manual tests',

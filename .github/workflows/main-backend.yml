@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/main-backend.yml'
+      - '.github/workflows/build-backend.yml'
+      - '.github/workflows/publish-backend-images.yml'
+      - '.github/actions/build-backend-images/**'
       - '.github/workflows/tests-backend-unit.yml'
       - '.github/workflows/checks-backend-smoke.yml'
       - '.github/workflows/tests-backend-modules.yml'
@@ -82,6 +85,28 @@ jobs:
     permissions:
       actions: read
       contents: read
+    secrets: inherit
+
+  # Builds the deployable backend images and publishes them to GHCR via publish-backend-images.yml,
+  # which reuses build-backend-images/action.yml -- the same composite action ci.yml's
+  # build-backend job uses to build and validate the same images without publishing them.
+  #
+  # Gated on static-checks only, like every other job here, so it runs alongside the test jobs
+  # rather than after them. A revision whose tests later fail still leaves images in GHCR, but
+  # nothing ever deploys them: dispatch-completed-deploy.yml fires only when this whole workflow
+  # concludes successfully, and vouchington-infra resolves digests solely for the revision its
+  # preflight verified. Those unreferenced images are reaped by ghcr-cleanup.yml.
+  publish-backend-images:
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
+    uses: ./.github/workflows/publish-backend-images.yml
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: write
+    with:
+      trusted_secret_context: true
     secrets: inherit
 
   static-checks:

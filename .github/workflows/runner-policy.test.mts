@@ -135,13 +135,18 @@ describe('workflow runner policy (real workflows)', () => {
     expect(jobs?.['build']?.['runs-on']).toBe('ubuntu-latest')
   })
 
-  it('restricts ubuntu-24.04-arm to the two native ARM64 image builds', () => {
+  it('restricts ubuntu-24.04-arm to the native ARM64 image builds', () => {
     const armJobs = allJobEntries()
       .filter(({ job }) => job['runs-on'] === 'ubuntu-24.04-arm')
       .map(({ file, jobName }) => `${file}#${jobName}`)
       .sort()
 
-    expect(armJobs).toEqual(['build-backend.yml#build', 'build-web.yml#build'])
+    expect(armJobs).toEqual([
+      'build-backend.yml#build',
+      'build-web.yml#build',
+      'publish-backend-images.yml#build',
+      'publish-web-images.yml#build',
+    ])
   })
 
   it('restricts macos-latest to the gated portability-macos job', () => {

@@ -1,0 +1,61 @@
+name: GHCR Cleanup
+
+# Reaps old container package versions published by main-backend.yml and main-web.yml.
+#
+# Every main revision that touches the backend or web publishes one image per component, so these
+# packages grow without bound unless something prunes them. GHCR is only a transfer medium:
+# vouchington-infra copies each image into ECR by digest, and both deployment and rollback read
+# from ECR. Deleting an old GHCR version therefore cannot affect a running service; it only
+# removes the ability to re-copy that revision, which is why a generous window is retained.
+#
+# See ci/ghcr-package-retention.sh for the retention policy itself.
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Delete the selected versions instead of listing them'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ghcr-cleanup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-slim
+    # 14, not 15: slim enforces a hard 15-minute platform cap, and a job that reaches it is
+    # killed by the platform rather than cancelled by GitHub, so nothing that runs on
+    # cancellation gets a chance to. The work here is a handful of API calls either way.
+    timeout-minutes: 14
+    permissions:
+      contents: read
+      # Deleting a package version requires write, not read.
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 2
+        with:
+          persist-credentials: false
+
+      - name: Prune published container package versions
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # A scheduled run prunes. A manual run lists what it would prune unless asked otherwise,
+          # so an operator can see the effect before causing it.
+          APPLY: ${{ github.event_name == 'schedule' || inputs.apply }}
+        run: |
+          set -euo pipefail
+          if [ "$APPLY" = 'true' ]; then
+            ./ci/ghcr-package-retention.sh --apply
+          else
+            ./ci/ghcr-package-retention.sh --dry-run
+          fi

@@ -7,14 +7,13 @@ type Step = {
   id?: string
   if?: string
   name?: string
-  'timeout-minutes'?: number
   uses?: string
   with?: Record<string, string>
 }
 
-const source = readFileSync('.github/workflows/build-backend.yml', 'utf8')
-const workflow = load(source) as { jobs?: { build?: { steps?: Step[] } } }
-const steps = workflow.jobs?.build?.steps ?? []
+const source = readFileSync('.github/actions/build-backend-images/action.yml', 'utf8')
+const action = load(source) as { runs?: { steps?: Step[] } }
+const steps = action.runs?.steps ?? []
 
 describe('build-backend Bake topology', () => {
   it('runs exactly one bounded Bake invocation for the selected backend image set', () => {
@@ -36,7 +35,6 @@ describe('build-backend Bake topology', () => {
         step.with?.builder,
         step.with?.files?.trim(),
         step.if,
-        step['timeout-minutes'],
       ]),
     ).toEqual([
       [
@@ -46,7 +44,6 @@ describe('build-backend Bake topology', () => {
         '${{ steps.buildx.outputs.name }}',
         './backend/docker-bake.hcl\n${{ steps.meta-api.outputs.bake-file }}\n${{ steps.meta-worker-cpu.outputs.bake-file }}',
         "${{ steps.images.outputs.worker_io_automation_enabled != 'true' }}",
-        10,
       ],
       [
         'Build all backend images',
@@ -55,7 +52,6 @@ describe('build-backend Bake topology', () => {
         '${{ steps.buildx.outputs.name }}',
         './backend/docker-bake.hcl\n${{ steps.meta-api.outputs.bake-file }}\n${{ steps.meta-worker-cpu.outputs.bake-file }}\n${{ steps.meta-worker-io.outputs.bake-file }}',
         "${{ steps.images.outputs.worker_io_automation_enabled == 'true' }}",
-        10,
       ],
     ])
 

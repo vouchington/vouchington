@@ -4,6 +4,17 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
+type Step = {
+  'continue-on-error'?: boolean
+  env?: Record<string, string>
+  name?: string
+  run?: string
+  uses?: string
+  with?: Record<string, string>
+  if?: string
+  id?: string
+}
+
 type Workflow = {
   env?: Record<string, string>
   jobs?: {
@@ -16,31 +27,33 @@ type Workflow = {
           ports?: Array<number | string>
         }
       >
-      steps?: Array<{
-        'continue-on-error'?: boolean
-        env?: Record<string, string>
-        name?: string
-        run?: string
-        'timeout-minutes'?: number
-        uses?: string
-        with?: Record<string, string>
-        if?: string
-        id?: string
-      }>
+      steps?: Step[]
       'timeout-minutes'?: number
     }
   }
 }
 
+type CompositeAction = { runs?: { steps?: Step[] } }
+
+// The image builds, smoke tests, and Trivy gate all live in the composite action that
+// build-backend.yml (and publish-backend-images.yml) delegate to -- only the job-level
+// declarations (services, env) stay in the calling workflow file.
 function readBuildBackendWorkflow(): Workflow {
   return load(readFileSync('.github/workflows/build-backend.yml', 'utf8')) as Workflow
+}
+
+function readBuildBackendImagesSteps(): Step[] {
+  const action = load(
+    readFileSync('.github/actions/build-backend-images/action.yml', 'utf8'),
+  ) as CompositeAction
+  return action.runs?.steps ?? []
 }
 
 const deployedNativeAddonSmoke = readFileSync('ci/check-deployed-worker-native-addons.mjs', 'utf8')
 
 describe('build-backend workflow', () => {
   it('runs the deployed Valkey diagnostic in a fresh API image container', () => {
-    const step = readBuildBackendWorkflow().jobs?.build?.steps?.find(
+    const step = readBuildBackendImagesSteps().find(
       candidate => candidate.name === 'Run API smoke test',
     )
 
@@ -64,7 +77,7 @@ describe('build-backend workflow', () => {
   })
 
   it('limits every image gate to OS vulnerabilities and writes complete findings reports', () => {
-    const scanStep = readBuildBackendWorkflow().jobs?.build?.steps?.find(
+    const scanStep = readBuildBackendImagesSteps().find(
       step => step.name === 'Scan OS packages in images with Trivy',
     )
 
@@ -84,14 +97,14 @@ describe('build-backend workflow', () => {
   })
 
   it('builds the active worker images without reading deployment topology', () => {
-    const workflow = readFileSync('.github/workflows/build-backend.yml', 'utf8')
-    const buildJob = readBuildBackendWorkflow().jobs?.build
-    const images = buildJob?.steps?.find(step => step.name === 'Set backend image set')
+    const compositeAction = readFileSync('.github/actions/build-backend-images/action.yml', 'utf8')
+    const steps = readBuildBackendImagesSteps()
+    const images = steps.find(step => step.name === 'Set backend image set')
     expect(images?.run).toContain('active_worker_images=')
-    expect(workflow).not.toContain('worker-queue-policy-cli')
+    expect(compositeAction).not.toContain('worker-queue-policy-cli')
 
-    const ioMetadata = buildJob?.steps?.find(step => step.name === 'Docker metadata (worker-io)')
-    const ioSmoke = buildJob?.steps?.find(step => step.name === 'Run worker-io smoke test')
+    const ioMetadata = steps.find(step => step.name === 'Docker metadata (worker-io)')
+    const ioSmoke = steps.find(step => step.name === 'Run worker-io smoke test')
     expect(ioMetadata?.if).toContain('worker_io_automation_enabled')
     expect(ioSmoke?.if).toContain('worker_io_automation_enabled')
 
@@ -100,9 +113,7 @@ describe('build-backend workflow', () => {
       'Scan OS packages in images with Trivy',
       'Generate Trivy SBOMs',
     ]) {
-      expect(buildJob?.steps?.find(step => step.name === stepName)?.run).toContain(
-        'ACTIVE_WORKER_IMAGES',
-      )
+      expect(steps.find(step => step.name === stepName)?.run).toContain('ACTIVE_WORKER_IMAGES')
     }
   })
 
@@ -114,7 +125,7 @@ describe('build-backend workflow', () => {
     )
     expect(buildJob?.services?.valkey?.options).toContain('valkey-cli ping')
 
-    const workerIoSmokeStep = buildJob?.steps?.find(
+    const workerIoSmokeStep = readBuildBackendImagesSteps().find(
       step => step.name === 'Run worker-io smoke test',
     )
     expect(workerIoSmokeStep?.env?.VALKEY_URL).toBe(
@@ -136,9 +147,7 @@ describe('build-backend workflow', () => {
   })
 
   it('gives worker-cpu smoke tests a reachable Valkey service', () => {
-    const buildJob = readBuildBackendWorkflow().jobs?.build
-
-    const workerCpuSmokeStep = buildJob?.steps?.find(
+    const workerCpuSmokeStep = readBuildBackendImagesSteps().find(
       step => step.name === 'Run worker-cpu smoke test',
     )
     expect(workerCpuSmokeStep?.env?.VALKEY_URL).toBe(
@@ -154,10 +163,10 @@ describe('build-backend workflow', () => {
   })
 
   it('enqueues a heartbeat job and verifies completion in both worker smoke tests', () => {
-    const buildJob = readBuildBackendWorkflow().jobs?.build
+    const steps = readBuildBackendImagesSteps()
 
     for (const name of ['Run worker-cpu smoke test', 'Run worker-io smoke test']) {
-      const step = buildJob?.steps?.find(s => s.name === name)
+      const step = steps.find(s => s.name === name)
       expect(step?.run).toContain("'@queues/heartbeat/enqueues'")
       expect(step?.run).toContain('m.enqueueHeartbeat()')
       expect(step?.run).toContain('job completed: heartbeat')
@@ -170,9 +179,9 @@ describe('build-backend workflow', () => {
     // one of the 4 required checks on the Main ruleset. "Install Trivy" itself
     // keeps continue-on-error: true — the install guard step immediately after
     // it is the deliberate enforcement point for install failures.
-    const buildJob = readBuildBackendWorkflow().jobs?.build
+    const steps = readBuildBackendImagesSteps()
 
-    const installStep = buildJob?.steps?.find(step => step.name === 'Install Trivy')
+    const installStep = steps.find(step => step.name === 'Install Trivy')
     expect(installStep?.['continue-on-error']).toBe(true)
     // id lets the guard tell "ran and failed" apart from "skipped because an
     // earlier unrelated step already failed the job" (run 31910979397).
@@ -183,7 +192,7 @@ describe('build-backend workflow', () => {
     // elsewhere in this repo).
     expect(installStep?.run).toContain('--retry 3 --retry-all-errors')
 
-    const installGuardStep = buildJob?.steps?.find(step => step.name === 'Trivy install guard')
+    const installGuardStep = steps.find(step => step.name === 'Trivy install guard')
     expect(installGuardStep?.['continue-on-error']).toBeUndefined()
     expect(installGuardStep?.run).toContain('exit 1')
     // `!cancelled()` alone is also true when Install Trivy was skipped, so the
@@ -195,9 +204,7 @@ describe('build-backend workflow', () => {
       "${{ !cancelled() && steps.install-trivy.outcome != 'skipped' }}",
     )
 
-    const scanStep = buildJob?.steps?.find(
-      step => step.name === 'Scan OS packages in images with Trivy',
-    )
+    const scanStep = steps.find(step => step.name === 'Scan OS packages in images with Trivy')
     expect(scanStep?.['continue-on-error']).toBeUndefined()
     expect(scanStep?.run).toContain('--exit-code "$TRIVY_FINDINGS_EXIT_CODE"')
     expect(scanStep?.run).toContain('--severity CRITICAL,HIGH')
@@ -209,7 +216,7 @@ describe('build-backend workflow', () => {
     expect(scanStep?.run).toContain('exit "$scan_error_exit"')
     expect(scanStep?.run).toContain('exit "$TRIVY_FINDINGS_EXIT_CODE"')
 
-    const sbomStep = buildJob?.steps?.find(step => step.name === 'Generate Trivy SBOMs')
+    const sbomStep = steps.find(step => step.name === 'Generate Trivy SBOMs')
     expect(sbomStep?.['continue-on-error']).toBeUndefined()
     // The SBOM step only runs once the OS vulnerability gate has already passed
     // (no `if: always()`), so filtering it by severity would only ever truncate
@@ -221,12 +228,12 @@ describe('build-backend workflow', () => {
     expect(sbomStep?.run).not.toContain('--ignorefile')
     expect(sbomStep?.run).not.toContain('--scanners vuln')
 
-    const uploadStep = buildJob?.steps?.find(step => step.name === 'Upload Trivy artifacts')
+    const uploadStep = steps.find(step => step.name === 'Upload Trivy artifacts')
     expect(uploadStep?.['continue-on-error']).toBe(true)
   })
 
   it('verifies every deployed Vurst wrapper against its required target assets', () => {
-    const step = readBuildBackendWorkflow().jobs?.build?.steps?.find(
+    const step = readBuildBackendImagesSteps().find(
       candidate => candidate.name === 'Run worker-cpu smoke test',
     )
     expect(step?.run).toContain(

@@ -89,6 +89,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `fix-main.yml`                      | `related-candidates`            | job    | `ubuntu-latest`                       | 5             |
 | `fix-main.yml`                      | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `fix-main.yml`                      | `triage-and-rerun`              | job    | `ubuntu-latest`                       | 10            |
+| `ghcr-cleanup.yml`                  | `cleanup`                       | job    | `ubuntu-slim`                         | 14            |
 | `gitleaks.yml`                      | `gitleaks`                      | job    | `ubuntu-slim`                         | 5             |
 | `harness-dispatch.yml`              | `dispatch`                      | job    | `ubuntu-latest`                       | 8             |
 | `initialize-smoke-test.yml`         | `initialize-smoke-test`         | job    | `ubuntu-latest`                       | 30            |
@@ -96,6 +97,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `lint-links.yml`                    | `lint-links`                    | job    | `ubuntu-slim`                         | 10            |
 | `main-backend.yml`                  | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
 | `main-backend.yml`                  | `postgres-schema-tests`         | job    | → `tests-postgres-schema.yml`         | 360           |
+| `main-backend.yml`                  | `publish-backend-images`        | job    | → `publish-backend-images.yml`        | 360           |
 | `main-backend.yml`                  | `static-checks`                 | job    | → `checks-static.yml`                 | 360           |
 | `main-backend.yml`                  | `test-backend-credentialed`     | job    | → `tests-backend-credentialed.yml`    | 360           |
 | `main-backend.yml`                  | `test-backend-modules`          | job    | → `tests-backend-modules.yml`         | 360           |
@@ -114,6 +116,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `main-web.yml`                      | `detect-web-deploy`             | job    | `ubuntu-slim`                         | 5             |
 | `main-web.yml`                      | `playwright-credentialed-tests` | job    | → `tests-playwright-credentialed.yml` | 360           |
 | `main-web.yml`                      | `playwright-tests`              | job    | → `tests-playwright.yml`              | 360           |
+| `main-web.yml`                      | `publish-web-images`            | job    | → `publish-web-images.yml`            | 360           |
 | `main-web.yml`                      | `static-checks`                 | job    | → `checks-static.yml`                 | 360           |
 | `main-web.yml`                      | `store-playwright-otel`         | job    | `ubuntu-slim`                         | 8             |
 | `main-web.yml`                      | `test-web`                      | job    | → `tests-web.yml`                     | 360           |
@@ -125,6 +128,8 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `plan.yml`                          | `gate`                          | job    | `ubuntu-slim`                         | 5             |
 | `plan.yml`                          | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `pnpm-dedupe.yml`                   | `dedupe`                        | job    | `ubuntu-latest`                       | 8             |
+| `publish-backend-images.yml`        | `build`                         | job    | `ubuntu-24.04-arm`                    | 30            |
+| `publish-web-images.yml`            | `build`                         | job    | `ubuntu-24.04-arm`                    | 25            |
 | `scheduled-prompts.yml`             | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `scheduled-prompts.yml`             | `select-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `shepherd.yml`                      | `checkpoint-dispatch`           | job    | `ubuntu-latest`                       | 8             |

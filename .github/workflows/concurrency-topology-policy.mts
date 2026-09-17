@@ -132,6 +132,7 @@ export const concurrencyTopologyPolicy = {
   '.github/workflows/dependabot-pr-automerge.yml': cancelling(['pull-request', 'sha']),
   '.github/workflows/dispatch-completed-deploy.yml': retained(['event']),
   '.github/workflows/docs-publish.yml': retained(['run']),
+  '.github/workflows/ghcr-cleanup.yml': retained(['fixed-resource']),
   '.github/workflows/gitleaks.yml': conditional(['pull-request', 'sha']),
   '.github/workflows/lint-links.yml': conditional(['pull-request', 'sha']),
   '.github/workflows/main-backend.yml': retained(['run']),

@@ -1,0 +1,122 @@
+name: Publish Backend Images
+
+on:
+  workflow_call:
+    inputs:
+      trusted_secret_context:
+        description: 'Whether this run may use repository secrets and OIDC roles'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      AWS_TEST_ROLE_ARN:
+        required: true
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+  packages: write
+
+# Deliberately no concurrency block: unlike build-backend.yml, this file has exactly one caller
+# (main-backend.yml#publish-backend-images), and main-backend.yml's own workflow-level group
+# already serializes every run on main with cancel-in-progress: false, so two publishes can never
+# race each other here.
+
+jobs:
+  build:
+    if: ${{ inputs.trusted_secret_context }}
+    runs-on: ubuntu-24.04-arm
+    # The publish path runs everything a validation run does and then pushes ~1.3 GiB to GHCR, so
+    # it gets its own ceiling rather than shaving the validation path's margin to fit. #31 moved
+    # this job from 8 vCPU to 2 at the same 20-minute ceiling, so that margin is thinner than it
+    # looks and is not the place to find room for a registry push.
+    timeout-minutes: 30
+    services:
+      valkey:
+        image: valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        ports:
+          - 6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      IMAGE_REPOSITORY: voucha-validation
+      SHA_TAG: sha-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          clean: false
+
+      - uses: ./.github/actions/setup-aws
+        timeout-minutes: 2
+        with:
+          role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
+
+      - id: build
+        uses: ./.github/actions/build-backend-images
+
+      - name: Diagnose browser port collision
+        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
+        continue-on-error: true
+        timeout-minutes: 2
+        uses: ./.github/actions/diagnose-browser-port-collision
+        with:
+          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
+          artifact-suffix: backend
+
+      # Deliberately the last step in the job. Everything published here has already passed the
+      # API, worker-cpu and worker-io smoke tests and the Trivy CRITICAL/HIGH gate, so the image
+      # that reaches the registry is the image that was tested -- which is the whole point of
+      # publishing from this repository rather than rebuilding somewhere else.
+      #
+      # The images are pushed from the local daemon rather than built with a registry output,
+      # which would upload them before any of those checks had run.
+      - name: Publish validated backend images to GHCR
+        # success() is explicit rather than implicit: this is a publication gate, and a reader
+        # should not have to know that GitHub ANDs it in for conditions without a status function.
+        if: ${{ success() }}
+        timeout-minutes: 8
+        env:
+          ACTIVE_WORKER_IMAGES: ${{ steps.build.outputs.active_worker_images }}
+          GHCR_NAMESPACE: ghcr.io/${{ github.repository_owner }}
+          IMAGE_TAG: ${{ env.SHA_TAG }}
+          REGISTRY_PASSWORD: ${{ github.token }}
+          REGISTRY_USERNAME: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          # These runners are not guaranteed ephemeral, so the credential is removed on every
+          # exit path rather than only on success.
+          cleanup() { docker logout ghcr.io >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+
+          printf '%s' "$REGISTRY_PASSWORD" |
+            docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
+
+          {
+            echo "## Published backend images"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for target in api $ACTIVE_WORKER_IMAGES; do
+            local_image="$IMAGE_REPOSITORY/$target:$IMAGE_TAG"
+            remote_image="$GHCR_NAMESPACE/$target:$IMAGE_TAG"
+            docker tag "$local_image" "$remote_image"
+
+            # The digest is read back from the push output rather than from `docker image
+            # inspect`, whose RepoDigests can carry entries for other repositories.
+            push_output=$(docker push "$remote_image")
+            printf '%s\n' "$push_output"
+            digest=$(printf '%s\n' "$push_output" |
+              sed -n 's/.*[[:space:]]digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' | head -1)
+            if [ -z "$digest" ]; then
+              echo "::error::$remote_image was pushed but no digest could be read back."
+              exit 1
+            fi
+
+            echo "✓ published $remote_image ($digest)"
+            echo "- \`$remote_image\` — \`$digest\`" >> "$GITHUB_STEP_SUMMARY"
+          done

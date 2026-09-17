@@ -3,42 +3,34 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-type Workflow = {
-  jobs?: Record<
-    string,
-    {
-      if?: string
-      needs?: string | string[]
-      outputs?: Record<string, string>
-      permissions?: Record<string, string>
-      'runs-on'?: string | string[]
-      steps?: Array<{
-        'continue-on-error'?: boolean
-        id?: string
-        if?: string
-        name?: string
-        run?: string
-        'timeout-minutes'?: number
-        uses?: string
-        with?: Record<string, string | number>
-      }>
-      'timeout-minutes'?: number
-    }
-  >
+type Step = {
+  'continue-on-error'?: boolean
+  id?: string
+  if?: string
+  name?: string
+  run?: string
+  uses?: string
+  with?: Record<string, string>
 }
 
-function readBuildWebWorkflow(): Workflow {
-  return load(readFileSync('.github/workflows/build-web.yml', 'utf8')) as Workflow
+type CompositeAction = { runs?: { steps?: Step[] } }
+
+// The image build, smoke test, and Trivy gate all live in the composite action that build-web.yml
+// (and publish-web-images.yml) delegate to -- only the job-level declarations (env) stay in the
+// calling workflow file.
+function readBuildWebImagesSteps(): Step[] {
+  const action = load(
+    readFileSync('.github/actions/build-web-images/action.yml', 'utf8'),
+  ) as CompositeAction
+  return action.runs?.steps ?? []
 }
 
 describe('build-web workflow', () => {
   it('uses the canonical runner-aware allocator for its Docker smoke port', () => {
-    const smoke = readBuildWebWorkflow().jobs?.build?.steps?.find(
-      step => step.name === 'Run Docker smoke test',
-    )
+    const steps = readBuildWebImagesSteps()
+    const smoke = steps.find(step => step.name === 'Run Docker smoke test')
 
     expect(smoke?.run).toContain('PORTS=$(python3 ci/allocate-browser-safe-ports.py 2)')
-    const steps = readBuildWebWorkflow().jobs?.build?.steps ?? []
     const activate = steps.findIndex(step => step.name === 'Activate pnpm via corepack')
     const smokeIndex = steps.findIndex(step => step.name === 'Run Docker smoke test')
     expect(activate).toBeGreaterThan(-1)
@@ -47,7 +39,7 @@ describe('build-web workflow', () => {
   })
 
   it('serves Docker smoke copy from the real localization backend', () => {
-    const steps = readBuildWebWorkflow().jobs?.build?.steps ?? []
+    const steps = readBuildWebImagesSteps()
     const install = steps.findIndex(step => step.name === 'Install localization smoke dependencies')
     const smoke = steps.findIndex(step => step.name === 'Run Docker smoke test')
     expect(install).toBeGreaterThan(-1)
@@ -59,28 +51,23 @@ describe('build-web workflow', () => {
     expect(steps[smoke]?.run).toContain('API_BASE_URL="http://host.docker.internal:$BACKEND_PORT"')
   })
 
-  it('uses a fail-fast Docker build budget', () => {
-    const buildJob = readBuildWebWorkflow().jobs?.build
-    const stepTimeoutTotal =
-      buildJob?.steps?.reduce((total, step) => total + (step['timeout-minutes'] ?? 0), 0) ?? 0
-
-    expect(stepTimeoutTotal).toBeGreaterThan(15)
-    expect(
-      buildJob?.steps?.find(step => step.name === 'Build Docker image')?.['timeout-minutes'],
-    ).toBe(10)
-  })
-
   it('does not give validation builds Sentry credentials or release-management mode', () => {
     const buildWebSource = readFileSync('.github/workflows/build-web.yml', 'utf8')
+    const compositeActionSource = readFileSync(
+      '.github/actions/build-web-images/action.yml',
+      'utf8',
+    )
     const ciSource = readFileSync('.github/workflows/ci.yml', 'utf8')
 
-    expect(buildWebSource).not.toContain('SENTRY_AUTH_TOKEN')
+    for (const source of [buildWebSource, compositeActionSource]) {
+      expect(source).not.toContain('SENTRY_AUTH_TOKEN')
+      expect(source).not.toContain('SENTRY_RELEASE_REQUIRED')
+    }
     expect(ciSource).not.toContain('SENTRY_AUTH_TOKEN')
-    expect(buildWebSource).not.toContain('SENTRY_RELEASE_REQUIRED')
   })
 
   it('limits the Trivy gate to OS vulnerabilities and writes a complete findings report', () => {
-    const scanStep = readBuildWebWorkflow().jobs?.build?.steps?.find(
+    const scanStep = readBuildWebImagesSteps().find(
       step => step.name === 'Scan OS packages in web image with Trivy',
     )
     const report = 'trivy-web-os-table.txt'
@@ -106,9 +93,9 @@ describe('build-web workflow', () => {
     // one of the 4 required checks on the Main ruleset. "Install Trivy" itself
     // keeps continue-on-error: true — the install guard step immediately after
     // it is the deliberate enforcement point for install failures.
-    const buildJob = readBuildWebWorkflow().jobs?.build
+    const steps = readBuildWebImagesSteps()
 
-    const installStep = buildJob?.steps?.find(step => step.name === 'Install Trivy')
+    const installStep = steps.find(step => step.name === 'Install Trivy')
     expect(installStep?.['continue-on-error']).toBe(true)
     // The install guard's `if:` keys off this id to tell "install ran and
     // failed" apart from "install never ran because an earlier unrelated step
@@ -122,7 +109,7 @@ describe('build-web workflow', () => {
     // elsewhere in this repo).
     expect(installStep?.run).toContain('--retry 3 --retry-all-errors')
 
-    const installGuardStep = buildJob?.steps?.find(step => step.name === 'Trivy install guard')
+    const installGuardStep = steps.find(step => step.name === 'Trivy install guard')
     expect(installGuardStep?.['continue-on-error']).toBeUndefined()
     expect(installGuardStep?.run).toContain('exit 1')
     // Regression guard: an earlier unrelated step failing the job first
@@ -138,9 +125,7 @@ describe('build-web workflow', () => {
       "${{ !cancelled() && steps.install-trivy.outcome != 'skipped' }}",
     )
 
-    const scanStep = buildJob?.steps?.find(
-      step => step.name === 'Scan OS packages in web image with Trivy',
-    )
+    const scanStep = steps.find(step => step.name === 'Scan OS packages in web image with Trivy')
     expect(scanStep?.['continue-on-error']).toBeUndefined()
     expect(scanStep?.run).toContain('--exit-code "$TRIVY_FINDINGS_EXIT_CODE"')
     expect(scanStep?.run).toContain('--severity CRITICAL,HIGH')
@@ -151,7 +136,7 @@ describe('build-web workflow', () => {
     expect(scanStep?.run).toContain('|| trivy_exit=$?')
     expect(scanStep?.run).toContain('exit "$trivy_exit"')
 
-    const sbomStep = buildJob?.steps?.find(step => step.name === 'Generate web SBOM')
+    const sbomStep = steps.find(step => step.name === 'Generate web SBOM')
     expect(sbomStep?.['continue-on-error']).toBeUndefined()
     // The SBOM step only runs once the OS vulnerability gate has already passed
     // (no `if: always()`), so filtering it by severity would only ever truncate
@@ -163,7 +148,7 @@ describe('build-web workflow', () => {
     expect(sbomStep?.run).not.toContain('--ignorefile')
     expect(sbomStep?.run).not.toContain('--scanners vuln')
 
-    const uploadStep = buildJob?.steps?.find(step => step.name === 'Upload Trivy artifacts')
+    const uploadStep = steps.find(step => step.name === 'Upload Trivy artifacts')
     expect(uploadStep?.['continue-on-error']).toBe(true)
     expect(uploadStep?.with?.path).toContain('trivy-web-os-stderr.txt')
   })
