@@ -101,12 +101,15 @@ describe('CI cache policy', () => {
 
   it('disables Docker build record uploads on build and bake actions', () => {
     const buildWebWorkflow = readFileSync('.github/workflows/build-web.yml', 'utf8')
-    const buildBackendWorkflow = readFileSync('.github/workflows/build-backend.yml', 'utf8')
+    const buildBackendImagesAction = readFileSync(
+      '.github/actions/build-backend-images/action.yml',
+      'utf8',
+    )
     const explainAnalyzeWorkflow = readFileSync('.github/workflows/explain-analyze.yml', 'utf8')
 
     expect(buildWebWorkflow).toContain("DOCKER_BUILD_RECORD_UPLOAD: 'false'")
     expect(buildWebWorkflow).toContain("DOCKER_BUILD_SUMMARY: 'false'")
-    expect(buildBackendWorkflow).toContain("DOCKER_BUILD_RECORD_UPLOAD: 'false'")
+    expect(buildBackendImagesAction).toContain("DOCKER_BUILD_RECORD_UPLOAD: 'false'")
     expect(explainAnalyzeWorkflow).toContain('name: Upload EXPLAIN ANALYZE results')
     expect(explainAnalyzeWorkflow).toContain('if: always()')
   })

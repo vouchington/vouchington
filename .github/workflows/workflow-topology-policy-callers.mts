@@ -12,8 +12,9 @@ export const exactCallerJobs = {
   '.github/workflows/ci-tests-processing.yml': splitIds(
     '.github/workflows/ci.yml#tests-processing',
   ),
-  '.github/workflows/build-backend.yml': splitIds(
-    '.github/workflows/ci.yml#build-backend .github/workflows/main-backend.yml#publish-backend-images',
+  '.github/workflows/build-backend.yml': splitIds('.github/workflows/ci.yml#build-backend'),
+  '.github/workflows/publish-backend-images.yml': splitIds(
+    '.github/workflows/main-backend.yml#publish-backend-images',
   ),
   '.github/workflows/build-web.yml': splitIds('.github/workflows/ci.yml#build-web'),
   '.github/workflows/checks-static.yml': splitIds(

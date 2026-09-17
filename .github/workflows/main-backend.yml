@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/main-backend.yml'
       - '.github/workflows/build-backend.yml'
+      - '.github/workflows/publish-backend-images.yml'
+      - '.github/actions/build-backend-images/**'
       - '.github/workflows/tests-backend-unit.yml'
       - '.github/workflows/checks-backend-smoke.yml'
       - '.github/workflows/tests-backend-modules.yml'
@@ -85,9 +87,9 @@ jobs:
       contents: read
     secrets: inherit
 
-  # Builds the deployable backend images and publishes them to GHCR. This is the only caller
-  # that passes `publish: true`; the pull-request callers in ci.yml build the same images and
-  # keep them local.
+  # Builds the deployable backend images and publishes them to GHCR via publish-backend-images.yml,
+  # which reuses build-backend-images/action.yml -- the same composite action ci.yml's
+  # build-backend job uses to build and validate the same images without publishing them.
   #
   # Gated on static-checks only, like every other job here, so it runs alongside the test jobs
   # rather than after them. A revision whose tests later fail still leaves images in GHCR, but
@@ -97,7 +99,7 @@ jobs:
   publish-backend-images:
     needs: [static-checks]
     if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
-    uses: ./.github/workflows/build-backend.yml
+    uses: ./.github/workflows/publish-backend-images.yml
     permissions:
       actions: read
       contents: read
@@ -105,7 +107,6 @@ jobs:
       packages: write
     with:
       trusted_secret_context: true
-      publish: true
     secrets: inherit
 
   static-checks:

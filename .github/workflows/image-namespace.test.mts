@@ -4,11 +4,14 @@ import { parse as parseYaml } from 'yaml'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const firstPartyGhcrPaths = ['.github/workflows/ghcr-cleanup.yml', 'ci/ghcr-package-retention.sh']
-// build-backend.yml is deliberately absent. Since vouchington/vouchington-infra#274 it is no
-// longer a pure validation source: on main it also publishes the deployable backend images to
-// GHCR. Its narrower invariants live in the "backend image publication" block below. Everything
-// listed here must still keep its output and caches local to its own BuildKit daemon.
+// publish-backend-images.yml is deliberately absent. Since vouchington/vouchington-infra#274 it
+// publishes the deployable backend images to GHCR on main; its narrower invariants live in the
+// "backend image publication" block below. build-backend.yml and the composite action it
+// delegates to remain pure validation sources -- everything listed here must still keep its
+// output and caches local to its own BuildKit daemon.
 const activeValidationSourcePaths = [
+  '.github/workflows/build-backend.yml',
+  '.github/actions/build-backend-images/action.yml',
   '.github/workflows/build-web.yml',
   'backend/docker-bake.hcl',
   'ci/exec-vouchington-gha.sh',
@@ -59,11 +62,20 @@ function validationSourceViolations(path: string, source: string): string[] {
   return violations
 }
 
+// build-backend.yml only sets up the job env and delegates the actual image builds to this
+// composite action, so the backend workspace's invariants are checked against both files
+// concatenated rather than the workflow file alone.
+const workspaceValidationSource = (workspace: 'backend' | 'web') =>
+  workspace === 'backend'
+    ? read('.github/workflows/build-backend.yml') +
+      read('.github/actions/build-backend-images/action.yml')
+    : read(`.github/workflows/build-${workspace}.yml`)
+
 describe('validation image invariants', () => {
   it.each(['backend', 'web'] as const)(
     'builds %s validation images under a transfer-invariant local namespace with immutable SHA tags',
     workspace => {
-      const workflow = read(`.github/workflows/build-${workspace}.yml`)
+      const workflow = workspaceValidationSource(workspace)
 
       expect(workflow).toContain('IMAGE_REPOSITORY: voucha-validation')
       for (const image of workspace === 'backend' ? ['api', 'worker-cpu', 'worker-io'] : ['web']) {
@@ -176,19 +188,16 @@ describe('validation image invariants', () => {
 
 type CallerJob = {
   uses?: string
-  with?: Record<string, unknown>
   permissions?: Record<string, string>
 }
-type Caller = { id: string; job: CallerJob }
 
-const PUBLISHER_ID = 'main-backend.yml#publish-backend-images'
-
-const publisher = (): Caller => ({
-  id: PUBLISHER_ID,
-  job: { with: { publish: true }, permissions: { packages: 'write' } },
-})
-
-function buildBackendCallers(): Caller[] {
+// build-backend.yml (validation only) and publish-backend-images.yml (validation + publication)
+// each have exactly one caller apiece, enforced generically by workflow-topology-policy-callers.mts
+// and the job-level permissions on each caller are matched exactly to the callee's own by
+// workflow-permissions-audit.mts's callerCalleePermissionMismatches check. What those generic
+// checks do not say is which *specific* callee may hold the GHCR write credential -- that is the
+// narrow security invariant this block exists to pin down.
+function reusableCallers(calleePath: string): { id: string; job: CallerJob }[] {
   return readdirSync('.github/workflows')
     .filter(file => file.endsWith('.yml'))
     .flatMap(file => {
@@ -196,112 +205,95 @@ function buildBackendCallers(): Caller[] {
         jobs?: Record<string, CallerJob>
       }
       return Object.entries(parsed.jobs ?? {})
-        .filter(([, job]) => job?.uses === './.github/workflows/build-backend.yml')
+        .filter(([, job]) => job?.uses === calleePath)
         .map(([id, job]) => ({ id: `${file}#${id}`, job }))
     })
 }
 
-// Publication is gated twice over, and both directions are enforced. Only the main-branch job
-// may publish, and `packages: write` is granted if and only if a caller publishes -- so the
-// credential never sits on a pull-request run that has no use for it, and the publisher can
-// never be quietly stripped of the permission that makes its push work.
-function publicationCallerViolations(callers: Caller[]): string[] {
-  const violations: string[] = []
-  for (const { id, job } of callers) {
-    const publishes = job.with?.publish === true
-    const grantsPackagesWrite = job.permissions?.packages === 'write'
-    if (publishes && id !== PUBLISHER_ID) {
-      violations.push(`${id}: publishes outside the main-branch caller`)
-    }
-    if (publishes !== grantsPackagesWrite) {
-      violations.push(`${id}: packages: write must be granted if and only if it publishes`)
-    }
-  }
-  return violations
-}
-
 describe('backend image publication', () => {
-  const source = read('.github/workflows/build-backend.yml')
-  const workflow = parseYaml(source) as {
-    jobs?: Record<string, { steps?: { name?: string; if?: string }[] }>
+  const buildBackendSource = read('.github/workflows/build-backend.yml')
+  const compositeActionSource = read('.github/actions/build-backend-images/action.yml')
+  const publishSource = read('.github/workflows/publish-backend-images.yml')
+
+  const compositeAction = parseYaml(compositeActionSource) as {
+    runs?: { steps?: { name?: string }[] }
   }
-  const steps = workflow.jobs?.build?.steps ?? []
-  const stepIndex = (name: string) => steps.findIndex(step => step?.name === name)
+  const compositeSteps = compositeAction.runs?.steps ?? []
+  const compositeStepIndex = (name: string) => compositeSteps.findIndex(step => step?.name === name)
+
+  const publishWorkflow = parseYaml(publishSource) as {
+    jobs?: Record<string, { steps?: { name?: string; uses?: string; if?: string }[] }>
+  }
+  const publishSteps = publishWorkflow.jobs?.build?.steps ?? []
   const publishStepName = 'Publish validated backend images to GHCR'
+  const publishStepIndex = publishSteps.findIndex(step => step?.name === publishStepName)
+  const buildActionStepIndex = publishSteps.findIndex(
+    step => step?.uses === './.github/actions/build-backend-images',
+  )
 
   it('keeps the build itself local and pushes from the daemon afterwards', () => {
     // A `type=registry` output would upload before a single check in the job had run. The
     // images are built locally, validated, and only then pushed -- so what reaches the
     // registry is what was tested.
-    expect(source).not.toContain('type=registry')
-    expect(source).not.toContain('cache-from')
-    expect(source).not.toContain('cache-to')
-  })
-
-  it('publishes only after the smoke tests and the Trivy gate', () => {
-    const publish = stepIndex(publishStepName)
-    expect(publish).toBeGreaterThan(-1)
-    for (const gate of [
-      'Run API smoke test',
-      'Run worker-cpu smoke test',
-      'Scan OS packages in images with Trivy',
-    ]) {
-      const gateIndex = stepIndex(gate)
-      expect(gateIndex, `${gate} must exist`).toBeGreaterThan(-1)
-      expect(publish, `publication must follow ${gate}`).toBeGreaterThan(gateIndex)
+    for (const source of [buildBackendSource, compositeActionSource]) {
+      expect(source).not.toContain('type=registry')
+      expect(source).not.toContain('cache-from')
+      expect(source).not.toContain('cache-to')
     }
   })
 
-  it('gates publication on the publish input and an explicit success check', () => {
-    const condition = steps[stepIndex(publishStepName)]?.if ?? ''
-    expect(condition).toContain('inputs.publish')
+  it('gates the composite action on the smoke tests and the Trivy scan, in order', () => {
+    const apiSmoke = compositeStepIndex('Run API smoke test')
+    const workerCpuSmoke = compositeStepIndex('Run worker-cpu smoke test')
+    const trivyScan = compositeStepIndex('Scan OS packages in images with Trivy')
+
+    expect(apiSmoke, 'Run API smoke test must exist').toBeGreaterThan(-1)
+    expect(workerCpuSmoke, 'Run worker-cpu smoke test must exist').toBeGreaterThan(apiSmoke)
+    expect(trivyScan, 'Scan OS packages in images with Trivy must exist').toBeGreaterThan(
+      workerCpuSmoke,
+    )
+  })
+
+  it('publishes only after the composite action that runs the smoke tests and the Trivy gate', () => {
+    expect(
+      buildActionStepIndex,
+      'the build-backend-images composite action step must exist',
+    ).toBeGreaterThan(-1)
+    expect(publishStepIndex, `${publishStepName} must exist`).toBeGreaterThan(-1)
+    expect(publishStepIndex, 'publication must follow the composite action step').toBeGreaterThan(
+      buildActionStepIndex,
+    )
+  })
+
+  it('gates publication on an explicit success check', () => {
+    const condition = publishSteps[publishStepIndex]?.if ?? ''
     // Explicit rather than relying on GitHub implicitly ANDing success() into a condition that
     // carries no status function: a failed smoke test must never reach a registry.
     expect(condition).toContain('success()')
   })
 
-  it.each([
-    ['accepts the main-branch publisher', [publisher()], []],
-    [
-      'rejects a pull-request caller that publishes',
-      [{ id: 'ci.yml#build-backend', job: { with: { publish: true }, permissions: { packages: 'write' } } }],
-      ['ci.yml#build-backend: publishes outside the main-branch caller'],
-    ],
-    [
-      'rejects the publication credential on a caller that does not publish',
-      [{ id: 'ci.yml#build-backend', job: { permissions: { packages: 'write' } } }],
-      ['ci.yml#build-backend: packages: write must be granted if and only if it publishes'],
-    ],
-    [
-      'rejects publication without the credential that makes it work',
-      [{ id: PUBLISHER_ID, job: { with: { publish: true } } }],
-      [`${PUBLISHER_ID}: packages: write must be granted if and only if it publishes`],
-    ],
-    [
-      'accepts a plain validation caller',
-      [{ id: 'ci.yml#build-backend', job: { with: { trusted_secret_context: true } } }],
-      [],
-    ],
-  ] as [string, Caller[], string[]][])('%s', (_description, callers, expected) => {
-    expect(publicationCallerViolations(callers)).toEqual(expected)
-  })
-
-  it('has no publication-caller violations in the real workflows', () => {
-    const callers = buildBackendCallers()
+  it('never grants packages: write to a build-backend.yml caller', () => {
+    const callers = reusableCallers('./.github/workflows/build-backend.yml')
 
     expect(callers.length, 'build-backend.yml must have callers').toBeGreaterThan(0)
-    expect(publicationCallerViolations(callers)).toEqual([])
-    expect(callers.filter(({ job }) => job.with?.publish === true).map(({ id }) => id)).toEqual([
-      PUBLISHER_ID,
-    ])
+    expect(
+      callers.filter(({ job }) => job.permissions?.packages === 'write').map(({ id }) => id),
+    ).toEqual([])
+  })
+
+  it('has exactly one caller of publish-backend-images.yml, and it grants packages: write', () => {
+    const callers = reusableCallers('./.github/workflows/publish-backend-images.yml')
+
+    expect(callers.map(({ id }) => id)).toEqual(['main-backend.yml#publish-backend-images'])
+    expect(callers[0]?.job.permissions?.packages).toBe('write')
   })
 
   it('publishes only into the repository owner namespace', () => {
     // The incident behind the original ban was a personal GHCR namespace
     // (ghcr.io/jonathanong/...). Every registry reference must be owner-derived, never a
     // hardcoded account.
-    expect(source).toContain('ghcr.io/${{ github.repository_owner }}')
-    const foreign = /ghcr\.io\/(?!\$\{\{ github\.repository_owner \}\})/u.exec(source)
+    expect(publishSource).toContain('ghcr.io/${{ github.repository_owner }}')
+    const foreign = /ghcr\.io\/(?!\$\{\{ github\.repository_owner \}\})/u.exec(publishSource)
     expect(foreign, `foreign GHCR namespace: ${foreign?.[0]}`).toBeNull()
   })
 })
