@@ -29,9 +29,10 @@ counts fail the prep job rather than silently using a stale numeric fallback:
 
 The full-stack integration suite is matrix-capable so it can be split later without redesigning
 the report and artifact contracts. Its build and setup dominate its current runtime, so automatic
-file-count fan-out would only duplicate that work. The backend-unit matrix alone caps
-`max-parallel` at five, preserving its prior simultaneous Tests-pool demand while its six shards
-queue in the same run. Other matrices remain uncapped: GitHub schedules them against normal runner
+file-count fan-out would only duplicate that work. The backend-unit matrix used to cap
+`max-parallel` at five, bounding its demand on the fixed self-hosted `[self-hosted, Linux, Docker,
+Tests]` runner pool. GitHub-hosted runners have no such fixed pool, so the cap was removed and its
+14 shards now run uncapped like every other matrix: GitHub schedules them against normal runner
 capacity and queues excess work. Every shard-capable workflow puts a ten-minute watchdog on the
 Vitest command itself; this is a step deadline, not a replacement for the job's broader timeout.
 

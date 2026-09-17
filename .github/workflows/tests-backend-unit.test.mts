@@ -12,7 +12,6 @@ const stepsWorkflow = load(workflow) as {
     string,
     {
       steps?: Array<{ env?: Record<string, string>; name?: string; run?: string }>
-      strategy?: { 'max-parallel'?: number }
     }
   >
 }
@@ -90,7 +89,7 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(prep).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(prep).toContain('shard-matrix: ${{ steps.shards.outputs.matrix }}')
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
-    expect(stepsWorkflow.jobs?.['backend-tests']?.strategy?.['max-parallel']).toBe(5)
+    expect(workflow).not.toContain('max-parallel')
   })
 
   it('keeps OpenAI integration tests out of the normal backend project', () => {
