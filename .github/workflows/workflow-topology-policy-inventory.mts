@@ -36,12 +36,13 @@ export const jobInventory = {
   '.github/workflows/docs-publish.yml': jobs('complete'),
   '.github/workflows/dispatch-completed-deploy.yml': jobs('dispatch'),
   '.github/workflows/explain-analyze.yml': jobs('explain-analyze'),
+  '.github/workflows/ghcr-cleanup.yml': jobs('cleanup'),
   '.github/workflows/gitleaks.yml': jobs('gitleaks'),
   '.github/workflows/initialize-smoke-test.yml': jobs('initialize-smoke-test'),
   '.github/workflows/label-pr.yml': jobs('label'),
   '.github/workflows/lint-links.yml': jobs('lint-links'),
   '.github/workflows/main-backend.yml': jobs(
-    'backend-smoke postgres-schema-tests static-checks test-backend-credentialed test-backend-modules test-backend-unit',
+    'backend-smoke postgres-schema-tests publish-backend-images static-checks test-backend-credentialed test-backend-modules test-backend-unit',
   ),
   '.github/workflows/main-checks.yml': jobs(
     'cleanup-artifacts explain-analyze select-main-checks tooling-tests ts-shared-tests',
