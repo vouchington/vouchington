@@ -1,0 +1,93 @@
+name: Publish Web Images
+
+on:
+  workflow_call:
+    inputs:
+      trusted_secret_context:
+        description: 'Whether this run may use repository secrets and OIDC roles'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      AWS_TEST_ROLE_ARN:
+        required: true
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+  packages: write
+
+# Deliberately no concurrency block: unlike build-web.yml, this file has exactly one caller
+# (main-web.yml#publish-web-images), and main-web.yml's own workflow-level group already
+# serializes every run on main with cancel-in-progress: false, so two publishes can never race
+# each other here.
+
+jobs:
+  build:
+    if: ${{ inputs.trusted_secret_context }}
+    runs-on: ubuntu-24.04-arm
+    # The publish path runs everything a validation run does and then pushes the web image to
+    # GHCR, so it gets its own ceiling rather than shaving the validation path's margin to fit.
+    timeout-minutes: 25
+    env:
+      IMAGE_REPOSITORY: voucha-validation
+      SHA_TAG: sha-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          clean: false
+
+      - uses: ./.github/actions/build-web-images
+        with:
+          aws-role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
+
+      # Deliberately the last step in the job. Everything published here has already passed the
+      # Docker smoke test and the Trivy CRITICAL/HIGH gate, so the image that reaches the registry
+      # is the image that was tested -- which is the whole point of publishing from this
+      # repository rather than rebuilding somewhere else.
+      #
+      # The image is pushed from the local daemon rather than built with a registry output, which
+      # would upload it before any of those checks had run.
+      - name: Publish validated web image to GHCR
+        # success() is explicit rather than implicit: this is a publication gate, and a reader
+        # should not have to know that GitHub ANDs it in for conditions without a status function.
+        if: ${{ success() }}
+        timeout-minutes: 8
+        env:
+          GHCR_NAMESPACE: ghcr.io/${{ github.repository_owner }}
+          IMAGE_TAG: ${{ env.SHA_TAG }}
+          REGISTRY_PASSWORD: ${{ github.token }}
+          REGISTRY_USERNAME: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          # These runners are not guaranteed ephemeral, so the credential is removed on every
+          # exit path rather than only on success.
+          cleanup() { docker logout ghcr.io >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+
+          printf '%s' "$REGISTRY_PASSWORD" |
+            docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
+
+          local_image="$IMAGE_REPOSITORY/web:$IMAGE_TAG"
+          remote_image="$GHCR_NAMESPACE/web:$IMAGE_TAG"
+          docker tag "$local_image" "$remote_image"
+
+          # The digest is read back from the push output rather than from `docker image
+          # inspect`, whose RepoDigests can carry entries for other repositories.
+          push_output=$(docker push "$remote_image")
+          printf '%s\n' "$push_output"
+          digest=$(printf '%s\n' "$push_output" |
+            sed -n 's/.*[[:space:]]digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' | head -1)
+          if [ -z "$digest" ]; then
+            echo "::error::$remote_image was pushed but no digest could be read back."
+            exit 1
+          fi
+
+          echo "✓ published $remote_image ($digest)"
+          {
+            echo "## Published web image"
+            echo ""
+            echo "- \`$remote_image\` — \`$digest\`"
+          } >> "$GITHUB_STEP_SUMMARY"

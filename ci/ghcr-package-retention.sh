@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # Prune published container package versions from GHCR.
 #
-# main-backend.yml publishes one image per component per main revision, so these packages grow
-# without bound unless something reaps them. GHCR is only a transfer medium: vouchington-infra
-# copies each image into ECR by digest, and deployments and rollbacks read from ECR. Removing an
-# old GHCR version therefore cannot affect a running service -- it only removes the ability to
-# re-copy that revision, which is why a generous window of recent versions is kept.
+# main-backend.yml and main-web.yml each publish one image per component per main revision, so
+# these packages grow without bound unless something reaps them. GHCR is only a transfer medium:
+# vouchington-infra copies each image into ECR by digest, and deployments and rollbacks read from
+# ECR. Removing an old GHCR version therefore cannot affect a running service -- it only removes
+# the ability to re-copy that revision, which is why a generous window of recent versions is kept.
 #
 # Defaults are dry-run. Pass --apply to actually delete.
 set -euo pipefail
 
 owner="${GHCR_OWNER:-vouchington}"
-packages="${GHCR_PACKAGES:-api worker-cpu worker-io}"
+packages="${GHCR_PACKAGES:-api worker-cpu worker-io web}"
 keep_tagged="${GHCR_KEEP_TAGGED:-30}"
 untagged_min_age_days="${GHCR_UNTAGGED_MIN_AGE_DAYS:-7}"
 apply=false

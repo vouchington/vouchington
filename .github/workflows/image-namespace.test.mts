@@ -4,15 +4,17 @@ import { parse as parseYaml } from 'yaml'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const firstPartyGhcrPaths = ['.github/workflows/ghcr-cleanup.yml', 'ci/ghcr-package-retention.sh']
-// publish-backend-images.yml is deliberately absent. Since vouchington/vouchington-infra#274 it
-// publishes the deployable backend images to GHCR on main; its narrower invariants live in the
-// "backend image publication" block below. build-backend.yml and the composite action it
-// delegates to remain pure validation sources -- everything listed here must still keep its
-// output and caches local to its own BuildKit daemon.
+// publish-backend-images.yml and publish-web-images.yml are deliberately absent. Since
+// vouchington/vouchington-infra#274 they publish the deployable backend and web images to GHCR on
+// main; their narrower invariants live in the "backend image publication" and "web image
+// publication" blocks below. build-backend.yml, build-web.yml, and the composite actions they
+// delegate to remain pure validation sources -- everything listed here must still keep its output
+// and caches local to its own BuildKit daemon.
 const activeValidationSourcePaths = [
   '.github/workflows/build-backend.yml',
   '.github/actions/build-backend-images/action.yml',
   '.github/workflows/build-web.yml',
+  '.github/actions/build-web-images/action.yml',
   'backend/docker-bake.hcl',
   'ci/exec-vouchington-gha.sh',
 ]
@@ -62,14 +64,12 @@ function validationSourceViolations(path: string, source: string): string[] {
   return violations
 }
 
-// build-backend.yml only sets up the job env and delegates the actual image builds to this
-// composite action, so the backend workspace's invariants are checked against both files
-// concatenated rather than the workflow file alone.
+// build-backend.yml and build-web.yml only set up the job env and delegate the actual image
+// builds to their composite actions, so each workspace's invariants are checked against both
+// files concatenated rather than the workflow file alone.
 const workspaceValidationSource = (workspace: 'backend' | 'web') =>
-  workspace === 'backend'
-    ? read('.github/workflows/build-backend.yml') +
-      read('.github/actions/build-backend-images/action.yml')
-    : read(`.github/workflows/build-${workspace}.yml`)
+  read(`.github/workflows/build-${workspace}.yml`) +
+  read(`.github/actions/build-${workspace}-images/action.yml`)
 
 describe('validation image invariants', () => {
   it.each(['backend', 'web'] as const)(
@@ -95,7 +95,7 @@ describe('validation image invariants', () => {
   })
 
   it('keeps the web validation image local while using only its GHA cache', () => {
-    const workflow = read('.github/workflows/build-web.yml')
+    const workflow = workspaceValidationSource('web')
 
     expect(workflow).toContain('type=gha,scope=web-arm64')
     expect(workflow).toContain('cache-to: type=gha,scope=web-arm64,mode=max')
@@ -278,6 +278,83 @@ describe('backend image publication', () => {
     const callers = reusableCallers('./.github/workflows/publish-backend-images.yml')
 
     expect(callers.map(({ id }) => id)).toEqual(['main-backend.yml#publish-backend-images'])
+    expect(callers[0]?.job.permissions?.packages).toBe('write')
+  })
+
+  it('publishes only into the repository owner namespace', () => {
+    // The incident behind the original ban was a personal GHCR namespace
+    // (ghcr.io/jonathanong/...). Every registry reference must be owner-derived, never a
+    // hardcoded account.
+    expect(publishSource).toContain('ghcr.io/${{ github.repository_owner }}')
+    const foreign = /ghcr\.io\/(?!\$\{\{ github\.repository_owner \}\})/u.exec(publishSource)
+    expect(foreign).toBeNull()
+  })
+})
+
+describe('web image publication', () => {
+  const buildWebSource = read('.github/workflows/build-web.yml')
+  const compositeActionSource = read('.github/actions/build-web-images/action.yml')
+  const publishSource = read('.github/workflows/publish-web-images.yml')
+
+  const compositeAction = parseYaml(compositeActionSource) as {
+    runs?: { steps?: { name?: string }[] }
+  }
+  const compositeSteps = compositeAction.runs?.steps ?? []
+  const compositeStepIndex = (name: string) => compositeSteps.findIndex(step => step?.name === name)
+
+  const publishWorkflow = parseYaml(publishSource) as {
+    jobs?: Record<string, { steps?: { name?: string; uses?: string; if?: string }[] }>
+  }
+  const publishSteps = publishWorkflow.jobs?.build?.steps ?? []
+  const publishStepName = 'Publish validated web image to GHCR'
+  const publishStepIndex = publishSteps.findIndex(step => step?.name === publishStepName)
+  const buildActionStepIndex = publishSteps.findIndex(
+    step => step?.uses === './.github/actions/build-web-images',
+  )
+
+  it('keeps the build itself local and pushes from the daemon afterwards', () => {
+    // A `type=registry` output would upload before a single check in the job had run. The
+    // image is built locally, validated, and only then pushed -- so what reaches the registry
+    // is what was tested.
+    for (const source of [buildWebSource, compositeActionSource]) {
+      expect(source).not.toContain('type=registry')
+    }
+  })
+
+  it('gates the composite action on the smoke test and the Trivy scan, in order', () => {
+    const dockerSmoke = compositeStepIndex('Run Docker smoke test')
+    const trivyScan = compositeStepIndex('Scan OS packages in web image with Trivy')
+
+    expect(dockerSmoke).toBeGreaterThan(-1)
+    expect(trivyScan).toBeGreaterThan(dockerSmoke)
+  })
+
+  it('publishes only after the composite action that runs the smoke test and the Trivy gate', () => {
+    expect(buildActionStepIndex).toBeGreaterThan(-1)
+    expect(publishStepIndex).toBeGreaterThan(-1)
+    expect(publishStepIndex).toBeGreaterThan(buildActionStepIndex)
+  })
+
+  it('gates publication on an explicit success check', () => {
+    const condition = publishSteps[publishStepIndex]?.if ?? ''
+    // Explicit rather than relying on GitHub implicitly ANDing success() into a condition that
+    // carries no status function: a failed smoke test must never reach a registry.
+    expect(condition).toContain('success()')
+  })
+
+  it('never grants packages: write to a build-web.yml caller', () => {
+    const callers = reusableCallers('./.github/workflows/build-web.yml')
+
+    expect(callers.length).toBeGreaterThan(0)
+    expect(
+      callers.filter(({ job }) => job.permissions?.packages === 'write').map(({ id }) => id),
+    ).toEqual([])
+  })
+
+  it('has exactly one caller of publish-web-images.yml, and it grants packages: write', () => {
+    const callers = reusableCallers('./.github/workflows/publish-web-images.yml')
+
+    expect(callers.map(({ id }) => id)).toEqual(['main-web.yml#publish-web-images'])
     expect(callers[0]?.job.permissions?.packages).toBe('write')
   })
 

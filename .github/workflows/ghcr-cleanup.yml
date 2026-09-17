@@ -1,8 +1,8 @@
 name: GHCR Cleanup
 
-# Reaps old container package versions published by main-backend.yml.
+# Reaps old container package versions published by main-backend.yml and main-web.yml.
 #
-# Every main revision that touches the backend publishes one image per component, so these
+# Every main revision that touches the backend or web publishes one image per component, so these
 # packages grow without bound unless something prunes them. GHCR is only a transfer medium:
 # vouchington-infra copies each image into ECR by digest, and both deployment and rollback read
 # from ECR. Deleting an old GHCR version therefore cannot affect a running service; it only

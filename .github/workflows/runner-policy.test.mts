@@ -145,6 +145,7 @@ describe('workflow runner policy (real workflows)', () => {
       'build-backend.yml#build',
       'build-web.yml#build',
       'publish-backend-images.yml#build',
+      'publish-web-images.yml#build',
     ])
   })
 

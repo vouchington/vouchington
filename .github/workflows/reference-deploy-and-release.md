@@ -2,14 +2,15 @@
 
 [Back to Workflow Reference](WORKFLOWS.md#deploy-and-release)
 
-| Workflow                                                   | Type       | Runner                                            | Docker | Purpose                                                                                        |
-| ---------------------------------------------------------- | ---------- | ------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
-| [Build Backend](build-backend.yml)                         | Reusable   | `ubicloud-standard-8-arm` or opt-in AWS CodeBuild | Yes    | Validates backend images for pull requests without publishing them.                            |
-| [Build Web](build-web.yml)                                 | Reusable   | `ubicloud-standard-4-arm` or opt-in AWS CodeBuild | Yes    | Validates web images for pull requests without publishing them.                                |
-| [Publish Backend Images](publish-backend-images.yml)       | Reusable   | `ubuntu-24.04-arm`                                | Yes    | Rebuilds and re-validates backend images on trusted main runs, then publishes them to GHCR.     |
-| [Dispatch Completed Deploy](dispatch-completed-deploy.yml) | Standalone | `[self-hosted]`                                   | No     | Dispatches trusted successful source metadata to route-specific `vouchington-infra` receivers. |
-| [Sync Articles](sync-articles.yml)                         | Standalone | —                                                 | No     | Produces a source workflow completion for private infrastructure dispatch.                     |
-| [Docs Publish](docs-publish.yml)                           | Standalone | —                                                 | No     | Produces a source workflow completion for private infrastructure dispatch.                     |
+| Workflow                                                   | Type       | Runner             | Docker | Purpose                                                                                        |
+| ---------------------------------------------------------- | ---------- | ------------------ | ------ | ---------------------------------------------------------------------------------------------- |
+| [Build Backend](build-backend.yml)                         | Reusable   | `ubuntu-24.04-arm` | Yes    | Validates backend images for pull requests without publishing them.                            |
+| [Build Web](build-web.yml)                                 | Reusable   | `ubuntu-24.04-arm` | Yes    | Validates web images for pull requests without publishing them.                                |
+| [Publish Backend Images](publish-backend-images.yml)       | Reusable   | `ubuntu-24.04-arm` | Yes    | Rebuilds and re-validates backend images on trusted main runs, then publishes them to GHCR.    |
+| [Publish Web Images](publish-web-images.yml)               | Reusable   | `ubuntu-24.04-arm` | Yes    | Rebuilds and re-validates the web image on trusted main runs, then publishes it to GHCR.       |
+| [Dispatch Completed Deploy](dispatch-completed-deploy.yml) | Standalone | `[self-hosted]`    | No     | Dispatches trusted successful source metadata to route-specific `vouchington-infra` receivers. |
+| [Sync Articles](sync-articles.yml)                         | Standalone | —                  | No     | Produces a source workflow completion for private infrastructure dispatch.                     |
+| [Docs Publish](docs-publish.yml)                           | Standalone | —                  | No     | Produces a source workflow completion for private infrastructure dispatch.                     |
 
 Filaments validates source and dispatches its revision asynchronously. `vouchington-infra` owns
 artifact publication and every deployment mutation. A successful dispatch is not deployment

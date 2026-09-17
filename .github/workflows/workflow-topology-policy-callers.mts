@@ -15,6 +15,9 @@ export const exactCallerJobs = {
     '.github/workflows/main-backend.yml#publish-backend-images',
   ),
   '.github/workflows/build-web.yml': splitIds('.github/workflows/ci.yml#build-web'),
+  '.github/workflows/publish-web-images.yml': splitIds(
+    '.github/workflows/main-web.yml#publish-web-images',
+  ),
   '.github/workflows/checks-static.yml': splitIds(
     '.github/workflows/ci.yml#static-backend .github/workflows/ci.yml#static-cloudflare-worker .github/workflows/ci.yml#static-lambdas .github/workflows/ci.yml#static-web .github/workflows/main-backend.yml#static-checks .github/workflows/main-cloudflare-worker.yml#static-checks .github/workflows/main-lambdas.yml#static-checks .github/workflows/main-web.yml#static-checks',
   ),

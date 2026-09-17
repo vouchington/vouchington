@@ -5,6 +5,7 @@ export const jobInventory = {
   '.github/workflows/build-backend.yml': jobs('build'),
   '.github/workflows/publish-backend-images.yml': jobs('build'),
   '.github/workflows/build-web.yml': jobs('build'),
+  '.github/workflows/publish-web-images.yml': jobs('build'),
   '.github/workflows/checks-static.yml': jobs(
     'static-backend static-cloudflare static-lambdas static-web',
   ),
@@ -50,7 +51,7 @@ export const jobInventory = {
   '.github/workflows/main-lambdas.yml': jobs('lambdas-tests static-checks'),
   '.github/workflows/main-storybook.yml': jobs('storybook-build'),
   '.github/workflows/main-web.yml': jobs(
-    'cleanup-artifacts detect-web-deploy playwright-credentialed-tests playwright-tests static-checks store-playwright-otel test-web test-web-api test-web-integration web-deploy-intent',
+    'cleanup-artifacts detect-web-deploy playwright-credentialed-tests playwright-tests publish-web-images static-checks store-playwright-otel test-web test-web-api test-web-integration web-deploy-intent',
   ),
   '.github/workflows/pnpm-dedupe.yml': jobs('dedupe'),
   '.github/workflows/static-code-analysis.yml': jobs('no-mistakes-owned static-code-analysis'),
@@ -83,6 +84,8 @@ export const unlockedWorkflowReasons = {
   '.github/workflows/label-pr.yml': 'idempotent PR labeling',
   '.github/workflows/publish-backend-images.yml':
     'sole caller main-backend.yml already serializes every run on main',
+  '.github/workflows/publish-web-images.yml':
+    'sole caller main-web.yml already serializes every run on main',
   '.github/workflows/tests-backend-credentialed.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/tests-backend-modules.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/tests-backend-unit.yml': 'parallel-safe idempotent manual tests',
