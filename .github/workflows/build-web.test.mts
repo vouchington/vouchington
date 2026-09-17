@@ -19,7 +19,9 @@ type CompositeAction = { runs?: { steps?: Step[] } }
 // (and publish-web-images.yml) delegate to -- only the job-level declarations (env) stay in the
 // calling workflow file.
 function readBuildWebImagesSteps(): Step[] {
-  const action = load(readFileSync('.github/actions/build-web-images/action.yml', 'utf8')) as CompositeAction
+  const action = load(
+    readFileSync('.github/actions/build-web-images/action.yml', 'utf8'),
+  ) as CompositeAction
   return action.runs?.steps ?? []
 }
 
@@ -51,7 +53,10 @@ describe('build-web workflow', () => {
 
   it('does not give validation builds Sentry credentials or release-management mode', () => {
     const buildWebSource = readFileSync('.github/workflows/build-web.yml', 'utf8')
-    const compositeActionSource = readFileSync('.github/actions/build-web-images/action.yml', 'utf8')
+    const compositeActionSource = readFileSync(
+      '.github/actions/build-web-images/action.yml',
+      'utf8',
+    )
     const ciSource = readFileSync('.github/workflows/ci.yml', 'utf8')
 
     for (const source of [buildWebSource, compositeActionSource]) {
