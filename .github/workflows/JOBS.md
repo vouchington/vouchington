@@ -22,7 +22,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | Workflow                            | Job                             | Kind   | Runner                                | Timeout (min) |
 | ----------------------------------- | ------------------------------- | ------ | ------------------------------------- | ------------- |
 | `actionlint.yml`                    | `actionlint`                    | job    | `ubuntu-slim`                         | 8             |
-| `build-backend.yml`                 | `build`                         | job    | `ubuntu-24.04-arm`                    | 20            |
+| `build-backend.yml`                 | `build`                         | job    | `ubuntu-24.04-arm`                    | 360           |
 | `build-web.yml`                     | `build`                         | job    | `ubuntu-24.04-arm`                    | 15            |
 | `checks-backend-smoke.yml`          | `smoke`                         | job    | `ubuntu-latest`                       | 10            |
 | `checks-static.yml`                 | `static-backend`                | job    | `ubuntu-latest`                       | 15            |
@@ -89,6 +89,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `fix-main.yml`                      | `related-candidates`            | job    | `ubuntu-latest`                       | 5             |
 | `fix-main.yml`                      | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `fix-main.yml`                      | `triage-and-rerun`              | job    | `ubuntu-latest`                       | 10            |
+| `ghcr-cleanup.yml`                  | `cleanup`                       | job    | `ubuntu-slim`                         | 14            |
 | `gitleaks.yml`                      | `gitleaks`                      | job    | `ubuntu-slim`                         | 5             |
 | `harness-dispatch.yml`              | `dispatch`                      | job    | `ubuntu-latest`                       | 8             |
 | `initialize-smoke-test.yml`         | `initialize-smoke-test`         | job    | `ubuntu-latest`                       | 30            |
@@ -96,6 +97,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `lint-links.yml`                    | `lint-links`                    | job    | `ubuntu-slim`                         | 10            |
 | `main-backend.yml`                  | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
 | `main-backend.yml`                  | `postgres-schema-tests`         | job    | → `tests-postgres-schema.yml`         | 360           |
+| `main-backend.yml`                  | `publish-backend-images`        | job    | → `build-backend.yml`                 | 360           |
 | `main-backend.yml`                  | `static-checks`                 | job    | → `checks-static.yml`                 | 360           |
 | `main-backend.yml`                  | `test-backend-credentialed`     | job    | → `tests-backend-credentialed.yml`    | 360           |
 | `main-backend.yml`                  | `test-backend-modules`          | job    | → `tests-backend-modules.yml`         | 360           |

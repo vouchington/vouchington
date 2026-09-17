@@ -23,14 +23,16 @@ concurrency:
   group: build-backend-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-permissions:
-  actions: read
-  contents: read
-  id-token: write
-  # Caps what any caller can grant. Publication is gated twice over: a caller must both grant
-  # `packages: write` and pass `publish: true`. The pull-request callers do neither, so a
-  # validation run cannot reach a registry even if the publish step were somehow reached.
-  packages: write
+# Deliberately no workflow-level `permissions` block. In a reusable workflow this key is not a
+# ceiling on what callers may grant -- it is a request, and a request that exceeds the calling
+# job's own permissions fails the entire caller run with a startup_failure that creates no jobs
+# and no check runs. Declaring `packages: write` here broke every pull-request run through
+# ci.yml, whose caller job grants no packages scope.
+#
+# Omitting the block instead lets each caller decide: ci.yml grants actions/contents/id-token for
+# validation, and main-backend.yml grants those plus `packages: write` for publication. That is
+# also the stronger arrangement, because the credential exists only on the run that publishes
+# rather than being declared once here for every caller.
 
 jobs:
   build:
