@@ -216,12 +216,24 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: '.nvmrc'
+          # Stays false even though this job caches the pnpm store explicitly below.
+          # setup-node's built-in cache keys off package.json's `packageManager`
+          # (pnpm@11.13.1), so leaving it on would cache the same store twice -- and it
+          # runs at this point, before corepack has put pnpm on PATH.
+          package-manager-cache: false
       - name: Activate pnpm via corepack
         timeout-minutes: 2
         run: bash "$GITHUB_WORKSPACE/ci/activate-pnpm.sh"
       - name: Resolve pnpm store path
         timeout-minutes: 1
-        run: echo "PNPM_STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+        run: |
+          set -euo pipefail
+          store_path="$(pnpm store path --silent)"
+          if [ -z "$store_path" ]; then
+            echo "::error::Could not resolve the pnpm store path for the cache key"
+            exit 1
+          fi
+          echo "PNPM_STORE_PATH=$store_path" >> "$GITHUB_ENV"
       - name: Cache pnpm store
         timeout-minutes: 3
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
