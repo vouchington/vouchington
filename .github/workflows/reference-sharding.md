@@ -35,15 +35,19 @@ queue in the same run. Other matrices remain uncapped: GitHub schedules them aga
 capacity and queues excess work. Every shard-capable workflow puts a ten-minute watchdog on the
 Vitest command itself; this is a step deadline, not a replacement for the job's broader timeout.
 
-Playwright has no repository-variable shard cap on the PR path. PR, labelled-full, fail-open, and
-manual runs use `max(1, ceil(runnable spec count × 2 seconds / 240 seconds))`; GitHub's matrix
-range limits the result to 1–256. The two seconds per spec is an allocation heuristic rather than a
-measured duration, and the 240-second execution budget leaves room for fixed per-shard build/
-startup overhead inside the eight-minute job target, plus a ~30-second Playwright-specific buffer
-reflected in that job's step `timeout-minutes`. The push-path `main-web.yml` workflow pins its own
-`shard_total_override` independently of this formula — it is sized against push-path's own
-measured runtimes, not the PR path's spec-count heuristic, so the two can diverge and one changing
-does not imply the other should.
+Playwright has no repository-variable shard cap on any path. PR, labelled-full, fail-open, manual,
+and push runs all use `max(1, ceil(runnable spec count × 8.6 seconds / 313 seconds))`; GitHub's
+matrix range limits the result to 1–256. The 8.6 seconds per spec and 313-second execution budget
+are an allocation heuristic, not a measured per-spec duration, calibrated for GitHub-hosted
+`ubuntu-latest` runners (2 vCPU while this repo is private) — see the derivation in
+[`ci/playwright/shard-selection.mts`](../../ci/playwright/shard-selection.mts). The execution budget
+leaves room for fixed per-shard build/startup overhead inside the whole job's ~10-minute ceiling
+(build + migrate + compile + test, not just the test step), plus a per-shard warm-up/variance
+buffer, rounded up to a whole minute, reflected in that job's step `timeout-minutes`. The push-path
+`main-web.yml` workflow used to pin its own `shard_total_override` here, sized against the
+self-hosted fleet's measured runtimes; that override predated the move to GitHub-hosted runners and
+was never recalibrated for them, so it was dropped in favor of the same formula the PR path already
+uses.
 
 Each sharded workflow includes a lightweight job that generates its matrix before the test job
 runs. Web shards run symmetrically — no shard owns a singleton duty; the pages-router check,
