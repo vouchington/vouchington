@@ -106,3 +106,58 @@ describe('validatePrBodyWithIssueReferences — closingIssues filtering for audi
     expect(capturedClosingIssues?.map(pair => pair.issue.number)).toEqual([456])
   })
 })
+
+const OPEN_RESOLVER = makeResolver({
+  '#123': { issue: makeIssue({ number: 123, state: 'open' }), ok: true },
+  '#456': { issue: makeIssue({ number: 456, state: 'open' }), ok: true },
+})
+
+// The project-completion audit is purely advisory (see `dev/pr-description/project-audit.mts`):
+// unlike `milestoneAuditor`, its output must never join `result.errors`, so a reported advisory —
+// including a skipped-audit notice — can never fail validation.
+describe('validatePrBodyWithIssueReferences — projectAuditor advisories are non-blocking', () => {
+  it('surfaces found open project items in result.advisories without touching result.errors', async () => {
+    let capturedClosingIssues: ClosingIssueForAudit[] | undefined
+    const advisory =
+      'other/repo#9 ("Stranded ticket") is still open in project "Q3 Initiative" ' +
+      '(https://github.com/orgs/x/projects/1), which this change is nearly completing.'
+    const result = await validatePrBodyWithIssueReferences(BASE_BODY, OPEN_RESOLVER, {
+      projectAuditor: closingIssues => {
+        capturedClosingIssues = closingIssues
+        return Promise.resolve([advisory])
+      },
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.errors).toEqual([])
+    expect(result.advisories).toEqual([advisory])
+    expect(capturedClosingIssues?.map(pair => pair.issue.number)).toEqual([123, 456])
+  })
+
+  it('leaves result.advisories empty when nothing is nearly complete', async () => {
+    const result = await validatePrBodyWithIssueReferences(BASE_BODY, OPEN_RESOLVER, {
+      projectAuditor: () => Promise.resolve([]),
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.advisories).toEqual([])
+  })
+
+  it('never fails validation on a skipped-audit notice (e.g. missing project token scope)', async () => {
+    const result = await validatePrBodyWithIssueReferences(BASE_BODY, OPEN_RESOLVER, {
+      projectAuditor: () =>
+        Promise.resolve(["Project completion audit skipped: The 'project' scope is required."]),
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.errors).toEqual([])
+    expect(result.advisories).toEqual([
+      "Project completion audit skipped: The 'project' scope is required.",
+    ])
+  })
+
+  it('defaults result.advisories to empty when no projectAuditor is supplied', async () => {
+    const result = await validatePrBodyWithIssueReferences(BASE_BODY, OPEN_RESOLVER)
+    expect(result.advisories).toEqual([])
+  })
+})

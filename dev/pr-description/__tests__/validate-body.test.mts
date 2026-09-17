@@ -26,7 +26,12 @@ function bodyAtLength(length: number): string {
 
 describe('validatePrBody', () => {
   it('accepts a valid PR body', () => {
-    expect(validatePrBody(VALID_BODY)).toEqual({ errors: [], ok: true, referencedIssues: [] })
+    expect(validatePrBody(VALID_BODY)).toEqual({
+      advisories: [],
+      errors: [],
+      ok: true,
+      referencedIssues: [],
+    })
   })
 
   it('accepts a body at GitHub’s limit', () => {
