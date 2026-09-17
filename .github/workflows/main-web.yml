@@ -114,12 +114,8 @@ jobs:
     secrets: inherit
 
   test-web-api:
-    needs: [static-checks, test-web]
-    if: >-
-      always() &&
-      !cancelled() &&
-      needs.static-checks.result == 'success' &&
-      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped')
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
     uses: ./.github/workflows/tests-web-api.yml
     permissions:
       actions: read
@@ -127,12 +123,8 @@ jobs:
     secrets: inherit
 
   test-web-integration:
-    needs: [static-checks, test-web]
-    if: >-
-      always() &&
-      !cancelled() &&
-      needs.static-checks.result == 'success' &&
-      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped')
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
     uses: ./.github/workflows/tests-web-integration.yml
     permissions:
       actions: read
@@ -140,14 +132,8 @@ jobs:
     secrets: inherit
 
   playwright-tests:
-    needs: [static-checks, test-web, test-web-api, test-web-integration]
-    if: >-
-      always() &&
-      !cancelled() &&
-      needs.static-checks.result == 'success' &&
-      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped') &&
-      (needs.test-web-api.result == 'success' || needs.test-web-api.result == 'failure' || needs.test-web-api.result == 'skipped') &&
-      (needs.test-web-integration.result == 'success' || needs.test-web-integration.result == 'failure' || needs.test-web-integration.result == 'skipped')
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
     uses: ./.github/workflows/tests-playwright.yml
     permissions:
       actions: read
@@ -225,14 +211,8 @@ jobs:
         run: ./ci/store-playwright-otel.sh
 
   playwright-credentialed-tests:
-    needs: [static-checks, test-web, test-web-api, test-web-integration]
-    if: >-
-      always() &&
-      !cancelled() &&
-      needs.static-checks.result == 'success' &&
-      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped') &&
-      (needs.test-web-api.result == 'success' || needs.test-web-api.result == 'failure' || needs.test-web-api.result == 'skipped') &&
-      (needs.test-web-integration.result == 'success' || needs.test-web-integration.result == 'failure' || needs.test-web-integration.result == 'skipped')
+    needs: [static-checks]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
     uses: ./.github/workflows/tests-playwright-credentialed.yml
     permissions:
       actions: read
@@ -249,7 +229,20 @@ jobs:
       actions: read
 
   cleanup-artifacts:
-    needs: [store-playwright-otel, playwright-credentialed-tests]
+    # test-web/test-web-api/test-web-integration are no longer transitive ancestors of
+    # store-playwright-otel/playwright-credentialed-tests now that all test stages fan out
+    # directly from static-checks (see PR flattening main-web.yml's DAG). Without these three
+    # in `needs:`, failure() below would stop seeing their results, and a run where only one of
+    # them fails (while both Playwright stages pass) would run cleanup and delete that failed
+    # stage's report/coverage artifacts — violating "never delete failure artifacts."
+    needs:
+      [
+        test-web,
+        test-web-api,
+        test-web-integration,
+        store-playwright-otel,
+        playwright-credentialed-tests,
+      ]
     if: ${{ always() && !cancelled() && !failure() }}
     uses: ./.github/workflows/cleanup-artifacts.yml
     permissions:

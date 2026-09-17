@@ -187,10 +187,9 @@ flowchart TD
     main-backend-static --> main-backend-tests["backend test families"]
     main-web --> main-web-static["web static"]
     main-web-static --> main-web-vitest["web Vitest"]
-    main-web-vitest --> main-web-api["web API"]
-    main-web-vitest --> main-web-integration["web integration"]
-    main-web-api --> main-web-playwright["Playwright + credentialed Playwright"]
-    main-web-integration --> main-web-playwright
+    main-web-static --> main-web-api["web API"]
+    main-web-static --> main-web-integration["web integration"]
+    main-web-static --> main-web-playwright["Playwright + credentialed Playwright"]
     main-lambdas --> main-lambda-static["Lambda static"]
     main-lambda-static --> main-lambda-tests["Lambda tests"]
     main-cloudflare-worker --> main-worker-static["Worker static"]

@@ -23,10 +23,16 @@ describe('main-web workflow', () => {
     expect(playwrightTests).not.toContain('shard_total_override')
   })
 
-  it('runs web API and full-stack integration as siblings after web unit tests', () => {
-    for (const job of ['test-web-api', 'test-web-integration']) {
+  it('fans out web unit, API, integration, and Playwright test stages directly from static-checks', () => {
+    for (const job of [
+      'test-web',
+      'test-web-api',
+      'test-web-integration',
+      'playwright-tests',
+      'playwright-credentialed-tests',
+    ]) {
       const section = jobSection(mainWeb, job)
-      expect(section).toContain('needs: [static-checks, test-web]')
+      expect(section).toContain('needs: [static-checks]')
       expect(section).not.toContain('max-parallel')
     }
   })
