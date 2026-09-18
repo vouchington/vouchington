@@ -190,8 +190,6 @@ jobs:
       - uses: ./.github/actions/clean-workspace
 
       - uses: ./.github/actions/setup-node-pnpm
-        with:
-          runner-lifecycle: persistent
 
       - name: Capture trusted issue context
         env:

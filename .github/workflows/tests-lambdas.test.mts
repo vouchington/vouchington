@@ -44,8 +44,8 @@ describe('Lambda Tests workflow', () => {
     expect(ciWorkflow).not.toContain("- 'ts-shared/ses-inbound-contract/**'")
   })
 
-  it('uses the shared persistent full install without another direct install', () => {
-    expect(workflow).toContain('runner-lifecycle: persistent')
+  it('uses the shared full install without another direct install', () => {
+    expect(workflow).toContain('- uses: ./.github/actions/setup-node-pnpm')
     expect(workflow).not.toContain('pnpm install')
     expect(workflow).not.toContain('timeout_prefix')
   })

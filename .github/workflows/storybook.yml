@@ -117,8 +117,6 @@ jobs:
           VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Run Storybook snapshots
         env:
           VITEST_CI_REPORTERS: run

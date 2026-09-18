@@ -24,7 +24,6 @@ describe('tests-playwright.yml OTel collector', () => {
     expect(workflow).toContain('otel_enabled:')
     expect(workflow).toContain("OTEL_ENABLED: ${{ inputs.otel_enabled && '1' || '' }}")
     expect(workflow).toContain('NEXT_PUBLIC_GIT_COMMIT: ${{ github.sha }}')
-    expect(workflow).toContain('runner-lifecycle: persistent')
     expect(workflow).toContain('name: Start OTel collector')
     expect(startOtelCollector).toBeGreaterThan(allocatePorts)
     expect(startOtelCollector).toBeLessThan(setupBackend)

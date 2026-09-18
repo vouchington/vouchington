@@ -83,8 +83,6 @@ jobs:
           VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Run portability tests
         env:
           VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}
@@ -237,8 +235,6 @@ jobs:
           VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Run portability tests
         env:
           VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}

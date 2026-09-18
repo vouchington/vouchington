@@ -107,8 +107,6 @@ jobs:
           preserve-node-modules: 'false'
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Dispatch session
         id: dispatch
         env:

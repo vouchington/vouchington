@@ -127,7 +127,7 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
     expect(allocate).toBeGreaterThan(install)
     const installStep = credentialedWorkflowText.slice(install, allocate)
     expect(installStep).toContain('ci/pnpm-install.sh')
-    expect(installStep).toContain('--runner-lifecycle persistent')
+    expect(installStep).toContain('--runner-lifecycle ephemeral-full')
     expect(installStep).toContain('--command-timeout-seconds 0')
   })
 

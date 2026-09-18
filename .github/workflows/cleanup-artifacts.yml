@@ -99,8 +99,6 @@ jobs:
       - uses: ./.github/actions/clean-workspace
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Sweep artifacts older than 6 hours
         timeout-minutes: 20
         continue-on-error: true

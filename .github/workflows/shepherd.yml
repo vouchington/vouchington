@@ -59,8 +59,6 @@ jobs:
 
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
 
       - name: Resolve PR and validate command
         id: gate
@@ -211,8 +209,6 @@ jobs:
       - uses: ./.github/actions/clean-workspace
 
       - uses: ./.github/actions/setup-node-pnpm
-        with:
-          runner-lifecycle: persistent
 
       - name: Resolve trusted pr-shepherd version
         id: pr-shepherd-version
@@ -304,8 +300,6 @@ jobs:
 
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Revalidate and patch the exact checkpoint comment
         env:
           CHECKPOINT_ACTOR: github-actions[bot]

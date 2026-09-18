@@ -71,7 +71,6 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         with:
           install-scripts: 'false'
-          runner-lifecycle: persistent
       - name: Revalidate source run
         id: source-state
         env:
@@ -153,7 +152,6 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         with:
           install-scripts: 'false'
-          runner-lifecycle: persistent
       - uses: jonathanong/auto-harness/actions/harness-prompt-context@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
         id: prompt-context
         with:
@@ -196,7 +194,6 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         with:
           install-scripts: 'false'
-          runner-lifecycle: persistent
 
       - name: Revalidate source run
         id: source-state
@@ -297,7 +294,6 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         with:
           install-scripts: 'false'
-          runner-lifecycle: persistent
       - name: Decide transient retry for this run
         id: decide
         env:

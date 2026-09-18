@@ -89,8 +89,6 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         if: ${{ inputs.shard_total_override == '' }}
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Resolve web-api shard total
         id: shard-total
         env:
@@ -161,8 +159,6 @@ jobs:
           echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - working-directory: backend
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3

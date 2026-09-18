@@ -98,7 +98,7 @@ describe('tests-tooling.yml setup timing', () => {
     expect(testTimeout).toBeGreaterThanOrEqual(8)
   })
 
-  it('dispatches selected files through the persistent workspace', () => {
+  it('dispatches selected files through setup-backend', () => {
     const runStep = runToolingTestsStep()
     expect(runStep.run).toContain(
       'node ci/tooling-test-runner.mts --workflow-projects --bail=3 "${FILES[@]}"',
@@ -108,7 +108,7 @@ describe('tests-tooling.yml setup timing', () => {
     )
     expect(runStep.env?.VITEST_SELECTED_FILES).toContain('inputs.selected_test_files')
 
-    expect(setupBackendStep().with).toEqual({ 'runner-lifecycle': 'persistent' })
+    expect(setupBackendStep().with).toBeUndefined()
   })
 
   it('isolates route bounds from regular tooling coverage and artifacts', () => {

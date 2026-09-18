@@ -85,8 +85,6 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         if: ${{ inputs.shard_total_override == '' }}
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Resolve web shard total
         id: shard-total
         env:
@@ -128,8 +126,6 @@ jobs:
           VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Run web tests
         if: ${{ inputs.run_tests }}
         env:

@@ -116,8 +116,6 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         if: '!cancelled()'
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Download Vitest report attempt markers
         if: '!cancelled()'
         continue-on-error: true

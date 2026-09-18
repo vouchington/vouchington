@@ -70,8 +70,6 @@ jobs:
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 6
-        with:
-          runner-lifecycle: persistent
       - name: Run backend module tests
         if: ${{ inputs.run_tests }}
         env:

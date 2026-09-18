@@ -271,8 +271,6 @@ jobs:
           deepen: 'true'
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Select Vitest tests
         id: select
         env:

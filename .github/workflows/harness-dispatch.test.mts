@@ -113,7 +113,7 @@ git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/c
     expect(setupNodePnpmIndex).toBeGreaterThan(2)
     expect(dispatchIndex).toBeGreaterThan(setupNodePnpmIndex ?? -1)
     const setupNodePnpm = job?.steps[setupNodePnpmIndex ?? -1]
-    expect(setupNodePnpm?.with).toEqual({ 'runner-lifecycle': 'persistent' })
+    expect(setupNodePnpm?.with).toBeUndefined()
     const dispatch = job?.steps.find(step => step.run?.includes('ci/harness-session-dispatch.mts'))
     expect(dispatch?.env).toMatchObject({
       // The host daemon's worktree pool is a plain clone: only a branch already checked out

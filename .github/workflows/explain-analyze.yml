@@ -92,8 +92,6 @@ jobs:
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - working-directory: backend
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3

@@ -100,7 +100,6 @@ describe('durable Vitest workflow commands', () => {
   it('installs the full workspace for both portability jobs', () => {
     const portability = readFileSync('.github/workflows/tests-portability.yml', 'utf8')
     expect(portability.match(/uses: \.\/\.github\/actions\/setup-node-pnpm/g)).toHaveLength(2)
-    expect(portability.match(/runner-lifecycle: persistent/g)).toHaveLength(2)
     expect(portability).not.toContain('pnpm install ')
   })
 

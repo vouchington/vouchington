@@ -55,8 +55,6 @@ jobs:
       - uses: ./.github/actions/clean-workspace
 
       - uses: ./.github/actions/setup-node-pnpm
-        with:
-          runner-lifecycle: persistent
 
       - name: Select prompt file
         id: select

@@ -59,8 +59,6 @@ jobs:
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Run ts-shared tests
         env:
           VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}

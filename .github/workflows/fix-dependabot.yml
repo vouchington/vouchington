@@ -53,8 +53,6 @@ jobs:
           git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
       - uses: ./.github/actions/clean-workspace
       - uses: ./.github/actions/setup-node-pnpm
-        with:
-          runner-lifecycle: persistent
       - name: Revalidate source run
         id: source-state
         env:
@@ -208,8 +206,6 @@ jobs:
           git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
       - uses: ./.github/actions/clean-workspace
       - uses: ./.github/actions/setup-node-pnpm
-        with:
-          runner-lifecycle: persistent
       - uses: jonathanong/auto-harness/actions/harness-prompt-context@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
         id: loop-breaker
         with:
@@ -248,8 +244,6 @@ jobs:
       - uses: ./.github/actions/clean-workspace
 
       - uses: ./.github/actions/setup-node-pnpm
-        with:
-          runner-lifecycle: persistent
 
       - name: Revalidate source run
         id: source-state

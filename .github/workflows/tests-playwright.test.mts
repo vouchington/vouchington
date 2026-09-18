@@ -121,7 +121,6 @@ describe('tests-playwright.yml', () => {
     expect(workflow).not.toContain('restore-web-targets')
     expect(workflow).not.toMatch(/\n {2}build-web-targets:\n/)
     expect(workflow).toContain('uses: ./.github/actions/build-web-targets')
-    expect(workflow).toContain('runner-lifecycle: persistent')
   })
 
   it('extracts chromium and chromium-headless-shell to the same paths Playwright resolves on linux-arm64', () => {
@@ -200,7 +199,7 @@ describe('tests-playwright.yml', () => {
     expect(allocate).toBeGreaterThan(install)
     const installStep = workflow.slice(install, allocate)
     expect(installStep).toContain('ci/pnpm-install.sh')
-    expect(installStep).toContain('--runner-lifecycle persistent')
+    expect(installStep).toContain('--runner-lifecycle ephemeral-full')
     expect(installStep).toContain('--command-timeout-seconds 0')
   })
 

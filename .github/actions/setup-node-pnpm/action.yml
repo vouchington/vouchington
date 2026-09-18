@@ -1,32 +1,17 @@
 name: Setup Node.js and pnpm
 description: >
-  Sets up Node.js from .nvmrc and pnpm, then installs dependencies according to
-  the caller's runner lifecycle. Persistent runners install the full workspace
-  and reconcile only verified stale links; ephemeral runners install an explicit
-  filtered closure.
+  Sets up Node.js from .nvmrc and pnpm, then installs the full workspace.
+  Every job runs on a fresh, ephemeral runner, so install is always an
+  unconditional full install with no reconciliation.
   The caller must run actions/checkout before invoking this action.
   Set timeout-minutes on the calling step to cap the combined operations.
 inputs:
-  runner-lifecycle:
-    description: 'Runner filesystem lifecycle: persistent or ephemeral'
-    required: true
   install-scripts:
     description: 'Set false when dependency lifecycle scripts are intentionally deferred'
     default: 'true'
-  ephemeral-workspaces:
-    description: 'Newline-separated pnpm selectors; required only for ephemeral runners'
-    default: ''
 runs:
   using: composite
   steps:
-    # The downloaded node binary needs libatomic, absent from the base CodeBuild
-    # image; dnf isn't present on Ubicloud runners, hence the guard.
-    - name: Install Node runtime dependencies
-      shell: bash
-      run: |
-        if command -v dnf >/dev/null 2>&1; then
-          dnf install -y libatomic
-        fi
     - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
       with:
         node-version-file: '.nvmrc'
@@ -37,12 +22,9 @@ runs:
     - name: pnpm install
       shell: bash
       env:
-        EPHEMERAL_WORKSPACES: ${{ inputs.ephemeral-workspaces }}
         INSTALL_SCRIPTS: ${{ inputs.install-scripts }}
-        RUNNER_LIFECYCLE: ${{ inputs.runner-lifecycle }}
       run: |
         set -euo pipefail
         bash "$GITHUB_WORKSPACE/ci/pnpm-install.sh" \
-          --runner-lifecycle "$RUNNER_LIFECYCLE" \
-          --install-scripts "$INSTALL_SCRIPTS" \
-          --ephemeral-workspaces "$EPHEMERAL_WORKSPACES"
+          --runner-lifecycle ephemeral-full \
+          --install-scripts "$INSTALL_SCRIPTS"

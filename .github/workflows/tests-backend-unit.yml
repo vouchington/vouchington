@@ -89,8 +89,6 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         if: ${{ inputs.shard_total_override == '' }}
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Resolve backend-unit shard total
         id: shard-total
         env:
@@ -165,8 +163,6 @@ jobs:
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 6
-        with:
-          runner-lifecycle: persistent
       - working-directory: backend
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
