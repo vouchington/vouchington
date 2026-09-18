@@ -1,10 +1,12 @@
-import { APIError, APIUserAbortError } from 'openai'
+import { APIConnectionError, APIError, APIUserAbortError } from 'openai'
 import { describe, expect, it } from 'vitest'
 import { streamOpenAIResponseEvents } from './create-response.mts'
 import {
+  describeOpenAIUpstreamFailure,
   isOpenAIMissingPreviousResponseError,
   OpenAIResponseNotCompletedError,
   OpenAIResponseStreamError,
+  OpenAIResponseStreamIterationError,
   shouldLatchUnknownBilledOpenAIAttempt,
 } from './response-errors.mts'
 import {
@@ -139,6 +141,119 @@ describe('OpenAI response errors', () => {
     expect(isOpenAIMissingPreviousResponseError(first)).toBe(false)
   })
 })
+
+describe('describeOpenAIUpstreamFailure', () => {
+  it('tolerates a bodiless 404 and keeps its request id attributable', () => {
+    const error = new APIError(404, undefined, undefined, makeHeaders('req_bodiless'))
+
+    expect(describeOpenAIUpstreamFailure(error)).toEqual({
+      reason: 'OpenAI returned a 404 with no error body',
+      status: 404,
+      requestId: 'req_bodiless',
+    })
+  })
+
+  it('does not tolerate a 404 that carries an error body', () => {
+    // A retired or misspelled model is our bug to fix, and always arrives with a JSON body.
+    const retiredModel = new APIError(
+      404,
+      {
+        code: 'model_not_found',
+        message: 'The model does not exist',
+        type: 'invalid_request_error',
+      },
+      undefined,
+      makeHeaders('req_model'),
+    )
+    const bodyWithoutCode = new APIError(404, { message: 'Not Found' }, undefined, makeHeaders())
+
+    expect(describeOpenAIUpstreamFailure(retiredModel)).toBeNull()
+    expect(describeOpenAIUpstreamFailure(bodyWithoutCode)).toBeNull()
+  })
+
+  it('tolerates transient statuses and connection failures', () => {
+    for (const status of [408, 409, 429, 500, 502, 503]) {
+      expect(
+        describeOpenAIUpstreamFailure(new APIError(status, undefined, undefined, makeHeaders())),
+      ).toEqual(expect.objectContaining({ status }))
+    }
+
+    expect(
+      describeOpenAIUpstreamFailure(new APIConnectionError({ message: 'socket hang up' })),
+    ).toEqual({
+      reason: 'the connection to OpenAI failed',
+    })
+  })
+
+  it('does not tolerate statuses that mean our request was wrong', () => {
+    for (const status of [400, 401, 403, 422]) {
+      expect(
+        describeOpenAIUpstreamFailure(
+          new APIError(status, { code: 'bad' }, undefined, makeHeaders()),
+        ),
+      ).toBeNull()
+    }
+  })
+
+  it('tolerates a stream that produced nothing, but not one cut short after text', () => {
+    const cause = new Error('terminated')
+
+    expect(
+      describeOpenAIUpstreamFailure(new OpenAIResponseStreamIterationError(false, { cause })),
+    ).toEqual({ reason: 'the response stream ended before emitting any text' })
+    expect(
+      describeOpenAIUpstreamFailure(new OpenAIResponseStreamIterationError(true, { cause })),
+    ).toBeNull()
+  })
+
+  it('tolerates a server_error response but not other terminal statuses', () => {
+    const serverError = new OpenAIResponseNotCompletedError(
+      'failed',
+      makeSdkResponse({ status: 'failed', error: { code: 'server_error', message: 'oops' } }),
+    )
+    const invalidPrompt = new OpenAIResponseNotCompletedError(
+      'failed',
+      makeSdkResponse({ status: 'failed', error: { code: 'invalid_prompt', message: 'nope' } }),
+    )
+
+    expect(describeOpenAIUpstreamFailure(serverError)).toEqual({
+      reason: 'OpenAI returned a failed response',
+      code: 'server_error',
+    })
+    expect(describeOpenAIUpstreamFailure(invalidPrompt)).toBeNull()
+  })
+
+  it('does not tolerate our own cancellation, timeout budget, or a failed assertion', () => {
+    const timeout = new Error('timed out')
+    timeout.name = 'TimeoutError'
+    const abortedUpstream = new Error('wrapped', {
+      cause: new APIError(503, undefined, undefined, makeHeaders()),
+    })
+    abortedUpstream.name = 'AbortError'
+
+    expect(describeOpenAIUpstreamFailure(new APIUserAbortError())).toBeNull()
+    expect(describeOpenAIUpstreamFailure(timeout)).toBeNull()
+    expect(describeOpenAIUpstreamFailure(new Error('expected true to be false'))).toBeNull()
+    // A cancel anywhere in the chain wins over an upstream status deeper down.
+    expect(describeOpenAIUpstreamFailure(abortedUpstream)).toBeNull()
+  })
+
+  it('finds an upstream failure wrapped behind a cause chain', () => {
+    const wrapped = new Error('createOpenAIResponse failed', {
+      cause: new OpenAIResponseStreamIterationError(false, {
+        cause: new APIError(503, undefined, undefined, makeHeaders('req_deep')),
+      }),
+    })
+
+    expect(describeOpenAIUpstreamFailure(wrapped)).toEqual({
+      reason: 'the response stream ended before emitting any text',
+    })
+  })
+})
+
+function makeHeaders(requestId?: string): Headers {
+  return new Headers(requestId === undefined ? {} : { 'x-request-id': requestId })
+}
 
 function makeMissingPreviousResponseAPIError(): APIError {
   return new APIError(
