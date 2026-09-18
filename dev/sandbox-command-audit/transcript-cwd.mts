@@ -115,7 +115,7 @@ async function resolveProjectCwd(
  * transcript files down to the handful of distinct project dirs, and resolves a
  * subagent transcript's cwd by proxy through its project's top-level session files
  * instead of failing on the subagent file's own (possibly absent) cwd. The directory
- * name itself is never decoded — Claude's encoding (`-Users-jong-filaments`) is lossy
+ * name itself is never decoded — Claude's encoding (`-Users-someone-project`) is lossy
  * and would over-match sibling repos. Only a *fulfilled* resolution is kept cached: if
  * `resolveProjectCwd` rejects (e.g. a transient read error on one of its session
  * files), the rejected promise is evicted immediately so the next lookup for that
