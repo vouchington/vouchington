@@ -47,3 +47,9 @@ Across the web app, cursor-paginated lists are expected to append with infinite 
 - [Agent Workflow & SDLC](.agents/skills/agent-workflow/SKILL.md) — Agent workflow, SDLC, and AI tool policy
 - [Codex Configuration](.codex/README.md) — Codex plugin provisioning and repo-scoped configuration
 - [Monorepo Guide](docs/development/MONOREPO.md) — Monorepo structure and conventions
+
+## Contributing
+
+- [Contributing Guide](CONTRIBUTING.md) — How to propose a change and what CI expects before review
+- [Code of Conduct](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1, and how to report a violation
+- [Security Policy](SECURITY.md) — How to report a vulnerability privately
