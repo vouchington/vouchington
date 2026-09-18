@@ -5,6 +5,15 @@ set -euo pipefail
 
 WORKER_OUTPUT_LOG="worker-output.log"
 
+# How long a slow-but-healthy start may take. This is not a liveness check: a worker
+# that crashes or fails initialization is caught within milliseconds by the checks
+# inside the loop, so this budget only bounds startup latency on a noisy CI runner.
+# A healthy start logs readiness in roughly 3s, which left the previous 10s budget
+# little headroom on a shared runner. Kept equal to the server script's budget.
+STARTUP_TIMEOUT_SECONDS=30
+POLL_INTERVAL_SECONDS=0.5
+STARTUP_POLL_ATTEMPTS=$((STARTUP_TIMEOUT_SECONDS * 2))
+
 # Start worker in background
 NODE_ENV='test' node entrypoints/worker-io/serve.mts > "$WORKER_OUTPUT_LOG" 2>&1 &
 WORKER_PID=$!
@@ -12,8 +21,8 @@ WORKER_PID=$!
 # Small delay to ensure log file is created and initial output is written
 sleep 0.1
 
-# Wait for worker to load (max 10 seconds)
-for i in {1..20}; do
+# Wait for worker to load
+for i in $(seq 1 "$STARTUP_POLL_ATTEMPTS"); do
   # Check if worker process is still alive
   if ! kill -0 $WORKER_PID 2>/dev/null; then
     echo "✗ Error: Worker process died unexpectedly. Output:"
@@ -36,13 +45,17 @@ for i in {1..20}; do
   fi
   
   # If we've reached the max iterations, fail
-  if [ "$i" -eq 20 ]; then
-    echo "✗ Error: Worker did not load within 10 seconds. Output:"
+  if [ "$i" -eq "$STARTUP_POLL_ATTEMPTS" ]; then
+    echo "✗ Error: Worker did not log readiness within ${STARTUP_TIMEOUT_SECONDS} seconds."
+    # The process is still alive and has logged no fatal error — otherwise one of the
+    # checks above would have fired — so say so explicitly. An empty log below is the
+    # finding, not a missing diagnostic.
+    echo "Process $WORKER_PID still running; $(wc -c < "$WORKER_OUTPUT_LOG" | tr -d ' ') bytes of output:"
     cat "$WORKER_OUTPUT_LOG"
     kill $WORKER_PID 2>/dev/null || true
     exit 1
   fi
-  sleep 0.5
+  sleep "$POLL_INTERVAL_SECONDS"
 done
 
 # Brief pause to ensure worker is fully initialized
