@@ -1,3 +1,9 @@
+// Bundled RS512 (RSA) test private key: used only as the dev/test fallback signing key in
+// keys.mts when VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64 and VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64 are
+// both unconfigured. Never used in production — buildResolvedKeySet() throws instead of falling
+// back when mode === 'production'. Rotating it is a no-op for deployed environments, which always
+// supply their own keys through those variables.
+// backend/modules/bluesky-oauth/test-jwk-private-key.mts mirrors this pattern for ES256.
 const testPrivateKey = {
   p: '-GTCqS3862SylsSwmSydYkZTdHu6Mad4fl5kFu8MuTqOUD81GtE53aUBrSPbnd59s-_uI5RnMcLTUEaDohOQ_J12601du8TaNKxSWDyp2Lr3Tt7SMu1qghTtgp4S0JWlSIlHAyHlFdwSMXRDq5Bqb-O60vBbyeFQYbqCfw02rrE',
   kty: 'RSA',
