@@ -14,5 +14,5 @@ silent simplification.
 OpenTofu role and output deletions often require workflow cleanup too. Before first push, scan
 workflow YAML, workflow tests, and the workflow reference for any retired role ARN variable,
 secret, output name, job environment name, or `aws-actions/configure-aws-credentials` assumption.
-The matching [OpenTofu deletion checklist](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/README.md#deleted-resource-checklist)
-defines the resource-side cleanup.
+The matching "Deleted resource checklist" section of the OpenTofu README (in the private
+`vouchington-infra` repository) defines the resource-side cleanup.

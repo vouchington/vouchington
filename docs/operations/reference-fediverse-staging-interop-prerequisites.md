@@ -15,9 +15,8 @@
 - `dig AAAA` each `*_HOST` before approving it. With asynchronous inbox delivery disabled, the
   inbox's actor fetch runs in the `api` process, which is IPv6-only in this environment — an
   IPv4-only remote host cannot complete step 1 of the execution-path rollout below. See the
-  ["Ordering gate — ActivityPub inbox IPv4-only actor
-  reachability"](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/reference-human_checklist-phase-4-populate-ssm-parameter-store.md#ordering-gate--activitypub-inbox-ipv4-only-actor-reachability)
-  section.
+  "Ordering gate — ActivityPub inbox IPv4-only actor reachability" section of the phase-4 SSM
+  parameter store checklist in the private `vouchington-infra` repository.
 - Record each instance's prior integration status. Status changes are append-only and must be
   restored by appending another change during cleanup.
 - Keep staging Basic Auth enabled. The machine routes under test are narrowly exempt; authenticated

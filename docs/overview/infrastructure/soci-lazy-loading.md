@@ -3,8 +3,8 @@
 [Back to Infrastructure](README.md)
 
 SOCI indexes reduce Fargate image-start latency by lazily loading container layers. The CloudFormation
-stack, vendored template, package lifecycle, and index builder are owned by
-[`vouchington-infra`](https://github.com/vouchington/vouchington-infra/tree/main/opentofu).
+stack, vendored template, package lifecycle, and index builder are owned by the private
+`vouchington-infra` repository.
 
 Filaments validates and dispatches source revisions. The private infrastructure repository builds
 and publishes immutable ECR image digests and SOCI packages, manages the index builder, and applies

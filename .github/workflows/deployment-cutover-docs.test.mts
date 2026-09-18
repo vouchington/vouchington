@@ -75,13 +75,20 @@ describe('post-cutover deployment documentation', () => {
       /\s+/g,
       ' ',
     )
-    const resetRunbook =
-      'https://github.com/vouchington/vouchington-infra/blob/main/opentofu/reference-human_checklist-phase-10-first-deploy.md#staging-database-reset' // pinned to vouchington-infra#47; update both docs if the private runbook moves
+    // `.agents/skills/staging-qa/SKILL.md` and the two `backend/data-stores/psql/**` docs sit outside
+    // the public-docs redaction pass (agent-skill and backend/ paths, respectively) and still link the
+    // runbook directly. `docs/overview/infrastructure/reference-deployment-ci-cd-flow.md` is
+    // public-facing and was rewritten to name the private repo and checklist step in prose instead of
+    // linking into it. pinned to vouchington-infra#47; update every one of these if the private runbook
+    // moves, keeping the prose in sync with the URL's target step.
+    const resetRunbookUrl =
+      'https://github.com/vouchington/vouchington-infra/blob/main/opentofu/reference-human_checklist-phase-10-first-deploy.md#staging-database-reset'
+    const resetRunbookProse =
+      'the "Staging database reset" step of the first-deploy checklist in the private `vouchington-infra` repository'
     const retainedScope =
       'Valkey, queues, object storage, analytics warehouse/event data, and infrastructure state'
 
     for (const document of [stagingQa, ciCd, migrationPolicy, schemaSnapshot]) {
-      expect(document).toContain(resetRunbook)
       expect(document).toContain('requires organization access')
       expect(document).not.toContain('.github/workflows/reset-staging-database.yml')
       expect(document).not.toContain('reset-on-failure')
@@ -89,6 +96,13 @@ describe('post-cutover deployment documentation', () => {
         'staging resets through the infrastructure deployment workflow',
       )
     }
+
+    for (const document of [stagingQa, migrationPolicy, schemaSnapshot]) {
+      expect(document).toContain(resetRunbookUrl)
+    }
+    expect(ciCd).toContain(resetRunbookProse)
+    expect(ciCd).not.toContain('vouchington-infra/blob/')
+    expect(ciCd).not.toContain('vouchington-infra/tree/')
 
     for (const document of [stagingQa, ciCd]) {
       expect(document).toContain(retainedScope)

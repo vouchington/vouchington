@@ -113,7 +113,7 @@ surfaces. Voucha does not expose a provider-neutral cancellation mutation.
 Administrators must configure Stripe with:
 
 - `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY`
-- The Stripe EventBridge partner event source per environment (see [`vouchington-infra` OpenTofu](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/stripe-eventbridge.tf))
+- The Stripe EventBridge partner event source per environment (see `opentofu/stripe-eventbridge.tf` in the private `vouchington-infra` repository)
 - The event set listed in [`docs/checklists/stripe-events.md`](../../checklists/stripe-events.md)
 - Customer records that keep `metadata.userId` populated if subscriptions are created or edited outside Voucha
 
