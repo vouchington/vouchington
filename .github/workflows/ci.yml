@@ -575,6 +575,8 @@ jobs:
       test-lambdas-result: ${{ needs.test-lambdas.result }}
       test-portability-result: ${{ needs.test-portability.result }}
       detect-changes-result: ${{ needs.detect-changes.result }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     permissions:
       contents: read
       actions: read

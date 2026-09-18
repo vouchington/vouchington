@@ -1,0 +1,31 @@
+name: Upload Full LCOV
+description: >-
+  Best-effort upload of a suite's full (pre-patch-sparsification) LCOV report as a GitHub
+  artifact, for later informational-only ingestion by Codecov. Never read by the in-house
+  patch-coverage gate.
+inputs:
+  suite:
+    description: Lowercase hyphen-delimited coverage suite identity.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Validate coverage suite
+      shell: bash
+      env:
+        SUITE: ${{ inputs.suite }}
+        LC_ALL: C
+      run: |
+        case "$SUITE" in
+          ''|-*|*-|*--*|*[![:lower:][:digit:]-]*)
+            echo "::error::Invalid coverage suite: expected lowercase alphanumeric segments separated by single hyphens" >&2
+            exit 1
+            ;;
+        esac
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        overwrite: true
+        name: lcov-full-${{ inputs.suite }}
+        path: coverage-full/lcov.info
+        retention-days: 1
+        if-no-files-found: warn
