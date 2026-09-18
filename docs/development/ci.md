@@ -73,10 +73,13 @@ mixed-rollout contract, and idle-host deployment gate are canonical in
 
 CI reserves `2200–2999` in repository code through
 [`ci/runner-port-policy.json`](../../ci/runner-port-policy.json): numeric runner paths receive a
-deterministic 16-port slice, while nonnumeric paths dynamically allocate Fetch-safe ports outside
-the range. Repository-owned Node test listeners use the validated
-`listenOnRunnerUnreservedEphemeralPort()` binder, and static analysis rejects direct `listen(0)`
-calls outside that policy owner. Linux runner provisioning is pending deployment of the reservation
+deterministic 16-port slice via the validated `listenOnRunnerUnreservedEphemeralPort()` binder.
+Repository-owned Node test listeners instead dynamically allocate a plain (or, for Fetch-exposed
+servers, Fetch-safe) ephemeral port through
+[`@ts-shared/utils/ephemeral-ports`](../../ts-shared/utils/ephemeral-ports.mts)'s
+`listenOnEphemeralPort()` — GitHub-hosted runners are single-job VMs, so these listeners have no
+shared-host port contention to avoid. Static analysis rejects direct `listen(0)` calls outside
+those two policy owners. Linux runner provisioning is pending deployment of the reservation
 of the same range from automatic ephemeral allocation; until then an empty
 `ip_local_reserved_ports` value is expected. See
 [Self-Hosted Runner Port Safety](../../.github/workflows/reference-self-hosted-runner-port-safety.md).

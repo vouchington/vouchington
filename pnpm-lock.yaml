@@ -10361,9 +10361,6 @@ importers:
       '@types/supertest':
         specifier: ^7.2.1
         version: 7.2.1
-      '@voucha/ci':
-        specifier: workspace:^
-        version: link:../../ci
 
   backend/tools:
     dependencies:

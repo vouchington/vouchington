@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events'
 import http from 'node:http'
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { listenOnRunnerUnreservedEphemeralPort } from '../ci/runner-port-policy.mts'
+import { listenOnEphemeralPort } from '../ts-shared/utils/ephemeral-ports.mts'
 
 import { listenWithRetry, server } from './dev-server.mts'
 import { PLAYWRIGHT_PODCAST_COVER_URL } from './playwright-podcast-cover.mts'
@@ -56,7 +56,7 @@ function request(path: string): Promise<{
 
 describe('Lambda dev server Playwright fixture', () => {
   beforeAll(async () => {
-    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+    const port = await listenOnEphemeralPort(server, '127.0.0.1')
     origin = `http://127.0.0.1:${port}`
   })
 

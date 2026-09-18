@@ -1,7 +1,7 @@
 import { createServer, request as httpRequest } from 'node:http'
 import { describe, expect, it, vi } from 'vitest'
 import type { Context } from '@jongleberry/api-server'
-import { listenOnRunnerUnreservedEphemeralPort } from '../../../ci/runner-port-policy.mts'
+import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
 import { createVouchaApiApp } from '../app.mts'
 import { startSSE } from '../sse-helpers.mts'
 
@@ -29,7 +29,7 @@ describe('SSE response listener budget', () => {
       res.once('close', closeObserver)
       callback(req, res)
     })
-    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+    const port = await listenOnEphemeralPort(server, '127.0.0.1')
 
     try {
       await new Promise<void>((resolve, reject) => {

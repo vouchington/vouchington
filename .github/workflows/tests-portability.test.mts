@@ -100,8 +100,7 @@ describe('portability path filters', () => {
     expect(paths).not.toContain('.agents/skills/retrospective/SKILL.md')
     expect(paths).toEqual(
       expect.arrayContaining([
-        'ci/runner-port-policy.mts',
-        'ci/runner-port-policy.json',
+        'ts-shared/utils/ephemeral-ports.mts',
         'lambdas/dev-server.mts',
         'lambdas/dev-server.test.mts',
         'lambdas/image-resize/**',

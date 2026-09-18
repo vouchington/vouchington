@@ -25,6 +25,6 @@ ports it doesn't start) so a later `./dev/initialize web` reuses them without re
 name, database name, and (web only) VAPID keys for the current worktree identity unless missing or
 invalid.
 
-Local allocation and saved-port reuse exclude the CI reservation in
-[`../ci/runner-port-policy.json`](../ci/runner-port-policy.json); every non-Worker service also
-excludes the main Cloudflare Worker’s fixed port `8787`.
+Local allocation and saved-port reuse exclude the reserved range in
+[`worktree-port-policy.json`](worktree-port-policy.json); every non-Worker service also excludes
+the main Cloudflare Worker’s fixed port `8787`.
