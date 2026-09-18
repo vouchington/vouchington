@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createGhPackageJsonReader, createLocalPackageJsonReader } from '../package-json-source.mts'
 
-const REPO = 'jonathanong/filaments'
+const REPO = 'vouchington/vouchington'
 const BASE_REF_OID = 'aaa0000'
 const HEAD_REF_OID = 'bbb1111'
 const MERGE_BASE_SHA = 'ccc2222'

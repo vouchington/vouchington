@@ -157,9 +157,9 @@ export function parseManifest(raw: string): BatchManifest {
   const parsed = JSON.parse(raw) as Record<string, unknown>
 
   const { targetRepo } = parsed
-  if (targetRepo !== 'jonathanong/filaments') {
+  if (targetRepo !== 'vouchington/vouchington') {
     throw new Error(
-      `manifest.targetRepo must be exactly "jonathanong/filaments", got ${JSON.stringify(targetRepo)}.`,
+      `manifest.targetRepo must be exactly "vouchington/vouchington", got ${JSON.stringify(targetRepo)}.`,
     )
   }
 

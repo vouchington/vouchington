@@ -19,7 +19,7 @@ function rootCauseIssue(overrides: Partial<ReferencedIssue> = {}): ReferencedIss
     number: 456,
     state: 'open',
     title: 'Root cause',
-    url: 'https://github.com/jonathanong/filaments/issues/456',
+    url: 'https://github.com/vouchington/vouchington/issues/456',
     ...overrides,
   }
 }

@@ -88,7 +88,7 @@ describe('Vouchington workflow skill adapters', () => {
   it('keeps only Filaments issue routing and taxonomy policy in the local adapter', () => {
     const skill = read('.agents/skills/github-issue/SKILL.md')
 
-    expect(skill).toContain('`jonathanong/filaments`')
+    expect(skill).toContain('`vouchington/vouchington`')
     expect(skill).toContain('`github-issue-agent`')
     expect(skill).toContain('`#N: title -- url`')
     expect(skill).toContain('`Duplicate of #N: <url>`')

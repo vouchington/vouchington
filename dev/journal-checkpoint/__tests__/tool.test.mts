@@ -126,7 +126,7 @@ describe('runToolCheckpoint', () => {
         tool_input: { command: 'gh pr create --title x --body y' },
         tool_response: {
           stderr: '',
-          stdout: 'https://github.com/jonathanong/filaments/pull/9358\n',
+          stdout: 'https://github.com/vouchington/vouchington/pull/9358\n',
         },
       },
       HOSTED_ENV,
@@ -140,7 +140,7 @@ describe('runToolCheckpoint', () => {
     expect(call.data.checkpoint).toBe('pr-create')
     const markdown = call.data.markdown as string
     expect(markdown).toContain('## Auto-append: PR created')
-    expect(markdown).toContain('https://github.com/jonathanong/filaments/pull/9358')
+    expect(markdown).toContain('https://github.com/vouchington/vouchington/pull/9358')
   })
 
   it('journals a git push milestone', async () => {
@@ -152,7 +152,7 @@ describe('runToolCheckpoint', () => {
         tool_input: { command: 'git push' },
         tool_response: {
           stderr:
-            'To github.com:jonathanong/filaments.git\n   abc123..def456  my-branch -> my-branch\n',
+            'To github.com:vouchington/vouchington.git\n   abc123..def456  my-branch -> my-branch\n',
           stdout: '',
         },
       },
@@ -176,7 +176,7 @@ describe('runToolCheckpoint', () => {
         tool_input: { command: 'gh pr create --title x --body y' },
         tool_response: {
           stderr: '',
-          stdout: 'https://github.com/jonathanong/filaments/pull/9358\n',
+          stdout: 'https://github.com/vouchington/vouchington/pull/9358\n',
         },
       },
       HOSTED_ENV,

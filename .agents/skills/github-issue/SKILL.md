@@ -36,7 +36,7 @@ or record a follow-up. Filing an issue records work but does not amend the accep
 authorize implementation.
 
 Resolve `CURRENT_REPO` once and use it as `PR_REPO`; PR inspection and `dev/pr-description.mts`
-always operate there. Default `TARGET_REPO` to `jonathanong/filaments`; set another repository
+always operate there. Default `TARGET_REPO` to `vouchington/vouchington`; set another repository
 only from explicit human input. Delegate every repository authorization, mutation check, duplicate search,
 relationship, batch preflight, post-write verification, and label-creation decision to the canonical
 skill. Its `Mutation authority` gate re-fetches and re-verifies the exact canonical repository

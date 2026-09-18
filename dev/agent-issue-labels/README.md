@@ -10,12 +10,12 @@ authority immediately before the mutation and reads the result back.
 
 ## Scope (v1)
 
-Batch preflight validates **plain issues only**, in **`jonathanong/filaments` only** — `targetRepo` must
+Batch preflight validates **plain issues only**, in **`vouchington/vouchington` only** — `targetRepo` must
 be exactly that string, or `parseManifest` throws before any `gh` call is made. There is no
 multi-repo support anywhere in this tool. `Plan:` issues, epics, sub-issues, and `blocked-by`
 relationships are out of scope and go through the one-at-a-time skill flow.
 
-Issue [#8152](https://github.com/jonathanong/filaments/issues/8152), which this tool implements,
+Issue [#8152](https://github.com/vouchington/vouchington/issues/8152), which this tool implements,
 originally asked for "mixed-repository" test coverage. That criterion doesn't apply under the
 single-repo-only design above, so the test suite covers a **mixed-classification** batch instead —
 one preflight run with an entry combining a milestone and the `dependencies` label alongside a
@@ -49,7 +49,7 @@ to replace the report.
 
 ```jsonc
 {
-  "targetRepo": "jonathanong/filaments", // must be exactly this string
+  "targetRepo": "vouchington/vouchington", // must be exactly this string
   "entries": [
     {
       "id": "e1", // unique; must match ^[A-Za-z_][A-Za-z0-9_]*$

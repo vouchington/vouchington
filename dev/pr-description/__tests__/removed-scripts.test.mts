@@ -91,7 +91,7 @@ describe('composition: removed script reaches a supersession search term (#8779)
       terms.push(...args.filter((_, i) => args[i - 1] === '--search'))
       return Promise.resolve('[]')
     }
-    await runAdvisorySupersessionSearch(runGh, 'jonathanong/filaments', patch, reader)
+    await runAdvisorySupersessionSearch(runGh, 'vouchington/vouchington', patch, reader)
     expect(terms).toContain('"db:snapshot:check"')
   })
 })

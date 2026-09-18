@@ -152,8 +152,8 @@ describe('Codex hook git and PR policy', () => {
 
   it.each([
     'Closes: #2476',
-    'Fixes jonathanong/filaments#2476',
-    'Resolves: jonathanong/filaments#2476',
+    'Fixes vouchington/vouchington#2476',
+    'Resolves: vouchington/vouchington#2476',
   ])('allows documented closing keyword format: %s', closingReference => {
     expect(
       findPreToolUseBlock({

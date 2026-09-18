@@ -46,12 +46,12 @@ describe('renderMilestoneNote', () => {
     const markdown = renderMilestoneNote(
       'gh pr create --title x --body y',
       'pr-create',
-      'https://github.com/jonathanong/filaments/pull/9358',
+      'https://github.com/vouchington/vouchington/pull/9358',
     )
 
     expect(markdown).toContain('## Auto-append: PR created')
     expect(markdown).toContain('Command: `gh pr create --title x --body y`')
-    expect(markdown).toContain('> https://github.com/jonathanong/filaments/pull/9358')
+    expect(markdown).toContain('> https://github.com/vouchington/vouchington/pull/9358')
   })
 
   it('labels a push milestone', () => {

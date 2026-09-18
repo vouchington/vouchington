@@ -4,7 +4,7 @@ import { validatePlanIssue } from '../validate.mts'
 
 const VALID_BODY = `## Solves
 - #7390
-- Source: https://github.com/jonathanong/filaments/issues/7390
+- Source: https://github.com/vouchington/vouchington/issues/7390
 
 ## Why
 - Goal: keep plans complete.
@@ -128,7 +128,7 @@ describe('validatePlanIssue', () => {
 
   it('allows exactly direct user request as the source', () => {
     const body = VALID_BODY.replace(
-      '- #7390\n- Source: https://github.com/jonathanong/filaments/issues/7390',
+      '- #7390\n- Source: https://github.com/vouchington/vouchington/issues/7390',
       '- Direct user request; no prior GitHub issue.',
     )
     expect(validatePlanIssue('Plan: harden lifecycle', body)).toEqual([])

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { executeBatch, parseBatchArgs, type BatchDeps } from '../batch-issues.mts'
 
 const VALID_MANIFEST = JSON.stringify({
-  targetRepo: 'jonathanong/filaments',
+  targetRepo: 'vouchington/vouchington',
   entries: [
     {
       id: 'e1',
@@ -38,13 +38,13 @@ function makeDeps(overrides: Partial<BatchDeps> = {}): BatchDeps {
 describe('parseBatchArgs', () => {
   it('parses a valid preflight invocation', () => {
     expect(
-      parseBatchArgs(['preflight', '--session-dir', '/tmp/x', '--repo', 'jonathanong/filaments']),
-    ).toEqual({ subcommand: 'preflight', sessionDir: '/tmp/x', repo: 'jonathanong/filaments' })
+      parseBatchArgs(['preflight', '--session-dir', '/tmp/x', '--repo', 'vouchington/vouchington']),
+    ).toEqual({ subcommand: 'preflight', sessionDir: '/tmp/x', repo: 'vouchington/vouchington' })
   })
 
   it.each(['create', 'verify', 'run'])('rejects the removed %s mutation mode', subcommand => {
     expect(() =>
-      parseBatchArgs([subcommand, '--session-dir', '/tmp/x', '--repo', 'jonathanong/filaments']),
+      parseBatchArgs([subcommand, '--session-dir', '/tmp/x', '--repo', 'vouchington/vouchington']),
     ).toThrow(/Usage:.*preflight/)
   })
 
@@ -89,7 +89,7 @@ describe('executeBatch', () => {
     const artifacts: Array<{ data: unknown; path: string }> = []
     const defaultRunGh = makeDeps().runGh
     const result = await executeBatch(
-      ['preflight', '--session-dir', '/tmp/session', '--repo', 'jonathanong/filaments'],
+      ['preflight', '--session-dir', '/tmp/session', '--repo', 'vouchington/vouchington'],
       makeDeps({
         runGh: async args => {
           calls.push(args)
@@ -116,11 +116,11 @@ describe('executeBatch', () => {
   it('writes a blocked report and exits nonzero', async () => {
     const artifacts: Array<{ data: unknown; path: string }> = []
     const result = await executeBatch(
-      ['preflight', '--session-dir', '/tmp/session', '--repo', 'jonathanong/filaments'],
+      ['preflight', '--session-dir', '/tmp/session', '--repo', 'vouchington/vouchington'],
       makeDeps({
         readManifest: async () =>
           JSON.stringify({
-            targetRepo: 'jonathanong/filaments',
+            targetRepo: 'vouchington/vouchington',
             entries: [
               {
                 id: 'e1',

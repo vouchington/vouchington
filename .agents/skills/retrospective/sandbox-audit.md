@@ -31,7 +31,7 @@ worktree, resolved via `git rev-parse --git-common-dir` and `git worktree list`,
 drop any worktree already nested inside another root. Files outside those roots are skipped and
 counted in the `Scope:` line's "skipped (other repo)" figure; files whose `cwd` could not be
 determined are skipped and counted separately as "skipped (cwd unknown)" — excluded, never silently
-dropped without a count. This is the fix for [#9406](https://github.com/jonathanong/filaments/issues/9406):
+dropped without a count. This is the fix for [#9406](https://github.com/vouchington/vouchington/issues/9406):
 before repo scoping, another repo's commands (there, `~/harness`'s `pnpm links`) could be reported
 as a filaments allowlist gap. Sanity-check the `Scope:` line before trusting a report — if the
 resolved root looks wrong, something is off. A nonzero "skipped (other repo)" count proves other-repo

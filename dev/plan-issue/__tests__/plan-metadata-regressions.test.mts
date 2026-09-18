@@ -31,7 +31,7 @@ describe('Plan metadata regressions', () => {
 
   it('binds a qualified source to the explicit target repository', () => {
     const body = VALID_PLAN_BODY.replace('#7390', 'owner/two#7390').replace(
-      'jonathanong/filaments/issues/7390',
+      'vouchington/vouchington/issues/7390',
       'owner/two/issues/7390',
     )
     expect(validatePlanIssue('Plan: target identity', body, 'owner/one').join('\n')).toContain(

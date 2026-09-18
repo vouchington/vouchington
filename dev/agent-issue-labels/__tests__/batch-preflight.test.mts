@@ -26,7 +26,7 @@ function makeEntry(overrides: Partial<BatchEntry> = {}): BatchEntry {
 }
 
 function makeManifest(entries: BatchEntry[]): BatchManifest {
-  return { targetRepo: 'jonathanong/filaments', entries }
+  return { targetRepo: 'vouchington/vouchington', entries }
 }
 
 type DuplicatesByTitle = Record<string, Array<{ number: number; title: string; url: string }>>
