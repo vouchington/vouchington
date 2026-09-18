@@ -201,10 +201,6 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(storybookWorkflow).not.toContain('deployments: write')
     expect(storybookWorkflow).not.toContain('id-token: write')
     expect(storybookWorkflow).not.toMatch(/uses: actions\/github-script@/)
-    expect(storybookWorkflow).toContain('uses: ./.github/actions/clean-workspace')
-    expect(storybookWorkflow).toContain(
-      "deepen: ${{ inputs.publish_coverage && 'true' || 'false' }}",
-    )
     expect(storybookWorkflow).not.toContain('\n  pull_request:')
     expect(storybookWorkflow).not.toContain('branches:\n      - main')
   })

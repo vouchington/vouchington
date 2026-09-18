@@ -10,10 +10,21 @@ type Workflow = {
         env?: Record<string, string>
         name?: string
         run?: string
+        shell?: string
+        uses?: string
       }>
     }
   >
 }
+
+const trustedTreeRestoreCommand = `rm -f -- .git/index
+git config --worktree --unset-all core.sparseCheckout || true
+git config --worktree --unset-all core.sparseCheckoutCone || true
+git config --unset-all core.sparseCheckout || true
+git config --unset-all core.sparseCheckoutCone || true
+git read-tree --empty
+git reset --hard HEAD
+`
 
 function readWorkflow(): Workflow {
   return load(readFileSync('.github/workflows/initialize-smoke-test.yml', 'utf8')) as Workflow
@@ -37,6 +48,18 @@ describe('initialize-smoke-test workflow', () => {
     expect(run).toContain('git config --worktree --unset-all core.sparseCheckoutCone || true')
     expect(run).toContain('git config --unset-all core.sparseCheckout || true')
     expect(run).toContain('git config --unset-all core.sparseCheckoutCone || true')
+  })
+
+  it('repairs the checkout before consuming tracked files', () => {
+    const steps = readWorkflow().jobs?.['initialize-smoke-test']?.steps ?? []
+    const checkoutIndex = steps.findIndex(step => step.uses?.startsWith('actions/checkout@'))
+
+    expect(checkoutIndex).toBeGreaterThanOrEqual(0)
+    expect(steps[checkoutIndex + 1]).toEqual({
+      name: 'Restore checked-out tree',
+      shell: 'bash',
+      run: trustedTreeRestoreCommand,
+    })
   })
 
   it('materializes the linked worktree from the trusted tree with a complete index', () => {

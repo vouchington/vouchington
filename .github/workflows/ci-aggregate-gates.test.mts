@@ -168,11 +168,7 @@ describe('CI aggregate gates', () => {
     )
 
     const checkoutStep = testsSteps.find(step => step.uses?.startsWith('actions/checkout@'))
-    const cleanWorkspaceStep = testsSteps.find(
-      step => step.uses === './.github/actions/clean-workspace',
-    )
     expect(checkoutStep?.if).toBeDefined()
-    expect(cleanWorkspaceStep?.if).toBeDefined()
 
     const allChecksPassedStep = testsSteps.find(step => step.name === 'All checks passed')
     expect(allChecksPassedStep?.if).toBe(

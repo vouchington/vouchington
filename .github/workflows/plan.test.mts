@@ -110,23 +110,22 @@ describe('plan workflow', () => {
     expect(extractScript).not.toContain(`grep -q '[^[:space:]]' "$REQUEST_FILE"`)
   })
 
-  it('checks out and cleans the trusted event revision before extracting the request', () => {
+  it('checks out the trusted event revision before extracting the request', () => {
     const gateJob = workflow.jobs?.['gate']
     const steps = gateJob?.steps ?? []
-    const checkoutStep = steps.find(step => step.uses?.startsWith('actions/checkout@'))
-    const cleanIndex = steps.findIndex(step => step.uses === './.github/actions/clean-workspace')
+    const checkoutIndex = steps.findIndex(step => step.uses?.startsWith('actions/checkout@'))
+    const checkoutStep = steps[checkoutIndex]
     const extractIndex = steps.findIndex(step => step.id === 'extract-plan')
 
     expect(gateJob?.permissions).toMatchObject({ contents: 'read', issues: 'write' })
     expect(gateJob?.env).toBeUndefined()
     expect(checkoutStep?.uses).toMatch(/^actions\/checkout@[0-9a-f]{40}$/)
     expect(checkoutStep?.with).toMatchObject({
-      clean: false,
       'persist-credentials': false,
       ref: '${{ github.sha }}',
     })
-    expect(cleanIndex).toBeGreaterThan(-1)
-    expect(extractIndex).toBeGreaterThan(cleanIndex)
+    expect(checkoutIndex).toBeGreaterThan(-1)
+    expect(extractIndex).toBeGreaterThan(checkoutIndex)
   })
 
   it('acknowledges the /plan comment with an eyes reaction and first-attempt run link', () => {

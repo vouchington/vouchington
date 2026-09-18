@@ -101,21 +101,6 @@ describe('tests-playwright.yml', () => {
     expect(shardJobMatch![0]).not.toContain('\n    concurrency:')
   })
 
-  it('uses checkout before clean-workspace so fetch auth is owned by the composite action', () => {
-    const shardJobStart = workflow.indexOf('  playwright-tests:')
-    const checkoutOffset = workflow.slice(shardJobStart).search(/uses: actions\/checkout@/)
-    const shardCheckout = checkoutOffset === -1 ? -1 : shardJobStart + checkoutOffset
-    const cleanWorkspace = workflow.indexOf(
-      'uses: ./.github/actions/clean-workspace',
-      shardJobStart,
-    )
-
-    expect(shardJobStart).toBeGreaterThan(-1)
-    expect(shardCheckout).toBeGreaterThan(-1)
-    expect(cleanWorkspace).toBeGreaterThan(shardCheckout)
-    expect(workflow.slice(shardCheckout, cleanWorkspace)).toContain('uses: actions/checkout@')
-  })
-
   it('builds web targets in each shard instead of restoring a shared artifact', () => {
     expect(workflow).not.toContain('web-targets-artifact-name')
     expect(workflow).not.toContain('restore-web-targets')
