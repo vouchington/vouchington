@@ -24,7 +24,7 @@ Tracks which user referred a session, linking anonymous visitors to a referrer f
 
 ## Retention & dedup
 
-Resolves [#8750](https://github.com/jonathanong/filaments/issues/8750): whether user-linked
+Resolves `predecessor-issue#8750`: whether user-linked
 attributions should ever age out.
 
 - **Anonymous rows age out after 30 days.** Row-based cleanup deletes `user_id IS NULL` rows past
