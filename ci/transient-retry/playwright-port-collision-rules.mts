@@ -83,10 +83,7 @@ export const mainWebPlaywrightReservedPortCollisionRule: TransientRetryRule = {
     'Main CI web Playwright shard finds an allocation-time, app, or OTel collector port already bound before any specs start.',
   rationale:
     'Playwright app and OTel collector ports are chosen from the same deterministic slice. Allocation fails closed when the slice cannot reserve hold sockets (or, historically, when a late lsof preflight saw a collision). After a successful hold, OTel starts immediately and each app port is released immediately before its consumer binds. An allocation, Docker, or app bind failure indicates a stale process or runner-contract drift rather than the former shared-random-port race. One rerun rechecks that slice or lands on a clean runner; a repeat must be investigated.',
-  exampleRunUrls: [
-    'https://github.com/jonathanong/filaments/actions/runs/29498308512',
-    'https://github.com/jonathanong/filaments/actions/runs/29987927475',
-  ],
+  exampleRunIds: ['29498308512', '29987927475'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
@@ -135,7 +132,7 @@ export const playwrightCredentialedWebServerReservedPortCollisionRule: Transient
     'Credentialed Playwright fails before specs when one of its web servers loses an allocated port.',
   rationale:
     'Credentialed Playwright allocates all four web-server ports before startup. The exact successful allocation plus failed credentialed test step and a named server bind signature identify a late shared-runner bind race; a rerun rechecks the same deterministic slice once, while any other failure needs investigation.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/30439023016'],
+  exampleRunIds: ['30439023016'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

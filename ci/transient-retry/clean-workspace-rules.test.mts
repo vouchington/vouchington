@@ -8,7 +8,7 @@ const storePlaywrightOtelJobName = 'store-playwright-otel'
 const webTestsJobName = 'test-web / web-tests (1)'
 const matchingLog = [
   'playwright-tests / select\tUNKNOWN STEP\t2026-06-13T18:10:22.1504456Z ##[group]Run ./.github/actions/clean-workspace',
-  'playwright-tests / select\tUNKNOWN STEP\t2026-06-13T18:10:23.1014324Z From https://github.com/jonathanong/filaments',
+  'playwright-tests / select\tUNKNOWN STEP\t2026-06-13T18:10:23.1014324Z From https://github.com/vouchington/vouchington',
   'playwright-tests / select\tUNKNOWN STEP\t2026-06-13T18:13:34.6347254Z ##[error]The action has timed out.',
   'playwright-tests / select\tUNKNOWN STEP\t2026-06-13T18:13:34.9128708Z Terminate orphan process: pid (2354652) (git-remote-https)',
 ].join('\n')

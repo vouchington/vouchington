@@ -131,7 +131,7 @@ export const backendUnitValkeyGlideTimeoutRule: TransientRetryRule = {
     'Backend unit shard fails one logout route test because the Valkey GLIDE client times out.',
   rationale:
     'The failure is an isolated Valkey client timeout in one test shard on a self-hosted runner; the application route did not fail with an assertion, and sibling backend shards completed on the same commit.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/28317524553'],
+  exampleRunIds: ['28317524553'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
@@ -150,7 +150,7 @@ export const backendUnitVitestWorkerExitAfterPassRule: TransientRetryRule = {
     'Backend unit shard finishes all Vitest tests successfully, then fails because one or more Vitest worker forks exit unexpectedly.',
   rationale:
     'The backend test summary reports every test file and test passed before Vitest reports an unhandled worker-pool exit; downstream aggregate jobs fail only because the producer exited non-zero.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/28656995621'],
+  exampleRunIds: ['28656995621'],
   consumerKey: 'backend-unit-vitest',
   rootCauseKey: 'worker-exit-after-pass',
   maxAttempts: 2,

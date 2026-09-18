@@ -22,7 +22,7 @@ describe('createLogFetchers', () => {
         { id: 1, name: 'first', conclusion: 'failure' },
         { id: 2, name: 'second', conclusion: 'failure' },
       ],
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       execFile: async (_command, args) => {
         active += 1
         maximumActive = Math.max(maximumActive, active)
@@ -34,8 +34,8 @@ describe('createLogFetchers', () => {
 
     await expect(fetchers.failedJobLogs()).resolves.toEqual(
       new Map([
-        ['first', 'repos/jonathanong/filaments/actions/jobs/1/logs'],
-        ['second', 'repos/jonathanong/filaments/actions/jobs/2/logs'],
+        ['first', 'repos/vouchington/vouchington/actions/jobs/1/logs'],
+        ['second', 'repos/vouchington/vouchington/actions/jobs/2/logs'],
       ]),
     )
     expect(maximumActive).toBe(1)
@@ -45,7 +45,7 @@ describe('createLogFetchers', () => {
     const fetchers = createLogFetchers({
       allJobEntries: [{ id: 1, name: 'job', conclusion: 'failure' }],
       rawJobEntries: [{ id: 1, name: 'job', conclusion: 'failure' }],
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       execFile: async () => ({ stdout: '', stderr: '' }),
       streamLogs: true,
       streamLog: () => streamed('terminal failure'),
@@ -59,7 +59,7 @@ describe('createLogFetchers', () => {
     const fetchers = createLogFetchers({
       allJobEntries: [{ id: 1, name: 'job', conclusion: 'failure' }],
       rawJobEntries: [{ id: 1, name: 'job', conclusion: 'failure' }],
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       execFile: async () => ({ stdout: '', stderr: '' }),
       streamLogs: true,
       streamLog: () => streamed(log),
@@ -74,7 +74,7 @@ describe('createLogFetchers', () => {
     const fetchers = createLogFetchers({
       allJobEntries: [{ id: 1, name: 'job', conclusion: 'failure' }],
       rawJobEntries: [{ id: 1, name: 'job', conclusion: 'failure' }],
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       execFile: async () => ({ stdout: '', stderr: '' }),
       streamLogs: true,
       sleep: async delay => {
@@ -107,7 +107,7 @@ describe('createLogFetchers', () => {
     const fetchers = createLogFetchers({
       allJobEntries: jobs,
       rawJobEntries: jobs,
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       execFile: async () => ({ stdout: '', stderr: '' }),
       streamLogs: true,
       streamLog: path =>

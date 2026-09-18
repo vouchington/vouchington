@@ -44,25 +44,25 @@ export const runnerShutdownLeafRerunRule: TransientRetryRule = {
     'Self-hosted runner receives a shutdown signal before an idempotent CI leaf job completes, causing the leaf and its aggregate fan-ins to fail.',
   rationale:
     'Runner infrastructure terminates the process before tests or the build step complete; every unsuccessful-job log is available and contains no explicit kernel/cgroup OOM evidence, test assertion, setup failure, smoke-test failure, build error, or non-143 (non-SIGTERM) exit code. Downstream aggregate jobs (tests, build) fail only because the leaf did not complete; cancelled sibling consumer jobs with no failure signal are treated as downstream of a failed clean-shutdown leaf; Patch Coverage is treated as downstream only when a coverage-producing leaf failed; store-playwright-otel is treated as downstream only when a Playwright shard failed and the store job was skipped, cancelled, or failed solely because no Playwright OTel artifacts existed.',
-  exampleRunUrls: [
+  exampleRunIds: [
     // backend-unit shard shutdown
-    'https://github.com/jonathanong/filaments/actions/runs/27846979399',
+    '27846979399',
     // CI web-integration + playwright shard shutdown
-    'https://github.com/jonathanong/filaments/actions/runs/27869582352',
+    '27869582352',
     // CI playwright-only shard shutdown
-    'https://github.com/jonathanong/filaments/actions/runs/27755229439',
+    '27755229439',
     // Main CI (web) Playwright shard shutdown with downstream missing OTel artifacts
-    'https://github.com/jonathanong/filaments/actions/runs/28357299849',
+    '28357299849',
     // Main CI (backend) standalone backend-smoke shutdown with SIGTERM but no operation-canceled line
-    'https://github.com/jonathanong/filaments/actions/runs/28552353759',
+    '28552353759',
     // CI Playwright shard shutdown with a cancelled sibling matrix job
-    'https://github.com/jonathanong/filaments/actions/runs/28513345722',
+    '28513345722',
     // Main CI (checks) tooling shutdown before Vitest summary
-    'https://github.com/jonathanong/filaments/actions/runs/29191951985',
+    '29191951985',
     // Main CI (web) static-web shutdown during next build
-    'https://github.com/jonathanong/filaments/actions/runs/30503060858',
+    '30503060858',
     // Main CI (storybook) storybook-build shutdown before the web-storybook Vitest project finished
-    'https://github.com/jonathanong/filaments/actions/runs/32069866705',
+    '32069866705',
   ],
   // maxAttempts: 2 tolerates a 2nd consecutive infra flake.  Safe because the
   // per-consumer isConsumerFailure guard prevents masking a real failure on

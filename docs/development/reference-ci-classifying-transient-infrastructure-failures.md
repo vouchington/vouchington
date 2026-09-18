@@ -228,7 +228,7 @@ fingerprinted (the verbatim log strings from the source incidents are unrecovera
 artifact retention window); they are documented here for human judgment until a real log fixture is
 captured and added as a code rule. To add a new signature, see
 [`ci/transient-retry/README.md`](../../ci/transient-retry/README.md) — include a real log fingerprint
-and `exampleRunUrls` so the automation and this table stay in sync.
+and `exampleRunIds` so the automation and this table stay in sync.
 
 The "worker exit after pass" rows above (#8259) are a `teardownTimeout` race, not a genuine worker
 crash: the forks-pool main process closes ~7 Valkey/PSQL/glide-mq sockets in

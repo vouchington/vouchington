@@ -54,7 +54,7 @@ describe('decide()', () => {
         CONCLUSION: 'failure',
         GH_TOKEN: 'token',
         GITHUB_OUTPUT: '/tmp/out',
-        GITHUB_REPOSITORY: 'jonathanong/filaments',
+        GITHUB_REPOSITORY: 'vouchington/vouchington',
         RUN_ATTEMPT: '2',
         WORKFLOW_NAME: 'Main CI (storybook)',
         WORKFLOW_RUN_ID: '28023619770',
@@ -62,7 +62,7 @@ describe('decide()', () => {
     ).toEqual({
       conclusion: 'failure',
       githubOutput: '/tmp/out',
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       runAttempt: 2,
       runId: '28023619770',
       workflowName: 'Main CI (storybook)',
@@ -74,7 +74,7 @@ describe('decide()', () => {
       parseDecisionEnv({
         CONCLUSION: 'failure',
         GH_TOKEN: 'token',
-        GITHUB_REPOSITORY: 'jonathanong/filaments',
+        GITHUB_REPOSITORY: 'vouchington/vouchington',
         RUN_ATTEMPT: '0',
         WORKFLOW_NAME: 'Main CI (storybook)',
         WORKFLOW_RUN_ID: '28023619770',
@@ -110,7 +110,7 @@ describe('decide()', () => {
     console.error = () => {}
     const execFile = async (_command: string, args: string[]) => {
       calls.push(args)
-      if (args.includes('repos/jonathanong/filaments/actions/runs/123/attempts/1/jobs')) {
+      if (args.includes('repos/vouchington/vouchington/actions/runs/123/attempts/1/jobs')) {
         throw Object.assign(new Error('dial tcp 140.82.114.6:443: i/o timeout'), {
           stderr: 'dial tcp 140.82.114.6:443: i/o timeout',
         })
@@ -121,7 +121,7 @@ describe('decide()', () => {
     try {
       await expect(
         fetchPriorAttemptJobCounts({
-          repository: 'jonathanong/filaments',
+          repository: 'vouchington/vouchington',
           runId: '123',
           runAttempt: 3,
           execFile,
@@ -133,12 +133,12 @@ describe('decide()', () => {
     }
     expect(
       calls.filter(args =>
-        args.includes('repos/jonathanong/filaments/actions/runs/123/attempts/1/jobs'),
+        args.includes('repos/vouchington/vouchington/actions/runs/123/attempts/1/jobs'),
       ),
     ).toHaveLength(3)
     expect(
       calls.filter(args =>
-        args.includes('repos/jonathanong/filaments/actions/runs/123/attempts/2/jobs'),
+        args.includes('repos/vouchington/vouchington/actions/runs/123/attempts/2/jobs'),
       ),
     ).toHaveLength(1)
     expect(
