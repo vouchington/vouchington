@@ -143,5 +143,5 @@ integration is missing an enqueue path — not a reason to shorten the polling i
   endpoints reached from the API tier.
 - [Bedrock Embeddings](bedrock-embeddings.md) — the batch pipeline `poll_dispatcher` reconciles
   for.
-- [`lambdas/CLAUDE.md`](../../../lambdas/CLAUDE.md), [`vouchington-infra` OpenTofu](https://github.com/vouchington/vouchington-infra/tree/main/opentofu),
+- [`lambdas/CLAUDE.md`](../../../lambdas/CLAUDE.md), OpenTofu (the private `vouchington-infra` repository),
   [`backend/api/CLAUDE.md`](../../../backend/api/CLAUDE.md) — workspace rules linking here.

@@ -63,9 +63,9 @@ Full technical design: [Fediverse Federation architecture](../../overview/archit
   `activitypub-inbox.async_delivery_enabled` flag, it preserves synchronous actor fetch, signature
   verification, replay deduplication, dispatch, and exact legacy statuses. That synchronous fetch
   runs in the `api` process itself and requires the sender's actor host to be reachable from there —
-  see the ["Ordering gate — ActivityPub inbox IPv4-only actor
-  reachability"](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/reference-human_checklist-phase-4-populate-ssm-parameter-store.md#ordering-gate--activitypub-inbox-ipv4-only-actor-reachability)
-  section for the IPv6-only cutover's reachability requirement. When enabled, the API
+  see the "Ordering gate — ActivityPub inbox IPv4-only actor reachability" section of the phase-4
+  SSM parameter store checklist in the private `vouchington-infra` repository for the IPv6-only
+  cutover's reachability requirement. When enabled, the API
   performs network-free preflight, verifies a cached signer locally when one exists (rejecting
   invalid signatures before any durable row), persists the exact raw signed envelope in
   `ap_inbox_deliveries`, awaits the initial enqueue attempt, and returns `202` once PostgreSQL is

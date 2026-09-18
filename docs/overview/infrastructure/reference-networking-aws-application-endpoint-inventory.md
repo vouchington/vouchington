@@ -135,10 +135,10 @@ groups were later replaced with `ip_address_type = "ipv6"` to match `api`/`web` 
 ECS subnets — a separate change from this address-type flip, but noted here since both touch the
 same target groups.
 
-After an address-type change applies to staging, follow
-[`vouchington-infra` operator checklist Step 29](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/reference-human_checklist-phase-10-first-deploy.md#step-29--smoke-tests) to verify
-that the ALB publishes AAAA but not A records and that both web and API traffic work through
-Cloudflare Full (Strict). Direct public-IPv4 probes of the ALB no longer work.
+After an address-type change applies to staging, follow Step 29 of the operator checklist (the
+first-deploy checklist in the private `vouchington-infra` repository) to verify that the ALB
+publishes AAAA but not A records and that both web and API traffic work through Cloudflare Full
+(Strict). Direct public-IPv4 probes of the ALB no longer work.
 
 > The ALB-native IdP (Cognito) authentication feature requires IPv4, but Voucha's
 > authentication is implemented in-app via the backend service — that caveat does not apply.
