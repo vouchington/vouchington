@@ -6,6 +6,15 @@ set -euo pipefail
 SERVER_OUTPUT_LOG="server-output.log"
 PORT="${PORT:-3000}"
 
+# How long a slow-but-healthy start may take. This is not a liveness check: a server
+# that crashes or fails initialization is caught within milliseconds by the checks
+# inside the loop, so this budget only bounds startup latency on a noisy CI runner.
+# A healthy start logs readiness in roughly 5s, which left the previous 10s budget
+# barely 2x of headroom and made the job flake.
+STARTUP_TIMEOUT_SECONDS=30
+POLL_INTERVAL_SECONDS=0.5
+STARTUP_POLL_ATTEMPTS=$((STARTUP_TIMEOUT_SECONDS * 2))
+
 # Start server in background
 NODE_ENV=test PORT="$PORT" node entrypoints/api/serve.mts > "$SERVER_OUTPUT_LOG" 2>&1 &
 SERVER_PID=$!
@@ -13,8 +22,8 @@ SERVER_PID=$!
 # Small delay to ensure log file is created and initial output is written
 sleep 0.1
 
-# Wait for server to load (max 10 seconds)
-for i in {1..20}; do
+# Wait for server to load
+for i in $(seq 1 "$STARTUP_POLL_ATTEMPTS"); do
   # Check if server process is still alive
   if ! kill -0 $SERVER_PID 2>/dev/null; then
     echo "✗ Error: Server process died unexpectedly. Output:"
@@ -37,13 +46,17 @@ for i in {1..20}; do
   fi
 
   # If we've reached the max iterations, fail
-  if [ "$i" -eq 20 ]; then
-    echo "✗ Error: Server did not load within 10 seconds. Output:"
+  if [ "$i" -eq "$STARTUP_POLL_ATTEMPTS" ]; then
+    echo "✗ Error: Server did not log readiness within ${STARTUP_TIMEOUT_SECONDS} seconds."
+    # The process is still alive and has logged no error — otherwise one of the checks
+    # above would have fired — so say so explicitly. An empty log below is the finding,
+    # not a missing diagnostic.
+    echo "Process $SERVER_PID still running; $(wc -c < "$SERVER_OUTPUT_LOG" | tr -d ' ') bytes of output:"
     cat "$SERVER_OUTPUT_LOG"
     kill $SERVER_PID 2>/dev/null || true
     exit 1
   fi
-  sleep 0.5
+  sleep "$POLL_INTERVAL_SECONDS"
 done
 
 # Brief pause to ensure server is fully initialized
