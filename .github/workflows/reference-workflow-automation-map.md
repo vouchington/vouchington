@@ -154,8 +154,10 @@ flowchart TD
     test-portability --> tests-processing
     sca --> tests-processing
     tests-processing --> tests["tests ✓"]
-    tests --> build-backend["build-backend\n(api + worker via docker bake; backend image changes + trusted secrets)"]
-    tests --> build-web["build-web\n(web image changes + trusted secrets)"]
+    detect --> build-backend["build-backend\n(api + worker via docker bake; backend image changes + trusted secrets)"]
+    detect --> build-web["build-web\n(web image changes + trusted secrets)"]
+    select-ci -. "full-ci / run-build-backend\n(or infra path)" .-> build-backend
+    select-ci -. "full-ci / run-build-web\n(or infra path)" .-> build-web
     build-backend --> build["build ✓"]
     build-web --> build
     tests --> build

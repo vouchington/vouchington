@@ -631,8 +631,12 @@ jobs:
         with:
           results: >-
             {"tests-processing":{"result":"${{ needs.tests-processing.result }}"}}
+  # Does not wait on `tests`: the image build consumes nothing tests produce (no
+  # download-artifact, shared cache, or shared service between them), so gating on `tests`
+  # only serialized independent work. `build` (below) still gates the merge-required result on
+  # `tests`, `build-backend`, and `build-web` together, so a test failure still fails CI.
   build-backend:
-    needs: [detect-changes, tests, select-ci]
+    needs: [detect-changes, select-ci]
     # On PRs, build when Docker configuration, copied workspace manifests, or the root dependency
     # boundary changes. Root manifest and lockfile changes fail open to both images so transitive
     # dependency updates receive image validation before merge. On non-PR events, build whenever
@@ -641,7 +645,6 @@ jobs:
       !cancelled() &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
-      (needs.tests.result == 'success' || needs.tests.result == 'skipped') &&
       (github.event_name != 'workflow_dispatch' || github.ref_name != 'main') &&
       (
         ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-build-backend == 'true') || github.event_name == 'pull_request' && needs.detect-changes.outputs.build-backend-infra == 'true')) ||
@@ -657,8 +660,12 @@ jobs:
     secrets:
       AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
 
+  # Does not wait on `tests`: the image build consumes nothing tests produce (no
+  # download-artifact, shared cache, or shared service between them), so gating on `tests`
+  # only serialized independent work. `build` (below) still gates the merge-required result on
+  # `tests`, `build-backend`, and `build-web` together, so a test failure still fails CI.
   build-web:
-    needs: [detect-changes, tests, select-ci]
+    needs: [detect-changes, select-ci]
     # On PRs, build when Docker configuration, copied workspace manifests, or the root dependency
     # boundary changes. Root manifest and lockfile changes fail open to both images so transitive
     # dependency updates receive image validation before merge. On non-PR events, build whenever
@@ -667,7 +674,6 @@ jobs:
       !cancelled() &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
-      (needs.tests.result == 'success' || needs.tests.result == 'skipped') &&
       (github.event_name != 'workflow_dispatch' || github.ref_name != 'main') &&
       (
         ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-build-web == 'true') || github.event_name == 'pull_request' && needs.detect-changes.outputs.build-web-infra == 'true')) ||
