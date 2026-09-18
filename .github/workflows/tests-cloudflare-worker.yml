@@ -91,6 +91,14 @@ jobs:
           done <<< "$VITEST_SELECTED_FILES"
           pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project cloudflare-worker --project cloudflare-worker-mocks "${FILES[@]}"
         timeout-minutes: 5
+      - name: Preserve full cloudflare-worker LCOV for Codecov
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage }}
+        shell: bash
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            mkdir -p coverage-full
+            cp coverage/lcov.info coverage-full/lcov.info
+          fi
       - name: Stamp cloudflare-worker coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
@@ -180,3 +188,10 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload full cloudflare-worker LCOV to GitHub (informational)
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: cloudflare-worker

@@ -109,6 +109,14 @@ jobs:
           done <<< "$VITEST_SELECTED_FILES"
           pnpm run test:portability -- --bail=3 "${FILES[@]}"
         timeout-minutes: 5
+      - name: Preserve full portability-macos LCOV for Codecov
+        if: ${{ !cancelled() && inputs.publish_coverage }}
+        shell: bash
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            mkdir -p coverage-full
+            cp coverage/lcov.info coverage-full/lcov.info
+          fi
       - name: Stamp portability-macos coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
@@ -198,6 +206,13 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload full portability-macos LCOV to GitHub (informational)
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: portability-macos
 
   portability-linux:
     runs-on: ubuntu-latest
@@ -248,6 +263,14 @@ jobs:
           done <<< "$VITEST_SELECTED_FILES"
           pnpm run test:portability -- --bail=3 "${FILES[@]}"
         timeout-minutes: 5
+      - name: Preserve full portability-linux LCOV for Codecov
+        if: ${{ !cancelled() && inputs.publish_coverage }}
+        shell: bash
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            mkdir -p coverage-full
+            cp coverage/lcov.info coverage-full/lcov.info
+          fi
       - name: Stamp portability-linux coverage provenance
         id: coverage-stamp-2
         timeout-minutes: 1
@@ -337,3 +360,10 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-2.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-2.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload full portability-linux LCOV to GitHub (informational)
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: portability-linux

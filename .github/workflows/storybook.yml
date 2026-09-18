@@ -127,6 +127,14 @@ jobs:
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
         run: VITEST_COVERAGE_SCOPE=web-storybook pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-storybook --project web-storybook-component-coverage
         timeout-minutes: 3
+      - name: Preserve full web-storybook LCOV for Codecov
+        if: ${{ !cancelled() && inputs.publish_coverage }}
+        shell: bash
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            mkdir -p coverage-full
+            cp coverage/lcov.info coverage-full/lcov.info
+          fi
       - name: Stamp web-storybook coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
@@ -216,6 +224,13 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload full web-storybook LCOV to GitHub (informational)
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: web-storybook
       - name: Install Playwright Chromium
         if: ${{ inputs.browser_test_mode != 'empty' }}
         uses: ./.github/actions/setup-playwright
@@ -254,6 +269,14 @@ jobs:
           path: storybook-browser-diagnostics.log
           retention-days: 1
           if-no-files-found: ignore
+      - name: Preserve full web-storybook-browser LCOV for Codecov
+        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.publish_coverage }}
+        shell: bash
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            mkdir -p coverage-full
+            cp coverage/lcov.info coverage-full/lcov.info
+          fi
       - name: Stamp web-storybook-browser coverage provenance
         id: coverage-stamp-2
         timeout-minutes: 1
@@ -343,3 +366,10 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-2.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-2.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload full web-storybook-browser LCOV to GitHub (informational)
+        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: web-storybook-browser
