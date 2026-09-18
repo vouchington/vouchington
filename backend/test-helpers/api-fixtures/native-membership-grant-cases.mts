@@ -1,10 +1,11 @@
+import { predecessorIssue } from './predecessor-issue.mts'
 import { responseBody } from './static-response-bodies.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const membershipGrantUserId = '00000000-0000-7000-8000-000000000003'
 const membershipGrantSkuId = '00000000-0000-7000-8000-000000000701'
 const membershipGrantId = '00000000-0000-7000-8000-000000000802'
-const migratedFrom = ['https://github.com/jonathanong/filaments/issues/7880']
+const migratedFrom = [predecessorIssue(7880)]
 const nativeConsumers: ApiFixtureCase['consumers'] = ['swift-core', 'swift-ui', 'dotnet-core']
 
 export const nativeMembershipGrantApiFixtureCases: ApiFixtureCase[] = [

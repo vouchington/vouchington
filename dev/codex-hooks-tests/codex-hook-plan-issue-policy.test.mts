@@ -118,7 +118,7 @@ describe('Codex hook plan issue policy', () => {
         findPreToolUseBlock({
           tool_input: {
             command:
-              'gh --repo jonathanong/filaments issue create --title "Plan: Workflow" --label plan --body-file plan-body.md',
+              'gh --repo vouchington/vouchington issue create --title "Plan: Workflow" --label plan --body-file plan-body.md',
             cwd: dir,
           },
         })?.reason,

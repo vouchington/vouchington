@@ -1,7 +1,7 @@
 import { it, expect, beforeAll, describe } from 'vitest'
 import { upsertPostOpenAIModeration } from '../posts.mts'
 import { createPost } from '@services/posts'
-import { createTestUser, getPostModerationData } from '@voucha/test-helpers'
+import { createTestUser, getPostModerationData, liveOpenAITest } from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
 import type { PrivateUser } from '@services/users/types'
 
@@ -26,7 +26,7 @@ describe('posts.openai', () => {
   it.skipIf(!hasOpenAIKey)(
     'upsertPostOpenAIModeration makes real API call and creates moderation',
     /* no-mistakes: integration=openai */
-    async () => {
+    liveOpenAITest(async () => {
       const random = randomSuffix()
       const post = await createPost(user, {
         title: `Test Post for OpenAI Moderation Integration ${random}`,
@@ -85,7 +85,7 @@ describe('posts.openai', () => {
       expect(result2).toBeDefined()
       expect(result2.results).toBeUndefined()
       expect(result2.content_sha256).toEqual(result.content_sha256)
-    },
+    }),
     30_000,
   )
 })

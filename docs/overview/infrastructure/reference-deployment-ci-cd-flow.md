@@ -57,9 +57,9 @@ The handoff is asynchronous: Filaments does not poll or wait for the receiver.
 - The global CI apply workflow and its trust remain disabled. Operator-controlled global applies
   use the private repository's separately authorized exact saved-plan procedure.
 
-A destructive staging reset is not a receiver rerun. The private repository owns the
-[manual-only staging database reset](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/reference-human_checklist-phase-10-first-deploy.md#staging-database-reset),
-which is private and requires organization access, including deploy/apply admission, service
-quiescence, recovery evidence, and restoration. It resets only the PostgreSQL `public` schema;
+A destructive staging reset is not a receiver rerun. The private repository owns the manual-only
+staging database reset (the "Staging database reset" step of the first-deploy checklist in the
+private `vouchington-infra` repository), which requires organization access, including deploy/apply
+admission, service quiescence, recovery evidence, and restoration. It resets only the PostgreSQL `public` schema;
 Valkey, queues, object storage, analytics warehouse/event data, and infrastructure state are
 retained.

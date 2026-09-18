@@ -186,6 +186,14 @@ jobs:
           name: web-test-report-shard-${{ matrix.shard }}
           path: web-shard-${{matrix.shard}}.junit.xml
           retention-days: 1
+      - name: Preserve full web-shard-${{ matrix.shard }} LCOV for Codecov
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage }}
+        shell: bash
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            mkdir -p coverage-full
+            cp coverage/lcov.info coverage-full/lcov.info
+          fi
       - name: Stamp web-shard-${{ matrix.shard }} coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
@@ -276,3 +284,10 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload full web-shard-${{ matrix.shard }} LCOV to GitHub (informational)
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: web-shard-${{ matrix.shard }}

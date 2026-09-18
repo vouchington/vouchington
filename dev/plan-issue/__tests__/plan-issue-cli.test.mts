@@ -99,7 +99,7 @@ describe('Plan issue CLI', () => {
         readBody: () => Promise.resolve('invalid'),
         resolveRepo: () => {
           invokedGitHub = true
-          return Promise.resolve('jonathanong/filaments')
+          return Promise.resolve('vouchington/vouchington')
         },
         runGh: () => {
           invokedGitHub = true
@@ -124,7 +124,7 @@ describe('Plan issue CLI', () => {
         readBody: () => Promise.resolve(body),
         resolveRepo: () => {
           invokedGitHub = true
-          return Promise.resolve('jonathanong/filaments')
+          return Promise.resolve('vouchington/vouchington')
         },
         runGh: () => {
           invokedGitHub = true
@@ -144,7 +144,7 @@ describe('Plan issue CLI', () => {
       {
         readBody: () =>
           Promise.resolve(
-            VALID_BODY.replace('jonathanong/filaments/issues/7390', 'owner/repo/issues/7390'),
+            VALID_BODY.replace('vouchington/vouchington/issues/7390', 'owner/repo/issues/7390'),
           ),
         resolveRepo: () => Promise.resolve('not/used'),
         runGh: args => {
@@ -183,7 +183,7 @@ describe('Plan issue CLI', () => {
       let submittedBody = ''
       await executePlanIssue(['create', '--title', 'Plan: x', '--body-file', callerPath], {
         readBody: path => readFile(path, 'utf8'),
-        resolveRepo: () => Promise.resolve('jonathanong/filaments'),
+        resolveRepo: () => Promise.resolve('vouchington/vouchington'),
         runGh: async args => {
           await writeFile(callerPath, 'mutated after validation')
           submittedPath = args[args.indexOf('--body-file') + 1] ?? ''
@@ -206,7 +206,7 @@ describe('Plan issue CLI', () => {
       executePlanIssue(['validate', '--title', 'Plan: x', '--body-file', '/tmp/body.md'], {
         readBody: () =>
           Promise.resolve(
-            VALID_BODY.replace('jonathanong/filaments/issues/7390', 'owner/two/issues/7390'),
+            VALID_BODY.replace('vouchington/vouchington/issues/7390', 'owner/two/issues/7390'),
           ),
         resolveRepo: () => Promise.resolve('owner/one'),
         runGh: () => Promise.resolve(''),
@@ -223,7 +223,7 @@ describe('Plan issue CLI', () => {
         readBody: () => Promise.resolve(VALID_BODY),
         resolveRepo: () => {
           resolvedRepository = true
-          return Promise.resolve('jonathanong/filaments')
+          return Promise.resolve('vouchington/vouchington')
         },
         runGh: () => Promise.resolve(''),
         validateMermaid: () => Promise.resolve(['invalid Mermaid syntax']),

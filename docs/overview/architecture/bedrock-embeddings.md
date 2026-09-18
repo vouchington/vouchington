@@ -84,7 +84,7 @@ The `backlog_dispatcher` runs every minute and reads the single-queue depth (`wa
 
 ## Infrastructure
 
-Bedrock access is role-based in ECS. `vouchington-infra` OpenTofu creates the backend and worker Bedrock invoke permissions, the worker batch-job permissions, and the dedicated `bedrock_batch` role that Amazon Bedrock assumes for S3 input/output. The batch role reads and writes a dedicated `voucha-bedrock-batch-{env}` bucket, region-pinned to `var.bedrock_region` (us-east-1) so the batch job and its S3 I/O bucket satisfy Bedrock's same-region requirement — see [the infrastructure sources](https://github.com/vouchington/vouchington-infra/tree/main/opentofu). Operators still need to enable `Amazon Nova 2 Multimodal Embeddings V1` model access in the Bedrock console for `us-east-1`.
+Bedrock access is role-based in ECS. `vouchington-infra` OpenTofu creates the backend and worker Bedrock invoke permissions, the worker batch-job permissions, and the dedicated `bedrock_batch` role that Amazon Bedrock assumes for S3 input/output. The batch role reads and writes a dedicated `voucha-bedrock-batch-{env}` bucket, region-pinned to `var.bedrock_region` (us-east-1) so the batch job and its S3 I/O bucket satisfy Bedrock's same-region requirement — see the infrastructure sources (the private `vouchington-infra` repository). Operators still need to enable `Amazon Nova 2 Multimodal Embeddings V1` model access in the Bedrock console for `us-east-1`.
 
 ## Related
 

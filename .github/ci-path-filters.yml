@@ -363,16 +363,14 @@ build-web-infra:
   - 'ci/runner-port-policy.mts'
 shell-scripts:
   - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml}'
-  - 'ci/runner-port-policy.json'
-  - 'ci/runner-port-policy.mts'
+  - 'dev/worktree-port-policy.json'
   - 'dev/initialize*'
   - 'dev/lib/**'
   - 'dev/host-storage-preflight.mts'
   - '**/*.sh'
 portability:
   - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml}'
-  - 'ci/runner-port-policy.json'
-  - 'ci/runner-port-policy.mts'
+  - 'ts-shared/utils/ephemeral-ports.mts'
   - 'ci/run-vitest-project-group.mts'
   - 'cloudflare-worker/scripts/wrangler/runtime.mts'
   - 'cloudflare-worker/scripts/wrangler/runtime.test.mts'

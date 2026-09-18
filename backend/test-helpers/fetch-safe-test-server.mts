@@ -1,12 +1,12 @@
 import http, { type RequestListener } from 'node:http'
 import {
+  EphemeralListenerAttemptsExhaustedError,
+  listenOnEphemeralPort,
+} from '@ts-shared/utils/ephemeral-ports'
+import {
   isFetchForbiddenPort as isFetchForbiddenTestPort,
   isFetchSafePort,
 } from '@ts-shared/utils/fetch-ports'
-import {
-  EphemeralListenerAttemptsExhaustedError,
-  listenOnRunnerUnreservedEphemeralPort,
-} from '@voucha/ci/runner-port-policy'
 
 const DEFAULT_HOST = '127.0.0.1'
 
@@ -37,7 +37,7 @@ export async function createFetchSafeTestServer(
   const server = http.createServer(listener)
   let port: number
   try {
-    port = await listenOnRunnerUnreservedEphemeralPort(server, host, {
+    port = await listenOnEphemeralPort(server, host, {
       isAllowedPort: isFetchSafePort,
       maxBindAttempts,
     })

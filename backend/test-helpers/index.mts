@@ -27,6 +27,7 @@ export { createTestUnprojectedProviderObservation } from './entities/memberships
 export * from './membership-entitlement-effects.mts'
 export * from './vector-search-recall.mts'
 export * from './openai.mts'
+export * from './openai-live.mts'
 export * from './runtime-generation-fixtures.mts'
 export * from './background-response-fixtures.mts'
 export * from './prioritized-referral-links.mts'

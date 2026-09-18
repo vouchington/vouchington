@@ -10,8 +10,8 @@ Canonical list of Stripe events the application handles. The source of truth is 
 
 These events trigger side effects. Subscribe to every event in this list on the EventBridge
 destination for each environment (`stripe v2 core event_destinations create --type
-amazon_eventbridge --enabled-events ...`; see
-[`vouchington-infra` OpenTofu](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/stripe-eventbridge.tf)).
+amazon_eventbridge --enabled-events ...`; see `opentofu/stripe-eventbridge.tf` in the private
+`vouchington-infra` repository).
 
 ### Checkout
 

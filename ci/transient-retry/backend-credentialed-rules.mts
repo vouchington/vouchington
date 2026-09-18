@@ -62,7 +62,7 @@ export const mainBackendCredentialedProviderAndUnitWorkerExitTransientRule: Tran
     'Main backend CI fails in the credentialed provider smoke tests and a backend unit shard that completed all tests before a Vitest worker exited unexpectedly.',
   rationale:
     'Both failed leaves are independently retryable: the credentialed job hit a provider-side transient, and the unit shard reported all files/tests passed before Vitest emitted only worker-pool exit errors. A full run rerun is required because two separate jobs failed.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/30156142228'],
+  exampleRunIds: ['30156142228'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
@@ -92,16 +92,16 @@ export const backendCredentialedProviderSmokeTestTransientRule: TransientRetryRu
     'Backend credentialed job fails only in a probe owned by one of the four credentialed vitest projects (backend-aws, backend-bedrock, backend-openai, backend-stripe) and the failure carries a known provider-transport marker (timeout, an AWS-SDK request abort/timeout, a Bedrock 500, or an OpenAI 429/500).',
   rationale:
     "The failure is a timeout, an AWS-SDK request abort/timeout, or a provider-side 500/429 constrained to known failure blocks, not a local assertion; coverage, tests, and build fail only because the credentialed producer exits early. Any test file added under a credentialed project's own `include` glob is covered automatically, so new probes cannot ship silently uncovered.",
-  exampleRunUrls: [
-    'https://github.com/jonathanong/filaments/actions/runs/29965903981',
-    'https://github.com/jonathanong/filaments/actions/runs/29354792259',
-    'https://github.com/jonathanong/filaments/actions/runs/29043236211',
-    'https://github.com/jonathanong/filaments/actions/runs/28820239952',
-    'https://github.com/jonathanong/filaments/actions/runs/28731728115',
-    'https://github.com/jonathanong/filaments/actions/runs/28701569552',
-    'https://github.com/jonathanong/filaments/actions/runs/28440881163',
-    'https://github.com/jonathanong/filaments/actions/runs/27051861422',
-    'https://github.com/jonathanong/filaments/actions/runs/26802868128',
+  exampleRunIds: [
+    '29965903981',
+    '29354792259',
+    '29043236211',
+    '28820239952',
+    '28731728115',
+    '28701569552',
+    '28440881163',
+    '27051861422',
+    '26802868128',
   ],
   maxAttempts: 2,
   needsLogs: true,

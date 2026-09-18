@@ -58,7 +58,6 @@
   },
   "devDependencies": {
     "@ts-shared/utils": "workspace:^",
-    "@types/supertest": "^7.2.1",
-    "@voucha/ci": "workspace:^"
+    "@types/supertest": "^7.2.1"
   }
 }

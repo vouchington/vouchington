@@ -9,8 +9,9 @@ client, not a `client_id`/`client_secret` pair: it signs token requests with a p
 P-256) key and serves the corresponding public JWKS inline from `GET /client-metadata.json`. There
 is no separate public-key env var — the public half is derived live from the private key. See
 [backend/modules/bluesky-oauth/README.md](../../../backend/modules/bluesky-oauth/README.md) for the
-design rationale and [`vouchington-infra` Operator Secrets Checklist § 2](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/OPERATOR-SECRETS-CHECKLIST.md)
-for the key-generation command.
+design rationale and the `vouchington-infra` Operator Secrets Checklist § 2
+(`OPERATOR-SECRETS-CHECKLIST.md` in the private `vouchington-infra` repository) for the
+key-generation command.
 
 | Name                                  | Required | Where | Notes                                                                                                                                                                                                                |
 | ------------------------------------- | -------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

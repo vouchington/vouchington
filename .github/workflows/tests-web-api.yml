@@ -194,6 +194,14 @@ jobs:
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
         # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
         timeout-minutes: 10
+      - name: Preserve full web-api-shard-${{ matrix.shard }} LCOV for Codecov
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage }}
+        shell: bash
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            mkdir -p coverage-full
+            cp coverage/lcov.info coverage-full/lcov.info
+          fi
       - name: Stamp web-api-shard-${{ matrix.shard }} coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
@@ -283,3 +291,10 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - name: Upload full web-api-shard-${{ matrix.shard }} LCOV to GitHub (informational)
+        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: web-api-shard-${{ matrix.shard }}

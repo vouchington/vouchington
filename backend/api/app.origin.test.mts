@@ -4,7 +4,7 @@ import { createOriginGuardedListener, createVouchaApiApp } from './app.mts'
 import { WORKER_SECRET_EXEMPT_PATHS } from './app-origin-guard.mts'
 import { createConnection } from 'node:net'
 import { createServer } from 'node:http'
-import { listenOnRunnerUnreservedEphemeralPort } from '../../ci/runner-port-policy.mts'
+import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
 
 const WORKER_HEADER_VALUE = '0123456789abcdef0123456789abcdef'
 
@@ -57,7 +57,7 @@ describe('API origin guards', () => {
     app.route('/infra/ping').get(ctx => ctx.json({ ok: true }))
 
     const server = createServer(createOriginGuardedListener(app.callback(), WORKER_HEADER_VALUE))
-    await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+    await listenOnEphemeralPort(server, '127.0.0.1')
 
     try {
       const agent = request(server)
@@ -110,7 +110,7 @@ describe('API origin guards', () => {
     app.route('/api/private').get(ctx => ctx.json({ ok: true }))
 
     const server = createServer(createOriginGuardedListener(app.callback(), WORKER_HEADER_VALUE))
-    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+    const port = await listenOnEphemeralPort(server, '127.0.0.1')
 
     try {
       const response = await new Promise<string>((resolve, reject) => {

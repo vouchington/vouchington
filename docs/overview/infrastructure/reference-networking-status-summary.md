@@ -20,8 +20,8 @@
 - [Infrastructure](infrastructure.md) — ECS sizing, Aurora/Valkey, CloudFront, S3
 - [API Egress Proxy](../architecture/api-egress-proxy.md) — provider-scoped HTTP CONNECT routing
   from IPv6-only API tasks through the dual-stack CPU worker service
-- [`vouchington-infra` VPC](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/vpc.tf) — VPC, subnets, route tables
-- [`vouchington-infra` ALB](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/alb.tf) — ALB configuration
-- [`vouchington-infra` ECS definitions](https://github.com/vouchington/vouchington-infra/tree/main/opentofu) — task definitions and `assign_public_ip`
-- [`vouchington-infra` OpenTofu overview](https://github.com/vouchington/vouchington-infra/tree/main/opentofu) — environment model and cost estimates
+- The VPC definition (`opentofu/vpc.tf` in the private `vouchington-infra` repository) — VPC, subnets, route tables
+- The ALB definition (`opentofu/alb.tf` in the private `vouchington-infra` repository) — ALB configuration
+- The ECS task definitions (in the private `vouchington-infra` repository) — task definitions and `assign_public_ip`
+- The OpenTofu overview (the private `vouchington-infra` repository) — environment model and cost estimates
 - [Runtime Timeouts](../../development/runtime-timeouts.md#principle-sse--long-lived-connection-duration-under-fargate-spot) — the Fargate Spot capacity-provider strategy (`vouchington-infra/opentofu/locals.tf`) grounds the principle that SSE/long-lived connections must degrade within a short, bounded window

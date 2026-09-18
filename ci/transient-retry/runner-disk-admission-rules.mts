@@ -42,7 +42,7 @@ export const runnerDiskAdmissionRejectedRule: TransientRetryRule = {
     'Self-hosted runner jobs fail before checkout because the host disk admission hook rejects their leases.',
   rationale:
     'The administrator hook rejects the job before checkout or repository code runs; retrying once can use a host with sufficient free space or run after active leases release disk capacity.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/30489202028'],
+  exampleRunIds: ['30489202028'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

@@ -1,7 +1,7 @@
 import { createServer, request as httpRequest } from 'node:http'
 import { describe, it, expect, vi } from 'vitest'
 import { PassThrough } from 'node:stream'
-import { listenOnRunnerUnreservedEphemeralPort } from '../../../ci/runner-port-policy.mts'
+import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
 import {
   DEFAULT_SSE_CYCLE_DURATION_MS,
   MAX_SSE_CYCLE_DURATION_MS,
@@ -105,7 +105,7 @@ describe('startSSE', () => {
     })
 
     const server = createServer(app.callback())
-    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+    const port = await listenOnEphemeralPort(server, '127.0.0.1')
 
     try {
       await new Promise<void>((resolve, reject) => {
@@ -155,7 +155,7 @@ describe('startSSE', () => {
     })
 
     const server = createServer(app.callback())
-    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+    const port = await listenOnEphemeralPort(server, '127.0.0.1')
 
     try {
       await new Promise<void>((resolve, reject) => {

@@ -5,7 +5,7 @@ import {
   type ServerResponse,
 } from 'node:http'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { listenOnRunnerUnreservedEphemeralPort } from '../../../ci/runner-port-policy.mts'
+import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
 import { mintUUIDv7, type DeviceTokenPayload } from '@ts-shared/session-jwt'
 import { getOptionalRequestClientInfo } from './index.mts'
 import { createRequestClientInfoListener } from './listener.mts'
@@ -260,7 +260,7 @@ async function send(options: SendOptions): Promise<Response> {
           },
     ),
   )
-  const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+  const port = await listenOnEphemeralPort(server, '127.0.0.1')
   try {
     return await new Promise<Response>((resolve, reject) => {
       const request = sendHttpRequest({

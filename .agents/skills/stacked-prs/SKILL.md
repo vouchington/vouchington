@@ -92,7 +92,7 @@ Check out the layer that owns the change, commit there, then `gh stack rebase --
 
 Every fact this procedure branches on — topology, layer state, ownership, head SHA — comes from the
 REST/GraphQL API, never from local `gh-stack` metadata. A local base ref can go stale after a remote
-relink or rebase and silently replay already-landed commits ([#11426](https://github.com/jonathanong/filaments/issues/11426)).
+relink or rebase and silently replay already-landed commits ([#11426](https://github.com/vouchington/vouchington/issues/11426)).
 `gh stack view --json` and `gh stack bottom` are used only to **act**, never to **decide**, and the
 former errors from a worktree whose current branch is not in the stack — the normal state right after
 a merge retargets the stack.

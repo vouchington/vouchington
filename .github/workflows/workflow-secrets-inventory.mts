@@ -58,6 +58,13 @@ export const SECRET_INVENTORY = {
     provisioned: true,
     notes: 'AWS role used by credentialed tests and validation builds (repo secret).',
   },
+  CODECOV_TOKEN: {
+    provisioned: true,
+    notes:
+      'Codecov upload token used only by the informational-only full-LCOV upload in the ' +
+      'Patch Coverage job (repo secret). Codecov never gates a PR; the in-house patch-coverage ' +
+      'gate (coverage-check) remains the sole blocking coverage check.',
+  },
   DEPENDABOT_AUTOMERGE_TOKEN: {
     provisioned: true,
     notes: 'PAT for Dependabot automerge and dependency-bump PR pushes (repo secret).',

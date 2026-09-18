@@ -64,7 +64,7 @@ describe('deriveRuleAttempts', () => {
       deriveRuleAttempts({
         execFile,
         priorAttemptJobCounts: [1, 0],
-        repository: 'jonathanong/filaments',
+        repository: 'vouchington/vouchington',
         rules,
         runAttempt: 3,
         runId: '123',
@@ -98,7 +98,7 @@ describe('deriveRuleAttempts', () => {
       deriveRuleAttempts({
         execFile,
         priorAttemptJobCounts: [1],
-        repository: 'jonathanong/filaments',
+        repository: 'vouchington/vouchington',
         rules: [
           {
             id: 'log-backed',
@@ -136,7 +136,7 @@ describe('deriveRuleAttempts', () => {
       deriveRuleAttempts({
         execFile,
         priorAttemptJobCounts: [1],
-        repository: 'jonathanong/filaments',
+        repository: 'vouchington/vouchington',
         rules: [
           {
             id: 'annotation-backed',
@@ -203,7 +203,7 @@ describe('deriveRuleAttempts', () => {
     const ruleAttempts = await deriveRuleAttempts({
       execFile,
       priorAttemptJobCounts: [1, 1],
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       rules,
       runAttempt: 3,
       runId: '123',
@@ -282,7 +282,7 @@ describe('deriveRuleAttempts', () => {
       deriveRuleAttempts({
         execFile,
         priorAttemptJobCounts: [1, 1, 1],
-        repository: 'jonathanong/filaments',
+        repository: 'vouchington/vouchington',
         rules,
         runAttempt: 4,
         runId: '123',

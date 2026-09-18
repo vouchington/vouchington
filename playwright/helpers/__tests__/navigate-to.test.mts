@@ -39,4 +39,28 @@ describe('navigateTo', () => {
     expect(page.waitForLoadState).toHaveBeenCalledWith('networkidle')
     expect(page.evaluate).toHaveBeenCalledOnce()
   })
+
+  it('settles a client-side redirect to the state it navigated under', async () => {
+    const page = createMockPage()
+    page.evaluate.mockRejectedValueOnce(
+      new Error(
+        'page.evaluate: Execution context was destroyed, most likely because of a navigation',
+      ),
+    )
+
+    await navigateTo(
+      page as never,
+      '/topics/create',
+      {},
+      {
+        installTurnstileStub: mockInstallTurnstileStub as never,
+        retryOnConnectionLost: mockRetryOnConnectionLost as never,
+      },
+    )
+
+    // Once for the first document, once for the one the redirect landed on —
+    // both at 'networkidle', so the redirect cannot weaken the wait.
+    expect(page.waitForLoadState.mock.calls).toEqual([['networkidle'], ['networkidle']])
+    expect(page.evaluate).toHaveBeenCalledTimes(2)
+  })
 })

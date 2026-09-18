@@ -96,5 +96,5 @@ not ready, the protocol `ReadyForQuery` boundary advances the status to `E`, and
 it to `I`.
 
 Do not replace either SAVEPOINT probe with the getter until upstream documents and tests a safe
-immediate `E` with no follow-up query. Track that on [#9805](https://github.com/jonathanong/filaments/issues/9805).
+immediate `E` with no follow-up query. Track that on `predecessor-issue#9805`.
 Do not patch `pg`.

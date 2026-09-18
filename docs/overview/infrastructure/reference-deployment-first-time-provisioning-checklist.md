@@ -4,7 +4,7 @@
 
 ## First-Time Provisioning Checklist
 
-1. Bootstrap remote state: `vouchington-infra/opentofu/bootstrap/` creates the S3 state bucket and DynamoDB lock table. See the [`vouchington-infra` OpenTofu overview](https://github.com/vouchington/vouchington-infra/tree/main/opentofu) and [operator checklist](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/HUMAN_CHECKLIST.md) for the step-by-step guide.
+1. Bootstrap remote state: `vouchington-infra/opentofu/bootstrap/` creates the S3 state bucket and DynamoDB lock table. See the OpenTofu overview and operator checklist (`opentofu/HUMAN_CHECKLIST.md`) in the private `vouchington-infra` repository for the step-by-step guide.
 2. Apply `vouchington-infra/opentofu/global` once for shared `voucha.ai` SES/DKIM/SPF/DMARC/CAA ownership, fixed GitHub OIDC roles, shared ECR repositories, the SOCI builder stack, and account-level S3 Tables Glue ownership.
 3. Follow the private repository's reviewed, operator-controlled saved-plan procedure for the
    staging environment.
@@ -81,8 +81,9 @@ before the web change that starts requesting it).
 - [Endpoint Migration recipe](../../../.agents/skills/agent-workflow/impact-recipes.md#endpoint-migration) —
   endpoint inventory plus independent rollout and rollback evidence
 
-- [`vouchington-infra` Operator Secrets Checklist](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/OPERATOR-SECRETS-CHECKLIST.md) — condensed
-  what-do-I-set checklist for standing up staging or production
+- The `vouchington-infra` Operator Secrets Checklist (`opentofu/OPERATOR-SECRETS-CHECKLIST.md` in
+  the private `vouchington-infra` repository) — condensed what-do-I-set checklist for standing up
+  staging or production
 - [Environment Variables](environment-variables.md) — runtime configuration inventory
 - [Local Env Vars](../../development/local-env-vars.md) — local setup matrix for credentials and config
 - [Infrastructure](infrastructure.md) — AWS and edge resource overview

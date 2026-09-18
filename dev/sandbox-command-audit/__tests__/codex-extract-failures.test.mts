@@ -80,7 +80,7 @@ describe('extractCodexRecords — normalized sandbox failures', () => {
   it('extracts an exit-zero push followed by local config and tracking-ref denials', () => {
     const command = 'git push -u origin agent/topic'
     const errorText =
-      "To github.com:jonathanong/filaments.git\n * [new branch] agent/topic -> agent/topic\nerror: could not lock config file /repo/.git/config: Operation not permitted\nerror: update_ref failed for ref 'refs/remotes/origin/agent/topic': cannot lock ref 'refs/remotes/origin/agent/topic': Unable to create '/repo/.git/refs/remotes/origin/agent/topic.lock': Operation not permitted"
+      "To github.com:vouchington/vouchington.git\n * [new branch] agent/topic -> agent/topic\nerror: could not lock config file /repo/.git/config: Operation not permitted\nerror: update_ref failed for ref 'refs/remotes/origin/agent/topic': cannot lock ref 'refs/remotes/origin/agent/topic': Unable to create '/repo/.git/refs/remotes/origin/agent/topic.lock': Operation not permitted"
     const result = extractCodexRecords([
       nestedExecCall('call-push', command),
       commandExecution({ command, aggregatedOutput: errorText, exitCode: 0 }),

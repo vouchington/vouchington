@@ -19,4 +19,4 @@ Config-backed (namespace `bedrock-embeddings-batch-config` and `moderation-confi
 them at `/admin/dynamic-config` instead of via env vars. See
 [Dynamic Config](../architecture/dynamic-config.md) for details.
 
-Bedrock IAM roles are managed in [`vouchington-infra`](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/iam-bedrock.tf). Operators still need to enable access to Amazon Nova 2 Multimodal Embeddings V1 in Bedrock for `us-east-1`; no Bedrock access keys should be stored in ECS Secrets Manager.
+Bedrock IAM roles are managed in `opentofu/iam-bedrock.tf` in the private `vouchington-infra` repository. Operators still need to enable access to Amazon Nova 2 Multimodal Embeddings V1 in Bedrock for `us-east-1`; no Bedrock access keys should be stored in ECS Secrets Manager.

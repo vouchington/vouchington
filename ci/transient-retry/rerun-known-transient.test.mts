@@ -9,14 +9,14 @@ function makeExecFile(calls: string[][]): GhApiExecFile {
   return async (_command, args) => {
     calls.push(args)
     if (args.join(' ') === 'repo view --json nameWithOwner --jq .nameWithOwner') {
-      return { stdout: 'jonathanong/filaments\n', stderr: '' }
+      return { stdout: 'vouchington/vouchington\n', stderr: '' }
     }
 
     const path = args[1]
     if (args[0] !== 'api') {
       return { stdout: '', stderr: '' }
     }
-    if (path === 'repos/jonathanong/filaments/actions/runs/123') {
+    if (path === 'repos/vouchington/vouchington/actions/runs/123') {
       return {
         stdout: JSON.stringify({
           conclusion: 'failure',
@@ -26,7 +26,7 @@ function makeExecFile(calls: string[][]): GhApiExecFile {
         stderr: '',
       }
     }
-    if (path === 'repos/jonathanong/filaments/actions/runs/456') {
+    if (path === 'repos/vouchington/vouchington/actions/runs/456') {
       return {
         stdout: JSON.stringify({
           conclusion: 'success',
@@ -39,7 +39,7 @@ function makeExecFile(calls: string[][]): GhApiExecFile {
     if (path.includes('/attempts/')) {
       return { stdout: JSON.stringify([{ jobs: [] }]), stderr: '' }
     }
-    if (path === 'repos/jonathanong/filaments/actions/runs/123/jobs') {
+    if (path === 'repos/vouchington/vouchington/actions/runs/123/jobs') {
       return {
         stdout: JSON.stringify([
           {
@@ -63,9 +63,9 @@ const alwaysDecision =
 
 describe('parseArgs()', () => {
   it('uses GITHUB_REPOSITORY as the default repository', () => {
-    expect(parseArgs(['123'], { GITHUB_REPOSITORY: 'jonathanong/filaments' })).toEqual({
+    expect(parseArgs(['123'], { GITHUB_REPOSITORY: 'vouchington/vouchington' })).toEqual({
       dryRun: false,
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       runId: '123',
     })
   })
@@ -94,7 +94,7 @@ describe('rerun-known-transient main()', () => {
 
     const exitCode = await main(
       ['123'],
-      { GITHUB_REPOSITORY: 'jonathanong/filaments' },
+      { GITHUB_REPOSITORY: 'vouchington/vouchington' },
       {
         decideRun: alwaysDecision({ decision: 'rerun', matchedRule: 'known-runner-flake' }),
         execFile: makeExecFile(calls),
@@ -103,7 +103,7 @@ describe('rerun-known-transient main()', () => {
     )
 
     expect(exitCode).toBe(0)
-    expect(calls).toContainEqual(['run', 'rerun', '--repo', 'jonathanong/filaments', '123'])
+    expect(calls).toContainEqual(['run', 'rerun', '--repo', 'vouchington/vouchington', '123'])
     expect(logs).toContain('Decision: rerun')
     expect(logs).toContain('Matched rule: known-runner-flake')
     expect(logs).toContain('Requested rerun for run 123.')
@@ -113,7 +113,7 @@ describe('rerun-known-transient main()', () => {
     const calls: string[][] = []
     const exitCode = await main(
       ['123'],
-      { GITHUB_REPOSITORY: 'jonathanong/filaments' },
+      { GITHUB_REPOSITORY: 'vouchington/vouchington' },
       {
         decideRun: alwaysDecision({
           decision: 'rerun',
@@ -129,7 +129,7 @@ describe('rerun-known-transient main()', () => {
       'run',
       'rerun',
       '--repo',
-      'jonathanong/filaments',
+      'vouchington/vouchington',
       '--job',
       '456',
     ])
@@ -139,7 +139,7 @@ describe('rerun-known-transient main()', () => {
     const logs: string[] = []
     const exitCode = await main(
       ['123', '--dry-run'],
-      { GITHUB_REPOSITORY: 'jonathanong/filaments' },
+      { GITHUB_REPOSITORY: 'vouchington/vouchington' },
       {
         decideRun: alwaysDecision({
           decision: 'rerun',
@@ -151,7 +151,9 @@ describe('rerun-known-transient main()', () => {
       },
     )
     expect(exitCode).toBe(0)
-    expect(logs).toContain('Dry run: would run gh run rerun --repo jonathanong/filaments --job 456')
+    expect(logs).toContain(
+      'Dry run: would run gh run rerun --repo vouchington/vouchington --job 456',
+    )
   })
 
   it('infers the repository from the local checkout', async () => {
@@ -176,7 +178,7 @@ describe('rerun-known-transient main()', () => {
       '--jq',
       '.nameWithOwner',
     ])
-    expect(calls).toContainEqual(['api', 'repos/jonathanong/filaments/actions/runs/123'])
+    expect(calls).toContainEqual(['api', 'repos/vouchington/vouchington/actions/runs/123'])
   })
 
   it('does not rerun in dry-run mode', async () => {
@@ -185,7 +187,7 @@ describe('rerun-known-transient main()', () => {
 
     const exitCode = await main(
       ['123', '--dry-run'],
-      { GITHUB_REPOSITORY: 'jonathanong/filaments' },
+      { GITHUB_REPOSITORY: 'vouchington/vouchington' },
       {
         decideRun: alwaysDecision({ decision: 'rerun', matchedRule: 'known-runner-flake' }),
         execFile: makeExecFile(calls),
@@ -194,8 +196,8 @@ describe('rerun-known-transient main()', () => {
     )
 
     expect(exitCode).toBe(0)
-    expect(calls).not.toContainEqual(['run', 'rerun', '--repo', 'jonathanong/filaments', '123'])
-    expect(logs).toContain('Dry run: would run gh run rerun --repo jonathanong/filaments 123')
+    expect(calls).not.toContainEqual(['run', 'rerun', '--repo', 'vouchington/vouchington', '123'])
+    expect(logs).toContain('Dry run: would run gh run rerun --repo vouchington/vouchington 123')
   })
 
   it('returns 2 and does not rerun when the decision is not rerun', async () => {
@@ -204,7 +206,7 @@ describe('rerun-known-transient main()', () => {
 
     const exitCode = await main(
       ['123'],
-      { GITHUB_REPOSITORY: 'jonathanong/filaments' },
+      { GITHUB_REPOSITORY: 'vouchington/vouchington' },
       {
         decideRun: alwaysDecision({ decision: 'dispatch', matchedRule: '' }),
         execFile: makeExecFile(calls),
@@ -213,7 +215,7 @@ describe('rerun-known-transient main()', () => {
     )
 
     expect(exitCode).toBe(2)
-    expect(calls).not.toContainEqual(['run', 'rerun', '--repo', 'jonathanong/filaments', '123'])
+    expect(calls).not.toContainEqual(['run', 'rerun', '--repo', 'vouchington/vouchington', '123'])
     expect(logs).toContain("No rerun requested: decision is 'dispatch', not 'rerun'.")
   })
 
@@ -223,7 +225,7 @@ describe('rerun-known-transient main()', () => {
 
     const exitCode = await main(
       ['456'],
-      { GITHUB_REPOSITORY: 'jonathanong/filaments' },
+      { GITHUB_REPOSITORY: 'vouchington/vouchington' },
       {
         decideRun: alwaysDecision({ decision: 'rerun', matchedRule: 'should-not-run' }),
         execFile: makeExecFile(calls),
@@ -232,7 +234,7 @@ describe('rerun-known-transient main()', () => {
     )
 
     expect(exitCode).toBe(2)
-    expect(calls).toEqual([['api', 'repos/jonathanong/filaments/actions/runs/456']])
+    expect(calls).toEqual([['api', 'repos/vouchington/vouchington/actions/runs/456']])
     expect(logs).toContain(
       'Run conclusion is not failure, timed_out, or cancelled; no rerun requested.',
     )

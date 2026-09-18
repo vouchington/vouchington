@@ -9,7 +9,7 @@ import {
 import type { MilestoneSibling } from '../milestone-query.mts'
 import type { ClosingIssueForAudit } from '../validate.mts'
 
-const REPO = 'jonathanong/filaments'
+const REPO = 'vouchington/vouchington'
 const OTHER_REPO = 'other/repo'
 const MILESTONE = 'Engineering Quality & Automation'
 
@@ -165,7 +165,7 @@ describe('validateMilestoneSiblings', () => {
     // on this repo itself renders qualified (`jonathonong/filaments#N`), which must still match the
     // bare `#N` a local sibling renders.
     const closingRefs: ClosingIssueReference[] = [
-      { key: `${REPO}#7944`, number: 7944, owner: 'jonathanong', repo: 'filaments' },
+      { key: `${REPO}#7944`, number: 7944, owner: 'vouchington', repo: 'vouchington' },
     ]
     expect(
       validateMilestoneSiblings(siblings, 'no related mentions here', closingRefs, REPO),

@@ -112,12 +112,12 @@ describe('isMilestoneCandidate', () => {
         tool_input: { command: 'gh pr create --title x --body y' },
         tool_response: {
           stderr: '',
-          stdout: 'https://github.com/jonathanong/filaments/pull/9358\n',
+          stdout: 'https://github.com/vouchington/vouchington/pull/9358\n',
         },
       }),
     ).toEqual({
       command: 'gh pr create --title x --body y',
-      evidence: 'https://github.com/jonathanong/filaments/pull/9358',
+      evidence: 'https://github.com/vouchington/vouchington/pull/9358',
       kind: 'pr-create',
     })
   })
@@ -137,7 +137,7 @@ describe('isMilestoneCandidate', () => {
         tool_input: { command: 'git push' },
         tool_response: {
           stderr:
-            'To github.com:jonathanong/filaments.git\n   abc123..def456  my-branch -> my-branch\n',
+            'To github.com:vouchington/vouchington.git\n   abc123..def456  my-branch -> my-branch\n',
           stdout: '',
         },
       }),
@@ -192,11 +192,11 @@ describe('isMilestoneCandidate', () => {
     expect(
       isMilestoneCandidate({
         tool_input: { command: 'gh pr create --title x --body y' },
-        tool_response: 'https://github.com/jonathanong/filaments/pull/9358\n',
+        tool_response: 'https://github.com/vouchington/vouchington/pull/9358\n',
       }),
     ).toEqual({
       command: 'gh pr create --title x --body y',
-      evidence: 'https://github.com/jonathanong/filaments/pull/9358',
+      evidence: 'https://github.com/vouchington/vouchington/pull/9358',
       kind: 'pr-create',
     })
   })
@@ -206,7 +206,7 @@ describe('isMilestoneCandidate', () => {
       isMilestoneCandidate({
         tool_input: { command: 'git push' },
         tool_response:
-          'To github.com:jonathanong/filaments.git\n   abc123..def456  my-branch -> my-branch\n',
+          'To github.com:vouchington/vouchington.git\n   abc123..def456  my-branch -> my-branch\n',
       }),
     ).toEqual({
       command: 'git push',
@@ -232,7 +232,7 @@ describe('isMilestoneCandidate', () => {
       isMilestoneCandidate({
         tool_input: { command: 'gh pr create --title x --body y' },
         tool_response:
-          'a pull request for branch "my-branch" into "main" already exists:\nhttps://github.com/jonathanong/filaments/pull/9358\n',
+          'a pull request for branch "my-branch" into "main" already exists:\nhttps://github.com/vouchington/vouchington/pull/9358\n',
       }),
     ).toBeNull()
   })

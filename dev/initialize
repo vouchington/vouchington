@@ -202,12 +202,12 @@ is_valid_port() {
     [[ "$port" =~ ^[0-9]+$ ]] && ((10#$port >= 1 && 10#$port <= 65535))
 }
 
-load_runner_port_policy() {
+load_worktree_port_policy() {
     local policy_values
 
-    # Read the JSON directly. The TypeScript loader validates it for Node
-    # consumers; initialize cannot import that module because some callers
-    # (and this script's own isolated tests) run without node_modules.
+    # Read the JSON directly. This script's own isolated tests (and some
+    # callers) run without node_modules, so initialize cannot import a
+    # TypeScript loader module here.
     # shellcheck disable=SC2016 # JavaScript template literal is evaluated by node, not Bash.
     policy_values=$(node -e '
 import { readFileSync } from "node:fs"
@@ -216,18 +216,18 @@ if (!Number.isInteger(policy.reservedPortStart) || !Number.isInteger(policy.rese
   process.exit(1)
 }
 console.log(`${policy.reservedPortStart} ${policy.reservedPortEnd}`)
-' "$REPO_ROOT/ci/runner-port-policy.json") || {
-        echo -e "${RED}Error: Invalid CI runner port policy at ci/runner-port-policy.json${NC}"
+' "$REPO_ROOT/dev/worktree-port-policy.json") || {
+        echo -e "${RED}Error: Invalid worktree port policy at dev/worktree-port-policy.json${NC}"
         exit 1
     }
-    read -r RUNNER_RESERVED_PORT_START RUNNER_RESERVED_PORT_END <<< "$policy_values"
+    read -r WORKTREE_RESERVED_PORT_START WORKTREE_RESERVED_PORT_END <<< "$policy_values"
 }
 
 is_allocatable_worktree_port() {
     local port=${1:-}
 
     is_valid_port "$port" \
-        && ! ((10#$port >= RUNNER_RESERVED_PORT_START && 10#$port <= RUNNER_RESERVED_PORT_END)) \
+        && ! ((10#$port >= WORKTREE_RESERVED_PORT_START && 10#$port <= WORKTREE_RESERVED_PORT_END)) \
         && ((10#$port != 8787))
 }
 
@@ -266,7 +266,7 @@ assign_worktree_ports() {
     local existing_image_lambda_port existing_valkey_url existing_inspector_port existing_storybook_port reused_ports allocated_ports
     local existing_worktree_dir
 
-    load_runner_port_policy
+    load_worktree_port_policy
 
     # Entrypoint port: always fixed for main
     if $IS_MAIN; then

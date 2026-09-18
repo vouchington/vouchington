@@ -24,7 +24,7 @@ discovery and verify the version. Use the host-specific instructions there.
 
 Recompute the adapter binding from the selected remote: fetch its default branch,
 then accept only handoff records whose `canonicalRepository` exactly equals
-`github.com/jonathanong/filaments`, whose `defaultBranch` exactly matches the
+`github.com/vouchington/vouchington`, whose `defaultBranch` exactly matches the
 remote default branch, and whose immutable `evidenceSha` exactly equals that
 fetched default-branch tip. A dirty or user-selected checkout may inform review,
 but cannot satisfy the handoff identity gate. Reject malformed, incomplete,
@@ -57,7 +57,7 @@ For every provider-created PR record, require `disposition: 'provider_fix_pr'`,
 number, URL, and provenance that match the handoff and a nonempty execution
 receipt. Immediately before
 `ready-and-shepherd`, re-read the live PR state and current diff from
-`jonathanong/filaments`; require `OPEN`, the exact canonical repository, matching
+`vouchington/vouchington`; require `OPEN`, the exact canonical repository, matching
 provider provenance, number, and URL, a diff that still addresses the source
 finding and evidence, and no unrelated changes. Block on mismatch before invoking:
 

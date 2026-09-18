@@ -53,11 +53,7 @@ export const gitleaksInstallReleasesDownloadFlakeRule: TransientRetryRule = {
     'Gitleaks fails before scanning because the install step cannot download the release archive or checksum file from GitHub Releases (timeout, transport failure, or 5xx).',
   rationale:
     'The scan never starts; the only failed job is the standalone Gitleaks job and the stable fingerprint is an external GitHub Releases download failure, not a repository secret finding or local code failure.',
-  exampleRunUrls: [
-    'https://github.com/jonathanong/filaments/actions/runs/26831005135',
-    'https://github.com/jonathanong/filaments/actions/runs/27120697184',
-    'https://github.com/jonathanong/filaments/actions/runs/27121476157',
-  ],
+  exampleRunIds: ['26831005135', '27120697184', '27121476157'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

@@ -66,6 +66,6 @@ only; update cost rows there so the checked totals stay in one place.
 
 - [docs/overview/architecture/ai-agents.md](../architecture/ai-agents.md)
 - [docs/overview/architecture/auth-overview.md](../architecture/auth-overview.md)
-- [`vouchington-infra` OpenTofu](https://github.com/vouchington/vouchington-infra/tree/main/opentofu)
-- [`vouchington-infra` developer access](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/DEVELOPER_ACCESS.md)
-- [`vouchington-infra` global stack](https://github.com/vouchington/vouchington-infra/tree/main/opentofu/global)
+- OpenTofu (the private `vouchington-infra` repository)
+- Developer access (`opentofu/DEVELOPER_ACCESS.md` in the private `vouchington-infra` repository)
+- The global stack (`opentofu/global` in the private `vouchington-infra` repository)

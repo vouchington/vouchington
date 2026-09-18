@@ -1,0 +1,11 @@
+# Codecov is an informational-only reporter. It never gates a pull request: the in-house
+# patch-coverage gate (`test-coverage` / coverage-check against `.coverage-rules.yml`) remains
+# the sole blocking coverage check. See docs/development/reference-ci-coverage-gates.md.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
