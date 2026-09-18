@@ -7,7 +7,7 @@ import {
   type MilestoneGroup,
 } from '../milestone-query.mts'
 
-const REPO = 'jonathanong/filaments'
+const REPO = 'vouchington/vouchington'
 const OTHER_REPO = 'other/repo'
 const MILESTONE = 'Engineering Quality & Automation'
 

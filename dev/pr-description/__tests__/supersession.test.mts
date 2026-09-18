@@ -14,7 +14,7 @@ import {
   type SupersessionHit,
 } from '../supersession.mts'
 
-const REPO = 'jonathanong/filaments'
+const REPO = 'vouchington/vouchington'
 
 // None of these fixtures touch a `package.json`, so `parseChangedPackageJsonPaths` always returns
 // `[]` and this reader is never actually invoked — it exists only to satisfy the required parameter.
@@ -39,12 +39,12 @@ const SNS_VERIFICATION_TERM = '"backend/modules/aws/sns-verification.mts"'
 const SNS_VERIFICATION_HIT = {
   number: 7995,
   title: 'Move SES-inbound SNS certificate fetch/verification to a worker (flag-gated)',
-  url: 'https://github.com/jonathanong/filaments/issues/7995',
+  url: 'https://github.com/vouchington/vouchington/issues/7995',
 }
 const REPLAY_PROTECTION_HIT = {
   number: 8300,
   title: 'Convert SES inbound webhook replay-protection mock to real Valkey integration',
-  url: 'https://github.com/jonathanong/filaments/issues/8300',
+  url: 'https://github.com/vouchington/vouchington/issues/8300',
 }
 
 function fakeRunGh(responses: Record<string, Array<typeof SNS_VERIFICATION_HIT>>) {
@@ -202,7 +202,7 @@ describe('validateAuditHits', () => {
   it('lets an explicit same-repo cross-repo-shaped ref clear a hit', () => {
     const hits: SupersessionHit[] = [{ matchedTerm: 'sns-verification', ...SNS_VERIFICATION_HIT }]
     const closingRefs: ClosingIssueReference[] = [
-      { key: `${REPO}#7995`, number: 7995, owner: 'jonathanong', repo: 'filaments' },
+      { key: `${REPO}#7995`, number: 7995, owner: 'vouchington', repo: 'vouchington' },
     ]
     expect(validateAuditHits(REPO, hits, [], closingRefs)).toEqual([])
   })

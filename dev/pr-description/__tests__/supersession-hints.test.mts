@@ -74,7 +74,7 @@ describe('writeSupersessionHints', () => {
     try {
       await writeSupersessionHints(
         runGh,
-        Promise.resolve('jonathanong/filaments'),
+        Promise.resolve('vouchington/vouchington'),
         Promise.resolve('diff --git a/backend/x.mts b/backend/x.mts\ndeleted file mode 100644\n'),
         Promise.resolve(async () => undefined),
       )

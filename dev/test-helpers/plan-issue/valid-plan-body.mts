@@ -1,6 +1,6 @@
 export const VALID_PLAN_BODY = `## Solves
 - #7390
-- Source: https://github.com/jonathanong/filaments/issues/7390
+- Source: https://github.com/vouchington/vouchington/issues/7390
 
 ## Why
 - Goal: complete plans.

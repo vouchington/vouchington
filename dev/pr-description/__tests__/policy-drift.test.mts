@@ -59,7 +59,7 @@ function makeIssue(body: string): ReferencedIssue {
     number: 7390,
     state: 'open',
     title: 'Lifecycle source',
-    url: 'https://github.com/jonathanong/filaments/issues/7390',
+    url: 'https://github.com/vouchington/vouchington/issues/7390',
   }
 }
 
@@ -77,7 +77,7 @@ function rootCauseIssue(overrides: Partial<ReferencedIssue> = {}): ReferencedIss
     number: 456,
     state: 'open',
     title: 'Root cause',
-    url: 'https://github.com/jonathanong/filaments/issues/456',
+    url: 'https://github.com/vouchington/vouchington/issues/456',
     ...overrides,
   }
 }
@@ -219,8 +219,8 @@ describe('PR lifecycle policy drift', () => {
         targetPullRequest: {
           mergeCommitOid: 'deadbeef',
           number: 8335,
-          owner: 'jonathanong',
-          repo: 'filaments',
+          owner: 'vouchington',
+          repo: 'vouchington',
           state: 'MERGED',
         },
       },
@@ -236,7 +236,7 @@ describe('PR lifecycle policy drift', () => {
       await writeFile(join(dir, 'plan.md'), body)
       expect(
         findGitHubWorkflowBlock(
-          'gh --repo jonathanong/filaments issue create --title "Plan: lifecycle" --label plan --body-file plan.md',
+          'gh --repo vouchington/vouchington issue create --title "Plan: lifecycle" --label plan --body-file plan.md',
           dir,
         )?.reason,
       ).toContain('dev/plan-issue.mts create')

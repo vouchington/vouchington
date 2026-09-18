@@ -25,7 +25,7 @@ describe('Plan issue review regressions', () => {
 
   it('compares the repository identity of qualified issue references', () => {
     const body = VALID_PLAN_BODY.replace('#7390', 'owner/one#7390').replace(
-      'jonathanong/filaments/issues/7390',
+      'vouchington/vouchington/issues/7390',
       'owner/two/issues/7390',
     )
     expect(validatePlanIssue('Plan: qualified source', body).join('\n')).toContain('same issues')
@@ -33,7 +33,7 @@ describe('Plan issue review regressions', () => {
 
   it('accepts a qualified issue reference with the same repository source', () => {
     const body = VALID_PLAN_BODY.replace('#7390', 'owner/one#7390').replace(
-      'jonathanong/filaments/issues/7390',
+      'vouchington/vouchington/issues/7390',
       'owner/one/issues/7390',
     )
     expect(validatePlanIssue('Plan: qualified source', body)).toEqual([])
@@ -41,7 +41,7 @@ describe('Plan issue review regressions', () => {
 
   it('binds an unqualified issue reference to the explicit target repository', () => {
     const body = VALID_PLAN_BODY.replace(
-      'jonathanong/filaments/issues/7390',
+      'vouchington/vouchington/issues/7390',
       'owner/two/issues/7390',
     )
     expect(validatePlanIssue('Plan: target source', body, 'owner/one').join('\n')).toContain(

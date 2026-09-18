@@ -3,7 +3,7 @@ import { CANONICAL_PRIORITIES, parseManifest } from '../batch/manifest.mts'
 
 function validManifest(overrides: Record<string, unknown> = {}) {
   return {
-    targetRepo: 'jonathanong/filaments',
+    targetRepo: 'vouchington/vouchington',
     entries: [
       {
         id: 'e1',
@@ -20,7 +20,7 @@ function validManifest(overrides: Record<string, unknown> = {}) {
 describe('parseManifest', () => {
   it('parses a minimal valid manifest, defaulting optional fields', () => {
     const manifest = parseManifest(JSON.stringify(validManifest()))
-    expect(manifest.targetRepo).toBe('jonathanong/filaments')
+    expect(manifest.targetRepo).toBe('vouchington/vouchington')
     expect(manifest.entries).toHaveLength(1)
     expect(manifest.entries[0]).toMatchObject({
       id: 'e1',
@@ -92,10 +92,10 @@ describe('parseManifest', () => {
     ])
   })
 
-  it('rejects a targetRepo other than jonathanong/filaments', () => {
+  it('rejects a targetRepo other than vouchington/vouchington', () => {
     expect(() =>
       parseManifest(JSON.stringify(validManifest({ targetRepo: 'other/repo' }))),
-    ).toThrow('manifest.targetRepo must be exactly "jonathanong/filaments"')
+    ).toThrow('manifest.targetRepo must be exactly "vouchington/vouchington"')
   })
 
   it('rejects an empty entries array', () => {

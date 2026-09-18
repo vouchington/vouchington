@@ -89,7 +89,7 @@ pass `--labeler <path>` when classifying paths against another repository's down
 configuration.
 
 [`agent-issue-labels/batch-issues.mts`](agent-issue-labels/batch-issues.mts) preflights a batch of
-proposed `jonathanong/filaments` issues from one agent-authored manifest. It reads live taxonomy and
+proposed `vouchington/vouchington` issues from one agent-authored manifest. It reads live taxonomy and
 duplicate-search data, validates every entry fail-closed, and writes only an ephemeral
 `preflight-report.json` under the caller's session directory. Issue creation and read-back remain
 one-at-a-time operations owned by the canonical

@@ -12,7 +12,7 @@ describe('Codex hook Plan repository policy', () => {
     await withTestTempDir('voucha-plan-body-', async dir => {
       await writeFile(
         join(dir, 'plan-body.md'),
-        VALID_PLAN_BODY.replace('jonathanong/filaments/issues/7390', 'owner/two/issues/7390'),
+        VALID_PLAN_BODY.replace('vouchington/vouchington/issues/7390', 'owner/two/issues/7390'),
       )
 
       expect(
