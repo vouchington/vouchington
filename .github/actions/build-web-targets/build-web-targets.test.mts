@@ -70,7 +70,7 @@ describe('build-web-targets composite action', () => {
 
   it('captures a per-job web build timing report for issue #10937 (host-lock instrumentation)', () => {
     const buildStep = step('Build web targets')
-    expect(buildStep.env?.FILAMENTS_SETUP_WEB_TIMINGS_JSON).toBe(
+    expect(buildStep.env?.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON).toBe(
       '${{ runner.temp }}/web-build-timings.json',
     )
     expect(buildStep.env?.VOUCHA_BUILD_LOCK_COMMAND_TIMEOUT_SECONDS).toBeUndefined()

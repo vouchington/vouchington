@@ -9,12 +9,12 @@ import {
 
 export { EPOCH_PRUNED_AT, normalizeDeployedLayer }
 
-const FILAMENTS_DEPLOY_ENV = { PROD_DIR: '/prod/backend' } as const
+const VOUCHINGTON_DEPLOY_ENV = { PROD_DIR: '/prod/backend' } as const
 
 export function runNormalizeDeployedLayerCli(options: Parameters<typeof runPublished>[0]): void {
   runPublished({
     ...options,
-    env: { ...FILAMENTS_DEPLOY_ENV, ...options.env },
+    env: { ...VOUCHINGTON_DEPLOY_ENV, ...options.env },
   })
 }
 

@@ -7,7 +7,7 @@ import type { SharedContext } from 'vouchington-tooling/shared-context'
 import { buildSccArgs, type SccComplexityScope } from 'vouchington-tooling/scc-complexity'
 import {
   checkSccComplexity,
-  FILAMENTS_SCC_SCOPES,
+  VOUCHINGTON_SCC_SCOPES,
   parseSccComplexityViolations,
   SCC_COMPLEXITY_ARGS,
   TOOLING_SCC_BASELINE,
@@ -81,13 +81,13 @@ describe('scc-complexity', () => {
   })
 
   it('encodes product and tooling scopes with test exclusions', () => {
-    const toolingArgs = buildSccArgs(FILAMENTS_SCC_SCOPES[1])
+    const toolingArgs = buildSccArgs(VOUCHINGTON_SCC_SCOPES[1])
 
     expect(SCC_COMPLEXITY_ARGS).toContain(String.raw`\.(test|spec)\.`)
     expect(SCC_COMPLEXITY_ARGS).toContain(
       '.git,fixtures,__tests__,test-helpers,static-code-analysis,ci,.github,dev',
     )
-    expect(FILAMENTS_SCC_SCOPES).toEqual([
+    expect(VOUCHINGTON_SCC_SCOPES).toEqual([
       expect.objectContaining({ includePaths: ['.'], name: 'product' }),
       { includePaths: ['.github', 'ci', 'dev', 'static-code-analysis'], name: 'tooling' },
     ])

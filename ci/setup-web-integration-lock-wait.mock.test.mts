@@ -33,7 +33,7 @@ let asyncPressureCaptureCount = 0
 // stderr chatter -- simulating with-host-lock.sh's own output -- from inside its own `it()` body
 // without reassigning state another test could observe.
 function readMockNextBuildStderrLines(): string[] {
-  const raw = process.env.FILAMENTS_MOCK_NEXT_BUILD_STDERR_LINES
+  const raw = process.env.VOUCHINGTON_MOCK_NEXT_BUILD_STDERR_LINES
   return raw ? (JSON.parse(raw) as string[]) : []
 }
 
@@ -41,7 +41,7 @@ function readMockNextBuildStderrLines(): string[] {
 // simulate the locked `next build` command failing (e.g. the watchdog timeout this instrumentation
 // targets) without any module-scope state another test could observe.
 function readMockNextBuildExitCode(): number {
-  const raw = process.env.FILAMENTS_MOCK_NEXT_BUILD_EXIT_CODE
+  const raw = process.env.VOUCHINGTON_MOCK_NEXT_BUILD_EXIT_CODE
   return raw ? Number(raw) : 0
 }
 
@@ -141,9 +141,9 @@ describe('setup-web-integration lock-wait and host-pressure recapture (issue #10
     asyncPressureCaptureCount = 0
     vi.mocked(fs.writeFileSync).mockClear()
     process.env = { ...originalEnv }
-    delete process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON
-    delete process.env.FILAMENTS_MOCK_NEXT_BUILD_STDERR_LINES
-    delete process.env.FILAMENTS_MOCK_NEXT_BUILD_EXIT_CODE
+    delete process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON
+    delete process.env.VOUCHINGTON_MOCK_NEXT_BUILD_STDERR_LINES
+    delete process.env.VOUCHINGTON_MOCK_NEXT_BUILD_EXIT_CODE
   })
 
   afterEach(() => {
@@ -152,10 +152,10 @@ describe('setup-web-integration lock-wait and host-pressure recapture (issue #10
 
   it('records next-build-lock-wait and re-captures pressure once the lock queues the build', async () => {
     const fs = await import('node:fs')
-    process.env.FILAMENTS_MOCK_NEXT_BUILD_STDERR_LINES = JSON.stringify([
+    process.env.VOUCHINGTON_MOCK_NEXT_BUILD_STDERR_LINES = JSON.stringify([
       'with-host-lock: expensive-build acquired after 42s',
     ])
-    process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-lock-wait.json'
+    process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-lock-wait.json'
 
     const modulePath = './setup-web-integration.mts?next-build-lock-wait'
     await import(modulePath)
@@ -175,7 +175,7 @@ describe('setup-web-integration lock-wait and host-pressure recapture (issue #10
 
   it('omits next-build-lock-wait and keeps the pre-dispatch pressure snapshot when the build runs unlocked', async () => {
     const fs = await import('node:fs')
-    process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-no-lock-wait.json'
+    process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-no-lock-wait.json'
 
     const modulePath = './setup-web-integration.mts?next-build-no-lock-wait'
     await import(modulePath)
@@ -193,10 +193,10 @@ describe('setup-web-integration lock-wait and host-pressure recapture (issue #10
 
   it('ignores an acquisition line naming a different lock', async () => {
     const fs = await import('node:fs')
-    process.env.FILAMENTS_MOCK_NEXT_BUILD_STDERR_LINES = JSON.stringify([
+    process.env.VOUCHINGTON_MOCK_NEXT_BUILD_STDERR_LINES = JSON.stringify([
       'with-host-lock: memory-heavy acquired after 9s',
     ])
-    process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-other-lock.json'
+    process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-other-lock.json'
 
     const modulePath = './setup-web-integration.mts?next-build-other-lock-name'
     await import(modulePath)
@@ -210,7 +210,7 @@ describe('setup-web-integration lock-wait and host-pressure recapture (issue #10
 
   it('forwards next-build stderr output live while watching for the lock-acquired line', async () => {
     const writeSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
-    process.env.FILAMENTS_MOCK_NEXT_BUILD_STDERR_LINES = JSON.stringify([
+    process.env.VOUCHINGTON_MOCK_NEXT_BUILD_STDERR_LINES = JSON.stringify([
       'with-host-lock: expensive-build acquired after 3s',
       'compiling web build...',
     ])
@@ -229,12 +229,12 @@ describe('setup-web-integration lock-wait and host-pressure recapture (issue #10
 
   it('persists next-build-lock-wait in the partial report when the locked build then fails', async () => {
     const fs = await import('node:fs')
-    process.env.FILAMENTS_MOCK_NEXT_BUILD_STDERR_LINES = JSON.stringify([
+    process.env.VOUCHINGTON_MOCK_NEXT_BUILD_STDERR_LINES = JSON.stringify([
       'with-host-lock: expensive-build acquired after 7s',
     ])
     // Simulates the watchdog remapping a SIGKILL termination to exit 124, per with-host-lock.sh.
-    process.env.FILAMENTS_MOCK_NEXT_BUILD_EXIT_CODE = '124'
-    process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-lock-wait-failure.json'
+    process.env.VOUCHINGTON_MOCK_NEXT_BUILD_EXIT_CODE = '124'
+    process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-lock-wait-failure.json'
 
     const modulePath = './setup-web-integration.mts?next-build-lock-wait-failure'
     await expect(import(modulePath)).rejects.toThrow('exit code 124')
@@ -247,13 +247,13 @@ describe('setup-web-integration lock-wait and host-pressure recapture (issue #10
 
   it('marks nextBuildLockAcquisitionFailed and skips the lock-wait sample when acquisition times out (issue #10937)', async () => {
     const fs = await import('node:fs')
-    process.env.FILAMENTS_MOCK_NEXT_BUILD_STDERR_LINES = JSON.stringify([
+    process.env.VOUCHINGTON_MOCK_NEXT_BUILD_STDERR_LINES = JSON.stringify([
       'with-host-lock: expensive-build lock not acquired within 300s',
     ])
     // Mirrors with-host-lock.sh's real fail-closed behavior: a lock-acquisition timeout exits
     // before the wrapped `next build` command ever starts.
-    process.env.FILAMENTS_MOCK_NEXT_BUILD_EXIT_CODE = '1'
-    process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON =
+    process.env.VOUCHINGTON_MOCK_NEXT_BUILD_EXIT_CODE = '1'
+    process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON =
       '/tmp/setup-web-timings-lock-acquisition-timeout.json'
 
     const modulePath = './setup-web-integration.mts?next-build-lock-acquisition-timeout'

@@ -24,7 +24,7 @@ const imageOrigin =
 // never derives either from a port -- reaching the build is decided by the caller's environment.
 const totalStart = performance.now()
 const startedAt = new Date().toISOString()
-const timingReportPath = process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON
+const timingReportPath = process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON
 const timings: Record<string, number> = {}
 let hostPressureAtBuildStart: HostPressureSnapshot | undefined
 let nextBuildLockAcquisitionFailed = false

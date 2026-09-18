@@ -8,7 +8,7 @@ import {
 
 export { restoreDeployedWorkspacePackages }
 
-const FILAMENTS_DEPLOY_ENV = {
+const VOUCHINGTON_DEPLOY_ENV = {
   PROD_DIR: '/prod/backend',
   BACKEND_DIR: '/app/backend',
 } as const
@@ -18,7 +18,7 @@ export function runRestoreDeployedWorkspacePackagesCli(
 ): void {
   runPublished({
     ...options,
-    env: { ...FILAMENTS_DEPLOY_ENV, ...options.env },
+    env: { ...VOUCHINGTON_DEPLOY_ENV, ...options.env },
   })
 }
 

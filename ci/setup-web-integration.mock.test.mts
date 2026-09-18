@@ -84,7 +84,7 @@ describe('setup-web-integration', () => {
     process.env = { ...originalEnv }
     delete process.env.IMAGE_ORIGIN
     delete process.env.IMAGE_LAMBDA_PORT
-    delete process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON
+    delete process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON
     delete process.env.NEXT_PUBLIC_ASSET_PREFIX
     delete process.env.NEXT_PUBLIC_API_BASE_URL
     delete process.env.PORT
@@ -179,7 +179,7 @@ describe('setup-web-integration', () => {
   it('writes a partial timing report after every step, not just once at the end (issue #10937)', async () => {
     const fs = await import('node:fs')
     const timingPath = '/tmp/setup-web-timings-partial.json'
-    process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON = timingPath
+    process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = timingPath
 
     const modulePath = './setup-web-integration.mts?timing-report-partial'
     await import(modulePath)
@@ -208,7 +208,7 @@ describe('setup-web-integration', () => {
 
   it('does not abort the build when the timing report write fails', async () => {
     const fs = await import('node:fs')
-    process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-write-failure.json'
+    process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-write-failure.json'
     vi.mocked(fs.writeFileSync).mockImplementation(() => {
       throw new Error('EIO: simulated timing-report write failure')
     })
