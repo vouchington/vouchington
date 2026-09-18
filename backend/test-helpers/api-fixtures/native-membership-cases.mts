@@ -1,11 +1,12 @@
 import { responseBody } from './static-response-bodies.mts'
 import type { ApiFixtureCase } from './types.mts'
 import { nativeMembershipGrantApiFixtureCases } from './native-membership-grant-cases.mts'
+import { predecessorIssue } from './predecessor-issue.mts'
 
 const membershipProductId = '00000000-0000-7000-8000-000000000701'
 const membershipPurchaseIntentId = '00000000-0000-7000-8000-000000000803'
 const membershipVerificationId = '00000000-0000-7000-8000-000000000807'
-const migratedFrom = ['https://github.com/jonathanong/filaments/issues/7880']
+const migratedFrom = [predecessorIssue(7880)]
 
 const nativeConsumers: ApiFixtureCase['consumers'] = ['swift-core', 'swift-ui', 'dotnet-core']
 
@@ -101,7 +102,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     status: 200,
     body: responseBody('native.memberships.microsoft.service-tickets.default'),
     consumers: ['dotnet-core'],
-    migratedFrom: ['https://github.com/jonathanong/filaments/issues/11535'],
+    migratedFrom: [predecessorIssue(11535)],
   },
   {
     id: 'native.memberships.purchase-intent.stripe.default',

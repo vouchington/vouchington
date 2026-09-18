@@ -1,10 +1,11 @@
+import { predecessorIssue } from './predecessor-issue.mts'
 import { responseBody } from './static-response-bodies.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const contactId = '00000000-0000-7000-8000-000000000584'
 const noteId = '00000000-0000-7000-8000-000000000901'
 const userId = '00000000-0000-7000-8000-000000000001'
-const migratedFrom = ['https://github.com/jonathanong/filaments/issues/6584']
+const migratedFrom = [predecessorIssue(6584)]
 
 const shared: Pick<ApiFixtureCase, 'auth' | 'consumers' | 'migratedFrom'> = {
   auth: 'fixture-admin',

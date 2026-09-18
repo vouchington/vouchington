@@ -74573,7 +74573,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.comments.post-detail.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6573"],
+      "migratedFrom": ["predecessor-issue#6573"],
       "path": "/api/v1/posts/comment-root",
       "responseSchema": {
         "hash": "ad284243cc726c5b31e0144107a074cc427dc479949b919bfbffbd9af470a3ca",
@@ -74597,7 +74597,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.comments.descendants.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6573"],
+      "migratedFrom": ["predecessor-issue#6573"],
       "path": "/api/v1/posts/comment-root-post/descendants",
       "query": {
         "after": "fixture-root-and-subtree-scoped-cursor",
@@ -74625,7 +74625,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.comments.ancestors.permalink",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6573"],
+      "migratedFrom": ["predecessor-issue#6573"],
       "path": "/api/v1/posts/comment-b/ancestors",
       "responseSchema": {
         "hash": "7533d398ee6dec840635221f4e3695dd8fb95d9a91c20454bde2138437252146",
@@ -74649,7 +74649,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.comments.ancestors.bounded.shallow",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/11213"],
+      "migratedFrom": ["predecessor-issue#11213"],
       "path": "/api/v1/posts/comment-b/ancestors",
       "query": {
         "limit": "5"
@@ -74676,7 +74676,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.comments.ancestors.bounded.deep-initial",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/11213"],
+      "migratedFrom": ["predecessor-issue#11213"],
       "path": "/api/v1/posts/bounded-ancestor-comment-7/ancestors",
       "query": {
         "limit": "5"
@@ -74703,7 +74703,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.comments.ancestors.bounded.deep-continuation",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/11213"],
+      "migratedFrom": ["predecessor-issue#11213"],
       "path": "/api/v1/posts/bounded-ancestor-comment-7/ancestors",
       "query": {
         "after": "fixture-ancestor-deep-initial-end",
@@ -75059,7 +75059,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.messages.conversations.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages",
       "query": {
         "limit": "50"
@@ -75083,7 +75083,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.messages.conversation.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages/00000000-0000-7000-8000-000000000101",
       "responseSchema": {
         "hash": "77563339aee5098d47ffdf83ecca1f55131215643fd74d5f39ea0bf17e7beb20",
@@ -75107,7 +75107,7 @@
       "consumers": ["swift-core", "dotnet-core"],
       "id": "native.messages.conversations.page-2",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages",
       "query": {
         "after": "eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAxVDA5OjE1OjAwLjAwMDAwMFoiLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiJ9",
@@ -75132,7 +75132,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.messages.create.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages",
       "requestBody": {
         "user_ids": ["00000000-0000-7000-8000-000000000002"]
@@ -75156,7 +75156,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.messages.thread.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages/00000000-0000-7000-8000-000000000101/messages",
       "query": {
         "limit": "50"
@@ -75183,7 +75183,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.messages.send.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages/00000000-0000-7000-8000-000000000101/messages",
       "requestBody": {
         "text": "Sent from native"
@@ -75210,7 +75210,7 @@
       "consumers": ["swift-core", "dotnet-core"],
       "id": "native.messages.thread.page-2",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages/00000000-0000-7000-8000-000000000101/messages",
       "query": {
         "after": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMSJ9",
@@ -75238,7 +75238,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.messages.participants.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages/00000000-0000-7000-8000-000000000101/participants",
       "responseSchema": {
         "hash": "a656be4e402c9351a5a3e4c9a46a9ffcf826b33b819ac9ad56256c1350a28022",
@@ -75262,7 +75262,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.messages.participant-add.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages/00000000-0000-7000-8000-000000000101/participants",
       "requestBody": {
         "user_id": "00000000-0000-7000-8000-000000000003"
@@ -75289,7 +75289,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.messages.participant-remove.default",
       "method": "DELETE",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages/00000000-0000-7000-8000-000000000101/participants/00000000-0000-7000-8000-000000000002",
       "responseSchema": {
         "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61",
@@ -75314,7 +75314,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.messages.policy.default",
       "method": "PATCH",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/my/messages/00000000-0000-7000-8000-000000000101",
       "requestBody": {
         "participant_add_policy": "owner_only"
@@ -75341,7 +75341,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.messages.user-search.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6575"],
+      "migratedFrom": ["predecessor-issue#6575"],
       "path": "/api/v1/users",
       "query": {
         "limit": "10",
@@ -75366,7 +75366,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.threads.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads",
       "query": {
         "limit": "25",
@@ -75392,7 +75392,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.thread-detail.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads/00000000-0000-7000-8000-000000000712",
       "responseSchema": {
         "hash": "0a4768ea6eff4c39749a1b67050373768ca722cced5c5cacdcf69fce03e0dc6b",
@@ -75416,7 +75416,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.thread-assign.default",
       "method": "PATCH",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads/00000000-0000-7000-8000-000000000712",
       "requestBody": {
         "assigned_to_id": "00000000-0000-7000-8000-000000000001"
@@ -75443,7 +75443,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.thread-resolve.default",
       "method": "PATCH",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads/00000000-0000-7000-8000-000000000712",
       "requestBody": {
         "resolved": true
@@ -75470,7 +75470,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.thread-reopen.default",
       "method": "PATCH",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads/00000000-0000-7000-8000-000000000712",
       "requestBody": {
         "resolved": false
@@ -75497,7 +75497,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.messages.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads/00000000-0000-7000-8000-000000000712/messages",
       "query": {
         "limit": "50"
@@ -75524,7 +75524,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.message-create.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads/00000000-0000-7000-8000-000000000712/messages",
       "requestBody": {
         "body_text": "Saved outbound reply."
@@ -75551,7 +75551,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.draft-create.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads/00000000-0000-7000-8000-000000000712/drafts",
       "responseSchema": {
         "hash": "fa7692a06a5fbc8acca1ad48ac96d86b3b17cf2203dd99a883c5d90bd91081b3",
@@ -75575,7 +75575,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.message-edit.default",
       "method": "PATCH",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads/00000000-0000-7000-8000-000000000712/messages/00000000-0000-7000-8000-000000000713",
       "requestBody": {
         "body_text": "Edited support draft."
@@ -75603,7 +75603,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.message-approve.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads/00000000-0000-7000-8000-000000000712/messages/00000000-0000-7000-8000-000000000713/approvals",
       "responseSchema": {
         "hash": "b3a1f2682f0710b948b741c1d1952525e2e1ae35f3b65aa9b94053f93f5ad2fd",
@@ -75628,7 +75628,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.message-send.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/threads/00000000-0000-7000-8000-000000000712/messages/00000000-0000-7000-8000-000000000713/sends",
       "responseSchema": {
         "hash": "57d1893f34419b278c448fdfff3afc9a9911742b364508ded7973b884f5db1c0",
@@ -75653,7 +75653,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.contacts.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/contacts",
       "query": {
         "limit": "25",
@@ -75678,7 +75678,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.contact-detail.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/contacts/00000000-0000-7000-8000-000000000711",
       "query": {
         "limit": "25"
@@ -75705,7 +75705,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.staff-support.contact-update.default",
       "method": "PATCH",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7879"],
+      "migratedFrom": ["predecessor-issue#7879"],
       "path": "/api/v1/support/contacts/00000000-0000-7000-8000-000000000711",
       "requestBody": {
         "name": "Traveler Support",
@@ -75733,7 +75733,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.plans.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/memberships/plans",
       "responseSchema": {
         "hash": "b463ca5d12876d75754b9ecc6238b6e8abf6fb0134423642c1d0aabef3d63807",
@@ -75754,7 +75754,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.me.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/memberships/me",
       "responseSchema": {
         "hash": "8c203cb577397da82f63909043405bae53562e93f03291d5ce661e2bbc81cc44",
@@ -75775,7 +75775,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.me.lifecycle.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/memberships/me",
       "responseSchema": {
         "hash": "9d23459f7ff7b95ef1af512c8631af411905f24b532948ff635e00c3473ebaff",
@@ -75796,7 +75796,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.purchase-intent.apple.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-purchase-intents",
       "requestBody": {
         "idempotency_key": "00000000-0000-7000-8000-000000000803",
@@ -75822,7 +75822,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.purchase-intent.google.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-purchase-intents",
       "requestBody": {
         "idempotency_key": "00000000-0000-7000-8000-000000000804",
@@ -75848,7 +75848,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.purchase-intent.microsoft.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-purchase-intents",
       "requestBody": {
         "idempotency_key": "00000000-0000-7000-8000-000000000805",
@@ -75874,7 +75874,7 @@
       "consumers": ["dotnet-core"],
       "id": "native.memberships.microsoft.service-tickets.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/11535"],
+      "migratedFrom": ["predecessor-issue#11535"],
       "path": "/api/v1/memberships/microsoft-store/service-tickets",
       "requestBody": {},
       "responseSchema": {
@@ -75896,7 +75896,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.purchase-intent.stripe.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-purchase-intents",
       "requestBody": {
         "idempotency_key": "00000000-0000-7000-8000-000000000806",
@@ -75922,7 +75922,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.purchase-intent.conflict.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-purchase-intents",
       "requestBody": {
         "idempotency_key": "00000000-0000-7000-8000-000000000811",
@@ -75948,7 +75948,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.verification.pending.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-verifications",
       "requestBody": {
         "evidence": {
@@ -75977,7 +75977,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.verification-status.pending.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-verifications/00000000-0000-7000-8000-000000000807",
       "responseSchema": {
         "hash": "08ac2e8bfabfed6d229f110120c54edbed04354659d4a4b7e9f39ebdcfcef2e4",
@@ -76001,7 +76001,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.verification-status.verified.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-verifications/00000000-0000-7000-8000-000000000808",
       "responseSchema": {
         "hash": "43f8bbbee82c88d0bf9bb85274847ee789adc7d3c1679d710587db788839fe70",
@@ -76025,7 +76025,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.verification-status.conflict.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-verifications/00000000-0000-7000-8000-000000000809",
       "responseSchema": {
         "hash": "43f8bbbee82c88d0bf9bb85274847ee789adc7d3c1679d710587db788839fe70",
@@ -76049,7 +76049,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.verification-status.rejected.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-verifications/00000000-0000-7000-8000-000000000810",
       "responseSchema": {
         "hash": "43f8bbbee82c88d0bf9bb85274847ee789adc7d3c1679d710587db788839fe70",
@@ -76073,7 +76073,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.grant.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-grants",
       "requestBody": {
         "duration_days": 30,
@@ -76100,7 +76100,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.memberships.grant.delete.default",
       "method": "DELETE",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7880"],
+      "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/membership-grants/00000000-0000-7000-8000-000000000802",
       "requestBody": {
         "reason": "Incorrect grant"
@@ -76127,7 +76127,7 @@
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "native.import-export.rss-feeds.submit.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7887"],
+      "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/import/rss-feeds",
       "requestBody": {
         "follow": true,
@@ -76152,7 +76152,7 @@
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "native.import-export.rss-feeds.status.retrying",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7887"],
+      "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000000001",
       "responseSchema": {
         "hash": "20cdf10dc909c98451adb305c066e817cf36eb004c3765da188d63482c6087f6",
@@ -76176,7 +76176,7 @@
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "native.import-export.rss-feeds.status.partial",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7887"],
+      "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000000001",
       "responseSchema": {
         "hash": "c50e3bd2cadecad9f93fdd708dca6cab35afcfcfd676d5dab6d8773e9f52c0af",
@@ -76200,7 +76200,7 @@
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "native.import-export.topics.import.outcomes",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7887"],
+      "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/import/topics",
       "requestBody": {
         "names": ["Travel", "Local News", "Travel", "!!!"]
@@ -76224,7 +76224,7 @@
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "native.import-export.topics.export.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7887"],
+      "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/export/topics",
       "responseSchema": {
         "hash": "0517df671a5cb18319155ff98ed25e3e0a4f14174072fb40230d44ed6187701a",
@@ -76245,7 +76245,7 @@
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "native.import-export.topics.export.download",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/7887"],
+      "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/export/topics",
       "query": {
         "download": "1"
@@ -76269,7 +76269,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contacts.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts",
       "query": {
         "limit": "25",
@@ -76296,7 +76296,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-detail.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584",
       "responseSchema": {
         "hash": "b362486a6c1ddafac8ae2a522f0b6eb8859c70f838ad5336872e4b8ce4cfc683",
@@ -76320,7 +76320,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-create.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts",
       "requestBody": {
         "contact_type": "influencer",
@@ -76349,7 +76349,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-update.default",
       "method": "PATCH",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584",
       "requestBody": {
         "email": "alice@example.test",
@@ -76381,7 +76381,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-archive.default",
       "method": "DELETE",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584",
       "responseSchema": {
         "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61",
@@ -76405,7 +76405,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-emails.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584/emails",
       "query": {
         "limit": "25"
@@ -76432,7 +76432,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-email-send.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584/emails",
       "requestBody": {
         "ai_generated_at": "2026-07-01T12:29:30Z",
@@ -76463,7 +76463,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-notes.default",
       "method": "GET",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584/notes",
       "query": {
         "limit": "25"
@@ -76490,7 +76490,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-note-create.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584/notes",
       "requestBody": {
         "body": "Met at the conference"
@@ -76517,7 +76517,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-note-delete.default",
       "method": "DELETE",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584/notes/00000000-0000-7000-8000-000000000901",
       "responseSchema": {
         "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61",
@@ -76542,7 +76542,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-link-user.default",
       "method": "PUT",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584/user-link",
       "requestBody": {
         "user_id": "00000000-0000-7000-8000-000000000001"
@@ -76569,7 +76569,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-unlink-user.default",
       "method": "DELETE",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584/user-link",
       "responseSchema": {
         "hash": "3dd9b64bb145de6b0d59548e0d3269d2ebe6d98379685c70693eb85f657a8090",
@@ -76593,7 +76593,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.contact-email-draft.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/crm/contacts/00000000-0000-7000-8000-000000000584/email-drafts",
       "requestBody": {
         "prompt": "Focus on travel content",
@@ -76621,7 +76621,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.import.success.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/imports/crm-contacts",
       "requestBody": {
         "csv": "name,email\nAlice Creator,alice@example.test"
@@ -76645,7 +76645,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.crm.import.validation.default",
       "method": "POST",
-      "migratedFrom": ["https://github.com/jonathanong/filaments/issues/6584"],
+      "migratedFrom": ["predecessor-issue#6584"],
       "path": "/api/v1/imports/crm-contacts",
       "requestBody": {
         "csv": "name,email,follower_count\nAlice Creator,alice@example.test,-1"

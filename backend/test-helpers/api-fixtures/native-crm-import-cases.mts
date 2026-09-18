@@ -1,10 +1,11 @@
+import { predecessorIssue } from './predecessor-issue.mts'
 import { responseBody } from './static-response-bodies.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const shared: Pick<ApiFixtureCase, 'auth' | 'consumers' | 'migratedFrom'> = {
   auth: 'fixture-admin',
   consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
-  migratedFrom: ['https://github.com/jonathanong/filaments/issues/6584'],
+  migratedFrom: [predecessorIssue(6584)],
 }
 
 export const nativeCrmImportApiFixtureCases: ApiFixtureCase[] = [

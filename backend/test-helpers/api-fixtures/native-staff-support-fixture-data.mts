@@ -1,4 +1,5 @@
 import type { ApiFixtureCase } from './types.mts'
+import { predecessorIssue } from './predecessor-issue.mts'
 
 export const adminId = '00000000-0000-7000-8000-000000000001'
 export const contactId = '00000000-0000-7000-8000-000000000711'
@@ -8,7 +9,7 @@ export const messageId = '00000000-0000-7000-8000-000000000713'
 export const shared: Pick<ApiFixtureCase, 'auth' | 'consumers' | 'migratedFrom'> = {
   auth: 'fixture-admin',
   consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
-  migratedFrom: ['https://github.com/jonathanong/filaments/issues/7879'],
+  migratedFrom: [predecessorIssue(7879)],
 }
 
 export const pageInfo = {
