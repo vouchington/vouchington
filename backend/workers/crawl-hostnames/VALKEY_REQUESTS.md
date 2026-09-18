@@ -2,7 +2,7 @@
 
 Application-level Valkey calls issued **per job** on the shared singleton
 clients. Excludes glide-mq stream ops (XADD/XREADGROUP/XACK on the worker's own
-connections). See [issue #4717](https://github.com/jonathanong/filaments/issues/4717).
+connections). See `predecessor-issue#4717`.
 
 | Job / call path                                                                                                       | Client | Operation    | Calls / job |
 | --------------------------------------------------------------------------------------------------------------------- | ------ | ------------ | ----------- |

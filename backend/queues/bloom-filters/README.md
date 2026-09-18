@@ -21,7 +21,7 @@ Each physical bloom filter lane is serialized with `ordering.concurrency: 1` and
 
 Entity-cache startup warmup only enqueues backfills for missing live filter keys. Existing live filters are kept in service and refreshed by weekly schedules plus write-time dual writes.
 
-**Future work:** Add batch-aware `backfillUserBookmarkBloomFilterBatch(userIds[])` to group multiple users' filter rebuilds into a single BF.MADD round-trip per relation. Track progress via analytics metrics (issue [#2263](https://github.com/jonathanong/filaments/issues/2263)).
+**Future work:** Add batch-aware `backfillUserBookmarkBloomFilterBatch(userIds[])` to group multiple users' filter rebuilds into a single BF.MADD round-trip per relation. Track progress via analytics metrics (issue `predecessor-issue#2263`).
 
 ## Recovery Contracts
 
