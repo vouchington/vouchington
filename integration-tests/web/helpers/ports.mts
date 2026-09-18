@@ -1,9 +1,6 @@
 import net from 'node:net'
+import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
 import { isFetchSafePort } from '@ts-shared/utils/fetch-ports'
-import {
-  isRunnerReservedPort,
-  listenOnRunnerUnreservedEphemeralPort,
-} from '../../../ci/runner-port-policy.mts'
 
 export { isFetchSafePort } from '@ts-shared/utils/fetch-ports'
 
@@ -14,10 +11,6 @@ export interface ReservedPort {
 
 type ReservePorts = (count: number) => Promise<ReservedPort[]>
 type ListenOnLoopback = (server: net.Server, port: number) => Promise<void>
-
-export function isFetchSafeUnreservedPort(port: number): boolean {
-  return isFetchSafePort(port) && !isRunnerReservedPort(port)
-}
 
 export async function allocateReservedPorts(
   count: number,
@@ -30,7 +23,7 @@ export async function allocateReservedPorts(
       const candidates = await reservePorts(count - reservations.length)
       const forbiddenCandidates: ReservedPort[] = []
       for (const candidate of candidates) {
-        if (isFetchSafeUnreservedPort(candidate.port)) {
+        if (isFetchSafePort(candidate.port)) {
           reservations.push(candidate)
         } else {
           forbiddenCandidates.push(candidate)
@@ -58,7 +51,7 @@ export async function listenOnFetchSafeEphemeralPort(
   server: net.Server,
   listen: ListenOnLoopback = listenOnLoopback,
 ): Promise<number> {
-  return listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1', {
+  return listenOnEphemeralPort(server, '127.0.0.1', {
     isAllowedPort: isFetchSafePort,
     listen: async candidate => listen(candidate, 0),
   })
@@ -68,7 +61,7 @@ async function reserveLoopbackPorts(count: number): Promise<ReservedPort[]> {
   const servers = await Promise.all(
     Array.from({ length: count }, async () => {
       const server = net.createServer()
-      await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+      await listenOnEphemeralPort(server, '127.0.0.1')
       return server
     }),
   )

@@ -9,7 +9,7 @@ import type { PrivateUser } from '../../services/users/types.mts'
 import { createDeviceAndSessionTokens } from '../../services/jwt-session/index.mts'
 import { encodeFeatureFlagCookie, type FeatureFlags } from '../../services/feature-flags/index.mts'
 import { v7 } from 'uuid'
-import { listenOnRunnerUnreservedEphemeralPort } from '@voucha/ci/runner-port-policy'
+import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
 
 type ApiTestListener = ReturnType<typeof createApiRequestGuardedListener>
 
@@ -142,7 +142,7 @@ function createSharedApiTestServer(state: ApiTestServerGlobal): ApiTestServerSta
   // (e.g. 8 fork workers × multiple test files running simultaneously). ::1 does not
   // have this restriction. We await the 'listening' event so the port is known before
   // the module's exports are used by any test.
-  const portPromise = listenOnRunnerUnreservedEphemeralPort(testServer, '::1').then(port => {
+  const portPromise = listenOnEphemeralPort(testServer, '::1').then(port => {
     // Surface post-bind server errors immediately instead of emitting an unhandled event.
     testServer.on('error', err => {
       throw err

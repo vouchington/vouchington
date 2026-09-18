@@ -1,8 +1,8 @@
 import { createServer, type Server } from 'node:http'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getLongRunningExternalFetch } from '@modules/utils'
+import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
 import { isFetchSafePort } from '@ts-shared/utils/fetch-ports'
-import { listenOnRunnerUnreservedEphemeralPort } from '../../../ci/runner-port-policy.mts'
 
 // The default export is a Proxy that lazily constructs the real OpenAI client on first property
 // access (see client.mts) and memoizes it for the life of the module. Mocking the external
@@ -58,7 +58,7 @@ describe('openai client', () => {
 })
 
 async function listen(server: Server, host: string): Promise<{ port: number }> {
-  const port = await listenOnRunnerUnreservedEphemeralPort(server, host, {
+  const port = await listenOnEphemeralPort(server, host, {
     isAllowedPort: isFetchSafePort,
   })
   return { port }

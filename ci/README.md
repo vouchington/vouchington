@@ -91,9 +91,12 @@ the verified manual Node fallback and isolated pnpm bootstrap out of workflow YA
 the same portable setup contract. `setup-backend-install.sh` owns setup-backend's persistent-runner
 lifecycle check and delegates the full installation to `pnpm-install.sh`.
 
-Workspace packages import the shared listener binder through
+CI-runner numeric paths import the shared listener binder through
 `@voucha/ci/runner-port-policy` so deploy restoration preserves the package boundary. That export
-loads this repository's JSON via `vouchington-tooling/runner-port-policy`.
+loads this repository's JSON via `vouchington-tooling/runner-port-policy`. Repository-owned Node
+test listeners instead allocate a plain or Fetch-safe ephemeral port through
+[`@ts-shared/utils/ephemeral-ports`](../ts-shared/utils/ephemeral-ports.mts), which has no
+dependency on this policy.
 
 Gitleaks CI intentionally installs its checksum-verified binary in an isolated per-job temporary
 directory; local `gitleaks` comes from the matching mise `aqua:` pin. The two versions are guarded

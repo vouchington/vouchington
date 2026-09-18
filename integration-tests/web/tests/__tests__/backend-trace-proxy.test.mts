@@ -251,3 +251,11 @@ describe('backend-trace-proxy parallel isolation', () => {
     }
   })
 })
+
+describe('backend-trace-proxy port validation', () => {
+  it('rejects an explicit Fetch-forbidden trace proxy port before binding', async () => {
+    await expect(createTraceProxy(4045, 'http://127.0.0.1:4046')).rejects.toThrow(
+      'Trace proxy port 4045 is forbidden by Fetch',
+    )
+  })
+})

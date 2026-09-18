@@ -132,8 +132,7 @@ describe('detect-changes path filters', () => {
         'dev/initialize*',
         'dev/lib/**',
         'dev/host-storage-preflight.mts',
-        'ci/runner-port-policy.mts',
-        'ci/runner-port-policy.json',
+        'dev/worktree-port-policy.json',
       ]),
     )
   })
@@ -144,7 +143,7 @@ describe('detect-changes path filters', () => {
       'dev/initialize',
       'dev/lib/db-target.sh',
       'dev/host-storage-preflight.mts',
-      'ci/runner-port-policy.mts',
+      'dev/worktree-port-policy.json',
       'ci/download-with-diagnostics.sh',
     ]
     const misses = ['ci/agent-workflow-docs.test.mts', 'dev/pr-description.mts']

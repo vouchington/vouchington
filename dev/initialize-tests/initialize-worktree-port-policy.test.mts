@@ -11,7 +11,7 @@ const initializePath = fileURLToPath(new URL('../initialize', import.meta.url))
 const testDirs: string[] = []
 
 async function run(script: string, env = '') {
-  const root = await mkdtemp(join(tmpdir(), 'voucha-runner-port-policy-'))
+  const root = await mkdtemp(join(tmpdir(), 'voucha-worktree-port-policy-'))
   testDirs.push(root)
   await mkdir(join(root, 'worktree'))
   await writeFile(join(root, 'worktree', '.env'), env)
@@ -24,21 +24,16 @@ async function run(script: string, env = '') {
 }
 
 async function copyInitializeToMetacharacterPath(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "voucha-runner-port-policy-#-'-"))
+  const root = await mkdtemp(join(tmpdir(), "voucha-worktree-port-policy-#-'-"))
   testDirs.push(root)
   await mkdir(join(root, 'dev'), { recursive: true })
-  await mkdir(join(root, 'ci'), { recursive: true })
   await copyFile(initializePath, join(root, 'dev', 'initialize'))
   await cp(fileURLToPath(new URL('../lib', import.meta.url)), join(root, 'dev', 'lib'), {
     recursive: true,
   })
   await copyFile(
-    fileURLToPath(new URL('../../ci/runner-port-policy.mts', import.meta.url)),
-    join(root, 'ci', 'runner-port-policy.mts'),
-  )
-  await copyFile(
-    fileURLToPath(new URL('../../ci/runner-port-policy.json', import.meta.url)),
-    join(root, 'ci', 'runner-port-policy.json'),
+    fileURLToPath(new URL('../worktree-port-policy.json', import.meta.url)),
+    join(root, 'dev', 'worktree-port-policy.json'),
   )
   return join(root, 'dev', 'initialize')
 }
@@ -50,7 +45,7 @@ DB_NAME="voucha"
 VALKEY_CONTAINER="voucha-valkey"
 `
 
-describe('initialize runner port policy', () => {
+describe('initialize worktree port policy', () => {
   afterEach(async () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
@@ -61,7 +56,7 @@ describe('initialize runner port policy', () => {
       'bash',
       [
         '-lc',
-        'source "$1"; load_runner_port_policy; printf \'%s,%s\' "$RUNNER_RESERVED_PORT_START" "$RUNNER_RESERVED_PORT_END"',
+        'source "$1"; load_worktree_port_policy; printf \'%s,%s\' "$WORKTREE_RESERVED_PORT_START" "$WORKTREE_RESERVED_PORT_END"',
         'initialize-test',
         copiedInitialize,
       ],
@@ -100,7 +95,7 @@ describe('initialize runner port policy', () => {
 
   it('treats leading-zero decimal port strings according to the port policy', async () => {
     const output = await run(
-      `RUNNER_RESERVED_PORT_START=2200; RUNNER_RESERVED_PORT_END=2999; if is_valid_port 0080 && is_allocatable_worktree_port 0080; then printf '80=true'; else printf '80=false'; fi; if is_valid_port 002200 && ! is_allocatable_worktree_port 002200; then printf ',2200=true'; else printf ',2200=false'; fi; if is_valid_port 008787 && ! is_allocatable_worktree_port 008787; then printf ',8787=true'; else printf ',8787=false'; fi`,
+      `WORKTREE_RESERVED_PORT_START=2200; WORKTREE_RESERVED_PORT_END=2999; if is_valid_port 0080 && is_allocatable_worktree_port 0080; then printf '80=true'; else printf '80=false'; fi; if is_valid_port 002200 && ! is_allocatable_worktree_port 002200; then printf ',2200=true'; else printf ',2200=false'; fi; if is_valid_port 008787 && ! is_allocatable_worktree_port 008787; then printf ',8787=true'; else printf ',8787=false'; fi`,
     )
 
     expect(output).toBe('80=true,2200=true,8787=true')

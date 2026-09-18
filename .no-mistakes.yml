@@ -2445,7 +2445,8 @@ rules:
     options:
       allow:
         - ci/runner-port-policy.mts
-      message: use ci/allocate-browser-safe-ports.py or listenOnRunnerUnreservedEphemeralPort()
+        - ts-shared/utils/ephemeral-ports.mts
+      message: use ci/allocate-browser-safe-ports.py, listenOnRunnerUnreservedEphemeralPort(), or @ts-shared/utils/ephemeral-ports's listenOnEphemeralPort()
 
   - name: workflow tests do not restate timeout-minutes literals
     rule: github-actions-test-timeout-literals

@@ -1,7 +1,7 @@
 import { createServer, type RequestListener } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it } from 'vitest'
-import { listenOnRunnerUnreservedEphemeralPort } from '../../ci/runner-port-policy.mts'
+import { listenOnEphemeralPort } from '../../ts-shared/utils/ephemeral-ports.mts'
 import {
   assertBackendLocalizationReady,
   backendLocalizationUrl,
@@ -14,7 +14,7 @@ const servers: ReturnType<typeof createServer>[] = []
 async function listen(handler: RequestListener): Promise<string> {
   const server = createServer(handler)
   servers.push(server)
-  await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+  await listenOnEphemeralPort(server, '127.0.0.1')
   return backendLocalizationUrl((server.address() as AddressInfo).port.toString())
 }
 

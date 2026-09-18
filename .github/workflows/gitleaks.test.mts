@@ -8,7 +8,7 @@ import { promisify } from 'node:util'
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { afterEach, describe, expect, it } from 'vitest'
-import { listenOnRunnerUnreservedEphemeralPort } from '../../ci/runner-port-policy.mts'
+import { listenOnEphemeralPort } from '../../ts-shared/utils/ephemeral-ports.mts'
 import {
   assertShellSnippetsInOrder,
   requiredNamedStep,
@@ -131,7 +131,7 @@ describe('gitleaks workflow', () => {
       }
       response.end(archiveBytes)
     })
-    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
+    const port = await listenOnEphemeralPort(server, '127.0.0.1')
 
     try {
       const fakeCurl = join(fakeCurlDirectory, 'curl')
