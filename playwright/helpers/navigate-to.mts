@@ -17,6 +17,9 @@ import { waitForBelowFoldHydration } from './wait-for-hydration.mts'
  *
  * Pass `waitUntil: 'load'` for pages with persistent SSE streams (admin dashboards)
  * that never reach networkidle because their event-source connection stays open.
+ *
+ * Safe for URLs that redirect on the client — the readiness wait restarts against
+ * whichever document the redirect lands on (see wait-for-hydration.mts).
  */
 export async function navigateTo(
   page: Page,
@@ -36,6 +39,10 @@ export async function navigateTo(
     // React 19 + React Compiler can attach above-fold click handlers slightly after
     // networkidle on slower machines. Wait for one idle callback so onClick handlers
     // are wired up before tests try to interact.
-    await waitForBelowFoldHydration(page)
+    //
+    // A route that redirects on the client can reach `waitUntil` before the
+    // redirect fires, so pass it through: if the redirect lands mid-wait, the
+    // replacement document is settled to the same state this call asked for.
+    await waitForBelowFoldHydration(page, { waitUntil })
   })
 }
