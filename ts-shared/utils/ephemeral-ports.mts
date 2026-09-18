@@ -32,11 +32,13 @@ export async function listenOnEphemeralPort(
 ): Promise<number> {
   const maxBindAttempts = options.maxBindAttempts ?? DEFAULT_MAX_BIND_ATTEMPTS
   for (let attempt = 0; attempt < maxBindAttempts; attempt += 1) {
+    // oxlint-disable-next-line no-await-in-loop -- each bind must settle before its port can be checked.
     await (options.listen ?? listenOnHost)(server, host)
     const port = getBoundPort(server)
     if (options.isAllowedPort?.(port) ?? true) {
       return port
     }
+    // oxlint-disable-next-line no-await-in-loop -- the same server must close before it can be rebound.
     await closeServer(server)
   }
   throw new EphemeralListenerAttemptsExhaustedError(maxBindAttempts)
