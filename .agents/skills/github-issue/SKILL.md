@@ -35,9 +35,10 @@ it. Otherwise, whether or not an issue exists, ask whether to widen the accepted
 or record a follow-up. Filing an issue records work but does not amend the accepted plan or
 authorize implementation.
 
-Resolve `CURRENT_REPO` once and use it as `PR_REPO`; PR inspection and `dev/pr-description.mts`
-always operate there. Default `TARGET_REPO` to `jonathanong/filaments`; set another repository
-only from explicit human input. Delegate every repository authorization, mutation check, duplicate search,
+Resolve `CURRENT_REPO` once and use it as both `PR_REPO` and the default `TARGET_REPO`; PR
+inspection and `dev/pr-description.mts` always operate at `PR_REPO`. `jonathanong/filaments` is a
+retired, archived predecessor repository, not a routing target — set a different `TARGET_REPO` only
+from explicit human input. Delegate every repository authorization, mutation check, duplicate search,
 relationship, batch preflight, post-write verification, and label-creation decision to the canonical
 skill. Its `Mutation authority` gate re-fetches and re-verifies the exact canonical repository
 immediately before every write; transport helpers never grant authority. A denied request to create an issue outside Vouchington becomes a Vouchington tracking issue with
