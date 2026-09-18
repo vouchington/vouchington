@@ -32,7 +32,7 @@ export const detectChangesPathsFilterGithub5xxRule: TransientRetryRule = {
     "The detect-changes job fails only because dorny/paths-filter's pull-request-files API call receives a GitHub 5xx server-error page.",
   rationale:
     'detect-changes is the sole genuinely-failed job and every annotation on it is the branded GitHub 5xx HTML error page that octokit surfaces from a failed pull-request-files API call, not a repository content or configuration problem.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/29542126581'],
+  exampleRunIds: ['29542126581'],
   maxAttempts: 1,
   needsAnnotations: true,
   match: async ctx => {

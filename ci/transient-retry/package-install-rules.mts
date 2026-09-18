@@ -26,11 +26,7 @@ export const playwrightSetupBackendPnpmActivationTimeoutRule: TransientRetryRule
     'A setup-backend job times out while the pnpm activation fallback is still running npm install.',
   rationale:
     'The failure happens before Playwright, SQL safety checks, migrations, schema tests, ts-shared tests, snapshot verification, or app builds run; the timed-out setup-backend job was still installing the pinned pnpm version.',
-  exampleRunUrls: [
-    'https://github.com/jonathanong/filaments/actions/runs/27902627869',
-    'https://github.com/jonathanong/filaments/actions/runs/29881162902',
-    'https://github.com/jonathanong/filaments/actions/runs/30664444111',
-  ],
+  exampleRunIds: ['27902627869', '29881162902', '30664444111'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

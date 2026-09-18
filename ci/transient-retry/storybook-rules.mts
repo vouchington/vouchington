@@ -137,7 +137,7 @@ export const storybookBrowserStartupTransientRule: TransientRetryRule = {
     'Storybook browser-mode startup fails while Vite, Vitest, and Chromium establish the test session.',
   rationale:
     'The consolidated fingerprint covers bounded bootstrap failures before tests begin: missing runner context, a dropped localhost module fetch, a Vite optimizer timeout, a watchdog exit, or a browser-session connection timeout. Assertion failures and failures after test execution starts remain excluded.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/27467505115'],
+  exampleRunIds: ['27467505115'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

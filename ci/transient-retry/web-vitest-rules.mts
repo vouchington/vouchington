@@ -41,7 +41,7 @@ export const webVitestSigsegvRule: TransientRetryRule = {
   description: 'Web unit test CI job SIGSEGVs before assertions.',
   rationale:
     'Native crash before test output; the current web project/shard command identifies the producer while avoiding an assumption about whether coverage was enabled.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/26764065016'],
+  exampleRunIds: ['26764065016'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
@@ -69,7 +69,7 @@ export const mainWebVitestWorkerStartTimeoutAfterPassRule: TransientRetryRule = 
     'Main web Vitest finishes all web tests, then fails because a Vitest worker thread does not respond while scheduling a test file.',
   rationale:
     'The web test summary reports every test file and test passed before Vitest reports an unhandled worker-pool startup timeout. In mixed Main CI web failures, simultaneous Playwright leaf failures are accepted only when they independently match clean runner shutdown, and store-playwright-otel is accepted only when it lacks artifacts after a failed Playwright shard.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/28513607183'],
+  exampleRunIds: ['28513607183'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

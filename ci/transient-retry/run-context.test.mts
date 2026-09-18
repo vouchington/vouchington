@@ -19,7 +19,7 @@ describe('workflow run context', () => {
 
     await expect(
       fetchWorkflowRunSummary({
-        repository: 'jonathanong/filaments',
+        repository: 'vouchington/vouchington',
         runId: '123',
         execFile,
       }),
@@ -28,7 +28,7 @@ describe('workflow run context', () => {
       runAttempt: 2,
       workflowName: 'CI',
     })
-    expect(calls).toEqual([['api', 'repos/jonathanong/filaments/actions/runs/123']])
+    expect(calls).toEqual([['api', 'repos/vouchington/vouchington/actions/runs/123']])
   })
 
   it('rejects non-object workflow run metadata from GitHub', async () => {
@@ -36,7 +36,7 @@ describe('workflow run context', () => {
 
     await expect(
       fetchWorkflowRunSummary({
-        repository: 'jonathanong/filaments',
+        repository: 'vouchington/vouchington',
         runId: '123',
         execFile,
       }),
@@ -81,7 +81,7 @@ describe('workflow run context', () => {
 
     const ctx = await buildWorkflowRunContext({
       conclusion: 'failure',
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       runAttempt: 2,
       runId: '123',
       workflowName: 'CI',
@@ -136,7 +136,7 @@ describe('workflow run context', () => {
 
     const ctx = await buildWorkflowRunContext({
       conclusion: 'failure',
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       runAttempt: 2,
       runId: '123',
       workflowName: 'CI',

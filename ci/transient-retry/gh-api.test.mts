@@ -41,7 +41,7 @@ describe('ghApi()', () => {
       calls.push(args)
       if (calls.length === 1) {
         throw makeTransportError(
-          'Get "https://api.github.com/repos/jonathanong/filaments/actions/runs/1/jobs": net/http: TLS handshake timeout',
+          'Get "https://api.github.com/repos/vouchington/vouchington/actions/runs/1/jobs": net/http: TLS handshake timeout',
         )
       }
       return { stdout: '{"ok":true}', stderr: '' }
@@ -49,7 +49,7 @@ describe('ghApi()', () => {
 
     try {
       await expect(
-        ghApi(['repos/jonathanong/filaments/actions/runs/1/jobs'], {
+        ghApi(['repos/vouchington/vouchington/actions/runs/1/jobs'], {
           execFile,
           maxBuffer: 123,
           sleep: ms => {
@@ -62,12 +62,12 @@ describe('ghApi()', () => {
       console.error = originalConsoleError
     }
     expect(calls).toEqual([
-      ['api', 'repos/jonathanong/filaments/actions/runs/1/jobs'],
-      ['api', 'repos/jonathanong/filaments/actions/runs/1/jobs'],
+      ['api', 'repos/vouchington/vouchington/actions/runs/1/jobs'],
+      ['api', 'repos/vouchington/vouchington/actions/runs/1/jobs'],
     ])
     expect(sleepMs).toEqual([1000])
     expect(warnings).toEqual([
-      '::warning::gh api attempt 1/3 failed (Get "https://api.github.com/repos/jonathanong/filaments/actions/runs/1/jobs": net/http: TLS handshake timeout); retrying',
+      '::warning::gh api attempt 1/3 failed (Get "https://api.github.com/repos/vouchington/vouchington/actions/runs/1/jobs": net/http: TLS handshake timeout); retrying',
     ])
   })
 
@@ -80,7 +80,7 @@ describe('ghApi()', () => {
     }
 
     await expect(
-      ghApi(['repos/jonathanong/filaments/actions/runs/missing/jobs'], {
+      ghApi(['repos/vouchington/vouchington/actions/runs/missing/jobs'], {
         execFile,
         sleep: () => Promise.resolve(),
       }),

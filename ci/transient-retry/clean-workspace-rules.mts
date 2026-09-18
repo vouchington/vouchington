@@ -69,10 +69,7 @@ export const cleanWorkspaceVouchingtonToolingDownloadFlakeRule: TransientRetryRu
     'clean-workspace fails before any job-specific step runs because its pre-trust-gate curl fallback cannot download vouchington-tooling from the npm registry.',
   rationale:
     'clean-workspace intentionally bypasses the packaged and pnpm-dlx fast paths before the trust gate and downloads vouchington-tooling directly from registry.npmjs.org with a checksum verification against pnpm-lock.yaml; a transport failure or timeout against that registry fails every job using the action before any job-specific logic runs, and the checksum check still guards a retried download, so rerunning once is safe.',
-  exampleRunUrls: [
-    'https://github.com/jonathanong/filaments/actions/runs/33277864198',
-    'https://github.com/jonathanong/filaments/actions/runs/33464822312',
-  ],
+  exampleRunIds: ['33277864198', '33464822312'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
@@ -107,10 +104,7 @@ export const playwrightSelectCleanWorkspaceFetchTimeoutRule: TransientRetryRule 
     'Main CI web Playwright selector fails transiently while clean-workspace prepares the test-selection checkout.',
   rationale:
     'The Playwright selector fails before dependency setup or test selection because a self-hosted runner git fetch hangs until timeout, or because the runner receives a shutdown signal during the clean-workspace step. Downstream OTel storage can fail only because no Playwright shard artifacts exist, and web test companion failures are accepted only with GitHub runner-lost-communication annotations.',
-  exampleRunUrls: [
-    'https://github.com/jonathanong/filaments/actions/runs/27474807081',
-    'https://github.com/jonathanong/filaments/actions/runs/28696967474',
-  ],
+  exampleRunIds: ['27474807081', '28696967474'],
   maxAttempts: 2,
   needsLogs: true,
   match: async ctx => {

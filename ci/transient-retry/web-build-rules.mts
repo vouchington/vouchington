@@ -74,12 +74,7 @@ export const mainWebBuildWebTargetsWatchdogTimeoutRule: TransientRetryRule = {
     'Main CI web Playwright or web-integration `build-web-targets` Next.js build is killed by the expensive-build command circuit breaker.',
   rationale:
     '`next build` wall time increased after PR #10794 capped Next.js page-data workers to fix a host OOM; the former 300-second expensive-build command cap was not re-derived for the slower build, so healthy-but-slow builds exceeded it under host pressure. The shared build action now uses an interim 360-second cap while #11093 validates the cgroup-aware build profile and narrows or retires this retry rule; #10937 is the historical phase-one context. Sibling shards on the same commit complete, there is no compiler diagnostic or kernel OOM, and a quieter rerun recovers the build.',
-  exampleRunUrls: [
-    'https://github.com/jonathanong/filaments/actions/runs/33947220513',
-    'https://github.com/jonathanong/filaments/actions/runs/33945343955',
-    'https://github.com/jonathanong/filaments/actions/runs/33938415433',
-    'https://github.com/jonathanong/filaments/actions/runs/33964001099',
-  ],
+  exampleRunIds: ['33947220513', '33945343955', '33938415433', '33964001099'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

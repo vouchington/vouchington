@@ -56,7 +56,7 @@ export const mainWebIntegrationBackendSilentStartupExitRule: TransientRetryRule 
     'Main CI web-integration backend exits during startup before tests run, and the service log contains only the harness exit line.',
   rationale:
     'The failure happens before any web-api or web-integration test file runs, after CI setup completed, and the harness lost the backend child stderr. A single rerun recovers this startup-only no-diagnostic shape while repeated or diagnostic-bearing failures still dispatch Harness.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/29501061688'],
+  exampleRunIds: ['29501061688'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
@@ -106,10 +106,7 @@ export const webIntegrationWranglerSocketClosedRule: TransientRetryRule = {
     'CI web-integration wrangler drops the local worker socket (undici UND_ERR_SOCKET), or its supervised-restart budget exhausts and the worker port stays closed for the rest of the run (undici ECONNREFUSED).',
   rationale:
     'Wrangler/workerd printed Network connection lost against the local worker, or the post-ready exit watcher reported the worker process gone; either way the same tests passed until the local worker socket was lost. One rerun recovers host-local transport loss without matching assertion failures such as route-baseline 500 versus 404.',
-  exampleRunUrls: [
-    'https://github.com/jonathanong/filaments/actions/runs/32537258712',
-    'https://github.com/jonathanong/filaments/actions/runs/33791168511',
-  ],
+  exampleRunIds: ['32537258712', '33791168511'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

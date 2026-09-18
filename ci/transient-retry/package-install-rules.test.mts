@@ -178,7 +178,7 @@ describe('postgres-schema-setup-backend-pnpm-activation-timeout', () => {
 
 describe('main-checks-ts-shared-setup-backend-pnpm-activation-timeout', () => {
   const tsSharedPnpmActivationTimeoutLog = [
-    `Uses: jonathanong/filaments/.github/workflows/tests-ts-shared.yml@refs/heads/main (${'a'.repeat(40)})`,
+    `Uses: vouchington/vouchington/.github/workflows/tests-ts-shared.yml@refs/heads/main (${'a'.repeat(40)})`,
     '##[group]Run ./.github/actions/setup-backend',
     'with:',
     '  runner-lifecycle: persistent',

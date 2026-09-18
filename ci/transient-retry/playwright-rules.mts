@@ -82,7 +82,7 @@ export const mainWebPlaywrightSetupAptLockRule: TransientRetryRule = {
     'Retry Playwright/Storybook jobs that fail in `Run ./.github/actions/setup-playwright` because of apt/dpkg lock contention or host package-manager lock timeout on shared self-hosted runners.',
   rationale:
     'Self-hosted runners share apt/dpkg state across jobs. When the Playwright dependency probe finds host drift, `setup-playwright` repairs it with `playwright install-deps` under the host package-manager lock. APT contention or host-lock timeout can fail that fallback; both are transient.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/27805129632'],
+  exampleRunIds: ['27805129632'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
@@ -134,7 +134,7 @@ export const mainWebPlaywrightWorkerNavigationTimeoutRule: TransientRetryRule = 
     'Main CI web Playwright shard reaches test execution, then workerd becomes unresponsive and a `navigateTo()` page.goto exhausts the connection retry budget.',
   rationale:
     'The shard had already started the production web stack and completed hundreds of specs; the terminal failure is broad worker/runtime unresponsiveness (`logger_core` timeouts plus `retryOnConnectionLost` budget exhaustion), not a route-specific assertion or build failure. Per-rule attempt accounting gives this fingerprint one retry even when an earlier workflow attempt failed for a different reason.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/28527428862'],
+  exampleRunIds: ['28527428862'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

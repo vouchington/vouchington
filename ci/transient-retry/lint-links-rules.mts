@@ -80,7 +80,7 @@ export const lintLinksGithub5xxRule: TransientRetryRule = {
   description: 'Lint Links fails only because Lychee reports transient GitHub-hosted 5xx URLs.',
   rationale:
     'The Markdown links are valid references, the only failed job is the standalone Lychee job, and 5xx responses from github.com are upstream server failures rather than repository content bugs.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/27894821921'],
+  exampleRunIds: ['27894821921'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
@@ -99,7 +99,7 @@ export const lintLinksSetupLycheeDownloadFlakeRule: TransientRetryRule = {
     'Lint Links fails before link checking because setup-lychee cannot download the pinned Lychee release asset from GitHub Releases.',
   rationale:
     'The Markdown link checker never starts; the only failed job is lint-links and the stable fingerprint is an external GitHub Releases download failure, not a broken repository link.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/29263881027'],
+  exampleRunIds: ['29263881027'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {

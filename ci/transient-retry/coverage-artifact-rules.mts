@@ -86,10 +86,7 @@ export const coverageTransportExhaustedRule: TransientRetryRule = {
     'A CI coverage producer fails only in its transport tail after both retried GitHub artifact fallback attempts fail to persist its provenance pair (the shared coverage-transport library always treats the S3 primary leg as skipped in this repo and emits its exhaustion marker once the fallback is exhausted too).',
   rationale:
     'The producer emitted COVERAGE_TRANSPORT_EXHAUSTED, its matching persisted-pair assertion failed, and GitHub reports no failed test, stamp, or unrelated step, so one workflow rerun can recover a transient transport outage without hiding a product failure.',
-  exampleRunUrls: [
-    'https://github.com/jonathanong/filaments/actions/runs/28513421770',
-    'https://github.com/jonathanong/filaments/actions/runs/29322555306',
-  ],
+  exampleRunIds: ['28513421770', '29322555306'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
@@ -117,10 +114,7 @@ export const coverageArtifactDownloadTimeoutRule: TransientRetryRule = {
     'Patch Coverage fails because the GitHub-artifact fallback download times out before downloading every LCOV artifact.',
   rationale:
     'Coverage producers completed and uploaded their GitHub artifact fallbacks, but the Patch Coverage job lost GitHub artifact-download connectivity or exhausted the fallback download step timeout; prepare-coverage-artifacts then failed only because the partial download was incomplete.',
-  exampleRunUrls: [
-    'https://github.com/jonathanong/filaments/actions/runs/33856233270',
-    'https://github.com/jonathanong/filaments/actions/runs/30193358422',
-  ],
+  exampleRunIds: ['33856233270', '30193358422'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
@@ -156,7 +150,7 @@ export const coverageArtifactStaleRerunMissingRule: TransientRetryRule = {
     'Patch Coverage fails on a delayed retry because the failed-job rerun reused successful producers from an earlier attempt after their GitHub artifacts were no longer listed (removed by the cleanup sweep or expired).',
   rationale:
     'The Patch Coverage job is rerunning without rerunning the coverage producers, and GitHub reports zero coverage artifacts even though the producer jobs previously succeeded. A full workflow rerun recreates the same-run artifact handoff; there is no dependency or test failure signal for Harness to fix.',
-  exampleRunUrls: ['https://github.com/jonathanong/filaments/actions/runs/30156016854'],
+  exampleRunIds: ['30156016854'],
   maxAttempts: 3,
   needsLogs: true,
   match: async ctx => {

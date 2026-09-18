@@ -4,7 +4,7 @@ import { deriveRuleAttempts } from './run-context-rule-attempts.mts'
 import type { TransientRetryRule } from './types.mts'
 
 const baseOptions = {
-  repository: 'jonathanong/filaments',
+  repository: 'vouchington/vouchington',
   runId: '123',
   workflowName: 'CI',
 }
@@ -168,7 +168,7 @@ describe('deriveRuleAttempts accounting', () => {
         ['guard-skipped', 1],
       ]),
     )
-    expect(calls).toEqual(['repos/jonathanong/filaments/actions/runs/123/attempts/1/jobs'])
+    expect(calls).toEqual(['repos/vouchington/vouchington/actions/runs/123/attempts/1/jobs'])
   })
 
   it('rejects replay when a matching rule accessed unavailable evidence', async () => {
