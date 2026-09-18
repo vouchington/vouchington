@@ -1,5 +1,6 @@
 import { completeNativePost, completePostMetrics } from './native-post-data.mts'
 import { nestedComment, rootPost, topLevelComment } from './native-comment-thread-posts.mts'
+import { predecessorIssue } from './predecessor-issue.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const boundedAncestorRoot = completeNativePost({
@@ -59,7 +60,7 @@ export const nativeCommentAncestorPaginationApiFixtureCases: ApiFixtureCase[] = 
       end_cursor: null,
     }),
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
-    migratedFrom: ['https://github.com/jonathanong/filaments/issues/11213'],
+    migratedFrom: [predecessorIssue(11213)],
   },
   {
     id: 'native.comments.ancestors.bounded.deep-initial',
@@ -78,7 +79,7 @@ export const nativeCommentAncestorPaginationApiFixtureCases: ApiFixtureCase[] = 
       end_cursor: 'fixture-ancestor-deep-initial-end',
     }),
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
-    migratedFrom: ['https://github.com/jonathanong/filaments/issues/11213'],
+    migratedFrom: [predecessorIssue(11213)],
   },
   {
     id: 'native.comments.ancestors.bounded.deep-continuation',
@@ -97,6 +98,6 @@ export const nativeCommentAncestorPaginationApiFixtureCases: ApiFixtureCase[] = 
       end_cursor: null,
     }),
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
-    migratedFrom: ['https://github.com/jonathanong/filaments/issues/11213'],
+    migratedFrom: [predecessorIssue(11213)],
   },
 ]

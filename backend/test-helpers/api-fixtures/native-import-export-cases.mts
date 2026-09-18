@@ -1,4 +1,5 @@
 import type { ApiFixtureCase } from './types.mts'
+import { predecessorIssue } from './predecessor-issue.mts'
 
 const importId = '70000000-0000-7000-8000-000000000001'
 const firstRowId = '70000000-0000-7000-8000-000000000002'
@@ -15,7 +16,7 @@ const exportedTopics = [
 const shared: Pick<ApiFixtureCase, 'auth' | 'consumers' | 'migratedFrom'> = {
   auth: 'fixture-user',
   consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
-  migratedFrom: ['https://github.com/jonathanong/filaments/issues/7887'],
+  migratedFrom: [predecessorIssue(7887)],
 }
 
 export const nativeImportExportApiFixtureCases: ApiFixtureCase[] = [

@@ -17,6 +17,7 @@ import {
   topLevelCommentElection,
   topLevelCommentVote,
 } from './native-comment-thread-sidecars.mts'
+import { predecessorIssue } from './predecessor-issue.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 export const nativeCommentThreadApiFixtureCases: ApiFixtureCase[] = [
@@ -57,7 +58,7 @@ export const nativeCommentThreadApiFixtureCases: ApiFixtureCase[] = [
       },
     },
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
-    migratedFrom: ['https://github.com/jonathanong/filaments/issues/6573'],
+    migratedFrom: [predecessorIssue(6573)],
   },
   {
     id: 'native.comments.descendants.default',
@@ -127,7 +128,7 @@ export const nativeCommentThreadApiFixtureCases: ApiFixtureCase[] = [
       bookmarks: bookmarkedPosts,
     },
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
-    migratedFrom: ['https://github.com/jonathanong/filaments/issues/6573'],
+    migratedFrom: [predecessorIssue(6573)],
   },
   {
     id: 'native.comments.ancestors.permalink',
@@ -193,6 +194,6 @@ export const nativeCommentThreadApiFixtureCases: ApiFixtureCase[] = [
       },
     },
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
-    migratedFrom: ['https://github.com/jonathanong/filaments/issues/6573'],
+    migratedFrom: [predecessorIssue(6573)],
   },
 ]
