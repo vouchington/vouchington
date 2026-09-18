@@ -12,10 +12,6 @@ import {
   workflowCancelledWithoutFailureSignalRule,
 } from './ci-cancelled-rules.mts'
 import {
-  cleanWorkspaceVouchingtonToolingDownloadFlakeRule,
-  playwrightSelectCleanWorkspaceFetchTimeoutRule,
-} from './clean-workspace-rules.mts'
-import {
   coverageArtifactDownloadTimeoutRule,
   coverageArtifactStaleRerunMissingRule,
   coverageTransportExhaustedRule,
@@ -68,7 +64,6 @@ export const RULES: TransientRetryRule[] = [
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
   runnerDiskAdmissionRejectedRule,
-  cleanWorkspaceVouchingtonToolingDownloadFlakeRule,
   lintLinksGithub5xxRule,
   lintLinksSetupLycheeDownloadFlakeRule,
   detectChangesPathsFilterGithub5xxRule,
@@ -96,7 +91,6 @@ export const RULES: TransientRetryRule[] = [
   mainWebStaticBuildSilentExitRule,
   mainWebVitestWorkerStartTimeoutAfterPassRule,
   storybookBrowserStartupTransientRule,
-  playwrightSelectCleanWorkspaceFetchTimeoutRule,
   webVitestSigsegvRule,
   staticAnalysisCheckoutDiskExhaustionRule,
   cloudflareWorkerTscRuntimeCrashRule,

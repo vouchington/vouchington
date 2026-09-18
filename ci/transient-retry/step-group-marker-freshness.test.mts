@@ -5,7 +5,6 @@ import { dirname, join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { cleanWorkspaceScriptStepMarker } from './clean-workspace-rules.mts'
 import {
   hostLockAcquireTimeoutMarker,
   hostLockProcessGroupSurvivedSigkillMarker,
@@ -19,8 +18,8 @@ import {
 import { buildWebTargetsStepMarker } from './web-build-watchdog-fingerprints.mts'
 
 // Guards the `##[group]Run <run:|uses:>` step-header class of marker against silent staleness — see
-// clean-workspace-rules.mts and static-analysis-log-fingerprints.mts for the incidents this closes
-// (PR #10604). sliceGithubActionsStepGroup() slices a log by exact-substring indexOf(); a marker that
+// static-analysis-log-fingerprints.mts for the incidents this closes (PR #10604).
+// sliceGithubActionsStepGroup() slices a log by exact-substring indexOf(); a marker that
 // no longer matches any step header makes its rule decline to match forever, and a marker that is only
 // a prefix of a sibling step's header would silently slice the wrong step.
 //
@@ -80,13 +79,6 @@ function assertMarkerIsFreshAndUnique(marker: string, yamlPath: string): void {
 
 describe('step-group-marker-freshness', () => {
   describe('YAML step headers (Table A)', () => {
-    it('clean-workspace composite action marker matches action.yml', () => {
-      assertMarkerIsFreshAndUnique(
-        cleanWorkspaceScriptStepMarker,
-        '../../.github/actions/clean-workspace/action.yml',
-      )
-    })
-
     it('Cloudflare Worker tsc marker matches checks-static.yml', () => {
       assertMarkerIsFreshAndUnique(
         cloudflareWorkerTscStepMarker,
@@ -202,7 +194,6 @@ describe('step-group-marker-freshness', () => {
     // adding a new step-header marker with no guard row fails this test instead of failing silently
     // the way the original PR #10604 markers did.
     const tableAMarkers = new Set([
-      cleanWorkspaceScriptStepMarker,
       cloudflareWorkerTscStepMarker,
       oxlintTypeAwareStepMarker,
       buildWebTargetsStepMarker,

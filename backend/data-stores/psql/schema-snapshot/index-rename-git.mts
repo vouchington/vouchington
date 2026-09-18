@@ -27,7 +27,7 @@ export type IndexRenameGit = {
 }
 
 const NOT_DEEP_ENOUGH_HINT =
-  "pair actions/checkout `fetch-depth: 0` with `./.github/actions/clean-workspace` `deepen: 'true'`."
+  'pair actions/checkout with `./.github/actions/fetch-base-ref` to unshallow the clone.'
 
 /**
  * `git cat-file -e <revision>:<path>` reports a missing path as a fatal rev-parse error (exit 128,
