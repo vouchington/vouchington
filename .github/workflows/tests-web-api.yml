@@ -71,16 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          clean: false
-          fetch-depth: ${{ inputs.publish_coverage && 0 || 1 }}
-      - name: Restore workspace cleaner
-        shell: bash
-        run: |
-          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
-          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
-      - uses: ./.github/actions/clean-workspace
-        with:
-          deepen: ${{ inputs.publish_coverage && 'true' || 'false' }}
+          fetch-depth: 1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: ${{ inputs.shard_total_override != '' }}
         with:
@@ -89,8 +80,6 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         if: ${{ inputs.shard_total_override == '' }}
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Resolve web-api shard total
         id: shard-total
         env:
@@ -141,16 +130,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          clean: false
-          fetch-depth: ${{ inputs.publish_coverage && 0 || 1 }}
-      - name: Restore workspace cleaner
-        shell: bash
-        run: |
-          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
-          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
-      - uses: ./.github/actions/clean-workspace
-        with:
-          deepen: ${{ inputs.publish_coverage && 'true' || 'false' }}
+          fetch-depth: 1
+      - uses: ./.github/actions/fetch-base-ref
+        if: ${{ inputs.publish_coverage }}
       - uses: ./.github/actions/load-runner-env
         with:
           VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
@@ -161,8 +143,6 @@ jobs:
           echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - working-directory: backend
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3

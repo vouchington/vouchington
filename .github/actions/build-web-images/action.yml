@@ -3,7 +3,7 @@ description: >
   Builds the web Docker image locally and runs the Docker smoke test against it, gating on a
   Trivy CRITICAL/HIGH scan before generating an SBOM. Produces a validated local image tagged
   sha-<sha> under the voucha-validation namespace; does not publish anywhere. The caller must run
-  actions/checkout (fetch-depth 0, clean: false) before invoking this action, must set job env
+  actions/checkout (fetch-depth 0) before invoking this action, must set job env
   IMAGE_REPOSITORY and SHA_TAG, and must assume the AWS OIDC role (via
   ./.github/actions/setup-aws) before invoking this action, so AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, and AWS_REGION are already in the job environment
@@ -24,15 +24,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Restore workspace cleaner
-      shell: bash
-      run: |
-        rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
-        git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
-    - uses: ./.github/actions/clean-workspace
-      with:
-        deepen: 'true'
-
     - name: Lint Dockerfile
       uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
       with:

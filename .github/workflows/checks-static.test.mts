@@ -95,10 +95,9 @@ describe('checks-static workflow', () => {
     }
   })
 
-  it('uses the persistent full install on the self-hosted static backend job', () => {
+  it('uses setup-backend on the static backend job', () => {
     const job = jobSection('static-backend')
     expect(job).toContain('- uses: ./.github/actions/setup-backend')
-    expect(job).toContain('runner-lifecycle: persistent')
   })
 
   it('owns the backend dependency and TypeScript checks lifted from tests-backend-modules.yml', () => {

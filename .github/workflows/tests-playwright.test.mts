@@ -101,27 +101,11 @@ describe('tests-playwright.yml', () => {
     expect(shardJobMatch![0]).not.toContain('\n    concurrency:')
   })
 
-  it('uses checkout before clean-workspace so fetch auth is owned by the composite action', () => {
-    const shardJobStart = workflow.indexOf('  playwright-tests:')
-    const checkoutOffset = workflow.slice(shardJobStart).search(/uses: actions\/checkout@/)
-    const shardCheckout = checkoutOffset === -1 ? -1 : shardJobStart + checkoutOffset
-    const cleanWorkspace = workflow.indexOf(
-      'uses: ./.github/actions/clean-workspace',
-      shardJobStart,
-    )
-
-    expect(shardJobStart).toBeGreaterThan(-1)
-    expect(shardCheckout).toBeGreaterThan(-1)
-    expect(cleanWorkspace).toBeGreaterThan(shardCheckout)
-    expect(workflow.slice(shardCheckout, cleanWorkspace)).toContain('uses: actions/checkout@')
-  })
-
   it('builds web targets in each shard instead of restoring a shared artifact', () => {
     expect(workflow).not.toContain('web-targets-artifact-name')
     expect(workflow).not.toContain('restore-web-targets')
     expect(workflow).not.toMatch(/\n {2}build-web-targets:\n/)
     expect(workflow).toContain('uses: ./.github/actions/build-web-targets')
-    expect(workflow).toContain('runner-lifecycle: persistent')
   })
 
   it('extracts chromium and chromium-headless-shell to the same paths Playwright resolves on linux-arm64', () => {
@@ -200,7 +184,7 @@ describe('tests-playwright.yml', () => {
     expect(allocate).toBeGreaterThan(install)
     const installStep = workflow.slice(install, allocate)
     expect(installStep).toContain('ci/pnpm-install.sh')
-    expect(installStep).toContain('--runner-lifecycle persistent')
+    expect(installStep).toContain('--runner-lifecycle ephemeral-full')
     expect(installStep).toContain('--command-timeout-seconds 0')
   })
 

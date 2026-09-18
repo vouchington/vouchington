@@ -61,24 +61,23 @@ describe('shepherd workflow', () => {
     expect(gateStep?.run).toContain('should_dispatch=true')
   })
 
-  it('keeps the elevated Codex token off trusted checkout, cleanup, and output serialization', () => {
+  it('keeps the elevated Codex token off trusted checkout and output serialization', () => {
     const gateJob = workflow.jobs?.['gate']
     const steps = gateJob?.steps ?? []
-    const rootCheckout = steps.find(
+    const rootCheckoutIndex = steps.findIndex(
       step => step.uses?.startsWith('actions/checkout@') && step.with?.['path'] === undefined,
     )
-    const cleanIndex = steps.findIndex(step => step.uses === './.github/actions/clean-workspace')
+    const rootCheckout = steps[rootCheckoutIndex]
     const gateIndex = steps.findIndex(step => step.id === 'gate')
     const gateStep = steps[gateIndex]
     expect(gateJob?.env).toBeUndefined()
     expect(rootCheckout?.uses).toMatch(/^actions\/checkout@[0-9a-f]{40}$/)
     expect(rootCheckout?.with).toMatchObject({
-      clean: false,
       'persist-credentials': false,
       ref: '${{ github.sha }}',
     })
-    expect(cleanIndex).toBeGreaterThan(-1)
-    expect(gateIndex).toBeGreaterThan(cleanIndex)
+    expect(rootCheckoutIndex).toBeGreaterThan(-1)
+    expect(gateIndex).toBeGreaterThan(rootCheckoutIndex)
     expect(gateStep?.env?.['GH_TOKEN']).toBe('${{ github.token }}')
   })
 
@@ -140,7 +139,7 @@ describe('shepherd workflow', () => {
     expect(gateJob?.permissions?.['pull-requests']).toBe('write')
     expect(setupNodeIndex).toBeGreaterThan(-1)
     expect(setupNodeIndex).toBeLessThan(checkpointIndex)
-    expect(steps[setupNodeIndex]?.with?.['runner-lifecycle']).toBe('persistent')
+    expect(steps[setupNodeIndex]?.with).toBeUndefined()
     expect(checkpointStep?.env?.['GH_TOKEN']).toBe('${{ github.token }}')
     expect(checkpointStep?.run).toContain('github-actions[bot]')
     expect(checkpointStep?.run).toContain('shepherd-checkpoint-cli.mts select')
@@ -251,26 +250,23 @@ describe('shepherd workflow', () => {
   })
 
   it('installs node_modules so the checkpoint CLI can resolve vouchington-tooling on any runner', () => {
-    // A hard `clean: true` checkout wipes the persistent runner's node_modules before
-    // `node ci/shepherd-checkpoint-cli.mts` runs, so its `vouchington-tooling` import throws
-    // ERR_MODULE_NOT_FOUND (confirmed live in run 33052532851, job 98451531593). `clean: false`
-    // plus `clean-workspace` alone only preserves node_modules when a prior run already
-    // populated it — insufficient once generalized `[self-hosted]` admission means this job can
-    // land on a runner that has never run it before, or one a fork/Dependabot cleanup swept
-    // clean. `setup-node-pnpm` with `runner-lifecycle: persistent` installs when absent and
-    // reconciles stale links when present, covering both the warm and cold case.
+    // `node ci/shepherd-checkpoint-cli.mts` imports `vouchington-tooling`, so `setup-node-pnpm`
+    // must run before it on this fresh, ephemeral runner (confirmed live in run 33052532851, job
+    // 98451531593, back when a hard `clean: true` checkout wiped node_modules ahead of it).
     const checkpointJob = workflow.jobs?.['checkpoint-dispatch']
     const steps = checkpointJob?.steps ?? []
-    const checkoutStep = steps.find(step => step.uses?.startsWith('actions/checkout@'))
-    const cleanIndex = steps.findIndex(step => step.uses === './.github/actions/clean-workspace')
+    const checkoutIndex = steps.findIndex(step => step.uses?.startsWith('actions/checkout@'))
     const setupNodeIndex = steps.findIndex(
       step => step.uses === './.github/actions/setup-node-pnpm',
     )
+    const checkpointCliIndex = steps.findIndex(step =>
+      step.run?.includes('ci/shepherd-checkpoint-cli.mts'),
+    )
 
-    expect(checkoutStep?.with?.['clean']).toBe(false)
-    expect(cleanIndex).toBeGreaterThan(-1)
-    expect(setupNodeIndex).toBeGreaterThan(cleanIndex)
-    expect(steps[setupNodeIndex]?.with?.['runner-lifecycle']).toBe('persistent')
+    expect(checkoutIndex).toBeGreaterThanOrEqual(0)
+    expect(setupNodeIndex).toBeGreaterThan(checkoutIndex)
+    expect(checkpointCliIndex).toBeGreaterThan(setupNodeIndex)
+    expect(steps[setupNodeIndex]?.with).toBeUndefined()
   })
 
   it('comments on the PR for immediate dispatch failures', () => {

@@ -259,20 +259,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          clean: false
-      - name: Restore workspace cleaner
-        shell: bash
-        run: |
-          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
-          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
-      - uses: ./.github/actions/clean-workspace
-        timeout-minutes: 3
-        with:
-          deepen: 'true'
+          fetch-depth: 0
+      - uses: ./.github/actions/fetch-base-ref
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Select Vitest tests
         id: select
         env:

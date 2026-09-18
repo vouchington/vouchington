@@ -44,7 +44,6 @@ const setupCalls: SetupCall[] = [...workflows].flatMap(([file, workflow]) =>
   ),
 )
 
-const ephemeralProfiles = new Map<string, string>()
 const scriptFreeInstallCallers = new Set([
   'fix-main-self-retry.yml#retry',
   'fix-main.yml#classify-self-failure',
@@ -55,10 +54,6 @@ const scriptFreeInstallCallers = new Set([
 
 function callerId(call: SetupCall) {
   return `${call.file}#${call.jobId}`
-}
-
-function expectedLifecycle(call: SetupCall) {
-  return ephemeralProfiles.has(callerId(call)) ? 'ephemeral' : 'persistent'
 }
 
 function hasExplicitCredential(step: Step) {
@@ -79,56 +74,26 @@ function containsDirectInstall(body: string | undefined): boolean {
 }
 
 describe('pnpm install workflow policy', () => {
-  it('classifies every setup-node-pnpm and setup-backend caller by runner lifecycle', () => {
+  it('keeps every setup-node-pnpm and setup-backend caller free of lifecycle inputs', () => {
     expect(setupCalls).toHaveLength(48)
     for (const call of setupCalls) {
-      const lifecycle = call.step.with?.['runner-lifecycle']
-      expect([callerId(call), lifecycle]).toEqual([callerId(call), expectedLifecycle(call)])
-      expect(call.step.with).not.toHaveProperty('force-install')
-      expect(call.step.with).not.toHaveProperty('install-extra-args')
-      expect(call.step.with).not.toHaveProperty('install-filters')
-      expect(call.step.with).not.toHaveProperty('extra-filters')
+      const withInputs = call.step.with ?? {}
+      expect(withInputs).not.toHaveProperty('runner-lifecycle')
+      expect(withInputs).not.toHaveProperty('ephemeral-workspaces')
+      expect(withInputs).not.toHaveProperty('force-install')
+      expect(withInputs).not.toHaveProperty('install-extra-args')
+      expect(withInputs).not.toHaveProperty('install-filters')
+      expect(withInputs).not.toHaveProperty('extra-filters')
     }
-    expect(
-      setupCalls
-        .filter(call => call.step.uses === './.github/actions/setup-backend')
-        .map(call => [callerId(call), call.step.with?.['runner-lifecycle']]),
-    ).toEqual(
-      setupCalls
-        .filter(call => call.step.uses === './.github/actions/setup-backend')
-        .map(call => [callerId(call), 'persistent']),
-    )
   })
 
-  it('keeps workspace selectors on the declared ephemeral install profiles only', () => {
-    const actual = new Map(
-      setupCalls
-        .filter(call => call.step.with?.['runner-lifecycle'] === 'ephemeral')
-        .map(call => [callerId(call), call.step.with?.['ephemeral-workspaces']]),
-    )
-    expect(actual).toEqual(ephemeralProfiles)
-    for (const call of setupCalls.filter(candidate => ephemeralProfiles.has(callerId(candidate)))) {
-      const labels = Array.isArray(call.job['runs-on'])
-        ? call.job['runs-on']
-        : [call.job['runs-on'] ?? '']
-      expect(labels).not.toContain('self-hosted')
-    }
-
-    for (const call of setupCalls.filter(
-      candidate => candidate.step.with?.['runner-lifecycle'] === 'persistent',
-    ))
-      expect(call.step.with).not.toHaveProperty('ephemeral-workspaces')
-  })
-
-  it('keeps persistent dependency setup ahead of explicit credential-bearing steps', () => {
-    const violations = setupCalls
-      .filter(candidate => candidate.step.with?.['runner-lifecycle'] === 'persistent')
-      .flatMap(call => {
-        if (JSON.stringify(call.job.env ?? {}).includes('secrets.'))
-          return [`${callerId(call)}: job-level secret environment`]
-        const firstCredential = (call.job.steps ?? []).findIndex(hasExplicitCredential)
-        return firstCredential !== -1 && call.stepIndex >= firstCredential ? [callerId(call)] : []
-      })
+  it('keeps dependency setup ahead of explicit credential-bearing steps', () => {
+    const violations = setupCalls.flatMap(call => {
+      if (JSON.stringify(call.job.env ?? {}).includes('secrets.'))
+        return [`${callerId(call)}: job-level secret environment`]
+      const firstCredential = (call.job.steps ?? []).findIndex(hasExplicitCredential)
+      return firstCredential !== -1 && call.stepIndex >= firstCredential ? [callerId(call)] : []
+    })
     expect(violations).toEqual([])
   })
 
@@ -165,10 +130,10 @@ describe('pnpm install workflow policy', () => {
       containsDirectInstall('pnpm -C package install'),
       containsDirectInstall('# pnpm install is documented, not executed'),
       containsDirectInstall(
-        'node ci/pnpm-install.mts --runner-lifecycle persistent --install-scripts true',
+        'node ci/pnpm-install.mts --runner-lifecycle ephemeral-full --install-scripts true',
       ),
       containsDirectInstall(
-        'bash ci/pnpm-install.sh --runner-lifecycle persistent --install-scripts true',
+        'bash ci/pnpm-install.sh --runner-lifecycle ephemeral-full --install-scripts true',
       ),
     ]).toEqual([true, true, true, true, true, false, false, false])
   })

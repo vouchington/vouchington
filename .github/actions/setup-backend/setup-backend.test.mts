@@ -18,15 +18,15 @@ function step(name: string) {
 }
 
 describe('setup-backend composite action', () => {
-  it('requires the caller to declare the persistent runner lifecycle', () => {
-    expect(action.inputs).toEqual({
-      'runner-lifecycle': {
-        description: 'Must be persistent; all setup-backend callers preserve node_modules',
-        required: true,
-      },
-    })
-    expect(source).not.toContain('extra-filters:')
-    expect(source).not.toContain('force-install:')
+  it('exposes no lifecycle inputs', () => {
+    expect(action.inputs ?? {}).toEqual({})
+    for (const removed of [
+      'runner-lifecycle',
+      'ephemeral-workspaces',
+      'extra-filters',
+      'force-install',
+    ])
+      expect(source).not.toContain(`${removed}:`)
   })
 
   it('activates repository Node and pnpm without setup-node package caching', () => {
@@ -44,12 +44,11 @@ describe('setup-backend composite action', () => {
     expect(source).not.toContain('pnpm/action-setup')
   })
 
-  it('rejects an ephemeral lifecycle before invoking the full-workspace helper', () => {
+  it('invokes the full-workspace helper as an unconditional full install', () => {
     const install = step('Install dependencies').run
-    expect(install).toBe('bash "$GITHUB_WORKSPACE/ci/setup-backend-install.sh" "$RUNNER_LIFECYCLE"')
-    expect(installHelper).toContain('setup-backend requires runner-lifecycle: persistent')
+    expect(install).toBe('bash "$GITHUB_WORKSPACE/ci/setup-backend-install.sh"')
     expect(installHelper).toContain('bash "$GITHUB_WORKSPACE/ci/pnpm-install.sh"')
-    expect(installHelper).toContain('--runner-lifecycle persistent')
+    expect(installHelper).toContain('--runner-lifecycle ephemeral-full')
     expect(installHelper).toContain('--install-scripts true')
     expect(installHelper).toContain('--command-timeout-seconds 0')
     expect(installHelper).not.toContain('--filter')

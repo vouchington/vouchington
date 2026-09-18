@@ -89,31 +89,20 @@ describe('Auto Harness dispatch boundary', () => {
     expect(job?.concurrency?.queue).toBe('max')
     expect(job?.concurrency?.['cancel-in-progress']).toBe(false)
     expect(checkout?.with).toMatchObject({
-      clean: false,
       'persist-credentials': false,
       ref: '${{ github.workflow_sha }}',
     })
-    expect(job?.steps[1]).toEqual({
-      name: 'Restore workspace cleaner',
-      shell: 'bash',
-      run: `rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
-git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
-`,
-    })
-    expect(job?.steps[2]).toEqual({
-      uses: './.github/actions/clean-workspace',
-      with: { 'preserve-node-modules': 'false' },
-    })
+    expect(job?.steps[1]?.uses).toBe('./.github/actions/setup-node-pnpm')
     const setupNodePnpmIndex = job?.steps.findIndex(
       step => step.uses === './.github/actions/setup-node-pnpm',
     )
     const dispatchIndex = job?.steps.findIndex(step =>
       step.run?.includes('ci/harness-session-dispatch.mts'),
     )
-    expect(setupNodePnpmIndex).toBeGreaterThan(2)
+    expect(setupNodePnpmIndex).toBe(1)
     expect(dispatchIndex).toBeGreaterThan(setupNodePnpmIndex ?? -1)
     const setupNodePnpm = job?.steps[setupNodePnpmIndex ?? -1]
-    expect(setupNodePnpm?.with).toEqual({ 'runner-lifecycle': 'persistent' })
+    expect(setupNodePnpm?.with).toBeUndefined()
     const dispatch = job?.steps.find(step => step.run?.includes('ci/harness-session-dispatch.mts'))
     expect(dispatch?.env).toMatchObject({
       // The host daemon's worktree pool is a plain clone: only a branch already checked out

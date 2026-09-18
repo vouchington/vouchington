@@ -177,7 +177,6 @@ describe('Web Tests workflow', () => {
     const tests = jobSection('web-tests')
 
     expect(tests).toContain('uses: ./.github/actions/setup-node-pnpm')
-    expect(tests).toContain('runner-lifecycle: persistent')
     expect(tests).not.toContain('pnpm install ')
   })
 

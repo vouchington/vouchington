@@ -15,8 +15,8 @@ describe('fix-dependabot workflow', () => {
     const renderSetup = renderJob?.steps?.find(s => s.uses?.endsWith('/setup-node-pnpm'))
 
     expect(dispatchJob?.with?.['install-workspace-dependencies']).toBeUndefined()
-    expect(triageSetup?.with).toEqual({ 'runner-lifecycle': 'persistent' })
-    expect(renderSetup?.with).toEqual({ 'runner-lifecycle': 'persistent' })
+    expect(triageSetup?.with).toBeUndefined()
+    expect(renderSetup?.with).toBeUndefined()
   })
 
   it('checks for existing automated commits on the Dependabot branch before dispatching', () => {

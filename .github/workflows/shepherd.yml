@@ -47,20 +47,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
-          clean: false
           persist-credentials: false
-
-      - name: Restore workspace cleaner
-        shell: bash
-        run: |
-          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
-          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
-      - uses: ./.github/actions/clean-workspace
 
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
 
       - name: Resolve PR and validate command
         id: gate
@@ -200,19 +190,8 @@ jobs:
       pr_shepherd_version: ${{ steps.pr-shepherd-version.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          clean: false
-
-      - name: Restore workspace cleaner
-        shell: bash
-        run: |
-          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
-          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
-      - uses: ./.github/actions/clean-workspace
 
       - uses: ./.github/actions/setup-node-pnpm
-        with:
-          runner-lifecycle: persistent
 
       - name: Resolve trusted pr-shepherd version
         id: pr-shepherd-version
@@ -292,20 +271,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.workflow_sha }}
-          clean: false
           persist-credentials: false
-
-      - name: Restore workspace cleaner
-        shell: bash
-        run: |
-          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
-          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
-      - uses: ./.github/actions/clean-workspace
 
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Revalidate and patch the exact checkpoint comment
         env:
           CHECKPOINT_ACTOR: github-actions[bot]

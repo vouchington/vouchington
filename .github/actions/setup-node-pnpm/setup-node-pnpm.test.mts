@@ -17,19 +17,11 @@ function step(name: string) {
 }
 
 describe('setup-node-pnpm composite action', () => {
-  it('requires an explicit runner lifecycle and exposes only structured install inputs', () => {
+  it('exposes only structured install inputs', () => {
     expect(action.inputs).toEqual({
-      'runner-lifecycle': {
-        description: 'Runner filesystem lifecycle: persistent or ephemeral',
-        required: true,
-      },
       'install-scripts': {
         description: 'Set false when dependency lifecycle scripts are intentionally deferred',
         default: 'true',
-      },
-      'ephemeral-workspaces': {
-        description: 'Newline-separated pnpm selectors; required only for ephemeral runners',
-        default: '',
       },
     })
     for (const removed of [
@@ -37,6 +29,8 @@ describe('setup-node-pnpm composite action', () => {
       'install-dependencies',
       'install-extra-args',
       'install-filters',
+      'runner-lifecycle',
+      'ephemeral-workspaces',
     ])
       expect(source).not.toContain(`${removed}:`)
   })
@@ -64,20 +58,14 @@ describe('setup-node-pnpm composite action', () => {
     expect(activationHelper).toContain('echo "$pnpm_bin" >> "$GITHUB_PATH"')
   })
 
-  it('delegates lifecycle validation and installation to the shared helper', () => {
+  it('delegates installation to the shared helper as an unconditional full install', () => {
     const install = step('pnpm install').run
     expect(install).toContain('bash "$GITHUB_WORKSPACE/ci/pnpm-install.sh"')
-    expect(install).toContain('--runner-lifecycle "$RUNNER_LIFECYCLE"')
+    expect(install).toContain('--runner-lifecycle ephemeral-full')
     expect(install).toContain('--install-scripts "$INSTALL_SCRIPTS"')
-    expect(install).toContain('--ephemeral-workspaces "$EPHEMERAL_WORKSPACES"')
     expect(install).not.toContain('pnpm install')
     expect(install).not.toContain('--force')
     expect(install).not.toContain('--filter')
-  })
-
-  it('keeps the Node runtime dependency guard portable across CodeBuild and Ubicloud', () => {
-    const runtime = step('Install Node runtime dependencies').run
-    expect(runtime).toContain('command -v dnf')
-    expect(runtime).toContain('dnf install -y libatomic')
+    expect(install).not.toContain('--ephemeral-workspaces')
   })
 })

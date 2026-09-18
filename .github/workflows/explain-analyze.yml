@@ -81,19 +81,9 @@ jobs:
           echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
           echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          clean: false
-      - name: Restore workspace cleaner
-        shell: bash
-        run: |
-          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
-          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
-      - uses: ./.github/actions/clean-workspace
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - working-directory: backend
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3

@@ -101,23 +101,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: '!cancelled()'
         with:
-          clean: false
           fetch-depth: 0
-      - name: Restore workspace cleaner
-        shell: bash
-        if: '!cancelled()'
-        run: |
-          rm -rf -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml
-          git archive --format=tar HEAD -- .github/actions/clean-workspace/action.yml ci/curl-to.sh ci/exec-vouchington-gha.sh package.json pnpm-lock.yaml | tar -x
-      - uses: ./.github/actions/clean-workspace
-        if: '!cancelled()'
-        with:
-          deepen: 'true'
       - uses: ./.github/actions/setup-node-pnpm
         if: '!cancelled()'
         timeout-minutes: 5
-        with:
-          runner-lifecycle: persistent
       - name: Download Vitest report attempt markers
         if: '!cancelled()'
         continue-on-error: true
