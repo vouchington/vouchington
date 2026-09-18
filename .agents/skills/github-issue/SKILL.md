@@ -56,10 +56,12 @@ verified areas, approach, acceptance evidence, and out-of-scope boundary for a j
 
 Before creating, load [organize-github-issues](../organize-github-issues/SKILL.md) for its live
 taxonomy rubric. Treat that organizer as read-only classification; only this separately authorized,
-gated workflow may create an issue. When filing, assign at most one existing, described, open org
-project for cross-repo initiative work, or an existing, described, open milestone for single-repo
-initiative work; an ambiguous case stays unassigned, and an issue never gets both. Use
-`dependencies` for
+gated workflow may create an issue. When filing, assign an existing, described, open org project for
+strategic, initiative-level tracking, or an existing, described, open milestone for repo-local release
+or sequencing tracking — the choice turns on the initiative's nature, not how many repositories it
+touches, so a single-repo strategic initiative can carry a project, and an initiative that needs both a
+cross-cutting strategic view and repo-local sequencing may carry both; an issue belongs to at most one
+project, and an ambiguous case stays unassigned. Use `dependencies` for
 dependency-owned work. Apply exactly one canonical `priority:` label that already exists and every
 clearly supported existing label. Derive component labels through
 [`.github/labeler.yml`](../../../.github/labeler.yml). A missing required priority, caller-required
