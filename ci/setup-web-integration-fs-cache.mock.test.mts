@@ -61,7 +61,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     vi.mocked(fs.writeFileSync).mockReset()
     process.env = { ...originalEnv }
     delete process.env.WEB_BUILD_FS_CACHE_ENABLED
-    delete process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON
+    delete process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON
     delete process.env.CI
   })
 
@@ -107,7 +107,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     const fs = await import('node:fs')
     process.env.CI = 'true'
     process.env.WEB_BUILD_FS_CACHE_ENABLED = 'true'
-    process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-first-enabled-run.json'
+    process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-first-enabled-run.json'
 
     // A disabled run still leaves the near-empty (~260 KB) build metadata that lives directly
     // under web/.next/cache without ever populating its turbopack subdirectory -- checking the
@@ -128,7 +128,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     const fs = await import('node:fs')
     process.env.CI = 'true'
     process.env.WEB_BUILD_FS_CACHE_ENABLED = 'true'
-    process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings.json'
+    process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings.json'
 
     const modulePath = './setup-web-integration.mts?timing-report'
     await import(modulePath)
@@ -154,7 +154,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
   it('reports the cache as disabled, and skips preserving it, when the flag is off in CI', async () => {
     const fs = await import('node:fs')
     process.env.CI = 'true'
-    process.env.FILAMENTS_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-disabled.json'
+    process.env.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON = '/tmp/setup-web-timings-disabled.json'
 
     const modulePath = './setup-web-integration.mts?timing-report-disabled'
     await import(modulePath)

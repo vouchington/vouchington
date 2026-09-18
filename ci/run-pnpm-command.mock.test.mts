@@ -35,17 +35,17 @@ const spawnSyncCalls: SpawnSyncCall[] = []
 // variable, so each test can configure the mock from inside its own `it()` body without
 // reassigning state another test could observe.
 function readMockUnavailableCommands(): string[] {
-  const raw = process.env.FILAMENTS_MOCK_UNAVAILABLE_COMMANDS
+  const raw = process.env.VOUCHINGTON_MOCK_UNAVAILABLE_COMMANDS
   return raw ? (JSON.parse(raw) as string[]) : []
 }
 
 function readMockChildExitCode(): number {
-  const raw = process.env.FILAMENTS_MOCK_CHILD_EXIT_CODE
+  const raw = process.env.VOUCHINGTON_MOCK_CHILD_EXIT_CODE
   return raw ? Number(raw) : 0
 }
 
 function readMockChildStderrLines(): string[] {
-  const raw = process.env.FILAMENTS_MOCK_CHILD_STDERR_LINES
+  const raw = process.env.VOUCHINGTON_MOCK_CHILD_STDERR_LINES
   return raw ? (JSON.parse(raw) as string[]) : []
 }
 
@@ -99,9 +99,9 @@ describe('run-pnpm-command', () => {
     spawnCalls.length = 0
     spawnSyncCalls.length = 0
     process.env = { ...originalEnv }
-    delete process.env.FILAMENTS_MOCK_UNAVAILABLE_COMMANDS
-    delete process.env.FILAMENTS_MOCK_CHILD_EXIT_CODE
-    delete process.env.FILAMENTS_MOCK_CHILD_STDERR_LINES
+    delete process.env.VOUCHINGTON_MOCK_UNAVAILABLE_COMMANDS
+    delete process.env.VOUCHINGTON_MOCK_CHILD_EXIT_CODE
+    delete process.env.VOUCHINGTON_MOCK_CHILD_STDERR_LINES
   })
 
   afterEach(() => {
@@ -120,7 +120,7 @@ describe('run-pnpm-command', () => {
   })
 
   it('falls back to corepack pnpm when the pnpm binary is unavailable', async () => {
-    process.env.FILAMENTS_MOCK_UNAVAILABLE_COMMANDS = JSON.stringify(['pnpm'])
+    process.env.VOUCHINGTON_MOCK_UNAVAILABLE_COMMANDS = JSON.stringify(['pnpm'])
     const { runPnpm } = await import('./run-pnpm-command.mts')
 
     await runPnpm('/repo', ['--dir', 'web', 'build'])
@@ -131,7 +131,7 @@ describe('run-pnpm-command', () => {
   })
 
   it('throws when neither pnpm nor corepack is available', async () => {
-    process.env.FILAMENTS_MOCK_UNAVAILABLE_COMMANDS = JSON.stringify(['pnpm', 'corepack'])
+    process.env.VOUCHINGTON_MOCK_UNAVAILABLE_COMMANDS = JSON.stringify(['pnpm', 'corepack'])
     const { runPnpm } = await import('./run-pnpm-command.mts')
 
     await expect(runPnpm('/repo', ['--dir', 'web', 'build'])).rejects.toThrow(
@@ -141,7 +141,7 @@ describe('run-pnpm-command', () => {
   })
 
   it('rejects when the child process exits non-zero', async () => {
-    process.env.FILAMENTS_MOCK_CHILD_EXIT_CODE = '1'
+    process.env.VOUCHINGTON_MOCK_CHILD_EXIT_CODE = '1'
     const { runPnpm } = await import('./run-pnpm-command.mts')
 
     await expect(runPnpm('/repo', ['--dir', 'web', 'build'])).rejects.toThrow(
@@ -150,7 +150,7 @@ describe('run-pnpm-command', () => {
   })
 
   it('forwards stderr line-by-line to onStderrLine while still writing every byte to real stderr', async () => {
-    process.env.FILAMENTS_MOCK_CHILD_STDERR_LINES = JSON.stringify(['compiling...', 'done'])
+    process.env.VOUCHINGTON_MOCK_CHILD_STDERR_LINES = JSON.stringify(['compiling...', 'done'])
     const writeSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
     const seenLines: string[] = []
 

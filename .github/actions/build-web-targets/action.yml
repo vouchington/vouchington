@@ -28,7 +28,7 @@ runs:
     - name: Build web targets
       shell: bash
       env:
-        FILAMENTS_SETUP_WEB_TIMINGS_JSON: ${{ runner.temp }}/web-build-timings.json
+        VOUCHINGTON_SETUP_WEB_TIMINGS_JSON: ${{ runner.temp }}/web-build-timings.json
         WEB_BUILD_FS_CACHE_ENABLED: ${{ inputs.web-build-fs-cache-enabled }}
       run: |
         if [ -f .env ]; then set -a; source .env; set +a; fi
