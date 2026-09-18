@@ -14,6 +14,7 @@ import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import {
   OpenAIResponseNotCompletedError,
   OpenAIResponseStreamError,
+  OpenAIResponseStreamIterationError,
   shouldLatchUnknownBilledOpenAIAttempt,
 } from './response-errors.mts'
 import { createOpenAIResponseWithRetries } from './response-retry.mts'
@@ -185,9 +186,6 @@ async function* iterateOpenAIResponseStream(
       ['AbortError', 'APIUserAbortError', 'TimeoutError'].includes(cause.name)
     )
       throw cause
-    const timing = hasEmittedTextDelta()
-      ? 'after at least one text delta was emitted'
-      : 'before any text delta was emitted'
-    throw new Error(`OpenAI response stream iteration failed ${timing}`, { cause })
+    throw new OpenAIResponseStreamIterationError(hasEmittedTextDelta(), { cause })
   }
 }

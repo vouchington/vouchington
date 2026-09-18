@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { callOpenAIAutotagger } from '../openai-autotagger.mts'
-import { createTestUser, createTestPost } from '@voucha/test-helpers'
+import { createTestUser, createTestPost, liveOpenAITest } from '@voucha/test-helpers'
 import {
   createConversation,
   createConversationMessage,
@@ -16,7 +16,7 @@ describe.skipIf(!hasOpenAIKey)('callOpenAIAutotagger', () => {
     'runs with real OpenAI call and persists conversation run metadata',
     { timeout: 300_000 },
     /* no-mistakes: integration=openai */
-    async () => {
+    liveOpenAITest(async () => {
       const user = await createTestUser()
       const post = await createTestPost({
         user: user,
@@ -90,6 +90,6 @@ describe.skipIf(!hasOpenAIKey)('callOpenAIAutotagger', () => {
           event => Boolean((event.input as { name?: unknown })?.name) && Boolean(event.output),
         ),
       ).toBe(true)
-    },
+    }),
   )
 })
