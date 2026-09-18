@@ -80,7 +80,12 @@ describe('parseClosingIssueReferences', () => {
       'Closes https://github.com/vouchington/vouchington/issues/1838',
     )
     expect(refs).toEqual([
-      { key: 'vouchington/vouchington#1838', number: 1838, owner: 'vouchington', repo: 'vouchington' },
+      {
+        key: 'vouchington/vouchington#1838',
+        number: 1838,
+        owner: 'vouchington',
+        repo: 'vouchington',
+      },
     ])
   })
 
