@@ -38,6 +38,19 @@ describe('listenOnEphemeralPort', () => {
     expect(releasedCandidates).toBe(1)
   })
 
+  it('rejects when the server reports no bound address after listening', async () => {
+    const server = {
+      address: () => null,
+      close: (callback: (error?: Error) => void) => callback(),
+    }
+
+    await expect(
+      listenOnEphemeralPort(server as unknown as net.Server, '127.0.0.1', {
+        listen: async () => undefined,
+      }),
+    ).rejects.toThrow('Failed to allocate listener port')
+  })
+
   it('honors a caller-specific listener attempt budget', async () => {
     const server = {
       address: () => ({ address: '127.0.0.1', family: 'IPv4', port: 4045 }),
