@@ -58,22 +58,48 @@ describe('parseSpdxExpression', () => {
     expect(parseSpdxExpression('GPL-2.0+')).toEqual({ type: 'ATOM', id: 'GPL-2.0+' })
   })
 
-  it('treats an empty string as an empty atom rather than throwing', () => {
-    expect(parseSpdxExpression('')).toEqual({ type: 'ATOM', id: '' })
+  it('keeps a recognized SPDX exception on the atom', () => {
+    expect(parseSpdxExpression('GPL-2.0-only WITH Classpath-exception-2.0')).toEqual({
+      type: 'ATOM',
+      id: 'GPL-2.0-only WITH Classpath-exception-2.0',
+    })
+  })
+
+  it('rejects an empty string', () => {
+    expect(() => parseSpdxExpression('')).toThrow('Invalid SPDX license expression')
+  })
+
+  it('rejects unknown license and exception identifiers', () => {
+    expect(() => parseSpdxExpression('Proprietary')).toThrow('Invalid SPDX license expression')
+    expect(() => parseSpdxExpression('MIT WITH Made-Up-Exception')).toThrow(
+      'Invalid SPDX license expression',
+    )
+  })
+
+  it('rejects custom SPDX license references, including inside an otherwise clean OR', () => {
+    expect(() => parseSpdxExpression('LicenseRef-Proprietary')).toThrow(
+      'Custom SPDX license references are not allowed',
+    )
+    expect(() => parseSpdxExpression('DocumentRef-vendor:LicenseRef-Proprietary')).toThrow(
+      'Custom SPDX license references are not allowed',
+    )
+    expect(() => parseSpdxExpression('MIT OR LicenseRef-Proprietary')).toThrow(
+      'Custom SPDX license references are not allowed',
+    )
   })
 
   it('throws on unbalanced parentheses', () => {
-    expect(() => parseSpdxExpression('(MIT OR Apache-2.0')).toThrow('Unbalanced parentheses')
+    expect(() => parseSpdxExpression('(MIT OR Apache-2.0')).toThrow(
+      'Invalid SPDX license expression',
+    )
   })
 
   it('throws on a dangling operator', () => {
-    expect(() => parseSpdxExpression('MIT OR')).toThrow('Unexpected end of license expression')
+    expect(() => parseSpdxExpression('MIT OR')).toThrow('Invalid SPDX license expression')
   })
 
   it('throws on unexpected trailing tokens', () => {
-    expect(() => parseSpdxExpression('MIT Apache-2.0')).toThrow(
-      'Unexpected trailing token: Apache-2.0',
-    )
+    expect(() => parseSpdxExpression('MIT Apache-2.0')).toThrow('Invalid SPDX license expression')
   })
 })
 

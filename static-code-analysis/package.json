@@ -17,10 +17,12 @@
     "no-mistakes": "^0.63.0",
     "oxfmt": "^0.67.0",
     "smol-toml": "^1.8.0",
+    "spdx-expression-parse": "^5.0.0",
     "vouchington-tooling": "^0.17.0",
     "yaml": "^2.9.0"
   },
   "devDependencies": {
+    "@types/spdx-expression-parse": "^4.0.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.0"
   }

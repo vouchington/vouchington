@@ -12,11 +12,13 @@ in [CLAUDE.md](CLAUDE.md).
 `pnpm licenses list --json`'s SPDX expressions for every third-party dependency resolved into the
 repo. It scans the full graph (no `-r`/`--recursive`, no `--prod`): `pnpm licenses list --prod`
 misclassifies at least one dev-only package, `lightningcss`, as production, even though every one
-of its dependency paths bottoms out in `devDependencies`. A from-scratch SPDX expression parser
-(`spdx-expression.mts`) evaluates compound `OR`/`AND` expressions against a deny list — GPL, AGPL,
-LGPL, EPL, CDDL, SSPL, BUSL, MPL prefixes, plus exact-match `UNLICENSED`/`Unknown`/empty-string —
-and denies by default; an expression the parser cannot parse fails closed (denied), never silently
-passes.
+of its dependency paths bottoms out in `devDependencies`. The maintained
+`spdx-expression-parse` package validates expressions against the official SPDX license and
+exception registries; the local `spdx-expression.mts` adapter evaluates compound `OR`/`AND`
+expressions against a deny list — GPL, AGPL, LGPL, EPL, CDDL, SSPL, BUSL, MPL prefixes, plus
+exact-match `UNLICENSED`/`Unknown`/empty-string. Unknown identifiers, custom `LicenseRef` /
+`DocumentRef` atoms, and expressions the parser cannot parse fail closed (denied), never silently
+pass.
 
 LGPL and MPL are denied by default (any future dependency introducing an unreviewed variant fails
 closed) but the two copyleft entries the graph is already known to contain are allowlisted back in

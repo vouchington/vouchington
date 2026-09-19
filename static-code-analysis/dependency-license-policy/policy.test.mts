@@ -48,6 +48,34 @@ describe('evaluatePackageLicenseExpression', () => {
     expect(evaluatePackageLicenseExpression('', 'mystery-lib').ok).toBe(false)
   })
 
+  it('denies unrecognized and custom license identifiers instead of treating them as permissive', () => {
+    for (const expression of [
+      'Proprietary',
+      'Made-Up-License',
+      'Foo-1.0',
+      'mit',
+      'LicenseRef-Proprietary',
+      'DocumentRef-vendor:LicenseRef-Proprietary',
+      'MIT OR LicenseRef-Proprietary',
+    ]) {
+      const result = evaluatePackageLicenseExpression(expression, 'mystery-lib')
+      expect(result.ok).toBe(false)
+      expect(result.deniedAtoms).toEqual([expression])
+    }
+  })
+
+  it('recognizes valid SPDX exception syntax and still applies policy to the base license', () => {
+    expect(
+      evaluatePackageLicenseExpression('Apache-2.0 WITH LLVM-exception', 'permissive-lib').ok,
+    ).toBe(true)
+    const result = evaluatePackageLicenseExpression(
+      'GPL-2.0-only WITH Classpath-exception-2.0',
+      'copyleft-lib',
+    )
+    expect(result.ok).toBe(false)
+    expect(result.deniedAtoms).toEqual(['GPL-2.0-only WITH Classpath-exception-2.0'])
+  })
+
   it('normalizes the known non-SPDX "SIL OPEN FONT LICENSE" string to OFL-1.1 and allows it', () => {
     // geist@1.7.2 ships this literal free-text string instead of the SPDX
     // id (compare @fontsource/inter, which reports OFL-1.1 directly).

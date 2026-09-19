@@ -1,15 +1,20 @@
+import parseSpdx from 'spdx-expression-parse'
+
 /**
- * Minimal SPDX license-expression parser/evaluator.
+ * SPDX license-expression adapter and policy evaluator.
  *
- * `pnpm licenses list --json` groups packages by the raw license string from
- * their `package.json` `license` field, which may be a compound SPDX
- * expression such as `(MIT OR Apache-2.0)` or `MIT AND ISC`. `OR` means the
- * consumer may pick either branch (the expression is "clean" if any branch
- * is clean); `AND` means both licenses apply simultaneously (the expression
- * is only "clean" if every branch is clean). A trailing `+` on a license id
- * ("this version or later", e.g. `GPL-2.0+`) and a `WITH <exception>`
- * clause are both kept on the atom string; policy.mts matches by prefix, so
- * the `+`/`WITH` suffix does not need stripping to be caught correctly.
+ * `spdx-expression-parse` owns the grammar plus the maintained SPDX license
+ * and exception registries. This adapter keeps the small tree shape the
+ * policy evaluator needs and rejects custom `LicenseRef` / `DocumentRef`
+ * atoms: those references are valid SPDX syntax, but they do not identify a
+ * reviewed standard license and therefore must fail closed at this policy
+ * boundary.
+ *
+ * `OR` means the consumer may pick either branch (the expression is clean if
+ * any branch is clean); `AND` means both licenses apply simultaneously (the
+ * expression is only clean if every branch is clean). A trailing `+` and a
+ * `WITH <exception>` clause stay on the atom string for diagnostics and
+ * conservative allowlist matching.
  */
 
 export type SpdxNode =
@@ -17,77 +22,48 @@ export type SpdxNode =
   | { type: 'OR'; children: SpdxNode[] }
   | { type: 'ATOM'; id: string }
 
-function tokenize(expression: string): string[] {
-  return expression
-    .replace(/\(/g, ' ( ')
-    .replace(/\)/g, ' ) ')
-    .trim()
-    .split(/\s+/)
-    .filter(token => token.length > 0)
+type ParsedSpdxNode = ReturnType<typeof parseSpdx>
+
+function isCustomLicenseReference(licenseId: string): boolean {
+  return licenseId.startsWith('LicenseRef-') || licenseId.startsWith('DocumentRef-')
 }
 
-class ExpressionParser {
-  private readonly tokens: string[]
-  private position = 0
-
-  constructor(tokens: string[]) {
-    this.tokens = tokens
+function convertParsedNode(parsed: ParsedSpdxNode): SpdxNode {
+  if ('license' in parsed) {
+    if (isCustomLicenseReference(parsed.license)) {
+      throw new Error(`Custom SPDX license references are not allowed: ${parsed.license}`)
+    }
+    const id = `${parsed.license}${parsed.plus ? '+' : ''}${
+      parsed.exception ? ` WITH ${parsed.exception}` : ''
+    }`
+    return { type: 'ATOM', id }
   }
 
-  parse(): SpdxNode {
-    const node = this.parseOr()
-    if (this.position !== this.tokens.length) {
-      throw new Error(`Unexpected trailing token: ${this.tokens[this.position]}`)
-    }
-    return node
-  }
-
-  private parseOr(): SpdxNode {
-    const children = [this.parseAnd()]
-    while (this.tokens[this.position] === 'OR') {
-      this.position += 1
-      children.push(this.parseAnd())
-    }
-    return children.length === 1 ? children[0]! : { type: 'OR', children }
-  }
-
-  private parseAnd(): SpdxNode {
-    const children = [this.parseAtom()]
-    while (this.tokens[this.position] === 'AND') {
-      this.position += 1
-      children.push(this.parseAtom())
-    }
-    return children.length === 1 ? children[0]! : { type: 'AND', children }
-  }
-
-  private parseAtom(): SpdxNode {
-    const token = this.tokens[this.position]
-    if (token === undefined) throw new Error('Unexpected end of license expression')
-    if (token === '(') {
-      this.position += 1
-      const node = this.parseOr()
-      if (this.tokens[this.position] !== ')') throw new Error('Unbalanced parentheses')
-      this.position += 1
-      return node
-    }
-    if (token === ')' || token === 'AND' || token === 'OR') {
-      throw new Error(`Unexpected token: ${token}`)
-    }
-    this.position += 1
-    return { type: 'ATOM', id: token }
-  }
+  const type = parsed.conjunction === 'and' ? 'AND' : 'OR'
+  const children = [convertParsedNode(parsed.left), convertParsedNode(parsed.right)].flatMap(
+    child => (child.type === type ? child.children : [child]),
+  )
+  return { type, children }
 }
 
 /**
- * Parses an SPDX-shaped license expression into a tree. Throws on malformed
- * input (unbalanced parens, dangling operators); callers must catch and fall
- * back to treating the raw string as a single opaque atom rather than
- * crashing the check.
+ * Parses a standard SPDX license expression into a tree. Throws on malformed
+ * input, unknown license or exception identifiers, and custom SPDX license
+ * references. Callers must catch and fail closed rather than crashing the
+ * check or treating an unrecognized atom as permissive.
  */
 export function parseSpdxExpression(expression: string): SpdxNode {
-  const tokens = tokenize(expression)
-  if (tokens.length === 0) return { type: 'ATOM', id: '' }
-  return new ExpressionParser(tokens).parse()
+  if (expression.trim().length === 0) {
+    throw new Error('Invalid SPDX license expression: expression is empty')
+  }
+  try {
+    return convertParsedNode(parseSpdx(expression))
+  } catch (error) {
+    throw new Error(
+      `Invalid SPDX license expression: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    )
+  }
 }
 
 /**

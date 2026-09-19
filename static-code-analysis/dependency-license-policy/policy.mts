@@ -120,10 +120,10 @@ export interface LicenseEvaluation {
 
 /**
  * Evaluates one package's license expression against the deny/allow policy.
- * Malformed expressions (unbalanced parens, stray operators) never throw:
- * they fail closed (denied) instead of being evaluated against the deny/allow
- * rules at all, since a string this check cannot parse might be hiding
- * anything, including a denied license.
+ * Malformed expressions, unknown SPDX identifiers, and custom license
+ * references never throw out of this boundary: they fail closed (denied)
+ * instead of being evaluated against the deny/allow rules at all, since a
+ * string this check cannot classify might be hiding a denied license.
  */
 export function evaluatePackageLicenseExpression(
   licenseExpression: string,
@@ -134,10 +134,10 @@ export function evaluatePackageLicenseExpression(
   try {
     node = parseSpdxExpression(normalizedExpression)
   } catch {
-    // Malformed expression (unbalanced parens, dangling operator): fail
-    // closed rather than silently defaulting to "allowed" for a string this
-    // check could not understand. A safe sentinel for a compliance gate
-    // means never passing something unrecognized, not passing by default.
+    // Invalid or unrecognized expression: fail closed rather than silently
+    // defaulting to "allowed" for a string this check could not understand.
+    // A safe sentinel for a compliance gate means never passing something
+    // unrecognized, not passing by default.
     return { ok: false, deniedAtoms: [licenseExpression] }
   }
 

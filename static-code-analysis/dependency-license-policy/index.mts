@@ -46,7 +46,8 @@ export async function checkDependencyLicensePolicy(
       errors.push(
         `::error::dependency-license-policy: ${entry.name}@${versions} is licensed under ` +
           `"${licenseExpression}" (denied: ${evaluation.deniedAtoms.join(', ')}). GPL/AGPL/EPL/` +
-          `CDDL/SSPL/BUSL and unlicensed/unknown packages are denied by default; if this is a ` +
+          `CDDL/SSPL/BUSL, unlicensed/unknown packages, and unrecognized/custom license ` +
+          `identifiers are denied by default; if this is a ` +
           `legitimate false positive, add a narrowly-scoped, justified allowlist entry in ` +
           `static-code-analysis/dependency-license-policy/policy.mts.`,
       )
