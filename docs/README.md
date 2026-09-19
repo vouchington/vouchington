@@ -31,6 +31,7 @@ Cross-link related docs bidirectionally instead of duplicating their content, an
 - [Tests and Checks](development/tests.md) — Local commands for every check (concise, agent-readable)
 - [Web Agent Rules](development/web-agent-rules.md) — Navigation, rendering, forms, completeness sweeps, and component/test conventions expanded from `web/CLAUDE.md`
 - [CI Reference](development/ci.md) — CI workflow files, configs, coverage thresholds, and workspace matrix
+- [Host Locks](development/host-locks.md) — Hosted-runner retirement boundary for repository CI locking and port allocation
 - [Merge Authority](development/merge-authority.md) — Env-aware merge-policy hook (blocked in GitHub Actions, human-confirmed interactively), automation PR labeling, and the #7848 bypass-actor residual
 - [Agent Sandbox](development/agent-sandbox.md) — OS-level sandbox containment model for Claude and Codex, per-command bypass rationale (gh/docker/pnpm/git), and why the credentialed-CI threat is already contained
 - [Agent Harness Parity](development/agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor vs OpenCode capability map; Grok reuses Claude-compat, Cursor uses native `.cursor/` adapters, OpenCode reads `CLAUDE.md` without copied hooks
