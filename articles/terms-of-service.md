@@ -128,7 +128,7 @@ Voucha provides API access for programmatic use of certain platform features, st
 
 ### API Keys
 
-API keys are issued on a per-user basis and grant access to specific permissions (e.g., `rss-feeds:read`). You are responsible for keeping your API keys secure. Do not expose API keys in public repositories or client-side code.
+API keys are issued on a per-user basis and grant access to specific scopes (e.g., `rss:read`). You are responsible for keeping your API keys secure. Do not expose API keys in public repositories or client-side code.
 
 ### Rate Limits
 

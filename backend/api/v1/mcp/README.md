@@ -12,7 +12,7 @@ Stateless MCP Streamable HTTP endpoint. Exposes user-scoped Voucha tools to MCP 
 
 ## Authentication
 
-Uses Bearer API keys of type `mcp` (not session cookies). The API key must have `mcp-tools:read` permission. Write operations (non-read-only user tools) additionally require `mcp-tools:write`.
+Uses Bearer API keys of type `mcp` (not session cookies). The API key must have `mcp.user:read` scope. Write operations (non-read-only user tools) additionally require `mcp.user:write`.
 
 Create MCP API keys at `POST /api/v1/my/api-keys` with `type: "mcp"`.
 

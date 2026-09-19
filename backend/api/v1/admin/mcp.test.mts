@@ -7,6 +7,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
+import { setTestApiKeyPermissions } from '@voucha/test-helpers/entities/api-keys'
 import { createApiKey } from '@services/api-keys'
 import type { PrivateUser } from '@services/users/types'
 
@@ -27,12 +28,13 @@ describe('POST /api/v1/admin/mcp', () => {
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
     regularUser = await createTestUser()
-    adminKey = (await createApiKey(admin.id, 'mcp', 'Admin MCP Key', ['mcp-admin-tools:read']))
-      .rawKey
-    userMcpKey = (await createApiKey(admin.id, 'mcp', 'User MCP Key', ['mcp-tools:read'])).rawKey
-    nonAdminAdminScopeKey = (
-      await createApiKey(regularUser.id, 'mcp', 'Non-admin Admin MCP Key', ['mcp-admin-tools:read'])
-    ).rawKey
+    adminKey = (await createApiKey(admin.id, 'mcp', 'Admin MCP Key', ['mcp.admin:read'])).rawKey
+    userMcpKey = (await createApiKey(admin.id, 'mcp', 'User MCP Key', ['mcp.user:read'])).rawKey
+    const corruptedKey = await createApiKey(regularUser.id, 'mcp', 'Corrupted Admin MCP Key', [
+      'mcp.user:read',
+    ])
+    await setTestApiKeyPermissions(corruptedKey.apiKey.id, ['mcp.admin:read'])
+    nonAdminAdminScopeKey = corruptedKey.rawKey
   })
 
   it('returns 415 when Content-Type is not application/json', async () => {

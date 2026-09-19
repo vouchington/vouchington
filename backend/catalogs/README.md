@@ -56,6 +56,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../modules/rss-feed-cover-art/README.md`](../modules/rss-feed-cover-art/README.md)
 - [`../modules/rss-unreliable-status-codes/README.md`](../modules/rss-unreliable-status-codes/README.md)
 - [`../modules/scheduled-job-manifest/README.md`](../modules/scheduled-job-manifest/README.md)
+- [`../modules/scopes/README.md`](../modules/scopes/README.md)
 - [`../modules/search-utils/README.md`](../modules/search-utils/README.md)
 - [`../modules/stripe/README.md`](../modules/stripe/README.md)
 - [`../modules/utils/README.md`](../modules/utils/README.md)

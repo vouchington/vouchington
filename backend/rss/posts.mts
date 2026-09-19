@@ -9,7 +9,7 @@ app.route('/rss/posts').get(async (ctx: Context) => {
   let rateLimitId: string
 
   if (apikey) {
-    const { valid, apiKey } = await validateApiKey(apikey, 'rss-feeds:read')
+    const { valid, apiKey } = await validateApiKey(apikey, 'rss:read')
     if (!valid || !apiKey) ctx.throw(403, 'Invalid API key or insufficient permissions')
     rateLimitId = `key:${apiKey.id}`
   } else {

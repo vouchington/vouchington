@@ -24,6 +24,7 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/scopes": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@services/bloom-filter-config": "workspace:^",
     "sql-template-strings": "^2.2.2"

@@ -30,7 +30,7 @@ The display prefix (e.g., `voucha_rss_a1b2`) is shown in the key management UI s
 3. Enter a label that describes what you're using the key for (e.g., "Feed Reader Integration", "Home Dashboard")
 4. Copy the full key immediately — it won't be shown again
 
-The `rss-feeds:read` permission is assigned automatically. Additional permission scopes will be added as new API features ship.
+The `rss:read` scope is assigned automatically. Additional scopes will be added as new API features ship.
 
 ## Using Your Key: RSS Feeds
 

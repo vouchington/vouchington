@@ -44,7 +44,7 @@ describe('POST /api/v1/my/api-keys', () => {
     await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
-      .send({ label: 'Test', permissions: ['rss-feeds:read'] })
+      .send({ label: 'Test', permissions: ['rss:read'] })
       .expect(401)
   })
 
@@ -60,7 +60,7 @@ describe('POST /api/v1/my/api-keys', () => {
     await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
-      .send({ permissions: ['rss-feeds:read'] })
+      .send({ permissions: ['rss:read'] })
       .expect(400)
   })
 
@@ -70,7 +70,7 @@ describe('POST /api/v1/my/api-keys', () => {
     await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
-      .send({ label: '   ', permissions: ['rss-feeds:read'] })
+      .send({ label: '   ', permissions: ['rss:read'] })
       .expect(400)
   })
 
@@ -80,7 +80,7 @@ describe('POST /api/v1/my/api-keys', () => {
     await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
-      .send({ label: 'x'.repeat(101), permissions: ['rss-feeds:read'] })
+      .send({ label: 'x'.repeat(101), permissions: ['rss:read'] })
       .expect(400)
   })
 
@@ -120,10 +120,10 @@ describe('POST /api/v1/my/api-keys', () => {
     const response = await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
-      .send({ label: 'Write-only MCP', type: 'mcp', permissions: ['mcp-tools:write'] })
+      .send({ label: 'Write-only MCP', type: 'mcp', permissions: ['mcp.user:write'] })
       .expect(400)
 
-    expect(response.text).toContain('mcp write permission requires mcp-tools:read')
+    expect(response.text).toContain('mcp.user:write requires mcp.user:read')
   })
 
   it('returns 400 when user mcp permissions mix user and admin scopes', async () => {
@@ -135,11 +135,11 @@ describe('POST /api/v1/my/api-keys', () => {
       .send({
         label: 'Mixed MCP',
         type: 'mcp',
-        permissions: ['mcp-tools:read', 'mcp-admin-tools:read'],
+        permissions: ['mcp.user:read', 'mcp.admin:read'],
       })
       .expect(400)
 
-    expect(response.text).toContain('mcp keys must not mix user and admin permissions')
+    expect(response.text).toContain('api key scopes must not mix audiences')
   })
 
   it('returns 400 when non-admin user creates admin mcp scopes', async () => {
@@ -148,7 +148,7 @@ describe('POST /api/v1/my/api-keys', () => {
     const response = await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
-      .send({ label: 'Admin MCP', type: 'mcp', permissions: ['mcp-admin-tools:read'] })
+      .send({ label: 'Admin MCP', type: 'mcp', permissions: ['mcp.admin:read'] })
       .expect(400)
 
     expect(response.text).toContain('admin mcp scopes require administrator role')
@@ -161,12 +161,12 @@ describe('POST /api/v1/my/api-keys', () => {
     const response = await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
-      .send({ label: 'My RSS Reader', permissions: ['rss-feeds:read'] })
+      .send({ label: 'My RSS Reader', permissions: ['rss:read'] })
       .expect(201)
 
     expect(response.body.api_key).toBeDefined()
     expect(response.body.api_key.label).toBe('My RSS Reader')
-    expect(response.body.api_key.permissions).toEqual(['rss-feeds:read'])
+    expect(response.body.api_key.permissions).toEqual(['rss:read'])
     expect(response.body.raw_key).toBeDefined()
     expect(typeof response.body.raw_key).toBe('string')
     expect(response.body.raw_key).toMatch(/^voucha_rss_/)
@@ -179,7 +179,7 @@ describe('POST /api/v1/my/api-keys', () => {
     const createResponse = await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
-      .send({ label: 'Feed Reader', permissions: ['rss-feeds:read'] })
+      .send({ label: 'Feed Reader', permissions: ['rss:read'] })
       .expect(201)
 
     const keyId = createResponse.body.api_key.id
@@ -189,13 +189,13 @@ describe('POST /api/v1/my/api-keys', () => {
     expect(found.label).toBe('Feed Reader')
   })
 
-  it('returns 400 when mcp key omits mcp-tools:read permission', async () => {
+  it('returns 400 when mcp key omits mcp.user:read permission', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
-      .send({ label: 'Write-only MCP', type: 'mcp', permissions: ['mcp-tools:write'] })
+      .send({ label: 'Write-only MCP', type: 'mcp', permissions: ['mcp.user:write'] })
       .expect(400)
   })
 
@@ -206,7 +206,7 @@ describe('POST /api/v1/my/api-keys', () => {
     const response = await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
-      .send({ label: 'My MCP Key', type: 'mcp', permissions: ['mcp-tools:read'] })
+      .send({ label: 'My MCP Key', type: 'mcp', permissions: ['mcp.user:read'] })
       .expect(201)
 
     expect(response.body.raw_key).toMatch(/^voucha_mcp_/)
@@ -222,11 +222,11 @@ describe('POST /api/v1/my/api-keys', () => {
       .send({
         label: 'Admin MCP Read',
         type: 'mcp',
-        permissions: ['mcp-admin-tools:read'],
+        permissions: ['mcp.admin:read'],
       })
       .expect(201)
 
-    expect(response.body.api_key.permissions).toEqual(['mcp-admin-tools:read'])
+    expect(response.body.api_key.permissions).toEqual(['mcp.admin:read'])
     expect(response.body.raw_key).toMatch(/^voucha_mcp_/)
   })
 
@@ -240,14 +240,11 @@ describe('POST /api/v1/my/api-keys', () => {
       .send({
         label: 'Admin MCP Read Write',
         type: 'mcp',
-        permissions: ['mcp-admin-tools:read', 'mcp-admin-tools:write'],
+        permissions: ['mcp.admin:write', 'mcp.admin:read'],
       })
       .expect(201)
 
-    expect(response.body.api_key.permissions).toEqual([
-      'mcp-admin-tools:read',
-      'mcp-admin-tools:write',
-    ])
+    expect(response.body.api_key.permissions).toEqual(['mcp.admin:read', 'mcp.admin:write'])
     expect(response.body.raw_key).toMatch(/^voucha_mcp_/)
   })
 })
@@ -276,7 +273,7 @@ describe('DELETE /api/v1/my/api-keys/:id', () => {
   })
 
   it('returns 204 on successful revoke', async () => {
-    const { apiKey } = await createApiKey(user.id, 'rss', 'To Revoke', ['rss-feeds:read'])
+    const { apiKey } = await createApiKey(user.id, 'rss', 'To Revoke', ['rss:read'])
     const request = createRequest()
     await request.authenticateAs(user)
     await request.delete(`/api/v1/my/api-keys/${apiKey.id}`).expect(204)
@@ -284,7 +281,7 @@ describe('DELETE /api/v1/my/api-keys/:id', () => {
 
   it('returns 404 when revoking another user key', async () => {
     const otherUser = await createTestUser()
-    const { apiKey } = await createApiKey(otherUser.id, 'rss', 'Other Key', ['rss-feeds:read'])
+    const { apiKey } = await createApiKey(otherUser.id, 'rss', 'Other Key', ['rss:read'])
     const request = createRequest()
     await request.authenticateAs(user)
     await request.delete(`/api/v1/my/api-keys/${apiKey.id}`).expect(404)

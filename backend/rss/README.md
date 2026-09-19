@@ -1,6 +1,6 @@
 # RSS Feed Endpoints
 
-RSS feeds for external feed readers. Endpoints can be read anonymously, and may also accept a valid API key with the `rss-feeds:read` permission for API-key identity rate limiting.
+RSS feeds for external feed readers. Endpoints can be read anonymously, and may also accept a valid API key with the `rss:read` scope for API-key identity rate limiting.
 
 ## Authentication
 
@@ -22,7 +22,7 @@ Returns an RSS 2.0 feed of user-generated posts.
 
 | Parameter   | Type   | Description                                      |
 | ----------- | ------ | ------------------------------------------------ |
-| `apikey`    | string | Optional API key with `rss-feeds:read` scope.    |
+| `apikey`    | string | Optional API key with `rss:read` scope.          |
 | `topics`    | string | Comma-separated topic slugs to filter by.        |
 | `post_type` | string | Post type filter (`discussion`, `review`, etc.). |
 | `user`      | string | Username to filter posts by a specific user.     |
@@ -47,7 +47,7 @@ Returns an RSS 2.0 feed of external news items fetched from RSS feeds.
 
 | Parameter | Type   | Description                                                                      |
 | --------- | ------ | -------------------------------------------------------------------------------- |
-| `apikey`  | string | Optional API key with `rss-feeds:read` scope.                                    |
+| `apikey`  | string | Optional API key with `rss:read` scope.                                          |
 | `topics`  | string | Comma-separated topic slugs to filter news items by associated topics.           |
 | `sources` | string | Comma-separated topic slugs to filter by RSS feed source (topic → feed mapping). |
 

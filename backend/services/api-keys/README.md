@@ -23,10 +23,16 @@ Validation runs in this order (do not reorder):
 2. `validateApiKeyChecksum` — HMAC verify via `timingSafeEqual`, no I/O
 3. Bloom filter probe — Valkey (skipped when `apiKeyBloomFilterEnabled` is false); `false` → reject; `null` → fall through
 4. `getApiKeyByHash` — Postgres lookup
-5. Permission check
+5. Validate the complete persisted scope set against the canonical catalogue and key type, then check typed scope membership
 6. Fire-and-forget `last_used_at` update
 
 Revocation invalidates a key by setting `revoked_at`; all DB lookups include `revoked_at IS NULL`.
+
+Creation validates scopes inside `createApiKey()` before persistence, including direct service callers.
+Scope arrays are stored in canonical lexical order with no duplicates. RSS keys accept only
+`rss:read`; MCP keys accept one user or admin audience, and admin scopes additionally require an
+administrator owner. Unknown, noncanonical, cross-type, mixed-audience, and write-without-read sets
+fail closed. The shared catalogue lives in [`@modules/scopes`](../../modules/scopes/README.md).
 
 ## Bloom Filter
 

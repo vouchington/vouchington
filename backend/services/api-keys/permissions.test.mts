@@ -13,46 +13,58 @@ describe('validateApiKeyCreationPermissions', () => {
   })
 
   it('allows rss read-only keys', () => {
-    expect(validateApiKeyCreationPermissions(user, 'rss', ['rss-feeds:read'])).toBeNull()
+    expect(validateApiKeyCreationPermissions(user, 'rss', ['rss:read'])).toBeNull()
   })
 
   it('rejects mcp write without matching read', () => {
-    expect(validateApiKeyCreationPermissions(user, 'mcp', ['mcp-tools:write'])).toBe(
-      'mcp write permission requires mcp-tools:read',
+    expect(validateApiKeyCreationPermissions(user, 'mcp', ['mcp.user:write'])).toBe(
+      'mcp.user:write requires mcp.user:read',
     )
   })
 
   it('rejects mixed user and admin mcp scopes', () => {
     expect(
-      validateApiKeyCreationPermissions(user, 'mcp', ['mcp-tools:read', 'mcp-admin-tools:read']),
-    ).toBe('mcp keys must not mix user and admin permissions')
+      validateApiKeyCreationPermissions(user, 'mcp', ['mcp.user:read', 'mcp.admin:read']),
+    ).toBe('api key scopes must not mix audiences')
   })
 
   it('rejects duplicate permissions that do not exactly match a preset', () => {
-    expect(
-      validateApiKeyCreationPermissions(user, 'mcp', ['mcp-tools:read', 'mcp-tools:read']),
-    ).toBe('mcp keys must use mcp-tools:read or mcp-tools:read, mcp-tools:write')
+    expect(validateApiKeyCreationPermissions(user, 'mcp', ['mcp.user:read', 'mcp.user:read'])).toBe(
+      'api key scopes must not contain duplicates',
+    )
   })
 
   it('rejects non-admin users creating admin mcp scopes', () => {
-    expect(validateApiKeyCreationPermissions(user, 'mcp', ['mcp-admin-tools:read'])).toBe(
+    expect(validateApiKeyCreationPermissions(user, 'mcp', ['mcp.admin:read'])).toBe(
       'admin mcp scopes require administrator role',
     )
   })
 
   it('rejects admin mcp write without matching read', () => {
-    expect(validateApiKeyCreationPermissions(admin, 'mcp', ['mcp-admin-tools:write'])).toBe(
-      'mcp admin write permission requires mcp-admin-tools:read',
+    expect(validateApiKeyCreationPermissions(admin, 'mcp', ['mcp.admin:write'])).toBe(
+      'mcp.admin:write requires mcp.admin:read',
     )
   })
 
   it('allows admins to create admin read-only and read-write mcp keys', () => {
-    expect(validateApiKeyCreationPermissions(admin, 'mcp', ['mcp-admin-tools:read'])).toBeNull()
+    expect(validateApiKeyCreationPermissions(admin, 'mcp', ['mcp.admin:read'])).toBeNull()
     expect(
-      validateApiKeyCreationPermissions(admin, 'mcp', [
-        'mcp-admin-tools:read',
-        'mcp-admin-tools:write',
-      ]),
+      validateApiKeyCreationPermissions(admin, 'mcp', ['mcp.admin:write', 'mcp.admin:read']),
     ).toBeNull()
+  })
+
+  it('rejects scopes for the wrong API-key type', () => {
+    expect(validateApiKeyCreationPermissions(user, 'rss', ['mcp.user:read'])).toBe(
+      'rss keys must use rss:read',
+    )
+    expect(validateApiKeyCreationPermissions(user, 'mcp', ['rss:read'])).toBe(
+      'mcp keys must use only mcp.user or mcp.admin scopes',
+    )
+  })
+
+  it('rejects unknown and noncanonical scopes', () => {
+    expect(validateApiKeyCreationPermissions(user, 'rss', ['RSS:read'])).toBe(
+      'unknown or noncanonical scope: RSS:read',
+    )
   })
 })

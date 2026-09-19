@@ -2458,6 +2458,8 @@ importers:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
 
+  backend/modules/scopes: {}
+
   backend/modules/search-utils:
     dependencies:
       '@voucha/types':
@@ -3955,6 +3957,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/scopes':
+        specifier: workspace:^
+        version: link:../../modules/scopes
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
@@ -6613,6 +6618,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/scopes':
+        specifier: workspace:^
+        version: link:../../modules/scopes
       '@services/users':
         specifier: workspace:^
         version: link:../users

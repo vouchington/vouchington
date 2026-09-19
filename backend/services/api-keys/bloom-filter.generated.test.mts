@@ -49,7 +49,7 @@ describe('bloom-filter.generated', () => {
         user.id,
         'rss',
         `Bloom Test ${Math.random().toString(36).slice(2, 8)}`,
-        ['rss-feeds:read'],
+        ['rss:read'],
       )
       const keyHash = hashApiKey(rawKey)
 

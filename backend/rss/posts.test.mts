@@ -18,7 +18,7 @@ describe('GET /rss/posts', () => {
       user.id,
       'rss',
       `RSS Test Key ${Math.random().toString(36).slice(2, 8)}`,
-      ['rss-feeds:read'],
+      ['rss:read'],
     )
     return result.rawKey
   }

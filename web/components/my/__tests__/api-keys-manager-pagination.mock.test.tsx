@@ -40,7 +40,7 @@ function makeApiKey(overrides: Partial<ApiKey> = {}): ApiKey {
     label: 'Default Reader',
     prefix: 'rss_live_default',
     type: 'rss',
-    permissions: ['rss-feeds:read'],
+    permissions: ['rss:read'],
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
     last_used_at: null,

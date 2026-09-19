@@ -25,7 +25,7 @@ export const nativeAccountPaginationApiFixtureCases: ApiFixtureCase[] = [
           prefix: 'voucha_rss_',
           type: 'rss',
           label: 'Feed reader',
-          permissions: ['rss-feeds:read'],
+          permissions: ['rss:read'],
           created_at: timestamp,
           last_used_at: null,
           revoked_at: null,

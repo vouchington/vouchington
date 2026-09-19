@@ -1,0 +1,19 @@
+{
+  "name": "@modules/scopes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Canonical API and OAuth scope grammar",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {}
+}

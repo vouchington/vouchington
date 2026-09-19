@@ -1,71 +1,80 @@
+import {
+  SCOPE_DEFINITIONS,
+  validateScopeSet,
+  type ApiScope,
+  type ScopeAudience,
+  type ScopeSetValidationResult,
+} from '@modules/scopes'
 import type { PrivateUser } from '../users/types.mts'
 import type { ApiKeyType } from './format.mts'
 
-const RSS_PERMISSIONS = ['rss-feeds:read'] as const
-const MCP_USER_PRESETS = [
-  ['mcp-tools:read'] as const,
-  ['mcp-tools:read', 'mcp-tools:write'] as const,
-] as const
-const MCP_ADMIN_PRESETS = [
-  ['mcp-admin-tools:read'] as const,
-  ['mcp-admin-tools:read', 'mcp-admin-tools:write'] as const,
-] as const
+type ApiKeyScopeSetValidationResult =
+  | {
+      valid: true
+      permissions: ApiScope[]
+      audience: ScopeAudience
+    }
+  | Extract<ScopeSetValidationResult, { valid: false }>
+  | {
+      valid: false
+      code: 'scope-type-mismatch'
+    }
+
+export function validateApiKeyScopeSet(
+  type: ApiKeyType,
+  permissions: readonly string[],
+): ApiKeyScopeSetValidationResult {
+  const result = validateScopeSet(permissions, {
+    surface: 'api-key',
+    allowMixedAudiences: false,
+  })
+  if (!result.valid) return result
+
+  const resources = result.scopes.map(scope => SCOPE_DEFINITIONS[scope].resource)
+  const matchesType =
+    type === 'rss'
+      ? result.scopes.length === 1 && result.scopes[0] === 'rss:read'
+      : resources.every(resource => resource === 'mcp.user' || resource === 'mcp.admin')
+  if (!matchesType) return { valid: false, code: 'scope-type-mismatch' }
+
+  const audience = result.audiences[0]
+  if (!audience) return { valid: false, code: 'empty-scope-set' }
+  return { valid: true, permissions: result.scopes, audience }
+}
 
 export function validateApiKeyCreationPermissions(
-  currentUser: PrivateUser,
+  currentUser: Pick<PrivateUser, 'roles'>,
   type: ApiKeyType,
   permissions: readonly string[],
 ): string | null {
-  if (type === 'rss') {
-    return matchesPreset(permissions, RSS_PERMISSIONS)
-      ? null
-      : `rss keys must use ${RSS_PERMISSIONS.join(', ')}`
-  }
-
-  const hasUserPermissions = permissions.some(permission => permission.startsWith('mcp-tools:'))
-  const hasAdminPermissions = permissions.some(permission =>
-    permission.startsWith('mcp-admin-tools:'),
-  )
-
-  if (hasUserPermissions && hasAdminPermissions) {
-    return 'mcp keys must not mix user and admin permissions'
-  }
-
-  if (hasAdminPermissions && !currentUser.roles.includes('administrator')) {
+  const result = validateApiKeyScopeSet(type, permissions)
+  if (!result.valid) return apiKeyScopeValidationError(type, result)
+  if (result.audience === 'admin' && !currentUser.roles.includes('administrator')) {
     return 'admin mcp scopes require administrator role'
   }
-
-  if (permissions.includes('mcp-tools:write') && !permissions.includes('mcp-tools:read')) {
-    return 'mcp write permission requires mcp-tools:read'
-  }
-
-  if (
-    permissions.includes('mcp-admin-tools:write') &&
-    !permissions.includes('mcp-admin-tools:read')
-  ) {
-    return 'mcp admin write permission requires mcp-admin-tools:read'
-  }
-
-  if (hasAdminPermissions) {
-    return matchesAnyPreset(permissions, MCP_ADMIN_PRESETS)
-      ? null
-      : 'admin mcp keys must use mcp-admin-tools:read or mcp-admin-tools:read, mcp-admin-tools:write'
-  }
-
-  return matchesAnyPreset(permissions, MCP_USER_PRESETS)
-    ? null
-    : 'mcp keys must use mcp-tools:read or mcp-tools:read, mcp-tools:write'
+  return null
 }
 
-function matchesAnyPreset(permissions: readonly string[], presets: readonly (readonly string[])[]) {
-  return presets.some(preset => matchesPreset(permissions, preset))
-}
-
-function matchesPreset(permissions: readonly string[], preset: readonly string[]) {
-  const permissionSet = new Set(permissions)
-  if (permissionSet.size !== permissions.length) return false
-  return (
-    permissions.length === preset.length &&
-    permissions.every(permission => preset.includes(permission))
-  )
+function apiKeyScopeValidationError(
+  type: ApiKeyType,
+  result: Exclude<ApiKeyScopeSetValidationResult, { valid: true }>,
+): string {
+  switch (result.code) {
+    case 'duplicate-scope':
+      return 'api key scopes must not contain duplicates'
+    case 'empty-scope-set':
+      return 'api key scopes must not be empty'
+    case 'missing-prerequisite':
+      return `${result.scope} requires ${result.requiredScope}`
+    case 'mixed-audiences':
+      return 'api key scopes must not mix audiences'
+    case 'scope-type-mismatch':
+      return type === 'rss'
+        ? 'rss keys must use rss:read'
+        : 'mcp keys must use only mcp.user or mcp.admin scopes'
+    case 'unknown-scope':
+      return `unknown or noncanonical scope: ${result.scope}`
+    case 'unsupported-surface':
+      return `scope is not supported for API keys: ${result.scope}`
+  }
 }

@@ -257,7 +257,7 @@ describe('routes-extended', () => {
   describe('api-keys client routes', () => {
     it('createApiKey and revokeApiKey return 200', async () => {
       const created = (await withClientRuntime(
-        () => clientRoutes.createApiKey('extended-test-key', 'rss', ['rss-feeds:read']),
+        () => clientRoutes.createApiKey('extended-test-key', 'rss', ['rss:read']),
         userCookieHeader,
       )) as { api_key: { id: string }; raw_key: string }
       expect(created.api_key?.id).toBeDefined()

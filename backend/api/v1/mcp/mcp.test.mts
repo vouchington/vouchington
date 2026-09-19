@@ -18,7 +18,7 @@ describe('POST /api/v1/mcp', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-    const { rawKey } = await createApiKey(user.id, 'mcp', 'Test MCP Key', ['mcp-tools:read'])
+    const { rawKey } = await createApiKey(user.id, 'mcp', 'Test MCP Key', ['mcp.user:read'])
     validKey = rawKey
   })
 

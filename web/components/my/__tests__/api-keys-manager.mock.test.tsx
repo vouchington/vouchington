@@ -52,7 +52,7 @@ const initialApiKeys: ApiKey[] = [
     label: 'FeedReader',
     prefix: 'rss_live_123',
     type: 'rss',
-    permissions: ['rss-feeds:read'],
+    permissions: ['rss:read'],
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
     last_used_at: null,
@@ -63,7 +63,7 @@ const initialApiKeys: ApiKey[] = [
     label: 'OldReader',
     prefix: 'rss_live_456',
     type: 'rss',
-    permissions: ['rss-feeds:read'],
+    permissions: ['rss:read'],
     created_at: '2022-01-01T00:00:00Z',
     updated_at: '2022-01-01T00:00:00Z',
     last_used_at: '2022-06-01T00:00:00Z',
@@ -109,7 +109,7 @@ describe('ApiKeysManager Integration Flow', () => {
         label: 'New RSS Reader',
         prefix: 'rss_live_789',
         type: 'rss',
-        permissions: ['rss-feeds:read'],
+        permissions: ['rss:read'],
         created_at: '2026-05-22T04:00:00Z',
         updated_at: '2026-05-22T04:00:00Z',
         last_used_at: null,
@@ -182,7 +182,7 @@ describe('ApiKeysManager Integration Flow', () => {
     })
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('New RSS Reader', 'rss', ['rss-feeds:read'])
+      expect(mockCreate).toHaveBeenCalledWith('New RSS Reader', 'rss', ['rss:read'])
       expect(screen.getByText('New RSS Reader')).toBeInTheDocument()
       expect(screen.getByText('Save your API key - it will only be shown once')).toBeInTheDocument()
     })
@@ -221,8 +221,8 @@ describe('ApiKeysManager Integration Flow', () => {
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('Codex user MCP', 'mcp', [
-        'mcp-tools:read',
-        'mcp-tools:write',
+        'mcp.user:read',
+        'mcp.user:write',
       ])
     })
   })
@@ -257,8 +257,8 @@ describe('ApiKeysManager Integration Flow', () => {
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith('Claude admin MCP', 'mcp', [
-        'mcp-admin-tools:read',
-        'mcp-admin-tools:write',
+        'mcp.admin:read',
+        'mcp.admin:write',
       ])
     })
   })
