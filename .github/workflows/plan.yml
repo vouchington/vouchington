@@ -22,7 +22,7 @@ jobs:
       vars.HARNESS_PLAN_ENABLED == 'true' &&
       github.event.issue.pull_request == null &&
       contains(github.event.comment.body, '/plan') &&
-      contains(fromJSON('["OWNER","COLLABORATOR"]'),
+      contains(fromJSON('["OWNER","COLLABORATOR","MEMBER"]'),
                github.event.comment.author_association)
     runs-on: ubuntu-slim
     timeout-minutes: 5
@@ -245,7 +245,7 @@ jobs:
           jq -e \
             'select((.id | tostring) == env.TRIGGER_COMMENT_ID and
               (.issue_url | endswith("/issues/" + env.ISSUE_NUMBER)) and
-              (.author_association == "OWNER" or .author_association == "COLLABORATOR"))' \
+              (.author_association == "OWNER" or .author_association == "COLLABORATOR" or .author_association == "MEMBER"))' \
             <<< "$COMMENT_JSON" > /dev/null
           COMMAND="$(jq -r '.body | split("\n")[0]' <<< "$COMMENT_JSON" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
           if [[ "$COMMAND" != "/plan" ]]; then

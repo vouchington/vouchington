@@ -30,6 +30,7 @@ type Workflow = {
 }
 
 const workflowText = readFileSync('.github/workflows/shepherd.yml', 'utf8')
+const shepherdPrompt = readFileSync('docs/prompts/automation/shepherd.md', 'utf8')
 const workflow = load(workflowText) as Workflow
 describe('shepherd workflow', () => {
   it('triggers on new PR conversation comments', () => {
@@ -40,12 +41,14 @@ describe('shepherd workflow', () => {
     expect(gateJob?.if).toContain("contains(github.event.comment.body, '/shepherd')")
   })
 
-  it('uses the same authorized associations as /fix (OWNER + COLLABORATOR only)', () => {
+  it('uses the same authorized associations as /fix (OWNER + COLLABORATOR + MEMBER)', () => {
     const gateJob = workflow.jobs?.['gate']
-    expect(gateJob?.if).toContain('OWNER')
-    expect(gateJob?.if).toContain('COLLABORATOR')
-    expect(gateJob?.if).not.toContain('MEMBER')
-    expect(gateJob?.if).toContain('author_association')
+    expect(gateJob?.if).toContain(`fromJSON('["OWNER","COLLABORATOR","MEMBER"]')`)
+    expect(gateJob?.if).not.toMatch(/CONTRIBUTOR|NONE/)
+    expect(shepherdPrompt).toContain('require its body to remain exactly `/shepherd`')
+    expect(shepherdPrompt).toMatch(
+      /live\s+`author_association` to be exactly `OWNER`, `COLLABORATOR`, or `MEMBER`/,
+    )
   })
 
   it('validates an exact standalone command and same-repo PR', () => {
@@ -284,9 +287,10 @@ describe('shepherd workflow', () => {
     expect(escalateJob?.env?.['TRIGGER_COMMENT_ID']).toBe('${{ github.event.comment.id }}')
 
     const commentStep = escalateJob?.steps?.find(step => step.name === 'Comment failure on PR')
-    expect(commentStep?.run).toContain('gh issue comment')
     expect(commentStep?.run).toContain('pulls/$PR_NUMBER')
     expect(commentStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
+    expect(commentStep?.run).toMatch(/OWNER.*COLLABORATOR.*MEMBER/)
+    expect(commentStep?.run).not.toMatch(/CONTRIBUTOR|NONE/)
     expect(commentStep?.run).toContain('Suppressing failure comment')
     expect(commentStep?.run).toContain('gh issue comment "$PR_NUMBER"')
     expect(commentStep?.run).not.toContain('needs.dispatch.outputs.session-id')

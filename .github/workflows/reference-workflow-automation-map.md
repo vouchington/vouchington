@@ -195,11 +195,11 @@ flowchart TD
     gitleaks -. "workflow_run failure\n(main only)" .-> fix-main
     fix-main -. "workflow_run completed" .-> fix-main-self-retry["fix-main-self-retry\n(watches Fix Main; bounded rerun)"]
     fix-main-self-retry -. "gh run rerun (bounded)" .-> fix-main
-    trigger --> issue-comment["/fix comment\n(OWNER/COLLABORATOR)"]
+    trigger --> issue-comment["/fix comment\n(OWNER/COLLABORATOR/MEMBER)"]
     issue-comment --> fix-issue["fix-issue"]
-    trigger --> plan-comment["/plan comment\n(OWNER/COLLABORATOR)"]
+    trigger --> plan-comment["/plan comment\n(OWNER/COLLABORATOR/MEMBER)"]
     plan-comment --> plan["plan"]
-    trigger --> shepherd-comment["/shepherd PR comment\n(OWNER/COLLABORATOR)"]
+    trigger --> shepherd-comment["/shepherd PR comment\n(OWNER/COLLABORATOR/MEMBER)"]
     shepherd-comment --> shepherd["shepherd"]
     schedule-prompts["08:00-18:00 UTC every 2 hours\nscheduled prompts"] --> scheduled-prompts["scheduled-prompts"]
     ci-pr["CI workflow_run failure\n(dependabot PR only)"] --> fix-dependabot["fix-dependabot"]
