@@ -18,9 +18,11 @@ import type { ExplainResult } from '@data-stores/psql'
 // plan-trending-communities-gate.mts rejects them: this repo's dev/CI database is shared and
 // growing, so a fixed row-count/timing threshold stops meaning anything once the seed outgrows
 // it. The signal that survives seed scale is plan shape: every `posts` base-relation access must
-// carry a non-empty `Index Cond`. A regressed plan instead shows a `posts` node with no
-// `Index Cond` — a Seq Scan, or an unconstrained per-loop Index Scan — which is a structural fact
-// about the plan, not a number that decays as the seed grows.
+// carry a non-empty `Index Cond`, either directly or on a Bitmap Index Scan below a Bitmap Heap
+// Scan over `posts__default_community_id_idx`. A regressed plan instead shows a `posts` node with
+// no constrained lookup — a Seq Scan, an unconstrained bitmap scan, or an unconstrained per-loop
+// Index Scan — which is a structural fact about the plan, not a number that decays as the seed
+// grows.
 const SEARCH_COMMUNITIES_SCENARIOS = new Set([
   'search-communities',
   'search-communities-has-list-items',
@@ -28,6 +30,7 @@ const SEARCH_COMMUNITIES_SCENARIOS = new Set([
   'search-communities-text',
   'search-communities-virtual-subscriptions',
 ])
+const POSTS_COMMUNITY_ID_INDEX = 'posts__default_community_id_idx'
 
 export function assertSearchCommunitiesEligibilityIsIndexed(result: ExplainResult): void {
   if (!result.scenario_id || !SEARCH_COMMUNITIES_SCENARIOS.has(result.scenario_id)) return
@@ -37,7 +40,7 @@ export function assertSearchCommunitiesEligibilityIsIndexed(result: ExplainResul
   const postsAccesses = collectPlanNodes(result.plan).filter(
     node => baseRelationName(node) === 'posts',
   )
-  const hasUnindexedAccess = postsAccesses.some(node => !String(node['Index Cond'] ?? ''))
+  const hasUnindexedAccess = postsAccesses.some(node => !hasIndexedAccess(node))
   if (postsAccesses.length === 0 || hasUnindexedAccess) {
     throw new Error(
       `${result.name} (${result.scenario_id}) must resolve view_community_metrics.post_count ` +
@@ -50,6 +53,22 @@ type PlanNode = Record<string, unknown>
 
 function baseRelationName(node: PlanNode): string {
   return String(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
+}
+
+// A Bitmap Heap Scan reports its restriction on a child Bitmap Index Scan. Restrict the accepted
+// bitmap form to the community lookup that keeps the metrics join candidate-bound; an arbitrary
+// bitmap index (such as post_type) would still permit the former broad scan shape.
+function hasIndexedAccess(node: PlanNode): boolean {
+  if (String(node['Node Type'] ?? '') !== 'Bitmap Heap Scan') {
+    return Boolean(String(node['Index Cond'] ?? ''))
+  }
+  return collectPlanNodes(node).some(
+    descendant =>
+      descendant !== node &&
+      String(descendant['Node Type'] ?? '') === 'Bitmap Index Scan' &&
+      String(descendant['Index Name'] ?? '') === POSTS_COMMUNITY_ID_INDEX &&
+      Boolean(String(descendant['Index Cond'] ?? '')),
+  )
 }
 
 function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {
