@@ -174,6 +174,9 @@ then format and compile.
   with `node dev/native-localization.mts --output-root <absolute-client-root> --consumer-root
 <absolute-client-root> [--check]`; the exporter rejects stale, missing, extra, or
   placeholder-incompatible output and validates external product usage.
+- Provider-neutral moderation summaries use the shared `native.moderation.summary.*` namespace.
+  Native review queues localize the server-owned disposition and aggregate evidence counts. They do
+  not present raw `reason_codes` or reuse provider-specific Spam, Flagged, or score messages.
 - Anonymous SSR resolves `Accept-Language` the same way authenticated SSR resolves
   a user with no saved `ui_locale` (`getResolvedUiLocale()` → `resolveUiLocale()`).
   This is safe because the Cloudflare Worker partitions the anonymous edge cache by

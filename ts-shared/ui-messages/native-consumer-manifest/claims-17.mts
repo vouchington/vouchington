@@ -19,18 +19,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_17 = [
     consumers: ['dotnet', 'swift'],
   },
   {
-    key: 'native.swift.moderationReports.reviewQueueFlagged',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
-    key: 'native.swift.moderationReports.reviewQueueFlaggedScore',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
-    key: 'native.swift.moderationReports.reviewQueueInReview',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
     key: 'native.swift.moderationReports.reviewQueueLoadFailed',
     consumers: ['dotnet', 'swift'],
   },
@@ -51,10 +39,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_17 = [
     consumers: ['dotnet', 'swift'],
   },
   {
-    key: 'native.swift.moderationReports.reviewQueueNotFlagged',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
     key: 'native.swift.moderationReports.reviewQueuePostType',
     consumers: ['dotnet', 'swift'],
   },
@@ -64,10 +48,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_17 = [
   },
   {
     key: 'native.swift.moderationReports.reviewQueueReject',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
-    key: 'native.swift.moderationReports.reviewQueueRejected',
     consumers: ['dotnet', 'swift'],
   },
   {
@@ -89,14 +69,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_17 = [
   {
     key: 'native.swift.moderationReports.reviewQueueSignInMessage',
     consumers: ['swift'],
-  },
-  {
-    key: 'native.swift.moderationReports.reviewQueueSpam',
-    consumers: ['dotnet', 'swift'],
-  },
-  {
-    key: 'native.swift.moderationReports.reviewQueueStatus',
-    consumers: ['dotnet', 'swift'],
   },
   {
     key: 'native.swift.moderationReports.reviewQueueTryAgain',
