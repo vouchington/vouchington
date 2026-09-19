@@ -88,7 +88,8 @@ const ALLOWLIST: readonly AllowlistEntry[] = [
   },
   {
     licenseId: 'LGPL-3.0-or-later',
-    packageNamePattern: /^@img\/sharp-(?:libvips-|wasm32$|win32-(?:arm64|ia32|x64)$)/,
+    packageNamePattern:
+      /^@img\/sharp-(?:libvips-(?:darwin-(?:arm64|x64)|linux-(?:arm|arm64|ppc64|riscv64|s390x|x64)|linuxmusl-(?:arm64|x64))|wasm32|win32-(?:arm64|ia32|x64))$/,
     reason:
       "sharp's audited libvips bundles and Windows/WASM package variants carry LGPL-3.0-or-later " +
       'as a component license. This repository neither modifies nor vendors their source or commits ' +

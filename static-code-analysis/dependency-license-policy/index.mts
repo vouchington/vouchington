@@ -4,7 +4,7 @@ import { collectLicenseReport, type LicenseReport } from './collect-licenses.mts
 import { evaluatePackageLicenseExpression } from './policy.mts'
 
 export { collectLicenseReport } from './collect-licenses.mts'
-export type { LicenseListExecutor, LicenseReport, LicenseReportEntry } from './collect-licenses.mts'
+export type { LicenseReport, LicenseReportEntry, PnpmExecutor } from './collect-licenses.mts'
 export { evaluatePackageLicenseExpression } from './policy.mts'
 
 /**

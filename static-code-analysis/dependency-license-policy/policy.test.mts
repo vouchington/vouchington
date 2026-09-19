@@ -112,6 +112,10 @@ describe('evaluatePackageLicenseExpression', () => {
     expect(evaluatePackageLicenseExpression('LGPL-3.0-or-later', '@img/sharp-linux-x64').ok).toBe(
       false,
     )
+    expect(
+      evaluatePackageLicenseExpression('LGPL-3.0-or-later', '@img/sharp-libvips-future-platform')
+        .ok,
+    ).toBe(false)
   })
 
   it('does not extend the LGPL-3.0-or-later allowance to a different LGPL version', () => {

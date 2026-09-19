@@ -1,8 +1,11 @@
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { parse as parseYaml } from 'yaml'
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
+
+import { parseLicenseReport } from './parse-license-report.mts'
 
 export interface LicenseReportEntry {
   name: string
@@ -12,14 +15,29 @@ export interface LicenseReportEntry {
 /** Shape of `pnpm licenses list --json`: license expression -> package entries. */
 export type LicenseReport = Record<string, LicenseReportEntry[]>
 
-export type LicenseListExecutor = (
+export type PnpmExecutor = (
   command: string,
   args: string[],
   options: { cwd: string; encoding: 'utf8' },
 ) => { error?: Error; status: number | null; stderr: string; stdout: string }
 
+function commandFailureOutput(result: { stderr: string; stdout: string }): string {
+  return result.stderr.trim() || result.stdout.trim()
+}
+
 type PlatformKey = 'cpu' | 'libc' | 'os'
 type TextFileReader = (path: string, encoding: 'utf8') => string
+
+interface LicenseAuditWorkspace {
+  cleanup: () => void
+  cwd: string
+}
+
+type LicenseAuditWorkspacePreparer = (
+  repoRoot: string,
+  lockfileSource: string,
+  workspaceSource: string,
+) => LicenseAuditWorkspace
 
 const PLATFORM_KEYS: readonly PlatformKey[] = ['os', 'cpu', 'libc']
 
@@ -40,71 +58,31 @@ function parseYamlObject(source: string, path: string): Record<string, unknown> 
 }
 
 function getStringList(value: unknown, path: string): string[] {
+  if (typeof value === 'string') return [value]
   if (!Array.isArray(value) || !value.every(entry => typeof entry === 'string')) {
-    throw new Error(`expected ${path} to be an array of strings`)
+    throw new Error(`expected ${path} to be a string or an array of strings`)
   }
   return value
 }
 
-function parseLicenseReport(value: unknown): LicenseReport {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw new Error('expected a JSON object keyed by license expression')
-  }
-
-  const report: LicenseReport = {}
-  for (const [licenseExpression, entries] of Object.entries(value)) {
-    if (!Array.isArray(entries)) {
-      throw new Error(`expected license group ${JSON.stringify(licenseExpression)} to be an array`)
-    }
-    report[licenseExpression] = entries.map((entry, index) => {
-      const path = `license group ${JSON.stringify(licenseExpression)} entry ${String(index)}`
-      if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
-        throw new Error(`expected ${path} to be an object`)
-      }
-      const { name, versions } = entry as Record<string, unknown>
-      if (typeof name !== 'string') {
-        throw new Error(`expected ${path}.name to be a string`)
-      }
-      if (versions === undefined) return { name }
-      return { name, versions: getStringList(versions, `${path}.versions`) }
-    })
-  }
-  return report
-}
-
-/**
- * Pnpm's license scanner walks the lockfile but omits a package when its
- * platform selector is not installable on the runner. Requiring the workspace
- * configuration to cover every lockfile platform makes pnpm install those
- * manifests and lets the scanner audit the complete graph.
- */
-export function validateSupportedArchitectureCoverage(
+export function renderLicenseAuditWorkspace(
   lockfileSource: string,
   workspaceSource: string,
   paths: { lockfile: string; workspace: string },
-): void {
+): string {
   const lockfile = parseYamlObject(lockfileSource, paths.lockfile)
   const workspace = parseYamlObject(workspaceSource, paths.workspace)
   const packages = lockfile.packages
   if (typeof packages !== 'object' || packages === null || Array.isArray(packages)) {
     throw new Error(`expected ${paths.lockfile} to contain a packages object`)
   }
-  const supportedArchitectures = workspace.supportedArchitectures
-  if (
-    typeof supportedArchitectures !== 'object' ||
-    supportedArchitectures === null ||
-    Array.isArray(supportedArchitectures)
-  ) {
-    throw new Error(`expected ${paths.workspace} to contain a supportedArchitectures object`)
-  }
 
+  const supportedArchitectures: Record<PlatformKey, string[]> = {
+    cpu: ['current'],
+    libc: ['current'],
+    os: ['current'],
+  }
   for (const key of PLATFORM_KEYS) {
-    const configuredValues = new Set(
-      getStringList(
-        (supportedArchitectures as Record<string, unknown>)[key],
-        `${paths.workspace} supportedArchitectures.${key}`,
-      ),
-    )
     const requiredValues = new Set<string>()
     for (const snapshot of Object.values(packages as Record<string, unknown>)) {
       if (typeof snapshot !== 'object' || snapshot === null || Array.isArray(snapshot)) continue
@@ -114,12 +92,43 @@ export function validateSupportedArchitectureCoverage(
         requiredValues.add(platform)
       }
     }
-    const missingValues = [...requiredValues].filter(value => !configuredValues.has(value)).sort()
-    if (missingValues.length > 0) {
-      throw new Error(
-        `${paths.workspace} supportedArchitectures.${key} is missing lockfile values: ${missingValues.join(', ')}`,
-      )
-    }
+    supportedArchitectures[key].push(
+      ...[...requiredValues].filter(value => value !== 'current').sort(),
+    )
+  }
+
+  return stringifyYaml({ ...workspace, packages: [], supportedArchitectures })
+}
+
+/**
+ * Gives `pnpm licenses list` a command-scoped view of every lockfile platform
+ * without making normal workspace installs materialize every native package.
+ */
+function prepareLicenseAuditWorkspace(
+  repoRoot: string,
+  lockfileSource: string,
+  workspaceSource: string,
+): LicenseAuditWorkspace {
+  const auditRoot = mkdtempSync(join(tmpdir(), 'voucha-license-audit-'))
+  try {
+    copyFileSync(join(repoRoot, 'package.json'), join(auditRoot, 'package.json'))
+    copyFileSync(join(repoRoot, 'pnpm-lock.yaml'), join(auditRoot, 'pnpm-lock.yaml'))
+    copyFileSync(join(repoRoot, '.npmrc'), join(auditRoot, '.npmrc'))
+    writeFileSync(
+      join(auditRoot, 'pnpm-workspace.yaml'),
+      renderLicenseAuditWorkspace(lockfileSource, workspaceSource, {
+        lockfile: join(repoRoot, 'pnpm-lock.yaml'),
+        workspace: join(repoRoot, 'pnpm-workspace.yaml'),
+      }),
+      'utf8',
+    )
+  } catch (error) {
+    rmSync(auditRoot, { force: true, recursive: true })
+    throw error
+  }
+  return {
+    cwd: auditRoot,
+    cleanup: () => rmSync(auditRoot, { force: true, recursive: true }),
   }
 }
 
@@ -133,36 +142,58 @@ export function validateSupportedArchitectureCoverage(
  */
 export function collectLicenseReport(
   repoRoot: string,
-  execute: LicenseListExecutor = spawnSync,
+  execute: PnpmExecutor = spawnSync,
   readFile: TextFileReader = readFileSync,
+  prepareWorkspace: LicenseAuditWorkspacePreparer = prepareLicenseAuditWorkspace,
 ): LicenseReport {
   const lockfilePath = join(repoRoot, 'pnpm-lock.yaml')
   const workspacePath = join(repoRoot, 'pnpm-workspace.yaml')
-  validateSupportedArchitectureCoverage(
+  const auditWorkspace = prepareWorkspace(
+    repoRoot,
     readFile(lockfilePath, 'utf8'),
     readFile(workspacePath, 'utf8'),
-    { lockfile: lockfilePath, workspace: workspacePath },
   )
-  const result = execute('pnpm', ['licenses', 'list', '--json'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-  })
-  if (result.error) throw result.error
-  if (result.status !== 0) {
-    throw new Error(
-      `pnpm licenses list --json exited with status ${String(result.status)}: ${result.stderr.trim()}`,
-    )
-  }
-
   try {
-    const parsed: unknown = JSON.parse(result.stdout)
-    return parseLicenseReport(parsed)
-  } catch (error) {
-    throw new Error(
-      `pnpm licenses list --json produced unparseable output: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
-      { cause: error },
+    const storeDir = join(auditWorkspace.cwd, '.pnpm-store')
+    const storeConfig = `--config.store-dir=${storeDir}`
+    const fetchResult = execute(
+      'pnpm',
+      [storeConfig, '--config.force=true', 'fetch', '--ignore-scripts'],
+      {
+        cwd: auditWorkspace.cwd,
+        encoding: 'utf8',
+      },
     )
+    if (fetchResult.error) throw fetchResult.error
+    if (fetchResult.status !== 0) {
+      throw new Error(
+        `pnpm fetch exited with status ${String(fetchResult.status)}: ${commandFailureOutput(fetchResult)}`,
+      )
+    }
+
+    const result = execute('pnpm', [storeConfig, 'licenses', 'list', '--json'], {
+      cwd: auditWorkspace.cwd,
+      encoding: 'utf8',
+    })
+    if (result.error) throw result.error
+    if (result.status !== 0) {
+      throw new Error(
+        `pnpm licenses list --json exited with status ${String(result.status)}: ${commandFailureOutput(result)}`,
+      )
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(result.stdout)
+      return parseLicenseReport(parsed)
+    } catch (error) {
+      throw new Error(
+        `pnpm licenses list --json produced unparseable output: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        { cause: error },
+      )
+    }
+  } finally {
+    auditWorkspace.cleanup()
   }
 }

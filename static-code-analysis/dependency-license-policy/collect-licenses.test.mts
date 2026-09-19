@@ -1,76 +1,134 @@
 import { describe, expect, it } from 'vitest'
+import { parse as parseYaml } from 'yaml'
 
 import {
   collectLicenseReport,
-  type LicenseListExecutor,
-  validateSupportedArchitectureCoverage,
+  type PnpmExecutor,
+  renderLicenseAuditWorkspace,
 } from './collect-licenses.mts'
 
-function fakeExecutor(result: {
+type PnpmResult = {
   error?: Error
   status: number | null
   stderr?: string
   stdout?: string
-}): LicenseListExecutor {
+}
+
+function fakeExecutor(result: PnpmResult, fetchResult: PnpmResult = { status: 0 }): PnpmExecutor {
+  const steps = [
+    {
+      args: [
+        '--config.store-dir=/audit/.pnpm-store',
+        '--config.force=true',
+        'fetch',
+        '--ignore-scripts',
+      ],
+      result: fetchResult,
+    },
+    {
+      args: ['--config.store-dir=/audit/.pnpm-store', 'licenses', 'list', '--json'],
+      result,
+    },
+  ]
   return (command, args, options) => {
+    const step = steps.shift()
+    if (!step) throw new Error(`unexpected pnpm invocation: ${args.join(' ')}`)
     expect(command).toBe('pnpm')
-    expect(args).toEqual(['licenses', 'list', '--json'])
-    expect(options.cwd).toBe('/repo')
+    expect(args).toEqual(step.args)
+    expect(options.cwd).toBe('/audit')
     expect(options.encoding).toBe('utf8')
-    return { stderr: '', stdout: '', ...result }
+    return { stderr: '', stdout: '', ...step.result }
   }
 }
 
-const supportedArchitectureFiles = {
-  '/repo/pnpm-lock.yaml': 'packages: {}\n',
-  '/repo/pnpm-workspace.yaml':
-    'supportedArchitectures:\n  os: [current]\n  cpu: [current]\n  libc: [current]\n',
-}
-
-function collectTestReport(execute: LicenseListExecutor) {
-  return collectLicenseReport('/repo', execute, (path: string) => {
-    const source = supportedArchitectureFiles[path as keyof typeof supportedArchitectureFiles]
-    if (source === undefined) throw new Error(`missing fixture ${path}`)
-    return source
-  })
+function collectTestReport(execute: PnpmExecutor, cleanup: () => void = () => undefined) {
+  return collectLicenseReport(
+    '/repo',
+    execute,
+    (path: string) => {
+      if (path === '/repo/pnpm-lock.yaml') return 'packages: {}\n'
+      expect(path).toBe('/repo/pnpm-workspace.yaml')
+      return 'packages: [app]\nengineStrict: true\n'
+    },
+    (repoRoot, lockfileSource, workspaceSource) => {
+      expect(repoRoot).toBe('/repo')
+      expect(lockfileSource).toBe('packages: {}\n')
+      expect(workspaceSource).toBe('packages: [app]\nengineStrict: true\n')
+      return { cwd: '/audit', cleanup }
+    },
+  )
 }
 
 describe('collectLicenseReport', () => {
-  it('accepts a supported-architectures configuration that covers every lockfile platform', () => {
-    expect(() =>
-      validateSupportedArchitectureCoverage(
+  it('derives a command-scoped supported-architectures workspace from the lockfile', () => {
+    const workspace = parseYaml(
+      renderLicenseAuditWorkspace(
         `packages:\n  example@1.0.0:\n    os: [win32]\n    cpu: [arm64]\n    libc: [musl]\n`,
-        `supportedArchitectures:\n  os: [current, win32]\n  cpu: [current, arm64]\n  libc: [current, musl]\n`,
+        'packages: [app]\nengineStrict: true\n',
         { lockfile: 'pnpm-lock.yaml', workspace: 'pnpm-workspace.yaml' },
       ),
-    ).not.toThrow()
+    ) as {
+      packages: string[]
+      supportedArchitectures: Record<string, string[]>
+    }
+
+    expect(workspace).toEqual({
+      engineStrict: true,
+      packages: [],
+      supportedArchitectures: {
+        cpu: ['current', 'arm64'],
+        libc: ['current', 'musl'],
+        os: ['current', 'win32'],
+      },
+    })
   })
 
-  it.each([
-    [
-      'os',
-      `supportedArchitectures:\n  os: [current]\n  cpu: [current, arm64]\n  libc: [current, musl]\n`,
-    ],
-    [
-      'cpu',
-      `supportedArchitectures:\n  os: [current, win32]\n  cpu: [current]\n  libc: [current, musl]\n`,
-    ],
-    [
-      'libc',
-      `supportedArchitectures:\n  os: [current, win32]\n  cpu: [current, arm64]\n  libc: [current]\n`,
-    ],
-  ])(
-    'rejects a supported-architectures configuration that omits a lockfile %s value',
-    (key, workspace) => {
-      expect(() =>
-        validateSupportedArchitectureCoverage(
-          `packages:\n  example@1.0.0:\n    os: [win32]\n    cpu: [arm64]\n    libc: [musl]\n`,
-          workspace,
-          { lockfile: 'pnpm-lock.yaml', workspace: 'pnpm-workspace.yaml' },
+  it('rejects a malformed lockfile platform selector', () => {
+    expect(() =>
+      renderLicenseAuditWorkspace(`packages:\n  example@1.0.0:\n    os: 42\n`, 'packages: []\n', {
+        lockfile: 'pnpm-lock.yaml',
+        workspace: 'pnpm-workspace.yaml',
+      }),
+    ).toThrow('pnpm-lock.yaml packages.*.os to be a string or an array of strings')
+  })
+
+  it('normalizes scalar lockfile platform selectors', () => {
+    const workspace = parseYaml(
+      renderLicenseAuditWorkspace(
+        `packages:\n  example@1.0.0:\n    os: linux\n    cpu: arm64\n    libc: musl\n`,
+        'packages: []\n',
+        { lockfile: 'pnpm-lock.yaml', workspace: 'pnpm-workspace.yaml' },
+      ),
+    ) as { supportedArchitectures: Record<string, string[]> }
+
+    expect(workspace.supportedArchitectures).toEqual({
+      cpu: ['current', 'arm64'],
+      libc: ['current', 'musl'],
+      os: ['current', 'linux'],
+    })
+  })
+
+  it('cleans the command-scoped workspace after success and failure', () => {
+    let cleanupCount = 0
+    const cleanup = () => {
+      cleanupCount += 1
+    }
+
+    collectTestReport(fakeExecutor({ status: 0, stdout: '{}' }), cleanup)
+    expect(() =>
+      collectTestReport(fakeExecutor({ error: new Error('spawn failed'), status: null }), cleanup),
+    ).toThrow('spawn failed')
+    expect(() =>
+      collectTestReport(
+        fakeExecutor(
+          { status: 0, stdout: '{}' },
+          { error: new Error('fetch spawn failed'), status: null },
         ),
-      ).toThrow(`supportedArchitectures.${key} is missing lockfile values`)
-    },
-  )
+        cleanup,
+      ),
+    ).toThrow('fetch spawn failed')
+    expect(cleanupCount).toBe(3)
+  })
 
   it('parses a well-formed JSON report', () => {
     const report = collectTestReport(
@@ -87,11 +145,29 @@ describe('collectLicenseReport', () => {
     expect(report).toEqual({})
   })
 
+  it('preserves a prototype-shaped license group as auditable report data', () => {
+    const report = collectTestReport(
+      fakeExecutor({ status: 0, stdout: '{"__proto__":[{"name":"unsafe-package"}]}' }),
+    )
+    expect(Object.entries(report)).toEqual([['__proto__', [{ name: 'unsafe-package' }]]])
+  })
+
   it('throws when the spawned process errors', () => {
     const spawnError = new Error('ENOENT: pnpm not found')
     expect(() => collectTestReport(fakeExecutor({ error: spawnError, status: null }))).toThrow(
       spawnError,
     )
+  })
+
+  it('throws with stderr context when the command-scoped fetch fails', () => {
+    expect(() =>
+      collectTestReport(
+        fakeExecutor(
+          { status: 0, stdout: '{}' },
+          { status: 1, stderr: 'ERR_PNPM_FETCH_403 forbidden' },
+        ),
+      ),
+    ).toThrow(/pnpm fetch.*status 1.*ERR_PNPM_FETCH_403/s)
   })
 
   it('throws with stderr context on a non-zero exit', () => {
@@ -100,6 +176,17 @@ describe('collectLicenseReport', () => {
         fakeExecutor({ status: 1, stderr: 'ERR_PNPM_NO_LOCKFILE something went wrong' }),
       ),
     ).toThrow(/status 1.*ERR_PNPM_NO_LOCKFILE/s)
+  })
+
+  it('preserves JSON error output written to stdout on a non-zero exit', () => {
+    expect(() =>
+      collectTestReport(
+        fakeExecutor({
+          status: 1,
+          stdout: '{"error":{"code":"ERR_PNPM_MISSING_PACKAGE_INDEX_FILE"}}',
+        }),
+      ),
+    ).toThrow(/status 1.*ERR_PNPM_MISSING_PACKAGE_INDEX_FILE/s)
   })
 
   it('throws a descriptive error on malformed JSON instead of returning garbage', () => {

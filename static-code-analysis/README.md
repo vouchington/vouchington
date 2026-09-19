@@ -20,11 +20,18 @@ exact-match `UNLICENSED`/`Unknown`/empty-string. Unknown identifiers, custom `Li
 `DocumentRef` atoms, and expressions the parser cannot parse fail closed (denied), never silently
 pass.
 
-Pnpm filters the lockfile walk through its platform-installability check. The
-`supportedArchitectures` lists in [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) therefore cover
-every `os`, `cpu`, and `libc` value in the lockfile, including non-runner targets. The collector
-validates that coverage before invoking pnpm, so adding a platform-specific resolution without its
-manifest being available to the license scanner fails the policy instead of silently under-scanning.
+Pnpm filters the lockfile walk through its platform-installability check. The collector therefore
+derives a temporary, command-scoped workspace whose `supportedArchitectures` cover every `os`,
+`cpu`, and `libc` value in the lockfile, including non-runner targets. It runs `pnpm fetch` without
+lifecycle scripts and with incompatible optional packages included in that disposable workspace
+before `pnpm licenses list`. Both commands use the same audit-only content-addressable store beneath
+the temporary workspace, guaranteeing that a clean runner has every package manifest without
+expanding or polluting the normal cached pnpm store. A newly locked platform is included
+automatically, and malformed selectors fail the policy instead of silently under-scanning. The
+temporary workspace and its store are deleted after the scan and do not expand normal developer or
+CI installs with every native binary package. The audit temporarily needs enough free disk for all
+locked platform packages, so clean-runner validation must retain peak-disk evidence when runner
+sizing changes.
 
 LGPL and MPL are denied by default (any future dependency introducing an unreviewed variant fails
 closed) but the two copyleft entries the graph is already known to contain are allowlisted back in
