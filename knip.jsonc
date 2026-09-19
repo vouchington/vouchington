@@ -22,6 +22,7 @@
       "ignoreBinaries": [
         "psql", // PostgreSQL system CLI probed by local DB-backed test setup checks
         "valkey-cli", // Valkey system CLI probed by local DB-backed test setup checks
+        "wrangler", // GitHub Actions invokes the Cloudflare Worker workspace's pinned binary
       ],
       // Invoked dynamically by the OpenAPI structural-validation test.
       "ignoreDependencies": ["@redocly/cli"],
