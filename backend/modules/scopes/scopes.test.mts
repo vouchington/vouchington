@@ -59,6 +59,22 @@ describe('validateScopeSet', () => {
     })
   })
 
+  it('rejects a catalogue scope on an unsupported credential surface', () => {
+    const definition = SCOPE_DEFINITIONS['rss:read']
+    const originalSurfaces = definition.surfaces
+    try {
+      Reflect.set(definition, 'surfaces', ['oauth'])
+      expect(
+        validateScopeSet(['rss:read'], {
+          surface: 'api-key',
+          allowMixedAudiences: false,
+        }),
+      ).toEqual({ valid: false, code: 'unsupported-surface', scope: 'rss:read' })
+    } finally {
+      Reflect.set(definition, 'surfaces', originalSurfaces)
+    }
+  })
+
   it('declares every scope audience and supported credential surface', () => {
     expect(SCOPE_DEFINITIONS).toEqual({
       'mcp.admin:read': {

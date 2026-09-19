@@ -47,12 +47,21 @@ export function validateApiKeyCreationPermissions(
   type: ApiKeyType,
   permissions: readonly string[],
 ): string | null {
+  const result = validateApiKeyCreationScopeSet(currentUser, type, permissions)
+  return result.valid ? null : result.error
+}
+
+export function validateApiKeyCreationScopeSet(
+  currentUser: Pick<PrivateUser, 'roles'>,
+  type: ApiKeyType,
+  permissions: readonly string[],
+): { valid: true; permissions: ApiScope[] } | { valid: false; error: string } {
   const result = validateApiKeyScopeSet(type, permissions)
-  if (!result.valid) return apiKeyScopeValidationError(type, result)
+  if (!result.valid) return { valid: false, error: apiKeyScopeValidationError(type, result) }
   if (result.audience === 'admin' && !currentUser.roles.includes('administrator')) {
-    return 'admin mcp scopes require administrator role'
+    return { valid: false, error: 'admin mcp scopes require administrator role' }
   }
-  return null
+  return { valid: true, permissions: result.permissions }
 }
 
 function apiKeyScopeValidationError(

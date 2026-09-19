@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '../users/types.mts'
 import { validateApiKeyCreationPermissions } from './permissions.mts'
+import { SCOPE_DEFINITIONS } from '@modules/scopes'
 
 describe('validateApiKeyCreationPermissions', () => {
   let user: PrivateUser
@@ -32,6 +33,25 @@ describe('validateApiKeyCreationPermissions', () => {
     expect(validateApiKeyCreationPermissions(user, 'mcp', ['mcp.user:read', 'mcp.user:read'])).toBe(
       'api key scopes must not contain duplicates',
     )
+  })
+
+  it('rejects empty permission sets', () => {
+    expect(validateApiKeyCreationPermissions(user, 'rss', [])).toBe(
+      'api key scopes must not be empty',
+    )
+  })
+
+  it('rejects catalogue scopes that do not support API keys', () => {
+    const definition = SCOPE_DEFINITIONS['rss:read']
+    const originalSurfaces = definition.surfaces
+    try {
+      Reflect.set(definition, 'surfaces', ['oauth'])
+      expect(validateApiKeyCreationPermissions(user, 'rss', ['rss:read'])).toBe(
+        'scope is not supported for API keys: rss:read',
+      )
+    } finally {
+      Reflect.set(definition, 'surfaces', originalSurfaces)
+    }
   })
 
   it('rejects non-admin users creating admin mcp scopes', () => {

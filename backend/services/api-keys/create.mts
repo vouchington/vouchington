@@ -5,7 +5,7 @@ import { generateApiKey } from './generate.mts'
 import { addKeyHashToBloomFilter } from './bloom-filter.mts'
 import type { ApiKey } from './types.mts'
 import type { ApiKeyType } from './format.mts'
-import { validateApiKeyCreationPermissions, validateApiKeyScopeSet } from './permissions.mts'
+import { validateApiKeyCreationScopeSet } from './permissions.mts'
 
 export async function createApiKey(
   userId: string,
@@ -27,17 +27,12 @@ export async function createApiKey(
           AND user_roles_types.slug = 'administrator'
       ) AS is_administrator
     `)
-    const permissionError = validateApiKeyCreationPermissions(
+    const permissionResult = validateApiKeyCreationScopeSet(
       { roles: ownerResult.rows[0]?.is_administrator === true ? ['administrator'] : [] },
       type,
       permissions,
     )
-    if (permissionError) throw new Error(`createApiKey: ${permissionError}`)
-
-    const validatedPermissions = validateApiKeyScopeSet(type, permissions)
-    if (!validatedPermissions.valid) {
-      throw new Error('createApiKey: scope validation changed during creation')
-    }
+    if (!permissionResult.valid) throw new Error(`createApiKey: ${permissionResult.error}`)
     const result = await query(sql`/* createApiKey */
         INSERT INTO api_keys (user_id, prefix, key_hash, type, label, permissions)
         VALUES (
@@ -46,7 +41,7 @@ export async function createApiKey(
           ${keyHash},
           ${type},
           ${label},
-          ${validatedPermissions.permissions}
+          ${permissionResult.permissions}
         )
         RETURNING id, user_id, prefix, type, label, permissions, created_at, last_used_at, revoked_at, updated_at
       `)
