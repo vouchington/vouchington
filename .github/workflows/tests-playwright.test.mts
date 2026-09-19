@@ -109,7 +109,7 @@ describe('tests-playwright.yml', () => {
   })
 
   it('extracts chromium and chromium-headless-shell to the same paths Playwright resolves on linux-arm64', () => {
-    // The custom curl + system unzip path supports Ubicloud ARM64 callers.
+    // The custom curl + system unzip path supports ARM64 callers.
     // Its sanity check must match Playwright's own EXECUTABLE_PATHS for linux-arm64
     // — when these drift, browsers download successfully but `playwright test` fails
     // to find them.
@@ -125,7 +125,7 @@ describe('tests-playwright.yml', () => {
     expect(packagedInstall).toContain(`chromium-headless-shell) exe="$dir/${headlessShellExe}" ;;`)
   })
 
-  it('retries partial browser downloads on Ubicloud', () => {
+  it('retries partial browser downloads on ARM64', () => {
     expect(playwrightInstallScript).toContain('exec-vouchington-gha.sh')
     expect(
       readFileSync(

@@ -51,9 +51,9 @@ function unpinnedCallTarget(target: string): string {
   return shortWorkflowPath(target.replace(/^\.\//, '').replace(/@[^@]+$/, ''))
 }
 
-// `runs-on:` can be an unevaluated `${{ ... }}` expression (e.g. the CodeBuild/ubicloud ternary in
-// build-backend.yml), which authors wrap across lines and use `||` inside. Collapse to one line
-// and escape `|` so it can never break out of its Markdown table cell.
+// `runs-on:` can be an unevaluated `${{ ... }}` expression, which authors may wrap across lines and
+// use `||` inside. Collapse to one line and escape `|` so it can never break out of its Markdown
+// table cell.
 function markdownTableCell(text: string): string {
   return text
     .replace(/\s+/g, ' ')

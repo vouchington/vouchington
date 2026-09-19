@@ -18,7 +18,7 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   selectors. Arch/OS-independent, no Docker, no test services → `[self-hosted]` (default; a
   superset match that accepts macOS as overflow — pin `Linux` only when needed). Needs
   Docker/services, or is a Linux Vitest job → add `Docker`, `Tests`. Needs
-  Linux+ARM64 → `ubicloud-standard-*-arm` (no self-hosted Linux host is ARM64). See
+  Linux+ARM64 → `ubuntu-24.04-arm` (no self-hosted Linux host is ARM64). See
   [Workflow Runner Types](reference-runner-types.md) and the [Runner Fleet Capacity live-capacity
   procedure](reference-runner-fleet-capacity.md) for current inventory and capacity evidence.
 - When adding, removing, or changing a workflow, keep the relevant grouped inventory reference and

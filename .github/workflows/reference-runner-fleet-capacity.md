@@ -79,6 +79,6 @@ longer-running shards, while 10 minutes is a hard performance ceiling. The sched
 for breaches; the budget does not impose a job timeout or turn an otherwise successful job red.
 
 Cost model: self-hosted `Tests`/`CPU`/`Playwright` runners preserve local caches but consume scarce
-fixed capacity. Ubicloud runners are ephemeral and per-minute billed; use them only after confirming
-their environment fits the job, because queue relief trades against cold-start, cache, and
-direct-runtime cost.
+fixed capacity. Ubicloud offered ephemeral, per-minute-billed runners as queue relief, used only
+after confirming environment fit because it traded against cold-start, cache, and direct-runtime
+cost; Ubicloud was cancelled 2026-09-19, and ephemeral CI now runs on GitHub-hosted runners instead.

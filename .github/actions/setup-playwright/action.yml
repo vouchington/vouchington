@@ -2,27 +2,27 @@ name: Setup Playwright
 description: >
   Install Playwright browsers. On self-hosted runners, browsers persist in
   ~/.cache/ms-playwright between runs so caching is not needed. Pass
-  ubicloud: 'true' on ARM64 ubicloud runners to bypass Node-based
-  extract-zip and use system curl + unzip instead — required on ARM64 ubicloud
-  runners where yauzl extraction of the ~150MB Chromium zip times out.
-  Probes host dependencies first. Only drift repair uses the shared host lock
-  to serialize package-manager operations across concurrent jobs sharing the
-  same OS user.
+  ubicloud: 'true' on ARM64 runners (e.g. GitHub-hosted ubuntu-24.04-arm) to
+  bypass Node-based extract-zip and use system curl + unzip instead —
+  required on ARM64 where yauzl extraction of the ~150MB Chromium zip times
+  out. Probes host dependencies first. Only drift repair uses the shared host
+  lock to serialize package-manager operations across concurrent jobs sharing
+  the same OS user.
 
 inputs:
   ubicloud:
-    description: 'Use curl + system unzip instead of playwright install to bypass slow ARM64 Node extraction (use true for ubicloud ARM64 runners; not for x64)'
+    description: 'Use curl + system unzip instead of playwright install to bypass slow ARM64 Node extraction (use true on ARM64 runners; not for x64)'
     default: 'false'
 
 runs:
   using: composite
   steps:
-    - name: Install Playwright browsers (ubicloud curl+unzip)
+    - name: Install Playwright browsers (ARM64 curl+unzip)
       if: inputs.ubicloud == 'true' && runner.arch == 'ARM64'
       shell: bash
       # Bypass playwright install's Node-based extract-zip on arm64.
-      # extract-zip + yauzl is single-threaded and CPU-bound; on ubicloud ARM64
-      # it grinds through Chromium's ~150MB / thousands of files and times out.
+      # extract-zip + yauzl is single-threaded and CPU-bound; on ARM64 it
+      # grinds through Chromium's ~150MB / thousands of files and times out.
       # System unzip finishes the same archive in ~10s.
       run: ./ci/playwright-install-ubicloud-browsers.sh
 

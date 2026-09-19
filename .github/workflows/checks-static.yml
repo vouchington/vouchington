@@ -2,10 +2,10 @@ name: Static Checks
 
 # Area-gated, non-Vitest gates (typecheck, dependency-cruiser, `next build`, smoke,
 # `wrangler --dry-run`) lifted out of the per-area Vitest workflows so they run on
-# the bare self-hosted fleet instead of the Ubicloud pool those workflows use for
-# sharded Vitest runs. This is a resource/cost reorganization for the lifted checks;
-# API fixture snapshot regeneration belongs to the static backend gate. See
-# docs/development/ci.md and .github/workflows/RUNNERS.md.
+# the bare self-hosted fleet instead of the Ubicloud pool those workflows used for
+# sharded Vitest runs (Ubicloud was cancelled 2026-09-19). This is a resource/cost
+# reorganization for the lifted checks; API fixture snapshot regeneration belongs to
+# the static backend gate. See docs/development/ci.md and .github/workflows/RUNNERS.md.
 
 on:
   workflow_call:

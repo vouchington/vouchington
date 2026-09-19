@@ -7,14 +7,18 @@ by treating labels as host-carving selectors: **arch/OS-independent, no Docker, 
 `[self-hosted]`** (the default — a cross-OS superset match, so such a job may land on macOS as
 accepted overflow; pin `Linux` only when a step genuinely requires it); **needs Docker/services,
 or is a Linux Vitest job → add `Docker`, `Tests`** (`[self-hosted, Linux, Docker, Tests]`); **needs
-Linux+ARM64 (a native arm64 artifact) → `ubicloud-standard-*-arm`** (no self-hosted Linux host is
+Linux+ARM64 (a native arm64 artifact) → `ubuntu-24.04-arm`** (no self-hosted Linux host is
 ARM64 — self-hosted macOS cannot produce a Linux artifact). Verify inventory and headroom live with
 the [Runner Fleet Capacity live-capacity procedure](reference-runner-fleet-capacity.md). The terse
 version of this rule lives in [CLAUDE.md](CLAUDE.md); this is the canonical, detailed version.
 
 GitHub-hosted runners:
 
-- Do not use GitHub-hosted labels such as `ubuntu-*`, `windows-*`, or `macos-*`. Jobs should run on repo self-hosted runners or Ubicloud only.
+- The closed GitHub-hosted label allowlist is `ubuntu-slim`, `ubuntu-latest`, `ubuntu-24.04-arm`, and
+  `macos-latest`, enforced by `ALLOWED_LABELS` in
+  [`runner-policy-classify.mts`](runner-policy-classify.mts); see the [canonical
+  checklist](../../docs/checklists/github-actions.md#checklist)'s "Runner preference" entry for when
+  each applies, and the ephemeral GitHub-hosted list below for the ARM64 build/dedupe jobs.
 
 Self-hosted:
 
@@ -31,8 +35,7 @@ Self-hosted:
   Hosts persist `~/.cache/ms-playwright` (browsers) and `web/.next/cache` (Next.js build cache via
   `clean-workspace` `extra-keep`) across runs — no `actions/cache` upload/download needed.
 
-Ubicloud (ephemeral):
+GitHub-hosted (ephemeral):
 
-- `ubicloud-standard-2` — for non-ARM jobs that must stay ephemeral, including `pnpm-dedupe.yml` and validated dependency-lock publishers.
-- `ubicloud-standard-4-arm` — the default runner for `build-web.yml`'s `build` job in every context, including `main`; on PRs that build job assumes `AWS_TEST_ROLE_ARN` for test/smoke credentials but does not publish to AWS, and reads and writes build cache through GitHub Actions. No longer runs `tests-backend-modules.yml` — that job moved to `[self-hosted, Linux, Docker, Tests]` (see above).
-- `ubicloud-standard-8-arm` — default runner for `build-backend.yml`'s `build` job in every context. The active profile builds `api` + `worker-cpu`; setting `WORKER_IO_AUTOMATION_ENABLED=true` in [the shared flag](../worker-io-automation.env) selects all three images in the same Bake invocation. Keep the 8-arm runner until the two-image default has measured memory evidence for downsizing: the earlier three-image bake OOM-crashed 4-arm even with sequential exports, and the optional three-image solve must remain reliable. No longer runs `tests-web.yml`'s sharded `web-tests` job — that job moved to `[self-hosted, Linux, Docker, Tests]` (see above), reversing the #7513 offload onto elastic capacity now that Vitest selection narrows the common case.
+- `ubuntu-latest` — for non-ARM jobs that must stay ephemeral, including `pnpm-dedupe.yml` and validated dependency-lock publishers.
+- `ubuntu-24.04-arm` — the default runner for `build-web.yml`'s and `build-backend.yml`'s `build` jobs in every context, including `main`; there is no smaller/larger size tier to pick between, unlike the former Ubicloud `ubicloud-standard-4-arm`/`ubicloud-standard-8-arm` split (Ubicloud was cancelled 2026-09-19). On PRs, `build-web.yml`'s build job assumes `AWS_TEST_ROLE_ARN` for test/smoke credentials but does not publish to AWS, and reads and writes build cache through GitHub Actions. `build-backend.yml`'s active profile builds `api` + `worker-cpu`; setting `WORKER_IO_AUTOMATION_ENABLED=true` in [the shared flag](../worker-io-automation.env) selects all three images in the same Bake invocation — the earlier three-image bake OOM-crashed the smaller Ubicloud tier even with sequential exports, so the optional three-image solve must remain reliable. Neither `build-web.yml` nor `build-backend.yml` runs `tests-web.yml`'s sharded `web-tests` job or `tests-backend-modules.yml`'s job — those moved to `[self-hosted, Linux, Docker, Tests]` (see above).
