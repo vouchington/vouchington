@@ -1,8 +1,16 @@
 # Contributing
 
-Thanks for your interest in contributing to Voucha. This file is a thin
-front door — the real rules live in the docs it links to; see those for
-details rather than looking for them duplicated here.
+Thanks for your interest in Voucha. This file is a thin front door — the real
+rules live in the docs it links to; see those for details rather than looking
+for them duplicated here.
+
+**This project does not accept outside pull requests.** The source is published
+to be read, run, and learned from, not to be developed collectively. Pull
+requests from people outside the project are closed unreviewed. Everything
+below describes how work is done _inside_ the project; it is kept public
+because the source is public, not as an invitation.
+
+Bug reports and questions are welcome as issues.
 
 ## Setup
 
@@ -25,10 +33,28 @@ Root project principles and directory-scoped rules are in
 
 ## Pull requests
 
-New PRs are opened as **drafts** and only marked ready for review once the
-change is genuinely shippable — see
+Within the project, new PRs are opened as **drafts** and only marked ready for
+review once the change is genuinely shippable — see
 [Git and PRs](.agents/skills/agent-workflow/git-and-prs.md) for the exact
 flow.
+
+## Licensing of contributions
+
+The repository is licensed under [FSL-1.1-MIT](LICENSE), which converts to the
+MIT license two years after each version is published.
+
+GitHub's default rule is inbound=outbound: absent any other agreement, anything
+you add to a repository is licensed under that repository's own terms. Under
+FSL that would leave the project unable to relicense the contribution —
+including at the two-year MIT conversion the license promises everyone.
+
+So, as an exception to that default: if you do submit a contribution despite
+the policy above, you grant Jonathan Ong a perpetual, worldwide, irrevocable,
+royalty-free, non-exclusive license to use, reproduce, modify, distribute, and
+relicense that contribution under any terms, including terms different from
+FSL-1.1-MIT. You also confirm that the contribution is yours to license. This
+grant runs only to the project; everyone else receives the contribution under
+FSL-1.1-MIT like the rest of the source.
 
 ## Before your commit lands
 
