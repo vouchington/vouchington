@@ -5,15 +5,9 @@ import { join } from 'node:path'
 
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 
-import { parseLicenseReport } from './parse-license-report.mts'
+import { parseLicenseReport, type LicenseReport } from './parse-license-report.mts'
 
-export interface LicenseReportEntry {
-  name: string
-  versions?: string[]
-}
-
-/** Shape of `pnpm licenses list --json`: license expression -> package entries. */
-export type LicenseReport = Record<string, LicenseReportEntry[]>
+export type { LicenseReport, LicenseReportEntry } from './parse-license-report.mts'
 
 export type PnpmExecutor = (
   command: string,

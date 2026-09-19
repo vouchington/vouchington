@@ -1,4 +1,10 @@
-import type { LicenseReport } from './collect-licenses.mts'
+export interface LicenseReportEntry {
+  name: string
+  versions?: string[]
+}
+
+/** Shape of `pnpm licenses list --json`: license expression -> package entries. */
+export type LicenseReport = Record<string, LicenseReportEntry[]>
 
 function getStringList(value: unknown, path: string): string[] {
   if (!Array.isArray(value) || !value.every(entry => typeof entry === 'string')) {
