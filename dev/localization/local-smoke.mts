@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { catalogRevision, loadCatalogDirectory } from '@vouchington/localization-compiler'
 import { waitFor } from '../../integration-tests/web/helpers/wait.mts'
 import { WEB_CHROME_SELECTOR } from '../../web/lib/i18n/route-selectors.generated.mts'
+import { maybeAssertSsrLocalizationRevision } from './ssr-revision-diagnostic.mts'
 
 const execFileAsync = promisify(execFile)
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
@@ -115,9 +116,11 @@ async function startLocalStack(): Promise<void> {
     120_000,
   )
   const currentCatalog = await loadCatalogDirectory(join(repoRoot, 'localization', 'catalog'))
+  if (!backendRevision) throw new Error('Localization backend returned no catalog revision')
   if (backendRevision !== catalogRevision(currentCatalog.catalog)) {
     throw new Error('Running backend localization catalog is stale; restart the managed tmux stack')
   }
+  await maybeAssertSsrLocalizationRevision(backendRevision)
 }
 
 async function runBrowserSmoke(): Promise<void> {

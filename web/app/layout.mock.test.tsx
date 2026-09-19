@@ -6,7 +6,10 @@ import RootLayout from './layout'
 import { SpeculationRulesScript } from '@/components/seo/speculation-rules-script'
 import { RootAppShell } from './root-app-shell'
 
-vi.mock(import('@/lib/i18n/load-server-messages'), () => ({ loadServerMessages: loadJsonMessages }))
+vi.mock(import('@/lib/i18n/load-server-messages'), () => ({
+  loadServerMessages: loadJsonMessages,
+  ssrLocalizationRevisionHtmlProps: async () => ({}),
+}))
 
 interface HeaderBag {
   get: (key: string) => string | null

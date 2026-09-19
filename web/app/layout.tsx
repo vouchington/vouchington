@@ -35,7 +35,10 @@ import { serializeCatalog } from '@ts-shared/ui-messages/catalog-bootstrap'
 import { RootAppShell } from './root-app-shell'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { getGlobalServerFeatureFlags } from '@/lib/feature-flags/server'
-import { loadServerMessages } from '@/lib/i18n/load-server-messages'
+import {
+  loadServerMessages,
+  ssrLocalizationRevisionHtmlProps,
+} from '@/lib/i18n/load-server-messages'
 
 export async function generateMetadata(): Promise<Metadata> {
   // A cache-fill render's HTML is frozen into the shared anon edge cache and replayed to every
@@ -65,8 +68,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // uiLocale is resolved via getResolvedUiLocale() (not re-derived here) so this file and
-  // get-resolved-ui-locale.ts can never drift back out of sync.
+  // uiLocale comes only from getResolvedUiLocale() so this file cannot drift.
   const t = await getTranslations()
   const [user, headersList, uiLocale, globalFeatureFlags] = await Promise.all([
     getCurrentUser(),
@@ -87,8 +89,7 @@ export default async function RootLayout({
   // Docker image can deploy to staging and production with different values.
   const imageOrigin = getServerImageOrigin()
   const imageOriginScript = serializeImageOriginBootstrapScript(imageOrigin)
-  // Catalog leaves are strings or data-only plural descriptors, so a route batch can cross
-  // the RSC → Client boundary and seed the client cache without reconstructing executable leaves.
+  // Catalog leaves are strings or data-only plural descriptors, so a route batch can seed the client cache.
   const uiMessages = await loadServerMessages(uiLocale)
   const uiMessagesScript = serializeUiMessagesBootstrapScript({
     locale: uiLocale,
@@ -115,6 +116,7 @@ export default async function RootLayout({
     <html
       lang={uiLocale}
       suppressHydrationWarning
+      {...await ssrLocalizationRevisionHtmlProps(uiLocale)}
     >
       <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
         <ResourceHints

@@ -11,6 +11,7 @@ const productionSources = [
   '../load-server-messages.ts',
   '../catalog-from-batch.ts',
   '../report-unresolved-message.ts',
+  '../ssr-localization-revision-props.ts',
   '../../../app/layout.tsx',
   '../../../app/global-error.tsx',
 ]
