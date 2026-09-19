@@ -22,10 +22,6 @@ function hasOnlyStaticAnalysisAndAggregateFailures(ctx: WorkflowRunContext): boo
   })
 }
 
-function staticAnalysisJobLog(logs: Map<string, string>, jobName = staticAnalysisJobName): string {
-  return logs.get(jobName) ?? ''
-}
-
 export const cloudflareWorkerTscRuntimeCrashRule: TransientRetryRule = {
   id: 'cloudflare-worker-tsc-runtime-unknown-caller-pc',
   consumerKey: 'cloudflare-worker-tsc-typecheck',
