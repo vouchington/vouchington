@@ -47,7 +47,9 @@ export const jobInventory = {
   '.github/workflows/main-checks.yml': jobs(
     'cleanup-artifacts explain-analyze select-main-checks tooling-tests ts-shared-tests',
   ),
-  '.github/workflows/main-cloudflare-worker.yml': jobs('cloudflare-worker-tests static-checks'),
+  '.github/workflows/main-cloudflare-worker.yml': jobs(
+    'cloudflare-worker-tests publish-cloudflare-worker static-checks',
+  ),
   '.github/workflows/main-lambdas.yml': jobs('lambdas-tests publish-image-resize static-checks'),
   '.github/workflows/main-storybook.yml': jobs('storybook-build'),
   '.github/workflows/main-web.yml': jobs(

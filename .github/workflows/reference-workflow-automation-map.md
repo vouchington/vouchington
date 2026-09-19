@@ -189,6 +189,8 @@ flowchart TD
     main-lambda-static --> main-lambda-tests["Lambda tests"]
     main-cloudflare-worker --> main-worker-static["Worker static"]
     main-worker-static --> main-worker-tests["Worker tests"]
+    main-worker-static --> publish-worker["publish-cloudflare-worker\n(credential-free deployable bundle)"]
+    main-worker-tests --> publish-worker
 
 
     build -. "workflow_run failure\n(main only)" .-> fix-main["fix-main\n(Auto Harness fix)"]
