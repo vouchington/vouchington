@@ -52,7 +52,7 @@ checks guard that request-selection contract instead of catalog content:
   error monitor enabled.
 - `pnpm run test:localization:tmux-smoke` — live local Worker smoke for `/`, `/login`, and `/news`.
   It probes backend catalog revision before browser navigation. `LOCALIZATION_SSR_REVISION_DIAGNOSTIC=1`
-  adds a Next-origin HTML check that the development `data-localization-ssr-revision` marker matches
+  adds a Next-origin HTML check, after Worker and Next origin readiness, that the development `data-localization-ssr-revision` marker matches
   that backend revision (`dev/localization/ssr-revision-diagnostic.mts`). Ordinary Playwright smoke
   stays English-only; the SSR cache TTL tests live in `web/lib/i18n/__tests__/load-server-messages.mock.test.ts`.
 - `web/scripts/tests/smoke-test-web.sh` — compiles only the real homepage and chrome selectors

@@ -116,7 +116,7 @@ export default async function RootLayout({
     <html
       lang={uiLocale}
       suppressHydrationWarning
-      {...await ssrLocalizationRevisionHtmlProps(uiLocale)}
+      {...ssrLocalizationRevisionHtmlProps(uiMessages)}
     >
       <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
         <ResourceHints

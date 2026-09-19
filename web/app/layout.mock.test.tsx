@@ -8,7 +8,7 @@ import { RootAppShell } from './root-app-shell'
 
 vi.mock(import('@/lib/i18n/load-server-messages'), () => ({
   loadServerMessages: loadJsonMessages,
-  ssrLocalizationRevisionHtmlProps: async () => ({}),
+  ssrLocalizationRevisionHtmlProps: () => ({}),
 }))
 
 interface HeaderBag {

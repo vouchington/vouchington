@@ -4,6 +4,6 @@ export async function loadedServerLocalizationRevision(): Promise<undefined> {
   return undefined
 }
 
-export async function ssrLocalizationRevisionHtmlProps(): Promise<Record<string, never>> {
+export function ssrLocalizationRevisionHtmlProps(): Record<string, never> {
   return {}
 }

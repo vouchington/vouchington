@@ -249,22 +249,34 @@ describe('loadServerMessages', () => {
       .mockResolvedValueOnce(localizationBatch('Channels', 10))
       .mockReturnValueOnce(refresh)
 
-    await expect(loadServerMessages('sv')).resolves.toEqual({ nav: { home: 'Channels' } })
+    const stale = await loadServerMessages('sv')
+    expect(stale).toEqual({ nav: { home: 'Channels' } })
     vi.advanceTimersByTime(10_000)
     await expect(loadServerMessages('sv')).resolves.toEqual({ nav: { home: 'Channels' } })
     await expect(loadedServerLocalizationRevision('sv')).resolves.toBe('revision-Channels')
+    vi.stubEnv('NODE_ENV', 'development')
+    expect(ssrLocalizationRevisionHtmlProps(stale)).toEqual({
+      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Channels',
+    })
     resolveRefresh(refreshedBatch)
     await flushPromises()
-    await expect(loadServerMessages('sv')).resolves.toEqual({ nav: { home: 'Channels next' } })
     await expect(loadedServerLocalizationRevision('sv')).resolves.toBe('revision-Channels next')
+    expect(ssrLocalizationRevisionHtmlProps(stale)).toEqual({
+      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Channels',
+    })
+    const next = await loadServerMessages('sv')
+    expect(next).toEqual({ nav: { home: 'Channels next' } })
+    expect(ssrLocalizationRevisionHtmlProps(next)).toEqual({
+      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Channels next',
+    })
   })
 
-  it('emits development html props from the peeked pathname revision', async () => {
+  it('emits development html props from the catalog snapshot revision', async () => {
     mockHeadersGet.mockReturnValue('/chat')
     mockGetBatch.mockResolvedValue(localizationBatch('Chat', 60))
-    await loadServerMessages('en')
+    const catalog = await loadServerMessages('en')
     vi.stubEnv('NODE_ENV', 'development')
-    await expect(ssrLocalizationRevisionHtmlProps('en')).resolves.toEqual({
+    expect(ssrLocalizationRevisionHtmlProps(catalog)).toEqual({
       [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Chat',
     })
   })
@@ -272,8 +284,8 @@ describe('loadServerMessages', () => {
   it('omits html props outside development', async () => {
     mockHeadersGet.mockReturnValue('/cards')
     mockGetBatch.mockResolvedValue(localizationBatch('Cards', 60))
-    await loadServerMessages('en')
+    const catalog = await loadServerMessages('en')
     vi.stubEnv('NODE_ENV', 'production')
-    await expect(ssrLocalizationRevisionHtmlProps('en')).resolves.toEqual({})
+    expect(ssrLocalizationRevisionHtmlProps(catalog)).toEqual({})
   })
 })

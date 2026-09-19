@@ -28,6 +28,7 @@ type ResolvedCatalog = {
 type CatalogEntry = LoadingCatalog | ResolvedCatalog
 
 const catalogs = new Map<string, CatalogEntry>()
+const catalogRevisions = new WeakMap<EnCatalog, string>()
 
 function expiresAt(batch: LocalizationBatch): number {
   const ttlMilliseconds = Number.isFinite(batch.ttlSeconds)
@@ -37,10 +38,12 @@ function expiresAt(batch: LocalizationBatch): number {
 }
 
 function resolvedCatalog(batch: LocalizationBatch): ResolvedCatalog {
+  const catalog = catalogFromLocalizationBatch(batch)
+  catalogRevisions.set(catalog, batch.revision)
   return {
     state: 'resolved',
     batch,
-    catalog: catalogFromLocalizationBatch(batch),
+    catalog,
     expiresAt: expiresAt(batch),
     retryAt: 0,
   }
@@ -134,13 +137,10 @@ export async function loadedServerLocalizationRevision(
   return entry?.state === 'resolved' ? entry.batch.revision : undefined
 }
 
-/** Development-only `<html>` marker; production `next start` returns `{}`. */
-export async function ssrLocalizationRevisionHtmlProps(
-  locale: string,
-): Promise<ReturnType<typeof ssrLocalizationRevisionProps>> {
+/** Development-only `<html>` marker bound to the catalog object this render serialized. */
+export function ssrLocalizationRevisionHtmlProps(
+  catalog: EnCatalog,
+): ReturnType<typeof ssrLocalizationRevisionProps> {
   if (process.env.NODE_ENV !== 'development') return {}
-  return ssrLocalizationRevisionProps(
-    process.env.NODE_ENV,
-    await loadedServerLocalizationRevision(locale),
-  )
+  return ssrLocalizationRevisionProps(process.env.NODE_ENV, catalogRevisions.get(catalog))
 }
