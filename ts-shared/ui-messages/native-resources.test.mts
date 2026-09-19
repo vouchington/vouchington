@@ -61,6 +61,27 @@ describe('native UI message resources', () => {
     )
   })
 
+  it('exports provider-neutral moderation summaries for both native clients', () => {
+    const files = generateNativeResourceFiles()
+    const swiftEnglish = files.find(file => file.path.endsWith('/en.lproj/Localizable.strings'))!
+    const dotnetEnglish = files.find(file => file.path.endsWith('/UiMessages.resx'))!
+
+    for (const content of [swiftEnglish.content, dotnetEnglish.content]) {
+      expect(content).toContain('native.moderation.summary.title')
+      expect(content).toContain('native.moderation.summary.disposition.pass')
+      expect(content).toContain('native.moderation.summary.disposition.review')
+      expect(content).toContain('native.moderation.summary.disposition.reject')
+      expect(content).toContain('native.moderation.summary.disposition.incomplete')
+      expect(content).toContain('native.moderation.summary.disposition.none')
+      expect(content).toContain(
+        'native.moderation.summary.evidence.flaggedCategories.__plural.other',
+      )
+      expect(content).toContain('native.moderation.summary.evidence.signals.__plural.other')
+      expect(content).not.toContain('native.swift.moderationReports.reviewQueueSpam')
+      expect(content).not.toContain('native.swift.moderationReports.reviewQueueFlaggedScore')
+    }
+  })
+
   it('escapes resource values without changing their placeholders', () => {
     const catalogs = {
       en: structuredClone(enMessages),
