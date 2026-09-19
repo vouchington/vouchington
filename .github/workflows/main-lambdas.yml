@@ -30,17 +30,18 @@ jobs:
     needs: [static-checks, lambdas-tests]
     if: ${{ !cancelled() && needs.static-checks.result == 'success' && needs.lambdas-tests.result == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           fetch-depth: 1
       - uses: ./.github/actions/setup-node-pnpm
-        timeout-minutes: 5
+        timeout-minutes: 3
       - name: Build and validate the image-resize deployment package
-        timeout-minutes: 5
+        timeout-minutes: 4
         run: |
           set -euo pipefail
           pnpm --filter @lambdas/image-resize run build
