@@ -90,11 +90,6 @@ jobs:
           done <<< "$VITEST_SELECTED_FILES"
           pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend-modules --project backend-no-data-mocks --project backend-test-helpers --project backend-contract-program --project backend-email-templates "${FILES[@]}"
         timeout-minutes: 10
-      - name: Host pressure diagnostics
-        if: failure()
-        continue-on-error: true
-        timeout-minutes: 1
-        run: ./ci/host-pressure-diagnostics.sh
       - name: Vitest fork diagnostic report summary
         if: failure()
         continue-on-error: true

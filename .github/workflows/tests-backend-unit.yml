@@ -190,11 +190,6 @@ jobs:
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
         # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
         timeout-minutes: 10
-      - name: Host pressure diagnostics
-        if: failure()
-        continue-on-error: true
-        timeout-minutes: 1
-        run: ./ci/host-pressure-diagnostics.sh
       - name: Vitest fork diagnostic report summary
         if: failure()
         continue-on-error: true

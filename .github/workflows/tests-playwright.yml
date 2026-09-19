@@ -231,7 +231,6 @@ jobs:
             echo "::error::Failed to allocate ports"
             exit 1
           fi
-          echo "BROWSER_ALLOCATED_PORTS=$PORT $NEXT_PORT $IMAGE_LAMBDA_PORT $WORKER_PORT $OTEL_HTTP_PORT $OTEL_GRPC_PORT" >> "$GITHUB_ENV"
           echo "PORT_HOLD_DIR=$HOLD_DIR" >> "$GITHUB_ENV"
           python3 ci/allocate-browser-safe-ports.py --check --hold-dir "$HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
           {
@@ -380,14 +379,17 @@ jobs:
           if [ -n "${PORT_HOLD_DIR:-}" ]; then
             python3 ci/allocate-browser-safe-ports.py --stop --hold-dir "$PORT_HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
           fi
-      - name: Diagnose browser port collision
-        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
+      - name: Upload browser port diagnostics
+        if: always()
         continue-on-error: true
         timeout-minutes: 2
-        uses: ./.github/actions/diagnose-browser-port-collision
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
-          artifact-suffix: playwright-${{ matrix.shard }}
+          name: browser-port-diagnostics-playwright-${{ matrix.shard }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/browser-port-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          if-no-files-found: warn
+          overwrite: true
+          retention-days: 1
       - name: Stop OTel collector
         if: ${{ always() && inputs.otel_enabled }}
         timeout-minutes: 1

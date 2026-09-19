@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
+import type { WorkflowRunContext } from './types.mts'
+
+// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
+// comment on idempotentWorkflows in runner-shutdown-consumers.mts) -- exercised directly here rather
+// than through decide()/RULES. Covers the 'exit code 143 with no operation-canceled line' marker
+// variant of hasRunnerShutdownMarkers, distinct from the variants covered by
+// runner-shutdown-web-rules.test.mts and runner-shutdown-task-cancelled.test.mts.
 
 const backendUnitShardJobName = 'test-backend-unit / backend-tests (1)'
 const backendSmokeJobName = 'backend-smoke / smoke'
@@ -30,31 +36,25 @@ const makeCtx = (
   failedJobAnnotations: () => Promise.resolve([]),
 })
 
-describe('runner-shutdown-leaf-rerun SIGTERM-only variant', () => {
+describe('runnerShutdownLeafRerunMatch SIGTERM-only variant', () => {
   it('reruns backend-unit when SIGTERM is emitted without an operation-canceled line', async () => {
-    const result = await decide(makeCtx(), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(await runnerShutdownLeafRerunMatch(makeCtx())).toBe(true)
   })
 
   it('does NOT rerun backend-smoke when a smoke-test failure precedes SIGTERM-only shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(`✗ Error: worker startup timed out\n${sigtermOnlyShutdownLog}`, backendSmokeJobName),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun backend-smoke when migration fails before shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         `ERROR: running migration 20260823000000-example.sql failed!\n${sigtermOnlyShutdownLog}`,
         backendSmokeJobName,
       ),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 })

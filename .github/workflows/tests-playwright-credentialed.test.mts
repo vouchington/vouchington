@@ -152,10 +152,8 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
     expect(credentialedWorkflowText).toContain('name: Stop port holder')
   })
 
-  it('selects every owning suite when shared port policy changes', () => {
+  it('selects every owning suite when shared port allocation inputs change', () => {
     const allocatorPath = 'ci/allocate-browser-safe-ports.py'
-    const runnerPolicyPath = 'ci/runner-port-policy.json'
-    const runnerPolicyModulePath = 'ci/runner-port-policy.mts'
 
     for (const filterName of ['backend', 'web-integration']) {
       expect(primaryPathFilters[filterName]).toContain('ts-shared/**')
@@ -164,27 +162,13 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
       expect(primaryPathFilters[filterName]).toContain('ts-shared/utils/**')
     }
     expect(primaryPathFilters['cloudflare-worker']).toEqual(
-      expect.arrayContaining([
-        allocatorPath,
-        runnerPolicyPath,
-        runnerPolicyModulePath,
-        'ts-shared/**',
-      ]),
+      expect.arrayContaining([allocatorPath, 'ts-shared/**']),
     )
     const allocatorOwningFilters = Object.values(primaryPathFilters).filter(paths =>
       paths.includes(allocatorPath),
     )
     expect(allocatorOwningFilters).not.toHaveLength(0)
-    expect(allocatorOwningFilters.every(paths => paths.includes(runnerPolicyPath))).toBe(true)
-    expect(allocatorOwningFilters.every(paths => paths.includes(runnerPolicyModulePath))).toBe(true)
-    expect(refinedRuntimeWebPathFilters['playwright']?.[0]).toContain(runnerPolicyPath)
-    expect(refinedRuntimeWebPathFilters['playwright']?.[0]).toContain(runnerPolicyModulePath)
     expect(refinedRuntimeWebPathFilters['playwright']?.[0]).toContain('ts-shared/utils/**')
-    expect(primaryPathFilters['web-integration']).toEqual(
-      expect.arrayContaining([runnerPolicyPath, runnerPolicyModulePath]),
-    )
-    expect(refinedRuntimeWebPathFilters['web-integration']?.[0]).toContain(runnerPolicyPath)
-    expect(refinedRuntimeWebPathFilters['web-integration']?.[0]).toContain(runnerPolicyModulePath)
     expect(refinedRuntimeWebPathFilters['web-integration']?.[0]).toContain('ts-shared/**')
   })
 

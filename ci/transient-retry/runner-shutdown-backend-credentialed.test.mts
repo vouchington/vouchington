@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
+import type { WorkflowRunContext } from './types.mts'
+
+// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
+// comment on idempotentWorkflows in runner-shutdown-consumers.mts) -- exercised directly here rather
+// than through decide()/RULES. See runner-shutdown-web-rules.test.mts for the web consumers.
 
 const backendCredentialedJobName = 'test-backend-credentialed / backend-credentialed-tests'
 
@@ -63,26 +67,22 @@ const makeBackendCredentialedCtx = (
   ...overrides,
 })
 
-describe('runner-shutdown-leaf-rerun — backend-credentialed consumer', () => {
+describe('runnerShutdownLeafRerunMatch — backend-credentialed consumer', () => {
   it('reruns Main CI (backend) when backend credentialed tests are cleanly shutdown', async () => {
-    const result = await decide(makeBackendCredentialedCtx(), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(await runnerShutdownLeafRerunMatch(makeBackendCredentialedCtx())).toBe(true)
   })
 
   it('treats Patch Coverage as downstream when backend credentialed tests are cleanly shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeBackendCredentialedCtx({
         failedJobNames: [backendCredentialedJobName, 'Patch Coverage', 'tests', 'build'],
       }),
-      RULES,
     )
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(matched).toBe(true)
   })
 
   it('treats the reusable Patch Coverage aggregate as downstream', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeBackendCredentialedCtx({
         failedJobNames: [
           backendCredentialedJobName,
@@ -92,64 +92,55 @@ describe('runner-shutdown-leaf-rerun — backend-credentialed consumer', () => {
           'build',
         ],
       }),
-      RULES,
     )
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(matched).toBe(true)
   })
 
   it('does NOT rerun when backend credentialed Vitest reports a real failure', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeBackendCredentialedCtx({
         failedJobLogs: () =>
           Promise.resolve(
             new Map([[backendCredentialedJobName, backendCredentialedVitestFailLog]]),
           ),
       }),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun when backend credentialed Vitest reports a non-assertion failure', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeBackendCredentialedCtx({
         failedJobLogs: () =>
           Promise.resolve(
             new Map([[backendCredentialedJobName, backendCredentialedNonAssertionFailLog]]),
           ),
       }),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun when backend credentialed Vitest reports an unhandled error section', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeBackendCredentialedCtx({
         failedJobLogs: () =>
           Promise.resolve(
             new Map([[backendCredentialedJobName, backendCredentialedUnhandledErrorLog]]),
           ),
       }),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun when credential setup fails before backend credentialed Vitest starts', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeBackendCredentialedCtx({
         failedJobLogs: () =>
           Promise.resolve(
             new Map([[backendCredentialedJobName, backendCredentialedSetupFailureBeforeVitestLog]]),
           ),
       }),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 })

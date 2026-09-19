@@ -26,8 +26,6 @@ describe('main-backend workflow', () => {
 
     expect(workflow).toContain("- 'ts-shared/**'")
     expect(workflow).toContain("- 'ci/allocate-browser-safe-ports.py'")
-    expect(workflow).toContain("- 'ci/runner-port-policy.json'")
-    expect(workflow).toContain("- 'ci/runner-port-policy.mts'")
   })
 
   it('runs PR and Main backend tests when the CI package export boundary changes', () => {

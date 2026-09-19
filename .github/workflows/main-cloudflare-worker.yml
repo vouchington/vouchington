@@ -11,8 +11,6 @@ on:
       - 'cloudflare-worker/**'
       - 'backend/config/**'
       - 'ci/allocate-browser-safe-ports.py'
-      - 'ci/runner-port-policy.json'
-      - 'ci/runner-port-policy.mts'
       - 'ci/cloudflare-worker-staging-*.mts'
       - 'ci/write-private-json.mts'
       - 'ts-shared/**'

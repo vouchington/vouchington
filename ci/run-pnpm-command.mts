@@ -66,8 +66,7 @@ async function runCommand(
     }
 
     child.once('error', reject)
-    // 'close' (not 'exit') guarantees every stdio 'data' event -- including a late-arriving
-    // with-host-lock.sh acquisition line on a failing build -- has already fired before this
+    // 'close' (not 'exit') guarantees every stdio 'data' event has already fired before this
     // settles, so callers reading `onStderrLine` state after the returned promise fails are
     // reading a complete picture, not a truncated one racing the process's own exit.
     child.once('close', code => {

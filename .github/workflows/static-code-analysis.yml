@@ -60,7 +60,7 @@ jobs:
         with:
           cache: false
         timeout-minutes: 3
-      - run: bash ci/with-heavy-slot.sh pnpm exec oxlint --type-aware --deny-warnings
+      - run: pnpm exec oxlint --type-aware --deny-warnings
         if: ${{ inputs.docs_only != true }}
         timeout-minutes: 5
       - name: ast-grep

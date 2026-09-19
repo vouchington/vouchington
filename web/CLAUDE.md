@@ -6,8 +6,8 @@ the [local-site-testing skill](../.agents/skills/local-site-testing/SKILL.md) fo
 for PR evidence; never commit screenshots.
 Batch all compatible changed web source files in one planner invocation before running selected
 tests; follow the [canonical before-push recipe](../docs/checklists/commit.md#before-pushing).
-Run production Next and Storybook builds through the package scripts; their shared per-user build
-lock is documented in [Per-User Host Locks](../docs/development/host-locks.md).
+Run production Next and Storybook builds through the package scripts (`next build` /
+`storybook build` directly — no build lock, since GitHub-hosted runners are single-job VMs).
 
 ## Rules
 

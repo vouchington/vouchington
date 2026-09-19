@@ -201,7 +201,6 @@ describe('backend uncredentialed Docker test workflow', () => {
   it('runs fork-crash diagnostics only on failure, without changing the test command (#8940)', () => {
     const backendJob = jobSection('backend-tests')
     const testStepIndex = backendJob.indexOf('name: Run backend tests')
-    const hostPressureIndex = backendJob.indexOf('name: Host pressure diagnostics')
     const reportSummaryIndex = backendJob.indexOf('name: Vitest fork diagnostic report summary')
     const uploadIndex = backendJob.indexOf(
       'name: vitest-fork-diagnostics-backend-shard-${{ matrix.shard }}',
@@ -209,8 +208,7 @@ describe('backend uncredentialed Docker test workflow', () => {
 
     // Ordering: diagnostics run after the test step and before the pre-existing blob upload.
     expect(testStepIndex).toBeGreaterThanOrEqual(0)
-    expect(hostPressureIndex).toBeGreaterThan(testStepIndex)
-    expect(reportSummaryIndex).toBeGreaterThan(hostPressureIndex)
+    expect(reportSummaryIndex).toBeGreaterThan(testStepIndex)
     expect(uploadIndex).toBeGreaterThan(reportSummaryIndex)
     expect(
       backendJob.indexOf(
@@ -227,24 +225,18 @@ describe('backend uncredentialed Docker test workflow', () => {
     )
 
     const steps = stepsWorkflow.jobs?.['backend-tests']?.steps ?? []
-    const hostPressureStep = steps.find(step => step.name === 'Host pressure diagnostics') as
-      | { if?: string; ['continue-on-error']?: boolean; run?: string }
-      | undefined
     const reportSummaryStep = steps.find(
       step => step.name === 'Vitest fork diagnostic report summary',
     ) as { env?: Record<string, string>; if?: string; ['continue-on-error']?: boolean } | undefined
 
-    expect(hostPressureStep?.if).toBe('failure()')
-    expect(hostPressureStep?.['continue-on-error']).toBe(true)
-    expect(hostPressureStep?.run).toContain('./ci/host-pressure-diagnostics.sh')
+    expect(steps.some(step => step.name === 'Host pressure diagnostics')).toBe(false)
+    expect(backendJob).not.toContain('host-pressure-diagnostics.sh')
     expect(reportSummaryStep?.if).toBe('failure()')
     expect(reportSummaryStep?.['continue-on-error']).toBe(true)
     expect(reportSummaryStep?.env?.VITEST_FORK_DIAGNOSTIC_DIR).toBe(
       '.vitest-reports/fork-diagnostics-${{ matrix.shard }}',
     )
 
-    // Never subscribed to the heavy slot for this diagnostics step — the coverage regression
-    // test for that consumer set (heavy-slot-coverage.test.mts) is unmodified by this change.
     expect(backendJob).not.toContain('with-heavy-slot.sh')
   })
 

@@ -41,12 +41,3 @@ jobs:
       - uses: ./.github/actions/build-web-images
         with:
           next-public-asset-prefix: ${{ vars.NEXT_PUBLIC_ASSET_PREFIX }}
-
-      - name: Diagnose browser port collision
-        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
-        continue-on-error: true
-        timeout-minutes: 2
-        uses: ./.github/actions/diagnose-browser-port-collision
-        with:
-          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
-          artifact-suffix: web

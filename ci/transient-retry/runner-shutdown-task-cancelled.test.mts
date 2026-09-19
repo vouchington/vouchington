@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
+import type { WorkflowRunContext } from './types.mts'
+
+// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
+// comment on idempotentWorkflows in runner-shutdown-consumers.mts) -- exercised directly here rather
+// than through decide()/RULES. Covers the 'A task was canceled.' marker variant of
+// hasRunnerShutdownMarkers, distinct from the 'The operation was canceled.' variant covered by
+// runner-shutdown-web-rules.test.mts.
 
 const playwrightShardJobName = 'playwright-tests / playwright-tests (1)'
 
@@ -23,11 +29,9 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   ...overrides,
 })
 
-describe('runner-shutdown-leaf-rerun task-cancelled variant', () => {
+describe('runnerShutdownLeafRerunMatch task-cancelled variant', () => {
   it('reruns when a Main CI web Playwright shard is shutdown during service initialization', async () => {
-    const result = await decide(makeCtx(), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(await runnerShutdownLeafRerunMatch(makeCtx())).toBe(true)
   })
 
   it('does NOT rerun when a Playwright failure precedes A task was canceled.', async () => {
@@ -35,13 +39,11 @@ describe('runner-shutdown-leaf-rerun task-cancelled variant', () => {
       'Error: expect(received).toBe(expected)',
       serviceInitTaskCancelledLog,
     ].join('\n')
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx({
         failedJobLogs: () => Promise.resolve(new Map([[playwrightShardJobName, realFailureLog]])),
       }),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 })

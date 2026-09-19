@@ -1,7 +1,0 @@
-{
-  "reservedPortStart": 2200,
-  "reservedPortEnd": 2999,
-  "portsPerRunner": 16,
-  "minimumRunnerSlot": 1,
-  "maximumRunnerSlot": 50
-}

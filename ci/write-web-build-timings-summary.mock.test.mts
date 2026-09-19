@@ -12,77 +12,27 @@ vi.mock<typeof import('node:fs')>(
 )
 
 describe('renderTimingsSummary', () => {
-  it('prints the raw host pressure text unescaped inside a collapsible details block', () => {
+  it('renders the started timestamp, cache status, and timings JSON', () => {
     const rendered = renderTimingsSummary({
       startedAt: '2026-09-05T00:00:00.000Z',
       nextBuildCache: 'hit',
-      hostPressureAtBuildStart: {
-        capturedAt: '2026-09-05T00:00:01.000Z',
-        ok: true,
-        output: 'load average: 4.2\nfree memory: 512MB',
-      },
       timings: { 'next-build': 12_345, total: 20_000 },
     })
 
     expect(rendered).toContain('## Web build timings (`build-web-targets`)')
     expect(rendered).toContain('- Next.js build cache: hit')
     expect(rendered).toContain('"next-build": 12345')
-    // The raw, multi-line diagnostic text appears un-escaped (real newlines, not literal `\n`),
-    // wrapped in its own collapsible <details> block -- not JSON-escaped onto one line inside the
-    // timings fence (issue #10937).
-    expect(rendered).toContain('<details>')
-    expect(rendered).toContain('load average: 4.2\nfree memory: 512MB')
-    expect(rendered).not.toContain('load average: 4.2\\nfree memory: 512MB')
   })
 
-  it('omits the pressure section entirely when no snapshot was captured yet', () => {
+  it('renders an empty timings block when no steps have completed yet', () => {
     const rendered = renderTimingsSummary({
       startedAt: '2026-09-05T00:00:00.000Z',
       nextBuildCache: 'miss',
       timings: {},
     })
 
-    expect(rendered).not.toContain('<details>')
-    expect(rendered).not.toContain('Host pressure snapshot captured')
-  })
-
-  it('marks a failed capture without claiming a snapshot was taken', () => {
-    const rendered = renderTimingsSummary({
-      startedAt: '2026-09-05T00:00:00.000Z',
-      nextBuildCache: 'miss',
-      hostPressureAtBuildStart: {
-        capturedAt: '2026-09-05T00:00:01.000Z',
-        ok: false,
-        output: 'host-pressure-snapshot: helper missing',
-      },
-      timings: {},
-    })
-
-    expect(rendered).toContain('Host pressure snapshot captured: no')
-    expect(rendered).toContain('host-pressure-snapshot: helper missing')
-  })
-
-  it('flags a fail-closed lock-acquisition timeout so the next-build duration is not misread as compiler wall time (issue #10937)', () => {
-    const rendered = renderTimingsSummary({
-      startedAt: '2026-09-05T00:00:00.000Z',
-      nextBuildCache: 'miss',
-      nextBuildLockAcquisitionFailed: true,
-      timings: { 'next-build': 300_000 },
-    })
-
-    expect(rendered).toContain('Lock acquisition timed out')
-    expect(rendered).toContain('not compiler wall time')
-  })
-
-  it('does not mention lock acquisition when it succeeded', () => {
-    const rendered = renderTimingsSummary({
-      startedAt: '2026-09-05T00:00:00.000Z',
-      nextBuildCache: 'hit',
-      nextBuildLockAcquisitionFailed: false,
-      timings: { 'next-build': 42_000 },
-    })
-
-    expect(rendered).not.toContain('Lock acquisition timed out')
+    expect(rendered).toContain('```json')
+    expect(rendered).toContain('{}')
   })
 })
 

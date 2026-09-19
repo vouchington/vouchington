@@ -77,17 +77,6 @@ describe('repo-owned-literal-freshness', () => {
         new Set(backendAwsLiteralIncludePaths),
       )
     })
-
-    // Hand-written, not scanner-covered: the completeness scanner's pathLiteralPattern below only
-    // matches backend/web/playwright/cloudflare-worker-prefixed .mts/.ts/.tsx literals, not a
-    // ci/-prefixed .sh script. host-lock-fingerprints.mts's hasExpensiveBuildAcquireTimeout hardcodes
-    // the 'expensive-build' family name into its marker; that name's source of truth is this script's
-    // --name flag, so a rename here would silently stop the marker from ever matching with no other
-    // guard catching it.
-    it('with-build-lock.sh still names the host lock family "expensive-build"', () => {
-      const source = readTracked('ci/with-build-lock.sh')
-      expect(source).toContain('--name expensive-build')
-    })
   })
 
   describe("backend-credentialed vitest command line agrees with tests-backend-credentialed.yml's own run: step (Table B)", () => {

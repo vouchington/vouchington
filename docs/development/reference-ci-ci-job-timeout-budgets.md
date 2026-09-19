@@ -57,13 +57,13 @@ Docker validation image builds get 10-minute step ceilings. The backend and web 
 than the sum of their build, smoke, scan, and artifact step caps. Private infrastructure owns image
 publication and its timeout policy.
 
-The four host-side Next builds that run through the `build-web-targets` composite action keep their
-300-second fail-closed lock-acquisition budget and receive a 360-second command circuit breaker
-only inside that composite action. Their outer composite step timeout is 13 minutes: 300s
-acquisition + 360s command + 30s process drain + 60s composite summary/upload margin = 750s,
-rounded up to 13m. Generic direct `with-build-lock.sh` steps retain the separate 8–12 minute
-backstop; the 13-minute value is the strict Next-build ceiling, not a repository-wide lock-step
-maximum.
+The four host-side Next builds that run through the `build-web-targets` composite action keep a
+13-minute outer composite step timeout. That ceiling was originally derived from a fail-closed
+lock-acquisition budget and a command circuit breaker specific to a shared self-hosted host;
+GitHub-hosted runners are ephemeral, single-job VMs, so the composite no longer acquires a lock
+before building. The 13-minute value is retained as-is pending re-derivation against GitHub-hosted
+build telemetry rather than recomputed here, and remains the strict Next-build ceiling, not a
+repository-wide step-timeout maximum.
 
 The backend image build smoke tests validate worker startup, Valkey connectivity, and universal
 heartbeat job processing. The `worker-cpu` smoke test also imports `vurst-ai` from the deployed

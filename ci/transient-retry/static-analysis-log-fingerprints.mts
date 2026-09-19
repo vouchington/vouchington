@@ -6,7 +6,7 @@ import { sliceGithubActionsStepGroup } from './github-actions-log.mts'
 export const cloudflareWorkerTscStepMarker =
   '##[group]Run pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json'
 export const oxlintTypeAwareStepMarker =
-  '##[group]Run bash ci/with-heavy-slot.sh pnpm exec oxlint --type-aware --deny-warnings'
+  '##[group]Run pnpm exec oxlint --type-aware --deny-warnings'
 
 export function hasCloudflareWorkerTscRuntimeCrash(log: string): boolean {
   const cloudflareWorkerStepLog = sliceGithubActionsStepGroup(log, cloudflareWorkerTscStepMarker)

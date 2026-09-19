@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
+import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 import { hasExplicitOomEvidence } from './runner-shutdown-fingerprints.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import type { WorkflowRunContext } from './types.mts'
+
+// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
+// comment on idempotentWorkflows in runner-shutdown-consumers.mts) -- exercised directly here rather
+// than through decide()/RULES. See runner-shutdown-web-rules.test.mts for the web consumers.
 
 const shutdownOnlyMarkers = [
   '##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled.',
@@ -38,7 +42,7 @@ const makeCtx = (
   ...overrides,
 })
 
-describe('runner-shutdown-leaf-rerun safety regressions', () => {
+describe('runnerShutdownLeafRerunMatch safety regressions', () => {
   it.each([
     ['kernel kill', kernelOom, true],
     ['zero kernel PID', kernelOom.replace('process 576134', 'process 0'), false],
@@ -51,7 +55,7 @@ describe('runner-shutdown-leaf-rerun safety regressions', () => {
     expect(hasExplicitOomEvidence(log)).toBe(expected)
   })
 
-  it('dispatches the incident-style Playwright OOM before shutdown markers', async () => {
+  it('does NOT rerun the incident-style Playwright OOM before shutdown markers', async () => {
     const incidentLog = [
       '$ cross-env NODE_ENV=production next build',
       cgroupOom,
@@ -60,14 +64,10 @@ describe('runner-shutdown-leaf-rerun safety regressions', () => {
       '##[error]The operation was canceled.',
     ].join('\n')
     const logs = new Map([[playwrightJobName, incidentLog]])
-    const result = await decide(makeCtx([playwrightJobName], logs), RULES)
 
-    expect(result).toEqual({ decision: 'dispatch', matchedRule: '' })
+    expect(await runnerShutdownLeafRerunMatch(makeCtx([playwrightJobName], logs))).toBe(false)
     expect(logs.get(playwrightJobName)).toContain(kernelOom)
     expect(logs.get(playwrightJobName)).toContain('oom_kill 1')
-    expect(RULES.find(rule => rule.id === 'runner-shutdown-leaf-rerun')).toMatchObject({
-      rootCauseKey: 'self-hosted-runner-shutdown',
-    })
   })
 
   it.each([
@@ -116,37 +116,32 @@ describe('runner-shutdown-leaf-rerun safety regressions', () => {
           { jobConclusions: new Map([['store-playwright-otel', 'failure']]) },
         ),
     ],
-  ])('dispatches when OOM evidence is in %s', async (_name, createCtx) => {
-    const result = await decide(createCtx(), RULES)
-    expect(`${result.decision}:${result.matchedRule}`).toBe('dispatch:')
+  ])('does NOT rerun when OOM evidence is in %s', async (_name, createCtx) => {
+    expect(await runnerShutdownLeafRerunMatch(createCtx())).toBe(false)
   })
 
   it('does NOT treat Patch Coverage as downstream of a Playwright-only shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         [playwrightJobName, 'Patch Coverage', 'tests', 'build'],
         new Map([[playwrightJobName, cleanShutdownLog]]),
       ),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('allows Patch Coverage as downstream of a coverage-producing web-tests shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         [webTestsJobName, 'Patch Coverage', 'tests', 'build'],
         new Map([[webTestsJobName, cleanShutdownLog]]),
       ),
-      RULES,
     )
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(matched).toBe(true)
   })
 
   it('does NOT rerun backend-unit when migration failure appears before shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         [backendUnitJobName],
         new Map([
@@ -158,14 +153,12 @@ describe('runner-shutdown-leaf-rerun safety regressions', () => {
           ],
         ]),
       ),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun web-integration when setup build fails before shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         [webIntegrationJobName],
         new Map([
@@ -175,26 +168,22 @@ describe('runner-shutdown-leaf-rerun safety regressions', () => {
           ],
         ]),
       ),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun Playwright when pre-test Next build fails before shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         [playwrightJobName],
         new Map([[playwrightJobName, ['Failed to compile', shutdownOnlyMarkers].join('\n')]]),
       ),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun web-tests when prefixed Vitest FAIL output appears before shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         [webTestsJobName],
         new Map([
@@ -207,14 +196,12 @@ describe('runner-shutdown-leaf-rerun safety regressions', () => {
           ],
         ]),
       ),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun tooling when Vitest startup fails before shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         [toolingJobName],
         new Map([
@@ -230,14 +217,12 @@ describe('runner-shutdown-leaf-rerun safety regressions', () => {
         ]),
         { workflowName: 'Main CI (checks)' },
       ),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun tooling when Vitest reports per-file failures before shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         [toolingJobName],
         new Map([
@@ -252,14 +237,12 @@ describe('runner-shutdown-leaf-rerun safety regressions', () => {
         ]),
         { workflowName: 'Main CI (checks)' },
       ),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun Playwright when prefixed failure summary appears before shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         [playwrightJobName],
         new Map([
@@ -272,9 +255,7 @@ describe('runner-shutdown-leaf-rerun safety regressions', () => {
           ],
         ]),
       ),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 })

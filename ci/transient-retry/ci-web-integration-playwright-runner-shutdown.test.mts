@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
+import type { WorkflowRunContext } from './types.mts'
+
+// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
+// comment on idempotentWorkflows in runner-shutdown-consumers.mts) -- exercised directly here rather
+// than through decide()/RULES. See runner-shutdown-web-rules.test.mts for the web consumers. The
+// former "does not match after the retry cap is exhausted" test is dropped: maxAttempts accounting is
+// a decide()/RULES-level concept the bare predicate no longer has.
 
 const webIntegrationJobName = 'test-web-integration / web-integration-tests (1)'
 const playwrightShardOneJobName = 'test-playwright / playwright-tests (1)'
@@ -43,15 +49,13 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   ...overrides,
 })
 
-describe('runner-shutdown-leaf-rerun (CI web-integration + playwright)', () => {
+describe('runnerShutdownLeafRerunMatch (CI web-integration + playwright)', () => {
   it('reruns CI when web integration and Playwright shards all fail from runner shutdown', async () => {
-    const result = await decide(makeCtx(), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(await runnerShutdownLeafRerunMatch(makeCtx())).toBe(true)
   })
 
   it('does not match when the web integration failure has a test assertion', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx({
         failedJobNames: [
           webIntegrationJobName,
@@ -68,14 +72,12 @@ describe('runner-shutdown-leaf-rerun (CI web-integration + playwright)', () => {
             ]),
           ),
       }),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does not match when another leaf job failed in the same run', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx({
         failedJobNames: [
           webIntegrationJobName,
@@ -92,16 +94,7 @@ describe('runner-shutdown-leaf-rerun (CI web-integration + playwright)', () => {
             ]),
           ),
       }),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
-  })
-
-  it('does not match after the retry cap is exhausted', async () => {
-    // maxAttempts: 2 — the cap is exhausted at runAttempt 3
-    const result = await decide(makeCtx({ runAttempt: 3 }), RULES)
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 })

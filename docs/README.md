@@ -59,7 +59,6 @@ Cross-link related docs bidirectionally instead of duplicating their content, an
 - [Dependency Updates](development/dependency-updates.md) — Coverage matrix for Dependabot and Renovate, Knip dependency-hygiene workflow, docs pinning policy, plus how to add a new pinned binary
 - [Native TLS Pinning Runbook](runbooks/native-tls-pinning.md) — Cloudflare edge SPKI pin rollout and rotation for native API clients
 - [Git Worktree Locks](development/git-worktree-locks.md) — Diagnosing and fixing `index.lock` collisions caused by git auto-maintenance
-- [Per-User Host Locks](development/host-locks.md) — Named locks for expensive builds and host package-manager mutations across concurrent jobs
 - [Worker Performance](development/worker-performance.md) — Sizing, concurrency knobs, Rust N-API libuv pool caps, and profiling for the backend worker process
 - [Runtime Timeouts](development/runtime-timeouts.md) — Registry of server/worker/dispatcher/Lambda/SSE timeouts by category, plus the Fargate Spot SSE short-cap principle
 - [OpenTelemetry](development/opentelemetry.md) — Local distributed tracing (collector + Jaeger) and AWS deploy path (ADOT → X-Ray)

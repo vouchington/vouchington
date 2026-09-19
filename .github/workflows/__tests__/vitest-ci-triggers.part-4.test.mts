@@ -50,7 +50,7 @@ describe('Vitest CI Docker triggers', () => {
   })
 
   it('routes Docker smoke port allocator inputs through both PR image builds', () => {
-    const smokePortInputs = ['ci/allocate-browser-safe-ports.py', 'ci/runner-port-policy.json']
+    const smokePortInputs = ['ci/allocate-browser-safe-ports.py']
 
     expectPrimaryMatches('build-backend-infra', smokePortInputs)
     expectPrimaryMatches('build-web-infra', smokePortInputs)

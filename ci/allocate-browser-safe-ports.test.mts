@@ -1,15 +1,22 @@
 import { execFile as execFileCallback } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { mkdtemp, rm, symlink } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
 
 const execFile = promisify(execFileCallback)
 const scriptPath = resolve('ci/allocate-browser-safe-ports.py')
-const runnerPortPolicyPath = resolve('ci/runner-port-policy.json')
+// The wrapper never forwards a --policy override (see allocate-browser-safe-ports.py),
+// so the packaged allocator falls back to the runner-port-policy.json vouchington-tooling
+// ships next to its own script — read that bundled file rather than a repo-owned one.
+const packagedToolingDir = dirname(
+  createRequire(import.meta.url).resolve('vouchington-tooling/package.json'),
+)
+const runnerPortPolicyPath = join(packagedToolingDir, 'scripts', 'runner-port-policy.json')
 
 function parsePorts(stdout: string): number[] {
   return stdout
@@ -175,7 +182,7 @@ describe('allocate-browser-safe-ports.py', () => {
     const policy = JSON.parse(readFileSync(runnerPortPolicyPath, 'utf8'))
 
     expect(source).toContain('from __future__ import annotations')
-    expect(source).toContain('--policy')
+    expect(source).toContain('forwarded = sys.argv[1:]')
     expect(source).not.toContain('--forbidden-ports')
     expect(source).toContain('createRequire')
     expect(source).toContain('scripts/allocate-browser-safe-ports.py')

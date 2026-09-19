@@ -25,50 +25,6 @@ function legacyPidPath(workspace: string) {
 }
 
 describe('vouchington-tooling consume wrappers', () => {
-  it('falls back to pnpm dlx when the packaged host-lock helper is missing', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'host-lock-dlx-'))
-    const bin = join(dir, 'bin')
-    const ciDir = join(dir, 'ci')
-    const calls = join(dir, 'pnpm-calls.txt')
-    await mkdir(bin)
-    await mkdir(ciDir)
-    await writeFile(
-      join(dir, 'package.json'),
-      JSON.stringify({ devDependencies: { 'vouchington-tooling': '^9.9.9' } }),
-    )
-    await writeFile(join(ciDir, 'vouchington-tooling-script.sh'), '#!/usr/bin/env bash\nexit 1\n')
-    await writeFile(join(ciDir, 'with-host-lock.sh'), readFileSync(resolve('ci/with-host-lock.sh')))
-    await writeFile(
-      join(bin, 'pnpm'),
-      `#!/usr/bin/env bash
-printf '%s\\n' "$*" > "$PNPM_CALLS"
-exit 0
-`,
-    )
-    await chmod(join(bin, 'pnpm'), 0o755)
-    await chmod(join(ciDir, 'with-host-lock.sh'), 0o755)
-    try {
-      await execFile(
-        'bash',
-        [
-          join(ciDir, 'with-host-lock.sh'),
-          '--name',
-          'shim',
-          '--timeout-seconds',
-          '1',
-          '--',
-          'true',
-        ],
-        { env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}`, PNPM_CALLS: calls } },
-      )
-      expect(await readFile(calls, 'utf8')).toContain(
-        'dlx --package vouchington-tooling@9.9.9 vouchington with-host-lock --name shim --timeout-seconds 1 -- true',
-      )
-    } finally {
-      await rm(dir, { force: true, recursive: true })
-    }
-  })
-
   it('uses the lockfile integrity download before any cached GitHub Actions script', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'gha-trust-'))
     const ciDir = join(dir, 'ci')

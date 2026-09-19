@@ -54,51 +54,17 @@ after a branch switch: they aggregate results that earlier steps already made av
 
 Cache keys that use `hashFiles` must target source files and manifests rather than broad directories, and package source globs must stay scoped to first-party package/source paths so dependency trees are not traversed while keys are evaluated. Web-stack test jobs must clear Next.js runtime output and Wrangler/Miniflare state before tests because stale caches have caused false failures; only explicit performance caches such as `web/.next/cache` may be restored, and those keys must invalidate often. Filaments image workflows build validation-local images. Backend uses one bounded Bake invocation per job for either API plus worker-cpu or all three images, so the selected targets share one cache-busted builder solve without a remote cache. Web alone reads and writes its GHA cache. Any repository-independent remote-cache or performance design is owned by a separate initiative (formerly filed as jonathanong/filaments#10864). Private infrastructure owns production ECR image publication.
 
-Type-aware oxlint, expensive builds, and host package installs use the named per-user
-locks in [Per-User Host Locks](host-locks.md). Oxlint has the sole one-slot `memory-heavy` wrapper;
-ordinary test runners are unlocked. Oxlint and most build scheduling waits are capped at 60 seconds
-in GitHub Actions and then run unlocked. Host-side Next builds instead wait up to 300 seconds and
-fail closed so admission timeout cannot create overlapping compilers. `next build` also caps its
-page-data worker pool from the smaller positive physical or cgroup memory limit
-(`experimental.cpus`) so a service limited to roughly 12 GiB gets one worker after the compile
-instead of using the enclosing host's RAM and CPU count. The shared `build-web-targets` action owns
-the CI-only 360-second Next command cap; the separate fail-closed acquisition wait remains 300
-seconds and local builds remain uncapped. Package-manager mutation
-remains a separate fail-closed correctness lock. Nested locks are rejected and each command path
-has one owner.
-CI reserves `2200–2999` in repository code through
-[`ci/runner-port-policy.json`](../../ci/runner-port-policy.json): numeric runner paths receive a
-deterministic 16-port slice via the validated `listenOnRunnerUnreservedEphemeralPort()` binder.
-Repository-owned Node test listeners instead dynamically allocate a plain (or, for Fetch-exposed
-servers, Fetch-safe) ephemeral port through
-[`@ts-shared/utils/ephemeral-ports`](../../ts-shared/utils/ephemeral-ports.mts)'s
-`listenOnEphemeralPort()` — GitHub-hosted runners are single-job VMs, so these listeners have no
-shared-host port contention to avoid. Static analysis rejects direct `listen(0)` calls outside
-those two policy owners. Linux runner provisioning is pending deployment of the reservation
-of the same range from automatic ephemeral allocation; until then an empty
-`ip_local_reserved_ports` value is expected. Allocation skips occupied candidates. Playwright jobs hold the selected sockets until each
-consumer is about to bind, then release that port. Short-window callers still print-and-exit
-and receive either one exact local retry or one fail-closed workflow retry for a proven late
-collision. Failed
-Playwright (including the credentialed suite), image-smoke (build-backend/build-web docker-image
-smokes), image-lambda smoke, backend smoke, and Cloudflare Worker smoke jobs upload a one-day,
-non-masking `browser-port-diagnostics-*` artifact with bounded listener, Docker publication, kernel
-port-contract, and runner-context evidence; the collector does not dump the environment, reallocate
-ports, or change the failing result. Every caller of `lambdas/dev-server.mts`'s `listenWithRetry`
-also invokes the same collector _at bind time_ — Playwright and credentialed Playwright reach it
-through the shared `webServer` config, and `static-lambdas`'s image-lambda smoke test invokes it
-directly, the first non-Playwright bind-time producer — inside `listenWithRetry`'s `EADDRINUSE`
-handling (first and final attempt only), because the post-hoc step runs after the process holding
-the port has already been torn down (Playwright's `webServer` process group; the smoke script's own
-`stop_lambda`) — by then, whatever held the port is gone. Bind-time evidence lands in
-`bind-time-attempt-<n>/` subdirectories under the same artifact directory as the post-hoc evidence,
-riding along on the same failure-gated upload with no separate reporting path. The image-lambda
-smoke script additionally wraps that in its own `smoke-attempt-<n>/` level, one per script-side
-port-reallocation retry, giving bind-time evidence the full path
-`smoke-attempt-<n>/bind-time-attempt-<m>/`. If a retry recovers and the job ultimately passes,
-that bind-time evidence is still written to disk but never uploaded, since the upload step never
-runs without a failure — a deliberate trade-off, since a recovered collision produced no failure
-to diagnose.
+GitHub-hosted runners are ephemeral and single-job-per-VM, so repository workflows do not use
+shared-host admission locks, host-pressure diagnostics, or deterministic runner port slices.
+`next build` still caps its page-data worker pool from the smaller positive physical or cgroup
+memory limit (`experimental.cpus`) so a constrained runner does not size from the enclosing host.
+
+Repository-owned Node test listeners dynamically allocate plain or Fetch-safe ephemeral ports
+through [`@ts-shared/utils/ephemeral-ports`](../../ts-shared/utils/ephemeral-ports.mts)'s
+`listenOnEphemeralPort()`. Docker callers normally let Docker assign the host-side port; the
+few in-job browser consumers that need an explicit reservation use
+[`ci/allocate-browser-safe-ports.py`](../../ci/allocate-browser-safe-ports.py) immediately before
+binding. This is in-job coordination, not cross-job runner scheduling.
 
 Repository automation dispatches fire-and-forget sessions through Auto Harness when the
 default-off master and per-surface gates are exactly `true`. Callers retain authorization,

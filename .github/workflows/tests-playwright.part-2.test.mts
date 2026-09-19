@@ -212,14 +212,6 @@ describe('tests-playwright.yml diagnostic upload conditions (issue #51)', () => 
       expect(index).toBeGreaterThan(-1)
       expect(body.slice(index, index + 700)).toContain(UPLOAD_CONDITION)
     }
-
-    // The port-collision diagnostic keeps its own, narrower failure() guard, unrelated to the
-    // uploads' retried signal.
-    const portDiagnosticIndex = body.indexOf('name: Diagnose browser port collision')
-    expect(portDiagnosticIndex).toBeGreaterThan(-1)
-    expect(body.slice(portDiagnosticIndex, portDiagnosticIndex + 200)).toContain(
-      'if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS',
-    )
   })
 
   it('keeps retention-days at 1 for the diagnostic uploads', () => {

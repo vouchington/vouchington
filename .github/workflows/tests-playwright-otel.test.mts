@@ -53,7 +53,6 @@ describe('tests-playwright.yml OTel collector', () => {
       "otel_enabled: ${{ vars.PLAYWRIGHT_OTEL_ENABLED == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.trusted-secret-context == 'true' }}",
     )
     expect(mainWebWorkflow).toContain("otel_enabled: ${{ vars.PLAYWRIGHT_OTEL_ENABLED == 'true' }}")
-    expect(mainWebWorkflow).toContain("- 'ci/runner-port-policy.mts'")
     // store-playwright-otel moved to main-web.yml (main-only push workflow)
     expect(mainWebWorkflow).toContain('store-playwright-otel:')
     const playwrightOtelStoreJob = workflowJobSection(mainWebWorkflow, 'store-playwright-otel')

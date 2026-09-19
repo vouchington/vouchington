@@ -231,20 +231,10 @@ describe('CI cache policy', () => {
 
   it('keeps binary download paths versioned', () => {
     const setupLychee = readFileSync('.github/actions/setup-lychee/action.yml', 'utf8')
-    const setupPlaywright = readFileSync('.github/actions/setup-playwright/action.yml', 'utf8')
-    const playwrightInstall = readFileSync('ci/playwright-install-ubicloud-browsers.sh', 'utf8')
     const gitleaks = readFileSync('.github/workflows/gitleaks.yml', 'utf8')
 
     expect(setupLychee).toContain('--bin-dir "$LYCHEE_BIN_DIR"')
     expect(setupLychee).toContain('LYCHEE_BIN_DIR="${RUNNER_TEMP:-$HOME/.local}/bin"')
-    expect(setupPlaywright).toContain('run: ./ci/playwright-install-ubicloud-browsers.sh')
-    expect(playwrightInstall).toContain('exec-vouchington-gha.sh')
-    expect(
-      readFileSync(
-        'node_modules/vouchington-tooling/scripts/gha/install-playwright-chromium-arm64.sh',
-        'utf8',
-      ),
-    ).toContain('local tmp="${RUNNER_TEMP:-/tmp}/${name}-${rev}-${archive}"')
     expect(gitleaks).toContain(': "${RUNNER_TEMP:?RUNNER_TEMP must be set by GitHub Actions}"')
     expect(gitleaks).toContain('--bin-dir "$RUNNER_TEMP/bin"')
     expect(gitleaks).not.toContain('${RUNNER_TEMP:-/tmp}')
