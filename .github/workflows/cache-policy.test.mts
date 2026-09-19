@@ -147,14 +147,11 @@ describe('CI cache policy', () => {
   })
 
   it('caches the pnpm store and Playwright browsers at every real install site', () => {
-    // Every runner is now a fresh, ephemeral GitHub-hosted machine (no
-    // self-hosted target persists a warm pnpm store or ~/.cache/ms-playwright
-    // across runs), so every real pnpm-install and Playwright-install site
-    // must be preceded by an actions/cache step or it pays a full cold
-    // install on every single run. This resolves one level of local
-    // composite `uses: ./.github/actions/<name>` steps so composite-routed
-    // call sites (setup-node-pnpm, setup-backend, setup-playwright) are
-    // checked the same way as standalone/manual install steps.
+    // No runner persists a warm pnpm store or ~/.cache/ms-playwright across runs
+    // anymore, so every real install site needs a preceding actions/cache step or
+    // it pays a full cold install every run. Resolves one level of local composite
+    // steps so setup-node-pnpm/setup-backend/setup-playwright call sites are
+    // checked like standalone/manual install steps.
     const violations: string[] = []
 
     for (const file of workflowFileNames) {
