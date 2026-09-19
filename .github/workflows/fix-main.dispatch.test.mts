@@ -186,7 +186,7 @@ describe('fix-main workflow', () => {
     expect(concurrencyId).toContain('github.event.workflow_run.workflow_id')
     expect(concurrencyId).toContain('github.event.workflow_run.head_sha')
     expect(concurrencyId).not.toContain('github.workflow }}')
-    const resolve = (workflowId: number, sha: string) => `filaments:fix-main:${workflowId}:${sha}`
+    const resolve = (workflowId: number, sha: string) => `vouchington:fix-main:${workflowId}:${sha}`
     expect(resolve(101, 'same-sha')).not.toBe(resolve(202, 'same-sha'))
   })
 

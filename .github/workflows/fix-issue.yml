@@ -239,7 +239,7 @@ jobs:
       surface-gate: HARNESS_FIX_ISSUE_ENABLED
       agent-ref: ${{ github.sha }}
       expected-head-sha: ${{ github.sha }}
-      concurrency-id: filaments:fix:${{ github.event.issue.number }}
+      concurrency-id: vouchington:fix:${{ github.event.issue.number }}
       publish-contract: fix-issue
       publish-base-ref: main
       publish-title-suffix: '(fixes #${{ github.event.issue.number }})'

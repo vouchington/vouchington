@@ -80,7 +80,7 @@ describe('root Auto Harness migration safety audit', () => {
       ),
     )
     expect(identities).not.toHaveLength(0)
-    expect(identities.every(identity => identity.startsWith('filaments:'))).toBe(true)
+    expect(identities.every(identity => identity.startsWith('vouchington:'))).toBe(true)
   })
 
   it('uses only current intent commands and resolvable automation prompt paths', () => {

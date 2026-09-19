@@ -359,7 +359,7 @@ jobs:
       # dependabot/* tip after the triage job's stale-event check.
       agent-ref: ${{ github.event.workflow_run.head_branch }}
       expected-head-sha: ${{ github.event.workflow_run.head_sha }}
-      concurrency-id: filaments:dependabot:${{ needs.triage-and-rerun.outputs.pr_number }}:${{ github.event.workflow_run.head_sha }}
+      concurrency-id: vouchington:dependabot:${{ needs.triage-and-rerun.outputs.pr_number }}:${{ github.event.workflow_run.head_sha }}
       publish-contract: dependabot
       publish-target-pr-number: ${{ needs.triage-and-rerun.outputs.pr_number }}
       source-run-id: ${{ github.event.workflow_run.id }}

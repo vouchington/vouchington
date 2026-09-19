@@ -83,9 +83,9 @@ Fix Issue, Fix Dependabot, Fix Main, and Scheduled Prompts never resume, so they
 to keep stale, but they share the same deduplicated-create residual as `/shepherd`: a session
 dispatched shortly before the repoint and still queued/running can resume against the pre-repoint
 Command via its own concurrency ID's deduplicated create response
-(`filaments:plan:<issue>`, `filaments:fix:<issue>`,
-`filaments:dependabot:<pr>:<sha>`, `filaments:fix-main-review:<pr>:<sha>` for existing-PR reviews,
-`filaments:fix-main:<workflow_id>:<sha>` otherwise, and `filaments:scheduled:<prompt_name>`) until the
+(`vouchington:plan:<issue>`, `vouchington:fix:<issue>`,
+`vouchington:dependabot:<pr>:<sha>`, `vouchington:fix-main-review:<pr>:<sha>` for existing-PR reviews,
+`vouchington:fix-main:<workflow_id>:<sha>` otherwise, and `vouchington:scheduled:<prompt_name>`) until the
 next full-principal drain runs, and — unlike `/plan` — the other four share the repointed
 `HARNESS_TARGET`/`HARNESS_FALLBACKS` directly, with no surface-specific override.
 

@@ -10,7 +10,7 @@ import {
 
 export type { GhApiExecutor } from 'vouchington-tooling/gha-runtime-audit'
 
-export const filamentsRuntimeAuditOptions: Omit<RuntimeAuditOptions, 'repository'> = {
+export const vouchingtonRuntimeAuditOptions: Omit<RuntimeAuditOptions, 'repository'> = {
   branch: 'main',
   workflows: [
     { name: 'CI', event: 'pull_request' },
@@ -26,7 +26,7 @@ export async function auditCiJobRuntime(
   execute: GhApiExecutor,
   repository: string,
 ): Promise<RuntimeAuditResult> {
-  return auditPublished(execute, { repository, ...filamentsRuntimeAuditOptions })
+  return auditPublished(execute, { repository, ...vouchingtonRuntimeAuditOptions })
 }
 
 async function main(): Promise<void> {
