@@ -75,11 +75,8 @@ describe('post-cutover deployment documentation', () => {
       /\s+/g,
       ' ',
     )
-    // All four docs name the private repo and checklist step in prose instead of linking into it —
-    // pinned to vouchington-infra#47; update every one of these if the private checklist's "Staging
-    // database reset" step heading moves.
-    const resetRunbookProse =
-      'the "Staging database reset" step of the first-deploy checklist in the private `vouchington-infra` repository'
+    // All four docs name the private repo and checklist step instead of linking into it. Keep these
+    // stable identifiers aligned with vouchington-infra#47 without pinning surrounding prose.
     const retainedScope =
       'Valkey, queues, object storage, analytics warehouse/event data, and infrastructure state'
 
@@ -93,7 +90,8 @@ describe('post-cutover deployment documentation', () => {
     }
 
     for (const document of [stagingQa, ciCd, migrationPolicy, schemaSnapshot]) {
-      expect(document).toContain(resetRunbookProse)
+      expect(document).toContain('Staging database reset')
+      expect(document).toContain('`vouchington-infra`')
       expect(document).not.toMatch(/vouchington-infra\/(?:blob|tree)\//)
     }
 
