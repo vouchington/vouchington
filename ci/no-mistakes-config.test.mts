@@ -71,13 +71,21 @@ describe('no-mistakes config', () => {
     }
   })
 
-  it('configures the package-owned Git revision and sparse-checkout guards', () => {
+  it('configures the package-owned Git revision guard', () => {
     const noMistakes = readRepoFile('.no-mistakes.yml')
 
     expect(noMistakes).toContain('rule: no-test-git-sha')
-    expect(noMistakes).toContain('rule: no-sparse-checkout')
-    expect(noMistakes).toContain('ci/no-mistakes-workflows/**')
     expect(noMistakes).not.toContain('allowedContexts:')
+  })
+
+  it('does not re-declare the retired no-sparse-checkout rule', () => {
+    // Every job runs on a fresh, ephemeral runner (see docs/checklists/github-actions.md),
+    // so the old rationale for banning sparse-checkout repo-wide -- a self-hosted runner
+    // reusing one persistent `_work` directory across unrelated job runs, silently
+    // inheriting a prior job's narrowed sparse-checkout config -- no longer applies.
+    const noMistakes = readRepoFile('.no-mistakes.yml')
+
+    expect(noMistakes).not.toContain('rule: no-sparse-checkout')
   })
 
   it('requires nested Oxlint configs to preserve their ancestor overrides and plugins', () => {

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -16,23 +16,16 @@ type CacheWorkflow = {
   >
 }
 
+type CompositeAction = {
+  runs?: {
+    using?: string
+    steps?: CacheStep[]
+  }
+}
+
 const workflowFileNames = readdirSync('.github/workflows').filter(
   file => file.endsWith('.yml') || file.endsWith('.yaml'),
 )
-
-function isSelfHostedRunsOn(runsOn: string | string[] | undefined): boolean {
-  const labels = Array.isArray(runsOn) ? runsOn : typeof runsOn === 'string' ? [runsOn] : []
-  return labels.some(label => label === 'self-hosted')
-}
-
-function withPathContainsViteVitestCache(withBlock: Record<string, unknown> | undefined): boolean {
-  const path = withBlock?.path
-  if (typeof path === 'string') return path.includes('.cache/vite/vitest')
-  if (Array.isArray(path)) {
-    return path.some(entry => typeof entry === 'string' && entry.includes('.cache/vite/vitest'))
-  }
-  return false
-}
 
 const yamlPaths = [
   ...readdirSync('.github/workflows').map(file => join('.github/workflows', file)),
@@ -71,8 +64,77 @@ function actionStepBlocks(source: string, pattern: RegExp): string[] {
   return blocks
 }
 
+// One-level resolution of a local composite action's own steps, so a job
+// that delegates its real install work to `./.github/actions/<name>` is
+// checked as if those steps were inlined. Only local composites are
+// resolved (remote `uses:` refs are left as opaque steps); none of the
+// composites this policy cares about nest a second local composite inside
+// themselves, so one level is sufficient.
+function resolveLocalCompositeSteps(usesRef: string): CacheStep[] {
+  const match = usesRef.match(/^\.\/(\.github\/actions\/[^/@]+)/)
+  if (!match) return []
+  const dir = match[1]!
+  for (const filename of ['action.yml', 'action.yaml']) {
+    const path = join(dir, filename)
+    if (!existsSync(path)) continue
+    const action = load(readFileSync(path, 'utf8')) as CompositeAction
+    if (action.runs?.using !== 'composite') return []
+    return action.runs.steps ?? []
+  }
+  return []
+}
+
+function flattenSteps(steps: CacheStep[]): CacheStep[] {
+  return steps.flatMap(step => {
+    if (!step.uses?.startsWith('./.github/actions/')) return [step]
+    return [step, ...resolveLocalCompositeSteps(step.uses)]
+  })
+}
+
+function isPnpmInstallStep(step: CacheStep): boolean {
+  const run = step.run ?? ''
+  return run.includes('ci/pnpm-install.sh') || run.includes('ci/setup-backend-install.sh')
+}
+
+function isPlaywrightInstallStep(step: CacheStep): boolean {
+  const run = step.run ?? ''
+  return (
+    run.includes('playwright install') || run.includes('playwright-install-ubicloud-browsers.sh')
+  )
+}
+
+function isActionsCacheStep(step: CacheStep): boolean {
+  return (
+    step.uses?.startsWith('actions/cache@') === true ||
+    step.uses?.startsWith('actions/cache/restore@') === true ||
+    step.uses?.startsWith('actions/cache/save@') === true
+  )
+}
+
+function cacheStepPath(step: CacheStep): string {
+  const path = step.with?.path
+  if (typeof path === 'string') return path
+  if (Array.isArray(path))
+    return path.filter((entry): entry is string => typeof entry === 'string').join('\n')
+  return ''
+}
+
+function isPnpmStoreCacheStep(step: CacheStep): boolean {
+  return isActionsCacheStep(step) && cacheStepPath(step).includes('pnpm-store')
+}
+
+function isPlaywrightCacheStep(step: CacheStep): boolean {
+  return isActionsCacheStep(step) && cacheStepPath(step).includes('ms-playwright')
+}
+
 describe('CI cache policy', () => {
   it('never enables npm package manager caches', () => {
+    // actions/setup-node's built-in `cache:` input is banned outright: it
+    // cannot be pinned to a commit SHA, it manages its own opaque key
+    // scheme, and it cannot cache Playwright browsers. Every job that needs
+    // caching uses an explicit, SHA-pinned actions/cache step instead (see
+    // 'caches the pnpm store and Playwright browsers at every real install
+    // site' below) so the cache key and scope stay under our control.
     for (const path of yamlPaths) {
       const source = readFileSync(path, 'utf8')
 
@@ -84,19 +146,48 @@ describe('CI cache policy', () => {
     }
   })
 
-  it('does not cache package directories or Playwright browser installs', () => {
-    for (const path of yamlPaths) {
-      const source = readFileSync(path, 'utf8')
-      for (const block of cachePathBlocks(source)) {
-        expect(block).not.toMatch(/(^|\s)(?:~\/)?\.pnpm-store\b/)
-        expect(block).not.toContain('~/.local/share/pnpm')
-        expect(block).not.toContain('~/.npm')
-        expect(block).not.toContain('~/.cache/yarn')
-        expect(block).not.toContain('~/.yarn/cache')
-        expect(block).not.toMatch(/(^|[\s/'"`{}])node_modules\b/)
-        expect(block).not.toContain('ms-playwright')
+  it('caches the pnpm store and Playwright browsers at every real install site', () => {
+    // Every runner is now a fresh, ephemeral GitHub-hosted machine (no
+    // self-hosted target persists a warm pnpm store or ~/.cache/ms-playwright
+    // across runs), so every real pnpm-install and Playwright-install site
+    // must be preceded by an actions/cache step or it pays a full cold
+    // install on every single run. This resolves one level of local
+    // composite `uses: ./.github/actions/<name>` steps so composite-routed
+    // call sites (setup-node-pnpm, setup-backend, setup-playwright) are
+    // checked the same way as standalone/manual install steps.
+    const violations: string[] = []
+
+    for (const file of workflowFileNames) {
+      const path = join('.github/workflows', file)
+      const workflow = load(readFileSync(path, 'utf8')) as CacheWorkflow
+
+      for (const [jobId, job] of Object.entries(workflow.jobs ?? {})) {
+        const steps = flattenSteps(job.steps ?? [])
+
+        steps.forEach((step, index) => {
+          const priorSteps = steps.slice(0, index)
+
+          if (isPnpmInstallStep(step) && !priorSteps.some(isPnpmStoreCacheStep)) {
+            violations.push(
+              `${file}#${jobId}: step "${step.name ?? 'pnpm install'}" installs pnpm ` +
+                `dependencies without a preceding actions/cache step for the pnpm store.`,
+            )
+          }
+
+          if (isPlaywrightInstallStep(step) && !priorSteps.some(isPlaywrightCacheStep)) {
+            violations.push(
+              `${file}#${jobId}: step "${step.name ?? 'Playwright install'}" installs ` +
+                `Playwright browsers without a preceding actions/cache step for ~/.cache/ms-playwright.`,
+            )
+          }
+        })
       }
     }
+
+    assertNoWorkflowViolations(
+      violations,
+      'Every pnpm/Playwright install site must be preceded by an actions/cache step:',
+    )
   })
 
   it('disables Docker build record uploads on build and bake actions', () => {
@@ -162,45 +253,50 @@ describe('CI cache policy', () => {
     expect(gitleaks).not.toContain('${RUNNER_TEMP:-/tmp}')
   })
 
-  it('never restores or saves the Vite transform cache via actions/cache on a self-hosted job', () => {
-    // Self-hosted runners already persist .cache/vite/vitest across runs via
-    // ./.github/actions/clean-workspace (it excludes .cache from `git clean`), so a
-    // remote actions/cache round-trip there is pure overhead with zero benefit — it
-    // once consumed a job's entire 10-minute budget. Only cold-start ephemeral
-    // runners, with no persisted local state, may still use
-    // actions/cache for this path — none currently do: tests-web.yml's web-tests
-    // and tests-backend-modules.yml's backend-modules jobs relocated to self-hosted.
+  it('keys the pnpm-store and Playwright browser caches safely', () => {
+    // Every cache step covering the pnpm store or the Playwright browser
+    // directory must be scoped by OS/arch (both paths are platform-specific)
+    // and keyed on the pnpm lockfile hash (so a dependency bump invalidates
+    // it). The Playwright browser cache additionally must never declare
+    // restore-keys: unlike the pnpm store (where a stale partial restore
+    // just means slower reinstalls of the changed packages), a stale
+    // Playwright browser cache is a version mismatch against the pinned
+    // `playwright` package -- it must surface as a loud install-time
+    // failure, never a silent restore of the wrong browser build.
     const violations: string[] = []
 
-    for (const file of workflowFileNames) {
-      const path = join('.github/workflows', file)
-      const workflow = load(readFileSync(path, 'utf8')) as CacheWorkflow
+    for (const path of yamlPaths) {
+      const source = readFileSync(path, 'utf8')
 
-      for (const [jobId, job] of Object.entries(workflow.jobs ?? {})) {
-        if (!isSelfHostedRunsOn(job['runs-on'])) continue
+      for (const block of cachePathBlocks(source)) {
+        const isPnpmStore = block.includes('pnpm-store')
+        const isPlaywright = block.includes('ms-playwright')
+        if (!isPnpmStore && !isPlaywright) continue
 
-        for (const step of job.steps ?? []) {
-          const usesCacheRestoreOrSave =
-            step.uses?.startsWith('actions/cache@') ||
-            step.uses?.startsWith('actions/cache/restore@') ||
-            step.uses?.startsWith('actions/cache/save@')
-          if (!usesCacheRestoreOrSave) continue
-          if (!withPathContainsViteVitestCache(step.with)) continue
+        const firstLine = block.trim().split('\n')[0]
 
+        if (!/hashFiles\(\s*['"]pnpm-lock\.yaml['"]\s*\)/.test(block)) {
           violations.push(
-            `${file}#${jobId}: step "${step.name ?? step.uses}" uses ${step.uses} to ` +
-              `restore/save .cache/vite/vitest on a self-hosted runner. Self-hosted runners ` +
-              `already persist .cache/ across runs via ./.github/actions/clean-workspace — ` +
-              `delete this actions/cache step instead of adding it back. See ` +
-              `.github/workflows/RUNNERS.md for the current policy.`,
+            `${path}: cache step "${firstLine}" must key on hashFiles('pnpm-lock.yaml') ` +
+              `so a dependency bump invalidates the cache.`,
+          )
+        }
+        if (!block.includes('runner.os') || !block.includes('runner.arch')) {
+          violations.push(
+            `${path}: cache step "${firstLine}" must scope its key by runner.os and ` +
+              `runner.arch (the pnpm store path and Playwright binaries are platform-specific).`,
+          )
+        }
+        if (isPlaywright && /restore-keys:/.test(block)) {
+          violations.push(
+            `${path}: Playwright browser cache step "${firstLine}" must not declare ` +
+              `restore-keys -- a stale/mismatched browser cache must surface as a loud ` +
+              `install-time failure, not a silent partial restore.`,
           )
         }
       }
     }
 
-    assertNoWorkflowViolations(
-      violations,
-      'Self-hosted jobs must not use actions/cache for .cache/vite/vitest:',
-    )
+    assertNoWorkflowViolations(violations, 'Cache steps must be keyed safely:')
   })
 })

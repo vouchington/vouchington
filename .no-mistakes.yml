@@ -413,15 +413,6 @@ rules:
       - '**/yarn.lock'
       - '**/Cargo.lock'
       - '**/Package.resolved'
-  - name: GitHub Actions does not use sparse checkout
-    rule: no-sparse-checkout
-    scope: repository
-    options:
-      include:
-        - '.github/workflows/**'
-        - '.github/actions/**'
-        - 'ci/no-mistakes-workflows/**'
-
   - name: Vitest tests do not invoke real timers
     rule: forbidden-calls
     scope: repository
