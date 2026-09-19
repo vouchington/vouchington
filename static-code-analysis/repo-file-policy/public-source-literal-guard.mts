@@ -1,3 +1,5 @@
+// oxlint-disable max-lines -- public source literal guard keeps its pattern catalog next to the
+// scanner; splitting the catalog into a sibling module fragments the checked literal list.
 import { readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -137,6 +139,10 @@ const PATTERNS: readonly LiteralPattern[] = [
     category: 'AWS CLI profile assignment',
     expression: /(?:PROFILE|READ_PROFILE)=(?!(?:["']?(?:<|\$)))["']?[A-Za-z0-9][A-Za-z0-9_-]*["']?/,
     appliesTo: file => PUBLIC_DOCUMENT_RE.test(file),
+  },
+  {
+    category: 'private infrastructure repository link',
+    expression: /\bvouchington-infra\/(?:blob|tree)\//i,
   },
 ]
 

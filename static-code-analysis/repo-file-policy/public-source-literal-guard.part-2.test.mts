@@ -15,6 +15,14 @@ const COMPUTE_DEFAULT_SERVICE_ACCOUNT = [
 const APP_ENGINE_DEFAULT_SERVICE_ACCOUNT = ['private-project', '@appspot.gserviceaccount.com'].join(
   '',
 )
+const PRIVATE_INFRA_BLOB_LINK = [
+  'https://github.com/vouchington/vouchington-infra/',
+  'blob/main/opentofu/runbook.md',
+].join('')
+const PRIVATE_INFRA_TREE_LINK = [
+  'https://github.com/vouchington/vouchington-infra/',
+  'tree/main/opentofu',
+].join('')
 
 function runGuard(file: string, content: string): string[] {
   const root = mkdtempSync(join(tmpdir(), 'voucha-public-source-literal-guard-'))
@@ -196,5 +204,27 @@ describe('public source literal guard additional deployment forms', () => {
       ].join('\n'),
     )
     expect(errors.filter(error => error.includes('maintainer-local path'))).toHaveLength(6)
+  })
+
+  it('flags deep links into the private vouchington-infra repository', () => {
+    const errors = runGuard(
+      'docs/operations/runbook.md',
+      [PRIVATE_INFRA_BLOB_LINK, PRIVATE_INFRA_TREE_LINK].join('\n'),
+    )
+    expect(errors).toHaveLength(2)
+    expect(errors.join('\n')).toContain('private infrastructure repository link')
+  })
+
+  it('allows references to the private vouchington-infra repository without a deep link', () => {
+    expect(
+      runGuard(
+        'docs/operations/runbook.md',
+        [
+          'https://github.com/vouchington/vouchington-infra',
+          'the private `vouchington-infra` repository',
+          'https://github.com/vouchington/vouchington-infra/issues/47',
+        ].join('\n'),
+      ),
+    ).toEqual([])
   })
 })
