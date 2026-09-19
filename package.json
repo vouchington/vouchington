@@ -2,9 +2,17 @@
   "name": "voucha",
   "version": "1.0.0",
   "private": true,
-  "description": "",
-  "license": "UNLICENSED",
-  "author": "",
+  "description": "A multi-vertical consumer intelligence platform built on human trust signals.",
+  "homepage": "https://github.com/vouchington/vouchington#readme",
+  "bugs": {
+    "url": "https://github.com/vouchington/vouchington/issues"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington.git"
+  },
   "type": "module",
   "scripts": {
     "pretest:integration:web": "bash -c 'if [ -f .env ]; then source .env; fi; node ci/setup-web-integration.mts'",

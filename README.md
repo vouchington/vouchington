@@ -53,3 +53,15 @@ Across the web app, cursor-paginated lists are expected to append with infinite 
 - [Contributing Guide](CONTRIBUTING.md) — How to propose a change and what CI expects before review
 - [Code of Conduct](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1, and how to report a violation
 - [Security Policy](SECURITY.md) — How to report a vulnerability privately
+
+## License
+
+Voucha is source-available under the
+[Functional Source License, Version 1.1, MIT Future License](LICENSE)
+(`FSL-1.1-MIT`). You may read, run, modify, and redistribute the source for any
+purpose other than a Competing Use — broadly, offering it to others as a
+commercial product or service that substitutes for Voucha. Internal use,
+non-commercial education, and non-commercial research are explicitly permitted.
+
+Each version additionally becomes available under the MIT license two years
+after it is published. See [LICENSE](LICENSE) for the controlling terms.
