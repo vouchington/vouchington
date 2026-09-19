@@ -35,8 +35,14 @@ function cacheSteps(source: string): CacheStep[] {
 }
 
 function normalizedCachePaths(value: unknown): string[] | null {
-  const values = typeof value === 'string' ? [value] : Array.isArray(value) ? value : null
-  if (!values || values.some(entry => typeof entry !== 'string')) return null
+  let values: string[]
+  if (typeof value === 'string') values = [value]
+  else if (
+    Array.isArray(value) &&
+    value.every((entry): entry is string => typeof entry === 'string')
+  )
+    values = value
+  else return null
   return values.flatMap(entry =>
     entry
       .split('\n')
