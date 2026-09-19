@@ -44,7 +44,7 @@ Examples: a directory-only guardrail stays in the nearest `CLAUDE.md`; test-auth
 ```mermaid
 flowchart TD
   item[Instruction candidate]
-  item --> q0{Value comes from real operational numbers or identities?}
+  item --> q0{Does it meet the private-tier test above?}
   q0 -->|yes| privateDocs[Private vouchington-docs, per its registry]
   q0 -->|no| q1{Directory-scoped invariant?}
   q1 -->|yes| claudeMd[Nearest CLAUDE.md]
