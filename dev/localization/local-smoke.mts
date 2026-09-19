@@ -3,8 +3,13 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 import { catalogRevision, loadCatalogDirectory } from '@vouchington/localization-compiler'
-import { waitFor } from '../../integration-tests/web/helpers/wait.mts'
+import { isHealthy, waitFor } from '../../integration-tests/web/helpers/wait.mts'
 import { WEB_CHROME_SELECTOR } from '../../web/lib/i18n/route-selectors.generated.mts'
+import {
+  isLocalizationSsrRevisionDiagnosticEnabled,
+  maybeAssertSsrLocalizationRevision,
+  nextLocalizationOrigin,
+} from './ssr-revision-diagnostic.mts'
 
 const execFileAsync = promisify(execFile)
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
@@ -98,7 +103,7 @@ export async function findReadyLocalWorkerUrl(
   return undefined
 }
 
-async function startLocalStack(): Promise<void> {
+async function startLocalStack(): Promise<string> {
   requiredEnvironment('WORKER_PORT')
   await execFileAsync('./dev/tmux', ['--no-attach'])
   let backendRevision: string | undefined
@@ -115,12 +120,14 @@ async function startLocalStack(): Promise<void> {
     120_000,
   )
   const currentCatalog = await loadCatalogDirectory(join(repoRoot, 'localization', 'catalog'))
+  if (!backendRevision) throw new Error('Localization backend returned no catalog revision')
   if (backendRevision !== catalogRevision(currentCatalog.catalog)) {
     throw new Error('Running backend localization catalog is stale; restart the managed tmux stack')
   }
+  return backendRevision
 }
 
-async function runBrowserSmoke(): Promise<void> {
+async function runBrowserSmoke(backendRevision: string): Promise<void> {
   let workerUrl: string | undefined
   await waitFor(
     'local Worker landing page',
@@ -131,6 +138,13 @@ async function runBrowserSmoke(): Promise<void> {
     120_000,
   )
   if (!workerUrl) throw new Error('Local Worker URL was not selected')
+  if (isLocalizationSsrRevisionDiagnosticEnabled()) {
+    const port = process.env.NEXT_PORT
+    if (!port) throw new TypeError('NEXT_PORT is required; run ./dev/initialize web first')
+    const origin = nextLocalizationOrigin(port)
+    await waitFor('Next.js SSR origin', () => isHealthy(`${origin}/`), 120_000)
+    await maybeAssertSsrLocalizationRevision(backendRevision)
+  }
   const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
   const { stdout, stderr } = await execFileAsync(
     command,
@@ -142,8 +156,7 @@ async function runBrowserSmoke(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  await startLocalStack()
-  await runBrowserSmoke()
+  await runBrowserSmoke(await startLocalStack())
 }
 
 if (import.meta.main) await main()

@@ -50,6 +50,11 @@ checks guard that request-selection contract instead of catalog content:
 - `playwright/tests/routes/localization-availability.spec.mts` — renders login, admin AI costs,
   and the dynamically loaded growth dashboard in English against the backend, with the browser
   error monitor enabled.
+- `pnpm run test:localization:tmux-smoke` — live local Worker smoke for `/`, `/login`, and `/news`.
+  It probes backend catalog revision before browser navigation. `LOCALIZATION_SSR_REVISION_DIAGNOSTIC=1`
+  adds a Next-origin HTML check, after Worker and Next origin readiness, that the development `data-localization-ssr-revision` marker matches
+  that backend revision (`dev/localization/ssr-revision-diagnostic.mts`). Ordinary Playwright smoke
+  stays English-only; the SSR cache TTL tests live in `web/lib/i18n/__tests__/load-server-messages.mock.test.ts`.
 - `web/scripts/tests/smoke-test-web.sh` — compiles only the real homepage and chrome selectors
   for its standalone backend, then verifies the production web server through that backend. The
   all-route SQLite sweep above owns catalog-wide bounds coverage.

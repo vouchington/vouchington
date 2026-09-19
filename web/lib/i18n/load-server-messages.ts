@@ -7,6 +7,7 @@ import { getWebLocalizationBatch } from '@/lib/api/server/localization'
 import { catalogFromLocalizationBatch } from './catalog-from-batch'
 import { webLocalizationSearchParams } from './localization-query'
 import { webSelectorsForPath } from './localization-selectors'
+import { ssrLocalizationRevisionProps } from './ssr-localization-revision-props.mts'
 
 const REFRESH_RETRY_DELAY_MS = 60_000
 
@@ -27,6 +28,7 @@ type ResolvedCatalog = {
 type CatalogEntry = LoadingCatalog | ResolvedCatalog
 
 const catalogs = new Map<string, CatalogEntry>()
+const catalogRevisions = new WeakMap<EnCatalog, string>()
 
 function expiresAt(batch: LocalizationBatch): number {
   const ttlMilliseconds = Number.isFinite(batch.ttlSeconds)
@@ -36,10 +38,12 @@ function expiresAt(batch: LocalizationBatch): number {
 }
 
 function resolvedCatalog(batch: LocalizationBatch): ResolvedCatalog {
+  const catalog = catalogFromLocalizationBatch(batch)
+  catalogRevisions.set(catalog, batch.revision)
   return {
     state: 'resolved',
     batch,
-    catalog: catalogFromLocalizationBatch(batch),
+    catalog,
     expiresAt: expiresAt(batch),
     retryAt: 0,
   }
@@ -100,11 +104,19 @@ function refreshCatalog(
   entry.refresh = refresh
 }
 
+function localizationCacheKey(locale: string, pathname: string): string {
+  const params = webLocalizationSearchParams(locale, webSelectorsForPath(pathname))
+  return `${params.locales}:${params.selectors}`
+}
+
+async function localizationPathname(): Promise<string> {
+  return (await headers()).get('x-pathname') ?? ''
+}
+
 /** Every live SSR render fetches route copy from the backend; the TTL cache avoids repeat work. */
 export async function loadServerMessages(locale: string): Promise<EnCatalog> {
-  const pathname = (await headers()).get('x-pathname') ?? ''
-  const params = webLocalizationSearchParams(locale, webSelectorsForPath(pathname))
-  const cacheKey = `${params.locales}:${params.selectors}`
+  const pathname = await localizationPathname()
+  const cacheKey = localizationCacheKey(locale, pathname)
   const entry = catalogs.get(cacheKey)
   if (!entry) {
     return loadInitialCatalog(cacheKey, locale, pathname)
@@ -114,4 +126,21 @@ export async function loadServerMessages(locale: string): Promise<EnCatalog> {
     refreshCatalog(cacheKey, entry, locale, pathname)
   }
   return entry.catalog
+}
+
+/** Catalog revision for the same pathname-keyed entry `loadServerMessages` just resolved. */
+export async function loadedServerLocalizationRevision(
+  locale: string,
+): Promise<string | undefined> {
+  const pathname = await localizationPathname()
+  const entry = catalogs.get(localizationCacheKey(locale, pathname))
+  return entry?.state === 'resolved' ? entry.batch.revision : undefined
+}
+
+/** Development-only `<html>` marker bound to the catalog object this render serialized. */
+export function ssrLocalizationRevisionHtmlProps(
+  catalog: EnCatalog,
+): ReturnType<typeof ssrLocalizationRevisionProps> {
+  if (process.env.NODE_ENV !== 'development') return {}
+  return ssrLocalizationRevisionProps(process.env.NODE_ENV, catalogRevisions.get(catalog))
 }

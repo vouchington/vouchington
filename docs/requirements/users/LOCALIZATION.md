@@ -340,6 +340,8 @@ key) across every consumer at once, not just the catalogs.
 
 After `./dev/initialize web`, run `pnpm run test:localization:tmux-smoke`. It starts or reuses the worktree's managed `./dev/tmux` session, probes the live backend localization API, then opens the running local Worker in Chromium for anonymous landing, login, and news states. It uses no localization mock; an unavailable backend or stale catalog revision fails before browser navigation. The runner detects the Worker's active HTTP or HTTPS protocol even when an existing tmux session is reused.
 
+Set `LOCALIZATION_SSR_REVISION_DIAGNOSTIC=1` to also fetch `/`, `/login`, and `/news` from the local Next origin (`http://127.0.0.1:$NEXT_PORT`) after the Worker is ready and Next origin `/` returns 200, and require `data-localization-ssr-revision` on the SSR HTML to match the backend catalog revision. That check isolates Next's in-process route-catalog cache from Worker HTML caching; it is a test-only exception to [traffic routing](../../../dev/reference-traffic-routing.md). Missing or stale markers fail with an instruction to restart the `nextjs` tmux window. The stale-while-revalidate TTL policy is unchanged. Default smoke without that env keeps the English-only, no-browser-error Playwright contract.
+
 The local stack still requires user-local S3 bucket names, including `S3_BUCKET_IMAGES`, in `~/voucha.env`. See [local environment variables](../../development/local-env-vars.md).
 
 ## Related
