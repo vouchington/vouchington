@@ -239,12 +239,12 @@ describe('tests-playwright.yml', () => {
     expect(workflow.slice(uploadIndex, uploadIndex + 200)).toContain('if: ${{ !cancelled() }}')
   })
 
-  it('does not cache Playwright browsers or Next.js build via actions/cache', () => {
-    expect(workflow).not.toContain('Save Playwright browsers')
-    expect(workflow).not.toContain('Restore Playwright browsers')
+  it('delegates Playwright browser caching and does not cache Next.js builds', () => {
+    expect(workflow).toContain('uses: ./.github/actions/setup-playwright')
+    expect(workflow).not.toContain('name: Cache Playwright browsers')
     expect(workflow).not.toMatch(/path:\s*\n\s+~\/.cache\/ms-playwright/)
-    // Next.js build cache persists on disk via clean-workspace extra-keep;
-    // no actions/cache round-trip is needed on self-hosted runners.
+    // The shared Playwright setup owns browser caching. This workflow does not
+    // independently cache either the browsers or Next.js build output.
     expect(workflow).not.toContain('Restore Next.js build cache')
     expect(workflow).not.toContain('Save Next.js build cache')
     expect(workflow).not.toContain('next-build-cache-v4')

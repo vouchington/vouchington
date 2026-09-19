@@ -19,6 +19,23 @@ runs:
     - name: Activate pnpm via corepack
       shell: bash
       run: bash "$GITHUB_WORKSPACE/ci/activate-pnpm.sh"
+    - name: Resolve pnpm store path
+      id: pnpm-store
+      shell: bash
+      run: |
+        echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+        if command -v sha256sum >/dev/null 2>&1; then
+          echo "lockfile-hash=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+        else
+          echo "lockfile-hash=$(shasum -a 256 pnpm-lock.yaml | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+        fi
+    - name: Cache pnpm store
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ steps.pnpm-store.outputs.lockfile-hash }}
+        restore-keys: |
+          pnpm-store-${{ runner.os }}-${{ runner.arch }}-
     - name: pnpm install
       shell: bash
       env:
