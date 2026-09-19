@@ -30,6 +30,7 @@ const nextBuildCache = !fsCache ? 'disabled' : existsSync(turbopackCachePath) ? 
 // watchdog SIGKILL mid-`next-build` still leaves partial data on disk for issue #10937.
 writeTimingReport()
 
+// ast-grep-ignore: no-three-sequential-awaits -- fixed pipeline, not independent work: cleanup must finish before either build touches the caches it clears, and the builds stay serialized so one runner never hosts two concurrent production builds
 await timeStep('cache-cleanup', async () => {
   clearStaleTestCaches({
     rootDir: ROOT_DIR,
