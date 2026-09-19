@@ -167,7 +167,7 @@ describe('CI cache policy', () => {
     // ./.github/actions/clean-workspace (it excludes .cache from `git clean`), so a
     // remote actions/cache round-trip there is pure overhead with zero benefit — it
     // once consumed a job's entire 10-minute budget. Only cold-start ephemeral
-    // (Ubicloud) runners, with no persisted local state, may still use
+    // runners, with no persisted local state, may still use
     // actions/cache for this path — none currently do: tests-web.yml's web-tests
     // and tests-backend-modules.yml's backend-modules jobs relocated to self-hosted.
     const violations: string[] = []
