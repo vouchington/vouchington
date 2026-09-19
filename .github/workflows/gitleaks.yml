@@ -52,8 +52,7 @@ jobs:
           # Install into a per-job RUNNER_TEMP dir (cleared between jobs by the runner),
           # never persistent $HOME/.local/bin — a prior PR-controlled job on this
           # self-hosted runner must not be able to leave a poisoned binary behind for
-          # this trusted job's version-skip check below to re-execute. See RUNNERS.md
-          # § Self-Hosted Runner Secret Isolation.
+          # this trusted job's version-skip check below to re-execute.
           : "${RUNNER_TEMP:?RUNNER_TEMP must be set by GitHub Actions}"
           case "$(uname -s)-$(uname -m)" in
             Darwin-arm64) PLATFORM=darwin_arm64 ;;

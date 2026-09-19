@@ -43,7 +43,7 @@ CI is expensive — this includes GitHub Actions artifact and cache storage. The
 
 Keep workflow triggers narrow, reproduce failures locally before rerunning, and keep tests fail-fast-ish (`--bail=3` for Vitest; `maxFailures: CI ? 3 : undefined` for Playwright). The stacked-PR exception is [`ci.yml`](../../.github/workflows/ci.yml): its `pull_request` trigger must not set `branches` or `branches-ignore`, because a `branches: [main]` filter races at `gh stack submit` ([github/gh-stack#425](https://github.com/github/gh-stack/issues/425)) and skips mid-stack PRs. Other workflows keep their path and branch filters. Playwright, web integration, and Docker image build filters should skip Markdown-only, Vitest-only, test-helper-only, and Storybook-only changes on both pull requests and `main` pushes unless the changed files are directly owned by that workflow. Direct `node_modules` caches and `actions/setup-node` package-manager cache helpers are not allowed. Ephemeral GitHub-hosted jobs may cache only the pnpm store and Playwright browsers through the explicit, SHA-pinned `actions/cache` policy in the [GitHub Actions checklist](../checklists/github-actions.md).
 
-Self-hosted runners should preserve local binaries and `node_modules`, but every run must assume a dirty workspace and run the checkout cleanup/version checks described in [.github/workflows/RUNNERS.md](../../.github/workflows/RUNNERS.md#self-hosted-runner-caching). Persistent dependency setup stores a successful dependency/platform provenance stamp under root `node_modules`; on a populated tree, a missing or changed stamp, or an invalid required workspace link, forces pnpm's script-free and strict reconciliation passes before a new stamp is written. That reconciliation performs exactly two installs: a script-free pass followed by a strict pass. If the strict pass still reports pending builds, one generic recursive pending rebuild completes them; setup does not add a third install or special-case individual packages. Matching warm state receives one ordinary install. An absent dependency tree (for example right after the Harness dispatcher's clean checkout) has nothing to reconcile, so it takes a single ordinary install and stamps on success, falling back to the two-pass reconciliation only if that install still leaves an invalid workspace link. Static analysis remains stricter and performs unconditional reconciliation so same-input native binary corruption cannot leak into typecheck.
+Local development and the Harness dispatcher's reused worktree preserve local binaries and `node_modules` across runs, so setup must assume a dirty workspace and run checkout cleanup/version checks; GitHub-hosted CI runners start from a clean checkout every job and have no persisted tree to reconcile. Persistent dependency setup stores a successful dependency/platform provenance stamp under root `node_modules`; on a populated tree, a missing or changed stamp, or an invalid required workspace link, forces pnpm's script-free and strict reconciliation passes before a new stamp is written. That reconciliation performs exactly two installs: a script-free pass followed by a strict pass. If the strict pass still reports pending builds, one generic recursive pending rebuild completes them; setup does not add a third install or special-case individual packages. Matching warm state receives one ordinary install. An absent dependency tree (for example right after the Harness dispatcher's clean checkout) has nothing to reconcile, so it takes a single ordinary install and stamps on success, falling back to the two-pass reconciliation only if that install still leaves an invalid workspace link. Static analysis remains stricter and performs unconditional reconciliation so same-input native binary corruption cannot leak into typecheck.
 
 Tracked repository hook payloads exit before doing work when `GITHUB_ACTIONS=true`; explicit workflow
 setup actions remain the sole owners of CI dependency setup. Local developer and agent hook behavior
@@ -66,11 +66,6 @@ the CI-only 360-second Next command cap; the separate fail-closed acquisition wa
 seconds and local builds remain uncapped. Package-manager mutation
 remains a separate fail-closed correctness lock. Nested locks are rejected and each command path
 has one owner.
-The shared self-hosted macOS host also applies a bounded capacity-only wait before creating a job lease;
-its 5 GiB floor, completion-time build-output cleanup, fail-closed cases, staged installer,
-mixed-rollout contract, and idle-host deployment gate are canonical in
-[Self-Hosted Runner Disk Admission And Orphan Recovery](../../.github/workflows/reference-runner-disk-admission-and-orphan-recovery.md).
-
 CI reserves `2200–2999` in repository code through
 [`ci/runner-port-policy.json`](../../ci/runner-port-policy.json): numeric runner paths receive a
 deterministic 16-port slice via the validated `listenOnRunnerUnreservedEphemeralPort()` binder.
@@ -81,9 +76,7 @@ servers, Fetch-safe) ephemeral port through
 shared-host port contention to avoid. Static analysis rejects direct `listen(0)` calls outside
 those two policy owners. Linux runner provisioning is pending deployment of the reservation
 of the same range from automatic ephemeral allocation; until then an empty
-`ip_local_reserved_ports` value is expected. See
-[Self-Hosted Runner Port Safety](../../.github/workflows/reference-self-hosted-runner-port-safety.md).
-Allocation skips occupied candidates. Playwright jobs hold the selected sockets until each
+`ip_local_reserved_ports` value is expected. Allocation skips occupied candidates. Playwright jobs hold the selected sockets until each
 consumer is about to bind, then release that port. Short-window callers still print-and-exit
 and receive either one exact local retry or one fail-closed workflow retry for a proven late
 collision. Failed

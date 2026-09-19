@@ -8,7 +8,6 @@
 - <a id="pr-triggered-workflow-trust-boundary-checklist"></a>[PR-Triggered Workflow Trust Boundary Checklist](reference-pr-triggered-workflow-trust-boundary-checklist.md)
 - <a id="fixed-branch-automation-prs"></a>[Fixed-Branch Automation PRs](reference-fixed-branch-automation-prs.md)
 - <a id="artifact-rerun-safety"></a>[Artifact Rerun Safety](reference-artifact-rerun-safety.md)
-- <a id="self-hosted-runner-change-checklist"></a>[Self-Hosted Runner Change Checklist](reference-self-hosted-runner-change-checklist.md)
 - <a id="workflow-classifiers"></a>[Workflow Classifiers](reference-workflow-classifiers.md)
 - <a id="extracted-shell-scripts"></a>[Extracted Shell Scripts](reference-extracted-shell-scripts.md)
 - <a id="step-timeouts"></a>[Step Timeouts](reference-step-timeouts.md)

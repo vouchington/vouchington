@@ -95,4 +95,28 @@ gates remain the containment layers, with Auto Harness's own operator-authentica
 providing incident-response containment outside this repository. Expanding completion types,
 repositories, credentials, or merge authority requires a new security review.
 
+## HARNESS_API_KEY repository-secret scope (accepted 2026-08-26)
+
+`HARNESS_API_KEY` is provisioned as a **repository-scoped** secret (see
+[Auto Harness automation](reference-harness-automation.md#configuration-and-activation)), not
+environment-scoped — `workflow_call`-invoked jobs cannot resolve Environment-scoped secrets, which
+is why the migration off the `auto-harness` Environment happened (#10211). Repository secrets are
+readable by any job in any workflow run triggered from a same-repository (non-fork) event,
+including `pull_request`, independent of `secrets: inherit`: a same-repo PR branch that edits a
+workflow file can add a step reading `${{ secrets.HARNESS_API_KEY }}` and have it evaluate before
+human review. The `environment: auto-harness` declaration retained on the
+[dispatcher](harness-dispatch.yml) still enforces its
+main-only branch-policy gate on job _execution_, but no longer gates the secret _value_ — that
+protection was lost when the secret left the `auto-harness` Environment.
+
+This was raised in review on #10212 (P1) alongside two mitigations — keep the secret
+environment-scoped and restructure the secret-consuming job boundary, or move to a brokered
+short-lived credential unreviewed workflows cannot request — and is **accepted as residual risk**
+rather than mitigated: the credential only grants Auto Harness dispatch actions
+scoped to this repository's own automation principal, same-repo PR authorship already carries a
+comparable trust bar to other repo secrets forwarded via `secrets: inherit` in `ci.yml`, and
+rotation or a broker credential remain available if this repository's trust model changes. If the
+repository becomes public, re-open this decision — the same-repo-authorship trust assumption
+breaks the same way for every same-repo-only mitigation above.
+
 Interactive agents and Codex Cloud Security are outside this boundary.

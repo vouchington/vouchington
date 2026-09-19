@@ -1,7 +1,5 @@
 # GitHub Actions Concurrency Locks
 
-[Back to Workflow Runners](RUNNERS.md#github-actions-concurrency-locks)
-
 Workflow YAML is the executable concurrency contract. The typed policy in
 [`concurrency-topology-policy.mts`](concurrency-topology-policy.mts) records pending behavior,
 cancellation behavior, and resource scope. The topology tests keep every live workflow, job,

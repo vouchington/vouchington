@@ -87,13 +87,11 @@ describe('Harness scheduled automation prompt contracts', () => {
     expect(indexText).toContain('`automation-prompts-scheduled.test.mts`')
   })
 
-  it('documents artifact cleanup outcomes and fail-closed live runner capacity evidence', () => {
-    const [ciReference, rerunSafety, runnerCapacity, cleanupWorkflow, checklist] = [
+  it('documents artifact cleanup outcomes', () => {
+    const [ciReference, rerunSafety, cleanupWorkflow] = [
       'docs/development/ci.md',
       '.github/workflows/reference-artifact-rerun-safety.md',
-      '.github/workflows/reference-runner-fleet-capacity.md',
       '.github/workflows/cleanup-artifacts.yml',
-      'docs/checklists/github-actions.md',
     ].map(path => readFileSync(path, 'utf8'))
     for (const text of [ciReference, rerunSafety])
       expect(text).toMatch(
@@ -101,33 +99,6 @@ describe('Harness scheduled automation prompt contracts', () => {
       )
     for (const text of [ciReference, rerunSafety, cleanupWorkflow])
       expect(text).not.toContain('6-hour rerun grace window')
-    for (const text of [
-      'timestamped live snapshot',
-      'runner API',
-      'per_page=100',
-      'total_count',
-      'Link',
-      'label-superset',
-      'status: online|offline',
-      'busy: true|false',
-      'permanently fenced-off',
-      'status=requested&per_page=100',
-      'status=waiting&per_page=100',
-      'status=pending&per_page=100',
-      'status=queued&per_page=100',
-      'status=in_progress&per_page=100',
-      'requested.total_count + waiting.total_count + pending.total_count + queued.total_count + in_progress.total_count <= 100',
-      'eligible-runner-set overlap',
-      'broader-label',
-      'runner-work-filesystem',
-      'VOUCHA_RUNNER_DISK_PROFILE',
-      'topology peak',
-      'fail-closed overlap accounting',
-      '80%',
-      'demand-neutral or demand-reducing',
-    ])
-      expect(runnerCapacity).toContain(text)
-    expect(checklist).toContain('live-capacity procedure')
   })
 
   it('documents the scheduled prompt implementation-choice section and deferral-target resolution rule', () => {

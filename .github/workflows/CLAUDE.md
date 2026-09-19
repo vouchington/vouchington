@@ -3,7 +3,7 @@
 Load the [github-actions-checklist skill](../../.agents/skills/github-actions-checklist/SKILL.md)
 before editing a workflow or composite action. Its canonical checklist covers runner selection and
 capacity, action pinning, concurrency, portability, security migrations, and validation. Use
-[RUNNERS.md](RUNNERS.md) for exact runner labels and concurrency topology, [AUTHORING.md](AUTHORING.md)
+[JOBS.md](JOBS.md) for exact runner labels and job inventory, [AUTHORING.md](AUTHORING.md)
 for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest project mapping.
 
 ## Scoped invariants
@@ -15,12 +15,11 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   executable control logic in a narrowly permissioned `ci-*.yml` reusable workflow, local
   composite action, or `.github/ci-*-filters.yml` file.
 - **Runner-label selection rule:** pick labels by what the job requires, not as host-carving
-  selectors. Arch/OS-independent, no Docker, no test services → `[self-hosted]` (default; a
-  superset match that accepts macOS as overflow — pin `Linux` only when needed). Needs
-  Docker/services, or is a Linux Vitest job → add `Docker`, `Tests`. Needs
-  Linux+ARM64 → `ubuntu-24.04-arm` (no self-hosted Linux host is ARM64). See
-  [Workflow Runner Types](reference-runner-types.md) and the [Runner Fleet Capacity live-capacity
-  procedure](reference-runner-fleet-capacity.md) for current inventory and capacity evidence.
+  selectors. Arch/OS-independent jobs use `ubuntu-latest` (or `ubuntu-slim` where a smaller image
+  suffices); jobs needing Linux+ARM64 use `ubuntu-24.04-arm` (see
+  [`runner-policy-classify.mts`](runner-policy-classify.mts) for the closed allowlist of accepted
+  labels); macOS-specific jobs use `macos-latest`. See [Job & runner inventory](JOBS.md) for the
+  exact `runs-on` resolved for every job.
 - When adding, removing, or changing a workflow, keep the relevant grouped inventory reference and
   the canonical [Workflow automation map](reference-workflow-automation-map.md) Mermaid topology
   synchronized. Update [README.md](README.md) and [WORKFLOWS.md](WORKFLOWS.md) navigation when

@@ -42,3 +42,16 @@ build or test jobs that require install-time artifacts.
   with:
     PLAYWRIGHT_MAX_WORKERS: ${{ vars.PLAYWRIGHT_MAX_WORKERS }}
 ```
+
+## Secret and Permission Scoping
+
+- **High-privilege secrets stay scoped to trusted-context jobs.** Deploy credentials and secrets
+  such as `OPENAI_API_KEY`/`STRIPE_SECRET_KEY` are only injected when
+  `detect-changes.outputs.trusted-secret-context == 'true'` (same-repo push/merge). Coverage and
+  Vitest-blob transport carries no `id-token: write` grant anywhere in the pipeline: producers and
+  consumers upload and download GitHub artifacts with `actions: read`/`actions: write` only. See
+  [COVERAGE.md](COVERAGE.md#provenance-and-transport).
+- **`$GITHUB_ENV`/`$GITHUB_PATH` poisoning is inherent to GitHub Actions.** Any step in a job can
+  write to either file and influence later steps in the same job; no stdout guard covers a direct
+  file write. Secret-bearing jobs stay gated by `trusted-secret-context` as above, which bounds the
+  blast radius rather than eliminating the mechanism.

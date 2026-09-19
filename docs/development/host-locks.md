@@ -114,15 +114,13 @@ Use canonical repository entry points so each expensive command has exactly one 
 The web package scripts own the Next and Storybook locks; callers of
 `ci/setup-web-integration.mts` must not add an outer lock.
 
-Measured on the Z890 host, `oxlint --type-aware` peaked at 4.0–4.3 GiB. It is the only retained
-heavy-slot consumer because it uses all available cores. Vitest, Playwright, and Storybook browser
-tests deliberately run without admission locking; workflow sharding and runner capacity own their
-concurrency.
+`oxlint --type-aware` is the only retained heavy-slot consumer because it uses all available cores.
+Vitest, Playwright, and Storybook browser tests deliberately run without admission locking;
+workflow sharding and runner capacity own their concurrency.
 
 `next build` still serializes compilers with `expensive-build`, but Next's page-data pool defaults
-to `os.cpus().length - 1`. On the 12 GiB NucBox that is 11 workers after a ~6.5 GiB compile, which
-OOM-killed `next-build` (Main CI web runs 33588522838 with 11 workers and 33774935536 with the
-previous 2-worker cap). Next's `memoryBasedWorkersCount` still enforces a 4-worker minimum, so
+to `os.cpus().length - 1`, which can produce enough workers to OOM `next-build` on a
+memory-constrained runner. Next's `memoryBasedWorkersCount` still enforces a 4-worker minimum, so
 [`web/next.config.ts`](../../web/next.config.ts) sets `experimental.cpus` from
 [`web/next-build-page-data-worker-count.ts`](../../web/next-build-page-data-worker-count.ts)
 instead. The helper sizes from the smaller of physical RAM and `process.constrainedMemory()`, which
@@ -152,6 +150,5 @@ composite summary/upload margin. Job-level timeouts still cover the complete hea
 ## Related Entry Points
 
 - CI scripts and local wrappers: [`ci/README.md`](../../ci/README.md)
-- Workflow runner rules: [`.github/workflows/RUNNERS.md`](../../.github/workflows/RUNNERS.md)
 - Web workspace rules: [`web/CLAUDE.md`](../../web/CLAUDE.md)
 - Native workspace rules: [vouchington/vouchington-clients](https://github.com/vouchington/vouchington-clients)

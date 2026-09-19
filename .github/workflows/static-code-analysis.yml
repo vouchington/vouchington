@@ -56,7 +56,7 @@ jobs:
         timeout-minutes: 3
       - name: Install CI tools via mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        # cache: false — actions/cache hangs on self-hosted runners (see RUNNERS.md);
+        # cache: false — actions/cache hangs on self-hosted runners;
         # ~/.local/share/mise persists across runs via workspace preservation instead.
         with:
           cache: false
@@ -108,8 +108,8 @@ jobs:
         working-directory: email-templates
         run: pnpm run build
         timeout-minutes: 1
-        # No --cache: self-hosted runners persist their working directory across runs
-        # (see RUNNERS.md), so a stale node_modules/.cache/knip from a prior commit can
+        # No --cache: self-hosted runners persist their working directory across runs,
+        # so a stale node_modules/.cache/knip from a prior commit can
         # report a false "unused file" here. CI skips the cache entirely since an
         # uncached run is well under this step's timeout.
       - run: pnpm exec knip --treat-config-hints-as-errors
@@ -148,7 +148,7 @@ jobs:
         timeout-minutes: 5
       - name: Install CI tools via mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        # cache: false — actions/cache hangs on self-hosted runners (see RUNNERS.md);
+        # cache: false — actions/cache hangs on self-hosted runners;
         # ~/.local/share/mise persists across runs via workspace preservation instead.
         with:
           cache: false
