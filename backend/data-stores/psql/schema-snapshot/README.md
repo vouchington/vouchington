@@ -97,10 +97,10 @@ an allowlist entry that stops matching a detected rename is reported as stale.
 - No cheap local signal: the comparison needs full git history (`git merge-base` against the PR base),
   so the first feedback is the CI PR run, not a local hook.
 - Detection only — it does not remove an orphan already live. Every database in this repo is
-  disposable today (staging uses the
-  [private infrastructure staging database reset runbook](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/reference-human_checklist-phase-10-first-deploy.md#staging-database-reset),
-  which requires organization access, and local development uses `db:clean`), so the value is
-  forward-looking: it stops new orphans, it doesn't clean up existing ones.
+  disposable today — staging uses the private infrastructure staging database reset runbook (the
+  "Staging database reset" step of the first-deploy checklist in the private `vouchington-infra`
+  repository), which requires organization access, and local development uses `db:clean` — so the
+  value is forward-looking: it stops new orphans, it doesn't clean up existing ones.
 
 ## Declared Partition Policy and Physical Catalog Facts
 

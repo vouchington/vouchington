@@ -170,10 +170,10 @@ When a migration edited in place causes staging schema drift (a column was folde
 `CREATE TABLE` but staging's migration ledger already recorded that migration), do **not** add
 config-driven repair generators. Instead, reset the staging schema:
 
-Use the
-[private infrastructure staging database reset runbook](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/reference-human_checklist-phase-10-first-deploy.md#staging-database-reset),
-which requires organization access. This is a manual-only operator procedure, not an automatic
-migration-failure action or a receiver rerun.
+Use the private infrastructure staging database reset runbook (the "Staging database reset" step of
+the first-deploy checklist in the private `vouchington-infra` repository), which requires
+organization access. This is a manual-only operator procedure, not an automatic migration-failure
+action or a receiver rerun.
 
 This reset policy applies only when the migration has never reached production or another
 non-disposable database. Once a fixed migration has been deployed there, restore its historical

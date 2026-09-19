@@ -148,9 +148,9 @@ the mismatch is itself a docs bug.
 
 ## Staging database reset
 
-Filaments does not expose a staging reset workflow. Use the private infrastructure
-[staging database reset runbook](https://github.com/vouchington/vouchington-infra/blob/main/opentofu/reference-human_checklist-phase-10-first-deploy.md#staging-database-reset)
-(private repository; requires organization access).
+Filaments does not expose a staging reset workflow. Use the private infrastructure staging
+database reset runbook (the "Staging database reset" step of the first-deploy checklist in the
+private `vouchington-infra` repository), which requires organization access.
 The manual procedure resets only the PostgreSQL `public` schema; it retains Valkey, queues, object
 storage, analytics warehouse/event data, and infrastructure state. Wait for exact service-count
 restoration and `/infra/ping` `200`/`pong` evidence before QA. Because Valkey session state is
