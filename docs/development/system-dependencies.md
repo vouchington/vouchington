@@ -2,8 +2,8 @@
 
 Host-level package installation and maintenance are owned by
 [vouchington-machines](https://github.com/vouchington/vouchington-machines).
-That host-only repository provisions both developer machines and self-hosted GitHub Actions runner
-hosts. Voucha does not duplicate brew, apt, cargo, Docker, runtime, or runner-service installers.
+That host-only repository provisions developer machines. Voucha does not duplicate brew, apt,
+cargo, Docker, or runtime installers.
 
 ## Product contract
 

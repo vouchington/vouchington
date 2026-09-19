@@ -54,7 +54,7 @@ after a branch switch: they aggregate results that earlier steps already made av
 
 Cache keys that use `hashFiles` must target source files and manifests rather than broad directories, and package source globs must stay scoped to first-party package/source paths so dependency trees are not traversed while keys are evaluated. Web-stack test jobs must clear Next.js runtime output and Wrangler/Miniflare state before tests because stale caches have caused false failures; only explicit performance caches such as `web/.next/cache` may be restored, and those keys must invalidate often. Filaments image workflows build validation-local images. Backend uses one bounded Bake invocation per job for either API plus worker-cpu or all three images, so the selected targets share one cache-busted builder solve without a remote cache. Web alone reads and writes its GHA cache. Any repository-independent remote-cache or performance design is owned by a separate initiative (formerly filed as jonathanong/filaments#10864). Private infrastructure owns production ECR image publication.
 
-Self-hosted type-aware oxlint, expensive builds, and host package installs use the named per-user
+Type-aware oxlint, expensive builds, and host package installs use the named per-user
 locks in [Per-User Host Locks](host-locks.md). Oxlint has the sole one-slot `memory-heavy` wrapper;
 ordinary test runners are unlocked. Oxlint and most build scheduling waits are capped at 60 seconds
 in GitHub Actions and then run unlocked. Host-side Next builds instead wait up to 300 seconds and
@@ -128,10 +128,6 @@ When a draft PR is marked ready for review without changing its head SHA, [`ci.y
 ## Coverage references
 
 - <a id="coverage-provenance-and-transport"></a>[Coverage Provenance and Transport](reference-ci-coverage-provenance-and-transport.md)
-
-The shared cleanup action reclaims common stale generated trees, every preserved `node_modules` directory, `$RUNNER_TEMP/wrangler-logs`, and `$RUNNER_TEMP/voucha-wrangler` with non-interactive `sudo` when available, then restores owner write bits on directories only before cleaning. If `git clean` still finds another locked-down generated path, it repairs the workspace while pruning `.git` and retries once. That recovery prevents prior generated non-writable files from blocking cleanup or forced pnpm relinks on persistent self-hosted runners without making pnpm store hardlinks writable.
-
-Every persistent-workspace cleaner caller checks out with `clean: false`, extracts only the five trusted cleaner prerequisites from the checked-out `HEAD` tree with `git archive`, and then invokes `.github/actions/clean-workspace`. The bootstrap neither deletes nor rebuilds Git’s index, so metadata-only jobs do not rematerialize every tracked file before cleanup. The packaged cleaner clears repository-local sparse-checkout state, resets tracked changes, and verifies the index; it reconstructs the complete index only when reset fails twice or the health check detects corruption or remaining skip-worktree entries, and logs the restored path count and elapsed time when that recovery runs. Permission repair batches `chown` and `chmod` operands and remains targeted to generated trees unless a demonstrated reset or clean failure requires a whole-workspace fallback.
 
 `storybook-static` is keep-classified for its one-day retention because the trusted Cloudflare Pages publisher consumes it only after the source workflow completes.
 
