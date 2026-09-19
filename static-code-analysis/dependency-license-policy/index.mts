@@ -10,7 +10,7 @@ export { evaluatePackageLicenseExpression } from './policy.mts'
 /**
  * Fails when a dependency's license is on the issue #158 deny list (GPL,
  * AGPL, EPL, CDDL, SSPL, BUSL, or a genuinely unlicensed/unknown package).
- * LGPL-3.0-or-later (scoped to `@img/sharp-libvips-*`) and MPL-2.0 are
+ * LGPL-3.0-or-later (scoped to audited `@img/sharp-*` binary package families) and MPL-2.0 are
  * allowlisted — see `policy.mts` for why. See
  * `static-code-analysis/README.md`'s "Dependency License Policy" section
  * for the full rationale and rollout note.

@@ -29,6 +29,38 @@ packages:
   - static-code-analysis
   - ts-shared/*
   - web
+supportedArchitectures:
+  # The dependency-license-policy audits every platform package in pnpm-lock.yaml.
+  # Keep these lists aligned with that graph; the policy rejects an omitted value.
+  os:
+    - current
+    - aix
+    - android
+    - darwin
+    - freebsd
+    - linux
+    - netbsd
+    - openbsd
+    - openharmony
+    - sunos
+    - win32
+  cpu:
+    - current
+    - arm
+    - arm64
+    - ia32
+    - loong64
+    - mips64el
+    - ppc64
+    - riscv64
+    - s390x
+    - wasm32
+    - x64
+    - x86
+  libc:
+    - current
+    - glibc
+    - musl
 allowBuilds:
   '@ast-grep/cli': true
   '@jongleberry/vurst-ai': false

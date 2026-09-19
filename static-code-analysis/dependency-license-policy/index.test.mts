@@ -47,7 +47,7 @@ describe('checkDependencyLicensePolicy', () => {
     expect(result.errors[0]).toContain('::error::')
   })
 
-  it('does not flag LGPL-3.0-or-later outside the sharp-libvips allowlist scope', async () => {
+  it('does not flag LGPL-3.0-or-later outside the audited sharp package allowlist scope', async () => {
     const report: LicenseReport = {
       'LGPL-3.0-or-later': [{ name: 'some-other-lgpl-lib', versions: ['1.0.0'] }],
     }

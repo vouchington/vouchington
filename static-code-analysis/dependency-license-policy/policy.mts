@@ -12,8 +12,9 @@ import {
  * dependency introducing a new, unreviewed LGPL/MPL package — or a
  * different LGPL/MPL version than the two audited exceptions below — fails
  * closed instead of silently passing. The two exceptions already confirmed
- * to carry no obligation (`LGPL-3.0-or-later` scoped to `@img/sharp-libvips-*`,
- * `MPL-2.0` unconditionally) are carved back out via `ALLOWLIST` below.
+ * to carry no obligation (`LGPL-3.0-or-later` scoped to the audited `@img/sharp-*`
+ * binary package families, `MPL-2.0` unconditionally) are carved back out via
+ * `ALLOWLIST` below.
  *
  * Matched by prefix on the SPDX identifier, not substring, so each family
  * needs its own entry rather than relying on a shared substring: `AGPL` and
@@ -70,7 +71,9 @@ interface AllowlistEntry {
 /**
  * Copyleft licenses the audit behind issue #158 found in the real dependency
  * graph, confirmed to carry no obligation (nothing vendored, no build output
- * committed), and allowlisted rather than denied. Keep entries narrow and
+ * committed), and allowlisted rather than denied. The sharp scope includes
+ * libvips bundles plus the Windows and WASM package variants whose manifests
+ * declare the same LGPL-3.0-or-later component. Keep entries narrow and
  * justified — see the Guard Authoring Checklist in
  * `static-code-analysis/README.md`.
  */
@@ -85,12 +88,12 @@ const ALLOWLIST: readonly AllowlistEntry[] = [
   },
   {
     licenseId: 'LGPL-3.0-or-later',
-    packageNamePattern: /^@img\/sharp-libvips-/,
+    packageNamePattern: /^@img\/sharp-(?:libvips-|wasm32$|win32-(?:arm64|ia32|x64)$)/,
     reason:
-      "sharp's prebuilt libvips binaries are dynamically loaded shared libraries, not statically " +
-      'linked or modified — LGPL-3.0 imposes no obligation in that usage. Scoped to this package ' +
-      'family only: an LGPL-3.0-or-later dependency anywhere else in the graph should still be ' +
-      'reviewed, not auto-allowed.',
+      "sharp's audited libvips bundles and Windows/WASM package variants carry LGPL-3.0-or-later " +
+      'as a component license. This repository neither modifies nor vendors their source or commits ' +
+      'a build artifact. The exact package-family scope keeps every other LGPL-3.0-or-later ' +
+      'dependency subject to review.',
   },
 ]
 

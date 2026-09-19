@@ -89,19 +89,29 @@ describe('evaluatePackageLicenseExpression', () => {
     expect(evaluatePackageLicenseExpression('MPL-2.0', 'some-other-package').ok).toBe(true)
   })
 
-  it('allows LGPL-3.0-or-later only for @img/sharp-libvips-* packages', () => {
+  it('allows LGPL-3.0-or-later only for audited @img/sharp binary package families', () => {
     expect(
       evaluatePackageLicenseExpression('LGPL-3.0-or-later', '@img/sharp-libvips-darwin-arm64').ok,
     ).toBe(true)
     expect(
       evaluatePackageLicenseExpression('LGPL-3.0-or-later', '@img/sharp-libvips-linux-x64').ok,
     ).toBe(true)
+    expect(evaluatePackageLicenseExpression('LGPL-3.0-or-later', '@img/sharp-wasm32').ok).toBe(true)
+    expect(evaluatePackageLicenseExpression('LGPL-3.0-or-later', '@img/sharp-win32-x64').ok).toBe(
+      true,
+    )
   })
 
   it('does not extend the LGPL-3.0-or-later allowance to an unrelated package', () => {
     const result = evaluatePackageLicenseExpression('LGPL-3.0-or-later', 'some-other-lgpl-package')
     expect(result.ok).toBe(false)
     expect(result.deniedAtoms).toEqual(['LGPL-3.0-or-later'])
+  })
+
+  it('does not extend the LGPL-3.0-or-later allowance to an unreviewed sharp package', () => {
+    expect(evaluatePackageLicenseExpression('LGPL-3.0-or-later', '@img/sharp-linux-x64').ok).toBe(
+      false,
+    )
   })
 
   it('does not extend the LGPL-3.0-or-later allowance to a different LGPL version', () => {
