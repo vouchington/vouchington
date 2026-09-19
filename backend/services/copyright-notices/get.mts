@@ -1,7 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
-  CopyrightActionIntentRecord,
   CopyrightCorrespondenceRecord,
   CopyrightEvidenceArtifactRecord,
   CopyrightLegalHoldAssessmentRecord,
@@ -15,6 +14,7 @@ import type {
   CopyrightNoticeTargetRecord,
   CopyrightRestrictionRecord,
 } from './types.mts'
+import { selectCopyrightActionIntents } from './get-action-intents.mts'
 
 export async function getCopyrightNoticePrivateAggregate(
   noticeId: string,
@@ -67,7 +67,7 @@ export async function getCopyrightNoticePrivateAggregate(
       noticeId,
       transaction,
     ),
-    selectActionIntents(noticeId, transaction),
+    selectCopyrightActionIntents(noticeId, transaction),
   ])
   await transaction.commit()
   return {
@@ -189,20 +189,6 @@ async function selectHoldResolutions(
     JOIN copyright_notice_legal_hold_assessments h ON h.id = r.copyright_notice_legal_hold_assessment_id
     JOIN copyright_notice_submissions s ON s.id = h.copyright_notice_submission_id
     WHERE s.copyright_notice_id = ${noticeId} ORDER BY r.id
-  `)
-  return rows
-}
-
-async function selectActionIntents(
-  noticeId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-): Promise<CopyrightActionIntentRecord[]> {
-  const { rows } =
-    await query<CopyrightActionIntentRecord>(sql`/* getCopyrightNoticePrivateAggregate:actionIntents */
-    SELECT i.* FROM copyright_notice_action_intents i
-    JOIN copyright_restrictions r ON r.id = i.copyright_restriction_id
-    JOIN copyright_notice_targets t ON t.id = r.copyright_notice_target_id
-    WHERE t.copyright_notice_id = ${noticeId} ORDER BY i.id
   `)
   return rows
 }
