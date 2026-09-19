@@ -7,7 +7,7 @@ import { getWebLocalizationBatch } from '@/lib/api/server/localization'
 import { catalogFromLocalizationBatch } from './catalog-from-batch'
 import { webLocalizationSearchParams } from './localization-query'
 import { webSelectorsForPath } from './localization-selectors'
-import { ssrLocalizationRevisionProps } from './ssr-localization-revision-props'
+import { ssrLocalizationRevisionProps } from './ssr-localization-revision-props.mts'
 
 const REFRESH_RETRY_DELAY_MS = 60_000
 

@@ -1,4 +1,4 @@
-import { SSR_LOCALIZATION_REVISION_ATTRIBUTE } from '../../web/lib/i18n/ssr-localization-revision-props.ts'
+import { SSR_LOCALIZATION_REVISION_ATTRIBUTE } from '../../web/lib/i18n/ssr-localization-revision-props.mts'
 
 export const LOCALIZATION_SSR_REVISION_DIAGNOSTIC = 'LOCALIZATION_SSR_REVISION_DIAGNOSTIC'
 

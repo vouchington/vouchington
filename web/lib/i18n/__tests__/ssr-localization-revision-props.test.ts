@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   SSR_LOCALIZATION_REVISION_ATTRIBUTE,
   ssrLocalizationRevisionProps,
-} from '../ssr-localization-revision-props'
+} from '../ssr-localization-revision-props.mts'
 
 describe('ssrLocalizationRevisionProps', () => {
   it('omits the marker outside development', () => {

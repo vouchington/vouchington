@@ -4,7 +4,7 @@ import {
   loadedServerLocalizationRevision,
   ssrLocalizationRevisionHtmlProps,
 } from '../load-server-messages'
-import { SSR_LOCALIZATION_REVISION_ATTRIBUTE } from '../ssr-localization-revision-props'
+import { SSR_LOCALIZATION_REVISION_ATTRIBUTE } from '../ssr-localization-revision-props.mts'
 import { ROUTE_SELECTORS, WEB_CHROME_SELECTOR } from '../route-selectors.generated.mts'
 
 function exactSelectorsFor(pattern: string): string {
