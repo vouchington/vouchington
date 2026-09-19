@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { encodeFeatureFlagCookie, FF_COOKIE } from './shared'
 import {
+  fetchGlobalServerFeatureFlags,
   getEffectiveServerFeatureFlag,
   getEffectiveServerFeatureFlags,
   getGlobalServerFeatureFlags,
@@ -65,6 +66,39 @@ describe('server feature flag helpers', () => {
     expect(mockGetFeatureFlags).toHaveBeenCalledWith({ headers: { Cookie: '' } })
   })
 
+  it('reports a rejected global flag fetch as a distinct failure, not an empty flag set', async () => {
+    const fetchError = new Error('backend unreachable')
+    mockGetFeatureFlags.mockRejectedValueOnce(fetchError)
+
+    const result = await fetchGlobalServerFeatureFlags()
+
+    // A structurally distinct failure result -- not `{}` -- so this assertion needs no console
+    // spy: the rejection is directly observable on the returned value.
+    expect(result).toEqual({ ok: false, error: fetchError })
+  })
+
+  it('reports a successful global flag fetch as a distinct success result', async () => {
+    mockGetFeatureFlags.mockResolvedValueOnce({ flags: { fediverse: true } })
+
+    const result = await fetchGlobalServerFeatureFlags()
+
+    expect(result).toEqual({ ok: true, flags: { fediverse: true } })
+  })
+
+  it('logs once and still resolves to an empty flag set when the global flag fetch fails', async () => {
+    const fetchError = new Error('backend unreachable')
+    mockGetFeatureFlags.mockRejectedValueOnce(fetchError)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await expect(getGlobalServerFeatureFlags()).resolves.toEqual({})
+
+    expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+      'getGlobalServerFeatureFlags: failed to read global feature flags',
+      fetchError,
+    )
+    consoleError.mockRestore()
+  })
+
   it('merges authenticated flags with cookie overrides and falls back on API errors', async () => {
     const cookie = encodeFeatureFlagCookie({ fediverse: true })
     mockCookies.mockResolvedValue({ get: () => ({ value: cookie }) })
@@ -75,7 +109,9 @@ describe('server feature flag helpers', () => {
       fediverse: true,
     })
 
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     mockGetFeatureFlags.mockRejectedValueOnce(new Error('offline'))
     await expect(getEffectiveServerFeatureFlag('fediverse')).resolves.toBe(true)
+    consoleError.mockRestore()
   })
 })

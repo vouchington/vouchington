@@ -36,10 +36,46 @@ export async function getEffectiveServerFeatureFlags(): Promise<FeatureFlags> {
   return { ...(await getGlobalServerFeatureFlags()), ...overrides }
 }
 
+export interface GlobalFeatureFlagsFetchSuccess {
+  ok: true
+  flags: FeatureFlags
+}
+
+export interface GlobalFeatureFlagsFetchFailure {
+  ok: false
+  error: unknown
+}
+
+export type GlobalFeatureFlagsFetchResult =
+  | GlobalFeatureFlagsFetchSuccess
+  | GlobalFeatureFlagsFetchFailure
+
+/**
+ * Reads the cookie-less (global) flag set and reports success or failure as a discriminated
+ * union instead of coercing a failed fetch into an empty flag set. A rejected fetch — a non-2xx,
+ * a mid-deploy restart, a network blip, a timeout — is structurally distinct from "the backend
+ * returned zero enabled flags", so callers are forced to name which case they are in rather than
+ * silently treating "unreadable" as "off".
+ */
+export async function fetchGlobalServerFeatureFlags(): Promise<GlobalFeatureFlagsFetchResult> {
+  try {
+    const response = await getFeatureFlags({ headers: { Cookie: '' } })
+    return { ok: true, flags: response.flags }
+  } catch (error) {
+    return { ok: false, error }
+  }
+}
+
 export async function getGlobalServerFeatureFlags(): Promise<FeatureFlags> {
-  return getFeatureFlags({ headers: { Cookie: '' } })
-    .then(response => response.flags)
-    .catch(() => ({}))
+  const result = await fetchGlobalServerFeatureFlags()
+  if (!result.ok) {
+    // Pages must keep rendering with flags reading as "off" rather than 500ing, so this is not
+    // rethrown — but a swallowed failure with no trace is exactly the bug this replaces, so it is
+    // logged once, here, at the only place the distinction is discarded.
+    console.error('getGlobalServerFeatureFlags: failed to read global feature flags', result.error)
+    return {}
+  }
+  return result.flags
 }
 
 export async function getEffectiveServerFeatureFlag(name: string): Promise<boolean> {
