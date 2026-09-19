@@ -1,5 +1,6 @@
 import { beforeAll, describe, it, expect } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { setTestApiKeyPermissions } from '@voucha/test-helpers/entities/api-keys'
 import { createApiKey } from './create.mts'
 import { revokeApiKey } from './revoke.mts'
 import { validateApiKey } from './validate.mts'
@@ -16,15 +17,15 @@ describe('validate', () => {
         user.id,
         'rss',
         `Validate Test ${Math.random().toString(36).slice(2, 8)}`,
-        ['rss-feeds:read'],
+        ['rss:read'],
       )
-      const result = await validateApiKey(rawKey, 'rss-feeds:read')
+      const result = await validateApiKey(rawKey, 'rss:read')
       expect(result.valid).toBe(true)
       expect(result.apiKey).toBeDefined()
     })
 
     it('malformed key (no voucha_ prefix) → { valid: false }', async () => {
-      const result = await validateApiKey('not-a-valid-key', 'rss-feeds:read')
+      const result = await validateApiKey('not-a-valid-key', 'rss:read')
       expect(result.valid).toBe(false)
       expect(result.apiKey).toBeUndefined()
     })
@@ -32,7 +33,7 @@ describe('validate', () => {
     it('wrong checksum → { valid: false }', async () => {
       // valid format but bad checksum
       const fakeKey = `voucha_rss_${'a'.repeat(32)}_${'b'.repeat(16)}`
-      const result = await validateApiKey(fakeKey, 'rss-feeds:read')
+      const result = await validateApiKey(fakeKey, 'rss:read')
       expect(result.valid).toBe(false)
     })
 
@@ -42,10 +43,10 @@ describe('validate', () => {
         user.id,
         'rss',
         `Revoke Test ${Math.random().toString(36).slice(2, 8)}`,
-        ['rss-feeds:read'],
+        ['rss:read'],
       )
       await revokeApiKey(user.id, apiKey.id)
-      const result = await validateApiKey(rawKey, 'rss-feeds:read')
+      const result = await validateApiKey(rawKey, 'rss:read')
       expect(result.valid).toBe(false)
     })
 
@@ -55,23 +56,40 @@ describe('validate', () => {
         user.id,
         'rss',
         `Perm Test ${Math.random().toString(36).slice(2, 8)}`,
-        ['rss-feeds:read'],
+        ['rss:read'],
       )
-      const result = await validateApiKey(rawKey, 'admin:write')
+      const result = await validateApiKey(rawKey, 'mcp.admin:write')
       expect(result.valid).toBe(false)
     })
 
     it('different required permission → { valid: false }', async () => {
       const user = await createTestUser()
-      // Create key with rss-feeds:read, try to validate with different permission
+      // Create an RSS key, then require a valid scope from a different resource.
       const { rawKey } = await createApiKey(
         user.id,
         'rss',
         `Empty Perm Test ${Math.random().toString(36).slice(2, 8)}`,
-        ['rss-feeds:read'],
+        ['rss:read'],
       )
-      const result = await validateApiKey(rawKey, 'other:permission')
+      const result = await validateApiKey(rawKey, 'mcp.user:read')
       expect(result.valid).toBe(false)
+    })
+
+    it.each([
+      ['unknown', ['rss:read', 'unknown:read']],
+      ['duplicate', ['rss:read', 'rss:read']],
+    ])('fails closed on a %s persisted scope set', async (_name, permissions) => {
+      const user = await createTestUser()
+      const { rawKey, apiKey } = await createApiKey(user.id, 'rss', 'Malformed stored scopes', [
+        'rss:read',
+      ])
+      try {
+        await setTestApiKeyPermissions(apiKey.id, permissions)
+
+        await expect(validateApiKey(rawKey, 'rss:read')).resolves.toEqual({ valid: false })
+      } finally {
+        await setTestApiKeyPermissions(apiKey.id, ['rss:read'])
+      }
     })
   })
 })

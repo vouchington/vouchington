@@ -5,12 +5,13 @@ import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
+import type { ApiScope } from '@modules/scopes'
 
 type McpRequestContext = {
   user: BasicUser & {
     membership_plan: 'plus' | 'pro' | null
   }
-  permissions: readonly string[]
+  permissions: readonly ApiScope[]
   request: Request
   parsedBody: unknown
   config: McpServerConfig

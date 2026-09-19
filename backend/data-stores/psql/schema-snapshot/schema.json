@@ -5108,7 +5108,7 @@
         },
         "permissions": {
           "collation": null,
-          "comment": "Array of permission scopes granted to this key.",
+          "comment": "Canonical scope set granted to this key; validated against the application scope catalogue.",
           "defaultExpression": "'{}'::text[]",
           "generated": null,
           "generatedExpression": null,

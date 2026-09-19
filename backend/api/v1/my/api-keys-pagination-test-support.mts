@@ -5,8 +5,8 @@ import { createApiKey } from '@services/api-keys'
 import type { PrivateUser } from '@services/users/types'
 
 export async function expectApiKeyPagination(user: PrivateUser): Promise<void> {
-  await createApiKey(user.id, 'rss', 'Page one', ['rss-feeds:read'])
-  await createApiKey(user.id, 'rss', 'Page two', ['rss-feeds:read'])
+  await createApiKey(user.id, 'rss', 'Page one', ['rss:read'])
+  await createApiKey(user.id, 'rss', 'Page two', ['rss:read'])
   const request = createRequest()
   await request.authenticateAs(user)
   const first = await request.get('/api/v1/my/api-keys?limit=1').expect(200)

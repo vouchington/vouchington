@@ -9,6 +9,7 @@ import {
 import { isToolAllowedForUser } from './authorization.mts'
 import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
+import { hasScope, type ApiScope } from '@modules/scopes'
 
 type UserForCall = BasicUser & {
   membership_plan: 'plus' | 'pro' | null
@@ -152,7 +153,7 @@ export async function callMcpTool(
   toolName: string,
   args: unknown,
   user: UserForCall,
-  permissions: readonly string[],
+  permissions: readonly ApiScope[],
   config: McpServerConfig,
 ): Promise<CallToolResult> {
   const mcpSurface = listToolsForSurface(config.surface, ALL_TOOLS)
@@ -171,7 +172,7 @@ export async function callMcpTool(
   }
 
   const isReadOnly = tool.meta?.annotations?.readOnlyHint === true
-  if (!isReadOnly && !permissions.includes(config.writePermission)) {
+  if (!isReadOnly && !hasScope(permissions, config.writePermission)) {
     throw new McpError(
       ErrorCode.InvalidRequest,
       `Tool requires ${config.writePermission} permission: ${toolName}`,

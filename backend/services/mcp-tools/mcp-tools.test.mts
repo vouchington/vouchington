@@ -21,25 +21,25 @@ describe('listMcpToolsForUser', () => {
   })
 
   it('returns only read-only tools when permissions has no write', () => {
-    const tools = listMcpToolsForUser(user, ['mcp-tools:read'], USER_MCP_SERVER_CONFIG)
+    const tools = listMcpToolsForUser(user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG)
     for (const tool of tools) {
       expect(tool.annotations?.readOnlyHint).toBe(true)
     }
     expect(tools.length).toBeGreaterThan(0)
   })
 
-  it('includes write tools when permissions includes mcp-tools:write', () => {
-    const readOnly = listMcpToolsForUser(user, ['mcp-tools:read'], USER_MCP_SERVER_CONFIG)
+  it('includes write tools when permissions includes mcp.user:write', () => {
+    const readOnly = listMcpToolsForUser(user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG)
     const withWrite = listMcpToolsForUser(
       user,
-      ['mcp-tools:read', 'mcp-tools:write'],
+      ['mcp.user:read', 'mcp.user:write'],
       USER_MCP_SERVER_CONFIG,
     )
     expect(withWrite.length).toBeGreaterThanOrEqual(readOnly.length)
   })
 
   it('returns array of McpToolShape with name and inputSchema', () => {
-    const tools = listMcpToolsForUser(user, ['mcp-tools:read'], USER_MCP_SERVER_CONFIG)
+    const tools = listMcpToolsForUser(user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG)
     for (const tool of tools) {
       expect(typeof tool.name).toBe('string')
       expect(typeof tool.inputSchema).toBe('object')
@@ -49,7 +49,7 @@ describe('listMcpToolsForUser', () => {
   it('excludes staff-only tools for regular users', () => {
     const tools = listMcpToolsForUser(
       user,
-      ['mcp-tools:read', 'mcp-tools:write'],
+      ['mcp.user:read', 'mcp.user:write'],
       USER_MCP_SERVER_CONFIG,
     )
     const names = tools.map(t => t.name)
@@ -59,12 +59,12 @@ describe('listMcpToolsForUser', () => {
 
   it('lists admin MCP tools for administrators on the admin surface', async () => {
     const admin = { ...(await createTestUser({ administrator: true })), membership_plan: null }
-    const tools = listMcpToolsForUser(admin, ['mcp-admin-tools:read'], ADMIN_MCP_SERVER_CONFIG)
+    const tools = listMcpToolsForUser(admin, ['mcp.admin:read'], ADMIN_MCP_SERVER_CONFIG)
     expect(tools.map(t => t.name)).toContain('search_support_messages')
   })
 
   it('does not list admin MCP tools for regular users on the admin surface', () => {
-    const tools = listMcpToolsForUser(user, ['mcp-admin-tools:read'], ADMIN_MCP_SERVER_CONFIG)
+    const tools = listMcpToolsForUser(user, ['mcp.admin:read'], ADMIN_MCP_SERVER_CONFIG)
     expect(tools.map(t => t.name)).not.toContain('search_support_messages')
   })
 })
@@ -134,7 +134,7 @@ describe('callMcpTool', () => {
 
   it('throws McpError when tool is not found', async () => {
     await expect(
-      callMcpTool('nonexistent_tool', {}, user, ['mcp-tools:read'], USER_MCP_SERVER_CONFIG),
+      callMcpTool('nonexistent_tool', {}, user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
     ).rejects.toMatchObject({
       message: expect.stringContaining('Tool not found'),
     })
@@ -143,13 +143,7 @@ describe('callMcpTool', () => {
   it('throws McpError when user does not have the required role for the tool', async () => {
     // search_support_messages is admin-MCP eligible but restricted to administrator/customer_support
     await expect(
-      callMcpTool(
-        'search_support_messages',
-        {},
-        user,
-        ['mcp-admin-tools:read'],
-        ADMIN_MCP_SERVER_CONFIG,
-      ),
+      callMcpTool('search_support_messages', {}, user, ['mcp.admin:read'], ADMIN_MCP_SERVER_CONFIG),
     ).rejects.toMatchObject({
       message: expect.stringContaining('Tool not allowed for your role'),
     })
@@ -166,9 +160,9 @@ describe('callMcpTool', () => {
     if (!writeTool) return // skip if no write tools exist
 
     await expect(
-      callMcpTool(writeTool.schema.name, {}, user, ['mcp-tools:read'], USER_MCP_SERVER_CONFIG),
+      callMcpTool(writeTool.schema.name, {}, user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
     ).rejects.toMatchObject({
-      message: expect.stringContaining('mcp-tools:write'),
+      message: expect.stringContaining('mcp.user:write'),
     })
   })
 
@@ -176,7 +170,7 @@ describe('callMcpTool', () => {
     // Curried tools are not exposed via MCP surface so they won't appear in mcp list
     // If we call with a non-existent name we get MethodNotFound
     await expect(
-      callMcpTool('__bad_tool__', {}, user, ['mcp-tools:read'], USER_MCP_SERVER_CONFIG),
+      callMcpTool('__bad_tool__', {}, user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
     ).rejects.toMatchObject({
       message: expect.stringContaining('Tool not found'),
     })
@@ -188,7 +182,7 @@ describe('callMcpTool', () => {
       'search_topics_text',
       { query: 'test' },
       user,
-      ['mcp-tools:read'],
+      ['mcp.user:read'],
       USER_MCP_SERVER_CONFIG,
     )
     expect(result.content).toBeDefined()
@@ -216,7 +210,7 @@ describe('handleMcpHttpRequest', () => {
 
     const response = await handleMcpHttpRequest({
       user,
-      permissions: ['mcp-tools:read'],
+      permissions: ['mcp.user:read'],
       request,
       parsedBody: body,
       config: USER_MCP_SERVER_CONFIG,
@@ -245,7 +239,7 @@ describe('handleMcpHttpRequest', () => {
 
     const response = await handleMcpHttpRequest({
       user,
-      permissions: ['mcp-tools:read'],
+      permissions: ['mcp.user:read'],
       request,
       parsedBody: body,
       config: USER_MCP_SERVER_CONFIG,

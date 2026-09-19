@@ -7,11 +7,16 @@ import { checkApiKeyBloomFilter } from './bloom-filter.mts'
 import { getApiKeyByHash } from './get.mts'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import type { ApiKey } from './types.mts'
+import { hasScope, type ApiScope } from '@modules/scopes'
+import { validateApiKeyScopeSet } from './permissions.mts'
 
 export async function validateApiKey(
   rawKey: string,
-  requiredPermission: string,
-): Promise<{ valid: boolean; apiKey?: ApiKey }> {
+  requiredPermission: ApiScope,
+): Promise<{
+  valid: boolean
+  apiKey?: Omit<ApiKey, 'permissions'> & { permissions: ApiScope[] }
+}> {
   // Step 1: structural parse + HMAC checksum verify — no I/O
   if (!validateApiKeyChecksum(rawKey)) return { valid: false }
 
@@ -29,8 +34,11 @@ export async function validateApiKey(
 
   if (!apiKey) return { valid: false }
 
-  // Step 4: Permission check
-  if (!apiKey.permissions.includes(requiredPermission)) return { valid: false }
+  // Step 4: fail closed on malformed persisted scope sets before checking membership
+  const persistedScopes = validateApiKeyScopeSet(apiKey.type, apiKey.permissions)
+  if (!persistedScopes.valid || !hasScope(persistedScopes.permissions, requiredPermission)) {
+    return { valid: false }
+  }
 
   // Step 5: Fire-and-forget update last_used_at
   write(sql`/* validateApiKey */
@@ -42,5 +50,8 @@ export async function validateApiKey(
     onError(err instanceof Error ? err : new Error(String(err)))
   })
 
-  return { valid: true, apiKey }
+  return {
+    valid: true,
+    apiKey: { ...apiKey, permissions: persistedScopes.permissions },
+  }
 }

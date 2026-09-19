@@ -15,6 +15,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@modules/on-error": "workspace:^",
+    "@modules/scopes": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/tools": "workspace:^"
   },
