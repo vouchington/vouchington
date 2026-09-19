@@ -72,7 +72,7 @@ jobs:
         timeout-minutes: 2
       - name: Repo Node static checks
         if: ${{ inputs.docs_only != true }}
-        run: node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails
+        run: node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
         timeout-minutes: 5
       - name: Docs-only repo file policy
         if: ${{ inputs.docs_only == true }}

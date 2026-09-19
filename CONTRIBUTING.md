@@ -56,6 +56,16 @@ FSL-1.1-MIT. You also confirm that the contribution is yours to license. This
 grant runs only to the project; everyone else receives the contribution under
 FSL-1.1-MIT like the rest of the source.
 
+### Why workspace `package.json` files say `"license": "UNLICENSED"`
+
+Every workspace manifest in this monorepo is `private: true` and is never
+published to a registry. npm's own docs recommend the `UNLICENSED` `license`
+value for exactly that case. That field is npm-registry metadata about
+publishability, not a statement of your rights to the source — the actual
+license grant for this repository is [LICENSE](LICENSE), described above.
+`docs/checklists/package-json.md` covers the field-level rule that enforces
+this convention.
+
 ## Before your commit lands
 
 Commits and PRs must pass the lint and test gates described in:

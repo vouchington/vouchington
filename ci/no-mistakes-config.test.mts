@@ -257,7 +257,7 @@ describe('no-mistakes config', () => {
     expect(noMistakes).toMatch(/rule: github-actions-pinned-hash\n {4}scope: repository/)
 
     expect(workflow).toContain(
-      'node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails',
+      'node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy',
     )
 
     expect(noMistakes).toContain('name: webpack.config')
