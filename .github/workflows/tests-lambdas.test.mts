@@ -5,6 +5,7 @@ import { parse as load } from 'yaml'
 
 const workflow = readFileSync('.github/workflows/tests-lambdas.yml', 'utf8')
 const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+const mainWorkflow = readFileSync('.github/workflows/main-lambdas.yml', 'utf8')
 
 type Step = { name?: string; run?: string; uses?: string; with?: Record<string, unknown> }
 type Job = {
