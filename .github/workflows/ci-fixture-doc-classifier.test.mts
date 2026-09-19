@@ -55,6 +55,7 @@ function fullSuiteTriggerPaths(): string[] {
 }
 
 const fixtureDocumentationPaths = [
+  '.github/workflows/JOBS.md',
   '.github/workflows/README.md',
   '.github/workflows/VITEST.md',
   '.github/workflows/CLAUDE.md',
