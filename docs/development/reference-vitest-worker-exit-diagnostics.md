@@ -133,7 +133,7 @@ fork exit code/signal, and `pool: 'threads'` is still not a drop-in for backend 
 
 This is the sixth instrumentation pass on this signature (#6807 → #7016 → #7973 → #8259 → #8072 →
 #8940). #7016 (formerly filed as jonathanong/filaments#7016) is an uncounted sibling of
-#6807 — same fingerprint, with PR [#7017](https://github.com/jonathanong/filaments/pull/7017) broadening the transient-retry matcher — and belongs in this
+#6807 — same fingerprint, with jonathanong/filaments PR #7017 broadening the transient-retry matcher — and belongs in this
 chain even though earlier revisions of this section omitted it.
 #9088 (formerly filed as jonathanong/filaments#9088) is deliberately **not** part of this
 chain: it looked like the same post-pass worker exit but its actual cause was a distinct defect from

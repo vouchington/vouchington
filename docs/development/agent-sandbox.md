@@ -9,7 +9,7 @@ stays in `workspace-write`; prefixes in `.codex/rules/default.rules` are
 pre-approved but still sandboxed, and every other command goes through on-request auto-review.
 `git rebase`, `git stash`, `git cherry-pick`, `gh run`, `gh api`, and `gh workflow` are not
 Codex-pre-approved: they skip Claude `permissions.allow` after
-[#9574](https://github.com/jonathanong/filaments/pull/9574) and skip Codex `prefix_rule` after a
+jonathanong/filaments PR #9574 and skip Codex `prefix_rule` after a
 later change (formerly filed as jonathanong/filaments#9578), so Codex `auto_review` sees the
 argv. The checked-in policy is what a reactivated CI Codex session would load; harness dispatch
 is currently fail-closed and does not execute these prefixes. See
@@ -41,7 +41,7 @@ Narrowing `excludedCommands` only affects layer 2. It does not add or remove any
   **but still OS-sandboxed** (`workspace-write` stays in effect). That is the review-skip analogue
   of Claude `permissions.allow`, not the OS-sandbox analogue of `excludedCommands`. Full bypass
   requires the separate `--dangerously-bypass-approvals-and-sandbox` flag, which CI Codex no longer
-  uses as of [#7871](https://github.com/jonathanong/filaments/pull/7871).
+  uses as of jonathanong/filaments PR #7871.
 
 A Claude `excludedCommands` entry and a Codex `prefix_rule` are **not equivalent**. The former
 removes OS containment; the latter only skips a confirmation for a narrow prefix while

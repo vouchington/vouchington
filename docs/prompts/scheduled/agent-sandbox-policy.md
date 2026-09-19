@@ -43,7 +43,7 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
   (`git rebase` / `stash` / `cherry-pick` and `gh run` / `api` / `workflow`) — do not re-propose those presence or absence
   assertions. Do **not** add those six families back to Claude `permissions.allow` or Codex
   `prefix_rule`; absence on both review-skip lists is the intended parity after
-  [#9574](https://github.com/jonathanong/filaments/pull/9574) and a related change (formerly
+  jonathanong/filaments PR #9574 and a related change (formerly
   filed as jonathanong/filaments#9578). Codex still having two-token
   `["gh","pr"]` while Claude allows only `comment` / `ready` / `edit` / `create --draft` is an
   intentional leftover, not a scheduled-prompt target — do not "fix" it by widening Claude
