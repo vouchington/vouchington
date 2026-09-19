@@ -50,10 +50,10 @@ Traffic flows: Cloudflare → ALB → ECS Fargate services. Each environment has
 
 ## ECS Services
 
-Filaments validates and dispatches source revisions for the `api`, `web`, `worker-cpu`, and optional
+Vouchington validates and dispatches source revisions for the `api`, `web`, `worker-cpu`, and optional
 `worker-io` artifacts. The private `vouchington-infra` repository builds and publishes those
 artifacts and is the source of truth for live ECS service counts, task sizing, task definitions,
-autoscaling, and worker queue placement. The Filaments worker queue policy classifies queue
+autoscaling, and worker queue placement. The Vouchington worker queue policy classifies queue
 capabilities without selecting a deployed topology. See
 [Worker Performance](../../development/worker-performance.md).
 

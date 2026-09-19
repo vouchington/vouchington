@@ -1,6 +1,6 @@
 # First-Party Dependencies
 
-These packages are authored and maintained by Jonathan Ong. When you encounter friction, gaps, or bugs with them, give feedback: capture it in session retrospectives (`/retrospective`) or use the `github-issue-agent` agent instead of silently working around it locally. File directly in an authorized owning repository; otherwise file a Filaments tracking issue labeled `dependencies` with a copy-paste-ready external report.
+These packages are authored and maintained by Jonathan Ong. When you encounter friction, gaps, or bugs with them, give feedback: capture it in session retrospectives (`/retrospective`) or use the `github-issue-agent` agent instead of silently working around it locally. File directly in an authorized owning repository; otherwise file a Vouchington tracking issue labeled `dependencies` with a copy-paste-ready external report.
 
 The authoritative registry is `pnpm-release-age-policy.permanentPackages` in [`.no-mistakes.yml`](../../.no-mistakes.yml). Registry membership requires an audited default-branch npm trusted-publishing (OIDC) workflow. Keep both in sync: add entries to that configuration and this table together when a new first-party package is added.
 
@@ -47,7 +47,7 @@ confirmed root cause per run without changing dependencies or code.
 | `@vouchington/wikimedia`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [vouchington/vouchington-platform](https://github.com/vouchington/vouchington-platform)         |
 | `@vouchington/worker-runtime`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [vouchington/vouchington-platform](https://github.com/vouchington/vouchington-platform)         |
 
-Filaments pins `@vouchington/utils` exactly at `0.5.1` in its established direct consumers:
+Vouchington pins `@vouchington/utils` exactly at `0.5.1` in its established direct consumers:
 `@modules/http-signatures`, `@modules/stripe`, `@modules/token-secrets`, `@modules/utils`, `@services/oauth-github`,
 `@ts-shared/deploy-environment`, `@ts-shared/env-contract`, `@ts-shared/feature-flags`,
 `@ts-shared/languages`, `@ts-shared/money`, `@ts-shared/request-client-info`,
@@ -66,28 +66,28 @@ helpers (`node:zlib`, `node:net`, `validator` plus `ssrf-guard`) do not. `@modul
 delegates key parsing and AES-GCM to `@vouchington/utils/token-secrets` and must not remap kids or
 accept noncanonical ciphertext.
 
-Filaments pins `@vouchington/localization` and `@vouchington/localization-compiler` exactly in their
+Vouchington pins `@vouchington/localization` and `@vouchington/localization-compiler` exactly in their
 direct consumer manifests. The runtime owns locale aliases, selector validation, and wire
-serialization; the compiler owns SQLite emission and the shared resolver. Filaments retains catalog
+serialization; the compiler owns SQLite emission and the shared resolver. Vouchington retains catalog
 source, consumer membership, API bounds, Docker
 artifact coupling, and native/email product usage.
 
-Filaments pins `@vouchington/uuid-v7` exactly at `0.0.0` in `@modules/utils`. The platform package
+Vouchington pins `@vouchington/uuid-v7` exactly at `0.0.0` in `@modules/utils`. The platform package
 owns UUIDv7 minting, timestamp, bounds, and fixed random-suffix conversion; the local facade retains
 Voucha's UUID syntax and HTTP 422 validation boundary.
 
-Filaments pins `@vouchington/html-utils` exactly at `0.1.1` in `@ts-shared/utils`. The package owns
+Vouchington pins `@vouchington/html-utils` exactly at `0.1.1` in `@ts-shared/utils`. The package owns
 HTML entity decode/escape, lexical tag checks, and inline-script JSON escaping.
 
-Filaments pins `@vouchington/media` and `@vouchington/image-resize` exactly at `0.2.0`. The public
+Vouchington pins `@vouchington/media` and `@vouchington/image-resize` exactly at `0.2.0`. The public
 packages own media validation, streamed hashing and spooling, S3 primitives, format negotiation,
-and Sharp transformation. Filaments retains upload orchestration, PostgreSQL transactions and
+and Sharp transformation. Vouchington retains upload orchestration, PostgreSQL transactions and
 states, buckets and signing policy, queue/retry behavior, cache keys and headers, HTTP errors, full
 metadata shape, and moderation policy.
 
-Filaments pins `@vouchington/memberships` exactly at `0.2.0` in its direct consumers:
+Vouchington pins `@vouchington/memberships` exactly at `0.2.0` in its direct consumers:
 `@services/memberships` and `@services/stripe`. The package owns benefit-catalog validation,
-SKU grouping, terminal-status detection, and membership-change classification utilities; Filaments retains
+SKU grouping, terminal-status detection, and membership-change classification utilities; Vouchington retains
 its product catalog data, SQL lifecycle projection, Stripe calls, refunds, portal, authorization, and
 side effects.
 

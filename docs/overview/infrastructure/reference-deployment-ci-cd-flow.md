@@ -6,7 +6,7 @@
 
 ```mermaid
 flowchart TD
-    Push["push to main"] --> Validate["path-scoped Filaments validation"]
+    Push["push to main"] --> Validate["path-scoped Vouchington validation"]
     Validate --> Publish["publish product-owned runtime artifacts"]
     Publish --> Dispatch["trusted completed-run route-specific dispatch"]
     Dispatch --> Infra["vouchington-infra receiver"]
@@ -34,7 +34,7 @@ Cloudflare Worker changes is the exception: `web-deploy-intent` is skipped and n
 ### Ownership boundary
 
 After one of the allowed source workflows completes successfully from the trusted default branch,
-Filaments sends one route-specific event containing only source repository, revision, workflow, run
+Vouchington sends one route-specific event containing only source repository, revision, workflow, run
 ID, and attempt. It contains no
 resource names, ARNs, buckets, registry endpoints, desired counts, queue placement, scaling
 settings, or other infrastructure topology.
@@ -46,7 +46,7 @@ and explicitly authorized saved-plan apply remain independent infrastructure wor
 source identity, verifies product-published artifacts for migrated routes, and owns durable
 materialization, migrations, OpenTofu, provider mutations, resource mappings, desired counts,
 autoscaling, worker placement, promotion, rollback, and serialization. Routes not yet migrated still
-use the legacy infrastructure-side build. The handoff is asynchronous: Filaments does not poll or
+use the legacy infrastructure-side build. The handoff is asynchronous: Vouchington does not poll or
 wait for the receiver.
 
 For Storybook, the successful trusted-main workflow uploads one protected
@@ -56,10 +56,10 @@ checking out or rebuilding product source. PR and dependency-bot Storybook runs 
 
 ### Operations and failure handling
 
-- A successful Filaments run proves validation and dispatch only. Confirm the matching private
+- A successful Vouchington run proves validation and dispatch only. Confirm the matching private
   receiver run by source repository, workflow, run ID, attempt, and revision.
 - A receiver failure is retried from the private repository after the failure is understood.
-  Filaments does not mutate provider state to recover it.
+  Vouchington does not mutate provider state to recover it.
 - Production is not live. Its promotion and rollback path must be implemented in the private
   repository before production is enabled.
 - The global CI apply workflow and its trust remain disabled. Operator-controlled global applies

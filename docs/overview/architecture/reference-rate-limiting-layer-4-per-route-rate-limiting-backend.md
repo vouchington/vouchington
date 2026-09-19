@@ -92,5 +92,5 @@ revoke the current session even if the browser or IP has already exhausted mutat
 **Files:** `backend/services/route-rate-limits/`, `backend/api/context/rate-limit.mts`
 
 **CF Worker bindings**: staging declares the shared GET/HEAD, mutating, and nested Server Action
-bindings in the private Worker deployment manifest; Filaments is not their source of
+bindings in the private Worker deployment manifest; Vouchington is not their source of
 truth.

@@ -4,7 +4,7 @@
 need shared static-analysis, local setup, or deployment policy checks.
 
 The package lives at [`ts-shared/env-contract/`](../../../ts-shared/env-contract/) and has no
-external npm dependencies. It is safe for Filaments tooling to import without pulling backend, web,
+external npm dependencies. It is safe for Vouchington tooling to import without pulling backend, web,
 Lambda, or Cloudflare Worker runtime packages into static analysis.
 
 ## Contract Shape
@@ -33,7 +33,7 @@ Main helpers:
 - [`static-code-analysis/config-inventory/`](../../../static-code-analysis/config-inventory/) loads
   typed metadata before scanning tracked files, then merges that metadata with observed usage from
   code, docs, workflows, Dockerfiles, and package scripts.
-- Filaments uses the contract for local setup output and web build-argument validation. When a
+- Vouchington uses the contract for local setup output and web build-argument validation. When a
   change affects deployment configuration, hand the affected names, sensitivity, and surfaces to
   the separate `vouchington-infra` repository; that handoff is manual, not an import or automated
   cross-repository validation.
@@ -59,7 +59,7 @@ surface:
 2. Update runtime code, docs, and tests. For a deployment surface, send the changed names,
    sensitivity, and target surfaces to the private infrastructure owner as a manual handoff.
 3. Run `./dev/config-inventory` to check observed usage and metadata output.
-4. Run the focused Filaments tests for the touched surfaces:
+4. Run the focused Vouchington tests for the touched surfaces:
    `pnpm exec vitest run --project ts-shared ts-shared/env-contract/index.test.mts`,
    and `pnpm exec vitest run --project static-analysis-tools static-code-analysis/config-inventory/**/*.test.mts`.
    Run the private infrastructure repository's own validation separately when that manual handoff

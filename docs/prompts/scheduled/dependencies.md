@@ -1,4 +1,4 @@
-Review Filaments pnpm dependency maintenance. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review Vouchington pnpm dependency maintenance. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
 
 Use [`docs/development/dependency-updates.md`](../../development/dependency-updates.md) as the
 source of truth for ownership, frozen-install commands, lockfiles, cache isolation, and audit
@@ -35,7 +35,7 @@ evidence. Do not duplicate or weaken that policy here.
      Select a safe consolidation or removal only when import, runtime, and package-boundary evidence
      establishes that the replacement preserves the caller's contract.
 
-3. This rotation covers only the Filaments pnpm workspace. Native dependency maintenance belongs to
+3. This rotation covers only the Vouchington pnpm workspace. Native dependency maintenance belongs to
    [`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients) and is
    outside this prompt's scope.
 

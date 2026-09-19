@@ -32,7 +32,7 @@ Dependabot branches while they target a non-default branch so the shared action 
 `disablePullRequestAutoMerge`. Unsigned or mixed HEAD on an enable event is a successful
 human-merge no-op: the job does not fail, and auto-merge is not enabled. Already-armed PRs are
 also a no-op. Enablement and cleanup share one per-PR concurrency group. Native-client lock repair
-is owned by [vouchington-clients](https://github.com/vouchington/vouchington-clients); Filaments
+is owned by [vouchington-clients](https://github.com/vouchington/vouchington-clients); Vouchington
 passes its validated base and head SHAs directly to the shared action. Metadata and PR reads use the job-scoped `github.token`;
 only eligible `enablePullRequestAutoMerge` and stale-state `disablePullRequestAutoMerge`
 mutations use the separate `DEPENDABOT_AUTOMERGE_TOKEN` Actions secret.

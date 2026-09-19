@@ -23,8 +23,8 @@ authorize root deletion or locking.
 
 ## Denied external targets
 
-Never write to a denied external target. Create or reuse a Filaments tracking issue after applying
-the same live gate to Filaments, unless the human caller opts out. Include a copy-ready external
+Never write to a denied external target. Create or reuse a Vouchington tracking issue after applying
+the same live gate to Vouchington, unless the human caller opts out. Include a copy-ready external
 report, but redact private repository identity, paths, links, code, and findings before crossing to a
 less-restricted destination; require explicit destination approval when useful redaction is
 impossible.
@@ -35,4 +35,4 @@ impossible.
 - A collaborator permission change takes effect at the next mutation preflight.
 - Existing labels and milestones remain usable without new-taxonomy approval.
 - New labels require explicit approval; missing required metadata still blocks issue creation.
-- Filaments keeps only its taxonomy, body, path-validation, and tracking-issue conventions locally.
+- Vouchington keeps only its taxonomy, body, path-validation, and tracking-issue conventions locally.

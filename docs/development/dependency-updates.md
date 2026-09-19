@@ -2,7 +2,7 @@
 
 Two bots keep this repo's dependencies fresh:
 
-- **Dependabot** — owns configured Filaments package managers (npm, Docker, GitHub Actions). Config: [`.github/dependabot.yml`](../../.github/dependabot.yml).
+- **Dependabot** — owns configured Vouchington package managers (npm, Docker, GitHub Actions). Config: [`.github/dependabot.yml`](../../.github/dependabot.yml).
 - **Renovate** (Mend-hosted GitHub App) — owns the residual gaps Dependabot has no native manager for: the pnpm toolchain pin in the root `package.json`, the Node version in `.nvmrc`, plus version literals embedded in workflow YAML and shell scripts via regex `customManagers`. Config: [`renovate.json`](../../renovate.json).
 
 ## Release policy references

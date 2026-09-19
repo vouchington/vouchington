@@ -6,7 +6,7 @@ These are the predictable failure modes when wiring a new job that needs real cl
 
 Before renaming a repo variable, secret, workflow input, or package-boundary token, run
 `./dev/audit-rename OLD_NAME NEW_NAME` and review the grouped old-name and new-name matches across
-Filaments app code, dev scripts, `.env.example`, and CI/deploy workflows. Search the separate
+Vouchington app code, dev scripts, `.env.example`, and CI/deploy workflows. Search the separate
 `vouchington-infra` checkout independently when the rename crosses its private deployment contract.
 
 ### 1. Unique concurrency group

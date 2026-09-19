@@ -14,14 +14,14 @@ root are valid for a successful producer with no changed lines in its report.
 [`ci/coverage-suites.mts`](../../ci/coverage-suites.mts) retains static collector descriptors and
 maps dynamic backend/web suite names to self-described partitions. It does not enumerate expected
 shards for fan-in. [`ci/prepare-coverage-artifacts.mts`](../../ci/prepare-coverage-artifacts.mts)
-passes the two transport roots and Filaments descriptor resolver to
+passes the two transport roots and Vouchington descriptor resolver to
 `preparePatchCoverageArtifacts`; `coverage-check` selects the newest attempt per suite, deduplicates
 identical transport copies, rejects conflicts and unknown suites, and proves every producer group
-contains exactly indices `1..total`. Filaments also passes the groups selected by the current
+contains exactly indices `1..total`. Vouchington also passes the groups selected by the current
 successful jobs. A required group may reuse a complete earlier attempt; an unselected group is
 pruned only when every selected contribution predates the current attempt, while missing required
 groups and unselected current-attempt contributions fail closed. Omitting that selection preserves
-the strict behavior that validates every selected group. Filaments supplies only its
+the strict behavior that validates every selected group. Vouchington supplies only its
 orchestration-specific descriptors.
 
 Coverage and Vitest-blob payloads travel over GitHub artifacts only; there is no S3 transport, no

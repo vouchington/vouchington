@@ -34,7 +34,7 @@ automatic retry state or the exact provider/account self-service action availabl
 - Provider-neutral cancellation, portal, or refund APIs where provider behavior differs.
 - A manual support or conflict-resolution workflow.
 - Backfills, dual writes, compatibility columns, deprecated routes, or a later legacy cleanup phase.
-- Native client implementation in Filaments. Swift and .NET consume the same fixtures and contract
+- Native client implementation in Vouchington. Swift and .NET consume the same fixtures and contract
   from their separate repository.
 - Provider-native offers at v1 launch. The mapping model remains capable of representing them later.
 

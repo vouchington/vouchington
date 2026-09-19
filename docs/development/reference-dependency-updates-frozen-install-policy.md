@@ -3,7 +3,7 @@
 [Back to Dependency Updates](dependency-updates.md#frozen-install-policy)
 
 The scheduled [dependency-maintenance prompt](../prompts/scheduled/dependencies.md) audits the
-Filaments package ecosystem against this policy. A dependency change is complete only when its authoritative
+Vouchington package ecosystem against this policy. A dependency change is complete only when its authoritative
 manifest or toolchain pin and every derived lock agree, a frozen resolution succeeds, and the PR
 records the candidate source and command output used as evidence.
 
@@ -12,7 +12,7 @@ records the candidate source and command output used as evidence.
 | pnpm      | Workspace `package.json` manifests, root `package.json` `packageManager`, `pnpm-workspace.yaml`, and root `pnpm-lock.yaml` | Dependabot for registry dependencies and the lockfile; Renovate for the pnpm toolchain pin; manual for reviewed temporary release-age exemptions | `pnpm install --frozen-lockfile` |
 
 SwiftPM and NuGet dependency policy is owned by
-[`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients); Filaments
+[`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients); Vouchington
 does not regenerate or validate native dependency locks.
 
 ### pnpm

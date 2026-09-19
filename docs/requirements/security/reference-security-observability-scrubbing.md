@@ -21,7 +21,7 @@ owns URL stripping, while
 owns credential redaction, event composition, and the dependency-free `beforeSend` composer:
 
 Both modules delegate generic URL, header, and span transformations to
-`@vouchington/utils/observability`. Filaments retains its Voucha-specific key and credential
+`@vouchington/utils/observability`. Vouchington retains its Voucha-specific key and credential
 policy, plus a copy-on-write adapter: a safe event, request, breadcrumb, header object, or span
 data record is returned by reference; only a changed branch is rebuilt. The upstream helpers
 include a header helper that intentionally returns a fresh record, so calling that helper directly

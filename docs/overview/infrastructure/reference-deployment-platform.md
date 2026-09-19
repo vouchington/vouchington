@@ -18,11 +18,11 @@ resource details.
 
 ## Source dispatch
 
-Path-scoped Filaments workflows validate changed source and dispatch the exact source revision to
-the private infrastructure receiver. Filaments does not publish runtime images or deployment
+Path-scoped Vouchington workflows validate changed source and dispatch the exact source revision to
+the private infrastructure receiver. Vouchington does not publish runtime images or deployment
 artifacts, manage provider retention, plan or apply OpenTofu, migrate databases, or mutate ECS,
 Lambda, Cloudflare, or static-storage deployment state.
 
 The private repository maps source workflows to deployables, builds and publishes their artifacts,
-and owns every provider identifier. Filaments sends only source repository, revision, workflow,
+and owns every provider identifier. Vouchington sends only source repository, revision, workflow,
 run, and attempt metadata.

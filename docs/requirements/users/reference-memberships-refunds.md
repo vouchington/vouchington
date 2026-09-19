@@ -80,7 +80,7 @@ different plan. Administrators revoke queued or active grants through
 
 Swift and .NET consume the same fixture and OpenAPI contract in separate client PRs. Their grant
 surfaces snapshot and revalidate the selected user, plan, SKU, and duration before submitting the
-same guarded request; this Filaments change does not implement those client surfaces.
+same guarded request; this Vouchington change does not implement those client surfaces.
 
 ## Feature Flag
 
