@@ -5,6 +5,7 @@ import {
   createTestUser,
   hasTestPostCategoryAdmissionResponseFinalization,
   insertTestTopic,
+  relatePostToTopic,
   updatePostTitleMarkdown,
 } from '@voucha/test-helpers'
 import { runContributionAdmission } from '@services/contribution-gating'
@@ -16,7 +17,6 @@ import {
 } from '../post-category-finalizations.mts'
 import { withPostFinalizationLock } from '../update/post-finalization-lock.mts'
 import { updatePost } from '../update.mts'
-import { tagPostWithTopics } from '../tagging.mts'
 
 describe('post category finalization admission replay', () => {
   it('refreshes create responses after recovery without applying later edits', async () => {
@@ -29,10 +29,9 @@ describe('post category finalization admission replay', () => {
       createdById: owner.id,
     })
     const post = await createTestPost({ user: owner, title: `Admission recovery ${suffix}` })
-    const manualTopicSlug = `manual-admission-recovery-${suffix}`
     const manualTopicId = await insertTestTopic({
       name: `Manual admission recovery ${suffix}`,
-      slug: manualTopicSlug,
+      slug: `manual-admission-recovery-${suffix}`,
       createdById: moderator.id,
     })
 
@@ -78,7 +77,7 @@ describe('post category finalization admission replay', () => {
 
     await createDirect()
     await createWrapped()
-    await tagPostWithTopics(moderator, post.id, [manualTopicSlug])
+    await relatePostToTopic(moderator, post, { id: manualTopicId })
     await reconcilePostCategoryFinalizationRows([pending])
 
     const finalizedPost = (await getPostByAny(post.id, { readOnly: false }))!
