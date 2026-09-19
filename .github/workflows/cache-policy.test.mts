@@ -251,16 +251,18 @@ describe('CI cache policy', () => {
   })
 
   it('keys the pnpm-store and Playwright browser caches safely', () => {
-    // Every cache step covering the pnpm store or the Playwright browser
-    // directory must be scoped by OS/arch (both paths are platform-specific)
-    // and keyed on the pnpm lockfile hash (so a dependency bump invalidates
-    // it). The Playwright browser cache additionally must never declare
-    // restore-keys: unlike the pnpm store (where a stale partial restore
-    // just means slower reinstalls of the changed packages), a stale
-    // Playwright browser cache is a version mismatch against the pinned
-    // `playwright` package -- it must surface as a loud install-time
-    // failure, never a silent restore of the wrong browser build.
+    // pnpm-store/Playwright cache steps must scope by OS/arch (both paths
+    // are platform-specific) and key on a lockfile content hash computed by
+    // a preceding shell step -- not GitHub's hashFiles(), which breaks
+    // no-mistakes's tsconfig-gate-coverage reachability analysis when it
+    // appears inside a composite action's cache key. The Playwright cache
+    // must also never declare restore-keys: a stale browser cache is a
+    // version mismatch against the pinned `playwright` package and must
+    // fail loudly, not silently restore the wrong build.
     const violations: string[] = []
+    const lockfileHashKeyRe = /\$\{\{\s*steps\.[\w-]+\.outputs\.lockfile-hash\s*\}\}/
+    const lockfileHashComputeRe =
+      /lockfile-hash=\$\(\s*(?:sha256sum|shasum -a 256)\s+pnpm-lock\.yaml/
 
     for (const path of yamlPaths) {
       const source = readFileSync(path, 'utf8')
@@ -272,24 +274,16 @@ describe('CI cache policy', () => {
 
         const firstLine = block.trim().split('\n')[0]
 
-        if (!/hashFiles\(\s*['"]pnpm-lock\.yaml['"]\s*\)/.test(block)) {
-          violations.push(
-            `${path}: cache step "${firstLine}" must key on hashFiles('pnpm-lock.yaml') ` +
-              `so a dependency bump invalidates the cache.`,
-          )
+        if (!lockfileHashKeyRe.test(block)) {
+          violations.push(`${path}: "${firstLine}" must key on steps.*.outputs.lockfile-hash.`)
+        } else if (!lockfileHashComputeRe.test(source)) {
+          violations.push(`${path}: "${firstLine}" keys on lockfile-hash but no step computes it.`)
         }
         if (!block.includes('runner.os') || !block.includes('runner.arch')) {
-          violations.push(
-            `${path}: cache step "${firstLine}" must scope its key by runner.os and ` +
-              `runner.arch (the pnpm store path and Playwright binaries are platform-specific).`,
-          )
+          violations.push(`${path}: "${firstLine}" must scope its key by runner.os/runner.arch.`)
         }
         if (isPlaywright && /restore-keys:/.test(block)) {
-          violations.push(
-            `${path}: Playwright browser cache step "${firstLine}" must not declare ` +
-              `restore-keys -- a stale/mismatched browser cache must surface as a loud ` +
-              `install-time failure, not a silent partial restore.`,
-          )
+          violations.push(`${path}: Playwright cache "${firstLine}" must not declare restore-keys.`)
         }
       }
     }
