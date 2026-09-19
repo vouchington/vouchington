@@ -131,7 +131,7 @@ export function validateIgnoreRegistry(registry: IgnoreRegistry, now = new Date(
       throw new Error(`${prefix}.purls must contain exact versioned package purls`)
     if (
       typeof ignore.statement !== 'string' ||
-      !/^Not exploitable:\s*(?=\S).+?\.\s*Cleanup:\s*https:\/\/github\.com\/jonathanong\/filaments\/issues\/[1-9]\d*$/i.test(
+      !/^Not exploitable:\s*(?=\S).+?\.\s*Cleanup:\s*https:\/\/github\.com\/vouchington\/vouchington\/issues\/[1-9]\d*$/i.test(
         ignore.statement,
       )
     )
