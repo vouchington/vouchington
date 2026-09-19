@@ -52,8 +52,8 @@ CVE-2025-66478 react2shell).
 When bumping `next`:
 
 1. Check the [Next.js security advisories index](https://github.com/vercel/next.js/security/advisories)
-   and [GitHub Dependabot security alerts](https://github.com/jonathanong/filaments/security/dependabot)
-   for any new CVEs since the previous bump.
+   and this repository's GitHub Dependabot security alerts for any new CVEs since the previous
+   bump.
 2. Add a row to the per-CVE table for each new advisory.
 3. If a new advisory exposes an internal Next.js header that external clients
    should never send, add it to the strip list in

@@ -23,7 +23,7 @@ PR-branch helper above remains available independently.
 A targeted GitHub job rerun also reruns that job's downstream dependent jobs; it does not omit
 them. This is the documented behavior of the
 [rerun-job API](https://docs.github.com/en/rest/actions/workflow-runs#re-run-a-job-from-a-workflow-run)
-and was confirmed in [run 29175307375](https://github.com/jonathanong/filaments/actions/runs/29175307375).
+and was confirmed in historical archive run `29175307375`.
 Artifact/bootstrap checks still matter because upstream siblings that are not downstream of the
 selected job are not rerun.
 
@@ -66,8 +66,8 @@ in-job retries are exhausted; it does not provide pull-request recovery.
 The `Surfaces in` contract for the general `runner-shutdown-leaf-rerun` row below includes
 `Main CI (web)` `static-checks / static-web` when the exact `next build` command started and the log then contains
 clean runner-shutdown/cancellation markers. Run
-[30503060858](https://github.com/jonathanong/filaments/actions/runs/30503060858) is the canonical
-fixture: compilation completed before the runner killed `next build`, and attempt 2 passed.
+Historical archive run `30503060858` is the canonical fixture: compilation completed before the
+runner killed `next build`, and attempt 2 passed.
 Missing build-start evidence, compiler/bundler/smoke failures, non-SIGTERM exits, absent shutdown
 markers, or an exhausted per-rule `maxAttempts: 2` budget remain Codex-owned look-alikes. This is
 distinct from `main-web-static-build-silent-exit`, which matches an unexplained non-143 exit code.
