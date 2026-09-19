@@ -32,33 +32,43 @@ export async function getCopyrightNoticePrivateAggregate(
     await transaction.commit()
     return null
   }
-  const targets = await selectTargets(noticeId, transaction)
-  const restrictions = await selectRestrictions(noticeId, transaction)
-  const submissions = await selectRows<CopyrightNoticeSubmissionRecord>(
-    'copyright_notice_submissions',
-    noticeId,
-    transaction,
-  )
-  const assessments = await selectAssessments(noticeId, transaction)
-  const deadlines = await selectRows<CopyrightNoticeDeadlineRecord>(
-    'copyright_notice_deadlines',
-    noticeId,
-    transaction,
-  )
-  const holdAssessments = await selectHoldAssessments(noticeId, transaction)
-  const holdResolutions = await selectHoldResolutions(noticeId, transaction)
-  const evidenceArtifacts = await selectEvidenceArtifacts(noticeId, transaction)
-  const correspondence = await selectRows<CopyrightCorrespondenceRecord>(
-    'copyright_notice_correspondence_messages',
-    noticeId,
-    transaction,
-  )
-  const lifecycleEvents = await selectRows<CopyrightLifecycleEventRecord>(
-    'copyright_notice_lifecycle_events',
-    noticeId,
-    transaction,
-  )
-  const actionIntents = await selectActionIntents(noticeId, transaction)
+  const [
+    targets,
+    restrictions,
+    submissions,
+    assessments,
+    deadlines,
+    holdAssessments,
+    holdResolutions,
+    evidenceArtifacts,
+    correspondence,
+    lifecycleEvents,
+    actionIntents,
+  ] = await Promise.all([
+    selectTargets(noticeId, transaction),
+    selectRestrictions(noticeId, transaction),
+    selectRows<CopyrightNoticeSubmissionRecord>(
+      'copyright_notice_submissions',
+      noticeId,
+      transaction,
+    ),
+    selectAssessments(noticeId, transaction),
+    selectRows<CopyrightNoticeDeadlineRecord>('copyright_notice_deadlines', noticeId, transaction),
+    selectHoldAssessments(noticeId, transaction),
+    selectHoldResolutions(noticeId, transaction),
+    selectEvidenceArtifacts(noticeId, transaction),
+    selectRows<CopyrightCorrespondenceRecord>(
+      'copyright_notice_correspondence_messages',
+      noticeId,
+      transaction,
+    ),
+    selectRows<CopyrightLifecycleEventRecord>(
+      'copyright_notice_lifecycle_events',
+      noticeId,
+      transaction,
+    ),
+    selectActionIntents(noticeId, transaction),
+  ])
   await transaction.commit()
   return {
     notice,

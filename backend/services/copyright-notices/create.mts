@@ -31,7 +31,8 @@ export async function createCopyrightNoticeAggregate(
       hosted_use_url: target.hostedUseUrl,
     })),
   )
-  await transaction(sql`/* createCopyrightNoticeAggregate:targets */
+  await Promise.all([
+    transaction(sql`/* createCopyrightNoticeAggregate:targets */
     WITH target_inputs AS (
       SELECT *
       FROM jsonb_to_recordset(${serializedTargets}::jsonb) AS target_input(
@@ -52,19 +53,20 @@ export async function createCopyrightNoticeAggregate(
     SELECT inserted_targets.id, target_inputs.image_id
     FROM inserted_targets
     INNER JOIN target_inputs USING (placement_key, placement_revision)
-  `)
-  await transaction(sql`/* createCopyrightNoticeAggregate:submission */
+  `),
+    transaction(sql`/* createCopyrightNoticeAggregate:submission */
     INSERT INTO copyright_notice_submissions (
       copyright_notice_id, submitted_by_user_id, kind, received_at, source_kind, body_ciphertext
     ) VALUES (
       ${notice.id}, ${input.claimantUserId}, 'notice', ${input.receivedAt},
       ${input.initialSubmission.sourceKind}, ${input.initialSubmission.bodyCiphertext}
     )
-  `)
-  await transaction(sql`/* createCopyrightNoticeAggregate:event */
+  `),
+    transaction(sql`/* createCopyrightNoticeAggregate:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, metadata)
     VALUES (${notice.id}, 'notice_received', '{}'::jsonb)
-  `)
+  `),
+  ])
   await transaction.commit()
   return notice
 }

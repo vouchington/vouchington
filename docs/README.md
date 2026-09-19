@@ -396,6 +396,7 @@ Feature specifications, rules, and policies.
 - [Moderation Policy Matrix](requirements/moderation/MODERATION-POLICY-MATRIX.md) — Canonical policy keys, labels, severity, and recommended actions
 - [Moderation Flows](requirements/moderation/MODERATION-FLOWS.md) — Canonical moderation pipeline and subsystem index
 - [Review Disputes](requirements/moderation/REVIEW-DISPUTES.md) — Verified-claimant legal dispute flow for reviews
+- [Copyright Notices](requirements/moderation/COPYRIGHT-NOTICES.md) — DMCA/copyright case lifecycle, privacy boundaries, deadlines, holds, and launch gates
 - [Moderation Appeals](requirements/moderation/MODERATION-APPEALS.md) — Member appeals for bans, warnings, and post removals
 - [Reporting](requirements/moderation/REPORTING.md) — User report/flag flow, entity types, reason codes, and moderation queue
 - [Community Bans](requirements/moderation/COMMUNITY-BANS.md) — Community-scoped ban lifecycle and enforcement
@@ -696,6 +697,7 @@ disabling features that require secrets or Cloudflare configuration not managed 
 ## Admin Operations
 
 - [Operational Runbooks](runbooks/README.md) — CSAM/child-safety escalation and product-safety/recall
+- [Copyright Notice Runbook](runbooks/copyright-notices.md) — Operational intake, review, restriction, counter-notice, and restoration procedure
   procedures (staff-only; legal reporting obligations and cross-functional contacts)
 - [Queue Monitoring API](../backend/api/v1/mq/README.md) — Real-time queue stats, SSE streaming, pause/resume, GlideMQ dashboard
   - [Queue monitoring service](../backend/services/queue-monitoring/README.md) — Service layer for queue stats
