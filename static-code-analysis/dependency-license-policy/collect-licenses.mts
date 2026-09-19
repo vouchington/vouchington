@@ -48,6 +48,7 @@ export function collectLicenseReport(
       `pnpm licenses list --json produced unparseable output: ${
         error instanceof Error ? error.message : String(error)
       }`,
+      { cause: error },
     )
   }
 }

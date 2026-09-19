@@ -63,15 +63,17 @@ describe('parseSpdxExpression', () => {
   })
 
   it('throws on unbalanced parentheses', () => {
-    expect(() => parseSpdxExpression('(MIT OR Apache-2.0')).toThrow()
+    expect(() => parseSpdxExpression('(MIT OR Apache-2.0')).toThrow('Unbalanced parentheses')
   })
 
   it('throws on a dangling operator', () => {
-    expect(() => parseSpdxExpression('MIT OR')).toThrow()
+    expect(() => parseSpdxExpression('MIT OR')).toThrow('Unexpected end of license expression')
   })
 
   it('throws on unexpected trailing tokens', () => {
-    expect(() => parseSpdxExpression('MIT Apache-2.0')).toThrow()
+    expect(() => parseSpdxExpression('MIT Apache-2.0')).toThrow(
+      'Unexpected trailing token: Apache-2.0',
+    )
   })
 })
 
