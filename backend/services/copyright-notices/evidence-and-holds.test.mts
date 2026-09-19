@@ -12,6 +12,7 @@ import {
   createCounterNoticeDeadline,
   createEligibleCopyrightRestoreIntent,
   getCopyrightNoticePrivateAggregate,
+  resolveCopyrightLegalHold,
 } from './index.mts'
 
 async function createTwoTargetFixture() {
@@ -137,9 +138,27 @@ describe('copyright notice evidence and holds', () => {
       now: new Date('2026-07-16T12:00:00.000Z'),
       blockers: [],
     })
+    const resolution = await resolveCopyrightLegalHold({
+      currentUser: moderator,
+      assessmentId: hold.id,
+      resolvedAt: new Date('2026-07-16T12:01:00.000Z'),
+      resolutionKind: 'dismissed',
+      rationaleCiphertext: `resolution-${crypto.randomUUID()}`,
+    })
+    const heldIntent = await createEligibleCopyrightRestoreIntent({
+      noticeId: notice.id,
+      targetId: heldTarget.id,
+      restrictionId: restrictions[0].id,
+      deadlineId: deadline.id,
+      expectedPlacementRevision: heldTarget.placement_revision,
+      now: new Date('2026-07-16T12:02:00.000Z'),
+      blockers: [],
+    })
     const refreshed = await getCopyrightNoticePrivateAggregate(notice.id)
 
     expect(intent.action).toBe('restore')
+    expect(heldIntent.action).toBe('restore')
+    expect(resolution.copyright_notice_legal_hold_assessment_id).toBe(hold.id)
     expect(hold.target_ids).toEqual([heldTarget.id])
     expect(refreshed?.evidenceArtifacts).toContainEqual(
       expect.objectContaining({ id: artifact.id, byte_size: 42 }),
