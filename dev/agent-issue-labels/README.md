@@ -2,7 +2,7 @@
 
 [Back to Dev Environment Reference](../README.md#github-issue-tooling)
 
-`batch-issues.mts` validates a batch of proposed Filaments issues from one manifest. It fetches the
+`batch-issues.mts` validates a batch of proposed Vouchington issues from one manifest. It fetches the
 live label and milestone taxonomy once and preflights every entry fail-closed. It never creates or
 mutates an issue. Run each approved write separately through the
 [github-issue skill](../../.agents/skills/github-issue/SKILL.md), which revalidates repository

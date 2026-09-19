@@ -14,7 +14,7 @@ export type GetEntriesInput = {
   entries?: BlackboardEntriesClient
 }
 
-// The public client streams entries as an AsyncIterable. Filaments consumes the complete
+// The public client streams entries as an AsyncIterable. Vouchington consumes the complete
 // session history for journal/retrospective operations, so collect it into the array those
 // callers already use. A nonexistent session preserves the client's "-> 404" message.
 export async function getEntries(input: GetEntriesInput): Promise<SessionEntry[]> {

@@ -9,7 +9,7 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 CLI_PATH="${REPO_ROOT}/node_modules/.bin/agent-blackboard"
 
 if [ ! -x "${CLI_PATH}" ]; then
-  echo "Error: agent-blackboard CLI not found at ${CLI_PATH}; run pnpm install from the Filaments root" >&2
+  echo "Error: agent-blackboard CLI not found at ${CLI_PATH}; run pnpm install from the Vouchington root" >&2
   exit 1
 fi
 

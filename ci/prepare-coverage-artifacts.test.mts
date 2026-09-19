@@ -74,7 +74,7 @@ async function writePair(
   return pairDir
 }
 
-describe('Filaments patch coverage artifact fan-in', () => {
+describe('Vouchington patch coverage artifact fan-in', () => {
   it('keeps API and full-stack integration coverage producer partitions distinct', async () => {
     const options = fixture()
     await writePair(options, 'web-api-shard-1', {

@@ -249,7 +249,7 @@ describe('index.redirect', () => {
     expect(mockReadBodyAsBuffer).not.toHaveBeenCalled()
   })
 
-  it('CrawlerRss preserves typed response errors from the Filaments adapter', async () => {
+  it('CrawlerRss preserves typed response errors from the Vouchington adapter', async () => {
     const typedError = new Error('typed rate-limit error')
     mockFetchUrl.mockResolvedValueOnce(fetchUrlResult(makeResponse(429)) as never)
     mockHandleErrors.mockImplementationOnce(() => {
@@ -260,7 +260,7 @@ describe('index.redirect', () => {
     expect(mockReadBodyAsBuffer).not.toHaveBeenCalled()
   })
 
-  it('CrawlerRss preserves typed bounded-body errors from the Filaments adapter', async () => {
+  it('CrawlerRss preserves typed bounded-body errors from the Vouchington adapter', async () => {
     const typedError = new Error('typed response-size error')
     mockFetchUrl.mockResolvedValueOnce(
       fetchUrlResult(makeResponse(200, { 'content-type': 'application/rss+xml' })) as never,

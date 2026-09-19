@@ -4,7 +4,7 @@ import { buildSchemaSnapshot } from './build-snapshot.mts'
 import type { SchemaCatalog } from '@vouchington/postgres/pg-schema-snapshot'
 
 describe('buildSchemaSnapshot', () => {
-  it('applies the Filaments schema-growth policy to the platform snapshot builder', () => {
+  it('applies the Vouchington schema-growth policy to the platform snapshot builder', () => {
     const catalog: SchemaCatalog = {
       tables: [
         {

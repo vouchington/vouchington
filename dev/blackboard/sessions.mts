@@ -18,7 +18,7 @@ export type EnsureSessionInput = {
 export type EnsureSessionResult = { status: 'created' | 'exists' }
 
 // The published client's idempotent ensure operation owns the 409/read-back/exact-field-match
-// contract. Filaments deliberately does not duplicate that protocol logic.
+// contract. Vouchington deliberately does not duplicate that protocol logic.
 export async function ensureSession(input: EnsureSessionInput): Promise<EnsureSessionResult> {
   const sessions = input.sessions ?? createSessionsClient(input.connection)
   try {

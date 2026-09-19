@@ -47,7 +47,7 @@ async function loadBlackboardModules() {
       error.message.includes('vouchington-tooling') || error.message.includes('agent-blackboard')
     if (error.code === 'ERR_MODULE_NOT_FOUND' && mentionsBlackboardPackage) {
       throw new BlackboardModuleUnavailableError(
-        'vouchington-tooling agent-blackboard helpers are not installed; run pnpm install from the Filaments worktree root',
+        'vouchington-tooling agent-blackboard helpers are not installed; run pnpm install from the Vouchington worktree root',
         { cause: error },
       )
     }
@@ -59,7 +59,7 @@ async function loadBlackboardModules() {
       throw new BlackboardModuleUnavailableError(
         'vouchington-tooling resolved an installed copy that predates the ./agent-blackboard export ' +
           '(a stale or incorrectly hoisted install, not a missing package); run ./dev/initialize monorepo ' +
-          'from the Filaments worktree root',
+          'from the Vouchington worktree root',
         { cause: error },
       )
     }
@@ -125,7 +125,7 @@ async function main(): Promise<void> {
         `STOP WORK: agent-blackboard is unavailable (${message}). This is a workspace-setup ` +
           'problem in this worktree, not a deployment outage — the hosted agent-blackboard ' +
           'deployment and AGENT_BLACKBOARD_URL/AGENT_BLACKBOARD_TOKEN are not the cause and do not ' +
-          'need checking. Run the command above from the Filaments worktree root, then start a ' +
+          'need checking. Run the command above from the Vouchington worktree root, then start a ' +
           'fresh session.',
       )
       return

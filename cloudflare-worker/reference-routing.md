@@ -7,7 +7,7 @@
 The private-infrastructure-managed docs Worker serves the private docs landing page, OpenAPI reference, and
 PostgreSQL schema from the `DOCS_BUCKET` R2 binding. It does not serve Storybook. The private
 infrastructure source `deploy/docs/index.html`, in the private `vouchington-infra` repository,
-creates the root landing page; Filaments's [`ci/render-psql-docs.mts`](../ci/render-psql-docs.mts)
+creates the root landing page; `vouchington/vouchington`'s [`ci/render-psql-docs.mts`](../ci/render-psql-docs.mts)
 renders the PostgreSQL documentation beneath its supplied output directory.
 
 The Worker requires HTTP Basic Auth before reading R2. Store the comma-separated

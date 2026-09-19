@@ -1,9 +1,9 @@
 # Worker Runtime
 
-Shared Filaments composition layer loaded by both `worker-cpu` and `worker-io` entrypoints. The
+Shared Vouchington composition layer loaded by both `worker-cpu` and `worker-io` entrypoints. The
 published `@vouchington/worker-runtime` package owns generic queue parsing, GlideMQ worker
-selection/loading, and schedule registration. This package injects Filaments topology-skew
-reporting and retains Filaments-specific SQS, observability, lifecycle, inventory, and universal
+selection/loading, and schedule registration. This package injects Vouchington topology-skew
+reporting and retains Vouchington-specific SQS, observability, lifecycle, inventory, and universal
 worker composition.
 
 ## Worker Loading
@@ -65,17 +65,17 @@ enforce class alignment, full coverage of the local entrypoints, and the invaria
 
 ## Files
 
-| File                    | Purpose                                                              |
-| ----------------------- | -------------------------------------------------------------------- |
-| `lifecycle.mts`         | Shared worker loading, startup, reporting, and process hook sequence |
-| `worker-runtime.mts`    | Filaments topology-skew reporting adapter for package worker loading |
-| `universal-workers.mts` | `UNIVERSAL_WORKER_DEFINITIONS`, `loadUniversalWorkers`               |
-| `observability.mts`     | `addWorkerEventListeners`, job-completion logging                    |
-| `scrub-job-data.mts`    | `scrubJobData` — PII/secret redaction for logged job payloads        |
-| `setup.mts`             | `setup` — Valkey/glide-mq connection initialization                  |
-| `logger.mts`            | Shared worker-runtime logger                                         |
-| `sqs-consumer.mts`      | Queue selection, loading, consumer factory, and lifecycle            |
-| `index.mts`             | Re-exports package queue/schedule contracts and local composition    |
+| File                    | Purpose                                                                |
+| ----------------------- | ---------------------------------------------------------------------- |
+| `lifecycle.mts`         | Shared worker loading, startup, reporting, and process hook sequence   |
+| `worker-runtime.mts`    | Vouchington topology-skew reporting adapter for package worker loading |
+| `universal-workers.mts` | `UNIVERSAL_WORKER_DEFINITIONS`, `loadUniversalWorkers`                 |
+| `observability.mts`     | `addWorkerEventListeners`, job-completion logging                      |
+| `scrub-job-data.mts`    | `scrubJobData` — PII/secret redaction for logged job payloads          |
+| `setup.mts`             | `setup` — Valkey/glide-mq connection initialization                    |
+| `logger.mts`            | Shared worker-runtime logger                                           |
+| `sqs-consumer.mts`      | Queue selection, loading, consumer factory, and lifecycle              |
+| `index.mts`             | Re-exports package queue/schedule contracts and local composition      |
 
 ## Observability
 

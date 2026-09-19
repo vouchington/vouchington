@@ -46,7 +46,7 @@ Creates a moderation report. Duplicate pending reports from the same user for th
 `vote_manipulation` is valid only when `entityType` is `post`.
 
 The report service uses the configurable `@vouchington/utils/moderation` input-parser primitive
-while the route retains Filaments' catalog, CAPTCHA/App Attest precondition, response contract, and
+while the route retains Vouchington's catalog, CAPTCHA/App Attest precondition, response contract, and
 moderation service integration.
 
 **CAPTCHA:** Requires a Cloudflare Turnstile token in `cf_turnstile_response`; the route calls `verifyCaptchaToken` (see [`@services/captcha`](../../../services/captcha/README.md)) — `422` if missing, `400` if rejected, `502` if siteverify is unreachable. Requests carrying valid Apple App Attest headers bypass this Turnstile requirement — see [App Attest bypass](../../../services/captcha/README.md#app-attest-bypass) in `@services/captcha` (actionTag: `reports.create`).

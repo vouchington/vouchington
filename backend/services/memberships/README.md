@@ -18,7 +18,7 @@ Business logic for user memberships (plans, billing, admin grants).
 ## Public benefit catalog
 
 `benefit-catalog.mts` owns `GET /api/v1/memberships/plans` `benefit_catalog`. It delegates generic
-catalog validation to `@vouchington/memberships` while retaining Filaments' benefit IDs, values, and
+catalog validation to `@vouchington/memberships` while retaining Vouchington's benefit IDs, values, and
 public JSON shape. Catalog data never authorizes a request; domain services remain authoritative. See
 [Membership plans and entitlements](../../../docs/requirements/users/reference-memberships-plans.md).
 
@@ -74,7 +74,7 @@ public JSON shape. Catalog data never authorizes a request; domain services rema
 - `getMembershipRefunds(userId)` — lists refund ledger rows for a user
 
 `@vouchington/memberships` owns the generic benefit-catalog validation, product grouping, terminal-status
-predicate, and membership-change classifier. Filaments retains the product catalog data, atomic SQL
+predicate, and membership-change classifier. Vouchington retains the product catalog data, atomic SQL
 lifecycle projection, Stripe normalization and calls, refunds, portal, authorization, and side effects.
 
 Renewal price changes compare immutable current and next-renewal money snapshots from the source's

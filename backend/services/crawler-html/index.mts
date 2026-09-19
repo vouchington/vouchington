@@ -27,7 +27,7 @@ export const DEFAULT_RESPONSE_TIMEOUT_MS = 5000
 const DEFAULT_MAX_RESPONSE_SIZE_BYTES = 10 * 1024 * 1024
 const MAX_CRAWLER_HTML_BYTES = 4 * 1024 * 1024
 
-/** Fetches an HTML response under Filaments transport policy and extracts its content upstream. */
+/** Fetches an HTML response under Vouchington transport policy and extracts its content upstream. */
 /* no-mistakes: integration=http */
 export async function fetchCrawlerHtml(
   {

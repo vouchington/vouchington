@@ -75,7 +75,7 @@ function makeExecutor(
 }
 
 describe('CI job runtime audit wrapper', () => {
-  it('keeps filaments CI pull_request and Main CI push filters', () => {
+  it('keeps Vouchington CI pull_request and Main CI push filters', () => {
     expect(filamentsRuntimeAuditOptions).toEqual({
       branch: 'main',
       workflows: [

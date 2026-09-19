@@ -12,4 +12,4 @@
   connection-string behavior
 - Read [query-capture.test.mts](query-capture.test.mts),
   [explain-analyze.test.mts](explain-analyze.test.mts), and
-  [transaction-status.test.mts](transaction-status.test.mts) for Filaments-owned adapter boundaries
+  [transaction-status.test.mts](transaction-status.test.mts) for Vouchington-owned adapter boundaries

@@ -8,7 +8,7 @@ key, and hands off image-metadata extraction (sharp) to the worker via the
 intentionally not loaded by the API container.
 
 [`@vouchington/media`](https://github.com/vouchington/vouchington-platform/tree/main/packages/media)
-provides request validation, streamed hashing, private temporary files, and S3 primitives. Filaments
+provides request validation, streamed hashing, private temporary files, and S3 primitives. Vouchington
 owns the complete workflow: PostgreSQL transitions and transactions, duplicate decisions, S3 bucket
 selection, HTTP semantics, queueing, metadata finalization, PubSub, cleanup ordering, and moderation
 policy.

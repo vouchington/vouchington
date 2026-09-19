@@ -179,7 +179,7 @@ describe('normalized catalog commands', () => {
       expect((await loadCatalogDirectory(source)).catalog.copies).toHaveLength(1)
     }))
 
-  it('compiles the normalized fixture through Filaments and resolves the public alias', () =>
+  it('compiles the normalized fixture through Vouchington and resolves the public alias', () =>
     withTemp('normalized-compile-', async directory => {
       const source = join(directory, 'source')
       cpSync('localization/normalized-fixture', source, { recursive: true })

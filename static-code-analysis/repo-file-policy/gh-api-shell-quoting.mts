@@ -2,7 +2,7 @@
 // repo count as a shell script or a workflow/composite-action YAML file worth scanning. The
 // detection itself — the shell-argument scanner and the YAML `run:`-block decoder — was extracted
 // to vouchington-tooling/gh-api-shell-quoting (issue #10956 follow-up, vouchington-tooling#182)
-// since it carries no Filaments-specific identifiers; only this file-universe decision stays local,
+// since it carries no Vouchington-specific identifiers; only this file-universe decision stays local,
 // since vouchington-tooling already ships its own unrelated file-classification module
 // (`gha-workspace-policy`) and has no reason to own this repo's layout.
 export type { ShellQuotingViolation } from 'vouchington-tooling/gh-api-shell-quoting'

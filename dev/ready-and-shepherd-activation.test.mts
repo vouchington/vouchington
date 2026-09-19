@@ -37,7 +37,7 @@ describe('ready-and-shepherd activation boundary', () => {
     expect(ready).toContain('/shepherd dispatched: no (activation disabled)')
   })
 
-  it('allows only the Filaments security-triage adapter to use the disabled provider-local handoff', () => {
+  it('allows only the Vouchington security-triage adapter to use the disabled provider-local handoff', () => {
     const flag = '--codex-security-local-handoff'
     const filesWithFlag = skillMarkdownPaths.filter(path =>
       readFileSync(path, 'utf8').includes(flag),

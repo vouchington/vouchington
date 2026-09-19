@@ -4,11 +4,11 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-// #7180: a global pr-shepherd shadowed the workspace install on PATH. Keep only Filaments'
+// #7180: a global pr-shepherd shadowed the workspace install on PATH. Keep only Vouchington's
 // workspace-pinning and local-guidance contracts here — package command behavior belongs upstream
 // as a rule.
 //
-// The stack-escalation assertions below are the deliberate, narrow exception: they pin *Filaments'
+// The stack-escalation assertions below are the deliberate, narrow exception: they pin *Vouchington's
 // procedure assumptions about upstream behavior* (the stacked-prs skill and git-and-prs.md both
 // state, as fact, that every ready stacked layer terminates as `ESCALATE`/`stacked-pr` rather than
 // `MERGE`, and give an exact exit-code map; and that per-PR ready-delay state is isolated, so
