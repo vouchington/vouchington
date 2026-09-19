@@ -6,11 +6,11 @@
 
 The following lifecycle flows have backend support (endpoint or service) but **no UI entry point**. Each has a linked follow-up GitHub issue.
 
-| #   | Entity     | Missing flow                              | Backend status                                                                                         | Issue                                                         |
-| --- | ---------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| 8   | `rss_feed` | Edit or recall own submission (submitter) | `currentUserCanUpdateRssFeed` / `currentUserCanDeleteRssFeed` are admin-only; no user-side recall path | [#3325](https://github.com/jonathanong/filaments/issues/3325) |
+| #   | Entity     | Missing flow                              | Backend status                                                                                         | Issue                      |
+| --- | ---------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------- |
+| 8   | `rss_feed` | Edit or recall own submission (submitter) | `currentUserCanUpdateRssFeed` / `currentUserCanDeleteRssFeed` are admin-only; no user-side recall path | jonathanong/filaments#3325 |
 
-Resolved: gap #3 (`post` Archive/Unarchive, [#3321](https://github.com/jonathanong/filaments/issues/3321)) shipped as `web/components/posts/post-form/post-archive-button.tsx`; gap #12 (`hostname` admin blacklist page, [#3327](https://github.com/jonathanong/filaments/issues/3327)) shipped without a dedicated `/admin/hostnames` page — block/edit via the Moderation tab on `/domain/[id]` and the quick-add on `/domains` (see [reference-domains-hostnames.md](./reference-domains-hostnames.md)), browse via `/domains?blocked=true`.
+Resolved: gap #3 (`post` Archive/Unarchive, formerly filed as jonathanong/filaments#3321) shipped as `web/components/posts/post-form/post-archive-button.tsx`; gap #12 (`hostname` admin blacklist page, formerly filed as jonathanong/filaments#3327) shipped without a dedicated `/admin/hostnames` page — block/edit via the Moderation tab on `/domain/[id]` and the quick-add on `/domains` (see [reference-domains-hostnames.md](./reference-domains-hostnames.md)), browse via `/domains?blocked=true`.
 
 ---
 

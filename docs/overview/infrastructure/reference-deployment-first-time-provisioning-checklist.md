@@ -16,8 +16,8 @@
 9. Generate VAPID keys for web push → set `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY`, `WEB_PUSH_SUBJECT`
 10. Dispatch and verify the Cloudflare Worker through the private infrastructure receiver
 11. First CI deploy to staging → confirm the matching private receiver run → smoke test. Stop there:
-    production promotion and rollback are not live and remain tracked in
-    [#10066](https://github.com/jonathanong/filaments/issues/10066).
+    production promotion and rollback are not live and remain tracked as a follow-up (formerly
+    filed as jonathanong/filaments#10066).
 
 Account-global apply remains operator-controlled in `vouchington-infra`; its CI apply workflow and
 trust are disabled. The apply policy can manage only the existing role ARN allowlist, pass the SOCI

@@ -6,8 +6,8 @@
 `no-mistakes-binary-download-http-500` was added alongside the existing
 `no-mistakes-napi-checksum-http-502`. Both shared the same consumer (no-mistakes postinstall) and
 the same root cause (GitHub Releases CDN error), so the correct fix was to widen the existing rule's
-accepted status set instead of forking it. That consolidated rule was later retired in
-[Filaments #8218](https://github.com/jonathanong/filaments/issues/8218) after
+accepted status set instead of forking it. That consolidated rule was later retired (formerly
+filed as jonathanong/filaments#8218) after
 [no-mistakes 0.33.1](https://github.com/jonathanong/no-mistakes/releases/tag/v0.33.1) widened its
 bounded internal postinstall retry budget through
 [no-mistakes PR #578](https://github.com/jonathanong/no-mistakes/pull/578).

@@ -27,8 +27,8 @@ import { seedUuid } from './common.mts'
 // and eligibility.post_id = p.id re-scanned the entire posts table once per community-tagged
 // candidate post instead of once total (confirmed via EXPLAIN ANALYZE: 200 candidate posts
 // against ~100k total posts took 8.25s for a single community). That was a real, pre-existing
-// production defect in the view, independent of this seed — tracked in
-// https://github.com/jonathanong/filaments/issues/10785. The fix flattened the view into a single
+// production defect in the view, independent of this seed (formerly filed as
+// jonathanong/filaments#10785). The fix flattened the view into a single
 // CTE-free, UNION-free SELECT so it pulls up and eligibility.post_id = p.id collapses into an
 // ordinary equijoin, so postsPerCommunity is back to a realistic 200: `plan-search-communities-
 // gate.mts` holds the search-communities* scenarios to indexed-only posts access at this volume.

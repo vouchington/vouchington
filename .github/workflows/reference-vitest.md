@@ -20,8 +20,8 @@ portability, native clients, and Storybook are intentionally outside that orderi
 
 Backend Uncredentialed Docker Tests (`tests-backend-unit.yml`) carries failure-only fork-exit
 sentinel, diagnostic-report, and host-pressure steps for the recurring
-`backend-unit-vitest-worker-exit-after-pass` signature (issue
-[#8940](https://github.com/jonathanong/filaments/issues/8940)). See
+`backend-unit-vitest-worker-exit-after-pass` signature (formerly filed as
+jonathanong/filaments#8940). See
 [Vitest Worker-Exit Diagnostics](../../docs/development/reference-vitest-worker-exit-diagnostics.md)
 for the sentinel line format, the `VITEST_FORK_CRASH_INJECT` fault-injection allowlist, and the
 signature-to-cause decision table.

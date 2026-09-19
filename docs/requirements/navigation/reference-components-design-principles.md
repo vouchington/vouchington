@@ -21,7 +21,7 @@ the root `<main>` gutter is the only page-level inset.
 For non-infinite-scroll pages (settings, detail, create), pass
 `showFooter={false}` to `PageWithAside`. For infinite-scroll list pages,
 omit it (defaults to `true`) — the footer renders inside the aside
-column instead of below the content. Tracking enforcement: [issue #2435](https://github.com/jonathanong/filaments/issues/2435).
+column instead of below the content. Enforcement of this was tracked as jonathanong/filaments#2435.
 
 Exceptions (intentionally narrower than 1200px):
 

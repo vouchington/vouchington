@@ -6,7 +6,7 @@
 
 Actions technically supported by the bookmarks API (predicates exist in [`entity-relations.md`](../overview/architecture/entity-relations.md)) or clearly needed for user safety, but not exposed in the UI, are tracked here with a linked GitHub issue until resolved.
 
-No open gaps — the last tracked gap ([#3306](https://github.com/jonathanong/filaments/issues/3306), `rss_feed_item` Save) shipped in `web/components/news/news-item-actions.tsx`. Resolved gaps are removed rather than marked done; the next new gap re-adds the table (`# | Entity | Missing action | Predicate / type | Gap issue`) below this line.
+No open gaps — the last tracked gap (formerly filed as jonathanong/filaments#3306, `rss_feed_item` Save) shipped in `web/components/news/news-item-actions.tsx`. Resolved gaps are removed rather than marked done; the next new gap re-adds the table (`# | Entity | Missing action | Predicate / type | Gap issue`) below this line.
 
 ---
 

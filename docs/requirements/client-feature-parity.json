@@ -1358,7 +1358,7 @@
       },
       "gap": {
         "summary": "Web and Swift cover the complete interaction and accessibility contract. .NET has equivalent Core and realized-control evidence, but its non-skipping Mac Catalyst app-shell run remains tracked by #8625.",
-        "trackingIssue": "https://github.com/jonathanong/filaments/issues/8600"
+        "trackingIssue": "jonathanong/filaments#8600"
       }
     },
     {
@@ -2044,8 +2044,8 @@
       },
       "gap": {
         "summary": "Native clients present plan status but lack store billing and management.",
-        "trackingIssue": "https://github.com/jonathanong/filaments/issues/6582",
-        "relatedIssues": ["https://github.com/jonathanong/filaments/issues/6742"]
+        "trackingIssue": "jonathanong/filaments#6582",
+        "relatedIssues": ["jonathanong/filaments#6742"]
       }
     },
     {

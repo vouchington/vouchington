@@ -60,7 +60,7 @@ checks guard that request-selection contract instead of catalog content:
   never rewrites catalog source. It runs as "Check localization catalog format" in static-analysis
   CI; use `pnpm run localization:catalog -- format` when an agent must rewrite rows through the
   authoring CLI.
-- `static-code-analysis/i18n-extract/route-selector-map.test.mts` — unit-tests `assembleRouteAliasMap` and route discovery on tiny fake-git fixtures in the `i18n-extract-codemod` Vitest project. Graph closures live in `route-selector-map.mock.test.mts`, which mocks a single `analyzeProject` call (the real graph resolves dynamic imports itself, so there is no separate `resolveCheck` worklist to mock) so tooling Vitest never waits on the user-global no-mistakes lock ([#11696](https://github.com/jonathanong/filaments/issues/11696)). The 25s analysis budget remains on `analysis-budget.mts` for genuine lock diagnostics and is not applied to production `--check`.
+- `static-code-analysis/i18n-extract/route-selector-map.test.mts` — unit-tests `assembleRouteAliasMap` and route discovery on tiny fake-git fixtures in the `i18n-extract-codemod` Vitest project. Graph closures live in `route-selector-map.mock.test.mts`, which mocks a single `analyzeProject` call (the real graph resolves dynamic imports itself, so there is no separate `resolveCheck` worklist to mock) so tooling Vitest never waits on the user-global no-mistakes lock (formerly filed as jonathanong/filaments#11696). The 25s analysis budget remains on `analysis-budget.mts` for genuine lock diagnostics and is not applied to production `--check`.
 - `static-code-analysis/i18n-extract/route-selector-map.mts --check` — regenerates
   `web/lib/i18n/route-selectors.generated.mts` and `localization/catalog/routes.json` (stable
   selectors and pattern-keyed alias membership for every real `web/app` route) and fails if either committed
@@ -74,8 +74,8 @@ checks guard that request-selection contract instead of catalog content:
   Run without `--check` and commit both artifacts when a route, its imports, shared chrome, or a
   web alias change alters route membership. Translation-text edits that leave web aliases and
   route membership unchanged need no local graph command. This closure check does not prove every
-  possible value of `t(variable)`; [#11647](https://github.com/jonathanong/filaments/issues/11647)
-  tracks that separate guardrail gap.
+  possible value of `t(variable)`; that separate guardrail gap is tracked as a follow-up (formerly
+  filed as jonathanong/filaments#11647).
 
 The catalog and native-resource tests run as the `ts-shared` Vitest project:
 

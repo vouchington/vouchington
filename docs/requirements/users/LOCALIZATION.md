@@ -119,8 +119,8 @@ then format and compile.
   CI runs `--check` and fails if either artifact drifts; the local check is optional. Regenerate
   and commit both artifacts after changing routes, their imports, shared chrome, or web aliases in
   a way that changes route membership. Translation-text-only edits do not need the graph command.
-  Module reachability does not prove every runtime value of `t(variable)`; see
-  [#11647](https://github.com/jonathanong/filaments/issues/11647). Each web load requests the exact
+  Module reachability does not prove every runtime value of `t(variable)` (formerly filed as
+  jonathanong/filaments#11647). Each web load requests the exact
   chrome and current-route selector IDs in one batch. Vitest
   can assemble the committed JSON directly; live Next servers, including local development and
   Playwright, use the backend. The standalone production web smoke test

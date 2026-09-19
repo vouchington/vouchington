@@ -32,7 +32,7 @@ All helpers live in: `web/lib/links/entity-href.ts`
 
 ## Gaps (no helper yet)
 
-Tracked in [#5254](https://github.com/jonathanong/filaments/issues/5254). Add the helper
+This gap was tracked as jonathanong/filaments#5254. Add the helper
 before adding any new URL for these entities.
 
 No known detail entity route gaps remain. Collection/search/create routes can remain

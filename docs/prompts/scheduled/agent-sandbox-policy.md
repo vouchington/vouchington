@@ -43,14 +43,14 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
   (`git rebase` / `stash` / `cherry-pick` and `gh run` / `api` / `workflow`) — do not re-propose those presence or absence
   assertions. Do **not** add those six families back to Claude `permissions.allow` or Codex
   `prefix_rule`; absence on both review-skip lists is the intended parity after
-  [#9574](https://github.com/jonathanong/filaments/pull/9574) and
-  [#9578](https://github.com/jonathanong/filaments/issues/9578). Codex still having two-token
+  [#9574](https://github.com/jonathanong/filaments/pull/9574) and a related change (formerly
+  filed as jonathanong/filaments#9578). Codex still having two-token
   `["gh","pr"]` while Claude allows only `comment` / `ready` / `edit` / `create --draft` is an
   intentional leftover, not a scheduled-prompt target — do not "fix" it by widening Claude
   `Bash(gh pr *)`.
 - Three concrete, unguarded targets to check first: Codex/Grok/Cursor extra writable roots are
   already required to stay equal, and every Codex `writable_roots` entry must appear in Claude
-  `sandbox.filesystem.allowWrite` ([#9814](https://github.com/jonathanong/filaments/issues/9814)).
+  `sandbox.filesystem.allowWrite` (formerly filed as jonathanong/filaments#9814).
   Do **not** re-propose that subset gate. Claude may still have extra `allowWrite` roots that
   Codex does not (`web/.next`, `cloudflare-worker/.wrangler/state`). Confirm whether each of
   those Claude-only roots is still justified. [Three-surface consistency when the allowlist does

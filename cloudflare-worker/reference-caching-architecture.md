@@ -15,7 +15,8 @@ Key points for this worker:
   `NEXT_PUBLIC_ASSET_PREFIX`.
   Playwright CI builds use the fixed logical origin `http://localhost`; Chromium maps that origin's
   default port to the shard's Next standalone port, so browser asset traffic bypasses Wrangler while
-  the compiled build remains reusable across shard ports ([#10990](https://github.com/jonathanong/filaments/issues/10990)).
+  the compiled build remains reusable across shard ports (formerly filed as
+  jonathanong/filaments#10990).
   Web-integration builds leave the prefix unset and verify assets through the same-origin Worker.
 - Images (`/images/*` and `/sideload/*`) are served via the image-host CloudFront distribution in production, not through this worker.
 - Cached responses include `stale-while-revalidate` (2× TTL) so the edge serves stale content instantly during revalidation

@@ -4,7 +4,7 @@
 
 Status: accepted pre-launch target. This document specifies the coordinated v1 product. It does not
 describe a compatibility or migration period because no production membership data or supported
-store-billing clients exist. Implementation is tracked by [Plan #10630](https://github.com/jonathanong/filaments/issues/10630).
+store-billing clients exist. Implementation was tracked by a plan (formerly filed as jonathanong/filaments#10630).
 
 ## Outcome
 

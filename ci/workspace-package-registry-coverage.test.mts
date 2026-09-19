@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest'
  * from git, so a new package, or a deleted one, can silently drift out of sync with what is
  * actually tracked. These assertions make that drift fail here instead of being found by hand.
  *
- * See https://github.com/jonathanong/filaments/issues/10977.
+ * Formerly filed as jonathanong/filaments#10977.
  */
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
