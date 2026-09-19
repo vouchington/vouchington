@@ -13,16 +13,25 @@ in [CLAUDE.md](CLAUDE.md).
 and per global-chrome file, with `relationships: ['import-static', 'import-dynamic', 'import-type',
 'workspace']`. `no-mistakes` follows dynamic import targets recursively in that same graph pass,
 including nested/transitive `next/dynamic` wrappers, re-exports, and type imports — there is no
-separate JS-side dynamic-import worklist. `workspace` is load-bearing, not a legacy leftover:
-dropping it (verified empirically) silently expands the closure and changes the generated catalog
-membership for hundreds of routes, so it must stay even though `import-dynamic` alone looks like it
-should cover proven dynamic imports. It then lexically matches known catalog aliases in each
-closure; it does not use AST parsing. It writes the committed route selector map and the catalog's
-generated pattern-keyed route membership (`localization/catalog/routes.json`). Alias-less rows
-retain routes with no route-local copy. Run it without flags to regenerate both artifacts, with
-`--check` to verify them, and add `--diagnostics` for stderr-only phase timings and a computed-
-closure count (never affects the generated artifacts; the closures themselves are not dumped, since
-a full closure listing can reach megabytes). The `--check` form runs in
+`dynamic-import-closure.mts`. `workspace` is load-bearing, not a legacy leftover: dropping it
+(verified empirically) silently expands the closure and changes the generated catalog membership
+for hundreds of routes, so it must stay even though `import-dynamic` alone looks like it should
+cover proven dynamic imports. A second `analyzeProject` call batches `resolveCheck` over the union
+of those closure files and fails generate/`--check` on unresolved local specifiers (relative, root,
+or `@/` aliases) except a reviewed exclusion list. Package specifiers stay external even when
+no-mistakes 0.62.1 labels workspace packages unresolved. Computed `import()` specifiers are omitted
+by no-mistakes 0.62.1
+([jonathanong/no-mistakes#1006](https://github.com/jonathanong/no-mistakes/issues/1006)) and are
+failed lexically until that release. The generator then scans quoted alias-shaped literals only,
+fails unknown catalog aliases, and fails unbounded `t()` assembly and production `as MessageKey`
+casts. It does not parse `t()` with an AST. Sidebar chrome aliases come from the layout graph
+(`layout` → `RootAppShell` → `AppSidebar`); there is no catalog prefix dump. It writes the
+committed route selector map and the catalog's generated pattern-keyed route membership
+(`localization/catalog/routes.json`). Alias-less rows retain routes with no route-local copy. Run
+it without flags to regenerate both artifacts, with `--check` to verify them, and add
+`--diagnostics` for stderr-only phase timings and a computed-closure count (never affects the
+generated artifacts; the closures themselves are not dumped, since a full closure listing can
+reach megabytes). The `--check` form runs in
 [`static-code-analysis.yml`](../.github/workflows/static-code-analysis.yml). The companion
 [`route-bounds.test.mts`](i18n-extract/route-bounds.test.mts) resolves every generated route
 against the real catalog compiler in all four web locales and all public request limits. See

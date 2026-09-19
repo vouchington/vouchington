@@ -3,9 +3,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { serializeCatalogTable } from '@vouchington/localization'
 import { loadCatalogDirectory } from '@vouchington/localization-compiler'
-import { analyzeProject, type Relationship } from 'no-mistakes'
 import { format, type FormatConfig } from 'oxfmt'
-import { withI18nAnalysisBudget, type AnalysisBudgetOptions } from './analysis-budget.mts'
+import { type AnalysisBudgetOptions } from './analysis-budget.mts'
 import {
   createDiagnosticsCollector,
   writeDiagnostics,
@@ -14,25 +13,33 @@ import {
 import { globalChromeFiles } from './global-chrome-files.mts'
 import {
   assembleRouteAliasMap,
+  assertCatalogAliases,
   type RouteAliasMap,
   type RouteAliasSource,
 } from './route-alias-map-assembly.mts'
+import {
+  analyzeRouteDependencies,
+  analyzeUnresolvedImports,
+  initialClosureFiles,
+  reportsById,
+  uniqueClosureFiles,
+} from './route-graph-analysis.mts'
 import { renderSource } from './route-selector-output.mts'
+import {
+  formatClosureScanFailure,
+  uniqueClosureScanIssues,
+  type ClosureScanIssue,
+} from './route-source-scan.mts'
 import { discoverRoutes } from './route-tree.mts'
-import { aliasesFromDependencyResult, dependencyPaths, dependencyResult } from './route-usage.mts'
+import { dependencyResult, scanDependencyResult } from './route-usage.mts'
+import { assertResolvedImports } from './unresolved-imports.mts'
+
 const ROOT = path.join(import.meta.dirname, '../..')
 const APP_ROOT = 'web/app'
 const GENERATED = path.join(ROOT, 'web/lib/i18n/route-selectors.generated.mts')
 const ROUTES = path.join(ROOT, 'localization/catalog/routes.json')
 const FORMAT = JSON.parse(readFileSync(path.join(ROOT, '.oxfmtrc.json'), 'utf8')) as FormatConfig
 const NAVBAR = 'web/components/navbar.tsx'
-
-const DEPENDENCY_RELATIONSHIPS: Relationship[] = [
-  'import-static',
-  'import-dynamic',
-  'import-type',
-  'workspace',
-] as const
 
 export {
   assembleRouteAliasMap,
@@ -56,81 +63,51 @@ export async function computeRouteAliasMap(
   ])
   diagnostics?.phase('discover-routes', performance.now() - discoverStart)
   const analysisStart = performance.now()
-  const analysis = await withI18nAnalysisBudget(
-    'analyzeProject',
-    analyzeProject({
-      root: repoRoot,
-      jobs: 0,
-      reports: discovered
-        .map((route, index) => ({
-          id: String(index),
-          type: 'dependencies' as const,
-          files: route.files,
-          relationships: DEPENDENCY_RELATIONSHIPS,
-        }))
-        .concat(
-          globalFiles.map((file, index) => ({
-            id: `global:${index}`,
-            type: 'dependencies' as const,
-            files: [file],
-            relationships: DEPENDENCY_RELATIONSHIPS,
-          })),
-        ),
-    }),
-    budget,
-  )
+  const analysis = await analyzeRouteDependencies(repoRoot, discovered, globalFiles, budget)
   diagnostics?.phase('analyze-project', performance.now() - analysisStart)
-  const reports = new Map<string, unknown>()
-  for (const report of analysis.reports) {
-    if (!report.id) throw new Error('Missing route dependency report id')
-    reports.set(report.id, report)
-  }
-  const initialFiles = new Map<string, string[]>(
-    discovered
-      .map((route, index): [string, string[]] => [
-        route.pattern,
-        [
-          ...route.files,
-          ...dependencyPaths(dependencyResult(reports.get(String(index)), route.pattern)),
-        ],
-      ])
-      .concat(
-        globalFiles.map((file, index): [string, string[]] => [
-          `global:${file}`,
-          [file, ...dependencyPaths(dependencyResult(reports.get(`global:${index}`), file))],
-        ]),
-      ),
+  const reports = reportsById(analysis)
+  const initialFiles = initialClosureFiles(discovered, globalFiles, reports)
+  const resolveStart = performance.now()
+  assertResolvedImports(
+    await analyzeUnresolvedImports(repoRoot, uniqueClosureFiles(initialFiles), budget),
   )
+  diagnostics?.phase('resolve-check', performance.now() - resolveStart)
   const textCache = new Map<string, Promise<string>>()
+  const quotedAliases = new Set<string>()
+  const issues: ClosureScanIssue[] = []
   const routeAliases: RouteAliasSource[] = []
   for (const [index, route] of discovered.entries()) {
-    const files = initialFiles.get(route.pattern) ?? route.files
     diagnostics?.closureComputed()
-    const candidates = await aliasesFromDependencyResult(
+    const scan = await scanDependencyResult(
       repoRoot,
-      files,
+      initialFiles.get(route.pattern) ?? route.files,
       dependencyResult(reports.get(String(index)), route.pattern),
       textCache,
     )
-    routeAliases.push({
-      pattern: route.pattern,
-      aliases: candidates,
-    })
+    for (const alias of scan.aliases) quotedAliases.add(alias)
+    issues.push(...scan.issues)
+    routeAliases.push({ pattern: route.pattern, aliases: scan.aliases })
   }
   const globalAliases = new Set<string>()
   for (const [index, file] of globalFiles.entries()) {
-    const files = initialFiles.get(`global:${file}`) ?? [file]
     diagnostics?.closureComputed()
-    const aliases = await aliasesFromDependencyResult(
+    const scan = await scanDependencyResult(
       repoRoot,
-      files,
+      initialFiles.get(`global:${file}`) ?? [file],
       dependencyResult(reports.get(`global:${index}`), file),
       textCache,
     )
-    for (const alias of aliases) globalAliases.add(alias)
+    for (const alias of scan.aliases) {
+      quotedAliases.add(alias)
+      globalAliases.add(alias)
+    }
+    issues.push(...scan.issues)
   }
+  if (issues.length > 0) throw new Error(formatClosureScanFailure(uniqueClosureScanIssues(issues)))
+  assertCatalogAliases(quotedAliases, knownAliases)
   return assembleRouteAliasMap(knownAliases, routeAliases, globalAliases)
 }
+
 export async function renderRouteAliasArtifacts(
   repoRoot: string = ROOT,
   appRoot: string = APP_ROOT,
@@ -160,6 +137,7 @@ export async function renderRouteAliasArtifacts(
   ])
   return { source: formatted.code, membership }
 }
+
 export async function writeRouteAliasArtifacts(
   check = false,
   diagnosticsEnabled = false,
@@ -183,6 +161,7 @@ export async function writeRouteAliasArtifacts(
   diagnostics?.collector.phase('total', performance.now() - totalStart)
   if (diagnostics) writeDiagnostics(diagnostics.summary())
 }
+
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   await writeRouteAliasArtifacts(
     process.argv.includes('--check'),

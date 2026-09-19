@@ -75256,8 +75256,6 @@
 {"alias":"extracted.messages.messagesSidebarGroup.failedToLoadMessages_eeaaa7b4","consumer":"web","pattern":"web.chrome"},
 {"alias":"extracted.messages.messagesSidebarGroup.failedToLoadMoreMessages_d37c5429","consumer":"web","pattern":"web.chrome"},
 {"alias":"extracted.messages.messagesSidebarGroupView.allMessages_020dc04d","consumer":"web","pattern":"web.chrome"},
-{"alias":"extracted.messages.messagesSidebarGroupView.loadMore_3f06cd33","consumer":"web","pattern":"web.chrome"},
-{"alias":"extracted.messages.messagesSidebarGroupView.loading_47d2a515","consumer":"web","pattern":"web.chrome"},
 {"alias":"extracted.messages.messagesSidebarGroupView.messages_04d7b483","consumer":"web","pattern":"web.chrome"},
 {"alias":"extracted.moderationAnalytics.moderationTransparencyPanel.moderationTransparency_0e1d33a9","consumer":"web","pattern":"web.chrome"},
 {"alias":"extracted.navbar.intentSwitcher.menu_99af6606","consumer":"web","pattern":"web.chrome"},

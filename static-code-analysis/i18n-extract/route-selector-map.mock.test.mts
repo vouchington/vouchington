@@ -9,6 +9,7 @@ import type {
   AnalyzeProjectReportRequest,
   AnalyzeProjectResult,
   DependencyResult,
+  ResolveCheckBatchResult,
   WithInvocationOptions,
 } from 'no-mistakes'
 
@@ -91,12 +92,28 @@ function dependencyResult(paths: readonly string[]): DependencyResult {
   }
 }
 
-function installGraphMocks(): void {
+function emptyResolveCheck(files: readonly string[]): ResolveCheckBatchResult {
+  return {
+    allResolve: true,
+    unresolvedFiles: [],
+    results: files.map(file => ({
+      file,
+      allResolve: true,
+      imports: [],
+      unresolved: [],
+    })),
+  }
+}
+
+function installGraphMocks(resolveCheck?: ResolveCheckBatchResult): void {
   noMistakes.analyzeProject.mockImplementation(async options => ({
     reports: options.reports.map(report => ({
       id: report.id,
       type: report.type,
-      result: dependencyResult(requestedFiles(report).flatMap(file => CLOSURE_EXTRAS[file] ?? [])),
+      result:
+        report.type === 'resolveCheck'
+          ? (resolveCheck ?? emptyResolveCheck(requestedFiles(report)))
+          : dependencyResult(requestedFiles(report).flatMap(file => CLOSURE_EXTRAS[file] ?? [])),
     })),
   }))
 }
@@ -130,18 +147,29 @@ async function withRoutes(
 
 function expectGraphRequests(): void {
   const reports = noMistakes.analyzeProject.mock.calls.flatMap(([options]) => options.reports)
+  expect(reports.some(report => report.type === 'resolveCheck')).toBe(true)
   for (const report of reports) {
-    expect(report.type).toBe('dependencies')
     if (report.type !== 'dependencies') continue
     expect(report.relationships).toEqual(DEPENDENCY_RELATIONSHIPS)
   }
-  const requestedRoots = new Set(reports.flatMap(report => requestedFiles(report)))
+  const requestedRoots = new Set(
+    reports
+      .filter(report => report.type === 'dependencies')
+      .flatMap(report => requestedFiles(report)),
+  )
+  const resolveFiles = new Set(
+    reports
+      .filter(report => report.type === 'resolveCheck')
+      .flatMap(report => requestedFiles(report)),
+  )
   for (const file of [
     'web/app/registry/page.tsx',
     'web/app/login/page.tsx',
     'web/components/navbar.tsx',
   ])
     expect(requestedRoots.has(file)).toBe(true)
+  for (const file of ['web/lib/dynamic.ts', 'web/lib/labels.ts'])
+    expect(resolveFiles.has(file)).toBe(true)
 }
 
 async function expectGraphMembership(root: string): Promise<void> {
@@ -183,5 +211,85 @@ describe('mocked web route graph closures', () => {
     ])
     expect(noMistakes.analyzeProject).toHaveBeenCalled()
     expectGraphRequests()
+  })
+
+  it('fails when a quoted registry alias is not a web catalog alias', async () => {
+    await withRoutes(
+      {
+        ...GRAPH_FILES,
+        'web/lib/labels.ts': "export const item = { label: 'extracted.missing.alias' }\n",
+      },
+      async root => {
+        await expect(computeRouteAliasMap(KNOWN_ALIASES, root)).rejects.toThrow(
+          'Quoted alias literals are not web catalog aliases: extracted.missing.alias',
+        )
+      },
+    )
+  })
+
+  it('fails when resolveCheck reports a reachable unresolved import', async () => {
+    installGraphMocks({
+      allResolve: false,
+      unresolvedFiles: ['web/lib/dynamic.ts'],
+      results: [
+        {
+          file: 'web/lib/dynamic.ts',
+          allResolve: false,
+          imports: [{ specifier: './missing', kind: 'dynamic', status: 'unresolved' }],
+          unresolved: ['./missing'],
+        },
+      ],
+    })
+    await withRoutes({ ...GRAPH_FILES }, async root => {
+      await expect(computeRouteAliasMap(KNOWN_ALIASES, root)).rejects.toThrow(
+        'Unresolved reachable imports:\nweb/lib/dynamic.ts: ./missing (unresolved)',
+      )
+      expectGraphRequests()
+    })
+  })
+
+  it('fails when reachable source assembles a translation key at runtime', async () => {
+    await withRoutes(
+      {
+        ...GRAPH_FILES,
+        'web/app/other/page.ts':
+          'export default function Page() { return t(`extracted.foo.${id}`) }\n',
+      },
+      async root => {
+        await expect(computeRouteAliasMap(KNOWN_ALIASES, root)).rejects.toThrow(
+          'web/app/other/page.ts: unbounded translation key',
+        )
+      },
+    )
+  })
+
+  it('fails when reachable source uses a computed dynamic import', async () => {
+    await withRoutes(
+      {
+        ...GRAPH_FILES,
+        'web/lib/dynamic.ts':
+          "void import(`./${name}`)\nexport const label = 'extracted.dynamic.item.title'\n",
+      },
+      async root => {
+        await expect(computeRouteAliasMap(KNOWN_ALIASES, root)).rejects.toThrow(
+          'web/lib/dynamic.ts: computed dynamic import',
+        )
+      },
+    )
+  })
+
+  it('fails when production web source casts as MessageKey', async () => {
+    await withRoutes(
+      {
+        ...GRAPH_FILES,
+        'web/lib/labels.ts':
+          "export const item = { label: 'extracted.registry.item.title' as MessageKey }\n",
+      },
+      async root => {
+        await expect(computeRouteAliasMap(KNOWN_ALIASES, root)).rejects.toThrow(
+          'web/lib/labels.ts: production MessageKey cast',
+        )
+      },
+    )
   })
 })
