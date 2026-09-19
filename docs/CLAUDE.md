@@ -4,6 +4,23 @@ Use the [documentation index](README.md) and [documentation catalog](catalog/REA
 the page for a change. Keep durable documentation in its owning domain and update the catalog when
 adding an agent-facing document.
 
+## Public and private tiers
+
+Documentation lives in two tiers. This repository is licensed for public distribution, so treat
+every page here as readable by anyone. The private `vouchington/vouchington-docs` holds what cannot
+be.
+
+Apply the test before writing, not after. A page belongs in the private tier when its value comes
+from real operational values rather than from how the system works: thresholds and parameters an
+evader could tune against, real infrastructure topology, hostnames and identities, actual spend or
+per-unit cost, and business projections. Everything else belongs here — architecture, contracts,
+commands, catalogs, procedures, and the reasoning behind a design. When a page needs both, describe
+the mechanism here and keep the numbers private.
+
+[Documentation moved to vouchington-docs](development/docs-moved-to-vouchington-docs.md) registers
+every page already held back and owns the procedure for moving one out. Read it before moving a
+page, and check it when a path you expected to find is missing.
+
 ## Instruction placement
 
 Classify each candidate before writing it:
@@ -27,7 +44,9 @@ Examples: a directory-only guardrail stays in the nearest `CLAUDE.md`; test-auth
 ```mermaid
 flowchart TD
   item[Instruction candidate]
-  item --> q1{Directory-scoped invariant?}
+  item --> q0{Value comes from real operational numbers or identities?}
+  q0 -->|yes| privateDocs[Private vouchington-docs, per its registry]
+  q0 -->|no| q1{Directory-scoped invariant?}
   q1 -->|yes| claudeMd[Nearest CLAUDE.md]
   q1 -->|no| q2{Task-triggered procedure?}
   q2 -->|existing skill| existingSkill[Point at existing skill]
