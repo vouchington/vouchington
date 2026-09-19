@@ -108,6 +108,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `main-checks.yml`                   | `tooling-tests`                 | job    | → `tests-tooling.yml`                 | 360           |
 | `main-checks.yml`                   | `ts-shared-tests`               | job    | → `tests-ts-shared.yml`               | 360           |
 | `main-cloudflare-worker.yml`        | `cloudflare-worker-tests`       | job    | → `tests-cloudflare-worker.yml`       | 360           |
+| `main-cloudflare-worker.yml`        | `publish-cloudflare-worker`     | job    | `ubuntu-latest`                       | 10            |
 | `main-cloudflare-worker.yml`        | `static-checks`                 | job    | → `checks-static.yml`                 | 360           |
 | `main-lambdas.yml`                  | `lambdas-tests`                 | job    | → `tests-lambdas.yml`                 | 360           |
 | `main-lambdas.yml`                  | `publish-image-resize`          | job    | `ubuntu-latest`                       | 10            |

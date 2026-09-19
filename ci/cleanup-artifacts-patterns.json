@@ -1,6 +1,7 @@
 {
   "keep": [
     "image-resize-lambda-*",
+    "cloudflare-worker-*",
     "next-static-*",
     "browser-port-diagnostics-*",
     "web-build-timings-*",

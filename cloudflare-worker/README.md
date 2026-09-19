@@ -24,6 +24,15 @@ A Cloudflare Worker that sits on top of [`backend/`](../backend/) and [`web/`](.
 - <a id="cf-headers-from-origin"></a>[CF Headers from Origin](reference-cf-headers-from-origin.md)
 - <a id="related"></a>[Related](reference-related.md)
 
+## Deployment artifact
+
+The successful `main-cloudflare-worker` workflow publishes the credential-free Wrangler bundle as
+`cloudflare-worker-<run-id>-<attempt>` after the Worker static checks and tests pass. The one-day
+Actions artifact is a transport for the infrastructure handoff; the infrastructure repository
+verifies the exact source run and attempt, then owns deployment configuration, bindings, secrets,
+and provider mutation. Product CI does not receive Cloudflare credentials or choose deployed
+topology.
+
 The Worker consumes `CF-Connecting-IP` to stamp `X-Forwarded-For` and defensively removes the
 original header before origin fetches. Same-zone Cloudflare subrequests may regenerate it, so the
 backend origin guard trusts the Worker-stamped `X-Forwarded-For` first; see [Headers](reference-headers.md).

@@ -4,6 +4,7 @@ import { classifyArtifact, isExplicitlyClassified } from './cleanup-artifacts-pa
 
 const KEEP_NAMES = [
   'image-resize-lambda-123456789-2',
+  'cloudflare-worker-123456789-2',
   'next-static-abc123',
   'browser-port-diagnostics-web',
   // Same category as browser-port-diagnostics-*: best-effort diagnostic evidence for an

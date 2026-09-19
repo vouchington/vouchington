@@ -29,6 +29,59 @@ permissions:
   contents: read
 
 jobs:
+  publish-cloudflare-worker:
+    needs: [static-checks, cloudflare-worker-tests]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' && needs.cloudflare-worker-tests.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 3
+      - name: Build and validate the Cloudflare Worker bundle
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          cat > cloudflare-worker/cloudflare-worker-build.json <<'JSON'
+          {
+            "name": "credential-free-package-build",
+            "main": "src/index.mts",
+            "compatibility_date": "2026-02-11",
+            "compatibility_flags": ["nodejs_compat"],
+            "upload_source_maps": true
+          }
+          JSON
+          output_dir="$RUNNER_TEMP/cloudflare-worker"
+          mkdir -p "$output_dir"
+          pnpm --dir cloudflare-worker exec wrangler deploy \
+            --config cloudflare-worker-build.json \
+            --dry-run --outdir "$output_dir"
+          test -f "$output_dir/index.js"
+          if find "$output_dir" -type l -print -quit | grep -q .; then
+            echo '::error::Cloudflare Worker bundle contains a symbolic link'
+            exit 1
+          fi
+          if find "$output_dir" ! -type f ! -type d -print -quit | grep -q .; then
+            echo '::error::Cloudflare Worker bundle contains a non-regular entry'
+            exit 1
+          fi
+          mkdir -p delivery
+          mv "$output_dir" delivery/cloudflare-worker
+      - name: Publish the Cloudflare Worker bundle
+        timeout-minutes: 1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: cloudflare-worker-${{ github.run_id }}-${{ github.run_attempt }}
+          path: delivery
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
   cloudflare-worker-tests:
     needs: [static-checks]
     if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
