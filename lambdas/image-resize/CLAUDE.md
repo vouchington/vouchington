@@ -21,9 +21,9 @@ fixture, or mock, load the
   URL fetch) — that is the entire point of moving OG rendering into this Lambda for the IPv6-only
   egress flip (issue #7987).
 - Keep runtime configuration synchronized with the Lambda deployment owned by
-  `vouchington/vouchington-infra`. Filaments validates and dispatches the source revision; private
-  infrastructure builds and publishes the artifact. Infrastructure changes belong in that
-  repository.
+  `vouchington/vouchington-infra`. The successful `main-lambdas` workflow publishes the validated,
+  attempt-bound ZIP; private infrastructure verifies that exact source-run artifact, persists it in
+  its deployment store, and owns the rollout. Infrastructure changes belong in that repository.
 - Origin S3 objects and sideload fetches over `MAX_INPUT_IMAGE_BYTES`, and Sharp inputs over
   `MAX_INPUT_PIXELS`, must 413 on `/images/*` and `/sideload/*` rather than buffering or decoding
   unbounded payloads. `/og/*` applies the same caps at S3 read and Sharp decode, then falls back to

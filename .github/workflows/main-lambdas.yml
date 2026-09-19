@@ -26,6 +26,38 @@ permissions:
   contents: read
 
 jobs:
+  publish-image-resize:
+    needs: [static-checks, lambdas-tests]
+    if: ${{ !cancelled() && needs.static-checks.result == 'success' && needs.lambdas-tests.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+      - name: Build and validate the image-resize deployment package
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          pnpm --filter @lambdas/image-resize run build
+          unzip -t lambdas/image-resize/dist/function.zip
+          zipinfo -1 lambdas/image-resize/dist/function.zip | grep -Fxq index.mjs
+          mkdir -p delivery
+          cp lambdas/image-resize/dist/function.zip delivery/image-resize.zip
+      - name: Publish the image-resize deployment package
+        timeout-minutes: 1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: image-resize-lambda-${{ github.run_id }}-${{ github.run_attempt }}
+          path: delivery/image-resize.zip
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
   lambdas-tests:
     needs: [static-checks]
     if: ${{ !cancelled() && needs.static-checks.result == 'success' }}

@@ -31,6 +31,7 @@ describe('main workflow permissions', () => {
       actions: 'read',
       contents: 'read',
     })
+    expect(main.jobs?.['publish-image-resize']?.permissions).toEqual({ contents: 'read' })
     expect(main.jobs?.dispatch).toBeUndefined()
   })
 })
