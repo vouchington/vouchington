@@ -44,7 +44,7 @@ describe('assertSearchCommunitiesEligibilityIsIndexed', () => {
     expect(() => assertSearchCommunitiesEligibilityIsIndexed(indexed)).not.toThrow()
   })
 
-  it('accepts a posts bitmap heap scan backed by the constrained community index', () => {
+  it('accepts a constrained posts bitmap heap scan with a non-qualifier subplan', () => {
     const bitmapIndexed = result(
       'search-communities-member',
       'SELECT * FROM view_community_metrics vm',
@@ -62,6 +62,11 @@ describe('assertSearchCommunitiesEligibilityIsIndexed', () => {
                   'Node Type': 'Bitmap Index Scan',
                   'Index Name': 'posts__default_community_id_idx',
                   'Index Cond': '(community_id = c_1.id)',
+                },
+                {
+                  'Node Type': 'CTE Scan',
+                  'Parent Relationship': 'SubPlan',
+                  'CTE Name': 'moderation_context',
                 },
               ],
             },
@@ -123,6 +128,72 @@ describe('assertSearchCommunitiesEligibilityIsIndexed', () => {
     expect(() => assertSearchCommunitiesEligibilityIsIndexed(wrongBitmapIndex)).toThrow(
       'must resolve view_community_metrics.post_count through indexed posts lookups',
     )
+  })
+
+  it('rejects a bitmap OR when any alternative is not community-bound', () => {
+    const partlyBoundBitmapOr = result(
+      'search-communities-member',
+      'SELECT * FROM view_community_metrics vm',
+      {
+        Plan: {
+          'Node Type': 'Bitmap Heap Scan',
+          'Relation Name': 'posts__default',
+          Alias: 'p',
+          Plans: [
+            {
+              'Node Type': 'BitmapOr',
+              Plans: [
+                {
+                  'Node Type': 'Bitmap Index Scan',
+                  'Index Name': 'posts__default_community_id_idx',
+                  'Index Cond': '(community_id = c_1.id)',
+                },
+                {
+                  'Node Type': 'Bitmap Index Scan',
+                  'Index Name': 'posts__default_post_type_idx',
+                  'Index Cond': "(post_type = 'discussion'::post_types)",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    )
+    expect(() => assertSearchCommunitiesEligibilityIsIndexed(partlyBoundBitmapOr)).toThrow(
+      'must resolve view_community_metrics.post_count through indexed posts lookups',
+    )
+  })
+
+  it('accepts a bitmap AND when a conjunct is community-bound', () => {
+    const communityBoundBitmapAnd = result(
+      'search-communities-member',
+      'SELECT * FROM view_community_metrics vm',
+      {
+        Plan: {
+          'Node Type': 'Bitmap Heap Scan',
+          'Relation Name': 'posts__default',
+          Alias: 'p',
+          Plans: [
+            {
+              'Node Type': 'BitmapAnd',
+              Plans: [
+                {
+                  'Node Type': 'Bitmap Index Scan',
+                  'Index Name': 'posts__default_community_id_idx',
+                  'Index Cond': '(community_id = c_1.id)',
+                },
+                {
+                  'Node Type': 'Bitmap Index Scan',
+                  'Index Name': 'posts__default_post_type_idx',
+                  'Index Cond': "(post_type = 'discussion'::post_types)",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    )
+    expect(() => assertSearchCommunitiesEligibilityIsIndexed(communityBoundBitmapAnd)).not.toThrow()
   })
 
   it('rejects a sequential posts scan', () => {

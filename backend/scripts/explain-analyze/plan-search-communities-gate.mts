@@ -62,13 +62,36 @@ function hasIndexedAccess(node: PlanNode): boolean {
   if (String(node['Node Type'] ?? '') !== 'Bitmap Heap Scan') {
     return Boolean(String(node['Index Cond'] ?? ''))
   }
-  return collectPlanNodes(node).some(
-    descendant =>
-      descendant !== node &&
-      String(descendant['Node Type'] ?? '') === 'Bitmap Index Scan' &&
-      String(descendant['Index Name'] ?? '') === POSTS_COMMUNITY_ID_INDEX &&
-      Boolean(String(descendant['Index Cond'] ?? '')),
-  )
+  const bitmapPlans = getBitmapPlans(node)
+  return bitmapPlans.length > 0 && bitmapPlans.every(isCommunityBoundBitmap)
+}
+
+function isCommunityBoundBitmap(value: unknown): boolean {
+  if (value == null || typeof value !== 'object' || Array.isArray(value)) return false
+  const node = value as PlanNode
+  const nodeType = String(node['Node Type'] ?? '')
+  if (nodeType === 'Bitmap Index Scan') {
+    return (
+      String(node['Index Name'] ?? '') === POSTS_COMMUNITY_ID_INDEX &&
+      Boolean(String(node['Index Cond'] ?? ''))
+    )
+  }
+
+  const plans = getBitmapPlans(node)
+  if (nodeType === 'BitmapAnd') return plans.some(isCommunityBoundBitmap)
+  if (nodeType === 'BitmapOr') {
+    return plans.length > 0 && plans.every(isCommunityBoundBitmap)
+  }
+  return false
+}
+
+function getBitmapPlans(node: PlanNode): unknown[] {
+  if (!Array.isArray(node['Plans'])) return []
+  return node['Plans'].filter(value => {
+    if (value == null || typeof value !== 'object' || Array.isArray(value)) return false
+    const nodeType = String((value as PlanNode)['Node Type'] ?? '')
+    return nodeType === 'Bitmap Index Scan' || nodeType === 'BitmapAnd' || nodeType === 'BitmapOr'
+  })
 }
 
 function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {
