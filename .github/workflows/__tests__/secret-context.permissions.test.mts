@@ -154,14 +154,11 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(storybookJob).not.toContain('publish_static_artifact')
     expect(storybookJob).not.toContain('presign_manifest:')
     expect(storybookJob).toContain("publish_coverage: ${{ github.event_name == 'pull_request' }}")
-    expect(storybookJob).toContain("cancel_in_progress: ${{ github.event_name == 'pull_request' }}")
+    expect(storybookJob).not.toContain('cancel_in_progress:')
     expect(storybookJob).not.toContain('publish_prefix:')
+    expect(storybookJob).not.toContain('concurrency_key:')
     expect(storybookJob).toContain('checkout_ref: ${{ github.sha }}')
     expect(storybookJob).not.toContain('github.event.pull_request.head.sha')
-    // PR Storybook remains read-only and concurrency_key still cancels stale runs.
-    expect(storybookJob).toContain(
-      "concurrency_key: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}",
-    )
     expect(storybookJob).not.toContain('secrets: inherit')
     expect(coverageJob).toContain('storybook-result: ${{ needs.storybook.result }}')
     expect(testsJob).toContain('test-coverage')
@@ -178,19 +175,21 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(vitestConfig).toContain('VITEST_STORYBOOK_BROWSER_MAX_WORKERS')
     expect(vitestConfig).toContain('maxWorkers: parseStorybookBrowserMaxWorkers()')
     expect(mappingSection(storybookWorkflow, 'workflow_call')).toContain('default: false')
-    expect(mappingSection(storybookWorkflow, 'workflow_call')).toContain('default: main')
+    expect(mappingSection(storybookWorkflow, 'workflow_call')).not.toContain('default: main')
     expect(mappingSection(storybookWorkflow, 'workflow_call')).toContain("default: ''")
     expect(mappingSection(storybookWorkflow, 'workflow_dispatch')).toContain('default: false')
-    expect(mappingSection(storybookWorkflow, 'workflow_dispatch')).toContain('default: main')
-    expect(mappingSection(storybookWorkflow, 'workflow_dispatch')).toContain('cancel_in_progress:')
+    expect(mappingSection(storybookWorkflow, 'workflow_dispatch')).not.toContain('default: main')
+    expect(mappingSection(storybookWorkflow, 'workflow_dispatch')).not.toContain(
+      'cancel_in_progress:',
+    )
     expect(mappingSection(storybookWorkflow, 'workflow_dispatch')).not.toContain(
       'manual PR preview publishing',
     )
     expect(storybookWorkflow).toContain(
-      "group: ${{ github.workflow }}-${{ inputs.cancel_in_progress && (inputs.concurrency_key || inputs.publish_prefix) || inputs.checkout_ref || github.sha }}-${{ inputs.cancel_in_progress && 'cancel' || 'queue' }}",
+      'group: ${{ github.workflow }}-${{ inputs.checkout_ref || github.sha }}',
     )
     expect(storybookWorkflow).toContain('ref: ${{ inputs.checkout_ref || github.sha }}')
-    expect(storybookWorkflow).toContain('cancel-in-progress: ${{ inputs.cancel_in_progress }}')
+    expect(storybookWorkflow).toContain('cancel-in-progress: false')
     expect(storybookWorkflow).not.toContain('inputs.trusted_secret_context')
     // PR-controlled Storybook code cannot publish or request a Pages artifact.
     // dispatch-completed-deploy.yml alone sends successful main-storybook source metadata.

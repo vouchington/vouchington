@@ -97,7 +97,7 @@ describe('tests-playwright.yml', () => {
     expect(workflow).toContain(
       'group: playwright-tests-${{ github.event.pull_request.number || github.ref || github.sha }}',
     )
-    expect(workflow).toContain("cancel-in-progress: ${{ inputs.event-name == 'pull_request' }}")
+    expect(workflow).toContain('cancel-in-progress: false')
     expect(shardJobMatch![0]).not.toContain('\n    concurrency:')
   })
 

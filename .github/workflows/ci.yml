@@ -290,10 +290,7 @@ jobs:
       actions: read
       contents: read
     with:
-      cancel_in_progress: ${{ github.event_name == 'pull_request' }}
       checkout_ref: ${{ github.sha }}
-      # Stable per-PR cancellation key so a new head cancels its stale Storybook build.
-      concurrency_key: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
       selected_test_files: ${{ needs.select-ci.outputs.storybook-browser-files }}
@@ -442,7 +439,6 @@ jobs:
       )
     uses: ./.github/workflows/tests-playwright-credentialed.yml
     with:
-      event-name: ${{ github.event_name }}
       trusted_secret_context: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' }}
     secrets:
       AWS_TEST_ROLE_ARN: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.AWS_TEST_ROLE_ARN || '' }}

@@ -32,7 +32,7 @@ permissions:
 concurrency:
   # Serialize Playwright workflow runs for the same PR/ref without serializing shards.
   group: playwright-tests-${{ github.event.pull_request.number || github.ref || github.sha }}
-  cancel-in-progress: ${{ inputs.event-name == 'pull_request' }}
+  cancel-in-progress: false
 
 jobs:
   select:

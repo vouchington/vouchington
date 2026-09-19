@@ -52,7 +52,7 @@ on:
 
 concurrency:
   group: portability-tests-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 permissions:
   contents: read

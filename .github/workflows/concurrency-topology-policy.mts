@@ -65,8 +65,8 @@ const fifo = (scope: readonly ConcurrencyScope[], family?: SharedConcurrencyFami
   policy('fifo', 'retain-running', scope, family)
 export const concurrencyTopologyPolicy = {
   '.github/workflows/actionlint.yml': conditional(['pull-request', 'sha']),
-  '.github/workflows/build-backend.yml': conditional(['pull-request', 'ref']),
-  '.github/workflows/build-web.yml': conditional(['pull-request', 'ref']),
+  '.github/workflows/build-backend.yml': retained(['pull-request', 'ref']),
+  '.github/workflows/build-web.yml': retained(['pull-request', 'ref']),
   '.github/workflows/ci.yml': conditional(['pull-request', 'sha']),
   '.github/workflows/ci-tests-processing.yml': retained(['run']),
   '.github/workflows/cleanup-artifacts.yml': retained(['input-resource']),
@@ -144,9 +144,9 @@ export const concurrencyTopologyPolicy = {
   '.github/workflows/pnpm-dedupe.yml': retained(['fixed-resource']),
   '.github/workflows/static-code-analysis.yml': conditional(['pull-request', 'ref']),
   '.github/workflows/static-code-analysis.yml#no-mistakes-owned': fifo(['fixed-resource']),
-  '.github/workflows/storybook.yml': conditional(['input-resource', 'sha']),
+  '.github/workflows/storybook.yml': retained(['input-resource', 'sha']),
   '.github/workflows/sync-articles.yml': retained(['run']),
-  '.github/workflows/tests-playwright-credentialed.yml': conditional(['pull-request', 'sha']),
-  '.github/workflows/tests-playwright.yml': conditional(['pull-request', 'ref', 'sha']),
-  '.github/workflows/tests-portability.yml': conditional(['pull-request', 'ref']),
+  '.github/workflows/tests-playwright-credentialed.yml': retained(['pull-request', 'sha']),
+  '.github/workflows/tests-playwright.yml': retained(['pull-request', 'ref', 'sha']),
+  '.github/workflows/tests-portability.yml': retained(['pull-request', 'ref']),
 } satisfies Record<string, ConcurrencyPolicy>

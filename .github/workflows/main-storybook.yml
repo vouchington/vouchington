@@ -42,5 +42,4 @@ jobs:
       actions: read
       contents: read
     with:
-      cancel_in_progress: false
       checkout_ref: ${{ github.sha }}

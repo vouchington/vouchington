@@ -3,26 +3,8 @@ name: Storybook
 on:
   workflow_call:
     inputs:
-      cancel_in_progress:
-        description: 'Whether newer Storybook runs should cancel older runs for the same concurrency group'
-        required: false
-        type: boolean
-        default: false
-      publish_prefix:
-        description: 'Target selector for the published Storybook build'
-        required: false
-        type: string
-        default: main
       checkout_ref:
         description: 'Git ref or SHA to check out before building Storybook'
-        required: false
-        type: string
-        default: ''
-      concurrency_key:
-        description: >-
-          Stable concurrency-group key used when cancel_in_progress is true, independent of
-          static publishing; falls back to publish_prefix when unset so a stale run for the same
-          caller still cancels.
         required: false
         type: string
         default: ''
@@ -49,26 +31,8 @@ on:
         default: full
   workflow_dispatch:
     inputs:
-      publish_prefix:
-        description: 'Target selector for the published Storybook build'
-        required: false
-        type: string
-        default: main
-      cancel_in_progress:
-        description: 'Whether newer Storybook runs should cancel older runs for the same concurrency group'
-        required: false
-        type: boolean
-        default: false
       checkout_ref:
         description: 'Git ref or SHA to check out before building Storybook'
-        required: false
-        type: string
-        default: ''
-      concurrency_key:
-        description: >-
-          Stable concurrency-group key used when cancel_in_progress is true, independent of
-          static publishing; falls back to publish_prefix when unset so a stale run for the same
-          caller still cancels.
         required: false
         type: string
         default: ''
@@ -79,8 +43,8 @@ on:
         default: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.cancel_in_progress && (inputs.concurrency_key || inputs.publish_prefix) || inputs.checkout_ref || github.sha }}-${{ inputs.cancel_in_progress && 'cancel' || 'queue' }}
-  cancel-in-progress: ${{ inputs.cancel_in_progress }}
+  group: ${{ github.workflow }}-${{ inputs.checkout_ref || github.sha }}
+  cancel-in-progress: false
 
 # This reusable workflow executes PR-controlled code with contents read only and never touches
 # the Cloudflare Pages token. Exact same-repository dependency bots may run tests here too. Only
