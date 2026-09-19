@@ -74,7 +74,7 @@ Public subnets with `assign_public_ip = true`. Each task gets one public IPv4 (~
 
 ### Deferred: IAM database authentication
 
-`iam_database_authentication_enabled` is intentionally not set (defaults off). Considered and deferred in [#2496](https://github.com/jonathanong/filaments/issues/2496).
+`iam_database_authentication_enabled` is intentionally not set (defaults off). Considered and deferred (formerly filed as jonathanong/filaments#2496).
 
 **Why deferred:** Zero AWS cost (token signing is a free local op), but real permanent complexity — two auth paths through the DB connection layer, mandatory TLS + RDS CA bundle, a host-aware async token callback (writer vs reader pool), an out-of-band `voucha_iam` Postgres role bootstrap (can't be done by Terraform or the migration runner), and a code path that only runs against real Aurora (not locally or in CI). The issue's stated motivation — avoiding static password copies — is partly mitigated: ECS reads the Aurora-managed Secrets Manager password directly and the backend assembles its connection URL at startup, so OpenTofu no longer copies the password into a `database-url` SSM value. IAM auth would still eliminate the static password entirely by replacing it with short-lived tokens.
 

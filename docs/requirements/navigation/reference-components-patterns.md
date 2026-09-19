@@ -155,7 +155,7 @@ Rules:
 - `<SelectValue>` requires a `placeholder`.
 - Exempt non-user-facing or unsupported controls such as file inputs, hidden inputs, date inputs, honeypot fields, and primitive wrappers under `web/components/ui/`.
 
-Enforcement is tracked in [issue #2449](https://github.com/jonathanong/filaments/issues/2449).
+Enforcement was tracked as jonathanong/filaments#2449.
 
 ### Post Type Badges
 

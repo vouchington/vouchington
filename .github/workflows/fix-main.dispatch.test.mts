@@ -154,7 +154,7 @@ describe('fix-main workflow', () => {
         labels: ['automation', 'workflow'],
         number: 402,
         title: 'Automation options: CI failure',
-        url: 'https://github.com/jonathanong/filaments/issues/402',
+        url: 'https://github.com/example/repo/issues/402',
       },
     ])
 

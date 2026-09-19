@@ -125,10 +125,10 @@ By placing landing page creation early in onboarding, users are primed to share 
 
 The landing page growth loop has basic visit/click analytics, but users still get insufficient feedback on what's working:
 
-- **Full-funnel attribution**: The app already exposes landing page visits, clicks, CTR, and daily stats, but doesn't yet surface an end-to-end funnel (visits -> clicks -> signups) or clearly attribute signups back to specific pages/links using `session_referral_attributions`. See [#1420](https://github.com/jonathanong/filaments/issues/1420).
+- **Full-funnel attribution**: The app already exposes landing page visits, clicks, CTR, and daily stats, but doesn't yet surface an end-to-end funnel (visits -> clicks -> signups) or clearly attribute signups back to specific pages/links using `session_referral_attributions` (formerly filed as jonathanong/filaments#1420).
 - **Sharing nudges**: No prompts when pages hit traction milestones (first 5 visits, first click-through, first referred signup).
-- **Referral revenue**: No estimated earnings from referral link clicks. See [#1426](https://github.com/jonathanong/filaments/issues/1426).
-- **Referral signup notifications**: Referrer isn't notified when someone they referred signs up. See [#1422](https://github.com/jonathanong/filaments/issues/1422).
+- **Referral revenue**: No estimated earnings from referral link clicks (formerly filed as jonathanong/filaments#1426).
+- **Referral signup notifications**: Referrer isn't notified when someone they referred signs up (formerly filed as jonathanong/filaments#1422).
 
 See [Feedback Loops](feedback-loops.md) for the full gap analysis.
 

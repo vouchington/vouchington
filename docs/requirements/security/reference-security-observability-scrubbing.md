@@ -7,7 +7,7 @@
 Sentry telemetry (errors, transactions, spans, breadcrumbs, and the Request Interface) previously shipped full URLs,
 including query strings and fragments. Unsubscribe tokens, email-verification tokens, and API keys
 are transmitted as query parameters across this codebase, so those URLs leaked secrets to Sentry.
-See [issue #8834](https://github.com/jonathanong/filaments/issues/8834).
+See the original analysis (formerly filed as jonathanong/filaments#8834).
 
 Sentry also copies request headers and cookies into error and transaction Request Interfaces without
 applying its span-header filtering. Repository-side scrubbing is therefore mandatory defense in
@@ -77,7 +77,7 @@ enabled.
 
 An HTTP header value can itself be a full URL with a query string — most notably `Referer`, which
 carries whatever page the user navigated from, tokens and all (e.g. an unsubscribe link's `?token=`).
-[Issue #8866](https://github.com/jonathanong/filaments/issues/8866) found that the original eight-key
+A prior investigation (formerly filed as jonathanong/filaments#8866) found that the original eight-key
 enumeration missed this: the header value reaches Sentry through two fields that
 `scrubSpanUrlAttributes`/`scrubRequestUrlFields` already had in hand, but neither scrubbed it.
 

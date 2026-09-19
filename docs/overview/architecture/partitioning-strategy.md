@@ -245,8 +245,8 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `relation__user__subscribe_rss_feed_items__topic`.
 
 `session_referral_attributions` is `RANGE (id)`-partitioned with a default partition only (see the
-inventory above) — this was the structural half of
-[#8750](https://github.com/jonathanong/filaments/issues/8750). The retention question is now
+inventory above) — this was the structural half of a change formerly filed as
+jonathanong/filaments#8750. The retention question is now
 settled too: anonymous (`user_id IS NULL`) rows are deleted after 30 days by
 `deleteOldReferralAttributionBatch()`, while user-linked rows are retained for the life of the
 account — `deleteUser` nulls `user_id`, which drops the row into the same 30-day sweep. See the

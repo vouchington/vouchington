@@ -238,7 +238,7 @@ describe('Trivy policy', () => {
       id: 'CVE-2026-0001',
       purls: [versionedPurl(['pkg:deb/debian/curl@', ['8', '0', '1'].join('.'), '?arch=amd64'])],
       statement:
-        'Not exploitable: package is not installed. Cleanup: https://github.com/jonathanong/filaments/issues/1',
+        'Not exploitable: package is not installed. Cleanup: https://github.com/vouchington/vouchington/issues/1',
       expired_at: futureDate(),
     }
     const plusName = versionedPurl([
@@ -268,7 +268,7 @@ describe('Trivy policy', () => {
         {
           ...valid,
           statement:
-            'Exploitable: reaches package. Cleanup: https://github.com/jonathanong/filaments/issues/1',
+            'Exploitable: reaches package. Cleanup: https://github.com/vouchington/vouchington/issues/1',
         },
         'vulnerabilities[0].statement must give exploitability rationale and cleanup issue URL',
       ],

@@ -172,7 +172,8 @@ Error: another ./dev/reset-worktree is running for this worktree.
 
 Two concurrent `./dev/reset-worktree` runs in the same worktree race: both fetch,
 tear down services, hard-reset the branch, and remove generated output, so a second
-run started mid-reset can observe (or clobber) a half-completed reset ([#10849](https://github.com/jonathanong/filaments/issues/10849)).
+run started mid-reset can observe (or clobber) a half-completed reset (formerly filed as
+jonathanong/filaments#10849).
 `./dev/reset-worktree` uses `.local/reset-worktree.lock` for an exclusive,
 non-blocking kernel lock through the entire reset. Linux `flock` locks an open
 descriptor; macOS `lockf` holds the named file while it runs the reset command. A second run fails before
@@ -189,4 +190,4 @@ no stale reset lock to clear with `./dev/unstick-locks`.
 ## See Also
 
 - [dev/CLAUDE.md](../../dev/CLAUDE.md) — worktree setup and initialization; `./dev/unstick-locks` command
-- GitHub issue [#2290](https://github.com/jonathanong/filaments/issues/2290) — original diagnosis
+- Original diagnosis (formerly filed as jonathanong/filaments#2290)

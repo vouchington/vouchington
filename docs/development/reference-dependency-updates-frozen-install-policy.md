@@ -51,7 +51,7 @@ Dependabot updates registry dependencies declared by workspace manifests, but it
 `overrides` map in `pnpm-workspace.yaml`. PR #5159 therefore updated the direct
 `@jongleberry/vurst-*` requirements while leaving a parent-scoped override on the old version. Do
 not add or rely on dependency-version overrides as automation-managed pins; fix the upstream
-package metadata or upgrade the parent dependency instead. Issue
-[#7794](https://github.com/jonathanong/filaments/issues/7794) tracks removing the remaining
-overrides and enforcing that policy. `packageExtensions`, which correct dependency metadata without
+package metadata or upgrade the parent dependency instead. Removing the remaining overrides and
+enforcing that policy is tracked as a follow-up (formerly filed as jonathanong/filaments#7794).
+`packageExtensions`, which correct dependency metadata without
 forcing a version, is outside that ban.

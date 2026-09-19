@@ -2,7 +2,7 @@
 
 This document is the source-of-truth for Voucha's brand positioning, voice, and copy. Every user-facing rework — homepage, articles, emails, microcopy — is measured against it.
 
-Related issue: [#6232 "Constitution"](https://github.com/jonathanong/filaments/issues/6232)
+Related issue: "Constitution" (formerly filed as jonathanong/filaments#6232)
 
 ---
 

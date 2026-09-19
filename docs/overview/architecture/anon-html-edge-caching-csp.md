@@ -153,7 +153,7 @@ this migration.
 
 ## Option C revisited: hash-based CSP
 
-Issue [#8391](https://github.com/jonathanong/filaments/issues/8391) asked whether the per-request
+An issue formerly filed as jonathanong/filaments#8391 asked whether the per-request
 placeholder-nonce rewrite — which runs on every cached HTML serve, including platform-cache HITs —
 can be eliminated by adopting hash-based CSP. This section corrects the original Option C reasoning
 and records why it's deferred rather than adopted.
@@ -216,7 +216,7 @@ why this stays a deferred option rather than a permanent rejection.
 **Revisit when:**
 
 - The per-serve rewrite CPU is shown by profiling to be a genuine hot-path bottleneck. The closed
-  CPU-reduction issue [#8392](https://github.com/jonathanong/filaments/issues/8392) explicitly
+  CPU-reduction issue (formerly filed as jonathanong/filaments#8392) explicitly
   assumed the nonce swap "cannot move out of the Worker" — but that assumption is a property of
   Option A's architecture, not a law; under Option C the equivalent work moves to cache-fill time
   instead of running on every serve.

@@ -34,7 +34,7 @@ checking out GitHub's `refs/pull/N/merge`. That is the merge parent versus the m
 already-merged `main` files are on both sides and cancel out. Do not pass
 `pull_request.base.sha` as `base` while `head` is `github.sha`: the recorded base SHA can lag the
 merge parent and the changed-path set then includes commits that already landed on main
-([#11711](https://github.com/jonathanong/filaments/issues/11711)). Pair 1
+(formerly filed as jonathanong/filaments#11711). Pair 1
 (`pull_request.base.sha` vs `pull_request.head.sha`) remains valid for consumers that are not
 looking at the merge checkout, such as gitleaks PR scans and patch coverage.
 

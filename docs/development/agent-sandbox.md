@@ -9,8 +9,8 @@ stays in `workspace-write`; prefixes in `.codex/rules/default.rules` are
 pre-approved but still sandboxed, and every other command goes through on-request auto-review.
 `git rebase`, `git stash`, `git cherry-pick`, `gh run`, `gh api`, and `gh workflow` are not
 Codex-pre-approved: they skip Claude `permissions.allow` after
-[#9574](https://github.com/jonathanong/filaments/pull/9574) and skip Codex `prefix_rule` after
-[#9578](https://github.com/jonathanong/filaments/issues/9578), so Codex `auto_review` sees the
+[#9574](https://github.com/jonathanong/filaments/pull/9574) and skip Codex `prefix_rule` after a
+later change (formerly filed as jonathanong/filaments#9578), so Codex `auto_review` sees the
 argv. The checked-in policy is what a reactivated CI Codex session would load; harness dispatch
 is currently fail-closed and does not execute these prefixes. See
 [Auto Harness automation security boundary](../../.github/workflows/reference-harness-automation-accepted-risk.md)
@@ -111,7 +111,7 @@ The SQLite error `unable to open database file` comes from pnpm's store `{storeD
 not from no-mistakes (file lock, not SQLite). Concurrent `pnpm exec` under workspace-write still
 shares that WAL database, so the supported contract is serial `pnpm exec`, or `node_modules/.bin/<tool>`
 for parallelism. Do not grant all of `~/Library/Caches`. Linux `$XDG_RUNTIME_DIR/no-mistakes` is a
-residual if that env is set; do not grant `/run/user`. See [#9814](https://github.com/jonathanong/filaments/issues/9814).
+residual if that env is set; do not grant `/run/user` (formerly filed as jonathanong/filaments#9814).
 
 [`dev/agent-sandbox-config.test.mts`](../../dev/agent-sandbox-config.test.mts) requires the three
 workspace-write lists to stay equal and every Codex writable root to appear in Claude `allowWrite`.

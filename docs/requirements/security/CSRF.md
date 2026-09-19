@@ -1,7 +1,7 @@
 # CSRF Protection
 
-Cross-Site Request Forgery (CSRF) policy for the Voucha API. Tracked by
-[#6386](https://github.com/jonathanong/filaments/issues/6386).
+Cross-Site Request Forgery (CSRF) policy for the Voucha API (formerly tracked as
+jonathanong/filaments#6386).
 
 ## Threat model
 
