@@ -2,8 +2,9 @@
 
 AWS Lambda source packages validated by Filaments alongside the Voucha backend. Each Lambda is a
 separate workspace package with its own `handler.mts` entrypoint. Filaments dispatches the validated
-source revision to `vouchington/vouchington-infra`, which builds and publishes immutable artifacts
-and owns deployment and infrastructure.
+source revision to `vouchington/vouchington-infra`. The successful `main-lambdas` run publishes the
+attempt-bound image-resize ZIP that infrastructure verifies and copies into its durable deployment
+store; infrastructure continues to own deployment and topology.
 
 ## Inventory
 

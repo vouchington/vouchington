@@ -7,10 +7,11 @@
 ```mermaid
 flowchart TD
     Push["push to main"] --> Validate["path-scoped Filaments validation"]
-    Validate --> Dispatch["trusted completed-run route-specific dispatch"]
+    Validate --> Publish["publish product-owned runtime artifacts"]
+    Publish --> Dispatch["trusted completed-run route-specific dispatch"]
     Dispatch --> Infra["vouchington-infra receiver"]
-    Infra --> Build["build and publish artifacts"]
-    Build --> Providers["provider image/package update"]
+    Infra --> Materialize["verify and materialize immutable artifacts"]
+    Materialize --> Providers["provider image/package update"]
 ```
 
 `ci.yml` runs on pull requests and manual dispatch. It validates backend and web images but does
@@ -42,9 +43,11 @@ The receiver does not run or update OpenTofu during an application deployment. O
 and explicitly authorized saved-plan apply remain independent infrastructure workflows.
 
 [`vouchington-infra`](https://github.com/vouchington/vouchington-infra) validates the sender and
-source identity, then owns builds, publication, migrations, OpenTofu, provider mutations, resource
-mappings, desired counts, autoscaling, worker placement, promotion, rollback, and serialization.
-The handoff is asynchronous: Filaments does not poll or wait for the receiver.
+source identity, verifies product-published artifacts for migrated routes, and owns durable
+materialization, migrations, OpenTofu, provider mutations, resource mappings, desired counts,
+autoscaling, worker placement, promotion, rollback, and serialization. Routes not yet migrated still
+use the legacy infrastructure-side build. The handoff is asynchronous: Filaments does not poll or
+wait for the receiver.
 
 ### Operations and failure handling
 

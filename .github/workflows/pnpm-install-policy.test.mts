@@ -75,7 +75,7 @@ function containsDirectInstall(body: string | undefined): boolean {
 
 describe('pnpm install workflow policy', () => {
   it('keeps every setup-node-pnpm and setup-backend caller free of lifecycle inputs', () => {
-    expect(setupCalls).toHaveLength(48)
+    expect(setupCalls).toHaveLength(49)
     for (const call of setupCalls) {
       const withInputs = call.step.with ?? {}
       expect(withInputs).not.toHaveProperty('runner-lifecycle')
