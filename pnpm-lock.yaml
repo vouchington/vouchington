@@ -4755,6 +4755,25 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/services/copyright-notices:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@services/users':
+        specifier: workspace:^
+        version: link:../users
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/services/countries:
     dependencies:
       '@data-stores/psql':

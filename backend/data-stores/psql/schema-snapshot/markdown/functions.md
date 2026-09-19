@@ -130,6 +130,110 @@ CREATE OR REPLACE FUNCTION public.fn_guard_admin_import_batch_type()
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_copyright_action_intent`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_action_intent()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_assessment_source`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_assessment_source()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_assessment_supersession`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_assessment_supersession()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_correspondence`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_correspondence()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_counter_notice_assessment_target_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_counter_notice_assessment_target_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_deadline`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_deadline()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_hold_target_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_hold_target_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_immutable_with_actor_erasure`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_immutable_with_actor_erasure()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_notice_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_notice_immutable_evidence`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_immutable_evidence()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_notice_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_notice_submission`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_submission()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_restriction_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_membership_grant_activation_period_mutation`
 
 ```sql
@@ -647,6 +751,14 @@ CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_threshold_life
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_require_copyright_human_actor`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_copyright_human_actor()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
