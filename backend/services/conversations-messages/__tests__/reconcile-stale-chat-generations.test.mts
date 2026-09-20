@@ -4,6 +4,7 @@ import {
   createConversation,
   createConversationMessage,
   createConversationMessageAgenticRun,
+  finalizeChatAgenticRun,
   getConversationById,
   getConversationMessageAgenticRunsByConversationMessageId,
   getConversationMessagesByConversationId,
@@ -141,8 +142,17 @@ describe('reconcileStaleChatRuntimeGenerations', () => {
       setChatAgenticRunStartedAt(staleRun.id, new Date('1900-01-01T00:00:00Z')),
       setChatAgenticRunStartedAt(completedRun.id, new Date('1900-01-01T00:00:00Z')),
       updateConversationLastResponseId(staleConversation.id, 'response_stale'),
-      updateConversationLastResponseId(completedConversation.id, 'response_newer'),
     ])
+    await expect(
+      finalizeChatAgenticRun({
+        id: completedRun.id,
+        conversationId: completedConversation.id,
+        conversationMessageId: completedMessage.id,
+        content: 'completed',
+        terminationReason: 'no_tool_calls',
+      }),
+    ).resolves.toBe(true)
+    await updateConversationLastResponseId(completedConversation.id, 'response_newer')
 
     await reconcileStaleChatRuntimeGenerations({
       cutoff: new Date('2000-01-01T00:00:00Z'),
