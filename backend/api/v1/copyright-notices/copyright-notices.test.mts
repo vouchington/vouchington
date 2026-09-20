@@ -8,6 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { addUserRole } from '@services/users/roles-permissions'
+import { createCopyrightFormIntake } from '@services/copyright-notices'
 
 describe('copyright notice routes', () => {
   beforeEach(() => {
@@ -130,6 +131,33 @@ describe('copyright notice routes', () => {
       .post(`/api/v1/copyright-form-intakes/${missingId}/reviews`)
       .send({ accepted: true, rationale: 'The structured notice is complete.' })
       .expect(404)
+    const guestTarget = fixture.form.targets[0]!
+    const guestIntake = await createCopyrightFormIntake({
+      requesterUserId: null,
+      requesterIdentity: `guest:${crypto.randomUUID()}`,
+      idempotencyKey: crypto.randomUUID(),
+      request: {
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: 'Guest claimant',
+        claimantContact: 'guest@example.test',
+        claimantEmail: 'guest@example.test',
+        workDescription: 'A photograph owned by the guest claimant.',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Guest claimant',
+        claimantTargets: [
+          {
+            postId: guestTarget.post_id,
+            imageId: guestTarget.image_id,
+            hostedUseUrl: guestTarget.target_url,
+          },
+        ],
+      },
+    })
+    await request
+      .post(`/api/v1/copyright-form-intakes/${guestIntake.intake.id}/reviews`)
+      .send({ accepted: true, rationale: 'The structured notice is complete.' })
+      .expect(200)
     await request
       .post(`/api/v1/copyright-email-intakes/${missingId}/rejections`)
       .send({
