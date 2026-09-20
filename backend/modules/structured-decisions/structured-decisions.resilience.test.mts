@@ -134,11 +134,16 @@ describe('structured-decision resilience', () => {
         transport: 'openrouter',
         apiKey: 'test-key',
         fetch: cancelled,
-      }).decide(request, controller.signal)
-      const rejection = expect(cancellation).rejects.toThrow('default delay cancelled')
+      })
+        .decide(request, controller.signal)
+        .then(
+          () => ({ error: null }),
+          (error: unknown) => ({ error }),
+        )
       await vi.advanceTimersByTimeAsync(0)
       controller.abort(new Error('default delay cancelled'))
-      await rejection
+      const { error } = await cancellation
+      expect(error).toEqual(new Error('default delay cancelled'))
       expect(cancelled).toHaveBeenCalledOnce()
     } finally {
       vi.useRealTimers()
