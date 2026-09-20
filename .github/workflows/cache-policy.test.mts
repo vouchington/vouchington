@@ -98,9 +98,7 @@ function isPnpmInstallStep(step: CacheStep): boolean {
 
 function isPlaywrightInstallStep(step: CacheStep): boolean {
   const run = step.run ?? ''
-  return (
-    run.includes('playwright install') || run.includes('playwright-install-ubicloud-browsers.sh')
-  )
+  return run.includes('playwright install')
 }
 
 function isActionsCacheStep(step: CacheStep): boolean {
