@@ -20,9 +20,19 @@ export function buildClassifierThresholdFixtureOperations(data: ClassifierFixtur
         UPDATE classifier_candidate_thresholds SET lower_threshold_override = 0.3500
         WHERE candidate_id = ${data.communityCandidateId}
           AND prompt_version_id = ${data.promptVersionId}`),
+    rejectCandidateThresholdIdentityMutation: () =>
+      write(sql`/* rejectClassifierFixtureThresholdIdentityMutation */
+        UPDATE classifier_candidate_thresholds SET id = uuidv7()
+        WHERE id = ${data.topicThresholdId}`),
+    rejectActiveThresholdWithDeactivatedActor: () =>
+      write(sql`/* rejectClassifierFixtureActiveThresholdDeactivatedActor */
+        UPDATE classifier_candidate_thresholds
+        SET deactivated_by_id = ${data.auditUserId}
+        WHERE id = ${data.topicThresholdId}`),
     deactivateCommunityThreshold: () =>
       write(sql`/* deactivateClassifierFixtureCommunityThreshold */
-        UPDATE classifier_candidate_thresholds SET deactivated_at = CURRENT_TIMESTAMP
+        UPDATE classifier_candidate_thresholds
+        SET deactivated_at = CURRENT_TIMESTAMP, deactivated_by_id = ${data.auditUserId}
         WHERE id = ${data.communityThresholdId}`),
     deleteCommunityThreshold: () =>
       write(sql`/* deleteClassifierFixtureCommunityThreshold */
@@ -38,5 +48,19 @@ export function buildClassifierThresholdFixtureOperations(data: ClassifierFixtur
       `)
       return rows[0]!.id
     },
+    getCommunityThresholdAuditUsers: async () => {
+      const { rows } = await write<{
+        created_by_id: string | null
+        deactivated_by_id: string | null
+      }>(sql`/* getClassifierFixtureCommunityThresholdAuditUsers */
+        SELECT created_by_id, deactivated_by_id
+        FROM classifier_candidate_thresholds
+        WHERE id = ${data.communityThresholdId}
+      `)
+      return rows[0]!
+    },
+    deleteAuditUser: () =>
+      write(sql`/* deleteClassifierFixtureAuditUser */
+        DELETE FROM users WHERE id = ${data.auditUserId}`),
   }
 }

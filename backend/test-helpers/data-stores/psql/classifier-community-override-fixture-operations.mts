@@ -7,8 +7,10 @@ export function buildClassifierCommunityOverrideFixtureOperations(data: Classifi
     enableGlobalCandidateForCommunity: async () => {
       const { rows } = await write<{ id: string; enabled_at: Date }>(sql`
         /* enableClassifierFixtureGlobalCandidate */
-        INSERT INTO classifier_candidate_community_overrides (community_id, candidate_id)
-        VALUES (${data.communityId}, ${data.topicCandidateId})
+        INSERT INTO classifier_candidate_community_overrides (
+          community_id, candidate_id, enabled_by_id
+        )
+        VALUES (${data.communityId}, ${data.topicCandidateId}, ${data.auditUserId})
         RETURNING id, enabled_at
       `)
       return rows[0]!
@@ -16,7 +18,7 @@ export function buildClassifierCommunityOverrideFixtureOperations(data: Classifi
     disableGlobalCandidateForCommunity: () =>
       write(sql`/* disableClassifierFixtureGlobalCandidate */
         UPDATE classifier_candidate_community_overrides
-        SET disabled_at = CURRENT_TIMESTAMP
+        SET disabled_at = CURRENT_TIMESTAMP, disabled_by_id = ${data.auditUserId}
         WHERE community_id = ${data.communityId}
           AND candidate_id = ${data.topicCandidateId}
           AND disabled_at IS NULL`),
@@ -45,5 +47,23 @@ export function buildClassifierCommunityOverrideFixtureOperations(data: Classifi
       write(sql`/* rejectClassifierFixtureLocalCandidateOverride */
         INSERT INTO classifier_candidate_community_overrides (community_id, candidate_id)
         VALUES (${data.communityId}, ${data.communityCandidateId})`),
+    rejectActiveCommunityOverrideWithDisabledActor: () =>
+      write(sql`/* rejectClassifierFixtureActiveOverrideDisabledActor */
+        INSERT INTO classifier_candidate_community_overrides (
+          community_id, candidate_id, disabled_by_id
+        ) VALUES (${data.communityId}, ${data.topicCandidateId}, ${data.auditUserId})`),
+    getGlobalCandidateCommunityOverrideAuditUsers: async () => {
+      const { rows } = await write<{
+        enabled_by_id: string | null
+        disabled_by_id: string | null
+      }>(sql`/* getClassifierFixtureGlobalCandidateOverrideAuditUsers */
+        SELECT enabled_by_id, disabled_by_id
+        FROM classifier_candidate_community_overrides
+        WHERE community_id = ${data.communityId}
+          AND candidate_id = ${data.topicCandidateId}
+        ORDER BY enabled_at, id
+      `)
+      return rows
+    },
   }
 }

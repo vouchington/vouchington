@@ -44,6 +44,7 @@ export const POST_PARTITION_TABLES: string[] = [
  * separate parents so UUIDv7 RANGE pruning remains direct for either entity.
  */
 export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
+  'classifier_decision_batch_candidates',
   'topic_classifier_results',
   'story_classifier_results',
 ]

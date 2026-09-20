@@ -28,8 +28,7 @@ _none_
 
 **Check constraints:**
 
-- `chk_classifier_candidate_thresholds__has_override`: `CHECK ((num_nonnulls(lower_threshold_override, upper_threshold_override) >= 1))`
-- `chk_classifier_candidate_thresholds__lifecycle`: `CHECK (((deactivated_at IS NULL) OR (deactivated_at >= activated_at)))`
+- `chk_classifier_candidate_thresholds__lifecycle`: `CHECK ((((deactivated_at IS NULL) AND (deactivated_by_id IS NULL)) OR ((deactivated_at IS NOT NULL) AND (deactivated_at >= activated_at))))`
 - `chk_classifier_candidate_thresholds__override_bounds`: `CHECK ((((lower_threshold_override IS NULL) OR (lower_threshold_override >= (0)::numeric)) AND ((upper_threshold_override IS NULL) OR (upper_threshold_override <= (1)::numeric))))`
 
 **Foreign keys:**

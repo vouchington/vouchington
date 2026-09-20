@@ -33,16 +33,19 @@ export type ClassifierPromptVersion = {
   deleted_at: Date | null
 }
 
-export type ClassifierCandidate = {
+type ClassifierCandidateBase = {
   id: string
   classifier_id: string
-  candidate_kind: ClassifierCandidateKind
-  topic_id: string | null
-  story_id: string | null
   community_id: string | null
   created_at: Date
   deleted_at: Date | null
 }
+
+export type ClassifierCandidate = ClassifierCandidateBase &
+  (
+    | { candidate_kind: 'topic'; topic_id: string; story_id: null }
+    | { candidate_kind: 'story'; topic_id: null; story_id: string }
+  )
 
 export type ClassifierCandidateThreshold = {
   id: string
@@ -76,6 +79,18 @@ export type ClassifierDecisionBatch = {
   scope_category: ClassifierScopeCategory
   scope_community_id: string | null
   created_at: Date
+}
+
+export type ClassifierDecisionBatchCandidate = {
+  batch_id: string
+  classifier_id: string
+  candidate_id: string
+  prompt_version_id: string
+  threshold_id: string
+  effective_lower_threshold: number
+  effective_upper_threshold: number
+  created_at: Date
+  updated_at: Date
 }
 
 export type ClassifierDecisionCall = {

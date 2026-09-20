@@ -14,8 +14,10 @@ export type ClassifierFixtureData = {
   classifierId: string
   promptVersionId: string
   topicCandidateId: string
+  topicThresholdId: string
   communityCandidateId: string
   communityThresholdId: string
+  auditUserId: string
   communityId: string
   topicId: string
   communityTopicId: string
@@ -24,12 +26,14 @@ export type ClassifierFixtureData = {
   storyClassifierId: string
   storyPromptVersionId: string
   storyCandidateId: string
+  storyThresholdId: string
   rssFeedItemId: string
 }
 
 export async function createClassifierFixtureData(): Promise<ClassifierFixtureData> {
   const suffix = randomUUID()
   const owner = await createTestUser()
+  const auditUser = await createTestUser()
   const topic = await createTestTopic({ user: owner, name: `Classifier topic ${suffix}` })
   const communityTopic = await createTestTopic({
     user: owner,
@@ -66,6 +70,13 @@ export async function createClassifierFixtureData(): Promise<ClassifierFixtureDa
     RETURNING id
   `)
   const topicCandidateId = candidateRows[0]!.id
+  const { rows: topicThresholdRows } = await write<{ id: string }>(sql`
+    /* createClassifierFixtureTopicThreshold */
+    INSERT INTO classifier_candidate_thresholds (
+      classifier_id, candidate_id, prompt_version_id
+    ) VALUES (${classifierId}, ${topicCandidateId}, ${promptVersionId})
+    RETURNING id
+  `)
   const { rows: communityCandidateRows } = await write<{ id: string }>(sql`
     /* createClassifierFixtureCommunityCandidate */
     INSERT INTO classifier_candidates (classifier_id, candidate_kind, topic_id, community_id)
@@ -76,9 +87,11 @@ export async function createClassifierFixtureData(): Promise<ClassifierFixtureDa
   const { rows: thresholdRows } = await write<{ id: string }>(sql`
     /* createClassifierFixtureCommunityThreshold */
     INSERT INTO classifier_candidate_thresholds (
-      classifier_id, candidate_id, prompt_version_id, lower_threshold_override
+      classifier_id, candidate_id, prompt_version_id, lower_threshold_override, created_by_id
     )
-    VALUES (${classifierId}, ${communityCandidateId}, ${promptVersionId}, 0.3000)
+    VALUES (
+      ${classifierId}, ${communityCandidateId}, ${promptVersionId}, 0.3000, ${auditUser.id}
+    )
     RETURNING id
   `)
 
@@ -103,13 +116,23 @@ export async function createClassifierFixtureData(): Promise<ClassifierFixtureDa
     INSERT INTO classifier_candidates (classifier_id, candidate_kind, story_id)
     VALUES (${storyClassifierId}, 'story', ${story.id}) RETURNING id
   `)
+  const storyCandidateId = storyCandidateRows[0]!.id
+  const { rows: storyThresholdRows } = await write<{ id: string }>(sql`
+    /* createClassifierFixtureStoryThreshold */
+    INSERT INTO classifier_candidate_thresholds (
+      classifier_id, candidate_id, prompt_version_id
+    ) VALUES (${storyClassifierId}, ${storyCandidateId}, ${storyPromptRows[0]!.id})
+    RETURNING id
+  `)
 
   return {
     classifierId,
     promptVersionId,
     topicCandidateId,
+    topicThresholdId: topicThresholdRows[0]!.id,
     communityCandidateId,
     communityThresholdId: thresholdRows[0]!.id,
+    auditUserId: auditUser.id,
     communityId: community.id,
     topicId: topic.id,
     communityTopicId: communityTopic.id,
@@ -117,7 +140,8 @@ export async function createClassifierFixtureData(): Promise<ClassifierFixtureDa
     storyId: story.id,
     storyClassifierId,
     storyPromptVersionId: storyPromptRows[0]!.id,
-    storyCandidateId: storyCandidateRows[0]!.id,
+    storyCandidateId,
+    storyThresholdId: storyThresholdRows[0]!.id,
     rssFeedItemId: rssFeedItem.id,
   }
 }

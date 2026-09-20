@@ -1,19 +1,41 @@
 import sql from 'sql-template-strings'
-import { write } from '@data-stores/psql'
+import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import type { ClassifierFixtureData } from './classifier-fixture-data.mts'
 
 type BatchOptions = { communityId?: string; shardOrdinal?: number }
-type ResultOptions = {
-  batchId: string
-  callId: string
-  candidateId?: string | null
-  thresholdId?: string | null
-  effectiveLower?: number
-  topicId?: string
-  communityId?: string
-}
 
 export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
+  async function captureBatchCandidate(
+    query: TransactionQuery,
+    batchId: string,
+    classifierId: string,
+    candidateId: string,
+    promptVersionId: string,
+  ) {
+    const capture = await query(sql`/* captureClassifierFixtureBatchCandidate */
+      INSERT INTO classifier_decision_batch_candidates (
+        batch_id, classifier_id, candidate_id, prompt_version_id, threshold_id,
+        effective_lower_threshold, effective_upper_threshold
+      )
+      SELECT ${batchId}, ${classifierId}, ${candidateId}, ${promptVersionId}, threshold.id,
+        COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold),
+        COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold)
+      FROM classifier_prompt_versions prompt
+      JOIN LATERAL (
+        SELECT candidate_threshold.*
+        FROM classifier_candidate_thresholds candidate_threshold
+        WHERE candidate_threshold.candidate_id = ${candidateId}
+          AND candidate_threshold.prompt_version_id = ${promptVersionId}
+          AND candidate_threshold.deactivated_at IS NULL
+        LIMIT 1
+      ) threshold ON TRUE
+      WHERE prompt.id = ${promptVersionId}
+    `)
+    if (capture.rowCount !== 1) {
+      throw new Error('classifier batch candidate capture requires exactly one active threshold')
+    }
+  }
+
   async function createAdditionalCall(batchId: string, shardOrdinal: number): Promise<string> {
     const { rows } = await write<{ id: string }>(sql`
       /* createClassifierFixtureCall */
@@ -25,7 +47,8 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
 
   async function createTopicBatch(options: BatchOptions = {}) {
     const scopeCategory = options.communityId ? 'community_ai' : 'global'
-    const { rows } = await write<{ id: string }>(sql`
+    await using transaction = await beginTransaction()
+    const { rows } = await transaction<{ id: string }>(sql`
       /* createClassifierFixtureTopicBatch */
       INSERT INTO classifier_decision_batches (
         classifier_id, prompt_version_id, post_id, scope_category, scope_community_id
@@ -35,14 +58,28 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
       ) RETURNING id
     `)
     const batchId = rows[0]!.id
+    await captureBatchCandidate(
+      transaction,
+      batchId,
+      data.classifierId,
+      options.communityId ? data.communityCandidateId : data.topicCandidateId,
+      data.promptVersionId,
+    )
+    const { rows: callRows } = await transaction<{ id: string }>(sql`
+      /* createClassifierFixtureTopicCall */
+      INSERT INTO classifier_decision_calls (batch_id, shard_ordinal)
+      VALUES (${batchId}, ${options.shardOrdinal ?? 0}) RETURNING id
+    `)
+    await transaction.commit()
     return {
       batchId,
-      callId: await createAdditionalCall(batchId, options.shardOrdinal ?? 0),
+      callId: callRows[0]!.id,
     }
   }
 
   async function createStoryBatch() {
-    const { rows } = await write<{ id: string }>(sql`
+    await using transaction = await beginTransaction()
+    const { rows } = await transaction<{ id: string }>(sql`
       /* createClassifierFixtureStoryBatch */
       INSERT INTO classifier_decision_batches (
         classifier_id, prompt_version_id, rss_feed_item_id, scope_category
@@ -51,48 +88,20 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
       ) RETURNING id
     `)
     const batchId = rows[0]!.id
-    return { batchId, callId: await createAdditionalCall(batchId, 0) }
-  }
-
-  function insertTopicResult(options: ResultOptions) {
-    const scopeCategory = options.communityId ? 'community_ai' : 'global'
-    const usesCommunityThreshold = options.candidateId === data.communityCandidateId
-    const effectiveLower = options.effectiveLower ?? (usesCommunityThreshold ? 0.3 : 0.25)
-    const thresholdId =
-      options.thresholdId === undefined
-        ? usesCommunityThreshold
-          ? data.communityThresholdId
-          : null
-        : options.thresholdId
-    return write(sql`
-      /* insertClassifierFixtureTopicResult */
-      INSERT INTO topic_classifier_results (
-        topic_id, batch_id, decision_call_id, classifier_id, candidate_id, threshold_id,
-        prompt_version_id,
-        probability, effective_lower_threshold, effective_upper_threshold,
-        raw_response, scope_category, scope_community_id
-      ) VALUES (
-        ${options.topicId ?? data.topicId}, ${options.batchId}, ${options.callId},
-        ${data.classifierId},
-        ${options.candidateId === undefined ? data.topicCandidateId : options.candidateId},
-        ${thresholdId}, ${data.promptVersionId}, 0.5000, ${effectiveLower}, 0.7500,
-        '{"type":"noul","noul":0.5}'::jsonb,
-        ${scopeCategory}, ${options.communityId ?? null}
-      )
+    await captureBatchCandidate(
+      transaction,
+      batchId,
+      data.storyClassifierId,
+      data.storyCandidateId,
+      data.storyPromptVersionId,
+    )
+    const { rows: callRows } = await transaction<{ id: string }>(sql`
+      /* createClassifierFixtureStoryCall */
+      INSERT INTO classifier_decision_calls (batch_id, shard_ordinal)
+      VALUES (${batchId}, 0) RETURNING id
     `)
-  }
-
-  function insertStoryResult(batchId: string, callId: string) {
-    return write(sql`/* insertClassifierFixtureStoryResult */
-      INSERT INTO story_classifier_results (
-        story_id, batch_id, decision_call_id, classifier_id, candidate_id, prompt_version_id,
-        probability, effective_lower_threshold, effective_upper_threshold,
-        raw_response, scope_category
-      ) VALUES (
-        ${data.storyId}, ${batchId}, ${callId}, ${data.storyClassifierId},
-        ${data.storyCandidateId}, ${data.storyPromptVersionId}, 0.8000, 0.2500, 0.7500,
-        '{"type":"choice","choice":"story"}'::jsonb, 'global'
-      )`)
+    await transaction.commit()
+    return { batchId, callId: callRows[0]!.id }
   }
 
   return {
@@ -135,46 +144,25 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
     createTopicBatch,
     createStoryBatch,
     createAdditionalCall,
-    insertTopicResult,
-    insertStoryResult,
-    rejectResultScopeMismatch: (batchId: string, callId: string) =>
-      write(sql`/* rejectClassifierFixtureResultScopeMismatch */
-        INSERT INTO topic_classifier_results (
-          topic_id, batch_id, decision_call_id, classifier_id, candidate_id, prompt_version_id,
-          probability, effective_lower_threshold, effective_upper_threshold,
-          raw_response, scope_category, scope_community_id
-        ) VALUES (
-          ${data.topicId}, ${batchId}, ${callId}, ${data.classifierId}, ${data.topicCandidateId},
-          ${data.promptVersionId}, 0.5000, 0.2500, 0.7500,
-          '{}'::jsonb, 'community_ai', ${data.communityId}
-        )`),
-    rejectResultThresholdMismatch: (batchId: string, callId: string) =>
-      write(sql`/* rejectClassifierFixtureResultThresholdMismatch */
-        INSERT INTO topic_classifier_results (
-          topic_id, batch_id, decision_call_id, classifier_id, candidate_id, prompt_version_id,
-          probability, effective_lower_threshold, effective_upper_threshold,
-          raw_response, scope_category
-        ) VALUES (
-          ${data.topicId}, ${batchId}, ${callId}, ${data.classifierId}, ${data.topicCandidateId},
-          ${data.promptVersionId}, 0.5000, 0.2000, 0.7500, '{}'::jsonb, 'global'
-        )`),
     rejectBatchMutation: (batchId: string) =>
       write(sql`/* rejectClassifierFixtureBatchMutation */
         UPDATE classifier_decision_batches SET scope_category = 'community_ai',
           scope_community_id = ${data.communityId} WHERE id = ${batchId}`),
+    rejectBatchCandidateMutation: (batchId: string, candidateId: string) =>
+      write(sql`/* rejectClassifierFixtureBatchCandidateMutation */
+        UPDATE classifier_decision_batch_candidates
+        SET effective_lower_threshold = 0.1000
+        WHERE batch_id = ${batchId} AND candidate_id = ${candidateId}`),
+    deleteBatchCandidate: (batchId: string, candidateId: string) =>
+      write(sql`/* deleteClassifierFixtureBatchCandidate */
+        DELETE FROM classifier_decision_batch_candidates
+        WHERE batch_id = ${batchId} AND candidate_id = ${candidateId}`),
     rejectClassifierIdentityMutation: () =>
       write(sql`/* rejectClassifierFixtureIdentityMutation */
         UPDATE classifiers SET candidate_kind = 'story' WHERE id = ${data.classifierId}`),
-    rejectTopicClassifierStoryResult: (batchId: string, callId: string) =>
-      write(sql`/* rejectTopicClassifierStoryResult */
-        INSERT INTO story_classifier_results (
-          story_id, batch_id, decision_call_id, classifier_id, candidate_id, prompt_version_id,
-          probability, effective_lower_threshold, effective_upper_threshold,
-          raw_response, scope_category
-        ) VALUES (
-          ${data.storyId}, ${batchId}, ${callId}, ${data.classifierId}, NULL,
-          ${data.promptVersionId}, 0.5, 0.25, 0.75, '{}'::jsonb, 'global'
-        )`),
+    rejectClassifierIdMutation: () =>
+      write(sql`/* rejectClassifierFixtureIdMutation */
+        UPDATE classifiers SET id = uuidv7() WHERE id = ${data.classifierId}`),
     deleteBatch: (batchId: string) =>
       write(sql`/* deleteClassifierFixtureBatch */
         DELETE FROM classifier_decision_batches WHERE id = ${batchId}`),

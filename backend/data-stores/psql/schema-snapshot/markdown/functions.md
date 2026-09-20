@@ -587,6 +587,22 @@ CREATE OR REPLACE FUNCTION public.fn_require_classifier_activation_lifecycle()
  LANGUAGE plpgsql
 ```
 
+## `fn_require_classifier_batch_candidate_configuration`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_classifier_batch_candidate_configuration()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_require_classifier_batch_candidate_owner_delete`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_classifier_batch_candidate_owner_delete()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_require_classifier_candidate_community_override_lifecycle`
 
 ```sql

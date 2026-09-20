@@ -2,7 +2,7 @@
 -- configuration and result history independent of the agent tables retired by Epic A.
 
 DO $$ BEGIN
-  CREATE TYPE classifier_primitive AS ENUM ('noul', 'choice', 'score');
+CREATE TYPE classifier_primitive AS ENUM ('noul', 'choice', 'score');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -53,7 +53,8 @@ CREATE OR REPLACE TRIGGER trigger_classifiers_updated_at
 CREATE OR REPLACE FUNCTION fn_reject_classifier_identity_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  IF NEW.slug IS DISTINCT FROM OLD.slug
+  IF NEW.id IS DISTINCT FROM OLD.id
+    OR NEW.slug IS DISTINCT FROM OLD.slug
     OR NEW.primitive IS DISTINCT FROM OLD.primitive
     OR NEW.candidate_kind IS DISTINCT FROM OLD.candidate_kind THEN
     RAISE EXCEPTION 'classifier identity is immutable' USING ERRCODE = '23514';
@@ -133,7 +134,8 @@ CREATE INDEX IF NOT EXISTS idx_classifier_prompt_versions__deleted_by
 CREATE OR REPLACE FUNCTION fn_reject_classifier_prompt_version_identity_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  IF NEW.classifier_id IS DISTINCT FROM OLD.classifier_id
+  IF NEW.id IS DISTINCT FROM OLD.id
+    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id
     OR NEW.prompt IS DISTINCT FROM OLD.prompt
     OR NEW.model_name IS DISTINCT FROM OLD.model_name
     OR NEW.model_provider IS DISTINCT FROM OLD.model_provider
@@ -208,7 +210,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_classifier_candidates__active_story
 CREATE OR REPLACE FUNCTION fn_reject_classifier_candidate_identity_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  IF NEW.classifier_id IS DISTINCT FROM OLD.classifier_id
+  IF NEW.id IS DISTINCT FROM OLD.id
+    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id
     OR NEW.candidate_kind IS DISTINCT FROM OLD.candidate_kind
     OR NEW.topic_id IS DISTINCT FROM OLD.topic_id
     OR NEW.story_id IS DISTINCT FROM OLD.story_id
@@ -239,15 +242,13 @@ CREATE TABLE IF NOT EXISTS classifier_candidate_thresholds (
   created_by_id UUID REFERENCES users ON DELETE SET NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deactivated_by_id UUID REFERENCES users ON DELETE SET NULL,
-  CONSTRAINT chk_classifier_candidate_thresholds__has_override CHECK (
-    num_nonnulls(lower_threshold_override, upper_threshold_override) >= 1
-  ),
   CONSTRAINT chk_classifier_candidate_thresholds__override_bounds CHECK (
     (lower_threshold_override IS NULL OR lower_threshold_override >= 0)
     AND (upper_threshold_override IS NULL OR upper_threshold_override <= 1)
   ),
   CONSTRAINT chk_classifier_candidate_thresholds__lifecycle CHECK (
-    deactivated_at IS NULL OR deactivated_at >= activated_at
+    (deactivated_at IS NULL AND deactivated_by_id IS NULL)
+    OR (deactivated_at IS NOT NULL AND deactivated_at >= activated_at)
   ),
   CONSTRAINT fk_classifier_candidate_thresholds__candidate_classifier
     FOREIGN KEY (candidate_id, classifier_id)
@@ -296,14 +297,28 @@ CREATE OR REPLACE TRIGGER trigger_classifier_candidate_thresholds_effective
 CREATE OR REPLACE FUNCTION fn_require_classifier_candidate_threshold_lifecycle()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  IF NEW.classifier_id IS DISTINCT FROM OLD.classifier_id
+  IF NEW.id IS DISTINCT FROM OLD.id
+    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id
     OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id
     OR NEW.prompt_version_id IS DISTINCT FROM OLD.prompt_version_id
     OR NEW.lower_threshold_override IS DISTINCT FROM OLD.lower_threshold_override
     OR NEW.upper_threshold_override IS DISTINCT FROM OLD.upper_threshold_override
     OR NEW.activated_at IS DISTINCT FROM OLD.activated_at
-    OR OLD.deactivated_at IS NOT NULL
-    OR NEW.deactivated_at IS NULL THEN
+    OR (
+      NEW.created_by_id IS DISTINCT FROM OLD.created_by_id
+      AND NOT (OLD.created_by_id IS NOT NULL AND NEW.created_by_id IS NULL)
+    )
+    OR NOT (
+      NEW.deactivated_at IS NOT DISTINCT FROM OLD.deactivated_at
+      OR (OLD.deactivated_at IS NULL AND NEW.deactivated_at IS NOT NULL)
+    )
+    OR (
+      NEW.deactivated_by_id IS DISTINCT FROM OLD.deactivated_by_id
+      AND NOT (
+        OLD.deactivated_at IS NULL AND NEW.deactivated_at IS NOT NULL
+        OR (OLD.deactivated_by_id IS NOT NULL AND NEW.deactivated_by_id IS NULL)
+      )
+    ) THEN
     RAISE EXCEPTION 'classifier candidate threshold revision is immutable except for deactivation' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
@@ -329,7 +344,7 @@ CREATE TABLE IF NOT EXISTS classifier_candidate_community_overrides (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT chk_classifier_candidate_community_overrides__lifecycle CHECK (
     (disabled_at IS NULL AND disabled_by_id IS NULL)
-    OR (disabled_at >= enabled_at)
+    OR (disabled_at IS NOT NULL AND disabled_at >= enabled_at)
   )
 );
 
@@ -367,9 +382,21 @@ BEGIN
     OR NEW.community_id IS DISTINCT FROM OLD.community_id
     OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id
     OR NEW.enabled_at IS DISTINCT FROM OLD.enabled_at
-    OR NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id
-    OR OLD.disabled_at IS NOT NULL
-    OR NEW.disabled_at IS NULL THEN
+    OR (
+      NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id
+      AND NOT (OLD.enabled_by_id IS NOT NULL AND NEW.enabled_by_id IS NULL)
+    )
+    OR NOT (
+      NEW.disabled_at IS NOT DISTINCT FROM OLD.disabled_at
+      OR (OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL)
+    )
+    OR (
+      NEW.disabled_by_id IS DISTINCT FROM OLD.disabled_by_id
+      AND NOT (
+        OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL
+        OR (OLD.disabled_by_id IS NOT NULL AND NEW.disabled_by_id IS NULL)
+      )
+    ) THEN
     RAISE EXCEPTION 'classifier candidate community override is immutable except for deactivation' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
@@ -427,6 +454,113 @@ CREATE OR REPLACE TRIGGER trigger_classifier_decision_batches_append_only
   BEFORE UPDATE ON classifier_decision_batches
   FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
 
+CREATE TABLE IF NOT EXISTS classifier_decision_batch_candidates (
+  batch_id UUID NOT NULL,
+  classifier_id UUID NOT NULL,
+  candidate_id UUID NOT NULL,
+  prompt_version_id UUID NOT NULL,
+  threshold_id UUID NOT NULL,
+  effective_lower_threshold NUMERIC(5,4) NOT NULL,
+  effective_upper_threshold NUMERIC(5,4) NOT NULL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(batch_id)) VIRTUAL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (batch_id, candidate_id),
+  CONSTRAINT chk_classifier_decision_batch_candidates__effective_thresholds CHECK (
+    effective_lower_threshold >= 0 AND effective_upper_threshold <= 1
+    AND effective_lower_threshold < effective_upper_threshold
+  ),
+  CONSTRAINT fk_classifier_decision_batch_candidates__batch_classifier
+    FOREIGN KEY (batch_id, classifier_id)
+    REFERENCES classifier_decision_batches (id, classifier_id) ON DELETE CASCADE,
+  CONSTRAINT fk_classifier_decision_batch_candidates__batch_prompt
+    FOREIGN KEY (batch_id, prompt_version_id)
+    REFERENCES classifier_decision_batches (id, prompt_version_id) ON DELETE CASCADE,
+  CONSTRAINT fk_classifier_decision_batch_candidates__candidate_classifier
+    FOREIGN KEY (candidate_id, classifier_id)
+    REFERENCES classifier_candidates (id, classifier_id) ON DELETE CASCADE,
+  CONSTRAINT fk_classifier_decision_batch_candidates__threshold
+    FOREIGN KEY (threshold_id)
+    REFERENCES classifier_candidate_thresholds (id)
+    ON DELETE RESTRICT,
+  CONSTRAINT uq_classifier_decision_batch_candidates__result_lineage
+    UNIQUE (
+      batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id,
+      effective_lower_threshold, effective_upper_threshold
+    )
+) PARTITION BY RANGE (batch_id);
+
+CREATE INDEX IF NOT EXISTS idx_classifier_decision_batch_candidates__classifier
+  ON classifier_decision_batch_candidates (classifier_id);
+CREATE INDEX IF NOT EXISTS idx_classifier_decision_batch_candidates__candidate
+  ON classifier_decision_batch_candidates (candidate_id);
+CREATE INDEX IF NOT EXISTS idx_classifier_decision_batch_candidates__prompt
+  ON classifier_decision_batch_candidates (prompt_version_id);
+CREATE INDEX IF NOT EXISTS idx_classifier_decision_batch_candidates__threshold
+  ON classifier_decision_batch_candidates (threshold_id);
+
+CREATE OR REPLACE FUNCTION fn_require_classifier_batch_candidate_configuration()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  batch classifier_decision_batches%ROWTYPE;
+  candidate classifier_candidates%ROWTYPE;
+  prompt classifier_prompt_versions%ROWTYPE;
+  threshold classifier_candidate_thresholds%ROWTYPE;
+  effective_lower NUMERIC(5,4);
+  effective_upper NUMERIC(5,4);
+BEGIN
+  SELECT * INTO batch FROM classifier_decision_batches
+  WHERE id = NEW.batch_id FOR SHARE;
+  SELECT * INTO candidate FROM classifier_candidates
+  WHERE id = NEW.candidate_id FOR SHARE;
+  IF candidate.community_id IS NOT NULL
+    AND (
+      batch.scope_category <> 'community_ai'
+      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id
+    ) THEN
+    RAISE EXCEPTION 'community classifier candidate scope must match its batch' USING ERRCODE = '23514';
+  END IF;
+  SELECT * INTO prompt FROM classifier_prompt_versions
+  WHERE id = NEW.prompt_version_id FOR SHARE;
+  SELECT * INTO threshold FROM classifier_candidate_thresholds
+  WHERE id = NEW.threshold_id FOR SHARE;
+  IF threshold.id IS NULL
+    OR threshold.classifier_id IS DISTINCT FROM NEW.classifier_id
+    OR threshold.candidate_id IS DISTINCT FROM NEW.candidate_id
+    OR threshold.prompt_version_id IS DISTINCT FROM NEW.prompt_version_id
+    OR threshold.deactivated_at IS NOT NULL THEN
+    RAISE EXCEPTION 'classifier batch candidate threshold must be its active configuration revision' USING ERRCODE = '23514';
+  END IF;
+  effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);
+  effective_upper := COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold);
+  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower
+    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN
+    RAISE EXCEPTION 'classifier batch candidate thresholds must match captured configuration' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE TRIGGER trigger_classifier_decision_batch_candidates_configuration
+  BEFORE INSERT ON classifier_decision_batch_candidates
+  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_batch_candidate_configuration();
+
+CREATE OR REPLACE TRIGGER trigger_classifier_decision_batch_candidates_append_only
+  BEFORE UPDATE ON classifier_decision_batch_candidates
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+
+CREATE OR REPLACE FUNCTION fn_require_classifier_batch_candidate_owner_delete()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)
+    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id) THEN
+    RAISE EXCEPTION 'classifier batch candidate snapshots can only be deleted with their batch or candidate' USING ERRCODE = '23503';
+  END IF;
+  RETURN OLD;
+END $$;
+
+CREATE OR REPLACE TRIGGER trigger_classifier_decision_batch_candidates_owner_delete
+  BEFORE DELETE ON classifier_decision_batch_candidates
+  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_batch_candidate_owner_delete();
+
 CREATE TABLE IF NOT EXISTS classifier_decision_calls (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   batch_id UUID NOT NULL REFERENCES classifier_decision_batches ON DELETE CASCADE,
@@ -469,15 +603,29 @@ CREATE TABLE IF NOT EXISTS topic_classifier_results (
     effective_lower_threshold >= 0 AND effective_upper_threshold <= 1
     AND effective_lower_threshold < effective_upper_threshold
   ),
+  CONSTRAINT chk_topic_classifier_results__stored_configuration CHECK (
+    (candidate_id IS NULL AND threshold_id IS NULL)
+    OR (candidate_id IS NOT NULL AND threshold_id IS NOT NULL)
+  ),
   CONSTRAINT fk_topic_classifier_results__classifier_kind
     FOREIGN KEY (classifier_id, candidate_kind)
     REFERENCES classifiers (id, candidate_kind) ON DELETE RESTRICT,
   CONSTRAINT fk_topic_classifier_results__candidate
     FOREIGN KEY (candidate_id, classifier_id, topic_id)
     REFERENCES classifier_candidates (id, classifier_id, topic_id) ON DELETE CASCADE,
+  CONSTRAINT fk_topic_classifier_results__batch_candidate
+    FOREIGN KEY (
+      batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id,
+      effective_lower_threshold, effective_upper_threshold
+    )
+    REFERENCES classifier_decision_batch_candidates (
+      batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id,
+      effective_lower_threshold, effective_upper_threshold
+    ) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
   CONSTRAINT fk_topic_classifier_results__threshold
     FOREIGN KEY (threshold_id)
-    REFERENCES classifier_candidate_thresholds (id) ON DELETE RESTRICT,
+    REFERENCES classifier_candidate_thresholds (id)
+    ON DELETE RESTRICT,
   CONSTRAINT fk_topic_classifier_results__batch_classifier
     FOREIGN KEY (batch_id, classifier_id)
     REFERENCES classifier_decision_batches (id, classifier_id) ON DELETE CASCADE,
@@ -533,15 +681,29 @@ CREATE TABLE IF NOT EXISTS story_classifier_results (
     effective_lower_threshold >= 0 AND effective_upper_threshold <= 1
     AND effective_lower_threshold < effective_upper_threshold
   ),
+  CONSTRAINT chk_story_classifier_results__stored_configuration CHECK (
+    (candidate_id IS NULL AND threshold_id IS NULL)
+    OR (candidate_id IS NOT NULL AND threshold_id IS NOT NULL)
+  ),
   CONSTRAINT fk_story_classifier_results__classifier_kind
     FOREIGN KEY (classifier_id, candidate_kind)
     REFERENCES classifiers (id, candidate_kind) ON DELETE RESTRICT,
   CONSTRAINT fk_story_classifier_results__candidate
     FOREIGN KEY (candidate_id, classifier_id, story_id)
     REFERENCES classifier_candidates (id, classifier_id, story_id) ON DELETE CASCADE,
+  CONSTRAINT fk_story_classifier_results__batch_candidate
+    FOREIGN KEY (
+      batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id,
+      effective_lower_threshold, effective_upper_threshold
+    )
+    REFERENCES classifier_decision_batch_candidates (
+      batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id,
+      effective_lower_threshold, effective_upper_threshold
+    ) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
   CONSTRAINT fk_story_classifier_results__threshold
     FOREIGN KEY (threshold_id)
-    REFERENCES classifier_candidate_thresholds (id) ON DELETE RESTRICT,
+    REFERENCES classifier_candidate_thresholds (id)
+    ON DELETE RESTRICT,
   CONSTRAINT fk_story_classifier_results__batch_classifier
     FOREIGN KEY (batch_id, classifier_id)
     REFERENCES classifier_decision_batches (id, classifier_id) ON DELETE CASCADE,
@@ -575,7 +737,7 @@ DECLARE
   batch classifier_decision_batches%ROWTYPE;
   candidate classifier_candidates%ROWTYPE;
   prompt classifier_prompt_versions%ROWTYPE;
-  threshold classifier_candidate_thresholds%ROWTYPE;
+  batch_candidate classifier_decision_batch_candidates%ROWTYPE;
   effective_lower NUMERIC(5,4);
   effective_upper NUMERIC(5,4);
 BEGIN
@@ -584,17 +746,10 @@ BEGIN
   SELECT * INTO prompt FROM classifier_prompt_versions
   WHERE id = NEW.prompt_version_id FOR SHARE;
   IF NEW.candidate_id IS NOT NULL THEN
-    SELECT * INTO threshold FROM classifier_candidate_thresholds
-    WHERE candidate_id = NEW.candidate_id
-      AND prompt_version_id = NEW.prompt_version_id
-      AND activated_at <= batch.created_at
-      AND (deactivated_at IS NULL OR deactivated_at > batch.created_at)
-    ORDER BY activated_at DESC, id DESC
-    LIMIT 1
+    SELECT * INTO batch_candidate FROM classifier_decision_batch_candidates
+    WHERE batch_id = NEW.batch_id AND candidate_id = NEW.candidate_id
     FOR SHARE;
   END IF;
-  effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);
-  effective_upper := COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold);
   IF NEW.scope_category IS DISTINCT FROM batch.scope_category
     OR NEW.scope_community_id IS DISTINCT FROM batch.scope_community_id THEN
     RAISE EXCEPTION 'classifier result scope must match its batch' USING ERRCODE = '23514';
@@ -606,12 +761,23 @@ BEGIN
     ) THEN
     RAISE EXCEPTION 'community classifier candidate scope must match its owning community' USING ERRCODE = '23514';
   END IF;
+  IF NEW.candidate_id IS NOT NULL AND batch_candidate.batch_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+  effective_lower := COALESCE(
+    batch_candidate.effective_lower_threshold,
+    prompt.default_lower_threshold
+  );
+  effective_upper := COALESCE(
+    batch_candidate.effective_upper_threshold,
+    prompt.default_upper_threshold
+  );
   IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower
     OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN
     RAISE EXCEPTION 'classifier result thresholds must match prompt and candidate configuration' USING ERRCODE = '23514';
   END IF;
-  IF NEW.threshold_id IS DISTINCT FROM threshold.id THEN
-    RAISE EXCEPTION 'classifier result threshold revision must match the configuration active when its batch began' USING ERRCODE = '23514';
+  IF NEW.threshold_id IS DISTINCT FROM batch_candidate.threshold_id THEN
+    RAISE EXCEPTION 'classifier result threshold revision must match its batch candidate snapshot' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END $$;
@@ -637,6 +803,14 @@ COMMENT ON TABLE classifier_prompt_versions IS 'Immutable classifier prompt/mode
 COMMENT ON TABLE classifier_candidates IS 'Stored topic or story candidate identities, independent of prompt revisions.';
 COMMENT ON TABLE classifier_candidate_thresholds IS 'Immutable per-candidate threshold revisions with an explicit deactivation lifecycle.';
 COMMENT ON TABLE classifier_candidate_community_overrides IS 'Per-community enablement lifecycle for global classifier candidates.';
+COMMENT ON TABLE classifier_decision_batch_candidates IS 'Immutable per-batch snapshots of stored candidate threshold configuration.';
+COMMENT ON COLUMN classifier_decision_batch_candidates.batch_id IS 'Decision batch that captured this candidate configuration.';
+COMMENT ON COLUMN classifier_decision_batch_candidates.classifier_id IS 'Classifier constrained to the owning batch and candidate.';
+COMMENT ON COLUMN classifier_decision_batch_candidates.candidate_id IS 'Stored candidate included in the decision batch.';
+COMMENT ON COLUMN classifier_decision_batch_candidates.prompt_version_id IS 'Prompt revision constrained to the owning decision batch.';
+COMMENT ON COLUMN classifier_decision_batch_candidates.threshold_id IS 'Exact active threshold revision captured for this candidate.';
+COMMENT ON COLUMN classifier_decision_batch_candidates.effective_lower_threshold IS 'Captured lower decision bound after prompt-default inheritance.';
+COMMENT ON COLUMN classifier_decision_batch_candidates.effective_upper_threshold IS 'Captured upper decision bound after prompt-default inheritance.';
 COMMENT ON TABLE classifier_decision_batches IS 'One classified post or RSS item decision, including scope provenance and prompt revision.';
 COMMENT ON TABLE classifier_decision_calls IS 'Ordered shards for one classifier decision batch.';
 COMMENT ON TABLE topic_classifier_results IS 'Per-candidate classifier results for topic candidates, RANGE-partitioned by topic_id.';
@@ -695,7 +869,7 @@ COMMENT ON COLUMN topic_classifier_results.decision_call_id IS 'Specific provide
 COMMENT ON COLUMN topic_classifier_results.classifier_id IS 'Classifier copied from the owning batch for relational enforcement.';
 COMMENT ON COLUMN topic_classifier_results.candidate_kind IS 'Fixed topic discriminator used only for the classifier-kind foreign key.';
 COMMENT ON COLUMN topic_classifier_results.candidate_id IS 'Stored topic candidate scored by this result, or NULL for a runtime-prefiltered candidate.';
-COMMENT ON COLUMN topic_classifier_results.threshold_id IS 'Exact candidate-threshold revision used, or NULL when prompt defaults were used.';
+COMMENT ON COLUMN topic_classifier_results.threshold_id IS 'Exact stored-candidate threshold revision used, or NULL for a runtime-prefiltered candidate without stored configuration.';
 COMMENT ON COLUMN topic_classifier_results.prompt_version_id IS 'Prompt revision copied from the owning batch for relational enforcement.';
 COMMENT ON COLUMN topic_classifier_results.probability IS 'Native per-candidate probability preserved without threshold mapping.';
 COMMENT ON COLUMN topic_classifier_results.effective_lower_threshold IS 'Resolved lower boundary used for this immutable decision result.';
@@ -710,7 +884,7 @@ COMMENT ON COLUMN story_classifier_results.decision_call_id IS 'Specific provide
 COMMENT ON COLUMN story_classifier_results.classifier_id IS 'Classifier copied from the owning batch for relational enforcement.';
 COMMENT ON COLUMN story_classifier_results.candidate_kind IS 'Fixed story discriminator used only for the classifier-kind foreign key.';
 COMMENT ON COLUMN story_classifier_results.candidate_id IS 'Stored story candidate scored by this result, or NULL for a runtime-prefiltered candidate.';
-COMMENT ON COLUMN story_classifier_results.threshold_id IS 'Exact candidate-threshold revision used, or NULL when prompt defaults were used.';
+COMMENT ON COLUMN story_classifier_results.threshold_id IS 'Exact stored-candidate threshold revision used, or NULL for a runtime-prefiltered candidate without stored configuration.';
 COMMENT ON COLUMN story_classifier_results.prompt_version_id IS 'Prompt revision copied from the owning batch for relational enforcement.';
 COMMENT ON COLUMN story_classifier_results.probability IS 'Native per-candidate probability preserved without threshold mapping.';
 COMMENT ON COLUMN story_classifier_results.effective_lower_threshold IS 'Resolved lower boundary used for this immutable decision result.';

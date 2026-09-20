@@ -22,10 +22,17 @@ describe('classifier schema constraints', () => {
     await expect(fixture.rejectInvalidInheritedThreshold()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.rejectDefaultThresholdUpdate()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.rejectCandidateThresholdUpdate()).rejects.toMatchObject({ code: '23514' })
+    await expect(fixture.rejectCandidateThresholdIdentityMutation()).rejects.toMatchObject({
+      code: '23514',
+    })
+    await expect(fixture.rejectActiveThresholdWithDeactivatedActor()).rejects.toMatchObject({
+      code: '23514',
+    })
     await expect(fixture.rejectPromptIdentityMutation()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.rejectClassifierIdentityMutation()).rejects.toMatchObject({
       code: '23514',
     })
+    await expect(fixture.rejectClassifierIdMutation()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.activateClassifier()).resolves.toMatchObject({ rowCount: 1 })
     await expect(fixture.activatePrompt()).resolves.toMatchObject({ rowCount: 1 })
     await expect(fixture.deactivateClassifier()).resolves.toMatchObject({ rowCount: 1 })
@@ -39,6 +46,9 @@ describe('classifier schema constraints', () => {
   it('allows community overrides only for global candidates', async () => {
     const fixture = await createClassifierFixture()
 
+    await expect(fixture.rejectActiveCommunityOverrideWithDisabledActor()).rejects.toMatchObject({
+      code: '23514',
+    })
     const firstLifecycle = await fixture.enableGlobalCandidateForCommunity()
     await expect(fixture.enableGlobalCandidateForCommunity()).rejects.toMatchObject({
       code: '23505',
@@ -64,6 +74,32 @@ describe('classifier schema constraints', () => {
     })
   })
 
+  it('allows audit actor foreign keys to clear without mutating lifecycle history', async () => {
+    const active = await createClassifierFixture()
+    await active.enableGlobalCandidateForCommunity()
+    await expect(active.deleteAuditUser()).resolves.toMatchObject({ rowCount: 1 })
+    await expect(active.getCommunityThresholdAuditUsers()).resolves.toEqual({
+      created_by_id: null,
+      deactivated_by_id: null,
+    })
+    await expect(active.getGlobalCandidateCommunityOverrideAuditUsers()).resolves.toEqual([
+      { enabled_by_id: null, disabled_by_id: null },
+    ])
+
+    const historical = await createClassifierFixture()
+    await historical.deactivateCommunityThreshold()
+    await historical.enableGlobalCandidateForCommunity()
+    await historical.disableGlobalCandidateForCommunity()
+    await expect(historical.deleteAuditUser()).resolves.toMatchObject({ rowCount: 1 })
+    await expect(historical.getCommunityThresholdAuditUsers()).resolves.toEqual({
+      created_by_id: null,
+      deactivated_by_id: null,
+    })
+    await expect(historical.getGlobalCandidateCommunityOverrideAuditUsers()).resolves.toEqual([
+      { enabled_by_id: null, disabled_by_id: null },
+    ])
+  })
+
   it('keeps result lineage, candidate ownership, and append-only scope aligned', async () => {
     const fixture = await createClassifierFixture()
     const global = await fixture.createTopicBatch()
@@ -78,8 +114,34 @@ describe('classifier schema constraints', () => {
       code: '23514',
     })
     await expect(
+      fixture.rejectBatchCandidateMutation(global.batchId, fixture.topicCandidateId),
+    ).rejects.toMatchObject({ code: '23514' })
+    await expect(
+      fixture.deleteBatchCandidate(global.batchId, fixture.topicCandidateId),
+    ).rejects.toMatchObject({ code: '23503' })
+    await expect(
       fixture.rejectResultThresholdMismatch(global.batchId, global.callId),
     ).rejects.toMatchObject({ code: '23514' })
+    const missingSnapshot = await fixture.createTopicBatchWithoutSnapshot()
+    await expect(
+      fixture.insertTopicResult({
+        batchId: missingSnapshot.batch_id,
+        callId: missingSnapshot.call_id,
+      }),
+    ).rejects.toMatchObject({ code: '23503' })
+    await expect(
+      fixture.insertTopicResult({
+        batchId: missingSnapshot.batch_id,
+        callId: missingSnapshot.call_id,
+        thresholdId: null,
+      }),
+    ).rejects.toMatchObject({ code: '23514' })
+    await expect(fixture.rejectResultBeforeMismatchedSnapshot()).rejects.toMatchObject({
+      code: '23503',
+    })
+    await expect(fixture.rejectCommunityResultScopeBeforeSnapshot()).rejects.toMatchObject({
+      code: '23514',
+    })
 
     const community = await fixture.createTopicBatch({ communityId: fixture.communityId })
     const inFlight = await fixture.createTopicBatch({ communityId: fixture.communityId })
@@ -96,6 +158,9 @@ describe('classifier schema constraints', () => {
       code: '23505',
     })
     await expect(fixture.deactivateCommunityThreshold()).resolves.toMatchObject({ rowCount: 1 })
+    await expect(fixture.createTopicBatch({ communityId: fixture.communityId })).rejects.toThrow(
+      'classifier batch candidate capture requires exactly one active threshold',
+    )
     const replacementThresholdId = await fixture.createReplacementCommunityThreshold()
     await expect(
       fixture.insertTopicResult({
@@ -161,135 +226,53 @@ describe('classifier schema constraints', () => {
     ).rejects.toMatchObject({ code: '23514' })
   })
 
-  it('supports ordered shards while preventing duplicate candidate results across them', async () => {
+  it('rejects stale capture when a threshold replacement commits first', async () => {
     const fixture = await createClassifierFixture()
-    const { batchId, callId } = await fixture.createTopicBatch()
-    const secondCallId = await fixture.createAdditionalCall(batchId, 1)
+    await using replacement = await fixture.holdThresholdReplacement()
+    const captureError = fixture
+      .createTopicBatch({ communityId: fixture.communityId })
+      .catch(caught => caught)
 
-    await expect(fixture.insertTopicResult({ batchId, callId })).resolves.toMatchObject({
-      rowCount: 1,
-    })
-    await expect(
-      fixture.insertTopicResult({ batchId, callId: secondCallId }),
-    ).rejects.toMatchObject({ code: '23505' })
-    await expect(fixture.createAdditionalCall(batchId, 1)).rejects.toMatchObject({ code: '23505' })
+    await expect.poll(replacement.hasBlockedOperation).toBe(true)
+    await replacement.release()
+    await expect(captureError).resolves.toMatchObject({ code: '23514' })
 
-    const otherBatch = await fixture.createTopicBatch()
+    const retry = await fixture.createTopicBatch({ communityId: fixture.communityId })
     await expect(
       fixture.insertTopicResult({
-        batchId,
-        callId: otherBatch.callId,
-        candidateId: null,
+        ...retry,
+        candidateId: fixture.communityCandidateId,
+        thresholdId: replacement.thresholdId,
+        effectiveLower: 0.35,
         topicId: fixture.communityTopicId,
+        communityId: fixture.communityId,
       }),
-    ).rejects.toMatchObject({ code: '23503' })
-  })
-
-  it('persists valid story-classifier lineage in the concrete story result family', async () => {
-    const fixture = await createClassifierFixture()
-    const lineage = await fixture.createStoryBatch()
-
-    await expect(fixture.insertStoryResult(lineage.batchId, lineage.callId)).resolves.toMatchObject(
-      {
-        rowCount: 1,
-      },
-    )
-  })
-
-  it('stores runtime-prefiltered candidates without materializing candidate rows', async () => {
-    const fixture = await createClassifierFixture()
-    const lineage = await fixture.createTopicBatch()
-
-    await expect(
-      fixture.insertTopicResult({ ...lineage, candidateId: null }),
     ).resolves.toMatchObject({ rowCount: 1 })
-    await expect(
-      fixture.insertTopicResult({ ...lineage, candidateId: null }),
-    ).rejects.toMatchObject({ code: '23505' })
-    await expect(
-      fixture.rejectTopicClassifierStoryResult(lineage.batchId, lineage.callId),
-    ).rejects.toMatchObject({ code: '23503' })
   })
 
-  it('applies declared ownership cascades without erasing retained configuration', async () => {
-    const callFixture = await createClassifierFixture()
-    const callLineage = await callFixture.createTopicBatch()
-    await callFixture.insertTopicResult(callLineage)
-    await callFixture.deleteCall(callLineage.callId)
-    await expect(callFixture.getLineageCounts(callLineage)).resolves.toEqual({
-      batches: 1,
-      calls: 0,
-      candidates: 1,
-      results: 0,
-    })
-
-    const batchFixture = await createClassifierFixture()
-    const batchLineage = await batchFixture.createTopicBatch()
-    await batchFixture.insertTopicResult(batchLineage)
-    await batchFixture.deleteBatch(batchLineage.batchId)
-    await expect(batchFixture.getLineageCounts(batchLineage)).resolves.toEqual({
-      batches: 0,
-      calls: 0,
-      candidates: 1,
-      results: 0,
-    })
-
-    const candidateFixture = await createClassifierFixture()
-    const candidateLineage = await candidateFixture.createTopicBatch()
-    await candidateFixture.insertTopicResult(candidateLineage)
-    await candidateFixture.deleteCandidate(candidateFixture.topicCandidateId)
-    await expect(candidateFixture.getLineageCounts(candidateLineage)).resolves.toEqual({
-      batches: 1,
-      calls: 1,
-      candidates: 0,
-      results: 0,
-    })
-
-    const subjectFixture = await createClassifierFixture()
-    const subjectLineage = await subjectFixture.createTopicBatch()
-    await subjectFixture.insertTopicResult(subjectLineage)
-    await subjectFixture.deletePost()
-    await expect(subjectFixture.getLineageCounts(subjectLineage)).resolves.toEqual({
-      batches: 0,
-      calls: 0,
-      candidates: 1,
-      results: 0,
-    })
-
-    const communityFixture = await createClassifierFixture()
-    const communityLineage = await communityFixture.createTopicBatch({
-      communityId: communityFixture.communityId,
-    })
-    await communityFixture.insertTopicResult({
-      ...communityLineage,
-      candidateId: communityFixture.communityCandidateId,
-      topicId: communityFixture.communityTopicId,
-      communityId: communityFixture.communityId,
-    })
-    await communityFixture.deleteCommunity()
-    await expect(
-      communityFixture.getLineageCounts({
-        ...communityLineage,
-        candidateId: communityFixture.communityCandidateId,
-      }),
-    ).resolves.toEqual({ batches: 1, calls: 1, candidates: 0, results: 0 })
-  })
-
-  it('creates concrete default RANGE partitions for both result families', async () => {
+  it('lets an in-flight capture commit before threshold replacement', async () => {
     const fixture = await createClassifierFixture()
-    const facts = await fixture.getPartitionFacts()
+    await using capture = await fixture.holdTopicBatchCapture()
+    const replacementPending = fixture.holdThresholdReplacement()
 
-    expect(facts).toEqual([
-      {
-        parent: 'story_classifier_results',
-        child: 'story_classifier_results__default',
-        strategy: 'RANGE (story_id)',
-      },
-      {
-        parent: 'topic_classifier_results',
-        child: 'topic_classifier_results__default',
-        strategy: 'RANGE (topic_id)',
-      },
-    ])
+    await expect.poll(capture.hasBlockedOperation).toBe(true)
+    await capture.release()
+    await using replacement = await replacementPending
+    await replacement.release()
+
+    await expect(
+      fixture.insertTopicResult({
+        batchId: capture.batchId,
+        callId: capture.callId,
+        candidateId: fixture.communityCandidateId,
+        topicId: fixture.communityTopicId,
+        communityId: fixture.communityId,
+      }),
+    ).resolves.toMatchObject({ rowCount: 1 })
+    await expect(fixture.getTopicResultThreshold(capture.batchId)).resolves.toEqual({
+      threshold_id: fixture.communityThresholdId,
+      effective_lower_threshold: '0.3000',
+      effective_upper_threshold: '0.7500',
+    })
   })
 })

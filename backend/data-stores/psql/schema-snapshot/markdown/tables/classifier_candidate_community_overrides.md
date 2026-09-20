@@ -25,7 +25,7 @@ _none_
 
 **Check constraints:**
 
-- `chk_classifier_candidate_community_overrides__lifecycle`: `CHECK ((((disabled_at IS NULL) AND (disabled_by_id IS NULL)) OR (disabled_at >= enabled_at)))`
+- `chk_classifier_candidate_community_overrides__lifecycle`: `CHECK ((((disabled_at IS NULL) AND (disabled_by_id IS NULL)) OR ((disabled_at IS NOT NULL) AND (disabled_at >= enabled_at))))`
 
 **Foreign keys:**
 

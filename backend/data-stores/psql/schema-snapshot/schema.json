@@ -739,13 +739,13 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_append_only_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION '% is append-only', TG_TABLE_NAME USING ERRCODE = '23514';\nEND $function$\n"
     },
     "fn_reject_classifier_candidate_identity_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.candidate_kind IS DISTINCT FROM OLD.candidate_kind\n    OR NEW.topic_id IS DISTINCT FROM OLD.topic_id\n    OR NEW.story_id IS DISTINCT FROM OLD.story_id\n    OR NEW.community_id IS DISTINCT FROM OLD.community_id THEN\n    RAISE EXCEPTION 'classifier candidate identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.candidate_kind IS DISTINCT FROM OLD.candidate_kind\n    OR NEW.topic_id IS DISTINCT FROM OLD.topic_id\n    OR NEW.story_id IS DISTINCT FROM OLD.story_id\n    OR NEW.community_id IS DISTINCT FROM OLD.community_id THEN\n    RAISE EXCEPTION 'classifier candidate identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_classifier_identity_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.slug IS DISTINCT FROM OLD.slug\n    OR NEW.primitive IS DISTINCT FROM OLD.primitive\n    OR NEW.candidate_kind IS DISTINCT FROM OLD.candidate_kind THEN\n    RAISE EXCEPTION 'classifier identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.slug IS DISTINCT FROM OLD.slug\n    OR NEW.primitive IS DISTINCT FROM OLD.primitive\n    OR NEW.candidate_kind IS DISTINCT FROM OLD.candidate_kind THEN\n    RAISE EXCEPTION 'classifier identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_classifier_prompt_version_identity_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_prompt_version_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.prompt IS DISTINCT FROM OLD.prompt\n    OR NEW.model_name IS DISTINCT FROM OLD.model_name\n    OR NEW.model_provider IS DISTINCT FROM OLD.model_provider\n    OR NEW.default_lower_threshold IS DISTINCT FROM OLD.default_lower_threshold\n    OR NEW.default_upper_threshold IS DISTINCT FROM OLD.default_upper_threshold THEN\n    RAISE EXCEPTION 'classifier prompt version identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_prompt_version_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.prompt IS DISTINCT FROM OLD.prompt\n    OR NEW.model_name IS DISTINCT FROM OLD.model_name\n    OR NEW.model_provider IS DISTINCT FROM OLD.model_provider\n    OR NEW.default_lower_threshold IS DISTINCT FROM OLD.default_lower_threshold\n    OR NEW.default_upper_threshold IS DISTINCT FROM OLD.default_upper_threshold THEN\n    RAISE EXCEPTION 'classifier prompt version identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_membership_administrator_refund_request_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN RAISE EXCEPTION 'membership administrator refund requests are immutable'; END $function$\n"
@@ -783,17 +783,23 @@
     "fn_require_classifier_activation_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_activation_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at\n    AND NEW.deactivated_at IS NOT DISTINCT FROM OLD.deactivated_at THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.activated_at IS NULL\n    AND OLD.deactivated_at IS NULL\n    AND NEW.activated_at IS NOT NULL\n    AND NEW.deactivated_at IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.activated_at IS NOT NULL\n    AND OLD.deactivated_at IS NULL\n    AND NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at\n    AND NEW.deactivated_at IS NOT NULL THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION '% activation lifecycle is immutable after each transition', TG_TABLE_NAME USING ERRCODE = '23514';\nEND $function$\n"
     },
+    "fn_require_classifier_batch_candidate_configuration": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_batch_candidate_configuration()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  threshold classifier_candidate_thresholds%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches\n  WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates\n  WHERE id = NEW.candidate_id FOR SHARE;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  SELECT * INTO threshold FROM classifier_candidate_thresholds\n  WHERE id = NEW.threshold_id FOR SHARE;\n  IF threshold.id IS NULL\n    OR threshold.classifier_id IS DISTINCT FROM NEW.classifier_id\n    OR threshold.candidate_id IS DISTINCT FROM NEW.candidate_id\n    OR threshold.prompt_version_id IS DISTINCT FROM NEW.prompt_version_id\n    OR threshold.deactivated_at IS NOT NULL THEN\n    RAISE EXCEPTION 'classifier batch candidate threshold must be its active configuration revision' USING ERRCODE = '23514';\n  END IF;\n  effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);\n  effective_upper := COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold);\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier batch candidate thresholds must match captured configuration' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_require_classifier_batch_candidate_owner_delete": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_batch_candidate_owner_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)\n    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id) THEN\n    RAISE EXCEPTION 'classifier batch candidate snapshots can only be deleted with their batch or candidate' USING ERRCODE = '23503';\n  END IF;\n  RETURN OLD;\nEND $function$\n"
+    },
     "fn_require_classifier_candidate_community_override_lifecycle": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_community_override_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.community_id IS DISTINCT FROM OLD.community_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.enabled_at IS DISTINCT FROM OLD.enabled_at\n    OR NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id\n    OR OLD.disabled_at IS NOT NULL\n    OR NEW.disabled_at IS NULL THEN\n    RAISE EXCEPTION 'classifier candidate community override is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_community_override_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.community_id IS DISTINCT FROM OLD.community_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.enabled_at IS DISTINCT FROM OLD.enabled_at\n    OR (\n      NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id\n      AND NOT (OLD.enabled_by_id IS NOT NULL AND NEW.enabled_by_id IS NULL)\n    )\n    OR NOT (\n      NEW.disabled_at IS NOT DISTINCT FROM OLD.disabled_at\n      OR (OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL)\n    )\n    OR (\n      NEW.disabled_by_id IS DISTINCT FROM OLD.disabled_by_id\n      AND NOT (\n        OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL\n        OR (OLD.disabled_by_id IS NOT NULL AND NEW.disabled_by_id IS NULL)\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier candidate community override is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_require_classifier_candidate_effective_thresholds": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_effective_thresholds()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  defaults classifier_prompt_versions%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO defaults FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  effective_lower := COALESCE(NEW.lower_threshold_override, defaults.default_lower_threshold);\n  effective_upper := COALESCE(NEW.upper_threshold_override, defaults.default_upper_threshold);\n  IF effective_lower < 0 OR effective_upper > 1 OR effective_lower >= effective_upper THEN\n    RAISE EXCEPTION 'classifier candidate effective thresholds must be ordered probabilities' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_require_classifier_candidate_threshold_lifecycle": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_threshold_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.prompt_version_id IS DISTINCT FROM OLD.prompt_version_id\n    OR NEW.lower_threshold_override IS DISTINCT FROM OLD.lower_threshold_override\n    OR NEW.upper_threshold_override IS DISTINCT FROM OLD.upper_threshold_override\n    OR NEW.activated_at IS DISTINCT FROM OLD.activated_at\n    OR OLD.deactivated_at IS NOT NULL\n    OR NEW.deactivated_at IS NULL THEN\n    RAISE EXCEPTION 'classifier candidate threshold revision is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_threshold_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.prompt_version_id IS DISTINCT FROM OLD.prompt_version_id\n    OR NEW.lower_threshold_override IS DISTINCT FROM OLD.lower_threshold_override\n    OR NEW.upper_threshold_override IS DISTINCT FROM OLD.upper_threshold_override\n    OR NEW.activated_at IS DISTINCT FROM OLD.activated_at\n    OR (\n      NEW.created_by_id IS DISTINCT FROM OLD.created_by_id\n      AND NOT (OLD.created_by_id IS NOT NULL AND NEW.created_by_id IS NULL)\n    )\n    OR NOT (\n      NEW.deactivated_at IS NOT DISTINCT FROM OLD.deactivated_at\n      OR (OLD.deactivated_at IS NULL AND NEW.deactivated_at IS NOT NULL)\n    )\n    OR (\n      NEW.deactivated_by_id IS DISTINCT FROM OLD.deactivated_by_id\n      AND NOT (\n        OLD.deactivated_at IS NULL AND NEW.deactivated_at IS NOT NULL\n        OR (OLD.deactivated_by_id IS NOT NULL AND NEW.deactivated_by_id IS NULL)\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier candidate threshold revision is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_require_classifier_result_batch_scope": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  threshold classifier_candidate_thresholds%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates WHERE id = NEW.candidate_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF NEW.candidate_id IS NOT NULL THEN\n    SELECT * INTO threshold FROM classifier_candidate_thresholds\n    WHERE candidate_id = NEW.candidate_id\n      AND prompt_version_id = NEW.prompt_version_id\n      AND activated_at <= batch.created_at\n      AND (deactivated_at IS NULL OR deactivated_at > batch.created_at)\n    ORDER BY activated_at DESC, id DESC\n    LIMIT 1\n    FOR SHARE;\n  END IF;\n  effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);\n  effective_upper := COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold);\n  IF NEW.scope_category IS DISTINCT FROM batch.scope_category\n    OR NEW.scope_community_id IS DISTINCT FROM batch.scope_community_id THEN\n    RAISE EXCEPTION 'classifier result scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its owning community' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier result thresholds must match prompt and candidate configuration' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.threshold_id IS DISTINCT FROM threshold.id THEN\n    RAISE EXCEPTION 'classifier result threshold revision must match the configuration active when its batch began' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  batch_candidate classifier_decision_batch_candidates%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates WHERE id = NEW.candidate_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF NEW.candidate_id IS NOT NULL THEN\n    SELECT * INTO batch_candidate FROM classifier_decision_batch_candidates\n    WHERE batch_id = NEW.batch_id AND candidate_id = NEW.candidate_id\n    FOR SHARE;\n  END IF;\n  IF NEW.scope_category IS DISTINCT FROM batch.scope_category\n    OR NEW.scope_community_id IS DISTINCT FROM batch.scope_community_id THEN\n    RAISE EXCEPTION 'classifier result scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its owning community' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.candidate_id IS NOT NULL AND batch_candidate.batch_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  effective_lower := COALESCE(\n    batch_candidate.effective_lower_threshold,\n    prompt.default_lower_threshold\n  );\n  effective_upper := COALESCE(\n    batch_candidate.effective_upper_threshold,\n    prompt.default_upper_threshold\n  );\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier result thresholds must match prompt and candidate configuration' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.threshold_id IS DISTINCT FROM batch_candidate.threshold_id THEN\n    RAISE EXCEPTION 'classifier result threshold revision must match its batch candidate snapshot' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_require_global_classifier_candidate_override": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_global_classifier_candidate_override()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM classifier_candidates candidate\n    WHERE candidate.id = NEW.candidate_id AND candidate.community_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'community overrides may target only global classifier candidates' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -7607,7 +7613,7 @@
     },
     "classifier_candidate_community_overrides": {
       "checkConstraints": {
-        "chk_classifier_candidate_community_overrides__lifecycle": "CHECK ((((disabled_at IS NULL) AND (disabled_by_id IS NULL)) OR (disabled_at >= enabled_at)))"
+        "chk_classifier_candidate_community_overrides__lifecycle": "CHECK ((((disabled_at IS NULL) AND (disabled_by_id IS NULL)) OR ((disabled_at IS NOT NULL) AND (disabled_at >= enabled_at))))"
       },
       "columns": {
         "candidate_id": {
@@ -7895,8 +7901,7 @@
     },
     "classifier_candidate_thresholds": {
       "checkConstraints": {
-        "chk_classifier_candidate_thresholds__has_override": "CHECK ((num_nonnulls(lower_threshold_override, upper_threshold_override) >= 1))",
-        "chk_classifier_candidate_thresholds__lifecycle": "CHECK (((deactivated_at IS NULL) OR (deactivated_at >= activated_at)))",
+        "chk_classifier_candidate_thresholds__lifecycle": "CHECK ((((deactivated_at IS NULL) AND (deactivated_by_id IS NULL)) OR ((deactivated_at IS NOT NULL) AND (deactivated_at >= activated_at))))",
         "chk_classifier_candidate_thresholds__override_bounds": "CHECK ((((lower_threshold_override IS NULL) OR (lower_threshold_override >= (0)::numeric)) AND ((upper_threshold_override IS NULL) OR (upper_threshold_override <= (1)::numeric))))"
       },
       "columns": {
@@ -8831,6 +8836,358 @@
         "uq_classifier_candidates__id__classifier_topic": {
           "columns": ["id", "classifier_id", "topic_id"],
           "definition": "UNIQUE (id, classifier_id, topic_id)"
+        }
+      }
+    },
+    "classifier_decision_batch_candidates": {
+      "checkConstraints": {
+        "chk_classifier_decision_batch_candidates__effective_thresholds": "CHECK (((effective_lower_threshold >= (0)::numeric) AND (effective_upper_threshold <= (1)::numeric) AND (effective_lower_threshold < effective_upper_threshold)))"
+      },
+      "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "Decision batch that captured this candidate configuration.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "candidate_id": {
+          "collation": null,
+          "comment": "Stored candidate included in the decision batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier constrained to the owning batch and candidate.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(batch_id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "effective_lower_threshold": {
+          "collation": null,
+          "comment": "Captured lower decision bound after prompt-default inheritance.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "numeric(5,4)"
+        },
+        "effective_upper_threshold": {
+          "collation": null,
+          "comment": "Captured upper decision bound after prompt-default inheritance.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "numeric(5,4)"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Prompt revision constrained to the owning decision batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "threshold_id": {
+          "collation": null,
+          "comment": "Exact active threshold revision captured for this candidate.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable per-batch snapshots of stored candidate threshold configuration.",
+      "foreignKeys": {
+        "fk_classifier_decision_batch_candidates__batch_classifier": {
+          "columns": ["batch_id", "classifier_id"],
+          "definition": "FOREIGN KEY (batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_classifier_decision_batch_candidates__batch_prompt": {
+          "columns": ["batch_id", "prompt_version_id"],
+          "definition": "FOREIGN KEY (batch_id, prompt_version_id) REFERENCES classifier_decision_batches(id, prompt_version_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "prompt_version_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_classifier_decision_batch_candidates__candidate_classifier": {
+          "columns": ["candidate_id", "classifier_id"],
+          "definition": "FOREIGN KEY (candidate_id, classifier_id) REFERENCES classifier_candidates(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_candidates",
+          "validated": true
+        },
+        "fk_classifier_decision_batch_candidates__threshold": {
+          "columns": ["threshold_id"],
+          "definition": "FOREIGN KEY (threshold_id) REFERENCES classifier_candidate_thresholds(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_candidate_thresholds",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "classifier_decision_batch_candidates_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifier_decision_batch_candidates_pkey ON ONLY public.classifier_decision_batch_candidates USING btree (batch_id, candidate_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_decision_batch_candidates__candidate": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__candidate ON ONLY public.classifier_decision_batch_candidates USING btree (candidate_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batch_candidates__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__classifier ON ONLY public.classifier_decision_batch_candidates USING btree (classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batch_candidates__prompt": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__prompt ON ONLY public.classifier_decision_batch_candidates USING btree (prompt_version_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batch_candidates__threshold": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__threshold ON ONLY public.classifier_decision_batch_candidates USING btree (threshold_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "threshold_id",
+              "descending": false,
+              "expression": "threshold_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_classifier_decision_batch_candidates__result_lineage": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_batch_candidates__result_lineage ON ONLY public.classifier_decision_batch_candidates USING btree (batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "threshold_id",
+              "descending": false,
+              "expression": "threshold_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "effective_lower_threshold",
+              "descending": false,
+              "expression": "effective_lower_threshold",
+              "nullsFirst": false,
+              "opclass": "numeric_ops"
+            },
+            {
+              "column": "effective_upper_threshold",
+              "descending": false,
+              "expression": "effective_upper_threshold",
+              "nullsFirst": false,
+              "opclass": "numeric_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "batch_id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (batch_id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["batch_id", "candidate_id"],
+        "definition": "PRIMARY KEY (batch_id, candidate_id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_classifier_decision_batch_candidates_append_only": "CREATE TRIGGER trigger_classifier_decision_batch_candidates_append_only BEFORE UPDATE ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()",
+        "trigger_classifier_decision_batch_candidates_configuration": "CREATE TRIGGER trigger_classifier_decision_batch_candidates_configuration BEFORE INSERT ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_batch_candidate_configuration()",
+        "trigger_classifier_decision_batch_candidates_owner_delete": "CREATE TRIGGER trigger_classifier_decision_batch_candidates_owner_delete BEFORE DELETE ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_batch_candidate_owner_delete()"
+      },
+      "uniqueConstraints": {
+        "uq_classifier_decision_batch_candidates__result_lineage": {
+          "columns": [
+            "batch_id",
+            "candidate_id",
+            "classifier_id",
+            "prompt_version_id",
+            "threshold_id",
+            "effective_lower_threshold",
+            "effective_upper_threshold"
+          ],
+          "definition": "UNIQUE (batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold)"
         }
       }
     },
@@ -75984,6 +76341,7 @@
       "checkConstraints": {
         "chk_story_classifier_results__effective_thresholds": "CHECK (((effective_lower_threshold >= (0)::numeric) AND (effective_upper_threshold <= (1)::numeric) AND (effective_lower_threshold < effective_upper_threshold)))",
         "chk_story_classifier_results__scope": "CHECK ((((scope_category = 'global'::text) AND (scope_community_id IS NULL)) OR ((scope_category = 'community_ai'::text) AND (scope_community_id IS NOT NULL))))",
+        "chk_story_classifier_results__stored_configuration": "CHECK ((((candidate_id IS NULL) AND (threshold_id IS NULL)) OR ((candidate_id IS NOT NULL) AND (threshold_id IS NOT NULL))))",
         "story_classifier_results_candidate_kind_check": "CHECK ((candidate_kind = 'story'::classifier_candidate_kind))",
         "story_classifier_results_probability_check": "CHECK (((probability >= (0)::numeric) AND (probability <= (1)::numeric)))"
       },
@@ -76155,7 +76513,7 @@
         },
         "threshold_id": {
           "collation": null,
-          "comment": "Exact candidate-threshold revision used, or NULL when prompt defaults were used.",
+          "comment": "Exact stored-candidate threshold revision used, or NULL for a runtime-prefiltered candidate without stored configuration.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -76178,6 +76536,31 @@
       },
       "comment": "Per-candidate classifier results for story candidates, RANGE-partitioned by story_id.",
       "foreignKeys": {
+        "fk_story_classifier_results__batch_candidate": {
+          "columns": [
+            "batch_id",
+            "candidate_id",
+            "classifier_id",
+            "prompt_version_id",
+            "threshold_id",
+            "effective_lower_threshold",
+            "effective_upper_threshold"
+          ],
+          "definition": "FOREIGN KEY (batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold) REFERENCES classifier_decision_batch_candidates(batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "batch_id",
+            "candidate_id",
+            "classifier_id",
+            "prompt_version_id",
+            "threshold_id",
+            "effective_lower_threshold",
+            "effective_upper_threshold"
+          ],
+          "referencedTable": "classifier_decision_batch_candidates",
+          "validated": true
+        },
         "fk_story_classifier_results__batch_classifier": {
           "columns": ["batch_id", "classifier_id"],
           "definition": "FOREIGN KEY (batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE",
@@ -80838,6 +81221,7 @@
       "checkConstraints": {
         "chk_topic_classifier_results__effective_thresholds": "CHECK (((effective_lower_threshold >= (0)::numeric) AND (effective_upper_threshold <= (1)::numeric) AND (effective_lower_threshold < effective_upper_threshold)))",
         "chk_topic_classifier_results__scope": "CHECK ((((scope_category = 'global'::text) AND (scope_community_id IS NULL)) OR ((scope_category = 'community_ai'::text) AND (scope_community_id IS NOT NULL))))",
+        "chk_topic_classifier_results__stored_configuration": "CHECK ((((candidate_id IS NULL) AND (threshold_id IS NULL)) OR ((candidate_id IS NOT NULL) AND (threshold_id IS NOT NULL))))",
         "topic_classifier_results_candidate_kind_check": "CHECK ((candidate_kind = 'topic'::classifier_candidate_kind))",
         "topic_classifier_results_probability_check": "CHECK (((probability >= (0)::numeric) AND (probability <= (1)::numeric)))"
       },
@@ -80998,7 +81382,7 @@
         },
         "threshold_id": {
           "collation": null,
-          "comment": "Exact candidate-threshold revision used, or NULL when prompt defaults were used.",
+          "comment": "Exact stored-candidate threshold revision used, or NULL for a runtime-prefiltered candidate without stored configuration.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -81032,6 +81416,31 @@
       },
       "comment": "Per-candidate classifier results for topic candidates, RANGE-partitioned by topic_id.",
       "foreignKeys": {
+        "fk_topic_classifier_results__batch_candidate": {
+          "columns": [
+            "batch_id",
+            "candidate_id",
+            "classifier_id",
+            "prompt_version_id",
+            "threshold_id",
+            "effective_lower_threshold",
+            "effective_upper_threshold"
+          ],
+          "definition": "FOREIGN KEY (batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold) REFERENCES classifier_decision_batch_candidates(batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "batch_id",
+            "candidate_id",
+            "classifier_id",
+            "prompt_version_id",
+            "threshold_id",
+            "effective_lower_threshold",
+            "effective_upper_threshold"
+          ],
+          "referencedTable": "classifier_decision_batch_candidates",
+          "validated": true
+        },
         "fk_topic_classifier_results__batch_classifier": {
           "columns": ["batch_id", "classifier_id"],
           "definition": "FOREIGN KEY (batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE",

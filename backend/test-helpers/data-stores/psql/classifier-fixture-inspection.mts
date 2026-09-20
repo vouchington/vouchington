@@ -51,14 +51,24 @@ export function buildClassifierFixtureInspection(data: ClassifierFixtureData) {
       return rows[0]!
     },
     async getPartitionFacts() {
-      const { rows } = await read<{ parent: string; child: string; strategy: string }>(sql`
+      const { rows } = await read<{
+        parent: string
+        child: string
+        strategy: string
+        bound: string
+      }>(sql`
         /* getClassifierFixturePartitionFacts */
         SELECT parent.relname AS parent, child.relname AS child,
-          pg_get_partkeydef(parent.oid) AS strategy
+          pg_get_partkeydef(parent.oid) AS strategy,
+          pg_get_expr(child.relpartbound, child.oid) AS bound
         FROM pg_inherits
         JOIN pg_class parent ON parent.oid = pg_inherits.inhparent
         JOIN pg_class child ON child.oid = pg_inherits.inhrelid
-        WHERE parent.relname IN ('topic_classifier_results', 'story_classifier_results')
+        WHERE parent.relname IN (
+          'classifier_decision_batch_candidates',
+          'topic_classifier_results',
+          'story_classifier_results'
+        )
         ORDER BY parent.relname, child.relname
       `)
       return rows

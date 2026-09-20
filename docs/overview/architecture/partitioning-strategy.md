@@ -38,6 +38,7 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `agent_moderations`                                     | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `agent_responses`                                       | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `ai_usage_records`                                      | RANGE         | `id`                                   | default            | none              | target-scoped      |
+| `classifier_decision_batch_candidates`                  | RANGE         | `batch_id`                             | default            | none              | target-scoped      |
 | `community_post_review_changes`                         | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `conversation_message_agentic_runs`                     | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `conversation_message_agentic_runs_events`              | RANGE         | `conversation_message_agentic_run_id`  | monthly            | cleanupPartitions | retention-window   |
