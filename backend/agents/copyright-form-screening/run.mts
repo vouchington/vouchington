@@ -8,10 +8,8 @@ import {
 } from '@agents/_shared'
 import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import {
-  appendCopyrightFormScreening,
-  getCopyrightFormIntakeForScreening,
-} from '@services/copyright-notices/form-screenings'
+import { appendCopyrightFormScreening } from '@services/copyright-notices/form-screenings'
+import { getCopyrightFormIntakeForScreening } from '@services/copyright-notices/form-screening-intake'
 
 const PROMPT =
   'This is only an anti-spam gate for an already structured copyright form. Return invalid_or_spam only for obvious spam or obvious invalidity; otherwise return not_obviously_invalid, including when legal merits are uncertain. Return JSON {"recommendation":"not_obviously_invalid"|"invalid_or_spam","rationale":"..."}. Do not decide legal ownership or take action.'
