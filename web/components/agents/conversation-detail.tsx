@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Agent, ConversationMessage } from '@/types/agents'
-import { agentHref, chatHref } from '@/lib/links/entity-href'
+import { agentHref } from '@/lib/links/entity-href'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { ConversationMessagesClient } from './conversation-messages-client'
 
@@ -49,14 +49,8 @@ export async function ConversationDetail({
       {/* Header */}
       <div>
         <h1 className='text-2xl font-bold'>
-          <Link
-            href={chatHref(conversation)}
-            prefetch={false}
-            className='hover:underline focus-visible:underline'
-          >
-            {conversation.title ||
-              t('extracted.agents.conversationDetail.untitledConversation_13fb26cc')}
-          </Link>
+          {conversation.title ||
+            t('extracted.agents.conversationDetail.untitledConversation_13fb26cc')}
         </h1>
         <p
           className='text-sm text-muted-foreground'

@@ -68,12 +68,10 @@ describe('AppSidebar Admin section visibility', () => {
     expect(getSectionLabels(container)).toEqual(['Dynamic Config'])
   })
 
-  it('Chat intent does not show static Messages group when authenticated', () => {
-    setMockPathname('/chat')
+  it('Support intent does not show static Messages group when authenticated', () => {
+    setMockPathname('/chat/support')
     const { container } = renderSidebar({ id: 'u1', roles: ['user'] } as User)
     const labels = getSectionLabels(container)
-    // Static Messages group was removed; dynamic ChatsSidebarGroup renders via next/dynamic
-    // (ssr:false) so it does not appear in synchronous render — covered in sections.mock.test.tsx
     expect(labels).not.toContain('Messages')
   })
 })

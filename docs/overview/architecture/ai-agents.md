@@ -1,7 +1,8 @@
 # AI Agents
 
-Voucha uses OpenAI for content moderation and LLM-powered agent conversations, Amazon Bedrock
-for semantic search embeddings, plus a local Rust detector for AI-generated post moderation.
+Voucha uses OpenAI for content moderation and retained focused backend agents, Amazon Bedrock for
+semantic search embeddings, plus a local Rust detector for AI-generated post moderation. Hosted web
+agent chat has been removed; native transcript synchronization remains available during migration.
 
 Conversation and message `created_by_id` fields are required API keys but nullable after a user is
 hard-deleted. User sidecars omit null IDs, and native conversation lists and transcripts render the

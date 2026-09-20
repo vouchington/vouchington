@@ -196,8 +196,6 @@ describe('ROBOTS_DISALLOW_PREFIXES', () => {
     expect(ROBOTS_DISALLOW_PREFIXES).toEqual(
       expect.arrayContaining([
         '/chat/',
-        '/chat?',
-        '/chat$',
         '/messages/',
         '/messages?',
         '/messages$',

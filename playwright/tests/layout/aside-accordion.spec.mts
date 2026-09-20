@@ -47,8 +47,8 @@ test.describe('Aside accordion behavior', () => {
 
   test('Communities accordion starts open by default', async ({ page }) => {
     await page.setViewportSize(LG_VIEWPORT)
-    // Use /chat which has PopularCommunitiesAside unconditionally (not activity-gated)
-    await navigateTo(page, '/chat')
+    // /feed has PopularCommunitiesAside unconditionally (not activity-gated).
+    await navigateTo(page, '/feed')
 
     const aside = page.locator('main aside')
     const container = aside.getByTestId('aside-accordion-communities')
@@ -61,8 +61,8 @@ test.describe('Aside accordion behavior', () => {
 
   test('Communities accordion closes on click', async ({ page }) => {
     await page.setViewportSize(LG_VIEWPORT)
-    // Use /chat which has PopularCommunitiesAside unconditionally (not activity-gated)
-    await navigateTo(page, '/chat')
+    // /feed has PopularCommunitiesAside unconditionally (not activity-gated).
+    await navigateTo(page, '/feed')
 
     const aside = page.locator('main aside')
     const trigger = aside.getByTestId('aside-accordion-communities-trigger')

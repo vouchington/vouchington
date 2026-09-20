@@ -202,7 +202,7 @@ How the system works — architecture, pipelines, and infrastructure.
 - [Dynamic Config](overview/architecture/dynamic-config.md) — Admin-managed Valkey DynamicConfig namespaces, authorization hooks, and audit history
 - [Feature Flags](overview/architecture/feature-flags.md) — Runtime feature toggles via Valkey DynamicConfig
   - [Feature flags service](../backend/services/feature-flags/README.md) — DynamicConfig implementation
-- [Conversations](overview/architecture/conversations.md) — LLM agentic chat sessions and message storage
+- [Conversations](overview/architecture/conversations.md) — native transcript storage and migration state
 - [Entity Relations](overview/architecture/entity-relations.md) — Follow, mute, block, and subscription relationships
 - [Bookmarks](overview/architecture/bookmarks.md) — User bookmark system with bloom filter optimization
 - [Post Lifecycle](overview/architecture/post-lifecycle.md) — Post creation, async fan-out, moderation, and sitemap updates
@@ -345,7 +345,6 @@ Feature specifications, rules, and policies.
 - [Fediverse](requirements/content/FEDIVERSE.md) — Feature-flagged search intent, provider buckets, current boundaries, and the planned A→D federation roadmap
   - [Fediverse Federation architecture](overview/architecture/fediverse-federation.md) — technical design for the roadmap's four phases
 - [Comments](requirements/content/COMMENTS.md) — Comment system requirements
-- [Chat](requirements/content/CHAT.md) — AI chat routes, SSE contract, no-refresh invariant, and scroll rules
 - [Topics](requirements/content/TOPICS.md) — Topic management
 - [Users](requirements/users/USERS.md) — User profile routes, tabs, and management views
 - [User Relation Matrix](requirements/users/USER-RELATION-MATRIX.md) — User bookmark relation management on profile pages

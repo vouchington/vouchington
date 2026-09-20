@@ -46,14 +46,6 @@ vi.mock(
     }) as unknown as typeof import('next/link'),
 )
 
-vi.mock(import('../../components/chat/chats-sidebar-group'), () => ({
-  ChatsSidebarGroup: () => (
-    <div data-sidebar='group'>
-      <div data-sidebar='group-label'>Chats</div>
-    </div>
-  ),
-}))
-
 vi.mock(import('../../components/messages/messages-sidebar-group'), () => ({
   MessagesSidebarGroup: () => null,
 }))

@@ -43,7 +43,6 @@ const authenticatedRoutes = [
   { name: 'my api keys page', path: '/my/api-keys' },
   { name: 'my data page', path: '/my/data' },
   { name: 'my notifications page', path: '/my/notifications' },
-  { name: 'chat page', path: '/chat' },
   { name: 'messages page', path: '/messages' },
 ] as const
 

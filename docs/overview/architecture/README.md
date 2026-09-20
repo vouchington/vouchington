@@ -26,7 +26,7 @@ System design, pipelines, and application-layer patterns for Voucha.
 | [Dynamic Config](./dynamic-config.md)                                                   | Admin-managed Valkey DynamicConfig namespaces, authorization hooks, and audit history                        |
 | [API Egress Proxy](./api-egress-proxy.md)                                               | Explicit provider-scoped HTTP CONNECT routing for IPv4-only APIs                                             |
 | [Feature Flags](./feature-flags.md)                                                     | Runtime feature toggles via Valkey DynamicConfig                                                             |
-| [Conversations](./conversations.md)                                                     | LLM agentic chat sessions and message storage                                                                |
+| [Conversations](./conversations.md)                                                     | Native transcript storage and migration state                                                                |
 | [Entity Relations](./entity-relations.md)                                               | Follow, mute, block, and subscription relationships                                                          |
 | [Bookmarks](./bookmarks.md)                                                             | User bookmark system with bloom filter optimization                                                          |
 | [Post Lifecycle](./post-lifecycle.md)                                                   | Post creation, async fan-out, moderation, and sitemap updates                                                |

@@ -51,12 +51,6 @@ export function makeAuthOnlyIntent(): NavIntent {
         requiresAuth: true,
         items: [
           {
-            label: 'New Chat' as MessageKey,
-            href: '/chat',
-            dataPw: 'sidebar-nav-new-chat',
-            exact: true,
-          },
-          {
             label: 'Support' as MessageKey,
             href: '/chat/support',
             dataPw: 'sidebar-nav-chat-support',

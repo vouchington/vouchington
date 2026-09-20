@@ -269,7 +269,7 @@ Every forward navigation to a new pathname scrolls `window` to the top (`scrollY
 
 Components that read `document.cookie`, `localStorage`, or `sessionStorage` at render time must stay
 out of the server render. Use `dynamic(..., { ssr: false })` at the call site when the whole client
-surface is browser-only (`ChatsSidebarGroup`), defer the read to `useEffect` for one-time hydration
+surface is browser-only, defer the read to `useEffect` for one-time hydration
 (`CookieConsentBanner`), or use `useSyncExternalStore` when the value needs an SSR-safe subscription
 contract (`DismissibleCtaAside`).
 

@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   agentConversationHref,
   agentHref,
-  chatHref,
   chatSupportThreadHref,
   compareHref,
   createAgentPathname,
@@ -64,12 +63,6 @@ describe('agentConversationHref', () => {
     expect(agentConversationHref({ id: 'agent-1', slug: 'writer' }, { id: 'conv-1' })).toBe(
       '/agent/writer/conversation/conv-1',
     )
-  })
-})
-
-describe('chatHref', () => {
-  it('builds the chat path from the conversation id', () => {
-    expect(chatHref({ id: 'conv-1' })).toBe('/chat/conv-1')
   })
 })
 

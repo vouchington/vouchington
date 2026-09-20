@@ -46,8 +46,6 @@ color, background, or inset ring/shadow treatments instead.
 |                                  | Sources                                                  | `/sources`                    | yes    | yes  | yes   | yes      |
 |                                  | Referral Programs                                        | `/referral-programs`          | yes    | yes  | yes   | yes      |
 | **Trust**                        | Domains                                                  | `/domains`                    | yes    | yes  | yes   | yes      |
-| **Chats**†                       | New Chat                                                 | `/chat`                       | —      | yes  | yes   | yes      |
-|                                  | [conversations]                                          | `/chat/:id`                   | —      | yes  | yes   | yes      |
 | **Help**                         | Support                                                  | `/chat/support`               | —      | yes  | yes   | yes      |
 | **Growth**                       | Growth                                                   | `/growth`                     | —      | —    | yes   | yes      |
 | **Users & Friends**              | Users                                                    | `/users`                      | —      | yes  | yes   | yes      |

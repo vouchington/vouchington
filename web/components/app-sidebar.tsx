@@ -20,15 +20,9 @@ import { useIsMac } from '@/hooks/use-is-mac'
 import { AppSidebarNavGroup } from './app-sidebar/nav-section'
 import { IntentSwitcher } from './navbar/intent-switcher'
 import { useFeatureFlags } from '@/lib/feature-flags/use-feature-flags'
-import type { ChatsSidebarGroup as ChatsSidebarGroupComponent } from './chat/chats-sidebar-group'
 import type { CommunitiesSidebarGroup as CommunitiesSidebarGroupComponent } from './communities/communities-sidebar-group'
 import type { ListsSidebarGroup as ListsSidebarGroupComponent } from './lists/lists-sidebar-group'
 import type { MessagesSidebarGroup as MessagesSidebarGroupComponent } from './messages/messages-sidebar-group'
-
-const ChatsSidebarGroup = dynamic<ComponentProps<typeof ChatsSidebarGroupComponent>>(
-  () => import('./chat/chats-sidebar-group').then(m => ({ default: m.ChatsSidebarGroup })),
-  { ssr: false },
-)
 
 const MessagesSidebarGroup = dynamic<ComponentProps<typeof MessagesSidebarGroupComponent>>(
   () =>
@@ -78,7 +72,6 @@ export function AppSidebar({ siteFooter }: { siteFooter?: ReactNode }) {
   )
 
   const isCommunitiesIntent = activeIntentId === 'communities'
-  const isChatIntent = activeIntentId === 'chat'
   const isMessagesIntent = activeIntentId === 'messages'
   const isListsIntent = activeIntentId === 'lists'
 
@@ -103,11 +96,8 @@ export function AppSidebar({ siteFooter }: { siteFooter?: ReactNode }) {
         <IntentSwitcher variant='sidebar' />
       </SidebarHeader>
       <SidebarContent>
-        {/* Suppress static groups for authenticated Communities/Chat/Messages/Lists intents — their dynamic sidebar groups below fully own the nav. */}
-        {!(
-          (isCommunitiesIntent || isChatIntent || isMessagesIntent || isListsIntent) &&
-          isAuthenticated
-        ) &&
+        {/* Suppress static groups for authenticated Communities/Messages/Lists intents — their dynamic sidebar groups below fully own the nav. */}
+        {!((isCommunitiesIntent || isMessagesIntent || isListsIntent) && isAuthenticated) &&
           visibleGroups.map(group => (
             <AppSidebarNavGroup
               key={group.dataPw}
@@ -117,7 +107,6 @@ export function AppSidebar({ siteFooter }: { siteFooter?: ReactNode }) {
             />
           ))}
         {isCommunitiesIntent && (isAuthenticated ? <CommunitiesSidebarGroup /> : null)}
-        {isChatIntent && isAuthenticated ? <ChatsSidebarGroup /> : null}
         {isMessagesIntent && isAuthenticated ? <MessagesSidebarGroup /> : null}
         {isListsIntent && isAuthenticated ? <ListsSidebarGroup /> : null}
         <div className='mt-auto'>{siteFooter}</div>

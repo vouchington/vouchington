@@ -15,12 +15,6 @@ export const PRODUCT_COMMUNICATION_INTENTS: readonly NavIntent[] = [
         requiresAuth: true,
         items: [
           {
-            label: 'extracted.intents.productCommunication.newChat_0d332351',
-            href: '/chat',
-            dataPw: 'sidebar-nav-new-chat',
-            exact: true,
-          },
-          {
             label: 'extracted.intents.productCommunication.support_be91940b',
             href: '/chat/support',
             dataPw: 'sidebar-nav-chat-support',

@@ -77,10 +77,6 @@ export function agentConversationHref(
   return createAgentPathname(agent, `/conversation/${idOrValue(conversation)}`)
 }
 
-export function chatHref(conversation: IdInput): string {
-  return `/chat/${conversation.id}`
-}
-
 export function chatSupportThreadHref(thread: string | IdInput): string {
   return `/chat/support/${idOrValue(thread)}`
 }
