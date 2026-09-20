@@ -15,32 +15,32 @@ const shutdownOnlyMarkers = [
 ].join('\n')
 
 const backendCredentialedCleanShutdownLog = [
-  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-stripe --coverage',
+  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe --coverage',
   '  CI_PROJECT: backend-credentialed',
   ' RUN  v4.1.9 /home/runner/actions-runner/4/_work/filaments/filaments',
   'Coverage enabled with v8',
   '##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled.',
   'undefined',
-  "ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL Command was killed with SIGKILL (Forced termination): ./ci/with-node-test-options vitest run '--bail=3' --project backend-aws --project backend-bedrock --project backend-openai --project backend-stripe --coverage",
+  "ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL Command was killed with SIGKILL (Forced termination): ./ci/with-node-test-options vitest run '--bail=3' --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe --coverage",
   '##[error]The operation was canceled.',
 ].join('\n')
 
 const backendCredentialedVitestFailLog = [
-  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-stripe --coverage',
+  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe --coverage',
   'FAIL backend-openai backend/modules/openai/client.openai.test.mts > openai.client > returns chat completions',
   'AssertionError: expected 500 to be 200',
   shutdownOnlyMarkers,
 ].join('\n')
 
 const backendCredentialedNonAssertionFailLog = [
-  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-stripe --coverage',
+  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe --coverage',
   'FAIL backend-stripe backend/modules/stripe/webhook.test.mts > stripe.webhook > parses event',
   'TypeError: Cannot read properties of undefined (reading "id")',
   shutdownOnlyMarkers,
 ].join('\n')
 
 const backendCredentialedUnhandledErrorLog = [
-  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-stripe --coverage',
+  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe --coverage',
   'Vitest caught 1 unhandled error during the test run.',
   'Errors  1 error',
   'Unhandled Errors',

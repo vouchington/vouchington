@@ -62,6 +62,7 @@ Cross-link related docs bidirectionally instead of duplicating their content, an
 - [Git Worktree Locks](development/git-worktree-locks.md) — Diagnosing and fixing `index.lock` collisions caused by git auto-maintenance
 - [Worker Performance](development/worker-performance.md) — Sizing, concurrency knobs, Rust N-API libuv pool caps, and profiling for the backend worker process
 - [Runtime Timeouts](development/runtime-timeouts.md) — Registry of server/worker/dispatcher/Lambda/SSE timeouts by category, plus the Fargate Spot SSE short-cap principle
+- [Structured Decisions](overview/architecture/structured-decisions.md) — Strict Jev Noul, Choice, and Score transport boundary
 - [OpenTelemetry](development/opentelemetry.md) — Local distributed tracing (collector + Jaeger) and AWS deploy path (ADOT → X-Ray)
 - [Agent Blackboard](development/agent-blackboard.md) — Hosted Lambda + DynamoDB session store for agent session journaling and retrospectives (local dev only today; CI wiring is not yet provisioned)
 - [Harness Engineering](development/harness-engineering.md) — Agent observability plan using CI-main Sentry, local/CI Playwright OTel, S3 trace dumps, and Sentry MCP

@@ -27,6 +27,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         '**/node_modules/**',
         '**/.git/**',
         '**/*.mock.test.mts',
+        '**/*.openrouter.test.mts',
         '**/*.stripe.test.mts',
         'backend/modules/aws/s3.test.mts',
         'backend/modules/aws/ses.generated.test.mts',

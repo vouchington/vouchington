@@ -104,6 +104,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
       { project: 'backend-aws', credential: 'AWS tests role' },
       { project: 'backend-bedrock', credential: 'AWS tests role + Bedrock' },
       { project: 'backend-openai', credential: 'OPENAI_API_KEY' },
+      { project: 'backend-openrouter', credential: 'OPENROUTER_API_KEY' },
       { project: 'backend-stripe', credential: 'STRIPE_SECRET_KEY' },
     ],
   },

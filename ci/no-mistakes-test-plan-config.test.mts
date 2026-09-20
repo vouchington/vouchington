@@ -201,6 +201,7 @@ describe('no-mistakes test plan config', () => {
         'backend-mocks',
         'backend-aws',
         'backend-openai',
+        'backend-openrouter',
         'web-api',
         'web-integration',
       ],

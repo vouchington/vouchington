@@ -89,7 +89,7 @@ export const backendCredentialedProviderSmokeTestTransientRule: TransientRetryRu
   consumerKey: 'backend-credentialed-provider-smoke-tests',
   rootCauseKey: 'external-provider-transient',
   description:
-    'Backend credentialed job fails only in a probe owned by one of the four credentialed vitest projects (backend-aws, backend-bedrock, backend-openai, backend-stripe) and the failure carries a known provider-transport marker (timeout, an AWS-SDK request abort/timeout, a Bedrock 500, or an OpenAI 429/500).',
+    'Backend credentialed job fails only in a probe owned by a credentialed Vitest project (backend-aws, backend-bedrock, backend-openai, backend-openrouter, backend-stripe) and the failure carries a known provider-transport marker (timeout, an AWS-SDK request abort/timeout, a Bedrock 500, an OpenAI 429/500, or an OpenRouter 429/5xx).',
   rationale:
     "The failure is a timeout, an AWS-SDK request abort/timeout, or a provider-side 500/429 constrained to known failure blocks, not a local assertion; coverage, tests, and build fail only because the credentialed producer exits early. Any test file added under a credentialed project's own `include` glob is covered automatically, so new probes cannot ship silently uncovered.",
   exampleRunIds: [
