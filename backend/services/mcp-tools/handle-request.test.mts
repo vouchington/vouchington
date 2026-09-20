@@ -49,7 +49,10 @@ describe('handleMcpHttpRequest', () => {
         permissions: ['mcp.user:read'],
         request: new Request('http://localhost/api/v1/mcp', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json, text/event-stream',
+          },
           body: JSON.stringify(body),
         }),
         parsedBody: body,

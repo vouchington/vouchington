@@ -1,6 +1,10 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  CallToolRequestSchema,
+  ErrorCode,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
 import type { BasicUser } from '@services/users/types'
@@ -18,6 +22,9 @@ type McpRequestContext = {
 }
 
 export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<Response> {
+  const invalidRequestResponse = validateRegisteredMcpRequest(ctx.parsedBody)
+  if (invalidRequestResponse) return invalidRequestResponse
+
   const server = new Server(
     { name: ctx.config.serverName, version: '1.0.0' },
     { capabilities: { tools: {} } },
@@ -51,4 +58,28 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<Resp
     await transport.close()
     await server.close()
   }
+}
+
+function validateRegisteredMcpRequest(parsedBody: unknown): Response | null {
+  if (!parsedBody || typeof parsedBody !== 'object' || Array.isArray(parsedBody)) return null
+
+  const request = parsedBody as Record<string, unknown>
+  const schema =
+    request.method === 'tools/list'
+      ? ListToolsRequestSchema
+      : request.method === 'tools/call'
+        ? CallToolRequestSchema
+        : null
+  if (!schema || schema.safeParse(parsedBody).success) return null
+
+  const id =
+    typeof request.id === 'string' || typeof request.id === 'number' ? request.id : undefined
+  return Response.json(
+    {
+      jsonrpc: '2.0',
+      ...(id === undefined ? {} : { id }),
+      error: { code: ErrorCode.InvalidRequest, message: 'Invalid request' },
+    },
+    { status: 200 },
+  )
 }
