@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { AGENT_PRIORITY } from '@queues/ai-agents/config'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
-import { processAIAgent } from './processors.mts'
+import { processAIAgent, type ProcessAIAgentDependencies } from './processors.mts'
 
 describe('processAIAgent routing', () => {
   it('has a switch route for every configured ai-agent queue job name', async () => {
@@ -53,5 +53,22 @@ describe('processAIAgent routing', () => {
       data: {},
     } as Job<AIAgentJobData>)
     expect(result).toBeUndefined()
+  })
+
+  it('routes reconcile-chat-runtime-generations to the retained chat recovery processor', async () => {
+    const processReconcileChatRuntimeGenerations = vi.fn<
+      ProcessAIAgentDependencies['processReconcileChatRuntimeGenerations']
+    >(async () => undefined)
+
+    await expect(
+      processAIAgent(
+        {
+          name: 'reconcile-chat-runtime-generations',
+          data: {},
+        } as Job<AIAgentJobData>,
+        { processReconcileChatRuntimeGenerations },
+      ),
+    ).resolves.toBeUndefined()
+    expect(processReconcileChatRuntimeGenerations).toHaveBeenCalledOnce()
   })
 })

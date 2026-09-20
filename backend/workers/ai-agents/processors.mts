@@ -30,7 +30,19 @@ import { processReconcileBackgroundResponses } from './processors/process-reconc
 import { processReconcileChatRuntimeGenerations } from './processors/process-reconcile-chat-runtime-generations.mts'
 import { processReconcileMemberSupportAgentIntents } from './processors/process-reconcile-member-support-agent-intents.mts'
 
-export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
+export type ProcessAIAgentDependencies = {
+  processReconcileChatRuntimeGenerations: typeof processReconcileChatRuntimeGenerations
+}
+
+const defaultProcessAIAgentDependencies: ProcessAIAgentDependencies = {
+  processReconcileChatRuntimeGenerations,
+}
+
+export function processAIAgent(
+  job: Job<AIAgentJobData>,
+  dependencyOverrides: Partial<ProcessAIAgentDependencies> = {},
+): Promise<unknown> {
+  const dependencies = { ...defaultProcessAIAgentDependencies, ...dependencyOverrides }
   const name = job.name as AIAgentJobName
 
   switch (name) {
@@ -97,7 +109,7 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
     case 'reconcile-background-responses':
       return processReconcileBackgroundResponses()
     case 'reconcile-chat-runtime-generations':
-      return processReconcileChatRuntimeGenerations()
+      return dependencies.processReconcileChatRuntimeGenerations()
     case 'reconcile-member-support-agent-intents':
       return processReconcileMemberSupportAgentIntents()
     default:
