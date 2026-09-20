@@ -21,9 +21,11 @@ test.describe('Footer links', () => {
     await page.setViewportSize(MOBILE_VIEWPORTS['iphone-se'])
     await navigateTo(page, '/')
 
-    await expect(page.getByTestId('footer-site-link-copyright')).toHaveAttribute(
-      'href',
-      '/copyright',
-    )
+    await page.getByTestId('sidebar-trigger').click()
+
+    const copyrightLink = page.getByTestId('footer-site-link-copyright')
+    await expect(copyrightLink).toHaveAttribute('href', '/copyright')
+    await copyrightLink.click()
+    await expect(page).toHaveURL(/\/copyright$/)
   })
 })
