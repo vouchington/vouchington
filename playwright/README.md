@@ -3,7 +3,7 @@
 Run `pnpm run test:playwright`.
 
 CI shards use three Playwright workers on public 4-vCPU runners. Each shard also runs Chromium,
-workerd, Next.js, backend, lambdas, Postgres, and Valkey. The first public full-suite baseline kept
+workerd, Next.js, backend, lambdas, Postgres, and Valkey. Three public full-suite baselines kept
 the shared nine-shard formula below the job KPI; future measurements continue to govern retuning.
 
 ## Scope

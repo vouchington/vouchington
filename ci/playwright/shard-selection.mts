@@ -8,7 +8,7 @@ export { GITHUB_MATRIX_MAX_JOBS } from '../shard-limits.mts'
 export const PLAYWRIGHT_ESTIMATED_SECONDS_PER_SPEC = 8.6
 // Allocation heuristic, not a per-spec SLA: this is the per-shard test-execution budget the
 // shard-total formula below solves against. It was calibrated on private runners and retained after
-// the first public baseline confirmed the current roughly 318-spec full suite stays below the
+// three public full-suite baselines confirmed the current roughly 318-spec full suite stays below the
 // ten-minute target with nine shards and three Playwright workers. The whole playwright-tests job
 // (build + migrate + compile + test) targets that job-level KPI, not just the test step.
 export const PLAYWRIGHT_EXECUTION_BUDGET_SECONDS = 313

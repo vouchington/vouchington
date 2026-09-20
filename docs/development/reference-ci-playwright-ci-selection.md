@@ -62,7 +62,7 @@ For targeted PRs, shard count is
 `max(1, ceil(selected runnable spec count × 8.6 seconds / 313 seconds))`. Full-suite selections,
 planner fail-open fallbacks, and manual runs use the same formula with the complete runnable
 Playwright spec count. The 8.6 seconds per spec and 313-second execution budget are allocation
-heuristics, not a per-spec SLA. The first public full-suite baseline retained this formula: the
+heuristics, not a per-spec SLA. Three public full-suite baselines retained this formula: the
 roughly 318-spec suite resolves to nine shards and meets the job KPI with three Playwright workers.
 The execution budget leaves room for fixed per-shard build/startup overhead
 inside the sub-ten-minute job target. There is no repository policy cap, although the selector
