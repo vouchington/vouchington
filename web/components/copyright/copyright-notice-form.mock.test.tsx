@@ -75,7 +75,7 @@ describe('CopyrightNoticeForm', () => {
     fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Claimant' } })
     fireEvent.change(screen.getByLabelText('Mailing address'), { target: { value: '1 Main St' } })
     fireEvent.change(screen.getByLabelText('Email address'), {
-      target: { value: 'claimant@example.com' },
+      target: { value: 'tests+51c2846f@voucha.ai' },
     })
     fireEvent.change(screen.getByLabelText('Copyrighted work'), {
       target: { value: 'Claimed photograph' },
@@ -91,7 +91,7 @@ describe('CopyrightNoticeForm', () => {
       expect(mockCreateNotice).toHaveBeenCalledWith({
         claimant_display_name: 'Claimant',
         claimant_contact: '1 Main St',
-        claimant_email: 'claimant@example.com',
+        claimant_email: 'tests+51c2846f@voucha.ai',
         work_description: 'Claimed photograph',
         electronic_signature: 'Claimant',
         good_faith_belief: true,

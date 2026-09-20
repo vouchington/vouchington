@@ -41,7 +41,7 @@ describe('copyright notices client', () => {
     const input = {
       claimant_display_name: 'Claimant',
       claimant_contact: '1 Main St',
-      claimant_email: 'claimant@example.com',
+      claimant_email: 'tests+0bdf859c@voucha.ai',
       work_description: 'A photograph',
       electronic_signature: 'Claimant',
       good_faith_belief: true,
