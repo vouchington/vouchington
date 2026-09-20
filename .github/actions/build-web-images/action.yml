@@ -72,7 +72,7 @@ runs:
           NEXT_PUBLIC_GIT_COMMIT=${{ github.sha }}
           NEXT_PUBLIC_ASSET_PREFIX=${{ inputs.next-public-asset-prefix }}
           STRIP_TEST_IDS=true
-          SENTRY_RELEASE=${{ inputs.sentry-release || github.sha }}
+          SENTRY_RELEASE=${{ inputs.sentry-source-map-upload == 'true' && (inputs.sentry-release || github.sha) || '' }}
           SENTRY_SOURCE_MAP_UPLOAD=${{ inputs.sentry-source-map-upload == 'true' && '1' || '0' }}
         secrets: |
           SENTRY_AUTH_TOKEN=${{ inputs.sentry-source-map-upload == 'true' && env.SENTRY_AUTH_TOKEN || '' }}

@@ -69,6 +69,9 @@ describe('build-web workflow', () => {
     expect(compositeActionSource).toContain(
       "SENTRY_AUTH_TOKEN=${{ inputs.sentry-source-map-upload == 'true' && env.SENTRY_AUTH_TOKEN || '' }}",
     )
+    expect(compositeActionSource).toContain(
+      "SENTRY_RELEASE=${{ inputs.sentry-source-map-upload == 'true' && (inputs.sentry-release || github.sha) || '' }}",
+    )
     expect(compositeActionSource).not.toContain('ARG SENTRY_AUTH_TOKEN')
     expect(compositeActionSource).not.toContain('ENV SENTRY_AUTH_TOKEN')
     expect(publishSource).toContain('SENTRY_AUTH_TOKEN:')
