@@ -1,4 +1,6 @@
 import { read, write } from '@data-stores/psql'
+import { stageImagePlacementDeliveryRecord } from '../../services/media-delivery-safety/delivery-registry-staging.mts'
+import { completeTestMediaDeliveryRecord } from './image-surface-placements.mts'
 import sql from 'sql-template-strings'
 
 export async function removeTestPostImage(postId: string, imageId: string): Promise<void> {
@@ -41,4 +43,22 @@ export async function getTestPostImagePlacement(
     WHERE image_placement.post_id = ${postId} AND image_placement.image_id = ${imageId}
   `)
   return rows[0] ?? null
+}
+
+/** Makes one current post-image placement visible through the fail-closed delivery registry. */
+export async function allowTestPostImageDelivery(input: {
+  postId: string
+  imageId: string
+}): Promise<void> {
+  const placement = await getTestPostImagePlacement(input.postId, input.imageId)
+  if (!placement || placement.retired_at !== null) {
+    throw new Error(`Expected an active post-image placement for ${input.postId}/${input.imageId}`)
+  }
+  const { deliveryKey } = await stageImagePlacementDeliveryRecord({
+    placementId: placement.placement_id,
+    revision: placement.placement_revision,
+    imageId: input.imageId,
+    state: 'allow',
+  })
+  await completeTestMediaDeliveryRecord(deliveryKey)
 }

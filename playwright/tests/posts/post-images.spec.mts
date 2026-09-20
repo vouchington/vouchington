@@ -3,9 +3,12 @@ import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { TEST_PNG } from '../../helpers/test-fixtures.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
-import { insertTestImage } from '../../../backend/test-helpers/entities/images.mts'
+import {
+  insertTestImage,
+  insertTestPostImage,
+} from '../../../backend/test-helpers/entities/images.mts'
+import { allowTestPostImageDelivery } from '../../../backend/test-helpers/entities/post-images.mts'
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 
@@ -30,10 +33,8 @@ test.describe('Post Images', () => {
       markdown: 'Post with an image attachment.',
     })
     const imageId = await insertTestImage(TEST_USER_ID)
-    await write(
-      `/* post-images-spec insertPostImage */ INSERT INTO post_images (post_id, image_id, order_index) VALUES ($1, $2, 0)`,
-      [postId, imageId],
-    )
+    await insertTestPostImage({ postId, imageId })
+    await allowTestPostImageDelivery({ postId, imageId })
 
     await page.route(
       url => new URL(url.toString()).pathname.startsWith('/images/'),
@@ -55,10 +56,8 @@ test.describe('Post Images', () => {
       markdown: 'Post with an image attachment.',
     })
     const imageId = await insertTestImage(TEST_USER_ID)
-    await write(
-      `/* post-images-spec insertPostImageDetail */ INSERT INTO post_images (post_id, image_id, order_index) VALUES ($1, $2, 0)`,
-      [postId, imageId],
-    )
+    await insertTestPostImage({ postId, imageId })
+    await allowTestPostImageDelivery({ postId, imageId })
 
     await page.route(
       url => new URL(url.toString()).pathname.startsWith('/images/'),
@@ -173,10 +172,8 @@ test.describe('Post Images', () => {
       markdown: 'Post for lightbox testing.',
     })
     const imageId = await insertTestImage(TEST_USER_ID)
-    await write(
-      `/* post-images-spec insertPostImageLightbox */ INSERT INTO post_images (post_id, image_id, order_index) VALUES ($1, $2, 0)`,
-      [postId, imageId],
-    )
+    await insertTestPostImage({ postId, imageId })
+    await allowTestPostImageDelivery({ postId, imageId })
 
     await page.route(
       url => new URL(url.toString()).pathname.startsWith('/images/'),
@@ -213,14 +210,12 @@ test.describe('Post Images', () => {
 
     const imageId1 = await insertTestImage(TEST_USER_ID)
     const imageId2 = await insertTestImage(TEST_USER_ID)
-    await write(
-      `/* post-images-spec insertMultiImages1 */ INSERT INTO post_images (post_id, image_id, order_index) VALUES ($1, $2, 0)`,
-      [postId, imageId1],
-    )
-    await write(
-      `/* post-images-spec insertMultiImages2 */ INSERT INTO post_images (post_id, image_id, order_index) VALUES ($1, $2, 1)`,
-      [postId, imageId2],
-    )
+    await insertTestPostImage({ postId, imageId: imageId1, orderIndex: 0 })
+    await insertTestPostImage({ postId, imageId: imageId2, orderIndex: 1 })
+    await Promise.all([
+      allowTestPostImageDelivery({ postId, imageId: imageId1 }),
+      allowTestPostImageDelivery({ postId, imageId: imageId2 }),
+    ])
 
     await page.route(
       url => new URL(url.toString()).pathname.startsWith('/images/'),
@@ -244,10 +239,8 @@ test.describe('Post Images', () => {
       markdown: 'Post for compact view testing.',
     })
     const imageId = await insertTestImage(TEST_USER_ID)
-    await write(
-      `/* post-images-spec insertCompactThumbnail */ INSERT INTO post_images (post_id, image_id, order_index) VALUES ($1, $2, 0)`,
-      [postId, imageId],
-    )
+    await insertTestPostImage({ postId, imageId })
+    await allowTestPostImageDelivery({ postId, imageId })
 
     await page.route(
       url => new URL(url.toString()).pathname.startsWith('/images/'),
