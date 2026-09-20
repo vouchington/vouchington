@@ -71,4 +71,19 @@ describe('RuntimeRequestValidatorRegistry', () => {
       ),
     ).toThrow('No generated runtime request contract')
   })
+
+  it('validates every supplied carrier at the authenticated route boundary', () => {
+    expect(
+      registry.validateAuthenticated('GET:/api/v1/items/:id', {
+        path: { id: '018f8780-6a0f-7c94-8d6c-b6b6d0b12a41' },
+        query: { limit: 2 },
+      }),
+    ).toBeNull()
+    expect(
+      registry.validateAuthenticated('GET:/api/v1/items/:id', {
+        path: { id: 'not-a-uuid' },
+        query: { limit: 2 },
+      }),
+    ).toMatchObject({ message: expect.stringContaining('Invalid request path') })
+  })
 })
