@@ -7,6 +7,7 @@ const membershipGrantSkuId = '00000000-0000-7000-8000-000000000701'
 const membershipGrantId = '00000000-0000-7000-8000-000000000802'
 const migratedFrom = [predecessorIssue(7880)]
 const nativeConsumers: ApiFixtureCase['consumers'] = ['swift-core', 'swift-ui', 'dotnet-core']
+const deferredNativeConsumers: ApiFixtureCase['consumers'] = []
 
 export const nativeMembershipGrantApiFixtureCases: ApiFixtureCase[] = [
   {
@@ -38,7 +39,7 @@ export const nativeMembershipGrantApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-admin',
     status: 204,
     body: null,
-    consumers: nativeConsumers,
+    consumers: deferredNativeConsumers,
     migratedFrom,
   },
 ]
