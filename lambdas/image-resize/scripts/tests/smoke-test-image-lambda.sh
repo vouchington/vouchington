@@ -40,9 +40,6 @@ trap cleanup EXIT INT TERM
 for attempt in $(seq 1 "$MAX_PORT_BIND_ATTEMPTS"); do
   cd "$REPO_ROOT"
   IMAGE_LAMBDA_PORT="$(python3 ci/allocate-browser-safe-ports.py 1)"
-  if [ -n "${GITHUB_ENV:-}" ]; then
-    echo "BROWSER_ALLOCATED_PORTS=$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"
-  fi
 
   : > "$LAMBDA_OUTPUT_LOG"
 

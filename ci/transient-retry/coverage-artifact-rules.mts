@@ -1,4 +1,3 @@
-import { runnerShutdownLeafRerunRule } from './runner-shutdown-rules.mts'
 import { GO_NET_HTTP_TRANSPORT_TRANSIENT_ERROR_MARKERS } from './aws-transport-fingerprints.mts'
 import { hasCoverageArtifactSelection } from './coverage-artifact-selection.mts'
 import {
@@ -10,6 +9,7 @@ import {
   CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES,
   CI_PATCH_COVERAGE_JOB_NAMES,
 } from './ci-aggregate-jobs.mts'
+import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 
 const coverageArtifactStaleRerunMissingRuleId = 'coverage-artifact-stale-rerun-missing'
 
@@ -75,7 +75,7 @@ async function hasOnlyAggregatesOrCleanRunnerShutdowns(
     failedJobNames,
     failedJobLogs: () => Promise.resolve(failedLogs),
   }
-  return runnerShutdownLeafRerunRule.match(shutdownCtx)
+  return runnerShutdownLeafRerunMatch(shutdownCtx)
 }
 
 export const coverageTransportExhaustedRule: TransientRetryRule = {

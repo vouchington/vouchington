@@ -81,22 +81,6 @@ describe('Vitest CI triggers', () => {
     )
   })
 
-  it('runs every lock-aware workflow when a shared lock helper changes', () => {
-    const buildLockPaths = ['ci/with-host-lock.sh', 'ci/with-build-lock.sh']
-    for (const filterName of [
-      'web',
-      'storybook',
-      'playwright',
-      'playwright-credentialed',
-      'web-integration',
-    ]) {
-      expectFilterMatches(filterName, buildLockPaths)
-    }
-    for (const filterName of ['web', 'storybook', 'playwright', 'web-integration']) {
-      expectRefinedRuntimeFilterMatches(filterName, buildLockPaths)
-    }
-  })
-
   it('runs Storybook for every browser-runtime input', () => {
     const runtimeInputs = [
       'ci/run-storybook-browser-tests.mts',
@@ -201,7 +185,7 @@ describe('Vitest CI triggers', () => {
   it('keeps API fixture changes on their owning test jobs without waking Playwright', () => {
     const apiFixturePaths = ['api-fixtures/v1/manifest.json']
     const sharedPlaywrightInfrastructure = [
-      'ci/playwright-install-ubicloud-browsers.sh',
+      'ci/allocate-browser-safe-ports.py',
       'playwright/config/shared-config.mts',
     ]
 

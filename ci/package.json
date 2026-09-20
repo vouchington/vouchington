@@ -6,13 +6,6 @@
   "license": "UNLICENSED",
   "author": "",
   "type": "module",
-  "exports": {
-    "./runner-port-policy": {
-      "types": "./runner-port-policy.mts",
-      "import": "./runner-port-policy.mts",
-      "default": "./runner-port-policy.mts"
-    }
-  },
   "scripts": {},
   "dependencies": {
     "auto-harness-client": "0.6.0",

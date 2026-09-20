@@ -110,9 +110,8 @@ describe('static-code-analysis workflow', () => {
       'node static-code-analysis/run-node-checks.mts --checks repo-file-policy,targeted-guardrails,config-inventory-policy',
     )
     const mise = workflow.indexOf('      - name: Install CI tools via mise')
-    const oxlintRun = workflow.indexOf('bash ci/with-heavy-slot.sh pnpm exec oxlint')
     expect(mise).toBeGreaterThanOrEqual(0)
-    expect(workflow.slice(mise, oxlintRun)).not.toContain('if: ${{ inputs.docs_only')
+    expect(workflow.slice(mise, oxlint)).not.toContain('if: ${{ inputs.docs_only')
     const oxfmt = workflow.indexOf('pnpm exec oxfmt --check')
     expect(oxfmt).toBeGreaterThan(knip)
     expect(workflow.slice(oxfmt, oxfmt + 80)).not.toContain('if: ${{ inputs.docs_only != true }}')

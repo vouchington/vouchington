@@ -6,7 +6,6 @@ import {
   backendUnitValkeyGlideTimeoutRule,
   backendUnitVitestWorkerExitAfterPassRule,
 } from './backend-test-rules.mts'
-import { backendSmokeReservedPortCollisionRule } from './backend-port-collision-rules.mts'
 import {
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
@@ -27,28 +26,14 @@ import {
   mainWebPlaywrightSetupAptLockRule,
   mainWebPlaywrightWorkerNavigationTimeoutRule,
 } from './playwright-rules.mts'
-import {
-  mainWebPlaywrightReservedPortCollisionRule,
-  playwrightCredentialedWebServerReservedPortCollisionRule,
-} from './playwright-port-collision-rules.mts'
-import { runnerDiskAdmissionRejectedRule } from './runner-disk-admission-rules.mts'
 import { runnerShutdownLeafRerunRule } from './runner-shutdown-rules.mts'
 import {
   cloudflareWorkerTscRuntimeCrashRule,
-  staticAnalysisCheckoutDiskExhaustionRule,
   staticAnalysisOxlintTsgolintRuntimeFaultRule,
 } from './static-analysis-rules.mts'
 import { storybookBrowserStartupTransientRule } from './storybook-rules.mts'
 import type { TransientRetryRule } from './types.mts'
-import {
-  mainWebBuildWebTargetsAcquireTimeoutRule,
-  mainWebStaticBuildAcquireTimeoutRule,
-} from './web-build-acquire-timeout-rules.mts'
-import {
-  mainWebBuildWebTargetsWatchdogTimeoutRule,
-  mainWebStaticBuildWatchdogTimeoutRule,
-  mainWebStaticBuildSilentExitRule,
-} from './web-build-rules.mts'
+import { mainWebStaticBuildSilentExitRule } from './web-build-rules.mts'
 import {
   mainWebIntegrationBackendSilentStartupExitRule,
   webIntegrationWranglerSocketClosedRule,
@@ -63,20 +48,16 @@ export type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 export const RULES: TransientRetryRule[] = [
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
-  runnerDiskAdmissionRejectedRule,
   lintLinksGithub5xxRule,
   lintLinksSetupLycheeDownloadFlakeRule,
   detectChangesPathsFilterGithub5xxRule,
   gitleaksInstallReleasesDownloadFlakeRule,
   mainBackendCredentialedProviderAndUnitWorkerExitTransientRule,
   backendCredentialedProviderSmokeTestTransientRule,
-  backendSmokeReservedPortCollisionRule,
   backendUnitValkeyGlideTimeoutRule,
   backendUnitVitestWorkerExitAfterPassRule,
   playwrightSetupBackendPnpmActivationTimeoutRule,
   mainWebPlaywrightSetupAptLockRule,
-  mainWebPlaywrightReservedPortCollisionRule,
-  playwrightCredentialedWebServerReservedPortCollisionRule,
   mainWebPlaywrightWorkerNavigationTimeoutRule,
   mainWebIntegrationBackendSilentStartupExitRule,
   webIntegrationWranglerSocketClosedRule,
@@ -84,15 +65,10 @@ export const RULES: TransientRetryRule[] = [
   coverageArtifactDownloadTimeoutRule,
   coverageArtifactStaleRerunMissingRule,
   runnerShutdownLeafRerunRule,
-  mainWebBuildWebTargetsWatchdogTimeoutRule,
-  mainWebBuildWebTargetsAcquireTimeoutRule,
-  mainWebStaticBuildWatchdogTimeoutRule,
-  mainWebStaticBuildAcquireTimeoutRule,
   mainWebStaticBuildSilentExitRule,
   mainWebVitestWorkerStartTimeoutAfterPassRule,
   storybookBrowserStartupTransientRule,
   webVitestSigsegvRule,
-  staticAnalysisCheckoutDiskExhaustionRule,
   cloudflareWorkerTscRuntimeCrashRule,
   staticAnalysisOxlintTsgolintRuntimeFaultRule,
 ]

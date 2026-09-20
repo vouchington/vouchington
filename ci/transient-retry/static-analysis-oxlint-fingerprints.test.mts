@@ -12,7 +12,7 @@ const staticAnalysisJobName = 'static-code-analysis / static-code-analysis'
 // (`/home/runner/work/tsgolint/tsgolint/typescript-go/internal/...`) — see
 // oxlintTsgolintVendoredCheckoutShapeLog below for that old shape as a counterfixture.
 const oxlintTsgolintFaultLog = [
-  '##[group]Run bash ci/with-heavy-slot.sh pnpm exec oxlint --type-aware --deny-warnings',
+  '##[group]Run pnpm exec oxlint --type-aware --deny-warnings',
   'pnpm exec oxlint --type-aware --deny-warnings',
   '+ oxlint-tsgolint 7.0.2001',
   'unexpected fault address 0x6f6a2f73726573c5',
@@ -24,7 +24,7 @@ const oxlintTsgolintFaultLog = [
 ].join('\n')
 
 const oxlintTsgolintParserFaultLog = [
-  '##[group]Run bash ci/with-heavy-slot.sh pnpm exec oxlint --type-aware --deny-warnings',
+  '##[group]Run pnpm exec oxlint --type-aware --deny-warnings',
   'pnpm exec oxlint --type-aware --deny-warnings',
   '+ oxlint-tsgolint 7.0.2001',
   'unexpected fault address 0x6e6f6974636134a7',
@@ -39,7 +39,7 @@ const oxlintTsgolintParserFaultLog = [
 // checkout path instead of the stable import path. Proves the corrected fingerprint is not
 // tautological with the old-shape input it replaced.
 const oxlintTsgolintVendoredCheckoutShapeLog = [
-  '##[group]Run bash ci/with-heavy-slot.sh pnpm exec oxlint --type-aware --deny-warnings',
+  '##[group]Run pnpm exec oxlint --type-aware --deny-warnings',
   'pnpm exec oxlint --type-aware --deny-warnings',
   '+ oxlint-tsgolint 0.23.0',
   'unexpected fault address 0x6f6a2f73726573c5',
@@ -87,7 +87,7 @@ describe('static-analysis-oxlint-tsgolint-runtime-fault', () => {
               [
                 staticAnalysisJobName,
                 [
-                  '##[group]Run bash ci/with-heavy-slot.sh pnpm exec oxlint --type-aware --deny-warnings',
+                  '##[group]Run pnpm exec oxlint --type-aware --deny-warnings',
                   'pnpm exec oxlint --type-aware --deny-warnings',
                   'web/app/page.tsx:1:1 lint/suspicious/noExplicitAny',
                   '##[error]Process completed with exit code 1.',

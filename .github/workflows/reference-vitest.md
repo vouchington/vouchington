@@ -19,7 +19,7 @@ Vitest roots settle, but ordinary test failure or skip does not suppress them. T
 portability, native clients, and Storybook are intentionally outside that ordering.
 
 Backend Uncredentialed Docker Tests (`tests-backend-unit.yml`) carries failure-only fork-exit
-sentinel, diagnostic-report, and host-pressure steps for the recurring
+sentinel and diagnostic-report steps for the recurring
 `backend-unit-vitest-worker-exit-after-pass` signature (formerly filed as
 jonathanong/filaments#8940). See
 [Vitest Worker-Exit Diagnostics](../../docs/development/reference-vitest-worker-exit-diagnostics.md)

@@ -4,7 +4,7 @@ import {
   findRunnerShutdownConsumer,
   isCoverageProducerJob,
   isWebApiShardJob,
-} from './runner-shutdown-consumers.mts'
+} from './runner-shutdown-consumer-registry.mts'
 
 const webApiShard = 'test-web-api / web-api-tests (2)'
 

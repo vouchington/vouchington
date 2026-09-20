@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { decide } from './decide.mts'
 import { RULES, type WorkflowRunContext } from './rules.mts'
+import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 
 const playwrightShardOneJobName = 'test-playwright / playwright-tests (1)'
 const playwrightShardTwoJobName = 'test-playwright / playwright-tests (2)'
@@ -40,15 +41,14 @@ const aptWaitTimeoutLog = [
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:25:45.9351067Z ::error::Timed out waiting for apt/dpkg locks after 120s: /var/lib/dpkg/lock-frontend',
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:25:45.9595126Z ##[error]Process completed with exit code 1.',
 ].join('\n')
-const hostLockTimeoutLog = [
+const aptWaitTimeoutLogShardTwo = [
   'test-playwright / playwright-tests (2)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run ./.github/actions/setup-playwright',
-  'test-playwright / playwright-tests (2)\tUNKNOWN STEP\t2026-06-19T04:35:45.9351067Z with-host-lock: host-package-manager lock not acquired within 300s',
+  'test-playwright / playwright-tests (2)\tUNKNOWN STEP\t2026-06-19T04:35:45.9351067Z ::error::Timed out waiting for apt/dpkg locks after 300s: /var/lib/dpkg/lock-frontend',
   'test-playwright / playwright-tests (2)\tUNKNOWN STEP\t2026-06-19T04:35:45.9595126Z ##[error]Process completed with exit code 1.',
 ].join('\n')
 const echoedTimeoutSourceLog = [
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run ./.github/actions/setup-playwright',
-  'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.8031854Z echo "::error::Timed out waiting for apt/dpkg locks after ${timeout_seconds}s: ${busy_paths[*]}"',
-  'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.9031854Z echo "with-host-lock: host-package-manager lock not acquired within ${host_lock_timeout_seconds}s"; exit 1',
+  'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.8031854Z echo "::error::Timed out waiting for apt/dpkg locks after ${timeout_seconds}s: ${busy_paths[*]}"; exit 1',
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:22:45.9595126Z ##[error]Process completed with exit code 1.',
 ].join('\n')
 
@@ -68,54 +68,44 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   ...overrides,
 })
 
-describe('runner-shutdown-leaf-rerun (playwright shards only)', () => {
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. These direct matcher cases also protect the
+// coverage-artifact rules that reuse the same conservative predicate.
+describe('runnerShutdownLeafRerunMatch (playwright shards only)', () => {
   it('reruns CI when Playwright shards fail from runner shutdown and only aggregate jobs fail downstream', async () => {
-    const result = await decide(makeCtx(), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(await runnerShutdownLeafRerunMatch(makeCtx())).toBe(true)
   })
 
   it('also matches Main CI (web) playwright shard shutdown (previously excluded)', async () => {
-    const result = await decide(makeCtx({ workflowName: 'Main CI (web)' }), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(await runnerShutdownLeafRerunMatch(makeCtx({ workflowName: 'Main CI (web)' }))).toBe(
+      true,
+    )
   })
 
   it('does not match non-idempotent workflows', async () => {
-    const result = await decide(makeCtx({ workflowName: 'Stateful workflow' }), RULES)
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(await runnerShutdownLeafRerunMatch(makeCtx({ workflowName: 'Stateful workflow' }))).toBe(
+      false,
+    )
   })
 
   it('does not match when a non-aggregate job also failed', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx({
         failedJobNames: [playwrightShardOneJobName, 'test-web / web-tests (1)', 'tests', 'build'],
       }),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does not match normal Playwright assertion failures', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx({
         failedJobNames: [playwrightShardOneJobName, 'tests', 'build'],
         failedJobLogs: () =>
           Promise.resolve(new Map([[playwrightShardOneJobName, assertionFailureLog]])),
       }),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
-  })
-
-  it('does not match after the retry cap is exhausted', async () => {
-    // maxAttempts: 2 — the cap is exhausted at runAttempt 3
-    const result = await decide(makeCtx({ runAttempt: 3 }), RULES)
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 })
 
@@ -164,7 +154,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
     expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
   })
 
-  it('matches Main CI web with OTel fan-in and host-lock sibling timeouts', async () => {
+  it('matches Main CI web with OTel fan-in and multiple shard apt-lock timeouts', async () => {
     const result = await decide(
       makeCtx({
         workflowName: 'Main CI (web)',
@@ -177,7 +167,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
           Promise.resolve(
             new Map([
               [mainWebPlaywrightShardOneJobName, aptWaitTimeoutLog],
-              ['playwright-tests / playwright-tests (2)', hostLockTimeoutLog],
+              ['playwright-tests / playwright-tests (2)', aptWaitTimeoutLogShardTwo],
             ]),
           ),
       }),
@@ -228,12 +218,13 @@ describe('main-web-playwright-setup-apt-lock', () => {
     expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
   })
 
-  it('matches Main CI Storybook setup host-lock timeouts', async () => {
+  it('matches Main CI Storybook setup apt-lock wait timeouts', async () => {
     const result = await decide(
       makeCtx({
         workflowName: 'Main CI (storybook)',
         failedJobNames: [mainStorybookJobName],
-        failedJobLogs: () => Promise.resolve(new Map([[mainStorybookJobName, hostLockTimeoutLog]])),
+        failedJobLogs: () =>
+          Promise.resolve(new Map([[mainStorybookJobName, aptWaitTimeoutLogShardTwo]])),
       }),
       RULES,
     )

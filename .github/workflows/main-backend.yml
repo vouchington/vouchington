@@ -26,8 +26,6 @@ on:
       - 'ci/prepare-trivy-db.sh'
       - 'ci/allocate-browser-safe-ports.py'
       - 'ci/package.json'
-      - 'ci/runner-port-policy.json'
-      - 'ci/runner-port-policy.mts'
       - 'vitest.config.mts'
       - 'package.json'
       - 'pnpm-lock.yaml'

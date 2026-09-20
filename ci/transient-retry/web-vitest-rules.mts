@@ -10,7 +10,7 @@ import {
   isCleanRunnerShutdown,
 } from './runner-shutdown-fingerprints.mts'
 import type { TransientRetryRule } from './types.mts'
-import { webTestsShardPattern } from './runner-shutdown-consumers.mts'
+import { webTestsShardPattern } from './runner-shutdown-consumer-registry.mts'
 import {
   hasWebVitestSegfault,
   hasWebVitestWorkerStartTimeoutAfterPassingSummary,

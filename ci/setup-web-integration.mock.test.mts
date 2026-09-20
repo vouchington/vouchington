@@ -115,13 +115,7 @@ describe('setup-web-integration', () => {
     const modulePath = './setup-web-integration.mts?sequential-builds'
     await import(modulePath)
 
-    // Excludes the host-pressure-diagnostics.sh capture spawned between the two builds (via
-    // captureHostPressureSnapshotAsync()) -- this test asserts build ordering, not pressure
-    // capture, which has its own coverage in setup-web-integration-lock-wait.mock.test.mts.
-    const buildOnlyEvents = buildEvents.filter(
-      event => !event.includes('host-pressure-diagnostics.sh'),
-    )
-    expect(buildOnlyEvents).toEqual([
+    expect(buildEvents).toEqual([
       'start:--dir cloudflare-worker build',
       'exit:--dir cloudflare-worker build',
       'start:--dir web build',

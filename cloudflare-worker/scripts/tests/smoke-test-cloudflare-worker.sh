@@ -36,9 +36,6 @@ pnpm run build
 for attempt in $(seq 1 "$MAX_PORT_BIND_ATTEMPTS"); do
   cd "$REPO_ROOT"
   read -r WORKER_PORT INSPECTOR_PORT <<< "$(python3 ci/allocate-browser-safe-ports.py 2)"
-  if [ -n "${GITHUB_ENV:-}" ]; then
-    echo "BROWSER_ALLOCATED_PORTS=$WORKER_PORT $INSPECTOR_PORT" >> "$GITHUB_ENV"
-  fi
   cd "$WORKER_DIR"
   : > "$WORKER_OUTPUT_LOG"
   CI=true RUNNER_TEMP="${TMPDIR:-/tmp}" WRANGLER_LOCAL_PROTOCOL=http \

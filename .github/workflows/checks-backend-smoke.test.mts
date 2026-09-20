@@ -54,9 +54,12 @@ describe('checks-backend-smoke workflow', () => {
     expect(source).not.toContain('VITEST_MAX_WORKERS')
   })
 
-  it('keeps failure-only port diagnostics with the standalone smoke suffix', () => {
-    expect(source).toContain("failure() && env.BROWSER_ALLOCATED_PORTS != ''")
-    expect(source).toContain('continue-on-error: true')
-    expect(source).toContain('artifact-suffix: backend-smoke')
+  it('allocates the backend port with the shared Fetch-safe allocator and verifies it is free', () => {
+    const steps = smoke?.steps ?? []
+    const allocation = steps.find(step => step.name === 'Allocate backend port')
+    expect(allocation?.run).toContain('ci/allocate-browser-safe-ports.py 1')
+    expect(allocation?.run).toContain('lsof -ti:"$PORT"')
+    expect(allocation?.run).toContain('deterministic allocation will not retry')
+    expect(allocation?.run).toContain('PORT=$PORT')
   })
 })

@@ -8,10 +8,7 @@ description: >
   IMAGE_REPOSITORY and SHA_TAG, and must assume the AWS OIDC role (via
   ./.github/actions/setup-aws) before invoking this action, so AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, and AWS_REGION are already in the job environment
-  for the smoke test steps. Composite-action steps cannot carry their own timeout-minutes, so the
-  caller must run ./.github/actions/diagnose-browser-port-collision (ports:
-  env.BROWSER_ALLOCATED_PORTS, which this action sets via GITHUB_ENV during the API smoke test)
-  directly after invoking this action, gated on failure() && env.BROWSER_ALLOCATED_PORTS != ''.
+  for the smoke test steps.
 
 outputs:
   active_worker_images:
@@ -163,7 +160,6 @@ runs:
         set -euo pipefail
         IMAGE="$IMAGE_REPOSITORY/api:$IMAGE_TAG"
         PORT=$(python3 ci/allocate-browser-safe-ports.py 1)
-        echo "BROWSER_ALLOCATED_PORTS=$PORT" >> "$GITHUB_ENV"
         SERVER_CONTAINER="voucha-api-server-$$"
 
         cleanup() {

@@ -61,22 +61,16 @@ jobs:
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
       - name: Allocate backend port
-        id: port
-        uses: ./.github/actions/allocate-ports
-        with:
-          count: '1'
-      - name: Export backend port to env
         timeout-minutes: 1
-        run: echo "PORT=${{ steps.port.outputs.port1 }}" >> "$GITHUB_ENV"
+        run: |
+          set -euo pipefail
+          PORT=$(python3 ci/allocate-browser-safe-ports.py 1)
+          if lsof -ti:"$PORT" >/dev/null 2>&1; then
+            echo "::error::Port $PORT is already in use after allocation; deterministic allocation will not retry"
+            exit 1
+          fi
+          echo "PORT=$PORT" >> "$GITHUB_ENV"
       - name: Smoke test backend
         timeout-minutes: 3
         working-directory: backend
         run: ./scripts/tests/smoke-test-server.sh && ./scripts/tests/smoke-test-worker.sh
-      - name: Diagnose browser port collision
-        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
-        continue-on-error: true
-        timeout-minutes: 2
-        uses: ./.github/actions/diagnose-browser-port-collision
-        with:
-          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
-          artifact-suffix: backend-smoke

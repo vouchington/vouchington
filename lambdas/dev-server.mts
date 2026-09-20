@@ -21,8 +21,8 @@ const LISTEN_RETRY_JITTER_MS = 200
 // already torn down its webServer process group, so the collision evidence it probes
 // for is already gone. Reusing it here, at the moment of EADDRINUSE itself, is what
 // actually captures the process holding the port. CI sets BROWSER_PORT_DIAGNOSTICS_DIR
-// to the same directory the "Diagnose browser port collision" composite action uploads
-// as an artifact, so this needs no reporting path of its own; it is unset in local dev
+// to the directory the workflow uploads as an artifact, so this needs no reporting path of its own;
+// it is unset in local dev
 // and tests, so this stays a no-op there.
 const BIND_TIME_DIAGNOSTICS_TIMEOUT_SECONDS = '4'
 const DIAGNOSTIC_SCRIPT_PATH = fileURLToPath(

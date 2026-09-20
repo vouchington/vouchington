@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
+import type { WorkflowRunContext } from './types.mts'
+
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. This direct matcher suite covers the conditional
+// store-playwright-otel downstream relationship.
 
 const playwrightShardJobName = 'test-playwright / playwright-tests (1)'
 const storePlaywrightOtelJobName = 'store-playwright-otel'
@@ -71,60 +75,52 @@ const makeCtx = (
   }
 }
 
-describe('runner-shutdown-leaf-rerun — store-playwright-otel', () => {
+describe('runnerShutdownLeafRerunMatch — store-playwright-otel', () => {
   it('allows cancelled store-playwright-otel as downstream of a playwright shard failure', async () => {
-    const result = await decide(makeCtx('cancelled'), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(await runnerShutdownLeafRerunMatch(makeCtx('cancelled'))).toBe(true)
   })
 
   it('does not allow cancelled store-playwright-otel when its log could not be fetched', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx('cancelled', '', new Set([storePlaywrightOtelJobName])),
-      RULES,
     )
-    expect(result).toEqual({ decision: 'dispatch', matchedRule: '' })
+    expect(matched).toBe(false)
   })
 
   it('allows failed store-playwright-otel as downstream when no shard artifacts were available', async () => {
-    const result = await decide(makeCtx('failure', noArtifactsStoreLog), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(await runnerShutdownLeafRerunMatch(makeCtx('failure', noArtifactsStoreLog))).toBe(true)
   })
 
   it('allows failed store-playwright-otel as downstream when log lines have prefixes', async () => {
-    const result = await decide(makeCtx('failure', prefixedNoArtifactsStoreLog), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    const matched = await runnerShutdownLeafRerunMatch(
+      makeCtx('failure', prefixedNoArtifactsStoreLog),
+    )
+    expect(matched).toBe(true)
   })
 
   it('allows store-playwright-otel with no recorded conclusion when no shard artifacts were available', async () => {
-    const result = await decide(makeCtx(undefined, noArtifactsStoreLog), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    const matched = await runnerShutdownLeafRerunMatch(makeCtx(undefined, noArtifactsStoreLog))
+    expect(matched).toBe(true)
   })
 
   it('allows skipped store-playwright-otel as downstream of a playwright shard failure', async () => {
-    const result = await decide(makeCtx('skipped'), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(await runnerShutdownLeafRerunMatch(makeCtx('skipped'))).toBe(true)
   })
 
   it('does NOT allow failed store-playwright-otel with an independent store failure', async () => {
-    const result = await decide(makeCtx('failure', storeAwsFailureLog), RULES)
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    const matched = await runnerShutdownLeafRerunMatch(makeCtx('failure', storeAwsFailureLog))
+    expect(matched).toBe(false)
   })
 
   it('does NOT allow failed store-playwright-otel with a non-error no-artifacts mention', async () => {
-    const result = await decide(makeCtx('failure', storeDebugNoArtifactsLog), RULES)
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    const matched = await runnerShutdownLeafRerunMatch(makeCtx('failure', storeDebugNoArtifactsLog))
+    expect(matched).toBe(false)
   })
 
   it('does NOT allow failed store-playwright-otel with an echoed no-artifacts command', async () => {
-    const result = await decide(makeCtx('failure', storeEchoedNoArtifactsLog), RULES)
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    const matched = await runnerShutdownLeafRerunMatch(
+      makeCtx('failure', storeEchoedNoArtifactsLog),
+    )
+    expect(matched).toBe(false)
   })
 })

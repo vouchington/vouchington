@@ -1,7 +1,7 @@
 import { execFile as execFileCallback } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { createConnection, createServer } from 'node:net'
-import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
@@ -9,12 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   expectOutsideReservedSlice,
   isolatedHoldEnv,
-  synthesizedPortRangeEnd,
-  synthesizedPortRangeStart,
-  synthesizedRunnerSlot,
-  synthesizedSlotHostLockTestTimeoutMs,
-  withSynthesizedSlotHostLock,
-} from './allocate-browser-safe-ports.slot-fixtures.test-helpers.mts'
+} from './allocate-browser-safe-ports.hold-fixtures.test-helpers.mts'
 
 const execFile = promisify(execFileCallback)
 const scriptPath = resolve('ci/allocate-browser-safe-ports.py')
@@ -140,54 +135,6 @@ describe('allocate-browser-safe-ports.py hold mode', () => {
       await expect(listenAvailable(port, '0.0.0.0')).resolves.toBe(false)
       await expect(listenAvailable(port, '::')).resolves.toBe(false)
     },
-  )
-
-  it(
-    'holds five ports from a numeric runner slice',
-    async () => {
-      await withSynthesizedSlotHostLock(async () => {
-        const root = await mkdtemp(join(tmpdir(), 'voucha-runner-slot-'))
-        const workspace = join(
-          root,
-          'actions-runner',
-          String(synthesizedRunnerSlot),
-          '_work',
-          'filaments',
-          'filaments',
-        )
-        const holdDir = await mkdtemp(join(tmpdir(), 'voucha-port-hold-'))
-        await mkdir(workspace, { recursive: true })
-        try {
-          const { stdout } = await execFile(
-            'python3',
-            [scriptPath, '5', '--hold', '--hold-dir', holdDir],
-            {
-              cwd: workspace,
-              env: {
-                ...process.env,
-                GITHUB_ACTIONS: 'true',
-                GITHUB_WORKSPACE: workspace,
-                VOUCHA_PORT_HOLD_WORKSPACE: workspace,
-              },
-            },
-          )
-          const ports = parsePorts(stdout)
-          expect(ports).toHaveLength(5)
-          expect(new Set(ports).size).toBe(5)
-          expect(
-            ports.every(
-              port => port >= synthesizedPortRangeStart && port <= synthesizedPortRangeEnd,
-            ),
-          ).toBe(true)
-          await expect(listenAvailable(ports[0], '127.0.0.1')).resolves.toBe(false)
-        } finally {
-          await stopHolder(holdDir, workspace)
-          await rm(holdDir, { force: true, recursive: true })
-          await rm(root, { force: true, recursive: true })
-        }
-      })
-    },
-    synthesizedSlotHostLockTestTimeoutMs,
   )
 
   it('refuses an HTTP connect while the port is held without listen()', async () => {

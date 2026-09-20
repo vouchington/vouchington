@@ -36,10 +36,13 @@ most commonly on transient host-capacity conditions, not the monitored workflow'
 Fix Main's **own** run (its `WORKFLOW_RUN_ID`/`WORKFLOW_NAME`/`RUN_ATTEMPT`, not the monitored run's).
 `escalate` withholds filing only while that classification is still `retry_pending`.
 
-Two rules are workflow-agnostic and can match a Fix Main failure this way:
-`runner-disk-admission-rejected` (`ci/transient-retry/runner-disk-admission-rules.mts`) and
-`clean-workspace-vouchington-tooling-download-flake`. Both cap at `maxAttempts: 1`, so this can add at
-most one rerun before `escalate` proceeds normally.
+No currently-live rule is workflow-agnostic, so `classify-self-failure` can only add a rerun when
+Fix Main's own failure happens to match a rule that is otherwise scoped to a specific monitored
+workflow or job name (for example, one of the coverage-artifact rules if Fix Main's own coverage
+step reproduces that exact fingerprint). The self-hosted-runner-only `runner-disk-admission-rejected`
+and shared-host `clean-workspace-vouchington-tooling-download-flake` rules this section previously
+named were retired with the self-hosted runner fleet and the shared clean-workspace apparatus; no
+replacement workflow-agnostic rule currently exists.
 
 A run cannot rerun its own in-progress jobs, so the rerun itself is issued from a separate sibling
 workflow, `fix-main-self-retry.yml`, which watches `Automation Fix Main`'s completed runs via
@@ -67,8 +70,10 @@ Fix Main runs for the same source workflow, SHA, and source event type also use 
 concurrency, so a later push-origin completion supersedes older push-origin automation without a
 no-op manual completion cancelling it.
 
-The clean runner-shutdown rule treats each exact job as a consumer with its own durable-failure
-guard. `static-checks / static-web`, for example, is eligible only after the `next build` command
-started and only when no compiler, bundler, smoke-test, non-SIGTERM exit, or other web-stack failure
-signal is present. Every new consumer must carry a trimmed real-log fixture and counterfixtures;
-unknown consumers continue to Harness.
+`runnerShutdownLeafRerunMatch` (`ci/transient-retry/runner-shutdown-consumers.mts`) is the matcher
+for the standalone `runner-shutdown-leaf-rerun` rule and also narrows the coverage-artifact rules
+above. It treats each exact sibling job as a consumer with its own durable-failure guard —
+`static-checks / static-web`, for example, only counts as a clean shutdown after the `next build`
+command started and only when no compiler, bundler, smoke-test, non-SIGTERM exit, or other web-stack
+failure signal is present. Every new consumer must carry a trimmed real-log fixture and
+counterfixtures; unknown consumers are treated as a real failure by the matcher.

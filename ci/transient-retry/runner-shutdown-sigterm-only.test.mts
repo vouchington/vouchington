@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
+import type { WorkflowRunContext } from './types.mts'
+
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. This direct matcher suite covers the exit-code-143
+// marker variant without an operation-cancelled line.
 
 const backendUnitShardJobName = 'test-backend-unit / backend-tests (1)'
 const backendSmokeJobName = 'backend-smoke / smoke'
@@ -30,31 +34,25 @@ const makeCtx = (
   failedJobAnnotations: () => Promise.resolve([]),
 })
 
-describe('runner-shutdown-leaf-rerun SIGTERM-only variant', () => {
+describe('runnerShutdownLeafRerunMatch SIGTERM-only variant', () => {
   it('reruns backend-unit when SIGTERM is emitted without an operation-canceled line', async () => {
-    const result = await decide(makeCtx(), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    expect(await runnerShutdownLeafRerunMatch(makeCtx())).toBe(true)
   })
 
   it('does NOT rerun backend-smoke when a smoke-test failure precedes SIGTERM-only shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(`✗ Error: worker startup timed out\n${sigtermOnlyShutdownLog}`, backendSmokeJobName),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun backend-smoke when migration fails before shutdown', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
         `ERROR: running migration 20260823000000-example.sql failed!\n${sigtermOnlyShutdownLog}`,
         backendSmokeJobName,
       ),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 })

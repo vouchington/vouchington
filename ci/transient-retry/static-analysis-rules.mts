@@ -22,46 +22,6 @@ function hasOnlyStaticAnalysisAndAggregateFailures(ctx: WorkflowRunContext): boo
   })
 }
 
-function staticAnalysisJobLog(logs: Map<string, string>, jobName = staticAnalysisJobName): string {
-  return logs.get(jobName) ?? ''
-}
-
-function hasStaticAnalysisCheckoutDiskExhaustion(log: string): boolean {
-  return (
-    log.includes('Run actions/checkout@') &&
-    log.includes('Error: ENOSPC: no space left on device, write') &&
-    log.includes("code: 'ENOSPC'") &&
-    log.includes('file_command_issueFileCommand') &&
-    log.includes('/actions/checkout/')
-  )
-}
-
-export const staticAnalysisCheckoutDiskExhaustionRule: TransientRetryRule = {
-  id: 'static-analysis-checkout-enospc',
-  consumerKey: 'actions-checkout-static-analysis',
-  rootCauseKey: 'self-hosted-runner-disk-exhaustion',
-  description:
-    'Static analysis fails before repository checkout completes because the self-hosted runner disk is full.',
-  rationale:
-    'The failure occurs inside actions/checkout while writing GitHub Actions state, before repo code or static analysis commands run; downstream jobs are cancelled only because the producer never started.',
-  exampleRunIds: ['29220434718'],
-  maxAttempts: 1,
-  needsLogs: true,
-  match: async ctx => {
-    if (ctx.workflowName !== 'CI') return false
-    if (ctx.conclusion !== 'failure' && ctx.conclusion !== 'cancelled') return false
-    if (!hasOnlyStaticAnalysisAndAggregateFailures(ctx)) return false
-
-    const logs = await ctx.failedJobLogs()
-    return (
-      hasStaticAnalysisCheckoutDiskExhaustion(staticAnalysisJobLog(logs)) ||
-      hasStaticAnalysisCheckoutDiskExhaustion(
-        staticAnalysisJobLog(logs, staticAnalysisNoMistakesJobName),
-      )
-    )
-  },
-}
-
 export const cloudflareWorkerTscRuntimeCrashRule: TransientRetryRule = {
   id: 'cloudflare-worker-tsc-runtime-unknown-caller-pc',
   consumerKey: 'cloudflare-worker-tsc-typecheck',

@@ -1,9 +1,9 @@
 # These positive brace globs intentionally mirror the same-named primary filters above.
 # Keep them in sync so the final negated rules are the only refinement.
 web:
-  - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml,ci/with-host-lock.sh,ci/with-build-lock.sh,ci/host-pressure-diagnostics.sh,ci/host-pressure-snapshot.mts,ci/setup-web-integration.mts,ci/run-pnpm-command.mts,ci/stale-test-cache-cleanup.mts,api-fixtures/**,vitest.config.mts,test-helpers/vitest-config/web-projects.mts,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,backend/types/**,ts-shared/**,web/**}'
+  - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml,ci/setup-web-integration.mts,ci/run-pnpm-command.mts,ci/stale-test-cache-cleanup.mts,api-fixtures/**,vitest.config.mts,test-helpers/vitest-config/web-projects.mts,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,backend/types/**,ts-shared/**,web/**}'
 storybook:
-  - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml,ci/run-storybook-browser-tests.mts,ci/storybook-browser-runner*.mts,ci/storybook-pages*.mts,ci/with-host-lock.sh,ci/with-build-lock.sh,ci/host-pressure-diagnostics.sh,cloudflare-worker/package.json,cloudflare-worker/src/basic-auth-credentials.mts,cloudflare-worker/src/storybook-pages-auth.mts,cloudflare-worker/src/timing-safe-credential-match.mts,web/**,vitest.config.mts,test-helpers/vitest-config/environment.mts,test-helpers/vitest-config/storybook-browser-project.mts,test-helpers/vitest-config/web-projects.mts,pnpm-lock.yaml}'
+  - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml,ci/run-storybook-browser-tests.mts,ci/storybook-browser-runner*.mts,ci/storybook-pages*.mts,cloudflare-worker/package.json,cloudflare-worker/src/basic-auth-credentials.mts,cloudflare-worker/src/storybook-pages-auth.mts,cloudflare-worker/src/timing-safe-credential-match.mts,web/**,vitest.config.mts,test-helpers/vitest-config/environment.mts,test-helpers/vitest-config/storybook-browser-project.mts,test-helpers/vitest-config/web-projects.mts,pnpm-lock.yaml}'
   - '!web/.dependency-cruiser.cjs'
   - '!**/*.md'
   - '!**/*.mdx'
@@ -21,7 +21,7 @@ storybook:
   - '!web/{__tests__,app,components,hooks,lib,types}/**/*.spec.ts'
   - '!web/{__tests__,app,components,hooks,lib,types}/**/*.spec.tsx'
 playwright:
-  - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml,ci/with-host-lock.sh,ci/with-build-lock.sh,ci/host-pressure-diagnostics.sh,playwright.config.mts,playwright/config/**,playwright/*.mts,backend/scripts/seeds/playwright-seed-assertions.mts,playwright/global-setup.mts,playwright/helpers/**,playwright/fixtures/**,playwright/tests/**,ci/allocate-browser-safe-ports.py,ci/runner-port-policy.json,ci/runner-port-policy.mts,ci/playwright-install-ubicloud-browsers.sh,ci/playwright/**,ci/setup-web-integration.mts,ci/run-pnpm-command.mts,ci/host-pressure-snapshot.mts,ci/write-web-build-timings-summary.mts,dev/otel/**,wrangler.*,pnpm-lock.yaml,ts-shared/utils/**,web/**,playwright/package.json,cloudflare-worker/**,lambdas/image-resize/**,lambdas/shared/**}'
+  - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml,playwright.config.mts,playwright/config/**,playwright/*.mts,backend/scripts/seeds/playwright-seed-assertions.mts,playwright/global-setup.mts,playwright/helpers/**,playwright/fixtures/**,playwright/tests/**,ci/allocate-browser-safe-ports.py,ci/playwright/**,ci/setup-web-integration.mts,ci/run-pnpm-command.mts,ci/write-web-build-timings-summary.mts,dev/otel/**,wrangler.*,pnpm-lock.yaml,ts-shared/utils/**,web/**,playwright/package.json,cloudflare-worker/**,lambdas/image-resize/**,lambdas/shared/**}'
   - '!web/.dependency-cruiser.cjs'
   - '!**/*.md'
   - '!**/*.mdx'
@@ -44,7 +44,7 @@ playwright:
   - '!lambdas/image-resize/**/*.spec.mts'
   - '!lambdas/image-resize/**/test-helpers/**'
 web-integration:
-  - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml,ci/with-host-lock.sh,ci/with-build-lock.sh,ci/host-pressure-diagnostics.sh,ci/runner-port-policy.json,ci/runner-port-policy.mts,ci/run-pnpm-command.mts,ci/host-pressure-snapshot.mts,ci/write-web-build-timings-summary.mts,api-fixtures/**,vitest.config.mts,package.json,backend/**,ts-shared/**,web/**,cloudflare-worker/**,lambdas/image-resize/**,integration-tests/web/**,integration-tests/web-api/**}'
+  - '{.github/ci-path-filters.yml,.github/ci-runtime-path-filters.yml,ci/run-pnpm-command.mts,ci/write-web-build-timings-summary.mts,api-fixtures/**,vitest.config.mts,package.json,backend/**,ts-shared/**,web/**,cloudflare-worker/**,lambdas/image-resize/**,integration-tests/web/**,integration-tests/web-api/**}'
   - '!web/.dependency-cruiser.cjs'
   - '!**/*.md'
   - '!**/*.mdx'

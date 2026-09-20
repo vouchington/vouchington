@@ -68,26 +68,22 @@ describe('build-web-targets composite action', () => {
     expect(parsed.inputs?.['web-build-fs-cache-enabled']?.default).toBe('false')
   })
 
-  it('captures a per-job web build timing report for issue #10937 (host-lock instrumentation)', () => {
+  it('captures a per-job web build timing report for issue #10937', () => {
     const buildStep = step('Build web targets')
     expect(buildStep.env?.VOUCHINGTON_SETUP_WEB_TIMINGS_JSON).toBe(
       '${{ runner.temp }}/web-build-timings.json',
     )
-    expect(buildStep.env?.VOUCHA_BUILD_LOCK_COMMAND_TIMEOUT_SECONDS).toBeUndefined()
     const buildRun = buildStep.run ?? ''
     expect(buildRun).toContain('if [ -f .env ]; then set -a; source .env; set +a; fi')
-    expect(buildRun).toContain(
-      'VOUCHA_BUILD_LOCK_COMMAND_TIMEOUT_SECONDS=360 node ci/setup-web-integration.mts',
-    )
+    expect(buildRun).toContain('node ci/setup-web-integration.mts')
     expect(buildRun.indexOf('source .env')).toBeLessThan(
-      buildRun.indexOf('VOUCHA_BUILD_LOCK_COMMAND_TIMEOUT_SECONDS=360'),
+      buildRun.indexOf('node ci/setup-web-integration.mts'),
     )
 
     const summaryStep = step('Summarize web build timings')
     expect(summaryStep.if).toBe('always()')
     // Delegates rendering to ci/write-web-build-timings-summary.mts rather than a raw `cat` into a
-    // JSON fence, so the host pressure snapshot's multi-line text isn't JSON-escaped onto one
-    // unreadable line -- see write-web-build-timings-summary.test.mts.
+    // JSON fence, for readability -- see write-web-build-timings-summary.test.mts.
     expect(summaryStep.run).toContain('node ci/write-web-build-timings-summary.mts')
     expect(summaryStep.run).toContain('${{ runner.temp }}/web-build-timings.json')
   })

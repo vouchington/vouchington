@@ -1,4 +1,13 @@
-import { hasEmittedLogLine, hostLockAcquireTimeoutMarker } from './host-lock-fingerprints.mts'
+// Distinguish emitted runtime log lines from GitHub Actions echoed source for
+// `run:` steps. Assumes this action emits timeout markers via `echo`; switch to
+// a tag-based marker if that changes.
+export function hasEmittedLogLine(log: string, text: string): boolean {
+  return log.split('\n').some(line => {
+    const index = line.indexOf(text)
+    if (index === -1) return false
+    return !/\becho\s+/.test(line.slice(0, index))
+  })
+}
 
 // Exported so the marker-freshness guard (step-group-marker-freshness.test.mts) can assert this
 // stays in sync with vouchington-tooling's packaged wait-for-apt-locks.sh, rather than the guard
@@ -22,12 +31,6 @@ export function hasPlaywrightSetupAptLockFailure(log: string): boolean {
   // vouchington-tooling's wait-for-apt-locks.sh moved this emitter out of this repo (#9963); it now
   // reads "…locks after ${timeout_seconds}s: …" rather than "…locks before Playwright install…".
   const isWaitTimeout = hasEmittedLogLine(log, aptLockWaitTimeoutMarker)
-  const isHostLockTimeout = hasEmittedLogLine(
-    log,
-    `with-host-lock: host-package-manager ${hostLockAcquireTimeoutMarker}`,
-  )
 
-  return (
-    isPlaywrightSetup && isProcessExit1 && (isAptLockFailure || isWaitTimeout || isHostLockTimeout)
-  )
+  return isPlaywrightSetup && isProcessExit1 && (isAptLockFailure || isWaitTimeout)
 }

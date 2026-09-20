@@ -9,8 +9,7 @@ inputs:
   artifact-suffix:
     # github.job is identical across matrix shards of the same job (composite actions cannot read
     # matrix.*), so a matrix caller (tests-playwright.yml) must pass a per-shard suffix here or its
-    # shards upload the timing artifact to the same name and race -- mirrors
-    # diagnose-browser-port-collision's artifact-suffix input.
+    # shards upload the timing artifact to the same name and race.
     description: Suffix for the one-day web-build-timings artifact, required for matrix callers.
     required: false
     default: generic
@@ -32,19 +31,17 @@ runs:
         WEB_BUILD_FS_CACHE_ENABLED: ${{ inputs.web-build-fs-cache-enabled }}
       run: |
         if [ -f .env ]; then set -a; source .env; set +a; fi
-        VOUCHA_BUILD_LOCK_COMMAND_TIMEOUT_SECONDS=360 node ci/setup-web-integration.mts
+        node ci/setup-web-integration.mts
     - name: Summarize web build timings
-      # Renders via ci/write-web-build-timings-summary.mts, not a raw `cat` into a JSON fence, so
-      # the host pressure snapshot's multi-line diagnostic text isn't JSON-escaped onto one
-      # unreadable line (issue #10937). Tolerates a missing timings file silently.
+      # Renders via ci/write-web-build-timings-summary.mts rather than a raw `cat` into a JSON
+      # fence, for readability (issue #10937). Tolerates a missing timings file silently.
       if: always()
       shell: bash
       run: node ci/write-web-build-timings-summary.mts "${{ runner.temp }}/web-build-timings.json"
     - name: Upload web build timings
-      # Best-effort evidence for re-deriving VOUCHA_BUILD_LOCK_COMMAND_TIMEOUT_SECONDS
-      # (docs/development/host-locks.md, issue #10937) from real recorded step times instead of a
-      # copied-forward number -- captured on success and failure alike via `if: always()`. The
-      # upload itself must not fail an otherwise-successful build, so it is non-blocking.
+      # Best-effort evidence of real recorded step times, captured on success and failure alike
+      # via `if: always()`. The upload itself must not fail an otherwise-successful build, so it
+      # is non-blocking.
       if: always()
       continue-on-error: true
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

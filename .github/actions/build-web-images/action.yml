@@ -7,10 +7,7 @@ description: >
   IMAGE_REPOSITORY and SHA_TAG, and must assume the AWS OIDC role (via
   ./.github/actions/setup-aws) before invoking this action, so AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, and AWS_REGION are already in the job environment
-  for the smoke test step. Composite-action steps cannot carry their own timeout-minutes, so the
-  caller must run ./.github/actions/diagnose-browser-port-collision (ports:
-  env.BROWSER_ALLOCATED_PORTS, which this action sets via GITHUB_ENV during the Docker smoke test)
-  directly after invoking this action, gated on failure() && env.BROWSER_ALLOCATED_PORTS != ''.
+  for the smoke test step.
 
 inputs:
   next-public-asset-prefix:
@@ -125,7 +122,6 @@ runs:
         IMAGE="$IMAGE_REPOSITORY/web:$IMAGE_TAG"
         PORTS=$(python3 ci/allocate-browser-safe-ports.py 2)
         read -r PORT BACKEND_PORT <<< "$PORTS"
-        echo "BROWSER_ALLOCATED_PORTS=$PORTS" >> "$GITHUB_ENV"
         SMOKE_TMP_DIR=$(mktemp -d "${RUNNER_TEMP}/web-image-smoke.XXXXXX")
         cleanup() {
           if [ -n "${CONTAINER:-}" ]; then

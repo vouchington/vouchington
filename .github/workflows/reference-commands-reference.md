@@ -5,9 +5,8 @@
 Canonical local-command list is in [docs/development/tests.md](../../docs/development/tests.md); CI workflow/config/coverage details are in [docs/development/ci.md](../../docs/development/ci.md). This table records the underlying invocations CI uses (package scripts expand to these).
 
 Run commands directly when no repository policy wrapper applies. Compiler-heavy Next and Storybook
-commands are the exception: invoke the canonical lock-aware package script or
-`ci/with-build-lock.sh` entry point documented in
-[Per-User Host Locks](../../docs/development/host-locks.md). Native-client commands are documented
+commands run the same way: invoke `next build`/`storybook build` directly rather than through a
+package-script wrapper. Native-client commands are documented
 in [vouchington-clients](https://github.com/vouchington/vouchington-clients). For other commands, package-script
 indirection spawns an extra process, obscures the real command in logs and error messages, and
 makes it harder to see what the workflow is doing at a glance.

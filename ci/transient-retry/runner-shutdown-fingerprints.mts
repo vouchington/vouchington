@@ -128,15 +128,10 @@ export function hasNextBuildFailureSignal(log: string): boolean {
   ].some(marker => log.includes(marker))
 }
 
-export function hasExpensiveBuildCommandTimeout(log: string): boolean {
-  return /with-host-lock: .* command exceeded \d+s; terminating its process group/.test(log)
-}
-
 /** Detects setup failures from shared web-stack build steps. */
 export function hasWebStackBuildFailureSignal(log: string): boolean {
   return (
     hasNextBuildFailureSignal(log) ||
-    hasExpensiveBuildCommandTimeout(log) ||
     [
       '✘ [ERROR]',
       'Error: Build failed',

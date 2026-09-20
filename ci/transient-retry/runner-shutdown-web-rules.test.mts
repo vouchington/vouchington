@@ -1,9 +1,12 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
-import { buildWebTargetsStepMarker } from './web-build-rules.mts'
+import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
+import { buildWebTargetsStepMarker } from './runner-shutdown-consumer-registry.mts'
+import type { WorkflowRunContext } from './types.mts'
+
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. These direct matcher cases also protect the
+// coverage-artifact rules that reuse the same conservative predicate.
 
 const staticWebJobName = 'static-checks / static-web'
 const shutdownOnlyMarkers = [
@@ -24,28 +27,26 @@ function makeWebTestsContext(log: string): WorkflowRunContext {
   }
 }
 
-describe('runner-shutdown-leaf-rerun — web consumers', () => {
+describe('runnerShutdownLeafRerunMatch — web consumers', () => {
   it('rejects shard-one smoke failures before runner shutdown', async () => {
-    const smokeFailure = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeWebTestsContext(`✗ Error: HTTP 500 from /api/health\n${shutdownOnlyMarkers}`),
-      RULES,
     )
-    expect(`${smokeFailure.decision}:${smokeFailure.matchedRule}`).toBe('dispatch:')
+    expect(matched).toBe(false)
   })
 
   it('reruns when a web test shard is cleanly shutdown', async () => {
-    const result = await decide(makeWebTestsContext(`$ vitest run\n${shutdownOnlyMarkers}`), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    const matched = await runnerShutdownLeafRerunMatch(
+      makeWebTestsContext(`$ vitest run\n${shutdownOnlyMarkers}`),
+    )
+    expect(matched).toBe(true)
   })
 
   it('does not rerun when a Vitest failure precedes the shutdown markers', async () => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeWebTestsContext(`$ vitest run\nFAIL web/lib/example.test.ts\n${shutdownOnlyMarkers}`),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 })
 
@@ -75,17 +76,10 @@ const makeStaticWebCtx = (overrides: Partial<WorkflowRunContext> = {}): Workflow
   ...overrides,
 })
 
-describe('runner-shutdown-leaf-rerun — static-web consumer', () => {
-  it('keeps the exact start marker coupled to the static-web workflow composite invocation', () => {
-    const workflow = readFileSync('.github/workflows/checks-static.yml', 'utf8')
-    const compositePath = buildWebTargetsStepMarker.replace(/^##\[group\]Run /, '')
-    expect(workflow).toContain(`uses: ${compositePath}`)
-  })
-
+describe('runnerShutdownLeafRerunMatch — static-web consumer', () => {
   it('reruns the clean static-web shutdown from run 30503060858', async () => {
-    const result = await decide(makeStaticWebCtx(), RULES)
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('runner-shutdown-leaf-rerun')
+    const matched = await runnerShutdownLeafRerunMatch(makeStaticWebCtx())
+    expect(matched).toBe(true)
   })
 
   it.each([
@@ -121,14 +115,6 @@ describe('runner-shutdown-leaf-rerun — static-web consumer', () => {
       ].join('\n'),
     ],
     [
-      'build-wrapper watchdog timeout',
-      [
-        buildWebTargetsStepMarker,
-        'with-host-lock: expensive-build command exceeded 300s; terminating its process group',
-        shutdownOnlyMarkers,
-      ].join('\n'),
-    ],
-    [
       'missing web-integration setup artifact',
       [
         buildWebTargetsStepMarker,
@@ -146,25 +132,11 @@ describe('runner-shutdown-leaf-rerun — static-web consumer', () => {
     ],
     ['no runner-shutdown markers', buildWebTargetsStepMarker],
   ])('does NOT rerun when %s', async (_caseName, log) => {
-    const result = await decide(
+    const matched = await runnerShutdownLeafRerunMatch(
       makeStaticWebCtx({
         failedJobLogs: () => Promise.resolve(new Map([[staticWebJobName, log]])),
       }),
-      RULES,
     )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
-  })
-
-  it('exhausts the per-rule retry cap', async () => {
-    const result = await decide(
-      makeStaticWebCtx({
-        ruleAttempts: new Map([['runner-shutdown-leaf-rerun', 3]]),
-        runAttempt: 7,
-      }),
-      RULES,
-    )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
+    expect(matched).toBe(false)
   })
 })

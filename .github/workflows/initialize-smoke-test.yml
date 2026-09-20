@@ -170,8 +170,7 @@ jobs:
           elif command -v apt-get >/dev/null 2>&1; then
             pg_container="voucha-postgres-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
             if ! command -v psql >/dev/null 2>&1; then
-              bash "$GITHUB_WORKSPACE/ci/with-host-lock.sh" --name host-package-manager --timeout-seconds 300 -- \
-                bash -c 'sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client'
+              sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
             fi
             sudo service postgresql stop 2>/dev/null || sudo systemctl stop postgresql 2>/dev/null || true
             docker rm -f "$pg_container" 2>/dev/null || true

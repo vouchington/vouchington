@@ -13,7 +13,6 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parent
-_POLICY = _HERE / "runner-port-policy.json"
 
 
 def packaged_allocator_path() -> Path | None:
@@ -55,7 +54,16 @@ def _load_packaged():
         raise RuntimeError(f"unable to load allocator from {packaged}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    module.configure_policy(_POLICY, packaged.with_name("fetch-forbidden-ports.json"))
+    # Ephemeral (GitHub-hosted) runners never resolve a numeric runner slot, so the
+    # packaged allocator's slice-vs-fallback logic always takes the bind(0) fallback
+    # path here. That fallback still consults RUNNER_PORT_POLICY for an additional
+    # exclusion check, so a policy file must exist — but it need not be repo-owned.
+    # Use the policy/forbidden-ports files vouchington-tooling ships next to the
+    # packaged script itself instead of a committed ci/runner-port-policy.json.
+    module.configure_policy(
+        packaged.with_name("runner-port-policy.json"),
+        packaged.with_name("fetch-forbidden-ports.json"),
+    )
     return module, packaged
 
 
@@ -116,11 +124,11 @@ def reap_legacy_voucha_identity(workspace: str) -> None:
 
 if __name__ == "__main__":
     reap_legacy_voucha_identity(workspace_from_argv(sys.argv[1:]))
-    forwarded = [
-        "--policy",
-        str(_POLICY),
-        *sys.argv[1:],
-    ]
+    # No policy or forbidden-ports override is forwarded here: both the exec'd
+    # packaged script and the pnpm-dlx-fetched CLI default those flags to the
+    # runner-port-policy.json/fetch-forbidden-ports.json files vouchington-tooling
+    # ships next to itself, which is exactly what we want on GitHub-hosted runners.
+    forwarded = sys.argv[1:]
     if _PACKAGED is not None:
         os.execv(sys.executable, [sys.executable, str(_PACKAGED), *forwarded])
     spec = tooling_spec()

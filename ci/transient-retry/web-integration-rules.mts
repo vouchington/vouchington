@@ -6,7 +6,7 @@ import {
   hasUndiciSocketClosed,
 } from './undici-transport-fingerprints.mts'
 import { POST_READY_EXIT_MARKER_PREFIX } from '../../integration-tests/web/helpers/exit-diagnostics.mts'
-import { isWebIntegrationShardJob } from './runner-shutdown-consumers.mts'
+import { isWebIntegrationShardJob } from './runner-shutdown-consumer-registry.mts'
 
 function hasSilentBackendStartupExit(log: string): boolean {
   const plainLog = stripAnsi(log)

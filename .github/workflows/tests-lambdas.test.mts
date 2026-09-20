@@ -23,19 +23,6 @@ function workflowFiles(): Array<{ contents: string; path: string }> {
 }
 
 describe('Lambda Tests workflow', () => {
-  it('runs PR and main Lambda checks when the shared listener policy changes', () => {
-    const pathFilters = readFileSync('.github/ci-path-filters.yml', 'utf8')
-    const lambdasFilter = pathFilters.slice(
-      pathFilters.indexOf('\nlambdas:'),
-      pathFilters.indexOf('\nexplain-analyze:'),
-    )
-
-    for (const policyPath of ['ci/runner-port-policy.json', 'ci/runner-port-policy.mts']) {
-      expect(lambdasFilter).toContain(`- '${policyPath}'`)
-      expect(mainWorkflow).toContain(`- '${policyPath}'`)
-    }
-  })
-
   it('leaves dependency and TypeScript checks with checks-static.yml', () => {
     const install = workflow.indexOf('uses: ./.github/actions/setup-node-pnpm')
     const tests = workflow.indexOf('vitest run --bail=3 --project lambdas')

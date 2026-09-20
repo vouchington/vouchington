@@ -200,11 +200,6 @@ is rejected through direct imports, local aliases, and re-export chains while pe
 entity-relations owners and unrelated same-named local functions remain valid. A context-free
 AST-grep call-spelling companion would add false positives without covering a distinct invariant.
 
-`no-mistakes` `no-raw-ephemeral-port` rejects Python socket binds to literal port zero and Node
-`listen(0)` / `listen({ port: 0 })` calls so repository tests cannot occupy deterministic Playwright
-slices. The binder implementation is allowlisted in `.no-mistakes.yml`; other callers use
-`listenOnRunnerUnreservedEphemeralPort()` or `ci/allocate-browser-safe-ports.py`.
-
 The Oxlint rate-limiter guard deliberately protects syntax rather than tracking `RateLimiter`
 provenance: a hazardous alias must first cross a statically named `.invalidate` member read or an
 object-pattern extraction, so banning that boundary also covers imports, instances, factories,

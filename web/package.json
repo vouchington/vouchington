@@ -18,8 +18,8 @@
   ],
   "scripts": {
     "dev": "./dev.sh",
-    "build": "VOUCHA_BUILD_LOCK_ON_ACQUIRE_TIMEOUT=fail VOUCHA_BUILD_LOCK_WAIT_SECONDS=300 bash ../ci/with-build-lock.sh env NODE_ENV=production next build",
-    "build-storybook": "bash ../ci/with-build-lock.sh storybook build",
+    "build": "NODE_ENV=production next build",
+    "build-storybook": "storybook build",
     "storybook": "storybook dev --port ${STORYBOOK_PORT:-6006} --host 127.0.0.1 --no-open --disable-telemetry",
     "start": "bash ./scripts/copy-standalone-assets.sh && node .next/standalone/web/server.js",
     "typecheck": "next typegen && tsc --noEmit --incremental",

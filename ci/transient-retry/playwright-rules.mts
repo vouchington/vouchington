@@ -79,9 +79,9 @@ export const mainWebPlaywrightSetupAptLockRule: TransientRetryRule = {
   consumerKey: 'setup-playwright',
   rootCauseKey: 'host-package-manager-lock',
   description:
-    'Retry Playwright/Storybook jobs that fail in `Run ./.github/actions/setup-playwright` because of apt/dpkg lock contention or host package-manager lock timeout on shared self-hosted runners.',
+    'Retry Playwright/Storybook jobs that fail in `Run ./.github/actions/setup-playwright` because of apt/dpkg lock contention or host package-manager lock timeout.',
   rationale:
-    'Self-hosted runners share apt/dpkg state across jobs. When the Playwright dependency probe finds host drift, `setup-playwright` repairs it with `playwright install-deps` under the host package-manager lock. APT contention or host-lock timeout can fail that fallback; both are transient.',
+    "A fresh GitHub-hosted runner's boot-time unattended-upgrades/apt-daily timer can still hold the dpkg lock when a job starts. When the Playwright dependency probe finds host drift, `setup-playwright` repairs it with `playwright install-deps` under the host package-manager lock. APT contention or host-lock timeout can fail that fallback; both are transient.",
   exampleRunIds: ['27805129632'],
   maxAttempts: 1,
   needsLogs: true,

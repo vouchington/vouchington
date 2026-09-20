@@ -150,22 +150,23 @@ jobs:
         run: ./lambdas/image-resize/scripts/tests/smoke-test-image-lambda.sh
         timeout-minutes: 2
         env:
-          # Same directory the "Diagnose browser port collision" composite action uploads
-          # as an artifact (see its OUTPUT_DIR), computed with the identical expression so
-          # the two never diverge. The smoke script nests a per-attempt subdirectory under
-          # it and passes it to lambdas/dev-server.mts's listenWithRetry, which captures
-          # bind-time collision evidence at the moment of EADDRINUSE, while the process
-          # holding the port is still alive — the post-hoc step below runs only after the
-          # dev server has already exited.
+          # Same directory the upload step below globs, computed with the identical
+          # expression so the two never diverge. The smoke script nests a per-attempt
+          # subdirectory under it and passes it to lambdas/dev-server.mts's
+          # listenWithRetry, which captures bind-time collision evidence at the moment of
+          # EADDRINUSE, while the process holding the port is still alive.
           BROWSER_PORT_DIAGNOSTICS_DIR: ${{ runner.temp }}/browser-port-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
-      - name: Capture image-lambda browser port diagnostics
-        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
+      - name: Upload browser port diagnostics
+        if: always()
         continue-on-error: true
         timeout-minutes: 2
-        uses: ./.github/actions/diagnose-browser-port-collision
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
-          artifact-suffix: image-lambda
+          name: browser-port-diagnostics-image-lambda-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/browser-port-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          if-no-files-found: warn
+          overwrite: true
+          retention-days: 1
 
   static-cloudflare:
     if: inputs.cloudflare-worker
@@ -187,14 +188,6 @@ jobs:
           printf '%s\n' 'CSP_BROWSER_UPLOAD_ORIGINS=["https://test-images.s3.us-west-2.amazonaws.com","https://test-images.s3.dualstack.us-west-2.amazonaws.com"]' > .dev.vars
           ./scripts/tests/smoke-test-cloudflare-worker.sh
         timeout-minutes: 2
-      - name: Capture Cloudflare Worker browser port diagnostics
-        if: ${{ failure() && env.BROWSER_ALLOCATED_PORTS != '' }}
-        continue-on-error: true
-        timeout-minutes: 2
-        uses: ./.github/actions/diagnose-browser-port-collision
-        with:
-          ports: ${{ env.BROWSER_ALLOCATED_PORTS }}
-          artifact-suffix: cloudflare-worker
       - name: Validate Cloudflare Worker bundle
         working-directory: cloudflare-worker
         run: pnpm exec wrangler deploy --config wrangler.local.jsonc --dry-run --outdir "${RUNNER_TEMP}/cloudflare-worker-dry-run"

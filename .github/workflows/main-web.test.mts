@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 
 const mainWeb = readFileSync('.github/workflows/main-web.yml', 'utf8')
 const mainBackend = readFileSync('.github/workflows/main-backend.yml', 'utf8')
-const mainStorybook = readFileSync('.github/workflows/main-storybook.yml', 'utf8')
 
 function jobSection(workflow: string, jobName: string): string {
   const start = workflow.indexOf(`\n  ${jobName}:`)
@@ -37,12 +36,6 @@ describe('main-web workflow', () => {
     }
   })
 
-  it('runs lock-aware main workflows when the shared lock helpers change', () => {
-    for (const workflow of [mainStorybook]) {
-      expect(workflow).toContain("- 'ci/with-host-lock.sh'")
-      expect(workflow).toContain("- 'ci/with-build-lock.sh'")
-    }
-  })
   it('runs producer-owned main workflows when shared API fixtures change', () => {
     expect(mainBackend).toContain("- 'api-fixtures/**'")
     expect(mainWeb).toContain("- 'api-fixtures/**'")

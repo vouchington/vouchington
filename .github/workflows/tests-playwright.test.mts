@@ -1,6 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
 
@@ -9,31 +7,7 @@ import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
 const workflow = readFileSync('.github/workflows/tests-playwright.yml', 'utf8')
 const playwrightConfigHelpers = readFileSync('playwright/config/config-helpers.mts', 'utf8')
 const playwrightSharedConfig = readFileSync('playwright/config/shared-config.mts', 'utf8')
-const playwrightInstallScript = readFileSync('ci/playwright-install-ubicloud-browsers.sh', 'utf8')
 const browserSafePortsScript = readFileSync('ci/allocate-browser-safe-ports.py', 'utf8')
-const require = createRequire(import.meta.url)
-const playwrightCoreRoot = dirname(require.resolve('playwright-core'))
-const registryPath = ['lib/server/registry/index.js', 'lib/coreBundle.js']
-  .map(path => join(playwrightCoreRoot, path))
-  .find(path => existsSync(path))
-if (!registryPath) {
-  throw new Error('Could not find Playwright registry source')
-}
-const registrySource = readFileSync(registryPath, 'utf8')
-
-function expectedLinuxArm64Path(browserName: string): string {
-  const blockPattern = new RegExp(
-    `"${browserName}":\\s*\\{[^}]*"linux-arm64":\\s*\\[([^\\]]+)\\]`,
-    's',
-  )
-  const blockMatch = registrySource.match(blockPattern)
-  expect(blockMatch).not.toBeNull()
-  const segments = blockMatch![1].split(',').flatMap(part => {
-    const trimmed = part.trim().replace(/^"|"$/g, '')
-    return trimmed ? [trimmed] : []
-  })
-  return segments.join('/')
-}
 
 function workflowJobSection(body: string, jobName: string): string {
   const match = body.match(
@@ -106,33 +80,6 @@ describe('tests-playwright.yml', () => {
     expect(workflow).not.toContain('restore-web-targets')
     expect(workflow).not.toMatch(/\n {2}build-web-targets:\n/)
     expect(workflow).toContain('uses: ./.github/actions/build-web-targets')
-  })
-
-  it('extracts chromium and chromium-headless-shell to the same paths Playwright resolves on linux-arm64', () => {
-    // The custom curl + system unzip path supports ARM64 callers.
-    // Its sanity check must match Playwright's own EXECUTABLE_PATHS for linux-arm64
-    // — when these drift, browsers download successfully but `playwright test` fails
-    // to find them.
-    const chromiumExe = expectedLinuxArm64Path('chromium')
-    const headlessShellExe = expectedLinuxArm64Path('chromium-headless-shell')
-
-    const packagedInstall = readFileSync(
-      'node_modules/vouchington-tooling/scripts/gha/install-playwright-chromium-arm64.sh',
-      'utf8',
-    )
-    expect(playwrightInstallScript).toContain('install-playwright-chromium-arm64')
-    expect(packagedInstall).toContain(`chromium) exe="$dir/${chromiumExe}" ;;`)
-    expect(packagedInstall).toContain(`chromium-headless-shell) exe="$dir/${headlessShellExe}" ;;`)
-  })
-
-  it('retries partial browser downloads on ARM64', () => {
-    expect(playwrightInstallScript).toContain('exec-vouchington-gha.sh')
-    expect(
-      readFileSync(
-        'node_modules/vouchington-tooling/scripts/gha/install-playwright-chromium-arm64.sh',
-        'utf8',
-      ),
-    ).toContain('ci_download_to "${mirror}/${rev}/${archive}" "$tmp" --retry 3 --retry-all-errors')
   })
 
   it('exports IMAGE_ORIGIN from the allocated image lambda port', () => {

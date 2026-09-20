@@ -8,8 +8,6 @@ on:
       - '.github/workflows/tests-lambdas.yml'
       - '.github/workflows/checks-static.yml'
       - '.github/actions/**'
-      - 'ci/runner-port-policy.json'
-      - 'ci/runner-port-policy.mts'
       - 'lambdas/**'
       - 'ts-shared/url-signing/**'
       - 'ts-shared/utils/**'

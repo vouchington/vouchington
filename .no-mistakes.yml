@@ -830,14 +830,10 @@ rules:
           message: Native Swift dependency tooling belongs in vouchington/vouchington-clients
         - glob: ci/swift-resolved-pin-delta.test.mts
           message: Native Swift dependency tooling belongs in vouchington/vouchington-clients
-        - glob: dev/actions-runner-health/**
-          message: Runner host health tooling belongs in vouchington-machines
         - glob: dev/setup-local-macos
           message: Host setup belongs in vouchington-machines
         - glob: dev/setup-local-linux
           message: Host setup belongs in vouchington-machines
-        - glob: .github/actions/cleanup-build-outputs/**
-          message: Runner host cleanup belongs in vouchington-machines
         - glob: web/pages/**
           message: Next.js pages router files are not allowed
         - glob: web/src/pages/**
@@ -1295,7 +1291,6 @@ rules:
         - ci/check-needs-results.sh
         - ci/coverage-artifacts.sh
         - ci/merge-vitest-reports.sh
-        - ci/playwright-install-ubicloud-browsers.sh
         - ci/with-node-test-options
       shebangDirs:
         - dev
@@ -2429,15 +2424,6 @@ rules:
         - file: .github/workflows/gitleaks.yml
           pattern: 'GITLEAKS_VERSION:\s*(\d+\.\d+\.\d+)'
           label: gitleaks
-
-  - name: no raw ephemeral port 0 binds
-    rule: no-raw-ephemeral-port
-    scope: repository
-    options:
-      allow:
-        - ci/runner-port-policy.mts
-        - ts-shared/utils/ephemeral-ports.mts
-      message: use ci/allocate-browser-safe-ports.py, listenOnRunnerUnreservedEphemeralPort(), or @ts-shared/utils/ephemeral-ports's listenOnEphemeralPort()
 
   - name: workflow tests do not restate timeout-minutes literals
     rule: github-actions-test-timeout-literals

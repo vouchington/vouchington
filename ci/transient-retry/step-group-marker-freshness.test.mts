@@ -5,17 +5,12 @@ import { dirname, join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import {
-  hostLockAcquireTimeoutMarker,
-  hostLockProcessGroupSurvivedSigkillMarker,
-  hostLockRanUnlockedSuffix,
-} from './host-lock-fingerprints.mts'
 import { aptLockWaitTimeoutMarker } from './playwright-log-fingerprints.mts'
 import {
   cloudflareWorkerTscStepMarker,
   oxlintTypeAwareStepMarker,
 } from './static-analysis-log-fingerprints.mts'
-import { buildWebTargetsStepMarker } from './web-build-watchdog-fingerprints.mts'
+import { buildWebTargetsStepMarker } from './runner-shutdown-consumer-registry.mts'
 
 // Guards the `##[group]Run <run:|uses:>` step-header class of marker against silent staleness — see
 // static-analysis-log-fingerprints.mts for the incidents this closes (PR #10604).
@@ -131,18 +126,6 @@ describe('step-group-marker-freshness', () => {
   })
 
   describe('script-emitted markers (Table B)', () => {
-    it('host-lock SIGKILL-survivor marker matches the packaged vouchington-tooling script', () => {
-      const scriptPath = join(
-        dirname(require.resolve('vouchington-tooling/package.json')),
-        'scripts/host-lock/with-host-lock.sh',
-      )
-      const script = readFileSync(scriptPath, 'utf8')
-
-      // The package emits the lock name via `$name`; require the full source-side template plus
-      // the shared terminal fragment used against runtime output.
-      expect(script).toContain(`with-host-lock: $name ${hostLockProcessGroupSurvivedSigkillMarker}`)
-    })
-
     it('apt-lock timeout marker matches the packaged vouchington-tooling script', () => {
       const scriptPath = join(
         dirname(require.resolve('vouchington-tooling/package.json')),
@@ -154,37 +137,6 @@ describe('step-group-marker-freshness', () => {
       // literal only this test owns — otherwise the marker could drift in
       // playwright-log-fingerprints.mts with this row staying green (see PR #10604).
       expect(script).toContain(aptLockWaitTimeoutMarker)
-    })
-
-    it('host-lock acquire-timeout markers match the packaged vouchington-tooling script', () => {
-      const scriptPath = join(
-        dirname(require.resolve('vouchington-tooling/package.json')),
-        'scripts/host-lock/with-host-lock.sh',
-      )
-      const lines = readFileSync(scriptPath, 'utf8').split('\n')
-
-      // A plain toContain for each constant would pass even if the fail-closed emitter (the one the
-      // rules' fingerprint depends on) were deleted, because both constants also appear together on
-      // the benign run-unlocked line. Assert both branches independently exist instead: some line
-      // carries the acquire marker WITHOUT the run-unlocked suffix (fail-closed, exit 1 — what
-      // hasExpensiveBuildAcquireTimeout keys on), and some other line carries both (run-unlocked,
-      // proceeds — what its negative guard excludes).
-      const failClosedLines = lines.filter(
-        line =>
-          line.includes(hostLockAcquireTimeoutMarker) && !line.includes(hostLockRanUnlockedSuffix),
-      )
-      const ranUnlockedLines = lines.filter(
-        line =>
-          line.includes(hostLockAcquireTimeoutMarker) && line.includes(hostLockRanUnlockedSuffix),
-      )
-
-      expect(failClosedLines).not.toEqual([])
-      expect(ranUnlockedLines).not.toEqual([])
-
-      // The two assertions above only guard the acquire/run-unlocked fragments. If upstream
-      // reworded the `with-host-lock:` prefix itself, hasExpensiveBuildAcquireTimeout's hardcoded
-      // `with-host-lock: expensive-build ...` would go silently dead while those still passed.
-      expect(lines.some(line => line.includes('with-host-lock:'))).toBe(true)
     })
   })
 
