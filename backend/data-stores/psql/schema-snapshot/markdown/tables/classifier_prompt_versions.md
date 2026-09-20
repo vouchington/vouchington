@@ -33,7 +33,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `chk_classifier_prompt_versions__default_thresholds`: `CHECK (((default_lower_threshold >= (0)::numeric) AND (default_upper_threshold <= (1)::numeric) AND (default_lower_threshold < default_upper_threshold)))`
-- `chk_classifier_prompt_versions__lifecycle`: `CHECK ((NOT ((activated_at IS NOT NULL) AND (deactivated_at IS NOT NULL))))`
+- `chk_classifier_prompt_versions__lifecycle`: `CHECK (((deactivated_at IS NULL) OR ((activated_at IS NOT NULL) AND (deactivated_at >= activated_at))))`
 
 **Foreign keys:**
 
@@ -54,5 +54,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_classifier_prompt_versions_activation_lifecycle`: `CREATE TRIGGER trigger_classifier_prompt_versions_activation_lifecycle BEFORE UPDATE ON public.classifier_prompt_versions FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_activation_lifecycle()`
 - `trigger_classifier_prompt_versions_identity_immutable`: `CREATE TRIGGER trigger_classifier_prompt_versions_identity_immutable BEFORE UPDATE ON public.classifier_prompt_versions FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_prompt_version_identity_mutation()`
 - `trigger_classifier_prompt_versions_updated_at`: `CREATE TRIGGER trigger_classifier_prompt_versions_updated_at BEFORE UPDATE ON public.classifier_prompt_versions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
