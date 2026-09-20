@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { callOpenAIAutotagger } from '../openai-autotagger.mts'
-import { createTestUser, createTestPost, liveOpenAITest } from '@voucha/test-helpers'
+import { createTestUser, createTestPost, liveOpenRouterTest } from '@voucha/test-helpers'
 import {
   createConversation,
   createConversationMessage,
@@ -10,13 +10,13 @@ import {
   getLatestConversationMessageAgenticRunByConversationMessageId,
 } from '@services/conversations-messages'
 
-const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY)
-describe.skipIf(!hasOpenAIKey)('callOpenAIAutotagger', () => {
+const hasOpenRouterKey = Boolean(process.env.OPENROUTER_API_KEY)
+describe.skipIf(!hasOpenRouterKey)('callOpenAIAutotagger', () => {
   it(
-    'runs with real OpenAI call and persists conversation run metadata',
+    'runs with a real OpenRouter call and persists conversation run metadata',
     { timeout: 300_000 },
-    /* no-mistakes: integration=openai */
-    liveOpenAITest(async () => {
+    /* no-mistakes: integration=openrouter */
+    liveOpenRouterTest(async () => {
       const user = await createTestUser()
       const post = await createTestPost({
         user: user,
@@ -64,8 +64,8 @@ describe.skipIf(!hasOpenAIKey)('callOpenAIAutotagger', () => {
         message.id,
       )
       expect(agenticRun).not.toBeNull()
-      expect(agenticRun!.model_name).toBe('gpt-5.4-nano')
-      expect(agenticRun!.model_provider).toBe('openai')
+      expect(agenticRun!.model_name).toBe('openai/gpt-5.4-nano')
+      expect(agenticRun!.model_provider).toBe('openrouter')
       expect(agenticRun!.input).toEqual({ content: `${post.title}\n\n${post.markdown}` })
       expect(agenticRun!.status).toBe('completed')
       expect(agenticRun!.termination_reason).not.toBeNull()
