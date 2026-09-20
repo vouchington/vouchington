@@ -72,6 +72,7 @@ describe('Sync Articles workflow', () => {
     expect(upload?.uses?.slice('actions/upload-artifact@'.length)).toMatch(/^[0-9a-f]{40}$/)
     expect(upload?.with).toMatchObject({
       'if-no-files-found': 'error',
+      'include-hidden-files': true,
       name: 'articles-${{ github.run_id }}-${{ github.run_attempt }}',
       overwrite: true,
       path: 'delivery',
