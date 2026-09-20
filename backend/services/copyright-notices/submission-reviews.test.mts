@@ -139,6 +139,16 @@ describe('copyright submission moderator reviews', () => {
         expect.objectContaining({ id: result.reviewIds[0], action: 'reverse' }),
       ]),
     )
+    await expect(
+      reviewCopyrightAppeal({
+        submissionId: appeal.submission.id,
+        currentUser: fixture.moderator,
+        recommendationId: recommendation.id,
+        manualFallbackReason: null,
+        rationale: 'The same completed review may be safely replayed.',
+        decisions: [{ restrictionId: fixture.restrictionId, action: 'reverse' }],
+      }),
+    ).resolves.toEqual(result)
   })
 
   it('requires one decision for every active restriction named by an appeal', async () => {
@@ -224,5 +234,13 @@ describe('copyright submission moderator reviews', () => {
     expect(delivery.text).toContain('Consent to federal jurisdiction:')
     expect(delivery.text).toContain('Consent to service of process:')
     expect(delivery.text).toContain('Electronic signature: Poster')
+    await expect(
+      reviewCopyrightCounterNotice({
+        submissionId: counter.submission.id,
+        currentUser: fixture.moderator,
+        accepted: true,
+        rationale: 'The completed review may be safely replayed.',
+      }),
+    ).resolves.toEqual(result)
   })
 })

@@ -67,6 +67,23 @@ describe('copyright form intakes', () => {
         request: { ...input.request, workDescription: '   ' },
       }),
     ).rejects.toMatchObject({ status: 422 })
+
+    const screening = {
+      intakeId: first.intake.id,
+      inputSha256: Buffer.alloc(32, 12),
+      recommendation: 'not_obviously_invalid' as const,
+      rationale: 'The structured form has no obvious spam markers.',
+      promptVersion: 'copyright-form-screening-v2',
+      model: 'test-model',
+    }
+    const screeningId = await appendCopyrightFormScreening(screening)
+    await expect(appendCopyrightFormScreening(screening)).resolves.toBe(screeningId)
+  })
+
+  it('treats an unknown screening submission as an inert queue replay', async () => {
+    await expect(
+      applyNonSpamSignedInCopyrightFormScreening('00000000-0000-7000-8000-000000000081'),
+    ).resolves.toBeUndefined()
   })
 
   it('records a CAPTCHA-gated caller’s statutory counter-notice scope idempotently', async () => {

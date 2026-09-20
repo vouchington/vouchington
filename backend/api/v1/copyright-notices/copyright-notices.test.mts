@@ -55,6 +55,14 @@ describe('copyright notice routes', () => {
     })
   })
 
+  it('requires an idempotency key before accepting an authenticated form', async () => {
+    const fixture = await createCopyrightFormFixture()
+    const request = createRequest()
+    await request.authenticateAs(fixture.claimant)
+
+    await request.post('/api/v1/copyright-notices').send(fixture.form).expect(400)
+  })
+
   it('rejects anonymous appeals and counter-notices', async () => {
     const fixture = await createCopyrightFormFixture()
     const noticeId = await createNotice(fixture)
@@ -156,6 +164,32 @@ describe('copyright notice routes', () => {
         rationale: 'The email supplements an existing record.',
         manual_fallback_reason: 'No recommendation is available.',
         submission_summary: 'Additional hosted-use information.',
+      })
+      .expect(404)
+    await request
+      .post(`/api/v1/copyright-email-intakes/${missingId}/correspondence`)
+      .send({
+        kind: 'appeal',
+        rationale: 'The email appeals a restriction.',
+        manual_fallback_reason: 'No recommendation is available.',
+        appeal_reason: 'The poster owns the material.',
+        target_ids: [crypto.randomUUID()],
+      })
+      .expect(404)
+    await request
+      .post(`/api/v1/copyright-email-intakes/${missingId}/correspondence`)
+      .send({
+        kind: 'counter_notice',
+        rationale: 'The email contains a counter-notice.',
+        manual_fallback_reason: 'No recommendation is available.',
+        name: 'Poster',
+        address: '1 Main Street',
+        telephone: '555-0100',
+        consent_to_federal_jurisdiction: true,
+        consent_to_service_of_process: true,
+        good_faith_misidentification_under_penalty_of_perjury: true,
+        electronic_signature: 'Poster',
+        target_ids: [crypto.randomUUID()],
       })
       .expect(404)
     await request

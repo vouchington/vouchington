@@ -13,6 +13,7 @@ import {
   getCopyrightNoticePrivateAggregate,
   prepareCopyrightEmailDelivery,
   recordCopyrightEmailParse,
+  rejectCopyrightEmailCorrespondence,
   reviewCopyrightCounterNotice,
 } from './index.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
@@ -96,6 +97,16 @@ describe('copyright email correspondence admission', () => {
       recommendationId: null,
       manualFallbackReason: 'Agent output is unavailable.',
     })
+    await expect(
+      rejectCopyrightEmailCorrespondence({
+        currentUser: moderator,
+        intakeId: intake.id,
+        kind: 'counter_notice',
+        rationale: 'The same email cannot receive a second decision.',
+        recommendationId: null,
+        manualFallbackReason: 'Agent output is unavailable.',
+      }),
+    ).rejects.toMatchObject({ status: 409 })
     const admittedAggregate = await getCopyrightNoticePrivateAggregate(notice.id)
     const submission = admittedAggregate?.submissions.find(
       item => item.id === admitted.submissionId,

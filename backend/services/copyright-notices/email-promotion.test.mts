@@ -9,8 +9,13 @@ import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores
 import {
   createCopyrightEmailIntake,
   getCopyrightNoticePrivateAggregate,
+  markCopyrightEmailIntakeResponseBouncedBySesMessageId,
+  markCopyrightEmailIntakeResponseFailed,
+  markCopyrightEmailIntakeResponseSent,
+  prepareCopyrightEmailIntakeResponseDelivery,
   promoteCopyrightEmailIntake,
   recordCopyrightEmailParse,
+  rejectCopyrightEmailIntake,
 } from './index.mts'
 
 describe('copyright email promotion', () => {
@@ -78,5 +83,97 @@ describe('copyright email promotion', () => {
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
       { accepted: true, promoted_copyright_notice_id: approved.noticeId },
     ])
+  })
+
+  it('sends and records a bounced staff response to a rejected email', async () => {
+    const moderatorRecord = await createTestUser()
+    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+    const sesMessageId = `ses-response-${crypto.randomUUID()}`
+    const { intake } = await createCopyrightEmailIntake({
+      sesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${sesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 3),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+    })
+    await recordCopyrightEmailParse(intake, {
+      status: 'succeeded',
+      fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
+      subject: 'Copyright complaint',
+      bodyText: 'A copyright complaint.',
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      replyReferences: [],
+      attachments: [],
+    })
+    const rejected = await rejectCopyrightEmailIntake({
+      currentUser: moderator,
+      intakeId: intake.id,
+      recommendationId: null,
+      manualFallbackReason: 'The extraction agent was unavailable.',
+      rationale: 'The message lacks the required declarations.',
+      responseKind: 'needs_information',
+      responseMessage: 'Please identify the work and the hosted material.',
+    })
+    if (!rejected.responseId) throw new Error('response was not created')
+    const first = await prepareCopyrightEmailIntakeResponseDelivery(rejected.responseId)
+    expect(first.subject).toContain('More information')
+    expect(first.text).toContain('Please identify the work')
+    const outboundMessageId = `ses-outbound-${crypto.randomUUID()}`
+    expect(
+      await markCopyrightEmailIntakeResponseSent({
+        responseId: rejected.responseId,
+        sesMessageId: outboundMessageId,
+      }),
+    ).toBe(true)
+    expect(await markCopyrightEmailIntakeResponseBouncedBySesMessageId(outboundMessageId)).toBe(
+      true,
+    )
+  })
+
+  it('records a retryable failure only after claiming an email response', async () => {
+    const moderatorRecord = await createTestUser()
+    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+    const sesMessageId = `ses-failed-response-${crypto.randomUUID()}`
+    const { intake } = await createCopyrightEmailIntake({
+      sesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${sesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 4),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+    })
+    await recordCopyrightEmailParse(intake, {
+      status: 'succeeded',
+      fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
+      subject: 'Copyright complaint',
+      bodyText: 'A copyright complaint.',
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      replyReferences: [],
+      attachments: [],
+    })
+    const rejected = await rejectCopyrightEmailIntake({
+      currentUser: moderator,
+      intakeId: intake.id,
+      recommendationId: null,
+      manualFallbackReason: 'The extraction agent was unavailable.',
+      rationale: 'The message lacks the required declarations.',
+      responseKind: 'rejected',
+      responseMessage: null,
+    })
+    if (!rejected.responseId) throw new Error('response was not created')
+    await prepareCopyrightEmailIntakeResponseDelivery(rejected.responseId)
+    await expect(
+      markCopyrightEmailIntakeResponseFailed({
+        responseId: rejected.responseId,
+        error: 'The email provider timed out.',
+      }),
+    ).resolves.toBe(true)
+    await expect(
+      markCopyrightEmailIntakeResponseSent({
+        responseId: rejected.responseId,
+        sesMessageId: `ses-should-not-send-${crypto.randomUUID()}`,
+      }),
+    ).resolves.toBe(false)
   })
 })

@@ -71,4 +71,27 @@ describe('processAIAgent routing', () => {
     ).resolves.toBeUndefined()
     expect(processReconcileChatRuntimeGenerations).toHaveBeenCalledOnce()
   })
+
+  it('treats missing copyright jobs as successful idempotent queue replays', async () => {
+    const missing = '00000000-0000-7000-8000-000000000091'
+
+    await expect(
+      processAIAgent({
+        name: 'copyright-email-intake',
+        data: { intake_id: missing },
+      } as Job<AIAgentJobData>),
+    ).resolves.toEqual({ success: true })
+    await expect(
+      processAIAgent({
+        name: 'copyright-form-screening',
+        data: { submission_id: missing },
+      } as Job<AIAgentJobData>),
+    ).resolves.toEqual({ success: true })
+    await expect(
+      processAIAgent({
+        name: 'copyright-appeal-recommendation',
+        data: { submission_id: missing },
+      } as Job<AIAgentJobData>),
+    ).resolves.toEqual({ success: true })
+  })
 })

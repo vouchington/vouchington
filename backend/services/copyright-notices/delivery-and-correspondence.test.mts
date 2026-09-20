@@ -13,12 +13,15 @@ import {
   createCopyrightDeliveryIntent,
   createCopyrightNoticeAggregate,
   createEligibleCopyrightRestoreIntent,
+  deliverCopyrightInAppNotification,
+  prepareCopyrightEmailDelivery,
   createOutboundCopyrightCorrespondence,
   getCopyrightNoticePrivateAggregate,
   markCopyrightDeliveryIntentBouncedBySesMessageId,
   markCopyrightDeliveryIntentFailed,
   markCopyrightDeliveryIntentSent,
 } from './index.mts'
+import { resolveCopyrightEmailRecipient } from './delivery-transport.mts'
 
 async function createFixture() {
   const [claimant, moderatorRecord] = await Promise.all([
@@ -58,10 +61,43 @@ async function createFixture() {
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
   if (!aggregate) throw new Error('fixture notice disappeared')
-  return { aggregate, moderator, notice }
+  return { aggregate, claimant, moderator, notice }
 }
 
 describe('copyright delivery and correspondence persistence', () => {
+  it('delivers a claimed in-app copyright notice exactly once', async () => {
+    const { claimant, notice } = await createFixture()
+    const intent = await createCopyrightDeliveryIntent({
+      noticeId: notice.id,
+      submissionId: null,
+      correspondenceId: null,
+      recipientUserId: claimant.id,
+      recipientRole: 'claimant',
+      deliveryKind: 'claimant_receipt',
+      channel: 'in_app',
+      idempotencyKey: `copyright-in-app-${crypto.randomUUID()}`,
+    })
+
+    await expect(deliverCopyrightInAppNotification(intent.id)).resolves.toBe(true)
+    await expect(deliverCopyrightInAppNotification(intent.id)).resolves.toBe(false)
+    const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
+    expect(aggregate?.deliveryIntents).toContainEqual(
+      expect.objectContaining({ id: intent.id, channel: 'in_app', state: 'sent' }),
+    )
+  })
+
+  it('fails closed for unavailable or private-recipient-less delivery intents', async () => {
+    await expect(
+      deliverCopyrightInAppNotification('00000000-0000-7000-8000-000000000071'),
+    ).resolves.toBe(false)
+    await expect(
+      prepareCopyrightEmailDelivery('00000000-0000-7000-8000-000000000072'),
+    ).rejects.toThrow('not available to send')
+    await expect(
+      resolveCopyrightEmailRecipient('00000000-0000-7000-8000-000000000073', null, 'claimant'),
+    ).rejects.toMatchObject({ status: 422 })
+  })
+
   it('retains a retryable legal delivery obligation and exposes its terminal state', async () => {
     const { notice } = await createFixture()
     const correspondence = await createOutboundCopyrightCorrespondence({

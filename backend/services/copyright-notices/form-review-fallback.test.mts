@@ -66,6 +66,17 @@ describe('copyright form moderator fallback', () => {
       accepted: true,
       rationale: 'The anti-spam classification was a false positive.',
     })
+    await expect(
+      reviewCopyrightFormIntake({
+        intakeId: flaggedNotice.intake.id,
+        currentUser: moderator,
+        accepted: true,
+        rationale: 'The completed moderator decision may be safely replayed.',
+      }),
+    ).resolves.toMatchObject({
+      noticeId: flaggedNotice.intake.copyright_notice_id,
+      accepted: true,
+    })
 
     const outageNotice = await createNotice('A second original photograph claim')
     await reviewCopyrightFormIntake({
