@@ -1,0 +1,55 @@
+import { cache } from 'react'
+import { serverApi } from './instance'
+import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
+import type {
+  CopyrightNoticeDetail,
+  CopyrightNoticeSummary,
+  CopyrightParticipantNoticeDetail,
+  CopyrightStaffQueueItem,
+} from '@/types/copyright-notices'
+
+export const getCopyrightNotices = cache(async (): Promise<CopyrightNoticeSummary[]> => {
+  const response = await serverApi.get<{ copyright_notices: CopyrightNoticeSummary[] }>(
+    '/api/v1/copyright-notices',
+  )
+  return response.copyright_notices
+})
+
+export const getCopyrightNoticeServer = cache(
+  async (id: string): Promise<CopyrightNoticeDetail | null> => {
+    const response = await returnNullForMissingEntity(
+      serverApi.get<{ copyright_notice: CopyrightNoticeDetail }>(`/api/v1/copyright-notices/${id}`),
+    )
+    return response?.copyright_notice ?? null
+  },
+)
+
+export const getCopyrightParticipantNoticeServer = cache(
+  async (id: string): Promise<CopyrightParticipantNoticeDetail | null> => {
+    const response = await returnNullForMissingEntity(
+      serverApi.get<{ copyright_notice: CopyrightParticipantNoticeDetail }>(
+        `/api/v1/copyright-notices/${id}/participant`,
+      ),
+    )
+    return response?.copyright_notice ?? null
+  },
+)
+
+export const getCopyrightReviewQueue = cache(async (): Promise<CopyrightStaffQueueItem[]> => {
+  const response = await serverApi.get<{ copyright_notices: CopyrightStaffQueueItem[] }>(
+    '/api/v1/copyright-notices/review-queue',
+  )
+  return response.copyright_notices
+})
+
+export const getCopyrightEmailIntakeReviewQueue = cache(async () => {
+  const response = await serverApi.get<{
+    copyright_email_intakes: Array<{
+      id: string
+      received_at: string
+      parse_status: string
+      recommendation_id: string | null
+    }>
+  }>('/api/v1/copyright-email-intakes/review-queue')
+  return response.copyright_email_intakes
+})

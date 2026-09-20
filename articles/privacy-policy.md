@@ -83,6 +83,20 @@ We use your information to operate Voucha, including:
 
 Voucha uses automated tools, including OpenAI's API, to help moderate submitted content for policy violations. **We use OpenAI solely for moderation purposes. We do not sell your data to AI companies, and your content is not used to train AI models.**
 
+### Copyright Process
+
+If Voucha activates its US copyright process, we process the information in copyright notices,
+appeals, counter-notices, email correspondence, and supporting evidence to assess and administer a
+copyright case. This can include names, contact details, signatures, hosted-use URLs, descriptions
+of copyrighted work, the original email, attachments, and correspondence metadata. We use a
+restricted agent-assisted extraction only to structure an email or identify abuse. Staff review
+email submissions and required legal decisions.
+
+Accepted case records can be viewed by signed-in members. They show only a redacted case projection
+such as case status, dates, hosted-use references, and timeline events. We do not publish claimant
+or poster identity, contact details, signatures, raw email, evidence, staff rationale, or agent
+analysis. Private case data is restricted to participants where appropriate and authorized staff.
+
 ### Analytics
 
 We use server-side analytics (Google Tag Manager, server-side configuration) to understand platform usage, improve features, and measure performance. Analytics are only loaded when you grant consent via the cookie banner. We do not use client-side advertising trackers or Google AdSense.
@@ -138,18 +152,18 @@ These are stored locally on your device and are not transmitted to our servers e
 
 Voucha integrates with third-party services that may process your data:
 
-| Service                                                                       | Purpose                                                                                                                                           | Data Shared                                                                                                                                                         |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Stripe**                                                                    | Billing and subscription management                                                                                                               | Name, email, payment method details; retained for 7 years per financial regulations; email is redacted from the Stripe customer record when you delete your account |
-| **OAuth Providers** (Google, GitHub, Facebook, Apple, X, LinkedIn, Microsoft) | Authentication and friend discovery                                                                                                               | Unique ID, email, name from provider; access tokens where required for friend sync                                                                                  |
-| **AWS**                                                                       | Infrastructure, file storage (S3 for images and data exports), email delivery (SES)                                                               | Uploaded images, data export files, email content for delivery                                                                                                      |
-| **OpenAI**                                                                    | Content moderation only                                                                                                                           | Submitted content text for policy review                                                                                                                            |
-| **Cloudflare**                                                                | CDN, DDoS protection, edge routing                                                                                                                | IP address, request metadata                                                                                                                                        |
-| **Sentry**                                                                    | Error monitoring, session replay recordings (approximately 10% of sessions and 100% of error sessions; replay data may include page interactions) | Error traces, browser info, session interactions                                                                                                                    |
+| Service                                                                       | Purpose                                                                                                                                           | Data Shared                                                                                                                                                                      |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Stripe**                                                                    | Billing and subscription management                                                                                                               | Name, email, payment method details; retained for 7 years per financial regulations; email is redacted from the Stripe customer record when you delete your account              |
+| **OAuth Providers** (Google, GitHub, Facebook, Apple, X, LinkedIn, Microsoft) | Authentication and friend discovery                                                                                                               | Unique ID, email, name from provider; access tokens where required for friend sync                                                                                               |
+| **AWS**                                                                       | Infrastructure, file storage (S3 for images and data exports), email delivery (SES)                                                               | Uploaded images, data export files, email content for delivery                                                                                                                   |
+| **OpenAI**                                                                    | Content moderation and copyright-intake analysis                                                                                                  | Submitted content text for policy review; for copyright email submissions: sender name and email address, subject line, full message body, and attachment filenames and metadata |
+| **Cloudflare**                                                                | CDN, DDoS protection, edge routing                                                                                                                | IP address, request metadata                                                                                                                                                     |
+| **Sentry**                                                                    | Error monitoring, session replay recordings (approximately 10% of sessions and 100% of error sessions; replay data may include page interactions) | Error traces, browser info, session interactions                                                                                                                                 |
 
 Each of these providers has their own privacy policy. We select providers who maintain appropriate security and data protection standards.
 
-**Regarding OpenAI:** Content submitted for moderation review is processed by OpenAI's API under their data processing terms. This data is used only for moderation determinations and is not used to train OpenAI's models under our API agreement.
+**Regarding OpenAI:** Content submitted for moderation review and copyright-intake analysis is processed by OpenAI's API under their data processing terms. For a copyright email submission, this can include the sender's name and email address, subject line, full message body, and attachment filenames and metadata. This data is used only for moderation and copyright-case determinations and is not used to train OpenAI's models under our API agreement.
 
 **Regarding email delivery:** Outbound emails sent by the platform (notifications, data export links, authentication codes) are delivered via AWS SES. A copy of outbound emails is retained in an internal mailbox for deliverability monitoring.
 
@@ -164,6 +178,8 @@ Each of these providers has their own privacy policy. We select providers who ma
 - **Billing records** — retained as required by financial regulations (typically 7 years); the email address associated with your Stripe customer record is redacted when you delete your account
 - **Security logs** — retained for up to 12 months
 - **Vote integrity flags** — retained for the life of the account; anonymized upon account deletion
+- **Copyright case records and evidence** — retained under the applicable legal, safety, and
+  retention requirements. We do not publish private evidence or correspondence.
 
 ---
 

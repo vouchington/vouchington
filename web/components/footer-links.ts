@@ -10,6 +10,22 @@ export const footerSiteLinks: FooterLink[] = [
   { label: 'About', href: '/article/about', dataPw: 'footer-site-link-about' },
   { label: 'Terms', href: '/article/terms-of-service', dataPw: 'footer-site-link-terms' },
   { label: 'Privacy', href: '/article/privacy-policy', dataPw: 'footer-site-link-privacy' },
+  {
+    label: 'Community Guidelines',
+    href: '/article/community-guidelines',
+    dataPw: 'footer-site-link-community-guidelines',
+  },
+  { label: 'Copyright', href: '/copyright', dataPw: 'footer-site-link-copyright' },
+  {
+    label: 'Designated Agent',
+    href: '/copyright/designated-agent',
+    dataPw: 'footer-site-link-designated-agent',
+  },
+  {
+    label: 'Repeat Infringer Policy',
+    href: '/copyright/repeat-infringer-policy',
+    dataPw: 'footer-site-link-repeat-infringer-policy',
+  },
   { label: 'Cookies', href: '/article/cookie-policy', dataPw: 'footer-site-link-cookies' },
 ]
 

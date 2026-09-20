@@ -153,7 +153,27 @@ The platform's trust scoring system, ranking algorithms, and aggregation methods
 
 User-generated content belongs to respective users as described in Section 5.
 
-## 10. Disclaimer of Warranties
+## 10. Copyright Notices And Repeat Infringement
+
+Voucha may restrict access to hosted material when it receives and validates a copyright notice.
+The copyright program is not active until Voucha registers a designated agent with the US Copyright
+Office and publishes a monitored contact channel. Until then, no address or form is represented as
+an active statutory DMCA intake channel.
+
+When active, a claimant may submit a US copyright notice through the published process. A poster
+may submit an appeal or a statutory counter-notice when eligible. We may preserve submissions,
+evidence, and case records, notify affected participants, apply a provisional restriction, and
+restore material when required by law. An automated check may identify abuse or obvious invalidity,
+but it does not decide legal validity. Human moderators review required decisions.
+
+Voucha reasonably implements a repeat-infringer policy after considering verified notices,
+counter-notices, legal holds, repeat conduct, and applicable law. An allegation alone does not
+automatically terminate an account.
+
+Accepted case records may be visible to signed-in members. Those records exclude participant names,
+contact details, signatures, raw correspondence, evidence, moderator rationale, and agent analysis.
+
+## 11. Disclaimer of Warranties
 
 Voucha is provided "as is" and "as available" without warranties of any kind, express or implied. Voucha, Inc. does not warrant that:
 
@@ -163,7 +183,7 @@ Voucha is provided "as is" and "as available" without warranties of any kind, ex
 
 To the fullest extent permitted by applicable law, Voucha, Inc. disclaims all implied warranties, including warranties of merchantability, fitness for a particular purpose, and non-infringement.
 
-## 11. Limitation of Liability
+## 12. Limitation of Liability
 
 To the maximum extent permitted by applicable law, Voucha, Inc. and its officers, directors, employees, and agents shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the platform, including losses resulting from reliance on community data, product recommendations, or referral outcomes.
 
@@ -171,7 +191,7 @@ Our total liability to you for any claims arising under these Terms shall not ex
 
 Some jurisdictions do not allow limitation of liability for certain damages. In those jurisdictions, our liability is limited to the maximum extent permitted by law.
 
-## 12. Indemnification
+## 13. Indemnification
 
 You agree to indemnify and hold harmless Voucha, Inc. and its officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from:
 
@@ -180,7 +200,7 @@ You agree to indemnify and hold harmless Voucha, Inc. and its officers, director
 - Your violation of these Terms
 - Your violation of any third party's rights
 
-## 13. Termination
+## 14. Termination
 
 Voucha may suspend or terminate your account at any time, with or without notice, for violations of these Terms, suspected fraudulent activity, or at our discretion. Upon termination:
 
@@ -190,19 +210,19 @@ Voucha may suspend or terminate your account at any time, with or without notice
 
 You may delete your own account at any time from account settings. Account deletion is irreversible.
 
-## 14. Modifications to Terms
+## 15. Modifications to Terms
 
 Voucha may modify these Terms at any time. We will notify users of material changes via the platform. For changes that materially affect how we process your personal data or your rights under these Terms, we will seek your affirmative re-consent before the changes take effect. For other changes, continued use of Voucha after notice constitutes acceptance of the updated Terms. If you do not agree to the revised Terms, you must stop using the platform.
 
-## 15. Governing Law
+## 16. Governing Law
 
 These Terms are governed by the laws of the State of Delaware, without regard to conflict of law principles. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts located in Delaware.
 
-## 16. Entire Agreement
+## 17. Entire Agreement
 
 These Terms, together with our Privacy Policy, constitute the entire agreement between you and Voucha, Inc. regarding your use of the platform, and supersede any prior agreements.
 
-## 17. Contact
+## 18. Contact
 
 Questions about these Terms? Contact us at:
 
