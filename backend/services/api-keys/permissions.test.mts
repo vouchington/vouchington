@@ -78,7 +78,7 @@ describe('validateApiKeyCreationPermissions', () => {
       'rss keys must use rss:read',
     )
     expect(validateApiKeyCreationPermissions(user, 'mcp', ['rss:read'])).toBe(
-      'mcp keys must use only mcp.user or mcp.admin scopes',
+      'mcp keys must use scopes for one user or admin audience',
     )
   })
 
