@@ -1,7 +1,7 @@
 id: openai-client-location
 language: Tsx
 severity: error
-message: '`new OpenAI()` is only allowed in the OpenAI client and moderation transport modules. Use the shared client from those modules instead.'
+message: '`new OpenAI()` is only allowed in an approved OpenAI-compatible transport module. Use its shared client instead.'
 files:
   - backend/**/*.mts
   - cloudflare-worker/**/*.ts
@@ -11,6 +11,7 @@ files:
 ignores:
   - backend/modules/openai-utils/client.mts
   - backend/modules/openai-utils/moderate.mts
+  - backend/modules/openrouter-utils/client.mts
   - '**/*.test.mts'
   - '**/*.spec.mts'
 rule:
@@ -28,6 +29,9 @@ examples:
   - code: 'const client = new OpenAI({ fetch: getProviderFetch("openai_moderation_enabled") })'
     isValid: true
     file: 'backend/modules/openai-utils/moderate.mts'
+  - code: "const client = new OpenAI({ apiKey: 'key', baseURL: 'https://openrouter.ai/api/v1' })"
+    isValid: true
+    file: 'backend/modules/openrouter-utils/client.mts'
   - code: "const client = new OpenAI({ apiKey: 'key' })"
     isValid: false
     file: web/app/page.tsx
