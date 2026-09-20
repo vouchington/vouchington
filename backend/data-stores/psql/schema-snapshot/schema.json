@@ -18670,7 +18670,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key": {
           "accessMethod": "btree",
@@ -24075,7 +24075,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "copyright_notice_enforcement_requests_pkey": {
           "accessMethod": "btree",
@@ -34166,7 +34166,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_image_placements__image": {
           "accessMethod": "btree",
@@ -34456,7 +34456,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_image_surface_placements__community_banner": {
           "accessMethod": "btree",
@@ -37413,7 +37413,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_media_delivery_registry_records__asset": {
           "accessMethod": "btree",
@@ -37616,7 +37616,7 @@
       },
       "comment": "Media-neutral, durable hosted-use placements. Delivery availability is revision-fenced and never inferred from an asset alone.",
       "foreignKeys": {},
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "media_placements_pkey": {
           "accessMethod": "btree",
