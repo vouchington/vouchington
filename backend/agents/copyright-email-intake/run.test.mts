@@ -35,6 +35,7 @@ describe('copyright email intake output', () => {
   })
 
   it('rejects oversized or unbounded model output', () => {
+    expect(() => parseCopyrightEmailIntakeOutput('{')).toThrow('invalid response JSON')
     expect(() =>
       parseCopyrightEmailIntakeOutput(
         JSON.stringify({

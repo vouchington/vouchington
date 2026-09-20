@@ -51,4 +51,38 @@ describe('copyright appeal recommendation enqueue recovery', () => {
     expect(remove).toHaveBeenCalledOnce()
     expect(enqueue).toHaveBeenCalledWith('submission-id')
   })
+
+  it('does not replace a retained job owned by another queue route', async () => {
+    const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
+
+    await enqueueOrRetryCopyrightAppealRecommendation('submission-id', {
+      getJob: async () => ({
+        name: 'another-job',
+        getState: async () => 'waiting',
+        retry: async () => undefined,
+        remove: async () => undefined,
+      }),
+      enqueue,
+    })
+
+    expect(enqueue).not.toHaveBeenCalled()
+  })
+
+  it('retries a retained failed advisory job without adding another job', async () => {
+    const retry = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+    const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
+
+    await enqueueOrRetryCopyrightAppealRecommendation('submission-id', {
+      getJob: async () => ({
+        name: 'copyright-appeal-recommendation',
+        getState: async () => 'failed',
+        retry,
+        remove: async () => undefined,
+      }),
+      enqueue,
+    })
+
+    expect(retry).toHaveBeenCalledOnce()
+    expect(enqueue).not.toHaveBeenCalled()
+  })
 })

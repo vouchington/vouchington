@@ -25,6 +25,9 @@ describe('copyright appeal recommendation output', () => {
   })
 
   it('rejects unsupported or unbounded model output', () => {
+    expect(() => parseCopyrightAppealRecommendationOutput('{')).toThrow(
+      'Invalid copyright appeal recommendation JSON',
+    )
     expect(() =>
       parseCopyrightAppealRecommendationOutput(
         JSON.stringify({ recommendation: 'takedown', rationale: 'Take action.' }),

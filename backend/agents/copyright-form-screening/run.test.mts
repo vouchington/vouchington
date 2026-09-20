@@ -26,6 +26,9 @@ describe('copyright form screening output', () => {
   })
 
   it('rejects a recommendation outside the anti-spam vocabulary', () => {
+    expect(() => parseCopyrightFormScreeningOutput('{')).toThrow(
+      'Invalid copyright form screening JSON',
+    )
     expect(() =>
       parseCopyrightFormScreeningOutput(
         JSON.stringify({ recommendation: 'takedown', rationale: 'Looks valid.' }),

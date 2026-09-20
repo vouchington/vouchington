@@ -51,4 +51,22 @@ describe('copyright form screening enqueue recovery', () => {
     expect(remove).toHaveBeenCalledOnce()
     expect(enqueue).toHaveBeenCalledWith('submission-id')
   })
+
+  it('retries a failed screening job without creating another screening request', async () => {
+    const retry = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+    const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
+
+    await enqueueOrRetryCopyrightFormScreening('submission-id', {
+      getJob: async () => ({
+        name: 'copyright-form-screening',
+        getState: async () => 'failed',
+        retry,
+        remove: async () => undefined,
+      }),
+      enqueue,
+    })
+
+    expect(retry).toHaveBeenCalledOnce()
+    expect(enqueue).not.toHaveBeenCalled()
+  })
 })

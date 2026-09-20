@@ -51,4 +51,22 @@ describe('copyright email intake enqueue recovery', () => {
     expect(retry).toHaveBeenCalledOnce()
     expect(enqueue).not.toHaveBeenCalled()
   })
+
+  it('removes a completed extraction job before enqueuing recovery', async () => {
+    const remove = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+    const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
+
+    await enqueueOrRetryCopyrightEmailIntake('intake-id', {
+      getJob: async () => ({
+        name: 'copyright-email-intake',
+        getState: async () => 'completed',
+        retry: async () => undefined,
+        remove,
+      }),
+      enqueue,
+    })
+
+    expect(remove).toHaveBeenCalledOnce()
+    expect(enqueue).toHaveBeenCalledWith('intake-id')
+  })
 })

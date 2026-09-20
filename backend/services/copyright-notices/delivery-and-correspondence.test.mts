@@ -17,6 +17,7 @@ import {
   prepareCopyrightEmailDelivery,
   createOutboundCopyrightCorrespondence,
   getCopyrightNoticePrivateAggregate,
+  listRecoverableCopyrightDeliveryIntents,
   markCopyrightDeliveryIntentBouncedBySesMessageId,
   markCopyrightDeliveryIntentFailed,
   markCopyrightDeliveryIntentSent,
@@ -84,6 +85,25 @@ describe('copyright delivery and correspondence persistence', () => {
     expect(aggregate?.deliveryIntents).toContainEqual(
       expect.objectContaining({ id: intent.id, channel: 'in_app', state: 'sent' }),
     )
+  })
+
+  it('replays a matching delivery key and lists recoverable delivery work', async () => {
+    const { claimant, notice } = await createFixture()
+    const idempotencyKey = `copyright-replay-${crypto.randomUUID()}`
+    const input = {
+      noticeId: notice.id,
+      submissionId: null,
+      correspondenceId: null,
+      recipientUserId: claimant.id,
+      recipientRole: 'claimant' as const,
+      deliveryKind: 'claimant_receipt' as const,
+      channel: 'in_app' as const,
+      idempotencyKey,
+    }
+    const first = await createCopyrightDeliveryIntent(input)
+
+    await expect(createCopyrightDeliveryIntent(input)).resolves.toMatchObject({ id: first.id })
+    await expect(listRecoverableCopyrightDeliveryIntents(1)).resolves.toEqual(expect.any(Array))
   })
 
   it('fails closed for unavailable or private-recipient-less delivery intents', async () => {
