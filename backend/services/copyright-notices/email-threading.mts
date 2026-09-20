@@ -3,10 +3,11 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { hashToken } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { findOutboundCopyrightEmailThreadMatch } from './email-threading-outbound.mts'
 
 export type CopyrightEmailThreadMatch = {
   noticeId: string
-  matchedIntakeId: string
+  matchedIntakeId: string | null
   matchedReference: string
 }
 
@@ -135,6 +136,22 @@ async function findCopyrightEmailThreadMatch(
   references: string[],
 ): Promise<CopyrightEmailThreadMatch | null> {
   if (references.length === 0) return null
+  const [inbound, outbound] = await Promise.all([
+    findInboundCopyrightEmailThreadMatch(intakeId, references),
+    findOutboundCopyrightEmailThreadMatch(references),
+  ])
+  const matches = [inbound, outbound].filter(
+    (match): match is CopyrightEmailThreadMatch => match !== null,
+  )
+  const noticeIds = new Set(matches.map(match => match.noticeId))
+  if (noticeIds.size !== 1) return null
+  return inbound ?? outbound
+}
+
+async function findInboundCopyrightEmailThreadMatch(
+  intakeId: string,
+  references: string[],
+): Promise<CopyrightEmailThreadMatch | null> {
   const lookups = references.map(reference => hashToken(THREAD_REFERENCE_PURPOSE, reference))
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{
@@ -166,5 +183,8 @@ async function findCopyrightEmailThreadMatch(
 }
 
 function normalizeReference(reference: string): string {
-  return reference.trim().replace(/\s+/g, ' ')
+  const normalized = reference.trim().replace(/\s+/g, ' ')
+  return normalized.startsWith('<') && normalized.endsWith('>')
+    ? normalized.slice(1, -1).trim()
+    : normalized
 }

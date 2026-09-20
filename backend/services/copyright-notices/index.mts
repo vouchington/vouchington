@@ -15,6 +15,14 @@ export {
 } from './email-correspondence-admission.mts'
 export { promoteCopyrightEmailIntake } from './email-promotion.mts'
 export { rejectCopyrightEmailIntake } from './email-rejection.mts'
+export {
+  CopyrightEmailIntakeResponseNotClaimedError,
+  markCopyrightEmailIntakeResponseFailed,
+  markCopyrightEmailIntakeResponseSent,
+  markCopyrightEmailIntakeResponseBouncedBySesMessageId,
+  listRecoverableCopyrightEmailIntakeResponses,
+  prepareCopyrightEmailIntakeResponseDelivery,
+} from './email-intake-responses.mts'
 export { getCopyrightNoticePrivateAggregate } from './get.mts'
 export {
   appendCopyrightNoticeSubmission,

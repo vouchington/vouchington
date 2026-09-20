@@ -1,5 +1,5 @@
 import { encryptSecret } from '@modules/token-secrets'
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
@@ -71,17 +71,35 @@ export async function appendCopyrightFormScreening(input: {
 export async function applyNonSpamSignedInCopyrightFormScreening(
   submissionId: string,
 ): Promise<void> {
-  const { rows } = await write<{
+  await using transaction = await beginTransaction()
+  const { rows: intakeIdRows } = await transaction<{ id: string }>(
+    sql`/* applyNonSpamSignedInCopyrightFormScreening:intakeId */
+      SELECT id FROM copyright_notice_form_intakes
+      WHERE copyright_notice_submission_id = ${submissionId}`,
+  )
+  const intakeId = intakeIdRows[0]?.id
+  if (!intakeId) {
+    await transaction.commit()
+    return
+  }
+  await transaction(sql`/* applyNonSpamSignedInCopyrightFormScreening:lock */
+    SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${intakeId}`}, 0))
+  `)
+  const { rows } = await transaction<{
     intake_id: string
     notice_id: string
     screening_id: string
     source_kind: 'signed_in_form' | 'guest_form'
+    form_review_accepted: boolean | null
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening */
     SELECT intake.id AS intake_id, intake.copyright_notice_id AS notice_id, submission.source_kind,
       (SELECT screening.id FROM copyright_notice_form_screenings screening
        WHERE screening.copyright_notice_form_intake_id = intake.id
-       ORDER BY screening.id DESC LIMIT 1) AS screening_id
+       ORDER BY screening.id DESC LIMIT 1) AS screening_id,
+      review.accepted AS form_review_accepted
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
+    LEFT JOIN copyright_notice_form_intake_reviews review
+      ON review.copyright_notice_form_intake_id = intake.id
     WHERE submission.id = ${submissionId}
       AND (
         SELECT screening.recommendation
@@ -92,7 +110,10 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
       ) = 'not_obviously_invalid'
   `)
   const intake = rows[0]
-  if (!intake || intake.source_kind !== 'signed_in_form') return
+  if (!intake || intake.source_kind !== 'signed_in_form' || intake.form_review_accepted !== null) {
+    await transaction.commit()
+    return
+  }
   const { rows: existingAssessments } = await write<{
     id: string
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:existingAssessment */
@@ -107,7 +128,10 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
       noticeId: intake.notice_id,
       screeningId: intake.screening_id,
     }))
-  if (!assessment) return
+  if (!assessment) {
+    await transaction.commit()
+    return
+  }
   const { rows: targets } = await write<{
     id: string
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:targets */
@@ -129,6 +153,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
       }),
     ),
   )
+  await transaction.commit()
 }
 
 async function createAutomatedAssessment(input: {

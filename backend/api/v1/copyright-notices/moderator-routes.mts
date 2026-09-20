@@ -2,6 +2,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
+import { enqueueSendCopyrightEmailIntakeResponse } from '@queues/emails/enqueues'
 import {
   assertCopyrightIntakeEnabled,
   admitCopyrightEmailCorrespondence,
@@ -111,13 +112,23 @@ app.route('/api/v1/copyright-email-intakes/:id/rejections').post(async (ctx: Con
     ctx,
     'POST:/api/v1/copyright-email-intakes/:id/rejections',
   )
-  await rejectCopyrightEmailIntake({
+  ctx.assert(
+    body.response_kind === undefined ||
+      body.response_kind === 'rejected' ||
+      body.response_kind === 'needs_information',
+    422,
+    'response_kind must be rejected or needs_information',
+  )
+  const rejected = await rejectCopyrightEmailIntake({
     currentUser,
     intakeId,
     recommendationId: parseRecommendationId(ctx, body),
     manualFallbackReason: parseManualFallbackReason(ctx, body),
     rationale: body.rationale as string,
+    responseKind: body.response_kind as 'rejected' | 'needs_information' | undefined,
+    responseMessage: typeof body.response_message === 'string' ? body.response_message : null,
   })
+  if (rejected.responseId) void enqueueSendCopyrightEmailIntakeResponse(rejected.responseId)
   ctx.setStatus(204)
 })
 

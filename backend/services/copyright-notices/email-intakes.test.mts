@@ -10,6 +10,7 @@ import {
   createCopyrightEmailIntake,
   createCopyrightNoticeAggregate,
   getPendingCopyrightAgentDispatches,
+  prepareCopyrightEmailIntakeResponseDelivery,
   promoteCopyrightEmailIntake,
   recordCopyrightEmailParse,
   rejectCopyrightEmailIntake,
@@ -120,6 +121,15 @@ describe('copyright email intake persistence', () => {
       rawMimeType: 'message/rfc822',
       rawByteSize: 12,
     })
+    await recordCopyrightEmailParse(intake, {
+      status: 'succeeded',
+      fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
+      subject: 'Copyright complaint',
+      bodyText: 'This is a copyright complaint.',
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      replyReferences: [],
+      attachments: [],
+    })
     const input = {
       currentUser: moderator,
       intakeId: intake.id,
@@ -128,12 +138,26 @@ describe('copyright email intake persistence', () => {
       rationale: 'The message is unrelated spam.',
     }
 
-    await rejectCopyrightEmailIntake(input)
-    await rejectCopyrightEmailIntake(input)
+    const rejected = await rejectCopyrightEmailIntake({
+      ...input,
+      responseKind: 'needs_information',
+      responseMessage: 'Please identify the copyrighted work and each allegedly infringing URL.',
+    })
+    const duplicate = await rejectCopyrightEmailIntake(input)
 
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
       { accepted: false, promoted_copyright_notice_id: null },
     ])
+    expect(rejected.responseId).toEqual(expect.any(String))
+    expect(duplicate).toEqual({ responseId: null })
+    if (!rejected.responseId) throw new Error('Email intake response was not created')
+    await expect(
+      prepareCopyrightEmailIntakeResponseDelivery(rejected.responseId),
+    ).resolves.toMatchObject({
+      recipientEmail: expect.stringMatching(/^claimant-/),
+      subject: 'More information is needed for your copyright notice',
+      text: expect.stringContaining('Please identify the copyrighted work'),
+    })
   })
 
   it('does not let a thread-linked email receive an initial-case decision', async () => {

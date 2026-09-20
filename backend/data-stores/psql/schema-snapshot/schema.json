@@ -636,6 +636,9 @@
     "fn_guard_copyright_email_correspondence_recommendation_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_correspondence_recommendation_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.copyright_notice_email_intake_recommendation_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation\n    WHERE recommendation.id = NEW.copyright_notice_email_intake_recommendation_id\n      AND recommendation.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id\n  ) THEN\n    RAISE EXCEPTION 'copyright email correspondence recommendation must belong to the same intake' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_guard_copyright_email_intake_response_transition": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_intake_response_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright email intake responses are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_email_intake_id IS DISTINCT FROM OLD.copyright_notice_email_intake_id\n    OR NEW.response_kind IS DISTINCT FROM OLD.response_kind\n    OR NEW.recipient_email_ciphertext IS DISTINCT FROM OLD.recipient_email_ciphertext\n    OR NEW.subject_ciphertext IS DISTINCT FROM OLD.subject_ciphertext\n    OR NEW.body_ciphertext IS DISTINCT FROM OLD.body_ciphertext\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright email intake response facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.state IN ('bounced', 'failed') AND NEW.state IS DISTINCT FROM OLD.state)\n    OR (OLD.state = 'sent' AND NEW.state NOT IN ('sent', 'bounced')) THEN\n    RAISE EXCEPTION 'terminal copyright email intake response cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_guard_copyright_email_review_recommendation_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_review_recommendation_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.copyright_notice_email_intake_recommendation_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation\n    WHERE recommendation.id = NEW.copyright_notice_email_intake_recommendation_id\n      AND recommendation.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id\n  ) THEN\n    RAISE EXCEPTION 'copyright email review recommendation must belong to the same intake' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -22384,6 +22387,377 @@
         "copyright_notice_email_intake_copyright_notice_email_intak_key2": {
           "columns": ["copyright_notice_email_intake_id", "input_sha256", "prompt_version"],
           "definition": "UNIQUE (copyright_notice_email_intake_id, input_sha256, prompt_version)"
+        }
+      }
+    },
+    "copyright_notice_email_intake_responses": {
+      "checkConstraints": {
+        "copyright_notice_email_intake__recipient_email_ciphertext_check": "CHECK (((char_length(recipient_email_ciphertext) >= 1) AND (char_length(recipient_email_ciphertext) <= 1048576)))",
+        "copyright_notice_email_intake_resp_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
+        "copyright_notice_email_intake_response_failure_ciphertext_check": "CHECK (((failure_ciphertext IS NULL) OR ((char_length(failure_ciphertext) >= 1) AND (char_length(failure_ciphertext) <= 1048576))))",
+        "copyright_notice_email_intake_response_subject_ciphertext_check": "CHECK (((char_length(subject_ciphertext) >= 1) AND (char_length(subject_ciphertext) <= 1048576)))",
+        "copyright_notice_email_intake_responses_body_ciphertext_check": "CHECK (((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 1048576)))",
+        "copyright_notice_email_intake_responses_check": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'sent'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'failed'::text) AND (delivery_attempted_at IS NOT NULL) AND (failed_at IS NOT NULL) AND (sent_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'bounced'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (bounced_at IS NOT NULL) AND (failed_at IS NULL))))",
+        "copyright_notice_email_intake_responses_check1": "CHECK (((failure_ciphertext IS NULL) OR (state = ANY (ARRAY['pending'::text, 'failed'::text]))))",
+        "copyright_notice_email_intake_responses_check2": "CHECK ((((state = 'pending'::text) AND ((delivery_attempt_count = 0) OR (next_attempt_at IS NOT NULL))) OR ((state <> 'pending'::text) AND (next_attempt_at IS NULL))))",
+        "copyright_notice_email_intake_responses_check3": "CHECK (((ses_message_id IS NULL) OR (state = ANY (ARRAY['sent'::text, 'bounced'::text]))))",
+        "copyright_notice_email_intake_responses_idempotency_key_check": "CHECK (((char_length(idempotency_key) >= 1) AND (char_length(idempotency_key) <= 512)))",
+        "copyright_notice_email_intake_responses_response_kind_check": "CHECK ((response_kind = ANY (ARRAY['rejected'::text, 'needs_information'::text])))",
+        "copyright_notice_email_intake_responses_ses_message_id_check": "CHECK (((ses_message_id IS NULL) OR ((char_length(ses_message_id) >= 1) AND (char_length(ses_message_id) <= 1024))))",
+        "copyright_notice_email_intake_responses_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'sent'::text, 'failed'::text, 'bounced'::text])))"
+      },
+      "columns": {
+        "body_ciphertext": {
+          "collation": null,
+          "comment": "Immutable encrypted response body.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "bounced_at": {
+          "collation": null,
+          "comment": "Time SES reported this response undeliverable.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "timestamp with time zone"
+        },
+        "claimed_at": {
+          "collation": null,
+          "comment": "Time a worker claimed this response.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "copyright_notice_email_intake_id": {
+          "collation": null,
+          "comment": "The private inbound email receiving this response.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18,
+          "type": "timestamp with time zone"
+        },
+        "delivery_attempt_count": {
+          "collation": null,
+          "comment": "Number of claimed send attempts, capped at five.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "integer"
+        },
+        "delivery_attempted_at": {
+          "collation": null,
+          "comment": "Time the latest send attempt began.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "failed_at": {
+          "collation": null,
+          "comment": "Time delivery became terminally failed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "failure_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted bounded latest transport failure.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "idempotency_key": {
+          "collation": null,
+          "comment": "Stable key preventing duplicate responses to one intake.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "next_attempt_at": {
+          "collation": null,
+          "comment": "Earliest retry time after a retryable failure.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "recipient_email_ciphertext": {
+          "collation": null,
+          "comment": "Intake sender address encrypted specifically for this response.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "response_kind": {
+          "collation": null,
+          "comment": "Whether the intake was rejected or requires more information.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "sent_at": {
+          "collation": null,
+          "comment": "Time SES accepted this response.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "timestamp with time zone"
+        },
+        "ses_message_id": {
+          "collation": null,
+          "comment": "SES provider identifier for this response.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "text"
+        },
+        "state": {
+          "collation": null,
+          "comment": "Bounded durable email delivery lifecycle.",
+          "defaultExpression": "'pending'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "subject_ciphertext": {
+          "collation": null,
+          "comment": "Immutable encrypted response subject.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 19,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Private, durable responses to rejected or incomplete email intakes. These rows never create a copyright case.",
+      "foreignKeys": {
+        "copyright_notice_email_intak_copyright_notice_email_intak_fkey7": {
+          "columns": ["copyright_notice_email_intake_id"],
+          "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_notice_email_intake_copyright_notice_email_intak_key5": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key5 ON public.copyright_notice_email_intake_responses USING btree (copyright_notice_email_intake_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_email_intake_responses_idempotency_key_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_intake_responses_idempotency_key_key ON public.copyright_notice_email_intake_responses USING btree (idempotency_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "idempotency_key",
+              "descending": false,
+              "expression": "idempotency_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_email_intake_responses_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_intake_responses_pkey ON public.copyright_notice_email_intake_responses USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_email_intake_responses__pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_email_intake_responses__pending ON public.copyright_notice_email_intake_responses USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "next_attempt_at",
+              "descending": false,
+              "expression": "next_attempt_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(state = 'pending'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_email_intake_responses__ses_message": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_email_intake_responses__ses_message ON public.copyright_notice_email_intake_responses USING btree (ses_message_id) WHERE (ses_message_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "ses_message_id",
+              "descending": false,
+              "expression": "ses_message_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(ses_message_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_email_intake_response_transition": "CREATE TRIGGER trigger_copyright_email_intake_response_transition BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_responses FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_email_intake_response_transition()",
+        "trigger_copyright_email_intake_responses_updated_at": "CREATE TRIGGER trigger_copyright_email_intake_responses_updated_at BEFORE UPDATE ON public.copyright_notice_email_intake_responses FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "copyright_notice_email_intake_copyright_notice_email_intak_key5": {
+          "columns": ["copyright_notice_email_intake_id"],
+          "definition": "UNIQUE (copyright_notice_email_intake_id)"
+        },
+        "copyright_notice_email_intake_responses_idempotency_key_key": {
+          "columns": ["idempotency_key"],
+          "definition": "UNIQUE (idempotency_key)"
         }
       }
     },

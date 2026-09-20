@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
+import type {
+  enqueueSendCopyrightEmailIntakeResponse,
+  enqueueSendCopyrightNoticeEmail,
+} from '@queues/emails/enqueues'
 import type { enqueueDeliverCopyrightNotice } from '@queues/notifications/enqueues'
 import type { listRecoverableCopyrightDeliveryIntents } from '@services/copyright-notices/delivery-intents'
+import type { listRecoverableCopyrightEmailIntakeResponses } from '@services/copyright-notices/email-intake-responses'
 import { processReconcileCopyrightDeliveryIntents } from './copyright-delivery.mts'
 
 describe('copyright delivery reconciliation', () => {
@@ -38,15 +42,24 @@ describe('copyright delivery reconciliation', () => {
     const enqueueEmail = vi
       .fn<typeof enqueueSendCopyrightNoticeEmail>()
       .mockResolvedValue(undefined)
+    const listResponses = vi
+      .fn<typeof listRecoverableCopyrightEmailIntakeResponses>()
+      .mockResolvedValue([{ id: '00000000-0000-7000-8000-000000000016' }])
+    const enqueueResponse = vi
+      .fn<typeof enqueueSendCopyrightEmailIntakeResponse>()
+      .mockResolvedValue(undefined)
 
     await expect(
       processReconcileCopyrightDeliveryIntents({
         listRecoverableCopyrightDeliveryIntents: list,
         enqueueDeliverCopyrightNotice: enqueueInApp,
         enqueueSendCopyrightNoticeEmail: enqueueEmail,
+        listRecoverableCopyrightEmailIntakeResponses: listResponses,
+        enqueueSendCopyrightEmailIntakeResponse: enqueueResponse,
       }),
-    ).resolves.toEqual({ enqueued: 2 })
+    ).resolves.toEqual({ enqueued: 3 })
     expect(enqueueInApp).toHaveBeenCalledWith('00000000-0000-7000-8000-000000000011')
     expect(enqueueEmail).toHaveBeenCalledWith('00000000-0000-7000-8000-000000000014')
+    expect(enqueueResponse).toHaveBeenCalledWith('00000000-0000-7000-8000-000000000016')
   })
 })

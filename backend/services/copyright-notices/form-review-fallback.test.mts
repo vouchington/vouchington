@@ -82,4 +82,59 @@ describe('copyright form moderator fallback', () => {
       ),
     ).resolves.toEqual([1, 1])
   })
+
+  it('keeps a moderator rejection authoritative when it races a clean automated screening', async () => {
+    const [poster, claimant, moderatorRecord] = await Promise.all([
+      createTestUser(),
+      createTestUser(),
+      createTestUser(),
+    ])
+    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+    const postId = await insertTestPost({
+      title: `racing copyright ${crypto.randomUUID()}`,
+      slug: `racing-copyright-${crypto.randomUUID()}`,
+      createdById: poster.id,
+      markdown: 'image',
+    })
+    const imageId = await insertTestImage(poster.id)
+    await insertTestPostImage({ postId, imageId })
+    const notice = await createCopyrightFormIntake({
+      requesterUserId: claimant.id,
+      requesterIdentity: `user:${claimant.id}`,
+      idempotencyKey: crypto.randomUUID(),
+      request: {
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: 'Claimant',
+        claimantContact: 'Claimant contact record',
+        claimantEmail: 'claimant@example.test',
+        workDescription: 'A disputed photograph',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Claimant',
+        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+      },
+    })
+    await appendCopyrightFormScreening({
+      intakeId: notice.intake.id,
+      inputSha256: Buffer.alloc(32, 10),
+      recommendation: 'not_obviously_invalid',
+      rationale: 'No obvious spam markers.',
+      promptVersion: 'copyright-form-screening-v2',
+      model: 'test-model',
+    })
+
+    await Promise.all([
+      reviewCopyrightFormIntake({
+        intakeId: notice.intake.id,
+        currentUser: moderator,
+        accepted: false,
+        rationale: 'The claimant did not substantiate this complaint.',
+      }),
+      applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id),
+    ])
+
+    await expect(
+      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+    ).resolves.toBe(0)
+  })
 })

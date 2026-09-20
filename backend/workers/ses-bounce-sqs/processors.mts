@@ -1,7 +1,10 @@
 import assert from 'http-assert'
 import type { SqsMessage } from '@backend/worker-runtime'
 import { createSesBounceEvent, type CreateSesBounceEventInput } from '@services/ses-bounce-events'
-import { markCopyrightDeliveryIntentBouncedBySesMessageId } from '@services/copyright-notices'
+import {
+  markCopyrightDeliveryIntentBouncedBySesMessageId,
+  markCopyrightEmailIntakeResponseBouncedBySesMessageId,
+} from '@services/copyright-notices'
 
 interface SesRecipient {
   emailAddress: string
@@ -60,6 +63,7 @@ export async function processSesBounceSqsMessage(message: SqsMessage): Promise<v
       sesMessageId: input.ses_message_id,
       recipientEmails: input.recipients,
     })
+    await markCopyrightEmailIntakeResponseBouncedBySesMessageId(input.ses_message_id)
   }
 }
 

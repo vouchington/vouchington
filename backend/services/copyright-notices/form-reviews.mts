@@ -41,7 +41,8 @@ export async function reviewCopyrightFormIntake(input: {
   assert(
     intake.source_kind === 'guest_form' ||
       (intake.source_kind === 'signed_in_form' &&
-        (intake.screening_recommendation === null ||
+        (!input.accepted ||
+          intake.screening_recommendation === null ||
           intake.screening_recommendation === 'invalid_or_spam')),
     422,
     'Only guest forms and signed-in forms without a clear anti-spam result require moderator review',
@@ -71,6 +72,8 @@ export async function reviewCopyrightFormIntake(input: {
   )
   if (input.accepted) {
     await applyMissingRestrictions(intake.notice_id, assessmentId, input.currentUser.id)
+  } else {
+    await reverseAutomatedRestrictions(intake.notice_id, intake.submission_id, input.currentUser.id)
   }
   return {
     noticeId: intake.notice_id,
@@ -85,9 +88,18 @@ async function getOrCreateHumanAssessment(
   accepted: boolean,
 ): Promise<string> {
   const existing = await getCurrentAssessment(submissionId)
+  if (existing?.substantially_compliant === accepted) return existing.id
   if (existing) {
-    assert(existing.substantially_compliant === accepted, 409, 'Submission was already assessed')
-    return existing.id
+    assert(!accepted, 409, 'Submission was already assessed')
+    return (
+      await appendCopyrightSubmissionAssessment({
+        submissionId,
+        assessedAt: new Date(),
+        currentUser,
+        substantiallyCompliant: false,
+        supersedesAssessmentId: existing.id,
+      })
+    ).id
   }
   try {
     return (
@@ -146,6 +158,33 @@ async function applyMissingRestrictions(
       }),
     ),
   )
+}
+
+async function reverseAutomatedRestrictions(
+  noticeId: string,
+  submissionId: string,
+  moderatorId: string,
+): Promise<void> {
+  const reviewedAt = new Date()
+  await write(sql`/* reviewCopyrightFormIntake:reverseAutomatedRestrictions */
+    UPDATE copyright_restrictions restriction
+    SET human_reviewed_at = COALESCE(restriction.human_reviewed_at, ${reviewedAt}),
+      human_review_action = COALESCE(restriction.human_review_action, 'reverse'),
+      human_reviewed_by_id = CASE
+        WHEN restriction.human_reviewed_at IS NULL THEN ${moderatorId}
+        ELSE restriction.human_reviewed_by_id
+      END,
+      lifted_at = COALESCE(restriction.lifted_at, ${reviewedAt}),
+      lifted_by_id = CASE WHEN restriction.lifted_at IS NULL THEN ${moderatorId} ELSE restriction.lifted_by_id END
+    FROM copyright_notice_submission_assessments assessment
+    CROSS JOIN copyright_notice_targets target
+    WHERE restriction.authorizing_assessment_id = assessment.id
+      AND target.id = restriction.copyright_notice_target_id
+      AND assessment.copyright_notice_submission_id = ${submissionId}
+      AND assessment.assessed_by_id IS NULL
+      AND target.copyright_notice_id = ${noticeId}
+      AND restriction.lifted_at IS NULL
+  `)
 }
 
 function isConflict(error: unknown): boolean {

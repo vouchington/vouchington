@@ -104,6 +104,24 @@ export function enqueueSendCopyrightNoticeEmail(intentId: string): EnqueueReturn
   )
 }
 
+export function enqueueSendCopyrightEmailIntakeResponse(responseId: string): EnqueueReturnType {
+  return enqueueSendCopyrightNoticeEmailJob(
+    { intakeResponseId: responseId } satisfies ProcessSendCopyrightNoticeEmailVariables,
+    {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+      priority: PRIORITY_DEFAULT,
+      deduplication: {
+        id: `copyright-email-intake-response:${responseId}:email`,
+        mode: 'throttle',
+        ttl: 5 * 60 * 1000,
+      },
+    },
+  )
+}
+
 const enqueueDispatchEngagementEmailsJob = createGlideMqEnqueueFunction({
   queue: emails,
   queueName: QUEUE_NAME,

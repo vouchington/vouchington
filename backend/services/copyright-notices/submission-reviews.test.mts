@@ -5,7 +5,10 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import {
+  readCopyrightNoticeTargetId,
+  readCopyrightNoticeTargetIds,
+} from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
   copyrightAppealRecommendations,
   createCopyrightAppeal,
@@ -20,7 +23,7 @@ import {
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
 
-async function createRestrictedFixture() {
+async function createRestrictedFixture(targetCount = 1) {
   const [poster, claimant, moderatorRecord] = await Promise.all([
     createTestUser(),
     createTestUser(),
@@ -33,8 +36,10 @@ async function createRestrictedFixture() {
     createdById: poster.id,
     markdown: 'image',
   })
-  const imageId = await insertTestImage(poster.id)
-  await insertTestPostImage({ postId, imageId })
+  const imageIds = await Promise.all(
+    Array.from({ length: targetCount }, () => insertTestImage(poster.id)),
+  )
+  await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
   const intake = await createCopyrightFormIntake({
     requesterUserId: claimant.id,
     requesterIdentity: `user:${claimant.id}`,
@@ -48,7 +53,11 @@ async function createRestrictedFixture() {
       goodFaithBelief: true,
       accuracyAuthorityUnderPenaltyOfPerjury: true,
       electronicSignature: 'Claimant',
-      claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+      claimantTargets: imageIds.map(imageId => ({
+        postId,
+        imageId,
+        hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+      })),
     },
   })
   await appendCopyrightFormScreening({
@@ -67,7 +76,9 @@ async function createRestrictedFixture() {
     moderator,
     noticeId: intake.intake.copyright_notice_id,
     targetId: await readCopyrightNoticeTargetId(intake.intake.copyright_notice_id),
+    targetIds: await readCopyrightNoticeTargetIds(intake.intake.copyright_notice_id),
     restrictionId: aggregate.restrictions[0].id,
+    restrictionIds: aggregate.restrictions.map(restriction => restriction.id),
   }
 }
 
@@ -125,6 +136,33 @@ describe('copyright submission moderator reviews', () => {
     expect(reviewed?.appealReviews).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: result.reviewIds[0], action: 'reverse' }),
+      ]),
+    )
+  })
+
+  it('requires one decision for every active restriction named by an appeal', async () => {
+    const fixture = await createRestrictedFixture(2)
+    const appeal = await createCopyrightAppeal(
+      fixture.poster,
+      fixture.noticeId,
+      crypto.randomUUID(),
+      { reason: 'I created both images.', targetIds: fixture.targetIds },
+    )
+    await expect(
+      reviewCopyrightAppeal({
+        submissionId: appeal.submission.id,
+        currentUser: fixture.moderator,
+        recommendationId: null,
+        manualFallbackReason: 'The record is sufficient without an agent recommendation.',
+        rationale: 'All appealed restrictions require a single complete decision.',
+        decisions: [{ restrictionId: fixture.restrictionIds[0]!, action: 'reverse' }],
+      }),
+    ).rejects.toMatchObject({ status: 422 })
+    const aggregate = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
+    expect(aggregate?.restrictions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: fixture.restrictionIds[0], human_reviewed_at: null }),
+        expect.objectContaining({ id: fixture.restrictionIds[1], human_reviewed_at: null }),
       ]),
     )
   })

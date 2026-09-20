@@ -48,6 +48,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'copyright_notice_email_intake_notice_links',
   'copyright_notice_email_intake_parses',
   'copyright_notice_email_intake_recommendations',
+  'copyright_notice_email_intake_responses',
   'copyright_notice_email_intake_reviews',
   'copyright_notice_email_intakes',
   'copyright_notice_email_thread_references',

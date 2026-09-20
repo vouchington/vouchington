@@ -68,24 +68,6 @@ export async function reviewCopyrightAppeal(input: {
     `)
     assert(rows[0], 422, 'Appeal recommendation does not belong to this appeal')
   }
-  const { rows: restrictionRows } = await transaction<{
-    id: string
-    human_reviewed_at: Date | null
-    lifted_at: Date | null
-  }>(sql`/* reviewCopyrightAppeal:restrictions */
-    SELECT restriction.id, restriction.human_reviewed_at, restriction.lifted_at
-    FROM copyright_restrictions restriction
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE restriction.id = ANY(${input.decisions.map(decision => decision.restrictionId)})
-      AND target.copyright_notice_id = ${appeal.copyright_notice_id}
-      AND target.id = ANY(${appeal.target_ids})
-    FOR UPDATE OF restriction
-  `)
-  assert(
-    restrictionRows.length === input.decisions.length,
-    422,
-    'Appeal decisions must cover only restrictions in the appeal',
-  )
   const { rows: existingRows } = await transaction<{
     id: string
     copyright_restriction_id: string
@@ -114,7 +96,27 @@ export async function reviewCopyrightAppeal(input: {
     await transaction.commit()
     return { noticeId: appeal.copyright_notice_id, reviewIds: existingRows.map(row => row.id) }
   }
-
+  const { rows: restrictionRows } = await transaction<{
+    id: string
+    human_reviewed_at: Date | null
+    lifted_at: Date | null
+  }>(sql`/* reviewCopyrightAppeal:restrictions */
+    SELECT restriction.id, restriction.human_reviewed_at, restriction.lifted_at
+    FROM copyright_restrictions restriction
+    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+    WHERE target.copyright_notice_id = ${appeal.copyright_notice_id}
+      AND target.id = ANY(${appeal.target_ids})
+      AND restriction.lifted_at IS NULL
+    FOR UPDATE OF restriction
+  `)
+  assert(
+    restrictionRows.length === input.decisions.length &&
+      restrictionRows.every(row =>
+        input.decisions.some(decision => decision.restrictionId === row.id),
+      ),
+    422,
+    'Appeal decisions must exactly cover every active restriction in the appeal',
+  )
   const reviewedAt = new Date()
   const reviewIds: string[] = []
   const restrictionsById = new Map(restrictionRows.map(row => [row.id, row]))
