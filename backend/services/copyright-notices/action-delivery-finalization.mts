@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
 import { invalidatePostStrict } from '@services/entity-cache/invalidate-strict'
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
@@ -76,40 +77,72 @@ export async function finalizeCopyrightActionAfterDelivery(
     return false
   }
   if (action === 'restore' && (await restoreIsBlocked(legal, now, transaction))) {
-    await dependencies.publishImagePlacementDeliveryRecord(
-      {
-        placementId: current.placementId,
-        revision: current.revision,
-        imageId: current.imageId,
-        state: 'withheld',
-      },
-      { query: transaction },
-    )
-    await completeCopyrightActionIntentInTransaction({
-      intentId,
-      outcome: 'blocked',
-      completedAt: now,
-      failureMessage: 'A current copyright blocker was admitted before restore delivery completed.',
-      query: transaction,
-    })
-    await transaction.commit()
+    await runSequentially([
+      () =>
+        dependencies.publishImagePlacementDeliveryRecord(
+          {
+            placementId: current.placementId,
+            revision: current.revision,
+            imageId: current.imageId,
+            state: 'withheld',
+          },
+          { query: transaction },
+        ),
+      () =>
+        completeCopyrightActionIntentInTransaction({
+          intentId,
+          outcome: 'blocked',
+          completedAt: now,
+          failureMessage:
+            'A current copyright blocker was admitted before restore delivery completed.',
+          query: transaction,
+        }),
+      () => transaction.commit(),
+    ])
     return false
   }
-  await completeCopyrightActionIntentInTransaction({
+  await completeCopyrightActionAndInvalidate({
     intentId,
-    outcome: 'completed',
-    completedAt: now,
-    query: transaction,
-  })
-  await insertCopyrightActionLifecycleEvent(
+    action,
+    now,
     legal,
-    intentId,
-    action === 'withhold' ? 'placement_withheld' : 'placement_restored',
     transaction,
-  )
-  await invalidateCopyrightPlacementCache(legal.placement_key, transaction, dependencies)
+    dependencies,
+  })
   await transaction.commit()
   return true
+}
+
+async function completeCopyrightActionAndInvalidate(input: {
+  intentId: string
+  action: 'withhold' | 'restore'
+  now: Date
+  legal: Parameters<typeof hasCopyrightActionBlocker>[0]
+  transaction: Awaited<ReturnType<typeof beginTransaction>>
+  dependencies: CopyrightActionDeliveryDependencies
+}): Promise<void> {
+  await runSequentially([
+    () =>
+      completeCopyrightActionIntentInTransaction({
+        intentId: input.intentId,
+        outcome: 'completed',
+        completedAt: input.now,
+        query: input.transaction,
+      }),
+    () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        input.action === 'withhold' ? 'placement_withheld' : 'placement_restored',
+        input.transaction,
+      ),
+    () =>
+      invalidateCopyrightPlacementCache(
+        input.legal.placement_key,
+        input.transaction,
+        input.dependencies,
+      ),
+  ])
 }
 
 export async function resolveCopyrightDeadlineIfComplete(

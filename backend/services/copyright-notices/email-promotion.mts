@@ -26,9 +26,16 @@ export async function promoteCopyrightEmailIntake(
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assertStatutoryEmailFields(input)
   const admitted = await admitCopyrightEmailIntake(input)
+  await assessAndEnforceCopyrightEmailIntake(input, admitted)
+  return admitted
+}
+
+async function assessAndEnforceCopyrightEmailIntake(
+  input: PromoteCopyrightEmailIntakeInput,
+  admitted: { noticeId: string; submissionId: string },
+): Promise<void> {
   const assessment = await getOrCreateEmailAssessment(input.currentUser, admitted)
   await processCopyrightEnforcementRequest(assessment.id)
-  return admitted
 }
 
 async function admitCopyrightEmailIntake(

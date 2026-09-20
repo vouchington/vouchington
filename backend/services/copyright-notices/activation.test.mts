@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/images/delivery-registry'
+import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { assertCopyrightIntakeEnabled } from './activation.mts'
 import { getCopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 

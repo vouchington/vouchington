@@ -8,8 +8,9 @@ import { enqueueOnPostDeleted } from '@queues/entity-listeners/enqueues'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
 import { retirePostImagePlacements } from './image-placements.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
-import { compensateFailedImageDeliveryMutation } from '../images/delivery-registry.mts'
+import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import onError from '@modules/on-error'
+import { runSequentially } from '@modules/utils/run-sequentially'
 
 /**
  * Three-state result for agent-driven content removal:
@@ -69,38 +70,48 @@ async function removeCommentInTransaction(input: {
   query: TransactionQuery
 }): Promise<Exclude<AgentRemovalResult, 'not-applicable'>> {
   const { commentId, communityId, moderationSystemUserId, query } = input
-  await preparePostImageDeliveryMutation(query, { postId: commentId, imageIds: [] })
-  await lockPostPublication(query, commentId)
-  const { rowCount } = await write(
-    sql`/* removeCommentAsAgent */
+  let rowCount: number | null = null
+  await runSequentially([
+    () => preparePostImageDeliveryMutation(query, { postId: commentId, imageIds: [] }),
+    () => lockPostPublication(query, commentId),
+    async () => {
+      const result = await write(
+        sql`/* removeCommentAsAgent */
       UPDATE posts
       SET deleted_at = CURRENT_TIMESTAMP,
           deleted_by_id = ${moderationSystemUserId}
       WHERE id = ${commentId}::uuid
         AND post_type = 'comment'
         AND deleted_at IS NULL`,
-    { query },
-  )
+        { query },
+      )
+      rowCount = result.rowCount
+    },
+  ])
   if ((rowCount ?? 0) === 0) return 'already-removed'
-  await retirePostImagePlacements(commentId, query)
-  // ast-grep-ignore: no-three-sequential-awaits -- removal revision, publication capture, and moderator audit must commit in order
-  await createPostRevision(
-    commentId,
-    'delete',
-    { deleted_at: { before: null, after: 'now' } },
-    moderationSystemUserId,
-    { query },
-  )
-  await recordPostPublicationChange(query, {
-    scope: { type: 'post', postId: commentId },
-    reason: 'post_deleted',
-    impactedPostIds: [commentId],
-    footprint: { priorCommunityId: communityId ?? undefined },
-  })
-  await recordModeratorAction(
-    moderationSystemUserId,
-    { actionType: 'remove', communityId, postId: commentId },
-    { query },
-  )
+  await runSequentially([
+    () => retirePostImagePlacements(commentId, query),
+    () =>
+      createPostRevision(
+        commentId,
+        'delete',
+        { deleted_at: { before: null, after: 'now' } },
+        moderationSystemUserId,
+        { query },
+      ),
+    () =>
+      recordPostPublicationChange(query, {
+        scope: { type: 'post', postId: commentId },
+        reason: 'post_deleted',
+        impactedPostIds: [commentId],
+        footprint: { priorCommunityId: communityId ?? undefined },
+      }),
+    () =>
+      recordModeratorAction(
+        moderationSystemUserId,
+        { actionType: 'remove', communityId, postId: commentId },
+        { query },
+      ),
+  ])
   return 'removed'
 }

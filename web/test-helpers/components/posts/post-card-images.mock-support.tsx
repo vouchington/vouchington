@@ -1,8 +1,9 @@
 import { vi } from 'vitest'
 
+import { Button } from '@/components/ui/button'
 import type { Post, PostElection } from '@/types/posts'
 import type { User } from '@/types/user'
-import { PostCard } from '../post-card'
+import { PostCard } from '@/components/posts/post-card'
 
 let mockCurrentUser: User | null = null
 const mockUseEmblaCarousel = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -12,11 +13,11 @@ vi.mock(import('next/dynamic'), () => ({
 }))
 
 vi.mock(import('@/components/admin/admin-moderation-button'), () => ({
-  default: () => <div data-testid='admin-moderation-button' />,
+  default: () => <div />,
 }))
 
 vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
-  EntityBookmarkButton: () => <button type='button'>Save</button>,
+  EntityBookmarkButton: () => <Button type='button'>Save</Button>,
 }))
 
 vi.mock(import('@/components/shared/post-image'), () => {
@@ -57,18 +58,11 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/follower-share-actions'), () => ({
-  FollowerShareActions: () => <div data-testid='follower-share-actions' />,
+  FollowerShareActions: () => <div />,
 }))
 
 vi.mock(import('@/components/shared/report-menu-item'), () => ({
-  ReportMenuKebab: ({ 'data-pw': dataPw }: { 'data-pw'?: string }) => (
-    <button
-      type='button'
-      data-pw={dataPw}
-    >
-      Report
-    </button>
-  ),
+  ReportMenuKebab: () => <Button type='button'>Report</Button>,
 }))
 
 vi.mock(
@@ -96,12 +90,7 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/shared-byline'), () => ({
-  SharedByline: ({ className }: { className?: string }) => (
-    <div
-      data-testid='shared-byline'
-      data-class={className ?? ''}
-    />
-  ),
+  SharedByline: ({ className }: { className?: string }) => <div data-class={className ?? ''} />,
 }))
 
 export const mockPost: Post = {

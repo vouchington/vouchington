@@ -12,7 +12,7 @@ import {
   getLegacyImageDeliveryKey,
   prepublishImagePlacementDenials,
   publishLegacyImageDeliveryRecord,
-} from './delivery-registry.mts'
+} from '@services/media-delivery-safety'
 
 describe('surface delivery provider boundary', () => {
   afterEach(() => {

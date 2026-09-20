@@ -54,8 +54,7 @@ export async function rejectCopyrightEmailIntake(input: {
   `)
   const intake = rows[0]
   assert(intake, 404, 'Copyright email intake not found')
-  await assertNotUnresolvedThreadReply(transaction, input.intakeId)
-  await assertNoThreadCorrespondenceDecision(transaction, input.intakeId)
+  await assertNoInitialIntakeThreadBarrier(transaction, input.intakeId)
   await assertRecommendationScope(transaction, input.recommendationId, input.intakeId)
   const { rows: decisions } = await transaction<{ accepted: boolean }>(
     sql`/* rejectCopyrightEmailIntake:existing */
@@ -96,6 +95,14 @@ export async function rejectCopyrightEmailIntake(input: {
   }
   await transaction.commit()
   return { responseId }
+}
+
+async function assertNoInitialIntakeThreadBarrier(
+  transaction: TransactionQuery,
+  intakeId: string,
+): Promise<void> {
+  await assertNotUnresolvedThreadReply(transaction, intakeId)
+  await assertNoThreadCorrespondenceDecision(transaction, intakeId)
 }
 
 async function assertNotUnresolvedThreadReply(

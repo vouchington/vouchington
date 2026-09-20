@@ -5,7 +5,7 @@ import { read, write } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { recordImageAutoRemoval } from './image-auto-removal-audit.mts'
-import { prepublishImageDeliveryDenials } from '@services/images/delivery-registry'
+import { prepublishImageDeliveryDenials } from '@services/media-delivery-safety'
 
 export const IMAGE_QUARANTINE_RECONCILIATION_BATCH_SIZE = 25
 

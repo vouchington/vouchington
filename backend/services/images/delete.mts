@@ -24,9 +24,9 @@ import {
 import { retireImageSurfacePlacementsForDeletedImage } from './surface-placements.mts'
 import {
   compensateFailedImageDeliveryMutation,
+  lockImageDeliveryMutation,
   prepublishImageDeliveryDenials,
-} from './delivery-registry.mts'
-import { lockImageDeliveryMutation } from './delivery-lock.mts'
+} from '@services/media-delivery-safety'
 import { cleanupDeletedImageStorage } from './delete-storage-cleanup.mts'
 export { deleteImageById } from './delete-entry.mts'
 

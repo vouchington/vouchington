@@ -4,6 +4,11 @@ This service provides fail-closed publication helpers for media routes whose own
 about to change or disappear. Callers publish the current immutable placement tuple as withheld
 before mutating its owning user, topic, community, or profile-link row.
 
+It owns the shared media-delivery registry, placement lock, staging, publication, replay, and
+recovery implementation. Image and post services both depend on this lower-level boundary, so a
+deployed workspace package never reaches across into a sibling service or creates an
+images-to-posts package cycle.
+
 The helper stages a generation-checked delivery-registry record in the caller's PostgreSQL
 transaction, publishes the denial to the edge registry, invalidates the exact CloudFront route,
 and marks only that generation complete. Provider failures reject the caller transaction. A later

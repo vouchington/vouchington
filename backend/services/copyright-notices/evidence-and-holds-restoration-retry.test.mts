@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/images/delivery-registry'
+import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,

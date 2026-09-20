@@ -8,7 +8,7 @@ import { enqueueDeliverCopyrightNotice } from '@queues/notifications/enqueues'
 import { enqueueCreateImageEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues'
 import onError from '@modules/on-error'
 import { findCopyrightImageSimilarityCandidates } from '@services/bedrock-embeddings-batch/image-similarity'
-import { replayFailedMediaDeliveryRegistryRecords } from '@services/images/delivery-registry'
+import { replayFailedMediaDeliveryRegistryRecords } from '@services/media-delivery-safety'
 import {
   admitCopyrightEmailCorrespondence,
   rejectCopyrightEmailCorrespondence,
@@ -36,6 +36,14 @@ import {
 import { assertNotSuspended } from '@services/users'
 import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
+import {
+  parseCopyrightCorrespondenceSubmission,
+  parseCopyrightManualFallbackReason,
+  parseCopyrightRecommendationId,
+  parseCopyrightSimilarityCandidateLimit,
+  parseNullableCopyrightDate,
+  parseNullableCopyrightEnum,
+} from '@services/copyright-notices/moderator-http-input'
 
 app.route('/api/v1/copyright-email-intakes/review-queue').get(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
@@ -89,7 +97,7 @@ app
     assertNotSuspended(currentUser)
     const noticeId = validateUUIDParam(ctx, 'id')
     const targetId = validateUUIDParam(ctx, 'targetId')
-    const limit = parseSimilarityCandidateLimit(ctx.query.limit)
+    const limit = parseCopyrightSimilarityCandidateLimit(ctx.query.limit)
     const result = await findCopyrightImageSimilarityCandidates({ noticeId, targetId, limit })
     ctx.assert(result.sourceImageId, 404, 'Copyright notice target not found')
     if (result.availability === 'unavailable') void enqueueMissingSourceImageEmbedding()
@@ -190,7 +198,7 @@ app.route('/api/v1/copyright-media-delivery/replays').post(async (ctx: Context) 
 })
 
 app.route('/api/v1/copyright-email-intakes/:id/approvals').post(async (ctx: Context) => {
-  const { currentUser, intakeId, body } = await parseReviewRequest(
+  const { currentUser, intakeId, body } = await parseCopyrightReviewRequest(
     ctx,
     'POST:/api/v1/copyright-email-intakes/:id/approvals',
   )
@@ -201,8 +209,8 @@ app.route('/api/v1/copyright-email-intakes/:id/approvals').post(async (ctx: Cont
   const promoted = await promoteCopyrightEmailIntake({
     currentUser,
     intakeId,
-    recommendationId: parseRecommendationId(ctx, body),
-    manualFallbackReason: parseManualFallbackReason(ctx, body),
+    recommendationId: parseCopyrightRecommendationId(ctx, body),
+    manualFallbackReason: parseCopyrightManualFallbackReason(ctx, body),
     jurisdiction: input.jurisdiction,
     claimantDisplayName: input.claimantDisplayName,
     claimantContact: input.claimantContact,
@@ -222,7 +230,7 @@ app.route('/api/v1/copyright-email-intakes/:id/approvals').post(async (ctx: Cont
 })
 
 app.route('/api/v1/copyright-form-intakes/:id/reviews').post(async (ctx: Context) => {
-  const { currentUser, intakeId, body } = await parseReviewRequest(
+  const { currentUser, intakeId, body } = await parseCopyrightReviewRequest(
     ctx,
     'POST:/api/v1/copyright-form-intakes/:id/reviews',
   )
@@ -241,7 +249,7 @@ app.route('/api/v1/copyright-form-intakes/:id/reviews').post(async (ctx: Context
 })
 
 app.route('/api/v1/copyright-email-intakes/:id/rejections').post(async (ctx: Context) => {
-  const { currentUser, intakeId, body } = await parseReviewRequest(
+  const { currentUser, intakeId, body } = await parseCopyrightReviewRequest(
     ctx,
     'POST:/api/v1/copyright-email-intakes/:id/rejections',
   )
@@ -255,8 +263,8 @@ app.route('/api/v1/copyright-email-intakes/:id/rejections').post(async (ctx: Con
   const rejected = await rejectCopyrightEmailIntake({
     currentUser,
     intakeId,
-    recommendationId: parseRecommendationId(ctx, body),
-    manualFallbackReason: parseManualFallbackReason(ctx, body),
+    recommendationId: parseCopyrightRecommendationId(ctx, body),
+    manualFallbackReason: parseCopyrightManualFallbackReason(ctx, body),
     rationale: body.rationale as string,
     responseKind: body.response_kind as 'rejected' | 'needs_information' | undefined,
     responseMessage: typeof body.response_message === 'string' ? body.response_message : null,
@@ -270,7 +278,10 @@ app.route('/api/v1/copyright-submissions/:id/appeal-reviews').post(async (ctx: C
     currentUser,
     intakeId: submissionId,
     body,
-  } = await parseReviewRequest(ctx, 'POST:/api/v1/copyright-submissions/:id/appeal-reviews')
+  } = await parseCopyrightReviewRequest(
+    ctx,
+    'POST:/api/v1/copyright-submissions/:id/appeal-reviews',
+  )
   const rawDecisions = body.decisions
   ctx.assert(
     Array.isArray(rawDecisions) && rawDecisions.length > 0 && rawDecisions.length <= 20,
@@ -295,8 +306,8 @@ app.route('/api/v1/copyright-submissions/:id/appeal-reviews').post(async (ctx: C
       action: decision.action as 'confirm' | 'reverse',
     }
   })
-  const recommendationId = parseRecommendationId(ctx, body)
-  const manualFallbackReason = parseManualFallbackReason(ctx, body)
+  const recommendationId = parseCopyrightRecommendationId(ctx, body)
+  const manualFallbackReason = parseCopyrightManualFallbackReason(ctx, body)
   const result = await reviewCopyrightAppeal({
     submissionId,
     currentUser,
@@ -316,7 +327,10 @@ app.route('/api/v1/copyright-submissions/:id/counter-notice-reviews').post(async
     currentUser,
     intakeId: submissionId,
     body,
-  } = await parseReviewRequest(ctx, 'POST:/api/v1/copyright-submissions/:id/counter-notice-reviews')
+  } = await parseCopyrightReviewRequest(
+    ctx,
+    'POST:/api/v1/copyright-submissions/:id/counter-notice-reviews',
+  )
   ctx.assert(typeof body.accepted === 'boolean', 422, 'accepted must be a boolean')
   const result = await reviewCopyrightCounterNotice({
     submissionId,
@@ -336,21 +350,24 @@ app.route('/api/v1/copyright-submissions/:id/legal-hold-assessments').post(async
     currentUser,
     intakeId: submissionId,
     body,
-  } = await parseReviewRequest(ctx, 'POST:/api/v1/copyright-submissions/:id/legal-hold-assessments')
-  const proceedingKind = parseNullableEnum(
+  } = await parseCopyrightReviewRequest(
+    ctx,
+    'POST:/api/v1/copyright-submissions/:id/legal-hold-assessments',
+  )
+  const proceedingKind = parseNullableCopyrightEnum(
     ctx,
     body.proceeding_kind,
     ['federal_court', 'ccb'] as const,
     'proceeding_kind',
   )
-  const ccbClaimKind = parseNullableEnum(
+  const ccbClaimKind = parseNullableCopyrightEnum(
     ctx,
     body.ccb_claim_kind,
     ['claim', 'counterclaim'] as const,
     'ccb_claim_kind',
   )
-  const commencedAt = parseNullableDate(ctx, body.commenced_at, 'commenced_at')
-  const receivedByDesignatedAgentAt = parseNullableDate(
+  const commencedAt = parseNullableCopyrightDate(ctx, body.commenced_at, 'commenced_at')
+  const receivedByDesignatedAgentAt = parseNullableCopyrightDate(
     ctx,
     body.received_by_designated_agent_at,
     'received_by_designated_agent_at',
@@ -395,8 +412,11 @@ app.route('/api/v1/copyright-legal-hold-assessments/:id/resolutions').post(async
     currentUser,
     intakeId: assessmentId,
     body,
-  } = await parseReviewRequest(ctx, 'POST:/api/v1/copyright-legal-hold-assessments/:id/resolutions')
-  const resolutionKind = parseNullableEnum(
+  } = await parseCopyrightReviewRequest(
+    ctx,
+    'POST:/api/v1/copyright-legal-hold-assessments/:id/resolutions',
+  )
+  const resolutionKind = parseNullableCopyrightEnum(
     ctx,
     body.resolution_kind,
     ['dismissed', 'proceeding_ended', 'superseded'] as const,
@@ -415,7 +435,7 @@ app.route('/api/v1/copyright-legal-hold-assessments/:id/resolutions').post(async
 })
 
 app.route('/api/v1/copyright-email-intakes/:id/correspondence').post(async (ctx: Context) => {
-  const { currentUser, intakeId, body } = await parseReviewRequest(
+  const { currentUser, intakeId, body } = await parseCopyrightReviewRequest(
     ctx,
     'POST:/api/v1/copyright-email-intakes/:id/correspondence',
   )
@@ -439,10 +459,10 @@ app.route('/api/v1/copyright-email-intakes/:id/correspondence').post(async (ctx:
       body.kind === 'appeal' || body.kind === 'counter_notice'
         ? parseCopyrightTargetIds(body.target_ids)
         : [],
-    structuredSubmission: parseCorrespondenceSubmission(ctx, body),
+    structuredSubmission: parseCopyrightCorrespondenceSubmission(ctx, body),
     rationale: body.rationale as string,
-    recommendationId: parseRecommendationId(ctx, body),
-    manualFallbackReason: parseManualFallbackReason(ctx, body),
+    recommendationId: parseCopyrightRecommendationId(ctx, body),
+    manualFallbackReason: parseCopyrightManualFallbackReason(ctx, body),
   })
   ctx.setStatus(admitted.isDuplicate ? 200 : 201)
   ctx.json({
@@ -456,7 +476,7 @@ app.route('/api/v1/copyright-email-intakes/:id/correspondence').post(async (ctx:
 app
   .route('/api/v1/copyright-email-intakes/:id/correspondence-rejections')
   .post(async (ctx: Context) => {
-    const { currentUser, intakeId, body } = await parseReviewRequest(
+    const { currentUser, intakeId, body } = await parseCopyrightReviewRequest(
       ctx,
       'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections',
     )
@@ -477,8 +497,8 @@ app
       intakeId,
       kind: body.kind as (typeof kinds)[number],
       rationale: body.rationale as string,
-      recommendationId: parseRecommendationId(ctx, body),
-      manualFallbackReason: parseManualFallbackReason(ctx, body),
+      recommendationId: parseCopyrightRecommendationId(ctx, body),
+      manualFallbackReason: parseCopyrightManualFallbackReason(ctx, body),
     })
     ctx.setStatus(rejected.isDuplicate ? 200 : 201)
     ctx.json({
@@ -487,7 +507,7 @@ app
     })
   })
 
-async function parseReviewRequest(ctx: Context, routeId: string) {
+async function parseCopyrightReviewRequest(ctx: Context, routeId: string) {
   setPrivateNoStoreCacheHeaders(ctx)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await requireAuthAndRateLimit(
@@ -500,100 +520,6 @@ async function parseReviewRequest(ctx: Context, routeId: string) {
   const body = (await ctx.request.json('1mb')) as Record<string, unknown>
   ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
   return { currentUser, intakeId, body }
-}
-
-function parseRecommendationId(ctx: Context, body: Record<string, unknown>): string | null {
-  const value = body.recommendation_id
-  ctx.assert(
-    value === null || value === undefined || (typeof value === 'string' && isUUID(value)),
-    422,
-    'recommendation_id must be a UUID or null',
-  )
-  return (value as string | null | undefined) ?? null
-}
-
-function parseManualFallbackReason(ctx: Context, body: Record<string, unknown>): string | null {
-  const value = body.manual_fallback_reason
-  ctx.assert(
-    value === null || value === undefined || boundedString(value, 10_000),
-    422,
-    'manual_fallback_reason must be a bounded string or null',
-  )
-  return (value as string | null | undefined) ?? null
-}
-
-function parseCorrespondenceSubmission(ctx: Context, body: Record<string, unknown>) {
-  if (body.kind === 'appeal') {
-    ctx.assert(boundedString(body.appeal_reason, 10_000), 422, 'appeal_reason is required')
-    return {
-      reason: body.appeal_reason,
-      targetIds: parseCopyrightTargetIds(body.target_ids),
-      rationale: body.rationale as string,
-    }
-  }
-  if (body.kind === 'counter_notice') {
-    ctx.assert(boundedString(body.name, 200), 422, 'name is required')
-    ctx.assert(boundedString(body.address, 4096), 422, 'address is required')
-    ctx.assert(boundedString(body.telephone, 200), 422, 'telephone is required')
-    ctx.assert(
-      body.consent_to_federal_jurisdiction === true,
-      422,
-      'consent_to_federal_jurisdiction must be accepted',
-    )
-    ctx.assert(
-      body.consent_to_service_of_process === true,
-      422,
-      'consent_to_service_of_process must be accepted',
-    )
-    ctx.assert(
-      body.good_faith_misidentification_under_penalty_of_perjury === true,
-      422,
-      'good_faith_misidentification_under_penalty_of_perjury must be accepted',
-    )
-    ctx.assert(
-      boundedString(body.electronic_signature, 500),
-      422,
-      'electronic_signature is required',
-    )
-    return {
-      name: body.name,
-      address: body.address,
-      telephone: body.telephone,
-      consentToFederalJurisdiction: true,
-      consentToServiceOfProcess: true,
-      goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-      electronicSignature: body.electronic_signature,
-      targetIds: parseCopyrightTargetIds(body.target_ids),
-    }
-  }
-  ctx.assert(boundedString(body.submission_summary, 10_000), 422, 'submission_summary is required')
-  return { summary: body.submission_summary }
-}
-
-function parseSimilarityCandidateLimit(value: unknown): number | undefined {
-  if (value === undefined) return undefined
-  const limit = typeof value === 'string' ? Number(value) : Number.NaN
-  if (!Number.isInteger(limit) || limit < 1 || limit > 50) return undefined
-  return limit
-}
-
-function parseNullableDate(ctx: Context, value: unknown, field: string): Date | null {
-  if (value === null || value === undefined) return null
-  ctx.assert(typeof value === 'string', 422, `${field} must be an ISO date or null`)
-  const parsed = new Date(value)
-  ctx.assert(!Number.isNaN(parsed.getTime()), 422, `${field} must be an ISO date or null`)
-  return parsed
-}
-
-function parseNullableEnum<const T extends readonly string[]>(
-  ctx: Context,
-  value: unknown,
-  allowed: T,
-  field: string,
-): T[number] | null {
-  if (value === null || value === undefined) return null
-  ctx.assert(typeof value === 'string' && allowed.includes(value), 422, `${field} is invalid`)
-  return value as T[number]
 }
 
 async function enqueueMissingSourceImageEmbedding(): Promise<void> {

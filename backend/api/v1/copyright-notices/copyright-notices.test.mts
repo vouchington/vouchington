@@ -7,10 +7,10 @@ import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/ps
 import { addUserRole } from '@services/users/roles-permissions'
 import { createCopyrightFormIntake } from '@services/copyright-notices'
 import {
-  verifyCopyrightActionReplayRoute,
-  verifyMediaDeliveryReplayRoute,
-} from './replay-cases.mts'
-import { counterNoticeBody, createCopyrightFormFixture, createNotice } from './test-fixtures.mts'
+  counterNoticeBody,
+  createCopyrightFormFixture,
+  createNotice,
+} from '@services/copyright-notices/route-test-fixtures'
 
 describe('copyright notice routes', () => {
   beforeEach(() => {
@@ -289,12 +289,5 @@ describe('copyright notice routes', () => {
         manual_fallback_reason: 'No recommendation is available.',
       })
       .expect(404)
-  })
-
-  it('replays a failed action only for copyright-review staff and records one scoped audit event', async () => {
-    expect(await verifyCopyrightActionReplayRoute()).toBe(true)
-  })
-  it('replays failed media registry records only for copyright-review staff and records one audit event', async () => {
-    expect(await verifyMediaDeliveryReplayRoute()).toBe(true)
   })
 })

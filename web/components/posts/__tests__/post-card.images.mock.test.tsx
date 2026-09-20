@@ -1,14 +1,15 @@
 import { render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Button } from '@/components/ui/button'
 
 import {
   loadPostCard,
   postWithImages,
   setUpPostCardImagesTest,
-} from './post-card.images.mock-support'
+} from '@/test-helpers/components/posts/post-card-images.mock-support'
 
 vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
-  EntityBookmarkButton: () => <button type='button'>Save</button>,
+  EntityBookmarkButton: () => <Button type='button'>Save</Button>,
 }))
 
 describe('PostCard image loading and placement', () => {

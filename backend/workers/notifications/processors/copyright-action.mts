@@ -37,9 +37,17 @@ export async function processReconcileCopyrightActionIntents(
     createDueStatutoryCopyrightRestoreIntents
   const reconcileEnforcement =
     dependencies.reconcileCopyrightEnforcementRequests ?? reconcileCopyrightEnforcementRequests
-  await reconcileEnforcement(100)
-  await createDue(evaluatedAt)
+  await reconcileCopyrightActionPrerequisites(reconcileEnforcement, createDue, evaluatedAt)
   const intentIds = await list(100, evaluatedAt)
   await Promise.all(intentIds.map(intentId => enqueue(intentId)))
   return { enqueued: intentIds.length }
+}
+
+async function reconcileCopyrightActionPrerequisites(
+  reconcileEnforcement: CopyrightActionProcessorDependencies['reconcileCopyrightEnforcementRequests'],
+  createDue: CopyrightActionProcessorDependencies['createDueStatutoryCopyrightRestoreIntents'],
+  evaluatedAt: Date,
+): Promise<void> {
+  await reconcileEnforcement(100)
+  await createDue(evaluatedAt)
 }

@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { runSequentially } from '@modules/utils/run-sequentially'
 
 export type PostImagePlacement = {
   placement_id: string
@@ -55,7 +56,9 @@ export async function syncPostImagePlacements(
       AND NOT (image_placement.image_id = ANY(${distinctImageIds}::uuid[]))
   `)
   if (distinctImageIds.length === 0) return
-  await query(sql`/* syncPostImagePlacements:reactivateExisting */
+  await runSequentially([
+    () =>
+      query(sql`/* syncPostImagePlacements:reactivateExisting */
     UPDATE media_placements placement
     SET retired_at = NULL,
         retirement_reason = NULL,
@@ -65,8 +68,9 @@ export async function syncPostImagePlacements(
       AND image_placement.post_id = ${postId}
       AND image_placement.image_id = ANY(${distinctImageIds}::uuid[])
       AND placement.retired_at IS NOT NULL
-  `)
-  await query(sql`/* syncPostImagePlacements:createMissing */
+    `),
+    () =>
+      query(sql`/* syncPostImagePlacements:createMissing */
     WITH missing_bindings AS (
       SELECT uuidv7() AS placement_id, image_id
       FROM UNNEST(${distinctImageIds}::uuid[]) AS requested(image_id)
@@ -82,8 +86,9 @@ export async function syncPostImagePlacements(
     )
     INSERT INTO image_placements (placement_id, post_id, image_id)
     SELECT placement_id, ${postId}, image_id FROM missing_bindings
-  `)
-  await query(sql`/* syncPostImagePlacements:stageDelivery */
+    `),
+    () =>
+      query(sql`/* syncPostImagePlacements:stageDelivery */
     INSERT INTO media_delivery_registry_records (
       delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state
     )
@@ -99,5 +104,6 @@ export async function syncPostImagePlacements(
       AND image.openai_omni_moderation_results IS NOT NULL
       AND image.openai_omni_moderation_created_at IS NOT NULL
     ON CONFLICT (delivery_key) DO NOTHING
-  `)
+    `),
+  ])
 }

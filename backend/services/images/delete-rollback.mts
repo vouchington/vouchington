@@ -15,7 +15,8 @@ import sql from 'sql-template-strings'
 import type { ImageDeleteResult } from './delete-rollback-types.mts'
 import { deleteImageDeletionPostRevision } from './delete-revisions.mts'
 import { restoreImagePlacementsAfterImageDeletion } from './placements.mts'
-import { lockImageDeliveryMutation } from './delivery-lock.mts'
+import { lockImageDeliveryMutation } from '@services/media-delivery-safety'
+import { runSequentially } from '@modules/utils/run-sequentially'
 
 type CompletedImageDeleteResult = Extract<ImageDeleteResult, { deletedThisImage: true }>
 
@@ -25,11 +26,14 @@ export async function rollbackImageDeletion(
 ): Promise<void> {
   const imageRollback = deleteResult.imageRollback
   await using query = await beginTransaction()
-  await lockImageDeliveryMutation(query, {
-    imageIds: [imageId],
-    postIds: deleteResult.affectedPostIds,
-  })
-  await query(sql`/* rollbackImageDeletion */
+  await runSequentially([
+    () =>
+      lockImageDeliveryMutation(query, {
+        imageIds: [imageId],
+        postIds: deleteResult.affectedPostIds,
+      }),
+    () =>
+      query(sql`/* rollbackImageDeletion */
       UPDATE images
       SET deleted_at = NULL,
           openai_omni_moderation_results = ${
@@ -40,8 +44,9 @@ export async function rollbackImageDeletion(
           openai_omni_moderation_flagged = ${imageRollback.openai_omni_moderation_flagged},
           openai_omni_moderation_created_at = ${imageRollback.openai_omni_moderation_created_at}
       WHERE id = ${imageId}
-    `)
-  await restoreImagePlacementsAfterImageDeletion(deleteResult.retiredPlacements, query)
+      `),
+    () => restoreImagePlacementsAfterImageDeletion(deleteResult.retiredPlacements, query),
+  ])
   await lockPostPublicationPostScopes(query, deleteResult.affectedPostIds)
   for (const rollback of deleteResult.postRollbacks) {
     if (!deleteResult.affectedPostIds.includes(rollback.post_id)) continue

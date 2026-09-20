@@ -1,6 +1,6 @@
 import { enqueueOnPostUpdated } from '@queues/entity-listeners/enqueues'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
-import { compensateFailedImageDeliveryMutation } from '../images/delivery-registry.mts'
+import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import { rollbackPostImages, type PostImageRollback } from './images-rollback.mts'
 
 export async function completePostImageUpdate(input: {

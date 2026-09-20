@@ -30,6 +30,7 @@
     "@modules/utils": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/images": "workspace:^",
+    "@services/media-delivery-safety": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/post-revisions": "workspace:^",

@@ -24,7 +24,7 @@ import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { assertActivePostAuthor } from './create/active-author.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
-import { compensateFailedImageDeliveryMutation } from '../images/delivery-registry.mts'
+import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import { finalizePreparedPost } from './create/finalize.mts'
 export { createPost } from './create-post.mts'
 export const preparePostWithCommunityReviews = async (

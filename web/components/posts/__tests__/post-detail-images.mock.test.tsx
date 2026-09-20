@@ -5,7 +5,7 @@ import {
   loadPostDetail,
   postDetailWithImages,
   setUpPostDetailImagesTest,
-} from './post-detail-images.mock-support'
+} from '@/test-helpers/components/posts/post-detail-images.mock-support'
 
 vi.mock(
   import('@/components/shared/entity-bookmark-button'),

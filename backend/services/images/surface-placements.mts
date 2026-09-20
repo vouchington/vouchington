@@ -6,7 +6,7 @@ import {
   publishImagePlacementDeliveryRecord,
   publishLegacyImageDeliveryRecord,
   stageImagePlacementDeliveryRecord,
-} from './delivery-registry.mts'
+} from '@services/media-delivery-safety'
 
 export type { ImagePlacementTuple } from '@voucha/types/entities/user'
 

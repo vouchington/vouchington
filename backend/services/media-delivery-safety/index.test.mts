@@ -1,13 +1,12 @@
-import { beginTransaction } from '@data-stores/psql'
 import * as mediaDeliveryRegistryProvider from '@modules/aws/media-delivery-registry'
 import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
   insertTestImage,
+  prepublishTestImageSurfaceDenial,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { prepublishImageSurfaceDenial } from './index.mts'
 
 describe('media delivery surface safety', () => {
   afterEach(() => {
@@ -32,12 +31,7 @@ describe('media delivery surface safety', () => {
       .spyOn(mediaDeliveryRegistryProvider, 'invalidateMediaDeliveryPath')
       .mockResolvedValue({ $metadata: {} })
 
-    await using transaction = await beginTransaction()
-    await prepublishImageSurfaceDenial(
-      { surfaceKind: 'user-profile-image', userId: user.id },
-      transaction,
-    )
-    await transaction.commit()
+    await prepublishTestImageSurfaceDenial({ surfaceKind: 'user-profile-image', userId: user.id })
 
     const deliveryKey = `image-placement:${placement.placement_id}:${placement.placement_revision}:${imageId}`
     expect(put).toHaveBeenCalledWith({

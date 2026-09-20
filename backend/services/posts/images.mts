@@ -7,17 +7,15 @@ import assert from 'http-assert'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { createPostRevision } from '@services/post-revisions'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
-import {
-  getLockedPostImagePublicationState,
-  resetPostImageClearance,
-} from './image-publication-state.mts'
+import { recordPostPublicationChange } from '@services/post-publication'
+import { resetPostImageClearance } from './image-publication-state.mts'
 import { syncPostImagePlacements, type PostImagePlacement } from './image-placements.mts'
-import { preparePostImageDeliveryMutation } from './media-delivery.mts'
-import { compensateFailedImageDeliveryMutation } from '../images/delivery-registry.mts'
+import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import onError from '@modules/on-error'
 import { assertPostImagesCanBeUpdated } from './images-update-authorization.mts'
 import { completePostImageUpdate } from './complete-post-image-update.mts'
+import { runSequentially } from '@modules/utils/run-sequentially'
+import { prepareLockedPostImageUpdate } from './prepare-locked-image-update.mts'
 export { getPostImages } from './post-image-read.mts'
 
 export type PostImageInput = {
@@ -51,13 +49,11 @@ export async function setPostImages(
         assert(imageRows.length === imageIds.length, 400, 'Image not found or not complete')
       }
       deliveryPrepared = true
-      await preparePostImageDeliveryMutation(query, {
-        postId: post.id,
-        imageIds: images.map(image => image.image_id),
-        retainImageIds: images.map(image => image.image_id),
-      })
-      await lockPostPublication(query, post.id)
-      const postState = await getLockedPostImagePublicationState(query, post.id)
+      const postState = await prepareLockedPostImageUpdate(
+        query,
+        post.id,
+        images.map(image => image.image_id),
+      )
       const {
         title,
         markdown,
@@ -101,24 +97,29 @@ export async function setPostImages(
         ) AS t(image_id, order_index, caption)
       `)
       }
-      await syncPostImagePlacements(
-        post.id,
-        images.map(image => image.image_id),
-        { query },
-      )
-
-      await query(sql`/* setPostImages */
+      let currentLatestClearanceChangeId: string | null = null
+      await runSequentially([
+        () =>
+          syncPostImagePlacements(
+            post.id,
+            images.map(image => image.image_id),
+            { query },
+          ),
+        () =>
+          query(sql`/* setPostImages */
       UPDATE posts
       SET llm_moderation_content_sha256 = ${moderationSha},
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${post.id}
-    `)
-
-      const currentLatestClearanceChangeId = await resetPostImageClearance(
-        query,
-        post.id,
-        currentUser.id,
-      )
+        `),
+        async () => {
+          currentLatestClearanceChangeId = await resetPostImageClearance(
+            query,
+            post.id,
+            currentUser.id,
+          )
+        },
+      ])
 
       const { rows } = await query<PostImage>(sql`/* setPostImages */
       SELECT post_image.image_id, post_image.order_index, post_image.caption,

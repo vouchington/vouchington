@@ -8,10 +8,13 @@ import {
   type ClearanceStatus,
 } from '@services/post-clearance'
 import { syncPostImagePlacements } from './image-placements.mts'
-import { lockImageDeliveryMutation } from '../images/delivery-lock.mts'
-import { compensateFailedImageDeliveryMutation } from '../images/delivery-registry.mts'
+import {
+  compensateFailedImageDeliveryMutation,
+  lockImageDeliveryMutation,
+} from '@services/media-delivery-safety'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import type { PostImageRollback } from './images-rollback-types.mts'
+import { runSequentially } from '@modules/utils/run-sequentially'
 
 export type { PostImageRollback } from './images-rollback-types.mts'
 
@@ -102,22 +105,27 @@ export async function rollbackPostImages(
         ) AS t(image_id, order_index, caption)
       `)
     }
-    await syncPostImagePlacements(
-      postId,
-      rollback.images.map(image => image.image_id),
-      { query },
-    )
-    await query(sql`/* rollbackPostImages */
+    await runSequentially([
+      () =>
+        syncPostImagePlacements(
+          postId,
+          rollback.images.map(image => image.image_id),
+          { query },
+        ),
+      () =>
+        query(sql`/* rollbackPostImages */
       UPDATE posts
       SET llm_moderation_content_sha256 = ${rollback.llmModerationContentSha256},
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${postId}
-    `)
-    await query(sql`/* rollbackPostImages */
+      `),
+      () =>
+        query(sql`/* rollbackPostImages */
       DELETE FROM post_revisions
       WHERE id = ${rollback.revisionId}
         AND post_id = ${postId}
-    `)
+      `),
+    ])
     if (rollback.currentLatestClearanceChangeId !== rollback.latestClearanceChangeId) {
       if (rollback.currentLatestClearanceChangeId === null) {
         throw new Error(`Post image rollback is missing the compensated change for post ${postId}`)

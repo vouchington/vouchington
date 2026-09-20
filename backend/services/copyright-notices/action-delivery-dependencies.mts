@@ -5,7 +5,7 @@ import {
   withholdImagePlacementForCopyright,
 } from '@services/images/placements'
 import { clearUnavailableImagePlacementCopyrightWithholding } from '@services/images/placement-copyright-resolution'
-import { publishImagePlacementDeliveryRecord } from '@services/images/delivery-registry'
+import { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { assertMediaDeliveryLegalEnforcementEnabled } from '@modules/aws'
 
 async function publishCopyrightLegalImagePlacementDeliveryRecord(

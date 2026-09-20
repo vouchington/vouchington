@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import { resolveCopyrightDeadlineIfComplete } from './action-delivery-finalization.mts'
@@ -16,35 +17,30 @@ export async function completeUnavailableRestore(input: {
   query: Awaited<ReturnType<typeof beginTransaction>>
   dependencies: CopyrightActionDeliveryDependencies
 }): Promise<void> {
-  await input.dependencies.clearUnavailableImagePlacementCopyrightWithholding(
-    input.legal.placement_key,
-    {
-      query: input.query,
-    },
-  )
-  await liftCopyrightRestrictionInTransaction(
-    input.legal.copyright_restriction_id,
-    input.now,
-    input.query,
-  )
-  await resolveCopyrightDeadlineIfComplete(
-    input.legal.copyright_notice_deadline_id,
-    input.now,
-    input.query,
-  )
-  await completeCopyrightActionIntentInTransaction({
-    intentId: input.intentId,
-    outcome: 'completed',
-    completedAt: input.now,
-    failureMessage: 'Restoration resolved without delivery because the placement is unavailable.',
-    query: input.query,
-  })
-  await insertCopyrightActionLifecycleEvent(
-    input.legal,
-    input.intentId,
-    'restoration_unavailable',
-    input.query,
-  )
+  await runSequentially([
+    () =>
+      input.dependencies.clearUnavailableImagePlacementCopyrightWithholding(
+        input.legal.placement_key,
+        { query: input.query },
+      ),
+    () => liftCopyrightRestrictionAndResolveDeadline(input),
+    () =>
+      completeCopyrightActionIntentInTransaction({
+        intentId: input.intentId,
+        outcome: 'completed',
+        completedAt: input.now,
+        failureMessage:
+          'Restoration resolved without delivery because the placement is unavailable.',
+        query: input.query,
+      }),
+    () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        'restoration_unavailable',
+        input.query,
+      ),
+  ])
 }
 
 export async function completeRestoreRetainingPlacement(input: {
@@ -66,34 +62,43 @@ export async function completeRestoreRetainingPlacement(input: {
     ) AS blocked
   `)
   if (!rows[0]?.blocked) return false
-  await liftCopyrightRestrictionInTransaction(
-    input.legal.copyright_restriction_id,
-    input.now,
-    input.query,
-  )
-  await resolveCopyrightDeadlineIfComplete(
-    input.legal.copyright_notice_deadline_id,
-    input.now,
-    input.query,
-  )
-  await completeCopyrightActionIntentInTransaction({
-    intentId: input.intentId,
-    outcome: 'completed',
-    completedAt: input.now,
-    query: input.query,
-  })
-  await insertCopyrightActionLifecycleEvent(
-    input.legal,
-    input.intentId,
-    'restriction_lifted_placement_retained',
-    input.query,
-  )
+  await runSequentially([
+    () => liftCopyrightRestrictionAndResolveDeadline(input),
+    () =>
+      completeCopyrightActionIntentInTransaction({
+        intentId: input.intentId,
+        outcome: 'completed',
+        completedAt: input.now,
+        query: input.query,
+      }),
+    () =>
+      insertCopyrightActionLifecycleEvent(
+        input.legal,
+        input.intentId,
+        'restriction_lifted_placement_retained',
+        input.query,
+      ),
+  ])
   return true
 }
 
 export async function authorizeRestoreBeforeDelivery(input: {
   legal: LockedCopyrightActionDelivery
   intentId: string
+  now: Date
+  query: Awaited<ReturnType<typeof beginTransaction>>
+}): Promise<void> {
+  await liftCopyrightRestrictionAndResolveDeadline(input)
+  await insertCopyrightActionLifecycleEvent(
+    input.legal,
+    input.intentId,
+    'restoration_authorized_pending_delivery',
+    input.query,
+  )
+}
+
+async function liftCopyrightRestrictionAndResolveDeadline(input: {
+  legal: LockedCopyrightActionDelivery
   now: Date
   query: Awaited<ReturnType<typeof beginTransaction>>
 }): Promise<void> {
@@ -105,12 +110,6 @@ export async function authorizeRestoreBeforeDelivery(input: {
   await resolveCopyrightDeadlineIfComplete(
     input.legal.copyright_notice_deadline_id,
     input.now,
-    input.query,
-  )
-  await insertCopyrightActionLifecycleEvent(
-    input.legal,
-    input.intentId,
-    'restoration_authorized_pending_delivery',
     input.query,
   )
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/images/delivery-registry'
+import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   acceptCopyrightNoticeAndImposeRestriction,

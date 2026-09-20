@@ -20,7 +20,7 @@
     "backend/services/post-publication/capture-author-deletion-batch.mts",
     "backend/services/communities/archive.mts",
     "backend/services/communities/delete.mts",
-    "backend/services/communities/update.mts",
+    "backend/services/communities/update-transaction.mts",
     "backend/services/communities/publications/add.mts",
     "backend/services/communities/publications/agent-moderate.mts",
     "backend/services/communities/publications/moderate.mts",
@@ -75,6 +75,10 @@
     {
       "path": "backend/services/communities/post-type-settings.mts",
       "reason": "future authoring policy does not change existing publication"
+    },
+    {
+      "path": "backend/services/communities/update-input.mts",
+      "reason": "builds the bounded update statement executed by the captured transactional writer"
     },
     {
       "path": "backend/services/images/delete.mts",

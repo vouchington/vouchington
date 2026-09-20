@@ -1,16 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import { createProfileLink, deleteProfileLink } from './profile-links.mts'
 import { updateProfileImageId } from './identity.mts'
-import { restoreImagePlacementsAfterImageDeletion } from '@services/images/placements'
-import { retireImageSurfacePlacementsForDeletedImage } from '@services/images/surface-placements'
 import {
   getImagePlacementDeliveryKey,
   getLegacyImageDeliveryKey,
   stageImagePlacementDeliveryRecord,
   stageAllCurrentImagePlacementDeliveryRecords,
-} from '@services/images/delivery-registry'
+} from '@services/media-delivery-safety'
 import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
@@ -26,6 +23,8 @@ import {
   setTestTopicSurfaceImages,
   softDeleteTopic,
   softDeleteUser,
+  restoreTestImageSurfacePlacementsAfterImageDeletion,
+  retireTestImageSurfacePlacementsForDeletedImage,
 } from '@voucha/test-helpers'
 
 describe('image surface placement lifecycle', () => {
@@ -132,18 +131,14 @@ describe('image surface placement lifecycle', () => {
     const [initial] = await getTestImageSurfacePlacements({ userId: user.id })
     expect(initial).toBeDefined()
 
-    await using deletion = await beginTransaction()
-    const retired = await retireImageSurfacePlacementsForDeletedImage(imageId, deletion)
-    await deletion.commit()
+    const retired = await retireTestImageSurfacePlacementsForDeletedImage(imageId)
     expect(retired).toEqual([
       { placementId: initial!.placement_id, revision: initial!.placement_revision + 1 },
     ])
 
     await updateProfileImageId(user.id, null)
 
-    await using rollback = await beginTransaction()
-    await restoreImagePlacementsAfterImageDeletion(retired, rollback)
-    await rollback.commit()
+    await restoreTestImageSurfacePlacementsAfterImageDeletion(retired)
 
     await expect(getTestImageSurfacePlacements({ userId: user.id })).resolves.toMatchObject([
       {

@@ -6,6 +6,9 @@ import {
 } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
 
+export * from './delivery-registry.mts'
+export { lockImageDeliveryMutation } from './delivery-lock.mts'
+
 export type ImageSurfaceReference =
   | { surfaceKind: 'user-profile-image'; userId: string }
   | { surfaceKind: 'topic-logo-image' | 'topic-hero-image'; topicId: string }
@@ -54,18 +57,25 @@ export async function prepublishImageSurfaceDenial(
   const generation = stagedRows[0]?.generation
   if (generation === undefined) throw new Error('Failed to stage the prior image surface denial')
   if (!isMediaDeliveryRegistryPublicationEnabled()) return
-  await putMediaDeliveryRegistryRecord({ deliveryKey, state: 'withheld', generation })
-  await invalidateMediaDeliveryPath(
-    `/images/placements/${current.placement_id}/${current.placement_revision}/${current.image_id}`,
-  )
-  const { rowCount } = await query(sql`/* prepublishImageSurfaceDenial:complete */
+  let rowCount: number | null = null
+  await runSequentially([
+    () => putMediaDeliveryRegistryRecord({ deliveryKey, state: 'withheld', generation }),
+    () =>
+      invalidateMediaDeliveryPath(
+        `/images/placements/${current.placement_id}/${current.placement_revision}/${current.image_id}`,
+      ),
+    async () => {
+      const result = await query(sql`/* prepublishImageSurfaceDenial:complete */
     UPDATE media_delivery_registry_records
     SET state = 'completed', projected_at = CURRENT_TIMESTAMP,
       invalidated_at = CURRENT_TIMESTAMP, completed_at = CURRENT_TIMESTAMP,
       next_attempt_at = NULL, failure_message = NULL
     WHERE delivery_key = ${deliveryKey} AND desired_state = 'withheld'
       AND generation = ${generation}
-  `)
+      `)
+      rowCount = result.rowCount
+    },
+  ])
   if (rowCount !== 1)
     throw new Error(`Media delivery generation changed while denying ${deliveryKey}`)
 }
@@ -78,4 +88,11 @@ function surfaceWhere(reference: ImageSurfaceReference): ReturnType<typeof sql> 
   if ('communityId' in reference)
     return sql`surface.surface_kind = ${reference.surfaceKind} AND surface.community_id = ${reference.communityId}`
   return sql`surface.surface_kind = ${reference.surfaceKind} AND surface.user_profile_link_id = ${reference.userProfileLinkId}`
+}
+
+function runSequentially(steps: readonly (() => Promise<unknown>)[]): Promise<void> {
+  return steps.reduce<Promise<void>>(
+    (pending, step) => pending.then(() => step()).then(() => undefined),
+    Promise.resolve(),
+  )
 }

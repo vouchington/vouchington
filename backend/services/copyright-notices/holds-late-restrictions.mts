@@ -4,7 +4,7 @@ import {
   getImagePlacementForCopyright,
   withholdImagePlacementForCopyright,
 } from '@services/images/placements'
-import { publishImagePlacementDeliveryRecord } from '@services/images/delivery-registry'
+import { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { assertMediaDeliveryLegalEnforcementEnabled } from '@modules/aws'
 
 /** A qualifying hold is governed by receipt time. Its later review cannot leave an already

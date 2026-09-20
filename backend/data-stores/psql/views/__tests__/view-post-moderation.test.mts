@@ -13,7 +13,7 @@ import {
   insertTestPostImage,
   markImageModerationFlagged,
 } from '../../../../test-helpers/index.mts'
-import { stagePostImagePlacementDeliveryRecords } from '../../../../services/images/delivery-registry.mts'
+import { stagePostImagePlacementDeliveryRecords } from '../../../../services/media-delivery-safety/delivery-registry.mts'
 
 describe('view_posts moderation projection', () => {
   let postId: string

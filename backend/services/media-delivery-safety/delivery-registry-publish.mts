@@ -13,6 +13,7 @@ import {
   stageLegacyImageDeliveryRecord,
 } from './delivery-registry-staging.mts'
 import { getMediaDeliveryPath, type ImageDeliveryRecord } from './delivery-registry-types.mts'
+import { runSequentially } from '@modules/utils/run-sequentially'
 
 export async function publishImagePlacementDeliveryRecord(
   input: {
@@ -35,13 +36,16 @@ export async function publishImagePlacementDeliveryRecord(
     asset_id: input.imageId,
     generation: staged.generation,
   }
-  await putMediaDeliveryRegistryRecord({
-    deliveryKey: staged.deliveryKey,
-    state: input.state,
-    generation: staged.generation,
-  })
-  await invalidateMediaDeliveryPath(getMediaDeliveryPath(record))
-  await markPublishedRecord(query, staged.deliveryKey, input.state, staged.generation)
+  await runSequentially([
+    () =>
+      putMediaDeliveryRegistryRecord({
+        deliveryKey: staged.deliveryKey,
+        state: input.state,
+        generation: staged.generation,
+      }),
+    () => invalidateMediaDeliveryPath(getMediaDeliveryPath(record)),
+    () => markPublishedRecord(query, staged.deliveryKey, input.state, staged.generation),
+  ])
 }
 
 export async function publishLegacyImageDeliveryRecord(
@@ -52,13 +56,16 @@ export async function publishLegacyImageDeliveryRecord(
   const query = options.query ?? write
   const staged = await stageLegacyImageDeliveryRecord(imageId, state, { query })
   if (!isMediaDeliveryRegistryPublicationEnabled()) return
-  await putMediaDeliveryRegistryRecord({
-    deliveryKey: staged.deliveryKey,
-    state,
-    generation: staged.generation,
-  })
-  await invalidateMediaDeliveryPath(`/images/${imageId}`)
-  await markPublishedRecord(query, staged.deliveryKey, state, staged.generation)
+  await runSequentially([
+    () =>
+      putMediaDeliveryRegistryRecord({
+        deliveryKey: staged.deliveryKey,
+        state,
+        generation: staged.generation,
+      }),
+    () => invalidateMediaDeliveryPath(`/images/${imageId}`),
+    () => markPublishedRecord(query, staged.deliveryKey, state, staged.generation),
+  ])
 }
 
 export async function prepublishImagePlacementDenials(

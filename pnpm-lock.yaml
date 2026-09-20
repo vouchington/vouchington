@@ -1257,6 +1257,9 @@ importers:
       '@services/mcp-tools':
         specifier: workspace:^
         version: link:../services/mcp-tools
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../services/media-delivery-safety
       '@services/memberships':
         specifier: workspace:^
         version: link:../services/memberships
@@ -4855,6 +4858,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@jongleberry/api-server':
+        specifier: ^2.1.0
+        version: 2.1.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -4876,6 +4882,9 @@ importers:
       '@services/images':
         specifier: workspace:^
         version: link:../images
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../media-delivery-safety
       '@services/notifications':
         specifier: workspace:^
         version: link:../notifications
@@ -6461,6 +6470,9 @@ importers:
       '@queues/images':
         specifier: workspace:^
         version: link:../../queues/images
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../media-delivery-safety
       '@services/post-clearance':
         specifier: workspace:^
         version: link:../post-clearance
@@ -6773,6 +6785,9 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -7359,6 +7374,9 @@ importers:
       '@services/images':
         specifier: workspace:^
         version: link:../images
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../media-delivery-safety
       '@services/oauth':
         specifier: workspace:^
         version: link:../oauth
@@ -7864,6 +7882,9 @@ importers:
       '@services/images':
         specifier: workspace:^
         version: link:../images
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../media-delivery-safety
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
@@ -8150,6 +8171,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../media-delivery-safety
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../moderation-reports
@@ -12003,6 +12027,9 @@ importers:
       '@services/images':
         specifier: workspace:^
         version: link:../../services/images
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../../services/media-delivery-safety
       '@services/notifications':
         specifier: workspace:^
         version: link:../../services/notifications

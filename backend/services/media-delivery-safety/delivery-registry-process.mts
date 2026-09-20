@@ -10,6 +10,7 @@ import {
   type ImageDeliveryRecord,
   type MediaDeliveryDependencies,
 } from './delivery-registry-types.mts'
+import { runSequentially } from '@modules/utils/run-sequentially'
 
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
 const MAX_ATTEMPTS = 5
@@ -25,14 +26,17 @@ export async function processMediaDeliveryRegistryRecord(
   if (!record) return 'not_claimed'
   const deps = { invalidateMediaDeliveryPath, putMediaDeliveryRegistryRecord, ...dependencies }
   try {
-    await deps.putMediaDeliveryRegistryRecord({
-      deliveryKey: record.delivery_key,
-      state: record.desired_state,
-      generation: record.generation,
-    })
-    await markMediaDeliveryRegistryProjected(record.delivery_key, record.generation, now)
-    await deps.invalidateMediaDeliveryPath(getMediaDeliveryPath(record))
-    await markMediaDeliveryRegistryCompleted(record.delivery_key, record.generation, now)
+    await runSequentially([
+      () =>
+        deps.putMediaDeliveryRegistryRecord({
+          deliveryKey: record.delivery_key,
+          state: record.desired_state,
+          generation: record.generation,
+        }),
+      () => markMediaDeliveryRegistryProjected(record.delivery_key, record.generation, now),
+      () => deps.invalidateMediaDeliveryPath(getMediaDeliveryPath(record)),
+      () => markMediaDeliveryRegistryCompleted(record.delivery_key, record.generation, now),
+    ])
     return 'completed'
   } catch (error) {
     await failMediaDeliveryRegistryRecord(

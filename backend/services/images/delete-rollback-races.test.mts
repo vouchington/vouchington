@@ -6,7 +6,7 @@ import { createPostModerationContent } from '@services/posts/content'
 import { getPostByAny } from '@services/posts/get'
 import { getPostModerationInput } from '@services/posts/moderation-input'
 import { getPostImages } from '@services/posts/images'
-import { stagePostImagePlacementDeliveryRecords } from './delivery-registry.mts'
+import { stagePostImagePlacementDeliveryRecords } from '@services/media-delivery-safety'
 import type { Post } from '@services/posts/types'
 import {
   createTestUserDirect,

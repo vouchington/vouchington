@@ -1,7 +1,8 @@
 import { vi } from 'vitest'
 
+import { Button } from '@/components/ui/button'
 import type { Post } from '@/types/posts'
-import { PostDetailView } from '../post-detail-view'
+import { PostDetailView } from '@/components/posts/post-detail-view'
 
 const mockUseEmblaCarousel = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const mockUseAuth = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -23,16 +24,13 @@ vi.mock(
             onOpenChange: (value: boolean) => void
           }) =>
             open ? (
-              <div
-                data-testid='lightbox'
-                data-start-index={startIndex}
-              >
-                <button
+              <div data-start-index={startIndex}>
+                <Button
                   type='button'
                   onClick={() => onOpenChange(false)}
                 >
                   Close lightbox
-                </button>
+                </Button>
               </div>
             ) : null
         return () => null
@@ -86,18 +84,11 @@ vi.mock(
 )
 
 vi.mock(import('@/components/shared/follower-share-actions'), () => ({
-  FollowerShareActions: () => <div data-testid='follower-share-actions' />,
+  FollowerShareActions: () => <div />,
 }))
 
 vi.mock(import('@/components/shared/report-menu-item'), () => ({
-  ReportMenuKebab: ({ 'data-pw': dataPw }: { 'data-pw'?: string }) => (
-    <button
-      type='button'
-      data-pw={dataPw}
-    >
-      Report
-    </button>
-  ),
+  ReportMenuKebab: () => <Button type='button'>Report</Button>,
 }))
 
 vi.mock(
@@ -111,35 +102,6 @@ vi.mock(
 vi.mock(import('@/lib/auth/context'), () => ({
   useAuth: mockUseAuth,
 }))
-
-vi.mock(
-  import('../post-image-lightbox'),
-  () =>
-    ({
-      PostImageLightbox: ({
-        open,
-        startIndex,
-        onOpenChange,
-      }: {
-        open: boolean
-        startIndex: number
-        onOpenChange: (open: boolean) => void
-      }) =>
-        open ? (
-          <div
-            data-testid='lightbox'
-            data-start-index={startIndex}
-          >
-            <button
-              type='button'
-              onClick={() => onOpenChange(false)}
-            >
-              Close lightbox
-            </button>
-          </div>
-        ) : null,
-    }) as unknown as typeof import('../post-image-lightbox'),
-)
 
 vi.mock(
   import('next/link'),

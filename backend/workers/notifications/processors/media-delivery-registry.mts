@@ -3,7 +3,7 @@ import {
   listRecoverableMediaDeliveryRegistryKeys,
   processMediaDeliveryRegistryRecord,
   stageAllCurrentImagePlacementDeliveryRecords,
-} from '@services/images/delivery-registry'
+} from '@services/media-delivery-safety'
 
 type MediaDeliveryRegistryProcessorDependencies = {
   enqueueApplyMediaDeliveryRegistryRecord: typeof enqueueApplyMediaDeliveryRegistryRecord

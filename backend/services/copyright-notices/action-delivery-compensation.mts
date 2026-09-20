@@ -1,4 +1,4 @@
-import { compensateFailedImageDeliveryMutation } from '@services/images/delivery-registry'
+import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import {
   failCopyrightActionIntent,

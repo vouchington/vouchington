@@ -7,7 +7,7 @@ import sql from 'sql-template-strings'
 import { deleteFlaggedImage } from './delete-flagged.mts'
 import { createOpenAIModeration } from './request.mts'
 import { publishTerminalImageState } from './terminal-image-state.mts'
-import { prepublishImageDeliveryDenials } from '@services/images/delivery-registry'
+import { prepublishImageDeliveryDenials } from '@services/media-delivery-safety'
 
 type UpsertImageModerationDependencies = {
   createOpenAIModeration: typeof createOpenAIModeration

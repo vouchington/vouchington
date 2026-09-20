@@ -19,13 +19,15 @@ export async function createCopyrightRestorationHoldFixture() {
     createTestUserDirect(),
   ])
   const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-  const imageId = await insertTestImage(claimant.id)
-  const postId = await insertTestPost({
-    title: `copyright hold ${crypto.randomUUID()}`,
-    slug: `copyright-hold-${crypto.randomUUID()}`,
-    createdById: claimant.id,
-    markdown: 'images',
-  })
+  const [imageId, postId] = await Promise.all([
+    insertTestImage(claimant.id),
+    insertTestPost({
+      title: `copyright hold ${crypto.randomUUID()}`,
+      slug: `copyright-hold-${crypto.randomUUID()}`,
+      createdById: claimant.id,
+      markdown: 'images',
+    }),
+  ])
   await insertTestPostImage({ postId, imageId })
   const placement = await getTestPostImagePlacement(postId, imageId)
   if (!placement) throw new Error('fixture image placement disappeared')
@@ -49,20 +51,7 @@ export async function createCopyrightRestorationHoldFixture() {
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
   if (!aggregate) throw new Error('fixture notice disappeared')
-  const assessment = await appendCopyrightSubmissionAssessment({
-    submissionId: aggregate.submissions[0].id,
-    assessedAt: new Date('2026-07-01T11:00:00.000Z'),
-    currentUser: moderator,
-    substantiallyCompliant: true,
-  })
-  const receipt = await createOutboundCopyrightCorrespondence({
-    noticeId: notice.id,
-    submissionId: aggregate.submissions[0].id,
-    correspondenceKind: 'receipt',
-    compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
-    draftedById: null,
-  })
+  const { assessment, receipt } = await createAssessmentAndReceipt(aggregate, moderator, notice.id)
   await createCopyrightDeliveryIntent({
     noticeId: notice.id,
     submissionId: aggregate.submissions[0].id,
@@ -75,4 +64,26 @@ export async function createCopyrightRestorationHoldFixture() {
     recipientEmail: `tests+copyright-${crypto.randomUUID()}@voucha.ai`,
   })
   return { aggregate, assessment, claimant, moderator, notice }
+}
+
+async function createAssessmentAndReceipt(
+  aggregate: NonNullable<Awaited<ReturnType<typeof getCopyrightNoticePrivateAggregate>>>,
+  moderator: Awaited<ReturnType<typeof createTestUserDirect>>,
+  noticeId: string,
+) {
+  const assessment = await appendCopyrightSubmissionAssessment({
+    submissionId: aggregate.submissions[0].id,
+    assessedAt: new Date('2026-07-01T11:00:00.000Z'),
+    currentUser: moderator,
+    substantiallyCompliant: true,
+  })
+  const receipt = await createOutboundCopyrightCorrespondence({
+    noticeId,
+    submissionId: aggregate.submissions[0].id,
+    correspondenceKind: 'receipt',
+    compositionKind: 'deterministic_template',
+    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+    draftedById: null,
+  })
+  return { assessment, receipt }
 }

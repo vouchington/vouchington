@@ -1,4 +1,6 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
+import { restoreImagePlacementsAfterImageDeletion } from '../../services/images/placements.mts'
+import { retireImageSurfacePlacementsForDeletedImage } from '../../services/images/surface-placements.mts'
 import sql from 'sql-template-strings'
 
 export type TestImageSurfacePlacement = {
@@ -122,4 +124,21 @@ export async function setTestUserProfileImage(userId: string, imageId: string): 
   await write(sql`/* setTestUserProfileImage */
     UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}
   `)
+}
+
+export async function retireTestImageSurfacePlacementsForDeletedImage(
+  imageId: string,
+): Promise<Array<{ placementId: string; revision: number }>> {
+  await using transaction = await beginTransaction()
+  const retired = await retireImageSurfacePlacementsForDeletedImage(imageId, transaction)
+  await transaction.commit()
+  return retired
+}
+
+export async function restoreTestImageSurfacePlacementsAfterImageDeletion(
+  retiredPlacements: Array<{ placementId: string; revision: number }>,
+): Promise<void> {
+  await using transaction = await beginTransaction()
+  await restoreImagePlacementsAfterImageDeletion(retiredPlacements, transaction)
+  await transaction.commit()
 }

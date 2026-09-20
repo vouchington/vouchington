@@ -8,6 +8,7 @@ import {
   type ImagePlacementTuple,
 } from '@services/images/surface-placements'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
+import { runSequentially } from '@modules/utils/run-sequentially'
 import {
   assertProfileLinkType,
   validateProfileLinkFields,
@@ -164,19 +165,22 @@ export async function deleteProfileLink(userId: string, linkId: string): Promise
       WHERE id = ${linkId} AND user_id = ${userId} FOR UPDATE`,
   )
   assert(rows.length === 1, 404, 'Profile link not found')
-  await syncImageSurfacePlacement(
-    { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
-    null,
-    transaction,
-  )
-  await transaction(sql`/* deleteProfileLink */
-    UPDATE image_surface_placements
-    SET user_profile_link_id = NULL, retired_user_profile_link_id = ${linkId}
-    WHERE surface_kind = 'user-profile-link-image' AND user_profile_link_id = ${linkId}
-  `)
-  await transaction(
-    sql`/* deleteProfileLink */ DELETE FROM user_profile_links WHERE id = ${linkId}`,
-  )
+  await runSequentially([
+    () =>
+      syncImageSurfacePlacement(
+        { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
+        null,
+        transaction,
+      ),
+    () =>
+      transaction(sql`/* deleteProfileLink */
+        UPDATE image_surface_placements
+        SET user_profile_link_id = NULL, retired_user_profile_link_id = ${linkId}
+        WHERE surface_kind = 'user-profile-link-image' AND user_profile_link_id = ${linkId}
+      `),
+    () =>
+      transaction(sql`/* deleteProfileLink */ DELETE FROM user_profile_links WHERE id = ${linkId}`),
+  ])
   await transaction.commit()
   void enqueueReconcileMediaDeliveryRegistry()
 }

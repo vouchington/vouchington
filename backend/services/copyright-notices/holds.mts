@@ -14,7 +14,7 @@ import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
 import { encryptSecret } from '@modules/token-secrets'
-import type { publishImagePlacementDeliveryRecord } from '@services/images/delivery-registry'
+import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 
 export async function appendCopyrightLegalHoldAssessment(input: {
   currentUser: PrivateUser

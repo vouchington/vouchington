@@ -1,10 +1,10 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { isMediaDeliveryEdgeEnforcementEnabled } from '@modules/aws/media-delivery-registry'
 import {
+  lockImageDeliveryMutation,
   prepublishImagePlacementDenials,
   publishLegacyImageDeliveryRecord,
-} from '../images/delivery-registry.mts'
-import { lockImageDeliveryMutation } from '../images/delivery-lock.mts'
+} from '@services/media-delivery-safety'
 
 /** The post service owns admission, while images owns one delivery saga for every route kind. */
 export async function preparePostImageDeliveryMutation(

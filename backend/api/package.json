@@ -181,6 +181,7 @@
     "@services/localization": "workspace:^",
     "@services/markdown": "workspace:^",
     "@services/mcp-tools": "workspace:^",
+    "@services/media-delivery-safety": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/messaging": "workspace:^",
     "@services/mfa": "workspace:^",

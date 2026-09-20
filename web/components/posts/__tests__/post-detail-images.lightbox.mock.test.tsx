@@ -5,7 +5,7 @@ import {
   loadPostDetail,
   postDetailWithImages,
   setUpPostDetailImagesTest,
-} from './post-detail-images.mock-support'
+} from '@/test-helpers/components/posts/post-detail-images.mock-support'
 
 vi.mock(
   import('@/components/shared/entity-bookmark-button'),
@@ -27,10 +27,15 @@ describe('PostDetail image lightbox', () => {
       />,
     )
 
-    expect(screen.queryByTestId('lightbox')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Close lightbox' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'View full size image' }))
-    await waitFor(() => expect(screen.getByTestId('lightbox')).toBeDefined())
-    expect(screen.getByTestId('lightbox')).toHaveAttribute('data-start-index', '0')
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Close lightbox' })).toBeDefined(),
+    )
+    expect(screen.getByRole('button', { name: 'Close lightbox' }).parentElement).toHaveAttribute(
+      'data-start-index',
+      '0',
+    )
   })
 
   it('opens lightbox at the clicked carousel image index', async () => {
@@ -48,7 +53,10 @@ describe('PostDetail image lightbox', () => {
     expect(buttons).toHaveLength(2)
     fireEvent.click(buttons[1]!)
     await waitFor(() =>
-      expect(screen.getByTestId('lightbox')).toHaveAttribute('data-start-index', '1'),
+      expect(screen.getByRole('button', { name: 'Close lightbox' }).parentElement).toHaveAttribute(
+        'data-start-index',
+        '1',
+      ),
     )
   })
 
@@ -62,8 +70,10 @@ describe('PostDetail image lightbox', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'View full size image' }))
-    await waitFor(() => expect(screen.getByTestId('lightbox')).toBeDefined())
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Close lightbox' })).toBeDefined(),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Close lightbox' }))
-    await waitFor(() => expect(screen.queryByTestId('lightbox')).toBeNull())
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Close lightbox' })).toBeNull())
   })
 })
