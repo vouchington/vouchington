@@ -8,6 +8,13 @@ import {
   rejectCopyrightEmailIntake,
   rejectCopyrightEmailCorrespondence,
 } from '@/lib/api/client/copyright-email-intakes'
+import {
+  copyrightEmailIntakeId as intakeId,
+  makeCopyrightEmailIntake as makeIntake,
+  makeCopyrightEmailQueueItem as makeQueueItem,
+  makeMatchedCopyrightEmailIntake as makeMatchedIntake,
+  makeMatchedCopyrightEmailQueueItem as makeMatchedQueueItem,
+} from '@/test-helpers/components/copyright/copyright-email-review'
 import { CopyrightEmailReview } from './copyright-email-review'
 
 configure({ testIdAttribute: 'data-pw' })
@@ -27,7 +34,6 @@ const mockGet = vi.mocked(getCopyrightEmailIntake)
 const mockList = vi.mocked(listCopyrightEmailIntakes)
 const mockReject = vi.mocked(rejectCopyrightEmailIntake)
 const mockRejectCorrespondence = vi.mocked(rejectCopyrightEmailCorrespondence)
-const intakeId = '019f0000-0000-7000-8000-000000000001'
 const otherIntakeId = '019f0000-0000-7000-8000-000000000007'
 
 describe('CopyrightEmailReview', () => {
@@ -241,74 +247,4 @@ function resolveFirstTarget() {
   fireEvent.change(screen.getByLabelText('Image ID 1'), {
     target: { value: '019f0000-0000-7000-8000-000000000004' },
   })
-}
-
-function makeQueueItem(id = intakeId) {
-  return {
-    id,
-    received_at: '2026-09-19T00:00:00.000Z',
-    parse_status: 'succeeded',
-    recommendation_id: '019f0000-0000-7000-8000-000000000002',
-    review_path: 'initial' as const,
-    linked_notice_id: null,
-  }
-}
-
-function makeIntake(id = intakeId) {
-  return {
-    id,
-    received_at: '2026-09-19T00:00:00.000Z',
-    review_path: 'initial' as const,
-    linked_notice: null,
-    raw_email: {
-      mime_type: 'message/rfc822',
-      byte_size: 1024,
-      sha256: 'a'.repeat(64),
-      download_url: `/api/v1/copyright-email-intakes/${id}/raw`,
-    },
-    parsed_email: {
-      sender_email: 'tests+copyright-claimant@voucha.ai',
-      subject: 'DMCA notice',
-      body_text: 'Please remove the image.',
-    },
-    parser_error: null,
-    recommendation: {
-      id: '019f0000-0000-7000-8000-000000000002',
-      structured_output: {
-        claimant_name: 'Claimant',
-        claimant_contact: 'tests+copyright-claimant@voucha.ai',
-        claimant_email: 'tests+copyright-claimant@voucha.ai',
-        work_description: 'Claimant photograph',
-        good_faith_belief: true,
-        accuracy_authority_under_penalty_of_perjury: true,
-        electronic_signature: 'Claimant',
-        target_urls: ['https://voucha.ai/posts/example'],
-        recommendation: 'potentially_valid',
-      },
-    },
-  }
-}
-
-function makeMatchedQueueItem() {
-  return {
-    ...makeQueueItem(),
-    review_path: 'matched_thread' as const,
-    linked_notice_id: '019f0000-0000-7000-8000-000000000006',
-  }
-}
-
-function makeMatchedIntake() {
-  return {
-    ...makeIntake(),
-    review_path: 'matched_thread' as const,
-    linked_notice: {
-      id: '019f0000-0000-7000-8000-000000000006',
-      targets: [
-        {
-          id: '019f0000-0000-7000-8000-000000000005',
-          placement_key: 'post-image:example',
-        },
-      ],
-    },
-  }
 }
