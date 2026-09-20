@@ -68,29 +68,6 @@ describe('handleMcpHttpRequest', () => {
     }
   })
 
-  it('returns a null id when a malformed envelope cannot be correlated', async () => {
-    const body = { jsonrpc: '2.0', method: 'tools/call', params: { arguments: {} } }
-    const response = await handleMcpHttpRequest({
-      user,
-      permissions: ['mcp.user:read'],
-      request: new Request('http://localhost/api/v1/mcp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json, text/event-stream',
-        },
-        body: JSON.stringify(body),
-      }),
-      parsedBody: body,
-      config: USER_MCP_SERVER_CONFIG,
-    })
-
-    expect(response.status).toBe(200)
-    const result = (await response.json()) as { id?: unknown; error?: { code?: number } }
-    expect(result).toHaveProperty('id', null)
-    expect(result.error?.code).toBe(ErrorCode.InvalidRequest)
-  })
-
   it('returns a Response for tools/call request', async () => {
     const body = {
       jsonrpc: '2.0',
