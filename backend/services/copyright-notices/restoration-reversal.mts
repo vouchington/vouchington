@@ -1,24 +1,8 @@
-import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { getImagePlacementForCopyright } from '@services/images/placements'
-import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import type { CopyrightActionIntentRecord } from './types.mts'
-
-/** Creates a durable reversal transition; unavailable placements resolve without an edge allow. */
-export async function createCopyrightRestoreIntentForReversal(
-  restrictionId: string,
-): Promise<CopyrightActionIntentRecord> {
-  await using transaction = await beginTransaction()
-  const intent = await createCopyrightRestoreIntentForReversalInTransaction(
-    restrictionId,
-    transaction,
-  )
-  await transaction.commit()
-  void enqueueApplyCopyrightAction(intent.id)
-  return intent
-}
 
 export async function createCopyrightRestoreIntentForReversalInTransaction(
   restrictionId: string,

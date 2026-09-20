@@ -11,10 +11,7 @@ export {
   lockCopyrightActionDelivery,
 } from './action-delivery-locking.mts'
 export type { LockedCopyrightActionDelivery } from './action-delivery-locking.mts'
-export {
-  completeCopyrightActionIntent,
-  failCopyrightActionIntent,
-} from './action-delivery-completion.mts'
+export { failCopyrightActionIntent } from './action-delivery-completion.mts'
 
 const MAX_ATTEMPTS = 5
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1000

@@ -42,15 +42,10 @@ export {
   approveCopyrightCorrespondence,
   createOutboundCopyrightCorrespondence,
 } from './correspondence.mts'
-export { createCopyrightRestoreIntentForReversal } from './restoration-reversal.mts'
 export { createEligibleCopyrightRestoreIntent } from './restoration.mts'
 export { createDueStatutoryCopyrightRestoreIntents } from './statutory-restoration-schedule.mts'
 export {
-  claimCopyrightActionIntent,
-  completeCopyrightActionIntent,
-  failCopyrightActionIntent,
   listRecoverableCopyrightActionIntentIds,
-  replayCopyrightRestoreActionsForRestrictions,
   replayFailedCopyrightActionIntent,
   processCopyrightActionIntent,
 } from './action-delivery.mts'

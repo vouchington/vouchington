@@ -1,26 +1,9 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CopyrightActionIntentRecord } from './types.mts'
-import type { CopyrightActionDeliveryOutcome } from './action-delivery-state.mts'
 
 const MAX_ATTEMPTS = 5
 const RETRY_BASE_MS = 60 * 1000
-
-export async function completeCopyrightActionIntent(input: {
-  intentId: string
-  outcome: CopyrightActionDeliveryOutcome
-  completedAt: Date
-  failureMessage?: string
-}): Promise<boolean> {
-  const { rowCount } = await write(sql`/* completeCopyrightActionIntent */
-    UPDATE copyright_notice_action_intents
-    SET state = ${input.outcome}, completed_at = ${input.completedAt},
-      completed_at_reason = ${input.outcome}, failure_message = ${input.failureMessage ?? null},
-      next_attempt_at = NULL
-    WHERE id = ${input.intentId} AND state = 'claimed'
-  `)
-  return rowCount === 1
-}
 
 export async function failCopyrightActionIntent(input: {
   intentId: string

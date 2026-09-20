@@ -3,16 +3,9 @@
  * intent leasing/replay and placement delivery evolve independently.
  */
 export {
-  claimCopyrightActionIntent,
-  completeCopyrightActionIntent,
-  failCopyrightActionIntent,
   listRecoverableCopyrightActionIntentIds,
-  processCopyrightActionIntent,
   replayCopyrightRestoreActionsForRestrictions,
   replayFailedCopyrightActionIntent,
-} from './action-delivery-process.mts'
+} from './action-delivery-state.mts'
 
-export type {
-  CopyrightActionDeliveryOutcome,
-  CopyrightClaimedActionIntent,
-} from './action-delivery-process.mts'
+export { processCopyrightActionIntent } from './action-delivery-process.mts'

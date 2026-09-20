@@ -3,26 +3,7 @@ import {
   type CopyrightActionDeliveryDependencies,
 } from './action-delivery-dependencies.mts'
 import { executeCopyrightActionIntent } from './action-delivery-execution.mts'
-import {
-  claimCopyrightActionIntent,
-  completeCopyrightActionIntent,
-  failCopyrightActionIntent,
-  listRecoverableCopyrightActionIntentIds,
-  replayCopyrightRestoreActionsForRestrictions,
-  replayFailedCopyrightActionIntent,
-  type CopyrightActionDeliveryOutcome,
-  type CopyrightClaimedActionIntent,
-} from './action-delivery-state.mts'
-
-export {
-  claimCopyrightActionIntent,
-  completeCopyrightActionIntent,
-  failCopyrightActionIntent,
-  listRecoverableCopyrightActionIntentIds,
-  replayCopyrightRestoreActionsForRestrictions,
-  replayFailedCopyrightActionIntent,
-}
-export type { CopyrightActionDeliveryOutcome, CopyrightClaimedActionIntent }
+import { claimCopyrightActionIntent } from './action-delivery-state.mts'
 
 /** Applies a claimed legal action through a placement-fenced, fail-closed edge projection. */
 export async function processCopyrightActionIntent(

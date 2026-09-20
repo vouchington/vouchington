@@ -10,14 +10,6 @@ import {
 
 export type { ImagePlacementTuple } from '@voucha/types/entities/user'
 
-export type ImageSurfaceKind =
-  | 'user-profile-image'
-  | 'topic-logo-image'
-  | 'topic-hero-image'
-  | 'community-profile-image'
-  | 'community-banner-image'
-  | 'user-profile-link-image'
-
 type ImageSurfaceReference =
   | { surfaceKind: 'user-profile-image'; userId: string }
   | { surfaceKind: 'topic-logo-image' | 'topic-hero-image'; topicId: string }
