@@ -61,6 +61,39 @@ describe('API origin guard — pre-auth and server-to-server coverage', () => {
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ ok: true })
   })
+
+  it.each(['/register', '/revoke', '/token'])(
+    'allows cross-site OAuth protocol calls through to protocol authentication at %s',
+    async path => {
+      const app = createVouchaApiApp()
+      app.route(path).post(ctx => ctx.json({ reached: true }))
+
+      const response = await guardedRequest(app)
+        .post(path)
+        .set('x-cf-worker-secret', WORKER_HEADER_VALUE)
+        .set('origin', 'https://client.example')
+        .set('sec-fetch-site', 'cross-site')
+
+      expect(response.status).toBe(200)
+      expect(response.body).toEqual({ reached: true })
+    },
+  )
+
+  it('keeps the cookie-authenticated OAuth consent mutation behind the origin guard', async () => {
+    const app = createVouchaApiApp()
+    app
+      .route('/api/v1/oauth/authorization-requests/:id/decisions')
+      .post(ctx => ctx.json({ reached: true }))
+
+    const response = await guardedRequest(app)
+      .post('/api/v1/oauth/authorization-requests/00000000-0000-7000-8000-000000000001/decisions')
+      .set('x-cf-worker-secret', WORKER_HEADER_VALUE)
+      .set('origin', 'https://client.example')
+      .set('sec-fetch-site', 'cross-site')
+
+    expect(response.status).toBe(403)
+    expect(response.text).toBe('Forbidden')
+  })
 })
 
 function guardedRequest(app: ReturnType<typeof createVouchaApiApp>): ReturnType<typeof request> {

@@ -21,6 +21,9 @@ retention is 90 days and never selects pending delivery work.
   accounts protected by an unexpired broker authorization; provider-ID indexes keep these exclusions bounded
 - `cleanupExpiredOAuthAuthorizations()` — removes expired OAuth broker authorization state in
   bounded batches
+- `cleanupExpiredOAuthAuthorizationServerArtifacts()` — removes expired consent requests,
+  authorization codes, access tokens, and refresh-token families in bounded batches while retaining
+  clients and durable grants
 - `cleanupExpiredTopicImportAttempts()` — removes completed topic-import response replays and
   abandoned pending attempts after their explicit 48-hour expiry
 - `cleanupExpiredBlueskyLinkCompletions()` — removes expired native Bluesky handoffs and only the
