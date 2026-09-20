@@ -31,6 +31,7 @@ type Workflow = {
 }
 
 const workflowText = readFileSync('.github/workflows/plan.yml', 'utf8')
+const planPrompt = readFileSync('docs/prompts/automation/plan.md', 'utf8')
 const workflow = load(workflowText) as Workflow
 
 describe('plan workflow', () => {
@@ -40,9 +41,12 @@ describe('plan workflow', () => {
     const gateJob = workflow.jobs?.['gate']
     expect(gateJob?.if).toContain('github.event.issue.pull_request == null')
     expect(gateJob?.if).toContain("contains(github.event.comment.body, '/plan')")
-    expect(gateJob?.if).toContain('OWNER')
-    expect(gateJob?.if).toContain('COLLABORATOR')
-    expect(gateJob?.if).not.toContain('MEMBER')
+    expect(gateJob?.if).toContain(`fromJSON('["OWNER","COLLABORATOR","MEMBER"]')`)
+    expect(gateJob?.if).not.toContain('CONTRIBUTOR')
+    expect(gateJob?.if).not.toContain('NONE')
+    expect(planPrompt).toMatch(
+      /live\s+`author_association` to be exactly `OWNER`, `COLLABORATOR`, or `MEMBER`/,
+    )
   })
 
   it('extracts the request after an exact /plan token', () => {
@@ -183,7 +187,8 @@ describe('plan workflow', () => {
     expect(escalateJob?.needs).toContain('render-prompt')
     expect(escalateJob?.env?.['TRIGGER_COMMENT_ID']).toBe('${{ github.event.comment.id }}')
     expect(commentStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
-    expect(commentStep?.run).toContain('author_association')
+    expect(commentStep?.run).toMatch(/OWNER.*COLLABORATOR.*MEMBER/)
+    expect(commentStep?.run).not.toMatch(/CONTRIBUTOR|NONE/)
     expect(commentStep?.run).toContain('Suppressing failure comment')
     expect(commentStep?.run).toContain('gh issue comment')
     expect(commentStep?.run).toContain('/plan run failed')

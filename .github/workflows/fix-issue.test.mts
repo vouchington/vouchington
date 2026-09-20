@@ -68,14 +68,17 @@ describe('fix-issue workflow', () => {
     expect(gateJob?.if).toContain('github.event.issue.pull_request == null')
   })
 
-  it('gates on /fix body and OWNER/COLLABORATOR author_association', () => {
+  it('gates on /fix body and OWNER/COLLABORATOR/MEMBER author_association', () => {
     const gateJob = parsedIssue.jobs?.['gate']
 
     expect(gateJob?.if).toContain("contains(github.event.comment.body, '/fix')")
-    expect(gateJob?.if).toContain('OWNER')
-    expect(gateJob?.if).toContain('COLLABORATOR')
-    expect(gateJob?.if).not.toContain('MEMBER')
+    expect(gateJob?.if).toContain(`fromJSON('["OWNER","COLLABORATOR","MEMBER"]')`)
+    expect(gateJob?.if).not.toContain('CONTRIBUTOR')
+    expect(gateJob?.if).not.toContain('NONE')
     expect(gateJob?.if).toContain('author_association')
+    expect(fixIssuePrompt).toMatch(
+      /live\s+`author_association` to be exactly `OWNER`, `COLLABORATOR`, or `MEMBER`/,
+    )
   })
 
   it('checks out the trusted event revision before extracting the request', () => {
@@ -242,7 +245,8 @@ describe('fix-issue workflow', () => {
     const failStep = escalateJob?.steps?.find(s => s.name?.toLowerCase().includes('comment'))
     expect(escalateJob?.env?.['TRIGGER_COMMENT_ID']).toBe('${{ github.event.comment.id }}')
     expect(failStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
-    expect(failStep?.run).toContain('author_association')
+    expect(failStep?.run).toMatch(/OWNER.*COLLABORATOR.*MEMBER/)
+    expect(failStep?.run).not.toMatch(/CONTRIBUTOR|NONE/)
     expect(failStep?.run).toContain('Suppressing failure comment')
     expect(failStep?.run).toContain('gh issue comment')
     expect(failStep?.run).toContain('/fix run failed')
