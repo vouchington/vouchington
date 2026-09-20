@@ -73,11 +73,6 @@ export function executeGateWithTitle(
     )
     chmodSync(join(fakeBinDirectory, 'gh'), 0o755)
     writeFileSync(
-      join(fakeBinDirectory, 'uuidgen'),
-      '#!/bin/sh\nprintf "%s\\n" "12345678-abcd-4def-8123-123456789abc"\n',
-    )
-    chmodSync(join(fakeBinDirectory, 'uuidgen'), 0o755)
-    writeFileSync(
       prJsonPath,
       JSON.stringify({
         ...options.prFields,

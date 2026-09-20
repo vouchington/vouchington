@@ -91,7 +91,7 @@ describe('shepherd workflow', () => {
     if (!gateRun) throw new Error('Missing gate script')
 
     const { githubOutput, outputs, prTitle, trustedPrUrl } = executeGateWithTitle(gateRun)
-    expect(githubOutput).toContain('pr_title<<PR_TITLE_12345678_ABCD_4DEF_8123_123456789ABC')
+    expect(githubOutput).toMatch(/(?:^|\n)pr_title<<(PR_TITLE_[A-F0-9]{32})\n[\s\S]*?\n\1\n/)
     expect(outputs['pr_title']).toBe(prTitle)
     expect(outputs['pr_number']).toBe('7611')
     expect(outputs['pr_url']).toBe(trustedPrUrl)
