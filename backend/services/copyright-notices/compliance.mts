@@ -53,10 +53,35 @@ export async function appendCopyrightSubmissionAssessment(input: {
     copyright_notice_id: string
     kind: CopyrightSubmissionKind
     source_kind: CopyrightSubmissionSourceKind
+    automated_statutory_fields_complete: boolean
   }>(sql`/* appendCopyrightSubmissionAssessment:lockSubmission */
-    SELECT s.copyright_notice_id, s.kind, s.source_kind
+    SELECT s.copyright_notice_id, s.kind, s.source_kind,
+      intake.requester_user_id IS NOT NULL
+        AND n.jurisdiction = 'us_dmca'
+        AND char_length(n.claimant_contact_ciphertext) > 0
+        AND char_length(btrim(n.work_description)) > 0
+        AND intake.good_faith_belief
+        AND intake.accuracy_authority_under_penalty_of_perjury
+        AND char_length(intake.electronic_signature_ciphertext) > 0
+        AND EXISTS (
+          SELECT 1 FROM copyright_notice_targets target
+          JOIN copyright_notice_target_images target_image
+            ON target_image.copyright_notice_target_id = target.id
+          WHERE target.copyright_notice_id = n.id
+            AND char_length(btrim(target.hosted_use_url)) > 0
+        )
+        AND EXISTS (
+          SELECT 1
+          FROM copyright_notice_delivery_intents receipt
+          JOIN copyright_notice_delivery_recipients recipient
+            ON recipient.copyright_notice_delivery_intent_id = receipt.id
+          WHERE receipt.copyright_notice_id = n.id
+            AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
+            AND receipt.delivery_kind = 'claimant_receipt'
+        ) AS automated_statutory_fields_complete
     FROM copyright_notice_submissions s
     JOIN copyright_notices n ON n.id = s.copyright_notice_id
+    LEFT JOIN copyright_notice_form_intakes intake ON intake.copyright_notice_submission_id = s.id
     WHERE s.id = ${input.submissionId}
     FOR UPDATE OF n, s
   `)
@@ -75,6 +100,13 @@ export async function appendCopyrightSubmissionAssessment(input: {
     input.currentUser === null || input.copyrightFormScreeningId === undefined,
     422,
     'Human assessments cannot claim an automated screening',
+  )
+  assert(
+    input.currentUser !== null ||
+      !input.substantiallyCompliant ||
+      submissionRows[0].automated_statutory_fields_complete,
+    422,
+    'Automated assessment requires all structured US DMCA notice fields',
   )
   assert(
     submissionRows[0].kind !== 'counter_notice' ||

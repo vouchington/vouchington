@@ -16,11 +16,33 @@ export async function getCopyrightFormIntakeForScreening(submissionId: string): 
     id: string
     source_kind: 'signed_in_form' | 'guest_form'
     work_description: string
+    jurisdiction: string
+    has_claimant_contact: boolean
+    has_claimant_email: boolean
+    has_hosted_target: boolean
     good_faith_belief: boolean
     accuracy_authority_under_penalty_of_perjury: boolean
     has_electronic_signature: boolean
   }>(sql`/* getCopyrightFormIntakeForScreening */
-    SELECT intake.id, submission.source_kind, notice.work_description,
+    SELECT intake.id, submission.source_kind, notice.work_description, notice.jurisdiction,
+      char_length(notice.claimant_contact_ciphertext) > 0 AS has_claimant_contact,
+      EXISTS (
+        SELECT 1
+        FROM copyright_notice_delivery_intents receipt
+        JOIN copyright_notice_delivery_recipients recipient
+          ON recipient.copyright_notice_delivery_intent_id = receipt.id
+        WHERE receipt.copyright_notice_id = notice.id
+          AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
+          AND receipt.delivery_kind = 'claimant_receipt'
+      ) AS has_claimant_email,
+      EXISTS (
+        SELECT 1
+        FROM copyright_notice_targets target
+        JOIN copyright_notice_target_images target_image
+          ON target_image.copyright_notice_target_id = target.id
+        WHERE target.copyright_notice_id = notice.id
+          AND char_length(btrim(target.hosted_use_url)) > 0
+      ) AS has_hosted_target,
       intake.good_faith_belief, intake.accuracy_authority_under_penalty_of_perjury,
       char_length(intake.electronic_signature_ciphertext) > 0 AS has_electronic_signature
     FROM copyright_notice_form_intakes intake
@@ -34,6 +56,11 @@ export async function getCopyrightFormIntakeForScreening(submissionId: string): 
     intakeId: row.id,
     sourceKind: row.source_kind,
     statutoryFieldsComplete:
+      row.jurisdiction === 'us_dmca' &&
+      row.has_claimant_contact &&
+      row.has_claimant_email &&
+      row.has_hosted_target &&
+      row.work_description.trim().length > 0 &&
       row.good_faith_belief &&
       row.accuracy_authority_under_penalty_of_perjury &&
       row.has_electronic_signature,
@@ -91,13 +118,37 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     screening_id: string
     source_kind: 'signed_in_form' | 'guest_form'
     form_review_accepted: boolean | null
+    statutory_fields_complete: boolean
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening */
     SELECT intake.id AS intake_id, intake.copyright_notice_id AS notice_id, submission.source_kind,
       (SELECT screening.id FROM copyright_notice_form_screenings screening
        WHERE screening.copyright_notice_form_intake_id = intake.id
        ORDER BY screening.id DESC LIMIT 1) AS screening_id,
-      review.accepted AS form_review_accepted
+      review.accepted AS form_review_accepted,
+      notice.jurisdiction = 'us_dmca'
+        AND char_length(notice.claimant_contact_ciphertext) > 0
+        AND char_length(btrim(notice.work_description)) > 0
+        AND intake.good_faith_belief
+        AND intake.accuracy_authority_under_penalty_of_perjury
+        AND char_length(intake.electronic_signature_ciphertext) > 0
+        AND EXISTS (
+          SELECT 1 FROM copyright_notice_targets target
+          JOIN copyright_notice_target_images target_image
+            ON target_image.copyright_notice_target_id = target.id
+          WHERE target.copyright_notice_id = intake.copyright_notice_id
+            AND char_length(btrim(target.hosted_use_url)) > 0
+        )
+        AND EXISTS (
+          SELECT 1
+          FROM copyright_notice_delivery_intents receipt
+          JOIN copyright_notice_delivery_recipients recipient
+            ON recipient.copyright_notice_delivery_intent_id = receipt.id
+          WHERE receipt.copyright_notice_id = intake.copyright_notice_id
+            AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
+            AND receipt.delivery_kind = 'claimant_receipt'
+        ) AS statutory_fields_complete
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
+    JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
     LEFT JOIN copyright_notice_form_intake_reviews review
       ON review.copyright_notice_form_intake_id = intake.id
     WHERE submission.id = ${submissionId}
@@ -110,7 +161,12 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
       ) = 'not_obviously_invalid'
   `)
   const intake = rows[0]
-  if (!intake || intake.source_kind !== 'signed_in_form' || intake.form_review_accepted !== null) {
+  if (
+    !intake ||
+    intake.source_kind !== 'signed_in_form' ||
+    intake.form_review_accepted !== null ||
+    !intake.statutory_fields_complete
+  ) {
     await transaction.commit()
     return
   }

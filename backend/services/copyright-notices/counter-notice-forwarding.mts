@@ -55,9 +55,9 @@ export async function createCounterNoticeForwardingInTransaction(
     goodFaithMisidentificationUnderPenaltyOfPerjury: boolean
     electronicSignature: string
   }
-  const { rows: targets } = await transaction<{ hosted_use_url: string }>(
+  const { rows: targets } = await transaction<{ id: string; hosted_use_url: string }>(
     sql`/* createCounterNoticeForwardingInTransaction:targets */
-      SELECT target.hosted_use_url
+      SELECT target.id, target.hosted_use_url
       FROM copyright_notice_counter_notice_assessment_targets scoped
       JOIN copyright_notice_targets target ON target.id = scoped.copyright_notice_target_id
       JOIN copyright_notice_submission_assessments assessment
@@ -71,11 +71,7 @@ export async function createCounterNoticeForwardingInTransaction(
       noticeId: row.notice_id,
       submissionId: row.submission_id,
       correspondenceKind: 'counter_notice_forwarding',
-      bodyText: renderCounterNoticeForwarding(
-        counterNotice,
-        targets.map(target => target.hosted_use_url),
-        input.earliestRestorationAt,
-      ),
+      bodyText: renderCounterNoticeForwarding(counterNotice, targets, input.earliestRestorationAt),
     },
     transaction,
   )
@@ -108,7 +104,7 @@ function renderCounterNoticeForwarding(
     goodFaithMisidentificationUnderPenaltyOfPerjury: boolean
     electronicSignature: string
   },
-  targetUrls: string[],
+  targets: Array<{ id: string; hosted_use_url: string }>,
   earliestRestorationAt: Date,
 ): string {
   return [
@@ -117,10 +113,14 @@ function renderCounterNoticeForwarding(
     `Name: ${notice.name}`,
     `Address: ${notice.address}`,
     `Telephone: ${notice.telephone}`,
-    `Material: ${targetUrls.join(', ')}`,
-    `Good-faith statement under penalty of perjury: ${notice.goodFaithMisidentificationUnderPenaltyOfPerjury ? 'provided' : 'not provided'}`,
-    `Consent to federal jurisdiction: ${notice.consentToFederalJurisdiction ? 'provided' : 'not provided'}`,
-    `Consent to service of process: ${notice.consentToServiceOfProcess ? 'provided' : 'not provided'}`,
+    'Material identified for restoration:',
+    ...targets.flatMap(target => [
+      `- Target ID: ${target.id}`,
+      `  Hosted URL: ${target.hosted_use_url}`,
+    ]),
+    `Statement under penalty of perjury: I have a good faith belief that the material was removed or disabled as a result of mistake or misidentification. ${notice.goodFaithMisidentificationUnderPenaltyOfPerjury ? 'Accepted.' : 'Not accepted.'}`,
+    `Consent to federal jurisdiction: I consent to the jurisdiction of the Federal District Court for the judicial district in which my address is located. ${notice.consentToFederalJurisdiction ? 'Accepted.' : 'Not accepted.'}`,
+    `Consent to service of process: I will accept service of process from the person who provided the notification under subsection (c)(1)(C), or an agent of that person. ${notice.consentToServiceOfProcess ? 'Accepted.' : 'Not accepted.'}`,
     `Electronic signature: ${notice.electronicSignature}`,
     '',
     `Unless we receive qualifying notice of a court action before then, we may restore the material on or after ${earliestRestorationAt.toISOString()}.`,

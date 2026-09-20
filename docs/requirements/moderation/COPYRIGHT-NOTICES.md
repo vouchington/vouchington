@@ -99,9 +99,11 @@ the recommendation reviewed. If the agent is unavailable or fails, staff must in
 explicit manual-fallback reason while reviewing the preserved original.
 
 The signed-in form is already structured. Its agent is only an anti-spam and obvious-invalidity
-screen, not a legal merits decision. A complete signed-in submission with a
-`not_obviously_invalid` screen may be
-provisionally withheld automatically, but it enters urgent mandatory human review. Guest forms
+screen, not a legal merits decision. The recommendation remains a separate immutable record; it
+cannot supply a declaration, contact detail, work description, hosted target, or signature. Only a
+deterministically complete immutable US DMCA form, with a `not_obviously_invalid` screen, may be
+provisionally withheld automatically, and it enters urgent mandatory human review. An incomplete
+form can never auto-restrict. Guest forms
 always require moderator approval. A signed-in form classified as `invalid_or_spam`, or left without
 a result after agent failure, is held for a moderator decision so a false positive or exhausted
 agent outage cannot strand a legal notice. Form routes require Turnstile, enforce CSRF through the normal
@@ -132,8 +134,11 @@ The persisted schedule uses `America/New_York` and the US federal business calen
 - `escalation_at`: start of business day 14; and
 - `restoration_deadline_at`: exclusive end of business day 14.
 
-The forwarding correspondence must tell the original claimant that restoration will occur in ten
-business days. An ordinary correction or appeal starts no statutory clock. Missing the deadline is
+The forwarding correspondence must send the original claimant the canonical counter-notice: the
+submitter's name, address, telephone, signature, each exact target identifier and hosted URL, and
+each required declaration and consent. The claimant receives only that case-scoped private
+correspondence; these details and any original email evidence are never part of a member-visible
+case projection. An ordinary correction or appeal starts no statutory clock. Missing the deadline is
 an overdue incident and urgent escalation, not a reason to keep otherwise eligible material down.
 
 The service creates a preliminary restore intent only while holding the relevant case, placement

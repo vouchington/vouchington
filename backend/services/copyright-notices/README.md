@@ -30,8 +30,10 @@ placement keys or revisions. The full authoritative revision and delivery transi
 media-placement layer.
 
 Signed-in forms may create a provisional restriction only after the exact current structured
-intake receives a `not_obviously_invalid` anti-spam screen; PostgreSQL binds the assessment and restriction to that
-screening record. Guest forms and every email intake remain moderator-gated. Email admission uses
+intake is deterministically complete (contact, work, declarations, signature, and hosted target)
+and receives a `not_obviously_invalid` anti-spam screen; PostgreSQL binds the assessment and
+restriction to that screening record. The screening is not a legal assessment and cannot fill
+missing statutory fields. Guest forms and every email intake remain moderator-gated. Email admission uses
 the trusted SES `intakeKind`/S3-prefix contract, preserves the exact raw object version before
 parsing, retains encrypted threading headers, and retains malformed messages for manual review.
 The extraction records all statutory fields plus bounded source excerpts without inventing missing
@@ -42,7 +44,10 @@ After an email intake is admitted, its Message-ID and reply references are corre
 digests only. A matched inbound reply receives an immutable pending-review record and remains attached
 to the original MIME evidence and still receives the advisory extraction/recommendation. Staff must
 classify and admit it through the correspondence endpoint; the admission creates the case submission and inbound correspondence without allowing the agent to trigger a
-restriction, deadline, or outbound delivery.
+restriction, deadline, or outbound delivery. An accepted statutory counter-notice produces a
+case-scoped private forwarding correspondence containing the canonical declarations, consents,
+contact details, signature, and exact target IDs and URLs; those private details never enter the
+member projection.
 
 ## Invariants
 

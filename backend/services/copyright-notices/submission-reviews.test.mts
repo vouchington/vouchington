@@ -15,6 +15,7 @@ import {
   createCopyrightCounterNotice,
   createCopyrightFormIntake,
   getCopyrightNoticePrivateAggregate,
+  prepareCopyrightEmailDelivery,
   reviewCopyrightAppeal,
   reviewCopyrightCounterNotice,
 } from './index.mts'
@@ -205,5 +206,23 @@ describe('copyright submission moderator reviews', () => {
         }),
       ]),
     )
+    const forwarding = aggregate?.deliveryIntents.find(
+      intent =>
+        intent.copyright_notice_submission_id === counter.submission.id &&
+        intent.delivery_kind === 'counter_notice_forwarding' &&
+        intent.channel === 'email',
+    )
+    if (!forwarding) throw new Error('counter-notice forwarding was not queued')
+    const delivery = await prepareCopyrightEmailDelivery(forwarding.id)
+    expect(delivery.recipientEmail).toBe('claimant@example.test')
+    expect(delivery.text).toContain(`Target ID: ${fixture.targetId}`)
+    expect(delivery.text).toContain('Hosted URL:')
+    expect(delivery.text).toContain('Name: Poster')
+    expect(delivery.text).toContain('Address: 1 Main Street')
+    expect(delivery.text).toContain('Telephone: 555-0100')
+    expect(delivery.text).toContain('Statement under penalty of perjury:')
+    expect(delivery.text).toContain('Consent to federal jurisdiction:')
+    expect(delivery.text).toContain('Consent to service of process:')
+    expect(delivery.text).toContain('Electronic signature: Poster')
   })
 })

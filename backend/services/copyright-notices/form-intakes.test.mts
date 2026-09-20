@@ -60,6 +60,13 @@ describe('copyright form intakes', () => {
       isDuplicate: true,
       intake: { id: first.intake.id, copyright_notice_id: first.intake.copyright_notice_id },
     })
+    await expect(
+      createCopyrightFormIntake({
+        ...input,
+        idempotencyKey: crypto.randomUUID(),
+        request: { ...input.request, workDescription: '   ' },
+      }),
+    ).rejects.toMatchObject({ status: 422 })
   })
 
   it('records a CAPTCHA-gated caller’s statutory counter-notice scope idempotently', async () => {
@@ -203,6 +210,19 @@ describe('copyright form intakes', () => {
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
     ).resolves.toBe(2)
+    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    expect(aggregate?.assessments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          copyright_notice_form_screening_id: screeningId,
+          assessed_by_id: null,
+          substantially_compliant: true,
+        }),
+      ]),
+    )
+    expect(aggregate?.restrictions).toEqual(
+      expect.arrayContaining([expect.objectContaining({ human_reviewed_at: null })]),
+    )
   })
 
   it('requires and records moderator approval before a guest form restricts a target', async () => {
