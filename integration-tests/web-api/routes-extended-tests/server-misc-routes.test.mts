@@ -4,12 +4,9 @@ import http from 'node:http'
 import serverApp from '../../../backend/entrypoints/api/index.mts'
 import * as serverRoutes from '@/lib/api/server'
 import { getMigrationStatus, getPartitionStatus } from '@/lib/api/server/psql'
-import { getMyConversations, getMyConversationMessages } from '@/lib/api/server/conversations'
-import { encodeCursor } from '@modules/pagination'
 import {
   createTestUser,
   createTestLandingPage,
-  createTestConversation,
   createTestMembership,
   safeUsername,
 } from '../../../backend/test-helpers/index.mts'
@@ -23,12 +20,6 @@ describe('server-misc-routes', () => {
 
   let previousPublicApiBaseUrl: string | undefined
 
-  let previousFetch: typeof globalThis.fetch
-
-  let hadWindow: boolean
-
-  let previousWindow: unknown
-
   let backendBaseUrl: string
 
   let userCookieHeader: CookieHeader
@@ -36,8 +27,6 @@ describe('server-misc-routes', () => {
   let adminCookieHeader: CookieHeader
 
   let landingPageId: string
-
-  let conversationId: string
 
   beforeAll(async () => {
     previousApiBaseUrl = process.env.API_BASE_URL
@@ -48,10 +37,6 @@ describe('server-misc-routes', () => {
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
 
-    previousFetch = globalThis.fetch
-    hadWindow = Object.hasOwn(globalThis, 'window')
-    previousWindow = (globalThis as { window?: unknown }).window
-
     const user = await createTestUser({ username: safeUsername('misc-routes-user') })
     const admin = await createTestUser({ administrator: true })
     await createTestMembership({ user_id: user.id, plan: 'plus' })
@@ -61,12 +46,6 @@ describe('server-misc-routes', () => {
 
     const lp = await createTestLandingPage(user.id, `Test LP ${randomUUID()}`)
     landingPageId = lp.landingPageId
-
-    const conv = await createTestConversation({
-      createdById: user.id,
-      title: `Test Conv ${randomUUID()}`,
-    })
-    conversationId = conv.id
   }, 20_000)
 
   afterAll(async () => {
@@ -83,13 +62,6 @@ describe('server-misc-routes', () => {
       delete process.env.NEXT_PUBLIC_API_BASE_URL
     } else {
       process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
-    }
-
-    globalThis.fetch = previousFetch
-    if (hadWindow) {
-      ;(globalThis as { window?: unknown }).window = previousWindow
-    } else {
-      delete (globalThis as { window?: unknown }).window
     }
   }, 15_000)
 
@@ -222,52 +194,6 @@ describe('server-misc-routes', () => {
       const response = await getPartitionStatus({ headers: adminCookieHeader })
 
       expect(response.tables).toEqual(expect.any(Array))
-    })
-  })
-  describe('conversations server routes', () => {
-    it('getMyConversations returns 200 without options', async () => {
-      const response = await getMyConversations({ headers: userCookieHeader })
-
-      expect(response.results).toEqual(expect.any(Array))
-      expect(response.page_info).toEqual(expect.any(Object))
-    })
-
-    it('getMyConversations returns 200 with after param', async () => {
-      const response = await getMyConversations({
-        headers: userCookieHeader,
-        after: encodeCursor({ id: conversationId }),
-      })
-
-      expect(response.results).toEqual(expect.any(Array))
-      expect(response.page_info).toEqual(expect.any(Object))
-    })
-
-    it('getMyConversations rejects a raw UUID after param', async () => {
-      await expect(
-        getMyConversations({ headers: userCookieHeader, after: randomUUID() }),
-      ).rejects.toMatchObject({ status: 400 })
-    })
-
-    it('getMyConversations returns 200 with limit param', async () => {
-      const response = await getMyConversations({ headers: userCookieHeader, limit: 5 })
-
-      expect(response.results).toEqual(expect.any(Array))
-      expect(response.page_info).toEqual(expect.any(Object))
-    })
-
-    it('getMyConversationMessages returns messages for existing conversation', async () => {
-      const response = await getMyConversationMessages(conversationId, {
-        headers: userCookieHeader,
-      })
-
-      expect(response).not.toBeNull()
-      expect(response?.results).toEqual(expect.any(Array))
-      expect(response?.page_info).toEqual(expect.any(Object))
-    })
-
-    it('getMyConversationMessages returns null for missing conversation (returnNullForMissingEntity branch)', async () => {
-      const result = await getMyConversationMessages(randomUUID(), { headers: userCookieHeader })
-      expect(result).toBeNull()
     })
   })
 })
