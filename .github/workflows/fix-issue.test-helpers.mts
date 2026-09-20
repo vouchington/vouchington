@@ -1,13 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import { parseGithubOutput } from '../../test-helpers/github-output.mts'
@@ -23,9 +15,6 @@ export function executeFixRequestExtraction(
 
   try {
     mkdirSync(fakeBinDirectory)
-    const uuidgenPath = join(fakeBinDirectory, 'uuidgen')
-    writeFileSync(uuidgenPath, '#!/bin/sh\nprintf "%s\\n" "12345678-abcd-4def-8123-123456789abc"\n')
-    chmodSync(uuidgenPath, 0o755)
 
     execFileSync('/bin/bash', ['-c', extractionScript], {
       env: {
