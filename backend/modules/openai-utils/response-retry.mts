@@ -14,10 +14,10 @@ const INITIAL_RETRY_DELAY_MS = 500
 const MAX_RETRY_DELAY_MS = 8_000
 
 type RawCreateOptions = Parameters<typeof openai.responses.create>[1]
-type CreateResponse = (
-  params: ResponseCreateParamsStreaming,
-  options?: RawCreateOptions,
-) => Promise<AsyncIterable<ResponseStreamEvent>>
+export interface OpenAICompatibleRequestOptions {
+  maxRetries?: number
+  signal?: AbortSignal | null
+}
 
 /* no-mistakes: integration=openai */
 export async function createOpenAIResponseWithRetries(
@@ -35,13 +35,18 @@ export async function createOpenAIResponseWithRetries(
  * Applies the direct OpenAI transport's retry and uncertainty policy to an OpenAI-compatible
  * Responses endpoint. Callers must supply an endpoint that accepts the same SDK request shape.
  */
-export async function createOpenAICompatibleResponseWithRetries(
-  createResponse: CreateResponse,
+export async function createOpenAICompatibleResponseWithRetries<
+  TOptions extends OpenAICompatibleRequestOptions,
+>(
+  createResponse: (
+    params: ResponseCreateParamsStreaming,
+    options?: TOptions,
+  ) => Promise<AsyncIterable<ResponseStreamEvent>>,
   params: ResponseCreateParamsStreaming,
-  options?: RawCreateOptions,
+  options?: TOptions,
 ): Promise<{ stream: AsyncIterable<ResponseStreamEvent>; requestStartedAt: Date }> {
   const maxRetries = options?.maxRetries ?? 2
-  const sdkOptions = { ...options, maxRetries: 0 }
+  const sdkOptions = { ...options, maxRetries: 0 } as TOptions
   const hooks = getOpenAIResponseAttemptHooks()
   for (let attempt = 1; ; attempt += 1) {
     options?.signal?.throwIfAborted()
