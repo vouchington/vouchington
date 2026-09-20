@@ -17,6 +17,14 @@ inputs:
     description: Forwarded value of the `NEXT_PUBLIC_ASSET_PREFIX` repo variable.
     required: false
     default: ''
+  sentry-source-map-upload:
+    description: Enable the trusted production Sentry source-map upload during the image build.
+    required: false
+    default: 'false'
+  sentry-release:
+    description: Immutable Git SHA used as the Sentry release for a trusted production build.
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -64,6 +72,10 @@ runs:
           NEXT_PUBLIC_GIT_COMMIT=${{ github.sha }}
           NEXT_PUBLIC_ASSET_PREFIX=${{ inputs.next-public-asset-prefix }}
           STRIP_TEST_IDS=true
+          SENTRY_RELEASE=${{ inputs.sentry-release || github.sha }}
+          SENTRY_SOURCE_MAP_UPLOAD=${{ inputs.sentry-source-map-upload == 'true' && '1' || '0' }}
+        secrets: |
+          SENTRY_AUTH_TOKEN=${{ inputs.sentry-source-map-upload == 'true' && env.SENTRY_AUTH_TOKEN || '' }}
       env:
         DOCKER_BUILD_SUMMARY: 'false'
         DOCKER_BUILD_RECORD_UPLOAD: 'false'

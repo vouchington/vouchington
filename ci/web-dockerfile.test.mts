@@ -10,8 +10,10 @@ function countDockerfileCopies(copyInstruction: string): number {
 describe('web Dockerfile dependency install', () => {
   it('runs the underlying Next build directly inside the isolated build container', () => {
     expect(dockerfile).toContain('NODE_ENV=production pnpm --dir web exec next build')
-    expect(dockerfile).not.toContain('SENTRY_AUTH_TOKEN')
-    expect(dockerfile).not.toContain('SENTRY_RELEASE_REQUIRED')
+    expect(dockerfile).toContain('--mount=type=secret,id=SENTRY_AUTH_TOKEN,required=false')
+    expect(dockerfile).toContain('test -s /run/secrets/SENTRY_AUTH_TOKEN')
+    expect(dockerfile).not.toContain('ARG SENTRY_AUTH_TOKEN')
+    expect(dockerfile).not.toContain('ENV SENTRY_AUTH_TOKEN')
     expect(dockerfile).not.toContain('pnpm --dir web build')
     expect(dockerfile).not.toContain('with-build-lock.sh')
   })

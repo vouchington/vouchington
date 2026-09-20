@@ -11,6 +11,8 @@ on:
     secrets:
       AWS_TEST_ROLE_ARN:
         required: true
+      SENTRY_AUTH_TOKEN:
+        required: true
 permissions:
   actions: read
   contents: read
@@ -45,6 +47,10 @@ jobs:
       - uses: ./.github/actions/build-web-images
         with:
           next-public-asset-prefix: ${{ vars.NEXT_PUBLIC_ASSET_PREFIX }}
+          sentry-source-map-upload: 'true'
+          sentry-release: ${{ github.sha }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       # Deliberately the last step in the job. Everything published here has already passed the
       # Docker smoke test and the Trivy CRITICAL/HIGH gate, so the image that reaches the registry

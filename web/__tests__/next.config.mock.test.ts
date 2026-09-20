@@ -109,8 +109,12 @@ describe('next.config', () => {
     )
   })
 
-  it('keeps client monitoring while disabling build-time source map uploads', () => {
+  it('keeps client monitoring and gates source map uploads on the trusted build flag', () => {
     expect(sentryConfigCall.nextConfig).toBe(config)
-    expect(sentryConfigCall.sentryBuildOptions).toEqual({ sourcemaps: { disable: true } })
+    expect(sentryConfigCall.sentryBuildOptions).toMatchObject({
+      org: 'vouchington',
+      project: 'vouchington-web',
+      sourcemaps: { disable: true },
+    })
   })
 })

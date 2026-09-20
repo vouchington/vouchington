@@ -17,11 +17,9 @@ export function assertSecureSharpVersion(version: string): void {
 
 assertSecureSharpVersion(sharp.versions.sharp)
 
-// In local dev, pages are always loaded from the CF Worker (e.g. localhost:8787).
-// Without mkcert: assetPrefix points to Next.js directly (cross-origin); allowedDevOrigins
-// lets Next.js accept cross-origin requests from the CF Worker for dev overlay / CORS fonts.
-// With mkcert: assetPrefix points to the CF Worker (same-origin); Next.js still receives
-// proxied requests from the worker, so allowedDevOrigins still applies.
+// In local dev, pages load from the CF Worker. Without mkcert, assetPrefix points to Next.js
+// directly and allowedDevOrigins permits the worker's dev-overlay and font requests.
+// With mkcert it points to the worker; proxied requests still require allowedDevOrigins.
 const workerPort = process.env.WORKER_PORT || '8787'
 const nextPort = process.env.NEXT_PORT || '3001'
 const storybookPort = process.env.STORYBOOK_PORT || String(Number(nextPort) + 1000)
@@ -177,4 +175,26 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default withSentryConfig(nextConfig, { sourcemaps: { disable: true } })
+const sentryRelease = process.env.SENTRY_RELEASE
+if (process.env.SENTRY_SOURCE_MAP_UPLOAD === '1' && !/^[0-9a-f]{40}$/u.test(sentryRelease ?? '')) {
+  throw new Error('SENTRY_RELEASE must be an immutable 40-character Git SHA')
+}
+
+export default withSentryConfig(nextConfig, {
+  org: 'vouchington',
+  project: 'vouchington-web',
+  release: sentryRelease
+    ? {
+        name: sentryRelease,
+        create: true,
+        finalize: true,
+        setCommits: {
+          repo: 'vouchington/vouchington',
+          commit: sentryRelease,
+          ignoreMissing: true,
+          ignoreEmpty: true,
+        },
+      }
+    : undefined,
+  sourcemaps: { disable: process.env.SENTRY_SOURCE_MAP_UPLOAD !== '1' },
+})
