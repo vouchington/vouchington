@@ -5,7 +5,11 @@ import {
   reviewCopyrightCounterNotice,
 } from '@/lib/api/client/copyright-notices'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
-import { ReviewButtons, type SubmitReview } from './copyright-staff-review-buttons'
+import {
+  ReviewButtons,
+  type SubmitRecovery,
+  type SubmitReview,
+} from './copyright-staff-review-buttons'
 
 type Props = {
   canSubmit: boolean
@@ -104,8 +108,12 @@ export function CopyrightStaffComplaint({ notice }: { notice: CopyrightStaffQueu
 export function CopyrightStaffIntentRecovery({
   notice,
   pending,
-  submit,
-}: Pick<Props, 'notice' | 'pending' | 'submit'>) {
+  submitRecovery,
+}: {
+  notice: CopyrightStaffQueueItem
+  pending: boolean
+  submitRecovery: SubmitRecovery
+}) {
   const failedActions = notice.action_intents.filter(intent => intent.state === 'failed')
   const failedDeliveries = notice.delivery_intents.filter(intent => intent.state === 'failed')
   const bouncedDeliveries = notice.delivery_intents.filter(intent => intent.state === 'bounced')
@@ -119,7 +127,7 @@ export function CopyrightStaffIntentRecovery({
           pending={pending}
           retry={() => replayCopyrightActionIntent(notice.id, intent.id)}
           success='Media action queued again.'
-          submit={submit}
+          submitRecovery={submitRecovery}
         >
           Media {intent.action} failed{intent.failure_message ? `: ${intent.failure_message}` : ''}
         </RecoveryRow>
@@ -130,7 +138,7 @@ export function CopyrightStaffIntentRecovery({
           pending={pending}
           retry={() => replayCopyrightDeliveryIntent(notice.id, intent.id)}
           success='Notice delivery queued again.'
-          submit={submit}
+          submitRecovery={submitRecovery}
         >
           {intent.channel} {intent.delivery_kind} failed after {intent.delivery_attempt_count}{' '}
           attempts
@@ -153,13 +161,13 @@ function RecoveryRow({
   children,
   pending,
   retry,
-  submit,
+  submitRecovery,
   success,
 }: {
   children: React.ReactNode
   pending: boolean
   retry: () => Promise<unknown>
-  submit: SubmitReview
+  submitRecovery: SubmitRecovery
   success: string
 }) {
   return (
@@ -167,7 +175,7 @@ function RecoveryRow({
       <span>{children}</span>
       <Button
         disabled={pending}
-        onClick={() => submit(retry, success)}
+        onClick={() => submitRecovery(retry, success)}
       >
         Retry
       </Button>

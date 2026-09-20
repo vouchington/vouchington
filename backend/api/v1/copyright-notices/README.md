@@ -19,6 +19,11 @@ is staff-only and cannot create a case until a moderator supplies and approves t
 replies use `POST /api/v1/copyright-email-intakes/:id/correspondence` for staff classification; the original MIME
 remains attached and no agent, restriction, or outbound message runs automatically.
 
+Accepted-case records are available to every signed-in member through `GET /api/v1/copyright-notices`.
+The public projection excludes participant details. It uses the canonical opaque `after` cursor and
+bounded `limit` (1–100; default 100), returning `page_info` so the member-visible index can continue
+beyond its first page.
+
 ## Performance
 
 Mutation routes are uncached. Notice creation resolves at most 20 image placements before one legal

@@ -1,9 +1,11 @@
 'use client'
 
 import { clientApi } from './instance'
+import { admissionIdempotency } from './admission-idempotency'
+import { withoutCopyrightCaptcha } from './copyright-notice-idempotency'
 import type {
   CopyrightNoticeDetail,
-  CopyrightNoticeSummary,
+  CopyrightNoticesPage,
   CopyrightParticipantNoticeDetail,
   CopyrightStaffQueueItem,
 } from '@/types/copyright-notices'
@@ -25,10 +27,13 @@ export function createCopyrightNotice(input: {
   targets: CopyrightNoticeTargetInput[]
   cf_turnstile_response?: string
 }): Promise<{ copyright_notice: { id: string }; is_duplicate: boolean }> {
-  return clientApi.post(
-    '/api/v1/copyright-notices',
-    { jurisdiction: 'us_dmca', ...input },
-    { headers: { 'Idempotency-Key': crypto.randomUUID() } },
+  const body = { jurisdiction: 'us_dmca' as const, ...input }
+  return admissionIdempotency.run(
+    { route: 'copyright-notices.create', body: withoutCopyrightCaptcha(body) },
+    idempotencyKey =>
+      clientApi.post('/api/v1/copyright-notices', body, {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }),
   )
 }
 
@@ -36,9 +41,13 @@ export function createCopyrightAppeal(
   noticeId: string,
   input: { reason: string; target_ids: string[]; cf_turnstile_response?: string },
 ): Promise<{ copyright_submission: { id: string }; is_duplicate: boolean }> {
-  return clientApi.post(`/api/v1/copyright-notices/${noticeId}/appeals`, input, {
-    headers: { 'Idempotency-Key': crypto.randomUUID() },
-  })
+  return admissionIdempotency.run(
+    { route: 'copyright-notices.appeal', noticeId, body: withoutCopyrightCaptcha(input) },
+    idempotencyKey =>
+      clientApi.post(`/api/v1/copyright-notices/${noticeId}/appeals`, input, {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }),
+  )
 }
 
 export function createCopyrightCounterNotice(
@@ -55,13 +64,22 @@ export function createCopyrightCounterNotice(
     cf_turnstile_response?: string
   },
 ): Promise<{ copyright_submission: { id: string }; is_duplicate: boolean }> {
-  return clientApi.post(`/api/v1/copyright-notices/${noticeId}/counter-notices`, input, {
-    headers: { 'Idempotency-Key': crypto.randomUUID() },
-  })
+  return admissionIdempotency.run(
+    { route: 'copyright-notices.counter-notice', noticeId, body: withoutCopyrightCaptcha(input) },
+    idempotencyKey =>
+      clientApi.post(`/api/v1/copyright-notices/${noticeId}/counter-notices`, input, {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }),
+  )
 }
 
-export function listCopyrightNotices(): Promise<{ copyright_notices: CopyrightNoticeSummary[] }> {
-  return clientApi.get('/api/v1/copyright-notices')
+export function listCopyrightNotices(options?: {
+  after?: string
+  limit?: number
+}): Promise<CopyrightNoticesPage> {
+  return clientApi.get('/api/v1/copyright-notices', {
+    searchParams: { after: options?.after, limit: options?.limit },
+  })
 }
 
 export function getCopyrightNotice(

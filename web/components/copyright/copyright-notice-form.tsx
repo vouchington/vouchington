@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button'
 import { TurnstileField } from '@/components/shared/turnstile-field'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
 import { createCopyrightNotice } from '@/lib/api/client/copyright-notices'
+import type { CopyrightNoticeResolvedTarget } from '@/lib/api/client/copyright-notice-targets'
 import onError, { onSuccess } from '@/lib/on-error'
 import { DeclarationCheckbox, LabeledInput, LabeledTextarea } from './copyright-form-fields'
+import { CopyrightNoticeTargetPicker } from './copyright-notice-target-picker'
 
 export function CopyrightNoticeForm() {
   const router = useRouter()
@@ -19,12 +21,10 @@ export function CopyrightNoticeForm() {
     email: '',
     work: '',
     signature: '',
-    postId: '',
-    imageId: '',
-    targetUrl: '',
     goodFaithBelief: false,
     authorityDeclaration: false,
   })
+  const [targets, setTargets] = useState<CopyrightNoticeResolvedTarget[]>([])
   const set =
     (key: keyof typeof values) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -42,13 +42,11 @@ export function CopyrightNoticeForm() {
           electronic_signature: values.signature.trim(),
           good_faith_belief: values.goodFaithBelief,
           accuracy_authority_under_penalty_of_perjury: values.authorityDeclaration,
-          targets: [
-            {
-              post_id: values.postId.trim(),
-              image_id: values.imageId.trim(),
-              target_url: values.targetUrl.trim(),
-            },
-          ],
+          targets: targets.map(({ post_id, image_id, target_url }) => ({
+            post_id,
+            image_id,
+            target_url,
+          })),
           cf_turnstile_response: turnstile.token ?? undefined,
         })
         onSuccess(
@@ -109,27 +107,9 @@ export function CopyrightNoticeForm() {
         onChange={set('work')}
         required
       />
-      <LabeledInput
-        id='copyright-post-id'
-        label='Hosted post ID'
-        value={values.postId}
-        onChange={set('postId')}
-        required
-      />
-      <LabeledInput
-        id='copyright-image-id'
-        label='Hosted image ID'
-        value={values.imageId}
-        onChange={set('imageId')}
-        required
-      />
-      <LabeledInput
-        id='copyright-target-url'
-        label='Hosted use URL'
-        type='url'
-        value={values.targetUrl}
-        onChange={set('targetUrl')}
-        required
+      <CopyrightNoticeTargetPicker
+        targets={targets}
+        onChange={setTargets}
       />
       <DeclarationCheckbox
         id='copyright-good-faith-belief'
@@ -163,7 +143,11 @@ export function CopyrightNoticeForm() {
       <Button
         type='submit'
         disabled={
-          pending || !turnstile.token || !values.goodFaithBelief || !values.authorityDeclaration
+          pending ||
+          targets.length === 0 ||
+          !turnstile.token ||
+          !values.goodFaithBelief ||
+          !values.authorityDeclaration
         }
       >
         Submit notice

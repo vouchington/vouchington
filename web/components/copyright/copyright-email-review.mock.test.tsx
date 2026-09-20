@@ -28,6 +28,7 @@ const mockList = vi.mocked(listCopyrightEmailIntakes)
 const mockReject = vi.mocked(rejectCopyrightEmailIntake)
 const mockRejectCorrespondence = vi.mocked(rejectCopyrightEmailCorrespondence)
 const intakeId = '019f0000-0000-7000-8000-000000000001'
+const otherIntakeId = '019f0000-0000-7000-8000-000000000007'
 
 describe('CopyrightEmailReview', () => {
   beforeEach(() => {
@@ -133,6 +134,33 @@ describe('CopyrightEmailReview', () => {
     })
   })
 
+  it('clears review state before selecting another email intake', async () => {
+    mockGet.mockResolvedValueOnce({
+      copyright_email_intake: { ...makeIntake(), recommendation: null },
+    })
+    mockGet.mockResolvedValueOnce({
+      copyright_email_intake: { ...makeIntake(otherIntakeId), recommendation: null },
+    })
+    render(<CopyrightEmailReview initialItems={[makeQueueItem(), makeQueueItem(otherIntakeId)]} />)
+
+    await selectEmailIntake(intakeId)
+    fireEvent.change(screen.getByLabelText('Review rationale'), {
+      target: { value: 'Rationale for the first intake.' },
+    })
+    fireEvent.change(screen.getByLabelText('Manual fallback reason'), {
+      target: { value: 'The first intake had no recommendation.' },
+    })
+    fireEvent.change(screen.getByLabelText('Claimant email'), {
+      target: { value: 'first-intake@example.test' },
+    })
+
+    await selectEmailIntake(otherIntakeId)
+
+    expect(screen.getByLabelText('Review rationale')).toHaveValue('')
+    expect(screen.getByLabelText('Manual fallback reason')).toHaveValue('')
+    expect(screen.getByLabelText('Claimant email')).toHaveValue('')
+  })
+
   it('keeps queue-refresh failures visible after an approval', async () => {
     mockApprove.mockResolvedValue(undefined)
     mockList.mockRejectedValue(new Error('The review queue is unavailable'))
@@ -199,8 +227,8 @@ describe('CopyrightEmailReview', () => {
   })
 })
 
-async function selectEmailIntake() {
-  fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
+async function selectEmailIntake(id = intakeId) {
+  fireEvent.click(screen.getByRole('button', { name: new RegExp(id) }))
   await waitFor(() => {
     expect(screen.getByRole('heading', { name: 'Staff-private evidence' })).toBeInTheDocument()
   })
@@ -215,9 +243,9 @@ function resolveFirstTarget() {
   })
 }
 
-function makeQueueItem() {
+function makeQueueItem(id = intakeId) {
   return {
-    id: intakeId,
+    id,
     received_at: '2026-09-19T00:00:00.000Z',
     parse_status: 'succeeded',
     recommendation_id: '019f0000-0000-7000-8000-000000000002',
@@ -226,9 +254,9 @@ function makeQueueItem() {
   }
 }
 
-function makeIntake() {
+function makeIntake(id = intakeId) {
   return {
-    id: intakeId,
+    id,
     received_at: '2026-09-19T00:00:00.000Z',
     review_path: 'initial' as const,
     linked_notice: null,
@@ -236,7 +264,7 @@ function makeIntake() {
       mime_type: 'message/rfc822',
       byte_size: 1024,
       sha256: 'a'.repeat(64),
-      download_url: `/api/v1/copyright-email-intakes/${intakeId}/raw`,
+      download_url: `/api/v1/copyright-email-intakes/${id}/raw`,
     },
     parsed_email: {
       sender_email: 'tests+copyright-claimant@voucha.ai',

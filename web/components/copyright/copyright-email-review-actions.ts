@@ -59,6 +59,7 @@ export function useCopyrightEmailReviewActions({
     setItems((await listCopyrightEmailIntakes()).copyright_email_intakes)
   }
   async function selectIntake(intakeId: string) {
+    clearIntakeReviewState()
     await run(async () => {
       const response = await getCopyrightEmailIntake(intakeId)
       setDetail(response.copyright_email_intake)
@@ -67,7 +68,6 @@ export function useCopyrightEmailReviewActions({
           response.copyright_email_intake.recommendation?.structured_output,
         ),
       )
-      setCorrespondenceDraft(createCopyrightEmailCorrespondenceDraft())
     }, 'We could not load that copyright email intake.')
   }
   async function approve() {
@@ -148,6 +148,13 @@ export function useCopyrightEmailReviewActions({
       await loadQueue()
       setSuccess(success)
     }, fallback)
+  }
+  function clearIntakeReviewState() {
+    setDetail(null)
+    setDraft(null)
+    setCorrespondenceDraft(createCopyrightEmailCorrespondenceDraft())
+    setManualFallbackReason('')
+    setRationale('')
   }
   return { admitCorrespondence, approve, reject, rejectCorrespondence, selectIntake }
 }

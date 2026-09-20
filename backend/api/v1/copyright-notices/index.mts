@@ -28,12 +28,52 @@ import {
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
+import {
+  createPaginationParser,
+  decodeScopedPreciseTimestampCursor,
+  encodeScopedPreciseTimestampCursor,
+} from '@modules/pagination'
 import './moderator-routes.mts'
 
+const acceptedCopyrightNoticesParser = createPaginationParser({
+  cursor: { type: 'precise_timestamp' },
+  limit: { min: 1, max: 100, default: 100 },
+})
+const acceptedCopyrightNoticesCursorScope = 'copyright-notices:accepted-at-desc-id-desc'
+
 app.route('/api/v1/copyright-notices').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/copyright-notices', acceptedCopyrightNoticesParser)
   setPrivateNoStoreCacheHeaders(ctx)
   await requireAuth(ctx, 'GET:/api/v1/copyright-notices')
-  ctx.json({ copyright_notices: await listAcceptedCopyrightNotices() })
+  const options = acceptedCopyrightNoticesParser.parse(ctx.query)
+  const after = options.after
+    ? decodeScopedPreciseTimestampCursor(
+        options.after,
+        acceptedCopyrightNoticesCursorScope,
+        'Invalid copyright notice cursor',
+      )
+    : undefined
+  const { notices, hasNextPage } = await listAcceptedCopyrightNotices({
+    limit: options.limit,
+    after,
+  })
+  const cursorFor = (notice: (typeof notices)[number]) =>
+    encodeScopedPreciseTimestampCursor(
+      notice.cursor_accepted_at,
+      notice.id,
+      acceptedCopyrightNoticesCursorScope,
+    )
+  ctx.json(
+    apiResponse('GET:/api/v1/copyright-notices', {
+      copyright_notices: notices.map(({ cursor_accepted_at: _, ...notice }) => notice),
+      page_info: {
+        has_next_page: hasNextPage,
+        start_cursor: notices[0] ? cursorFor(notices[0]) : null,
+        end_cursor: hasNextPage && notices.at(-1) ? cursorFor(notices.at(-1)!) : null,
+      },
+    }),
+  )
 })
 
 app.route('/api/v1/copyright-notices/review-queue').get(async (ctx: Context) => {

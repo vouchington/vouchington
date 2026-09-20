@@ -5,13 +5,21 @@ import { Textarea } from '@/components/ui/textarea'
 import onError, { onSuccess } from '@/lib/on-error'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffCase } from './copyright-staff-case'
+import type { SubmitRecovery, SubmitReview } from './copyright-staff-review-buttons'
 
 export function CopyrightStaffQueue({ notices }: { notices: CopyrightStaffQueueItem[] }) {
   const [rationale, setRationale] = useState('')
   const [pending, startTransition] = useTransition()
   const trimmedRationale = rationale.trim()
-  function submit(action: () => Promise<unknown>, success: string) {
+  const submit: SubmitReview = (action, success) => {
     if (pending || !trimmedRationale) return
+    runAction(action, success)
+  }
+  const submitRecovery: SubmitRecovery = (action, success) => {
+    if (pending) return
+    runAction(action, success)
+  }
+  function runAction(action: () => Promise<unknown>, success: string) {
     startTransition(async () => {
       try {
         await action()
@@ -43,6 +51,7 @@ export function CopyrightStaffQueue({ notices }: { notices: CopyrightStaffQueueI
           pending={pending}
           rationale={trimmedRationale}
           submit={submit}
+          submitRecovery={submitRecovery}
         />
       ))}
     </div>

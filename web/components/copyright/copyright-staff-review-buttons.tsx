@@ -2,6 +2,9 @@ import { Button } from '@/components/ui/button'
 
 export type SubmitReview = (action: () => Promise<unknown>, success: string) => void
 
+/** Deliberately separate from review decisions, which require a staff rationale. */
+export type SubmitRecovery = (action: () => Promise<unknown>, success: string) => void
+
 export function ReviewButtons({
   pending,
   canSubmit,

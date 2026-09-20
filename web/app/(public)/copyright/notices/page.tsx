@@ -2,9 +2,16 @@ import { requireCurrentUser } from '@/lib/auth/require-current-user'
 import { getCopyrightNotices } from '@/lib/api/server/copyright-notices'
 import Link from 'next/link'
 export const dynamic = 'force-dynamic'
-export default async function CopyrightNoticesPage() {
+export default async function CopyrightNoticesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ after?: string | string[] }>
+}) {
   await requireCurrentUser()
-  const notices = await getCopyrightNotices()
+  const { after } = await searchParams
+  const notices = await getCopyrightNotices({
+    after: typeof after === 'string' ? after : undefined,
+  })
   return (
     <main className='mx-auto max-w-3xl space-y-5 py-8'>
       <h1 className='text-3xl font-bold'>Accepted copyright notices</h1>
@@ -12,7 +19,7 @@ export default async function CopyrightNoticesPage() {
         Case records exclude participant identities, correspondence, evidence, and agent analysis.
       </p>
       <ul className='space-y-3'>
-        {notices.map(notice => (
+        {notices.copyright_notices.map(notice => (
           <li
             key={notice.id}
             className='rounded border p-4'
@@ -30,6 +37,14 @@ export default async function CopyrightNoticesPage() {
           </li>
         ))}
       </ul>
+      {notices.page_info.has_next_page && notices.page_info.end_cursor && (
+        <Link
+          className='inline-block underline'
+          href={`/copyright/notices?after=${encodeURIComponent(notices.page_info.end_cursor)}`}
+        >
+          Load more accepted copyright notices
+        </Link>
+      )}
     </main>
   )
 }

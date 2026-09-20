@@ -214,20 +214,41 @@ export type CopyrightParticipantNoticeDetail = CopyrightPublicNoticeDetail & {
   submissions: Array<{ id: string; kind: string; received_at: Date; source_kind: string }>
 }
 
-export async function listAcceptedCopyrightNotices(): Promise<CopyrightPublicNotice[]> {
+export type CopyrightAcceptedNoticeCursorRow = CopyrightPublicNotice & {
+  cursor_accepted_at: string
+}
+
+export async function listAcceptedCopyrightNotices(options: {
+  limit: number
+  after?: { timestamp: string; id: string }
+}): Promise<{ notices: CopyrightAcceptedNoticeCursorRow[]; hasNextPage: boolean }> {
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<CopyrightPublicNotice>(sql`/* listAcceptedCopyrightNotices */
+  const query = sql`/* listAcceptedCopyrightNotices */
     SELECT notice.id, notice.jurisdiction, notice.received_at, notice.accepted_at,
-      notice.provisional_withholding_at, count(target.id)::integer AS target_count
+      notice.provisional_withholding_at, count(target.id)::integer AS target_count,
+      to_char(
+        notice.accepted_at AT TIME ZONE 'UTC',
+        'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+      ) AS cursor_accepted_at
     FROM copyright_notices notice
     JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
     WHERE notice.accepted_at IS NOT NULL
+  `
+  if (options.after) {
+    query.append(sql`
+      AND (notice.accepted_at, notice.id) < (${options.after.timestamp}::timestamptz, ${options.after.id})`)
+  }
+  query.append(sql`
     GROUP BY notice.id
     ORDER BY notice.accepted_at DESC, notice.id DESC
-    LIMIT 100
+    LIMIT ${options.limit + 1}
   `)
+  const { rows } = await transaction<CopyrightAcceptedNoticeCursorRow>(query)
   await transaction.commit()
-  return rows
+  return {
+    notices: rows.slice(0, options.limit),
+    hasNextPage: rows.length > options.limit,
+  }
 }
 
 export async function getCopyrightPublicNoticeDetail(

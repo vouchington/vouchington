@@ -13,18 +13,24 @@ import {
   CopyrightStaffIntentRecovery,
 } from './copyright-staff-case-detail'
 import { CopyrightStaffLegalHoldReview } from './copyright-staff-case-legal-hold'
-import { ReviewButtons, type SubmitReview } from './copyright-staff-review-buttons'
+import {
+  ReviewButtons,
+  type SubmitRecovery,
+  type SubmitReview,
+} from './copyright-staff-review-buttons'
 
 export function CopyrightStaffCase({
   notice,
   pending,
   rationale,
   submit,
+  submitRecovery,
 }: {
   notice: CopyrightStaffQueueItem
   pending: boolean
   rationale: string
   submit: SubmitReview
+  submitRecovery: SubmitRecovery
 }) {
   const canSubmit = rationale.length > 0
   return (
@@ -61,7 +67,7 @@ export function CopyrightStaffCase({
         />
       ))}
       <CopyrightStaffCorrespondence notice={notice} />
-      <CopyrightStaffIntentRecovery {...{ notice, pending, submit }} />
+      <CopyrightStaffIntentRecovery {...{ notice, pending, submitRecovery }} />
     </article>
   )
 }

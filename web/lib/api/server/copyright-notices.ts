@@ -3,17 +3,18 @@ import { serverApi } from './instance'
 import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
 import type {
   CopyrightNoticeDetail,
-  CopyrightNoticeSummary,
+  CopyrightNoticesPage,
   CopyrightParticipantNoticeDetail,
   CopyrightStaffQueueItem,
 } from '@/types/copyright-notices'
 
-export const getCopyrightNotices = cache(async (): Promise<CopyrightNoticeSummary[]> => {
-  const response = await serverApi.get<{ copyright_notices: CopyrightNoticeSummary[] }>(
-    '/api/v1/copyright-notices',
-  )
-  return response.copyright_notices
-})
+export const getCopyrightNotices = cache(
+  async (options?: { after?: string; limit?: number }): Promise<CopyrightNoticesPage> => {
+    return serverApi.get<CopyrightNoticesPage>('/api/v1/copyright-notices', {
+      searchParams: { after: options?.after, limit: options?.limit },
+    })
+  },
+)
 
 export const getCopyrightNoticeServer = cache(
   async (id: string): Promise<CopyrightNoticeDetail | null> => {
@@ -30,6 +31,7 @@ export const getCopyrightParticipantNoticeServer = cache(
       serverApi.get<{ copyright_notice: CopyrightParticipantNoticeDetail }>(
         `/api/v1/copyright-notices/${id}/participant`,
       ),
+      { nullStatusCodes: [403, 404] },
     )
     return response?.copyright_notice ?? null
   },

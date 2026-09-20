@@ -262,6 +262,10 @@
       "fixtureIds": [],
       "hash": "11115901eecde79a3b5f6be7e3b6ccb54ea38fc4ca9098c4c58e75a7740944eb"
     },
+    "GET:/api/v1/copyright-notices": {
+      "fixtureIds": ["web.copyright.notices.default"],
+      "hash": "25d75957fe0a0c16be24b3ef14e4b5c9bd66dc4eaca857802ce29ed8c286fa1f"
+    },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
       "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940"
@@ -2773,6 +2777,10 @@
     "web.communities.warning.create.default": {
       "fixtureIds": ["web.communities.warning.create.default"],
       "hash": "b038a2f206ce0215d4d59994436070776411fd7e26ec212e912a03af1ee89ef9"
+    },
+    "web.copyright.notices.default": {
+      "fixtureIds": ["web.copyright.notices.default"],
+      "hash": "074daf1f3dc0959dbfa83af5cbbcb598805640e6c6f0a9e1c93bcea2ae4345c5"
     },
     "web.growth-metrics.default": {
       "fixtureIds": ["web.growth-metrics.default"],

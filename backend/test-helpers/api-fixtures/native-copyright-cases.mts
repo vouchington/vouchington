@@ -18,6 +18,37 @@ const clientConsumers = ['web', 'swift-core', 'swift-ui', 'dotnet-core'] as cons
 
 export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
   {
+    id: 'web.copyright.notices.default',
+    method: 'GET',
+    path: '/api/v1/copyright-notices',
+    route: { routeTemplate: '/api/v1/copyright-notices' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      copyright_notices: [
+        {
+          id: noticeId,
+          jurisdiction: 'us_dmca',
+          received_at: '2026-07-01T12:00:00.000Z',
+          accepted_at: '2026-07-01T12:01:00.000Z',
+          provisional_withholding_at: '2026-07-01T12:01:00.000Z',
+          target_count: 1,
+        },
+      ],
+      page_info: {
+        has_next_page: true,
+        start_cursor: 'copyright-notices-first',
+        end_cursor: 'copyright-notices-next',
+      },
+    },
+    consumers: ['web'],
+    migratedFrom: [
+      'backend/api/v1/copyright-notices/index.mts',
+      'web/lib/api/client/copyright-notices.ts',
+      'web/lib/api/server/copyright-notices.ts',
+    ],
+  },
+  {
     id: 'native.posts.images.placement.default',
     method: 'GET',
     path: `/api/v1/posts/${postId}/images`,

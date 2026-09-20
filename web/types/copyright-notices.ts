@@ -7,6 +7,15 @@ export type CopyrightNoticeSummary = {
   target_count: number
 }
 
+export type CopyrightNoticesPage = {
+  copyright_notices: CopyrightNoticeSummary[]
+  page_info: {
+    has_next_page: boolean
+    start_cursor: string | null
+    end_cursor: string | null
+  }
+}
+
 export type CopyrightNoticeDetail = CopyrightNoticeSummary & {
   targets: Array<{
     id: string
@@ -21,6 +30,12 @@ export type CopyrightParticipantNoticeDetail = CopyrightNoticeDetail & {
   respondable_target_ids: string[]
   submissions: Array<{ id: string; kind: string; received_at: string; source_kind: string }>
 }
+
+/** Deliberately excludes participant submissions before a public case page renders its controls. */
+export type CopyrightNoticeResponseEligibility = Pick<
+  CopyrightParticipantNoticeDetail,
+  'viewer_role' | 'respondable_target_ids'
+>
 
 export type CopyrightStaffQueueItem = {
   id: string

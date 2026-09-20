@@ -1,7 +1,16 @@
 import Link from 'next/link'
-import type { CopyrightNoticeDetail } from '@/types/copyright-notices'
+import type {
+  CopyrightNoticeDetail,
+  CopyrightNoticeResponseEligibility,
+} from '@/types/copyright-notices'
 
-export function CopyrightNoticeDetailView({ notice }: { notice: CopyrightNoticeDetail }) {
+export function CopyrightNoticeDetailView({
+  notice,
+  responseEligibility,
+}: {
+  notice: CopyrightNoticeDetail
+  responseEligibility: CopyrightNoticeResponseEligibility | null
+}) {
   return (
     <section className='space-y-5'>
       <div>
@@ -47,20 +56,23 @@ export function CopyrightNoticeDetailView({ notice }: { notice: CopyrightNoticeD
           ))}
         </ol>
       </section>
-      <div className='flex gap-3'>
-        <Link
-          className='underline'
-          href={`/copyright/notices/${notice.id}/appeal`}
-        >
-          Appeal
-        </Link>
-        <Link
-          className='underline'
-          href={`/copyright/notices/${notice.id}/counter-notice`}
-        >
-          Counter-notice
-        </Link>
-      </div>
+      {responseEligibility?.viewer_role === 'poster' &&
+        responseEligibility.respondable_target_ids.length > 0 && (
+          <div className='flex gap-3'>
+            <Link
+              className='underline'
+              href={`/copyright/notices/${notice.id}/appeal`}
+            >
+              Appeal
+            </Link>
+            <Link
+              className='underline'
+              href={`/copyright/notices/${notice.id}/counter-notice`}
+            >
+              Counter-notice
+            </Link>
+          </div>
+        )}
     </section>
   )
 }
