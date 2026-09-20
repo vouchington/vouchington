@@ -107,6 +107,13 @@ export const SECRET_INVENTORY = {
       'Marked provisioned because ci.yml forwards it from a stepless reusable-workflow job, ' +
       'which cannot host a readiness step; the called workflow performs the explicit preflight.',
   },
+  SENTRY_AUTH_TOKEN: {
+    provisioned: false,
+    notes:
+      'Sentry organization token used only by the trusted main-branch web image publication ' +
+      'to create releases and upload Next.js source maps (repo secret). Provision after the ' +
+      'Sentry projects and GitHub integration exist.',
+  },
   STRIPE_SECRET_KEY: {
     provisioned: true,
     notes: 'Stripe secret key for credentialed backend tests (repo secret).',

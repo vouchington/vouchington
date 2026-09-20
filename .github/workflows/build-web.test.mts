@@ -73,6 +73,8 @@ describe('build-web workflow', () => {
     expect(compositeActionSource).not.toContain('ENV SENTRY_AUTH_TOKEN')
     expect(publishSource).toContain('SENTRY_AUTH_TOKEN:')
     expect(publishSource).toContain('required: true')
+    expect(publishSource).toContain('[ -z "${SENTRY_AUTH_TOKEN:-}" ]')
+    expect(publishSource).toContain('exit 1')
     expect(publishSource).toContain("sentry-source-map-upload: 'true'")
     expect(publishSource).toContain('trusted_secret_context')
     expect(mainWebSource).toContain('trusted_secret_context: true')
