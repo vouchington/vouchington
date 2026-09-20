@@ -12,6 +12,7 @@ const expectedParameters = {
   'GET:/api/v1/auth/totp': ['after', 'limit'],
   'GET:/api/v1/communities/:idOrSlug/moderation-transparency': ['after', 'range'],
   'GET:/api/v1/communities/:idOrSlug/reports/pending': ['after', 'limit', 'sort'],
+  'GET:/api/v1/copyright-notices': ['after', 'limit'],
   'GET:/api/v1/currencies': ['after', 'limit'],
   'GET:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType': [
     'after',
