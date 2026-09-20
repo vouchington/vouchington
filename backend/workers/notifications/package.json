@@ -27,7 +27,6 @@
     "@queues/notifications": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@services/entity-relations": "workspace:^",
-    "@services/images": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/notifications-push": "workspace:^",

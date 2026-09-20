@@ -4271,15 +4271,9 @@ importers:
       '@vouchington/image-resize':
         specifier: 0.2.0
         version: 0.2.0(@types/node@26.5.0)
-      '@vouchington/media':
-        specifier: 0.2.0
-        version: 0.2.0
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
-      undici:
-        specifier: ^8.10.2
-        version: 8.10.2
     devDependencies:
       '@queues/ban-evasion':
         specifier: workspace:^
@@ -12024,9 +12018,6 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../../services/entity-relations
-      '@services/images':
-        specifier: workspace:^
-        version: link:../../services/images
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../../services/media-delivery-safety

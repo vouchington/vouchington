@@ -37,9 +37,7 @@
     "@services/topics": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@vouchington/image-resize": "0.2.0",
-    "@vouchington/media": "0.2.0",
-    "pg-copy-streams": "^7.0.0",
-    "undici": "^8.10.2"
+    "pg-copy-streams": "^7.0.0"
   },
   "devDependencies": {
     "@queues/ban-evasion": "workspace:^",

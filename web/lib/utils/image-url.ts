@@ -37,15 +37,9 @@ function getDeliveryUrl(pathname: string, opts: { width: number; quality?: numbe
   return host ? `${host}${path}` : path
 }
 
-export function buildImagePath(imageId?: string | null, width: number = 1200): string | undefined {
-  if (!imageId) return undefined
-  return getImageUrl(imageId, { width })
-}
-
 /**
- * Returns an SEO-safe placement URL for a persisted post image. Unlike
- * buildImagePath, this intentionally has no generic-image fallback: post media
- * must retain its placement binding outside in-progress upload previews.
+ * Returns an SEO-safe placement URL for a persisted post image. Post media
+ * retains its placement binding outside in-progress upload previews.
  */
 export function buildPlacementImagePath(
   image?: { image_id: string; placement_id: string; placement_revision: number } | null,
