@@ -18,10 +18,10 @@ consent page without exposing a pending request to another user.
 `/token` and `/revoke` are the only form-encoded route exceptions. Dynamic registration and
 consent decisions use JSON. Protocol errors use OAuth's `error` and `error_description` shape.
 
-`/register`, `/token`, and `/revoke` are public machine-to-machine ingress. The Cloudflare Worker
-strips browser session cookies from those exact POST routes and exempts them from staging Basic
-Auth so their protocol-level validation remains authoritative. `/authorize` is intentionally a
-browser route and retains the ordinary session and staging-auth boundaries.
+`/register`, `/token`, and `/revoke` are public machine-to-machine ingress and do not use browser
+session credentials. Edge routing and staging-auth policy are owned by the browser/edge integration
+layer above this service. `/authorize` is intentionally a browser route and retains the ordinary
+session boundary.
 
 ## Performance
 
@@ -31,5 +31,4 @@ changes are required. Every route is `no-store` and bypasses edge caching.
 
 ## Related
 
-- [Security requirements](../../../docs/requirements/security/OAUTH-AUTHORIZATION-SERVER.md)
 - [Service implementation](../../services/oauth-authorization-server/README.md)
