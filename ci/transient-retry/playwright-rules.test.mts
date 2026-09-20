@@ -68,10 +68,9 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   ...overrides,
 })
 
-// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
-// comment on idempotentWorkflows in runner-shutdown-consumers.mts), so it is exercised directly here
-// rather than through decide()/RULES. There is no per-rule retry cap to test at this layer — that
-// accounting lives entirely in decide().
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. These direct matcher cases also protect the
+// coverage-artifact rules that reuse the same conservative predicate.
 describe('runnerShutdownLeafRerunMatch (playwright shards only)', () => {
   it('reruns CI when Playwright shards fail from runner shutdown and only aggregate jobs fail downstream', async () => {
     expect(await runnerShutdownLeafRerunMatch(makeCtx())).toBe(true)

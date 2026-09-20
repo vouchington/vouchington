@@ -3,11 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 import type { WorkflowRunContext } from './types.mts'
 
-// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
-// comment on idempotentWorkflows in runner-shutdown-consumers.mts) -- exercised directly here rather
-// than through decide()/RULES. Covers the 'A task was canceled.' marker variant of
-// hasRunnerShutdownMarkers, distinct from the 'The operation was canceled.' variant covered by
-// runner-shutdown-web-rules.test.mts.
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. This direct matcher suite covers the A-task-cancelled
+// marker variant.
 
 const playwrightShardJobName = 'playwright-tests / playwright-tests (1)'
 

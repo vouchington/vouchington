@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 import type { WorkflowRunContext } from './types.mts'
 
-// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
-// comment on idempotentWorkflows in runner-shutdown-consumers.mts) -- exercised directly here rather
-// than through decide()/RULES. See runner-shutdown-web-rules.test.mts for the web consumers.
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. These direct matcher cases also protect the
+// coverage-artifact rules that reuse the same conservative predicate.
 
 const backendCredentialedJobName = 'test-backend-credentialed / backend-credentialed-tests'
 

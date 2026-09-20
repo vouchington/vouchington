@@ -4,12 +4,9 @@ import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 import { buildWebTargetsStepMarker } from './runner-shutdown-consumer-registry.mts'
 import type { WorkflowRunContext } from './types.mts'
 
-// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
-// comment on idempotentWorkflows in runner-shutdown-consumers.mts): on GitHub-hosted, ephemeral,
-// single-job-per-VM runners, hasRunnerShutdownMarkers can never match, since that marker is tied to a
-// persistent self-hosted runner agent being told to drain mid-job. The predicate is retained only as
-// a shared narrowing helper for coverage-artifact-rules.mts's hasOnlyAggregatesOrCleanRunnerShutdowns,
-// so it is exercised directly here rather than through decide()/RULES.
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. These direct matcher cases also protect the
+// coverage-artifact rules that reuse the same conservative predicate.
 
 const staticWebJobName = 'static-checks / static-web'
 const shutdownOnlyMarkers = [

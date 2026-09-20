@@ -4,9 +4,9 @@ import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 import { hasExplicitOomEvidence } from './runner-shutdown-fingerprints.mts'
 import type { WorkflowRunContext } from './types.mts'
 
-// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
-// comment on idempotentWorkflows in runner-shutdown-consumers.mts) -- exercised directly here rather
-// than through decide()/RULES. See runner-shutdown-web-rules.test.mts for the web consumers.
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. These direct matcher cases protect the OOM safety
+// boundary reused by the coverage-artifact rules.
 
 const shutdownOnlyMarkers = [
   '##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled.',

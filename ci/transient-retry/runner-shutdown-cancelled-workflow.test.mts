@@ -3,11 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 import type { WorkflowRunContext } from './types.mts'
 
-// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
-// comment on idempotentWorkflows in runner-shutdown-consumers.mts) -- exercised directly here rather
-// than through decide()/RULES. Covers isCancelledKnownConsumerWithoutFailure's non-OOM correctness
-// (a cancelled sibling matrix job alongside a cleanly-shutdown failed leaf), distinct from
-// runner-shutdown-safety-regressions.test.mts's OOM-interaction coverage of the same branch.
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. This direct matcher suite covers a cancelled sibling
+// matrix job alongside a cleanly-shutdown failed leaf.
 
 const failedShardJobName = 'test-playwright / playwright-tests (2)'
 const cancelledShardJobName = 'test-playwright / playwright-tests (1)'

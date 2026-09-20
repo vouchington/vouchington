@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 import type { WorkflowRunContext } from './types.mts'
 
-// runnerShutdownLeafRerunMatch is no longer registered as a standalone TransientRetryRule (see the
-// comment on idempotentWorkflows in runner-shutdown-consumers.mts) -- exercised directly here rather
-// than through decide()/RULES. See runner-shutdown-web-rules.test.mts for the web consumers.
+// Production registration and retry accounting are covered through decide()/RULES in
+// runner-shutdown-production-rule.test.mts. This direct matcher suite covers the conditional
+// store-playwright-otel downstream relationship.
 
 const playwrightShardJobName = 'test-playwright / playwright-tests (1)'
 const storePlaywrightOtelJobName = 'store-playwright-otel'
