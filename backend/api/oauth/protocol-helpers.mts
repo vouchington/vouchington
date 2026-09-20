@@ -1,4 +1,5 @@
-import { OAuthProtocolError } from '@services/oauth-authorization-server'
+import { invalidClientMetadata, OAuthProtocolError } from '@services/oauth-authorization-server'
+import { parseJsonBody } from '../response-helpers.mts'
 import type { Context } from '@jongleberry/api-server'
 
 const FORM_BODY_LIMIT = '16kb'
@@ -16,6 +17,18 @@ export async function parseFormBody(ctx: Context): Promise<URLSearchParams> {
     }
   }
   return form
+}
+
+export async function parseOAuthRegistrationBody(ctx: Context): Promise<unknown> {
+  const contentType = ctx.req.headers['content-type']?.split(';', 1)[0]?.trim().toLowerCase()
+  if (contentType !== 'application/json') {
+    throw invalidClientMetadata('registration metadata must use application/json')
+  }
+  try {
+    return await parseJsonBody<unknown>(ctx)
+  } catch {
+    throw invalidClientMetadata('registration metadata must be valid JSON')
+  }
 }
 
 export function parseOAuthClientAuthentication(

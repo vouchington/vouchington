@@ -14,7 +14,6 @@ import {
   exchangeOAuthRefreshToken,
   getOAuthAuthorizationErrorRedirect,
   getOAuthAuthorizationRequestForUser,
-  invalidClientMetadata,
   OAuthProtocolError,
   registerOAuthClient,
   revokeOAuthToken,
@@ -25,6 +24,7 @@ import { assertNotSuspended } from '@services/users'
 import {
   parseFormBody,
   parseOAuthClientAuthentication,
+  parseOAuthRegistrationBody,
   queryString,
   redirect,
   requiredFormValue,
@@ -82,7 +82,7 @@ app.route('/register').post(async (ctx: Context) => {
   setOAuthResponseHeaders(ctx)
   await ctx.applyRouteRateLimit('POST:/register', { identityMode: 'ip-only' })
   try {
-    const client = await registerOAuthClient(await parseRegistrationBody(ctx))
+    const client = await registerOAuthClient(await parseOAuthRegistrationBody(ctx))
     ctx.setStatus(201)
     ctx.json(client)
   } catch (error) {
@@ -156,12 +156,11 @@ app.route('/revoke').post(
 
 app.route('/api/v1/oauth/authorization-requests/:id').get(async (ctx: Context) => {
   setOAuthResponseHeaders(ctx)
-  const currentUser = await requireAuth(ctx, 'GET:/api/v1/oauth/authorization-requests/:id')
-  const session = await ctx.getSessionTokenData()
+  const authorizationContext = await getOAuthAuthorizationReadContext(ctx)
   const request = await getOAuthAuthorizationRequestForUser(
-    currentUser.id,
+    authorizationContext.userId,
     validateUUIDParam(ctx, 'id'),
-    createOAuthBrowserBindingHash(session.did, session.sid),
+    authorizationContext.browserBindingHash,
   )
   ctx.assert(request, 404, 'Not Found')
   ctx.json({ authorization_request: request })
@@ -186,14 +185,13 @@ app.route('/api/v1/oauth/authorization-requests/:id/decisions').post(async (ctx:
   ctx.json(result)
 })
 
-async function parseRegistrationBody(ctx: Context): Promise<unknown> {
-  const contentType = ctx.req.headers['content-type']?.split(';', 1)[0]?.trim().toLowerCase()
-  if (contentType !== 'application/json') {
-    throw invalidClientMetadata('registration metadata must use application/json')
-  }
-  try {
-    return await parseJsonBody<unknown>(ctx)
-  } catch {
-    throw invalidClientMetadata('registration metadata must be valid JSON')
+async function getOAuthAuthorizationReadContext(
+  ctx: Context,
+): Promise<{ browserBindingHash: string; userId: string }> {
+  const currentUser = await requireAuth(ctx, 'GET:/api/v1/oauth/authorization-requests/:id')
+  const session = await ctx.getSessionTokenData()
+  return {
+    browserBindingHash: createOAuthBrowserBindingHash(session.did, session.sid),
+    userId: currentUser.id,
   }
 }

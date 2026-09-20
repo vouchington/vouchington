@@ -39,21 +39,36 @@ export async function exchangeOAuthAuthorizationCode(input: {
   if (!code) throw new OAuthProtocolError('invalid_grant', 'authorization code is invalid')
   assertCodeExchange(code, client, input, verifier)
 
+  const tokens = await completeAuthorizationCodeExchange(code, query)
+  await query.commit()
+  return tokens
+}
+
+async function completeAuthorizationCodeExchange(
+  code: AuthorizationCodeRow,
+  query: TransactionQuery,
+): Promise<OAuthTokenResponse> {
   const tokens = await issueNewTokenFamily(code, query)
+  await markAuthorizationCodeConsumed(code, query)
+  return tokens
+}
+
+async function markAuthorizationCodeConsumed(
+  code: AuthorizationCodeRow,
+  query: TransactionQuery,
+): Promise<void> {
   await query(
-    `/* exchangeOAuthAuthorizationCode */ UPDATE oauth_authorization_codes
+    `/* markAuthorizationCodeConsumed */ UPDATE oauth_authorization_codes
      SET consumed_at = CURRENT_TIMESTAMP
      WHERE id = $1`,
     [code.id],
   )
   await query(
-    `/* exchangeOAuthAuthorizationCode grant */ UPDATE oauth_grants
+    `/* markAuthorizationCodeConsumed grant */ UPDATE oauth_grants
      SET last_used_at = CURRENT_TIMESTAMP
      WHERE id = $1`,
     [code.grant_id],
   )
-  await query.commit()
-  return tokens
 }
 
 async function lockAuthorizationCode(

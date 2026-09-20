@@ -34,20 +34,42 @@ export async function revokeOAuthRefreshFamily(
   )
   const family = result.rows[0]
   if (!family) return
+  await revokeOAuthRefreshFamilyTokens(familyId, query)
+  await insertOAuthRefreshFamilyRevocationEvent(familyId, family, reuseDetected, query)
+}
+
+async function revokeOAuthRefreshFamilyTokens(
+  familyId: string,
+  query: TransactionQuery,
+): Promise<void> {
   await query(
-    `/* revokeOAuthRefreshFamily refresh */ UPDATE oauth_refresh_tokens
+    `/* revokeOAuthRefreshFamilyTokens refresh */ UPDATE oauth_refresh_tokens
      SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
      WHERE family_id = $1`,
     [familyId],
   )
   await query(
-    `/* revokeOAuthRefreshFamily access */ UPDATE oauth_access_tokens
+    `/* revokeOAuthRefreshFamilyTokens access */ UPDATE oauth_access_tokens
      SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
      WHERE refresh_family_id = $1`,
     [familyId],
   )
+}
+
+async function insertOAuthRefreshFamilyRevocationEvent(
+  familyId: string,
+  family: {
+    client_id: string
+    grant_id: string
+    resource: string
+    scopes: string[]
+    user_id: string
+  },
+  reuseDetected: boolean,
+  query: TransactionQuery,
+): Promise<void> {
   await query(
-    `/* revokeOAuthRefreshFamily event */ INSERT INTO oauth_authorization_server_events (
+    `/* insertOAuthRefreshFamilyRevocationEvent */ INSERT INTO oauth_authorization_server_events (
        event_type,
        refresh_token_family_id,
        user_id,

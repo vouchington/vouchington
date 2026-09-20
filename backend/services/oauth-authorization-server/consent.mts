@@ -30,22 +30,70 @@ export async function decideOAuthAuthorizationRequest(
   }
 
   if (decision === 'deny') {
-    await insertConsentDecision(request, decision, null, query)
-    await query(
-      `/* decideOAuthAuthorizationRequest deny */ UPDATE oauth_authorization_requests
-       SET denied_at = CURRENT_TIMESTAMP
-       WHERE id = $1`,
-      [request.id],
-    )
+    await denyAuthorizationRequest(request, query)
     await query.commit()
     return { redirect_uri: buildAuthorizationRedirect(request, { error: 'access_denied' }) }
   }
 
-  const grantId = await upsertGrant(request, query)
-  await insertConsentDecision(request, decision, grantId, query)
-  const rawCode = `voucha_code_${randomBytes(32).toString('base64url')}`
+  const rawCode = await approveAuthorizationRequest(request, query)
+  await query.commit()
+  return { redirect_uri: buildAuthorizationRedirect(request, { code: rawCode }) }
+}
+
+async function denyAuthorizationRequest(
+  request: AuthorizationRequestRow,
+  query: TransactionQuery,
+): Promise<void> {
+  await insertConsentDecision(request, 'deny', null, query)
   await query(
-    `/* decideOAuthAuthorizationRequest code */ INSERT INTO oauth_authorization_codes (
+    `/* denyAuthorizationRequest */ UPDATE oauth_authorization_requests
+     SET denied_at = CURRENT_TIMESTAMP
+     WHERE id = $1`,
+    [request.id],
+  )
+}
+
+async function approveAuthorizationRequest(
+  request: AuthorizationRequestRow,
+  query: TransactionQuery,
+): Promise<string> {
+  const grantId = await recordAuthorizationApproval(request, query)
+  return issueAuthorizationCode(request, grantId, query)
+}
+
+async function recordAuthorizationApproval(
+  request: AuthorizationRequestRow,
+  query: TransactionQuery,
+): Promise<string> {
+  const grantId = await upsertGrant(request, query)
+  await insertConsentDecision(request, 'approve', grantId, query)
+  return grantId
+}
+
+async function issueAuthorizationCode(
+  request: AuthorizationRequestRow,
+  grantId: string,
+  query: TransactionQuery,
+): Promise<string> {
+  const rawCode = `voucha_code_${randomBytes(32).toString('base64url')}`
+  await insertAuthorizationCode(request, grantId, rawCode, query)
+  await query(
+    `/* issueAuthorizationCode */ UPDATE oauth_authorization_requests
+     SET approved_at = CURRENT_TIMESTAMP
+     WHERE id = $1`,
+    [request.id],
+  )
+  return rawCode
+}
+
+async function insertAuthorizationCode(
+  request: AuthorizationRequestRow,
+  grantId: string,
+  rawCode: string,
+  query: TransactionQuery,
+): Promise<void> {
+  await query(
+    `/* insertAuthorizationCode */ INSERT INTO oauth_authorization_codes (
        id, code_hash, grant_id, redirect_uri, resource, scopes, code_challenge, expires_at
      ) VALUES ($1, $2, $3, $4, $5, $6::text[], $7, $8)`,
     [
@@ -59,14 +107,6 @@ export async function decideOAuthAuthorizationRequest(
       new Date(Date.now() + AUTHORIZATION_CODE_TTL_MS),
     ],
   )
-  await query(
-    `/* decideOAuthAuthorizationRequest approve */ UPDATE oauth_authorization_requests
-     SET approved_at = CURRENT_TIMESTAMP
-     WHERE id = $1`,
-    [request.id],
-  )
-  await query.commit()
-  return { redirect_uri: buildAuthorizationRedirect(request, { code: rawCode }) }
 }
 
 async function insertConsentDecision(
