@@ -107,6 +107,27 @@ describe('copyright email correspondence admission', () => {
         manualFallbackReason: 'Agent output is unavailable.',
       }),
     ).rejects.toMatchObject({ status: 409 })
+    await expect(
+      admitCopyrightEmailCorrespondence({
+        currentUser: moderator,
+        intakeId: intake.id,
+        kind: 'counter_notice',
+        targetIds: [targetId],
+        structuredSubmission: {
+          name: 'Hosted-material poster',
+          address: '1 Main Street, Example City',
+          telephone: '555-0100',
+          consentToFederalJurisdiction: true,
+          consentToServiceOfProcess: true,
+          goodFaithMisidentificationUnderPenaltyOfPerjury: true,
+          electronicSignature: 'Hosted-material poster',
+          targetIds: [targetId],
+        },
+        rationale: 'The completed correspondence decision may be safely replayed.',
+        recommendationId: null,
+        manualFallbackReason: 'Agent output is unavailable.',
+      }),
+    ).resolves.toEqual({ ...admitted, isDuplicate: true })
     const admittedAggregate = await getCopyrightNoticePrivateAggregate(notice.id)
     const submission = admittedAggregate?.submissions.find(
       item => item.id === admitted.submissionId,

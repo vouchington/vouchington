@@ -98,6 +98,37 @@ describe('copyright delivery and correspondence persistence', () => {
     ).rejects.toMatchObject({ status: 422 })
   })
 
+  it('returns a wrongly routed claimed email intent to retryable state', async () => {
+    const { notice } = await createFixture()
+    const correspondence = await createOutboundCopyrightCorrespondence({
+      noticeId: notice.id,
+      submissionId: null,
+      correspondenceKind: 'status_update',
+      compositionKind: 'deterministic_template',
+      bodyCiphertext: `status-${crypto.randomUUID()}`,
+      draftedById: null,
+    })
+    const intent = await createCopyrightDeliveryIntent({
+      noticeId: notice.id,
+      submissionId: null,
+      correspondenceId: correspondence.id,
+      recipientUserId: null,
+      recipientRole: 'correspondent',
+      recipientEmail: `copyright-correspondent-${crypto.randomUUID()}@example.test`,
+      deliveryKind: 'status_update',
+      channel: 'email',
+      idempotencyKey: `copyright-wrong-channel-${crypto.randomUUID()}`,
+    })
+
+    await expect(deliverCopyrightInAppNotification(intent.id)).rejects.toMatchObject({
+      status: 422,
+    })
+    const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
+    expect(aggregate?.deliveryIntents).toContainEqual(
+      expect.objectContaining({ id: intent.id, state: 'pending', channel: 'email' }),
+    )
+  })
+
   it('retains a retryable legal delivery obligation and exposes its terminal state', async () => {
     const { notice } = await createFixture()
     const correspondence = await createOutboundCopyrightCorrespondence({

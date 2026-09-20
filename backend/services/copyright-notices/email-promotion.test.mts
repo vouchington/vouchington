@@ -83,6 +83,31 @@ describe('copyright email promotion', () => {
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
       { accepted: true, promoted_copyright_notice_id: approved.noticeId },
     ])
+    await expect(
+      promoteCopyrightEmailIntake({
+        currentUser: moderator,
+        intakeId: intake.id,
+        recommendationId: null,
+        manualFallbackReason: 'The extraction agent was unavailable.',
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: 'Claimant',
+        claimantContact: 'claimant@example.test',
+        claimantEmail: 'claimant@example.test',
+        workDescription: 'Original photograph',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Claimant',
+        targets: [
+          {
+            placementKey: `post-image:${postId}:${imageId}`,
+            placementRevision: 1,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
+        rationale: 'The prior moderator decision may be safely replayed.',
+      }),
+    ).resolves.toEqual(approved)
   })
 
   it('sends and records a bounced staff response to a rejected email', async () => {

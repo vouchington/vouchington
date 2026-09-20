@@ -74,6 +74,7 @@ describe('copyright email threading', () => {
       }),
     ).toBe(true)
     const sesMessageId = `ses-inbound-${crypto.randomUUID()}`
+    const inboundMessageId = `<${crypto.randomUUID()}@example.test>`
     const { intake } = await createCopyrightEmailIntake({
       sesMessageId,
       receivedAt: new Date(),
@@ -89,7 +90,7 @@ describe('copyright email threading', () => {
         fromEmail: 'claimant@example.test',
         subject: 'Re: Copyright notice',
         bodyText: 'Please provide more details.',
-        messageId: `<${crypto.randomUUID()}@example.test>`,
+        messageId: inboundMessageId,
         replyReferences: [`<${outboundMessageId}>`],
         attachments: [],
       }),
@@ -107,5 +108,30 @@ describe('copyright email threading', () => {
         rationale: 'This is correspondence, not a new notice.',
       }),
     ).rejects.toThrow('Thread-linked copyright email cannot be rejected as an initial intake')
+
+    const replySesMessageId = `ses-inbound-reply-${crypto.randomUUID()}`
+    const { intake: reply } = await createCopyrightEmailIntake({
+      sesMessageId: replySesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${replySesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 8),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+    })
+    await expect(
+      recordCopyrightEmailParse(reply, {
+        status: 'succeeded',
+        fromEmail: 'claimant@example.test',
+        subject: 'Re: Copyright notice',
+        bodyText: 'This follows up on the prior correspondence.',
+        messageId: `<${crypto.randomUUID()}@example.test>`,
+        replyReferences: [inboundMessageId],
+        attachments: [],
+      }),
+    ).resolves.toMatchObject({
+      noticeId: notice.id,
+      matchedIntakeId: intake.id,
+      matchedReference: inboundMessageId.slice(1, -1),
+    })
   })
 })
