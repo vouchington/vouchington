@@ -5,17 +5,14 @@ import { isRunnablePlaywrightSpec } from '../test-plan.mts'
 
 export { GITHUB_MATRIX_MAX_JOBS } from '../shard-limits.mts'
 
-export const PLAYWRIGHT_ESTIMATED_SECONDS_PER_SPEC = 8.6
-// Allocation heuristic, not a per-spec SLA: this is the per-shard test-execution budget the
-// shard-total formula below solves against, calibrated for GitHub-hosted ubuntu-latest runners
-// (2 vCPU while this repo is private) rather than the self-hosted fleet the previous constants
-// targeted — hosted runners are materially slower per spec. The whole playwright-tests job (build
-// + migrate + compile + test) targets a ~10-minute ceiling, not just the test step. Band-top check
-// at the current runnable spec count (318; the 292-327 band all resolve to shardTotal=9, 328 steps
-// to 10): 327 * PLAYWRIGHT_ESTIMATED_SECONDS_PER_SPEC = 2812.2s of estimated spec time, spread over
-// 9 shards, averages ~313s/shard before the fixed per-shard build/startup overhead outside this
-// budget.
-export const PLAYWRIGHT_EXECUTION_BUDGET_SECONDS = 313
+export const PLAYWRIGHT_ESTIMATED_SECONDS_PER_SPEC = 12
+// Allocation heuristic, not a per-spec SLA: this is an initial public 4-vCPU, three-worker
+// candidate projected from the private-runner baseline. The whole playwright-tests job (build +
+// migrate + compile + test) targets a sub-ten-minute runtime, not just the test step. At the current
+// runnable spec count (318), 318 * 12 seconds / 300 seconds rounds to 13 shards. Public-runner
+// measurements must validate or retune this allocation; the execution budget leaves room for fixed
+// per-shard build and startup overhead.
+export const PLAYWRIGHT_EXECUTION_BUDGET_SECONDS = 300
 function validatedShardTotalOverride(override?: string): number | undefined {
   if (override === undefined || override === '') return undefined
   if (!/^[1-9]\d*$/.test(override)) {

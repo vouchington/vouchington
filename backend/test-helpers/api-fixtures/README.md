@@ -18,8 +18,8 @@ project (`test-helpers/vitest-config/backend-core-projects.mts`), isolated from 
 `backend-test-helpers`'s files so this project's peak fork memory depends only on these four files, not on
 whatever unrelated test-helper files happen to share a fork with them. They keep `isolate: false` among
 themselves — when two of them do land in the same fork, they reuse one memoized program via
-`loadBackendProgram()` rather than each building their own — but `VITEST_MAX_WORKERS` (the CI worker-count
-env var) can still give each file its own fork; Vitest 5 has no per-project worker cap that would force
+`loadBackendProgram()` rather than each building their own — but the repository-owned
+`VITEST_MAX_WORKERS` CI worker policy can still give each file its own fork; Vitest 5 has no per-project worker cap that would force
 all four onto exactly one. Either way each fork now pays at most one program build, not one build plus
 whatever unrelated test-helper files it would otherwise have accumulated.
 

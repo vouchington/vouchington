@@ -38,7 +38,7 @@ process.emitWarning = ((
     ...(args as [Function?]),
   )
 }) as typeof process.emitWarning
-const defaultCiVitestWorkers = 4
+const defaultCiVitestWorkers = 2
 const defaultVitestWorkers = process.env.CI ? defaultCiVitestWorkers : '30%'
 export const maxCiVitestWorkers = 5
 const coverageScope = vitestCoverageScope()

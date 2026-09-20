@@ -97,9 +97,10 @@ describe('PostgreSQL workflow image policy', () => {
 
     expect(maxCiVitestWorkers).toBe(5)
     for (const [configuredWorkers, expectedWorkers] of [
+      ['', 2],
       ['5', 5],
       ['6', maxCiVitestWorkers],
-      ['100%', 4],
+      ['100%', 2],
     ] as const) {
       vi.stubEnv('VITEST_MAX_WORKERS', configuredWorkers)
       vi.resetModules()

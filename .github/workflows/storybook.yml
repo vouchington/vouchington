@@ -103,9 +103,6 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.checkout_ref || github.sha }}
-      - uses: ./.github/actions/load-runner-env
-        with:
-          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Run Storybook snapshots
@@ -234,14 +231,10 @@ jobs:
           VITEST_JUNIT_OUTPUT_FILE: storybook-browser-test-report.junit.xml
           VITEST_BLOB_OUTPUT_FILE: .vitest-reports/web-storybook-browser.json
           VITEST_STORYBOOK_BROWSER: '1'
-          VITEST_STORYBOOK_BROWSER_MAX_WORKERS: ${{ vars.VITEST_STORYBOOK_BROWSER_MAX_WORKERS || '1' }}
+          VITEST_STORYBOOK_BROWSER_MAX_WORKERS: '1'
           STORYBOOK_BROWSER_COVERAGE: ${{ inputs.publish_coverage && '1' || '0' }}
-          # load-runner-env (above) already exported VITEST_MAX_WORKERS=4 into the job env for the
-          # snapshot step's headless pool. This step's own worker count must win here: without this
-          # override, vitest's config resolution unconditionally clobbers the project's
-          # parseStorybookBrowserMaxWorkers() value with the stale job-wide 4, running 4 concurrent
-          # headless Chromium instances against a runner sized for one.
-          VITEST_MAX_WORKERS: ${{ vars.VITEST_STORYBOOK_BROWSER_MAX_WORKERS || '1' }}
+          # Browser mode remains serial despite the two-worker CI fallback.
+          VITEST_MAX_WORKERS: '1'
           VITEST_SELECTED_FILES: ${{ inputs.selected_test_files }}
         run: pnpm exec ./ci/run-storybook-browser-tests.mts
         # The runner owns one monotonic 300-second session budget across at most three startup

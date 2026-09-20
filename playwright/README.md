@@ -2,10 +2,9 @@
 
 Run `pnpm run test:playwright`.
 
-CI shards default to 2 Playwright workers per runner. The job still honors
-`PLAYWRIGHT_MAX_WORKERS`, but the default is intentionally conservative because
-each shard also runs Chromium, workerd, Next.js, backend, lambdas, Postgres, and
-Valkey on the same 4-core runner.
+CI shards use three Playwright workers as an initial public 4-vCPU candidate projected from the
+private-runner baseline. Each shard also runs Chromium, workerd, Next.js, backend, lambdas, Postgres,
+and Valkey; public-runner measurements must validate or retune this repository-owned policy.
 
 ## Scope
 

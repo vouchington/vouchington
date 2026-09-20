@@ -4,7 +4,8 @@
 
 Never set `fileParallelism: false` or a literal `maxWorkers` in a Vitest config. Both are enforced
 by `dev/vitest-config.test.mts`, and the root config explicitly keeps file parallelism on. Neither
-knob actually works per-project: vitest reads the `VITEST_MAX_WORKERS` repo variable _after_ merging
+knob actually works per-project: Vitest reads the repository-owned `VITEST_MAX_WORKERS` environment
+policy _after_ merging
 project config and unconditionally overwrites both `fileParallelism: false` (which is itself
 implemented internally as `maxWorkers = 1`) and any explicit `maxWorkers`. Concurrency is bounded
 only by `VITEST_MAX_WORKERS` — set it via `parseVitestMaxWorkers()` /

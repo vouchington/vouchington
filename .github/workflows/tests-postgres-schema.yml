@@ -86,9 +86,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: ./.github/actions/fetch-base-ref
-      - uses: ./.github/actions/load-runner-env
-        with:
-          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - name: Set service connections
         timeout-minutes: 1
         run: |
