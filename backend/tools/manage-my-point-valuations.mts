@@ -79,6 +79,7 @@ export default createManageEntityTool<
   removeFn: (user, id) => deleteIndividualRewardsProgramPointValuationById(user, user, id),
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    requiredScopes: { mcp: ['point-valuations:write'] },
     annotations: { destructiveHint: true },
     api: [
       { method: 'GET', path: '/api/v1/my/rewards-program-point-valuations' },

@@ -10398,6 +10398,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../modules/on-error
+      '@modules/scopes':
+        specifier: workspace:^
+        version: link:../modules/scopes
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils

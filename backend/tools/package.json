@@ -20,6 +20,7 @@
   "dependencies": {
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/on-error": "workspace:^",
+    "@modules/scopes": "workspace:^",
     "@modules/utils": "workspace:^",
     "@modules/wikipedia-api": "workspace:^",
     "@services/crawl-chunks": "workspace:^",

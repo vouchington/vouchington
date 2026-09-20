@@ -2,6 +2,32 @@ export type ScopeAudience = 'admin' | 'api' | 'user'
 export type ScopeCredentialSurface = 'api-key' | 'oauth'
 export type ScopeAction = 'read' | 'write'
 
+export type ApiScope =
+  | 'cards:read'
+  | 'cards:write'
+  | 'data-points:read'
+  | 'domain-ratings:read'
+  | 'financial-profile:read'
+  | 'financial-profile:write'
+  | 'mcp.admin:read'
+  | 'mcp.admin:write'
+  | 'mcp.user:read'
+  | 'mcp.user:write'
+  | 'point-valuations:read'
+  | 'point-valuations:write'
+  | 'posts:read'
+  | 'profile:read'
+  | 'recommendations:read'
+  | 'referral-links:read'
+  | 'rewards-statuses:read'
+  | 'rewards-statuses:write'
+  | 'rss:read'
+  | 'spending:read'
+  | 'spending:write'
+  | 'support-messages:read'
+  | 'topics:read'
+  | 'wikipedia:read'
+
 type ScopeDefinition = {
   action: ScopeAction
   audience: ScopeAudience
@@ -9,8 +35,38 @@ type ScopeDefinition = {
   surfaces: readonly ScopeCredentialSurface[]
   requires?: string
 }
-
-export const SCOPE_DEFINITIONS = {
+const USER_RESOURCE_SCOPES = {
+  cards: ['read', 'write'],
+  'data-points': ['read'],
+  'domain-ratings': ['read'],
+  'financial-profile': ['read', 'write'],
+  'point-valuations': ['read', 'write'],
+  posts: ['read'],
+  profile: ['read'],
+  recommendations: ['read'],
+  'referral-links': ['read'],
+  'rewards-statuses': ['read', 'write'],
+  spending: ['read', 'write'],
+  topics: ['read'],
+  wikipedia: ['read'],
+} as const
+function userResourceDefinitions(): Record<string, ScopeDefinition> {
+  return Object.fromEntries(
+    Object.entries(USER_RESOURCE_SCOPES).flatMap(([resource, actions]) =>
+      actions.map(action => [
+        `${resource}:${action}`,
+        {
+          action: action as ScopeAction,
+          audience: 'user',
+          ...(action === 'write' ? { requires: `${resource}:read` } : {}),
+          resource,
+          surfaces: ['api-key', 'oauth'],
+        },
+      ]),
+    ),
+  )
+}
+export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
   'mcp.admin:read': {
     action: 'read',
     audience: 'admin',
@@ -43,10 +99,25 @@ export const SCOPE_DEFINITIONS = {
     resource: 'rss',
     surfaces: ['api-key', 'oauth'],
   },
-} as const satisfies Record<string, ScopeDefinition>
-
-export type ApiScope = keyof typeof SCOPE_DEFINITIONS
-
+  'support-messages:read': {
+    action: 'read',
+    audience: 'admin',
+    resource: 'support-messages',
+    surfaces: ['api-key', 'oauth'],
+  },
+  ...(userResourceDefinitions() as Record<
+    Exclude<
+      ApiScope,
+      | 'mcp.admin:read'
+      | 'mcp.admin:write'
+      | 'mcp.user:read'
+      | 'mcp.user:write'
+      | 'rss:read'
+      | 'support-messages:read'
+    >,
+    ScopeDefinition
+  >),
+}
 export type ScopeSetValidationErrorCode =
   | 'duplicate-scope'
   | 'empty-scope-set'
@@ -54,7 +125,6 @@ export type ScopeSetValidationErrorCode =
   | 'mixed-audiences'
   | 'unsupported-surface'
   | 'unknown-scope'
-
 export type ScopeSetValidationResult =
   | {
       valid: true
@@ -77,8 +147,19 @@ export function parseApiScope(value: string): ApiScope | null {
 }
 
 export function hasScope(scopes: readonly ApiScope[], requiredScope: ApiScope): boolean {
-  return scopes.includes(requiredScope)
+  if (scopes.includes(requiredScope)) return true
+
+  const required = SCOPE_DEFINITIONS[requiredScope]
+  if (required.audience === 'user') {
+    return scopes.includes(`mcp.user:${required.action}` as ApiScope)
+  }
+  if (required.audience === 'admin') {
+    return scopes.includes(`mcp.admin:${required.action}` as ApiScope)
+  }
+  return false
 }
+
+export { hasEveryScope, hasScopeAudience } from './authorization.mts'
 
 export function validateScopeSet(
   input: readonly string[],

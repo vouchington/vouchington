@@ -5,11 +5,12 @@ import {
   listToolsForSurface,
   isToolMcpEligible,
   isToolAllowedForPlan,
+  getToolRequiredScopes,
 } from '@voucha/tools/registry/select'
 import { isToolAllowedForUser } from './authorization.mts'
 import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
-import { hasScope, type ApiScope } from '@modules/scopes'
+import { hasEveryScope, type ApiScope } from '@modules/scopes'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 
 type UserForCall = BasicUser & {
@@ -172,11 +173,11 @@ export async function callMcpTool(
     throw new McpError(ErrorCode.InvalidRequest, `Tool requires a higher plan: ${toolName}`)
   }
 
-  const isReadOnly = tool.meta?.annotations?.readOnlyHint === true
-  if (!isReadOnly && !hasScope(permissions, config.writePermission)) {
+  const requiredScopes = getToolRequiredScopes(tool, config.surface)
+  if (requiredScopes == null || !hasEveryScope(permissions, requiredScopes)) {
     throw new McpError(
       ErrorCode.InvalidRequest,
-      `Tool requires ${config.writePermission} permission: ${toolName}`,
+      `Tool requires scopes ${requiredScopes?.join(', ') ?? 'unavailable'}: ${toolName}`,
     )
   }
 

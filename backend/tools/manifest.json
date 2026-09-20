@@ -9,7 +9,8 @@
           "method": "GET",
           "path": "/api/v1/topics/compare"
         }
-      ]
+      ],
+      "requiredScopes": ["topics:read"]
     },
     {
       "name": "get_my_profile",
@@ -20,7 +21,8 @@
           "method": "GET",
           "path": "/api/v1/my/profile"
         }
-      ]
+      ],
+      "requiredScopes": ["profile:read"]
     },
     {
       "name": "get_recommended_topics",
@@ -31,7 +33,8 @@
           "method": "GET",
           "path": "/api/v1/recommended-topics"
         }
-      ]
+      ],
+      "requiredScopes": ["recommendations:read"]
     },
     {
       "name": "get_referral_links",
@@ -42,7 +45,8 @@
           "method": "GET",
           "path": "/api/v1/topics/:id/prioritized-referral-links"
         }
-      ]
+      ],
+      "requiredScopes": ["referral-links:read"]
     },
     {
       "name": "get_topic_details",
@@ -53,7 +57,8 @@
           "method": "GET",
           "path": "/api/v1/topics/:idOrSlug"
         }
-      ]
+      ],
+      "requiredScopes": ["topics:read"]
     },
     {
       "name": "get_topic_hierarchy",
@@ -64,7 +69,8 @@
           "method": "GET",
           "path": "/api/v1/topics/:idOrSlug"
         }
-      ]
+      ],
+      "requiredScopes": ["topics:read"]
     },
     {
       "name": "get_trending_posts",
@@ -75,7 +81,8 @@
           "method": "GET",
           "path": "/api/v1/trending-posts"
         }
-      ]
+      ],
+      "requiredScopes": ["posts:read"]
     },
     {
       "name": "get_trending_topics",
@@ -86,13 +93,15 @@
           "method": "GET",
           "path": "/api/v1/trending-topics"
         }
-      ]
+      ],
+      "requiredScopes": ["topics:read"]
     },
     {
       "name": "get_wikipedia_summary",
       "description": "Gets detailed summary information for a Wikipedia article by title. Returns the full Wikipedia page data including description, extract, URL, and thumbnail. Use this after searching to get complete details about a specific article.",
       "parameters": null,
-      "api": null
+      "api": null,
+      "requiredScopes": ["wikipedia:read"]
     },
     {
       "name": "manage_my_cards",
@@ -115,7 +124,8 @@
           "method": "DELETE",
           "path": "/api/v1/my/cards/:id"
         }
-      ]
+      ],
+      "requiredScopes": ["cards:write"]
     },
     {
       "name": "manage_my_point_valuations",
@@ -138,7 +148,8 @@
           "method": "DELETE",
           "path": "/api/v1/my/rewards-program-point-valuations/:id"
         }
-      ]
+      ],
+      "requiredScopes": ["point-valuations:write"]
     },
     {
       "name": "manage_my_rewards_statuses",
@@ -161,7 +172,8 @@
           "method": "DELETE",
           "path": "/api/v1/my/rewards-program-statuses/:id"
         }
-      ]
+      ],
+      "requiredScopes": ["rewards-statuses:write"]
     },
     {
       "name": "manage_my_spending",
@@ -184,7 +196,8 @@
           "method": "DELETE",
           "path": "/api/v1/my/spending-categories/:id"
         }
-      ]
+      ],
+      "requiredScopes": ["spending:write"]
     },
     {
       "name": "search_posts",
@@ -195,7 +208,8 @@
           "method": "GET",
           "path": "/api/v1/posts"
         }
-      ]
+      ],
+      "requiredScopes": ["posts:read"]
     },
     {
       "name": "search_topics",
@@ -206,13 +220,15 @@
           "method": "GET",
           "path": "/api/v1/topics"
         }
-      ]
+      ],
+      "requiredScopes": ["topics:read"]
     },
     {
       "name": "search_wikipedia",
       "description": "Searches Wikipedia for articles by title. Returns a list of matching Wikipedia pages with their titles and page IDs. Use this to find relevant Wikipedia articles based on keywords or topics mentioned in the content.",
       "parameters": null,
-      "api": null
+      "api": null,
+      "requiredScopes": ["wikipedia:read"]
     },
     {
       "name": "update_my_financial_profile",
@@ -227,7 +243,8 @@
           "method": "PUT",
           "path": "/api/v1/my/financial-profile"
         }
-      ]
+      ],
+      "requiredScopes": ["financial-profile:write"]
     }
   ]
 }
