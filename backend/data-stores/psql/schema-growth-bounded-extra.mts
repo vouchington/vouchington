@@ -1,25 +1,5 @@
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   [
-    'oauth_access_tokens',
-    'Access tokens expire after one hour and bounded data-retention batches delete expired rows.',
-  ],
-  [
-    'oauth_authorization_codes',
-    'Authorization codes expire after five minutes and bounded data-retention batches delete expired rows.',
-  ],
-  [
-    'oauth_authorization_requests',
-    'Authorization requests expire after ten minutes and bounded data-retention batches delete expired rows.',
-  ],
-  [
-    'oauth_refresh_token_families',
-    'Refresh-token families expire after thirty days and bounded data-retention batches delete each family and its cascading token members.',
-  ],
-  [
-    'oauth_refresh_tokens',
-    'Refresh tokens are bounded by their thirty-day family lifetime and cascade when bounded retention deletes the family.',
-  ],
-  [
     'membership_google_play_recovery_cursors',
     'One durable high-water mark per named Google Play recovery scan.',
   ],
