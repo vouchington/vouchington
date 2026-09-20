@@ -1,0 +1,29 @@
+{
+  "name": "@modules/openrouter-utils",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenRouter OpenResponses transport for retained agents",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@modules/openai-utils": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "openai": "^7.15.0"
+  }
+}

@@ -34,11 +34,23 @@ export type RecordAiUsageResult = 'recorded' | 'already-recorded'
 
 type RecordedRow = { recorded: boolean }
 
+/** OpenRouter reports billed cost directly in USD; never replace it with a stale local price table. */
+function explicitCostMicrounits(usage: OpenAIUsage): number | null {
+  if (usage.cost === undefined) return null
+  if (!Number.isFinite(usage.cost) || usage.cost < 0)
+    throw new TypeError('Provider usage cost must be a non-negative finite USD amount')
+  const microunits = Math.round(usage.cost * 1_000_000)
+  if (!Number.isSafeInteger(microunits))
+    throw new RangeError('Provider usage cost exceeds the maximum JSON-safe integer')
+  return microunits
+}
+
 export async function recordAiUsage(options: RecordAiUsageOptions): Promise<RecordAiUsageResult> {
   const { responseId, communityId, postId, agentSlug, model, serviceTier, usage, createdAt } =
     options
   const run = options.query ?? write
-  const costMicrounits = calcCostMicrounits(model, serviceTier, usage)
+  const costMicrounits =
+    explicitCostMicrounits(usage) ?? calcCostMicrounits(model, serviceTier, usage)
   const cachedInputTokens = normalizeCachedInputTokens(usage)
   if (responseId !== undefined) {
     const { rows } = await run<RecordedRow>(sql`/* recordAiUsage */

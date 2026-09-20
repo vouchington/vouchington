@@ -202,6 +202,9 @@ importers:
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
+      '@modules/openrouter-utils':
+        specifier: workspace:^
+        version: link:../../modules/openrouter-utils
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
@@ -2391,6 +2394,18 @@ importers:
       openai:
         specifier: ^7.15.0
         version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.5.4)
+
+  backend/modules/openrouter-utils:
+    dependencies:
+      '@modules/openai-utils':
+        specifier: workspace:^
+        version: link:../openai-utils
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../utils
+      openai:
+        specifier: ^7.15.0
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
 
   backend/modules/pagination:
     dependencies:
@@ -29627,6 +29642,14 @@ snapshots:
       undici: 8.10.2
       ws: 8.21.3
       zod: 4.5.4
+
+  openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2):
+    optionalDependencies:
+      '@aws-sdk/credential-provider-node': 3.972.83
+      '@smithy/signature-v4': 5.7.3
+      undici: 8.10.2
+      ws: 8.21.3
+      zod: 4.6.2
 
   optionator@0.9.4:
     dependencies:

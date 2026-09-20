@@ -16,6 +16,7 @@
 - `windows_foundry`
 - `openai_compatible`
 - `android_aicore`
+- `openrouter`
 
 ## `agent_models`
 
@@ -25,6 +26,7 @@
 - `phi-silica`
 - `windows-system-language-model`
 - `android-aicore-system`
+- `openai/gpt-5.4-nano`
 
 ## `agent_name`
 

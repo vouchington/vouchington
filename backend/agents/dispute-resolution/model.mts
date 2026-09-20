@@ -1,7 +1,8 @@
 import {
-  createOpenAIResponse,
   DEFAULT_AGENT_MODEL,
   QUEUED_BACKGROUND_RETRY_POLICY,
+  createOpenRouterResponse,
+  toOpenRouterModel,
 } from '@agents/_shared'
 import { renderContentPolicyForPrompt } from '@services/moderation/content-policy'
 
@@ -48,14 +49,14 @@ Respond with a JSON object containing:
 - Default to "dismiss" when uncertain and the claim does not meet the policy bar.
 - Your response will be reviewed and edited by a human moderator before anything is communicated.`
 
-/* v8 ignore start -- thin OpenAI integration wrapper; exercised by credentialed *.openai.test.mts */
+/* v8 ignore start -- thin OpenRouter integration wrapper; exercised by credentialed *.openrouter.test.mts */
 export function callDisputeModel(
   input: string,
   safetyIdentifier: string,
-): Promise<Awaited<ReturnType<typeof createOpenAIResponse>>> {
-  return createOpenAIResponse(
+): Promise<Awaited<ReturnType<typeof createOpenRouterResponse>>> {
+  return createOpenRouterResponse(
     {
-      model: DEFAULT_AGENT_MODEL,
+      model: toOpenRouterModel(DEFAULT_AGENT_MODEL),
       instructions: SYSTEM_PROMPT,
       input,
       safety_identifier: safetyIdentifier,
@@ -71,7 +72,7 @@ export function callDisputeModel(
           schema: DISPUTE_JSON_SCHEMA,
         },
       },
-    } as unknown as Parameters<typeof createOpenAIResponse>[0],
+    } as unknown as Parameters<typeof createOpenRouterResponse>[0],
     { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
   )
 }

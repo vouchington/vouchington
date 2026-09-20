@@ -1,4 +1,9 @@
 export * from './create-response.mts'
+export {
+  createOpenRouterResponse,
+  toOpenRouterModel,
+  OPENROUTER_DEFAULT_AGENT_MODEL,
+} from '@modules/openrouter-utils'
 export * from './record-response-usage.mts'
 export * from './models.mts'
 export * from './retry-policy.mts'

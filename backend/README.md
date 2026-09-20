@@ -55,6 +55,7 @@ The bundled Rust N-API module is compiled for `aarch64-unknown-linux-gnu` with
 - Modules:
   - `modules/*` aka `@modules/*` - reusable modules that contain no business logic
   - [ActivityPub inbox storage policy](modules/activitypub-inbox-storage-policy/README.md) - durable inbox retention, capacity, cleanup, and retry bounds
+  - [OpenRouter utilities](modules/openrouter-utils/README.md) - retained-agent OpenResponses transport
 - Business Logic:
   - `services/*` aka `@services/*` - services for business logic, re-used across jobs, APIs, and other entry points
   - `queues/*` aka `@queues/*` - GlideMQ queue clients, configuration, and enqueue APIs grouped by domain

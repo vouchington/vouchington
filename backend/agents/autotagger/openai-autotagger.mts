@@ -6,6 +6,8 @@ import {
   withCurry,
   DEFAULT_AGENT_MODEL,
   QUEUED_BACKGROUND_RETRY_POLICY,
+  toOpenRouterModel,
+  OPENROUTER_DEFAULT_AGENT_MODEL,
 } from '@agents/_shared'
 import type { AgentTool, OpenAIFunctionCall } from '@services/openai-agents'
 import {
@@ -101,8 +103,8 @@ export async function callOpenAIAutotagger(
     const agenticRun = await createAgenticRun({
       conversationId,
       conversationMessageId,
-      modelName: DEFAULT_AGENT_MODEL,
-      modelProvider: 'openai',
+      modelName: OPENROUTER_DEFAULT_AGENT_MODEL,
+      modelProvider: 'openrouter',
       input: { content },
     })
     agenticRunId = agenticRun.id
@@ -117,7 +119,8 @@ export async function callOpenAIAutotagger(
   try {
     const runLoop = deps.runToolLoop ?? runToolLoop
     const result = await runLoop({
-      model: DEFAULT_AGENT_MODEL,
+      model: toOpenRouterModel(DEFAULT_AGENT_MODEL),
+      responseProvider: 'openrouter',
       instructions,
       tools,
       input: initialInput,

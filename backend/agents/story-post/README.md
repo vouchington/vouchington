@@ -4,7 +4,7 @@ Generates a concise headline and AI summary markdown for a news story, given the
 
 ## Pattern
 
-Single-call agent — one `createOpenAIResponse` call, no tool use. Uses `parseLLMJsonResponse` to extract structured JSON from the LLM response.
+Single-call agent — one OpenRouter OpenResponses call, no tool use. Uses `parseLLMJsonResponse` to extract structured JSON from the LLM response. Terminal provider metadata settles the shared usage ledger directly rather than using the direct OpenAI background-response reconciler.
 
 ## Inputs
 

@@ -4,6 +4,7 @@ import type {
   createOpenAIResponse,
   streamOpenAIResponse,
 } from '../create-response.mts'
+import type { createOpenRouterResponse } from '@modules/openrouter-utils'
 import type {
   AgentTool,
   OpenAIFunctionCallOutput,
@@ -23,6 +24,7 @@ import type { recordAgentResponseUsage } from '../record-response-usage.mts'
 export interface RunToolLoopDeps {
   agentToolsToSchemas?: typeof agentToolsToSchemas
   createOpenAIResponse?: typeof createOpenAIResponse
+  createOpenRouterResponse?: typeof createOpenRouterResponse
   streamOpenAIResponse?: typeof streamOpenAIResponse
   getFunctionCallsFromOutput?: typeof getFunctionCallsFromOutput
   executeToolCalls?: typeof executeToolCalls
@@ -34,6 +36,8 @@ export interface RunToolLoopDeps {
 
 export interface RunToolLoopConfig {
   model: string
+  /** Route this retained tool loop through OpenRouter instead of the direct OpenAI transport. */
+  responseProvider?: 'openai' | 'openrouter'
   instructions?: string
   tools: AgentTool[]
   input: OpenAIResponseInput

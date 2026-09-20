@@ -1,5 +1,6 @@
 export type AgentModel =
   | 'gpt-5.4-nano'
+  | 'openai/gpt-5.4-nano'
   | 'apple-foundation-system'
   | 'claude-sonnet-5'
   | 'phi-silica'
@@ -8,6 +9,7 @@ export type AgentModel =
 
 export type AgentModelProvider =
   | 'openai'
+  | 'openrouter'
   | 'apple_foundation'
   | 'anthropic'
   | 'windows_foundry'

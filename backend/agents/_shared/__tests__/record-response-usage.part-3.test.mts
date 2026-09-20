@@ -4,7 +4,7 @@ import {
   callRecordingAgentResponseUsage,
   recordAgentResponseUsage,
 } from '../record-response-usage.mts'
-import { getOpenAIResponseAttemptHooks } from '../create-response.mts'
+import { getBackgroundResponseHooks, getOpenAIResponseAttemptHooks } from '../create-response.mts'
 
 function response() {
   return {
@@ -16,6 +16,21 @@ function response() {
 }
 
 describe('callRecordingAgentResponseUsage attempt hooks', () => {
+  it('does not install the direct OpenAI background registry for OpenRouter', async () => {
+    const recorder = vi.fn<typeof recordAgentResponseUsage>().mockResolvedValue(undefined)
+
+    await callRecordingAgentResponseUsage(
+      async () => {
+        expect(getBackgroundResponseHooks()).toBeUndefined()
+        return response()
+      },
+      { agentSlug: 'openrouter-foreground-test', responseProvider: 'openrouter' },
+      { assertOpenAiSpendCapNotBreached: async () => null, recordAgentResponseUsage: recorder },
+    )
+
+    expect(recorder).toHaveBeenCalledOnce()
+  })
+
   it('installs hooks while keeping attempt one on the initial spend-cap guard only', async () => {
     const assertOpenAiSpendCapNotBreached = vi.fn<(agentSlug: string) => Promise<null>>()
     assertOpenAiSpendCapNotBreached.mockResolvedValue(null)

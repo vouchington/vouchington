@@ -14,9 +14,29 @@ const INITIAL_RETRY_DELAY_MS = 500
 const MAX_RETRY_DELAY_MS = 8_000
 
 type RawCreateOptions = Parameters<typeof openai.responses.create>[1]
+type CreateResponse = (
+  params: ResponseCreateParamsStreaming,
+  options?: RawCreateOptions,
+) => Promise<AsyncIterable<ResponseStreamEvent>>
 
 /* no-mistakes: integration=openai */
 export async function createOpenAIResponseWithRetries(
+  params: ResponseCreateParamsStreaming,
+  options?: RawCreateOptions,
+): Promise<{ stream: AsyncIterable<ResponseStreamEvent>; requestStartedAt: Date }> {
+  return await createOpenAICompatibleResponseWithRetries(
+    async (request, requestOptions) => await openai.responses.create(request, requestOptions),
+    params,
+    options,
+  )
+}
+
+/**
+ * Applies the direct OpenAI transport's retry and uncertainty policy to an OpenAI-compatible
+ * Responses endpoint. Callers must supply an endpoint that accepts the same SDK request shape.
+ */
+export async function createOpenAICompatibleResponseWithRetries(
+  createResponse: CreateResponse,
   params: ResponseCreateParamsStreaming,
   options?: RawCreateOptions,
 ): Promise<{ stream: AsyncIterable<ResponseStreamEvent>; requestStartedAt: Date }> {
@@ -31,7 +51,7 @@ export async function createOpenAIResponseWithRetries(
     options?.signal?.throwIfAborted()
     try {
       // oxlint-disable-next-line no-await-in-loop -- a retry cannot begin until this physical request settles
-      return { stream: await openai.responses.create(params, sdkOptions), requestStartedAt }
+      return { stream: await createResponse(params, sdkOptions), requestStartedAt }
     } catch (error) {
       const isFlexResourceUnavailable = isOpenAIFlexResourceUnavailableError(error)
       if (isFlexResourceUnavailable && attempt <= maxRetries) {
