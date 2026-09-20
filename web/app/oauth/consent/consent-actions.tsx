@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
 import { decideOAuthAuthorizationRequest } from '@/lib/api/client/oauth-authorization'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import onError from '@/lib/on-error'
 
 export function ConsentActions({ requestId }: { requestId: string }) {
+  const t = useTranslations()
   const [pendingDecision, setPendingDecision] = useState<'approve' | 'deny' | null>(null)
 
   async function decide(decision: 'approve' | 'deny') {
@@ -18,7 +20,7 @@ export function ConsentActions({ requestId }: { requestId: string }) {
     } catch (error) {
       setPendingDecision(null)
       onError(error, {
-        fallback: 'Could not complete this authorization request.',
+        fallback: t('oauth.consent.authorizationError'),
         tags: { form: 'oauth-consent' },
       })
     }
@@ -35,7 +37,7 @@ export function ConsentActions({ requestId }: { requestId: string }) {
         data-pw='oauth-consent-approve'
         onClick={async () => decide('approve')}
       >
-        Allow access
+        {t('oauth.consent.allow')}
       </Button>
       <Button
         type='button'
@@ -46,7 +48,7 @@ export function ConsentActions({ requestId }: { requestId: string }) {
         data-pw='oauth-consent-deny'
         onClick={async () => decide('deny')}
       >
-        Deny
+        {t('oauth.consent.deny')}
       </Button>
     </ButtonGroup>
   )
