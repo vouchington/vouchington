@@ -2,15 +2,16 @@
 import * as postPublication from './post-publication-allowlists.mts'
 import * as postModeration from './moderation-ledger-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_MISSING_UPDATED_AT } from './membership-timestamp-allowlists.mts'
+import { AUTHORIZATION_TABLES_WITHOUT_CREATED_AT } from './oauth-authorization-allowlists.mts'
 
 export const ALLOWED_NON_UUIDV7_CREATED_AT = new Map<string, string>([])
 export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
   ...postPublication.POST_PUBLICATION_TABLES_WITHOUT_CREATED_AT,
+  ...AUTHORIZATION_TABLES_WITHOUT_CREATED_AT,
   [
     'rss_feed_item_ids',
     'Permanent identity lookup; creation time remains derivable from its UUIDv7 id and is never queried from the lookup.',
   ],
-  ['api_keys', 'Secret credentials use last-used/revoked timestamps instead of creation history.'],
   [
     'rss_feed_item_read_states',
     'Composite-PK read-state table; read_at serves as the single lifecycle timestamp.',
