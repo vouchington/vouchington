@@ -7,12 +7,21 @@ describe('copyright email intake enqueue recovery', () => {
     const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
 
     await enqueueOrRetryCopyrightEmailIntake('intake-id', {
-      getJob: vi.fn().mockResolvedValue({
-        name: 'copyright-email-intake',
-        getState: async () => 'failed',
-        retry,
-        remove: async () => undefined,
-      }),
+      getJob: vi
+        .fn<
+          () => Promise<{
+            name: string
+            getState(): Promise<string>
+            retry(): Promise<void>
+            remove(): Promise<void>
+          }>
+        >()
+        .mockResolvedValue({
+          name: 'copyright-email-intake',
+          getState: async () => 'failed',
+          retry,
+          remove: async () => undefined,
+        }),
       enqueue,
     })
 

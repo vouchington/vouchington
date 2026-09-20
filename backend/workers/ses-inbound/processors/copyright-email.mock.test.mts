@@ -9,8 +9,7 @@ import type {
   loadSesInboundObjectAndHash,
   loadSesInboundObjectVersion,
 } from './s3.mts'
-import type { ParsedSesInboundEmail } from './mime.mts'
-import { SesInboundTerminalError } from './mime.mts'
+import { SesInboundTerminalError, type ParsedSesInboundEmail } from './mime.mts'
 import { processSesInboundEmail } from '../processors.mts'
 
 vi.mock<typeof import('mailparser')>(

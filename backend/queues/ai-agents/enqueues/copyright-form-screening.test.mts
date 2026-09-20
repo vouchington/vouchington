@@ -7,12 +7,21 @@ describe('copyright form screening enqueue recovery', () => {
     const enqueue = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined)
 
     await enqueueOrRetryCopyrightFormScreening('submission-id', {
-      getJob: vi.fn().mockResolvedValue({
-        name: 'copyright-form-screening',
-        getState: async () => 'completed',
-        remove,
-        retry: async () => undefined,
-      }),
+      getJob: vi
+        .fn<
+          () => Promise<{
+            name: string
+            getState(): Promise<string>
+            retry(): Promise<void>
+            remove(): Promise<void>
+          }>
+        >()
+        .mockResolvedValue({
+          name: 'copyright-form-screening',
+          getState: async () => 'completed',
+          remove,
+          retry: async () => undefined,
+        }),
       enqueue,
     })
 
