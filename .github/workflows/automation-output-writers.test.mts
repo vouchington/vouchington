@@ -16,6 +16,7 @@ const workflowPaths = readdirSync('.github/workflows')
   .map(file => join('.github/workflows', file))
 
 const yamlByPath = new Map(workflowPaths.map(path => [path, readFileSync(path, 'utf8')] as const))
+const outputWriter = readFileSync('ci/write-github-multiline-output.sh', 'utf8')
 
 describe('automation output writers', () => {
   it('reuses the prompt renderer action at all six render sites', () => {
@@ -49,6 +50,12 @@ describe('automation output writers', () => {
       const uses = yamlByPath.get(path)?.match(/ci\/write-github-multiline-output\.sh/g) ?? []
       expect(uses).toHaveLength(expectedUses[path] ?? 0)
     }
+  })
+
+  it('resolves the shared output writer before workspace dependencies are installed', () => {
+    expect(outputWriter).toContain('exec-vouchington-gha.sh')
+    expect(outputWriter).toContain('gha-output \\\n  scripts/gha/write-github-multiline-output.sh')
+    expect(outputWriter).not.toContain('vouchington-tooling-script.sh')
   })
 
   it('does not expose the selected scheduled prompt body as an output', () => {
