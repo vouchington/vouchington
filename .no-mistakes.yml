@@ -2434,6 +2434,10 @@ rules:
   - name: workflow tests do not restate timeout-minutes literals
     rule: github-actions-test-timeout-literals
     scope: repository
+    options:
+      allow:
+        - path: .github/workflows/docs-publish.test.mts
+          reason: The exact job timeout is part of the immutable documentation-artifact contract.
 
   - name: setup-aws steps pair caller and nested timeouts
     rule: github-actions-action-timeout-pair

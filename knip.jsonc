@@ -24,8 +24,6 @@
         "valkey-cli", // Valkey system CLI probed by local DB-backed test setup checks
         "wrangler", // GitHub Actions invokes the Cloudflare Worker workspace's pinned binary
       ],
-      // Invoked dynamically by the OpenAPI structural-validation test.
-      "ignoreDependencies": ["@redocly/cli"],
       "ignoreExportsUsedInFile": true,
     },
     "static-code-analysis": {
