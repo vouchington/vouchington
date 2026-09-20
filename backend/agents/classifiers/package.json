@@ -23,7 +23,6 @@
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/structured-decisions": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@services/classifiers": "workspace:^",
-    "@voucha/types": "workspace:^"
+    "@services/classifiers": "workspace:^"
   }
 }

@@ -407,9 +407,6 @@ importers:
       '@services/classifiers':
         specifier: workspace:^
         version: link:../../services/classifiers
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
 
   backend/agents/community-moderation:
     dependencies:
@@ -1115,9 +1112,6 @@ importers:
       '@services/captcha':
         specifier: workspace:^
         version: link:../services/captcha
-      '@services/classifiers':
-        specifier: workspace:^
-        version: link:../services/classifiers
       '@services/comments':
         specifier: workspace:^
         version: link:../services/comments
@@ -1740,9 +1734,6 @@ importers:
       '@services/captcha':
         specifier: workspace:^
         version: link:../../services/captcha
-      '@services/classifiers':
-        specifier: workspace:^
-        version: link:../../services/classifiers
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../../services/elections-votes
@@ -4543,9 +4534,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
       uuid:
         specifier: ^14.0.2
         version: 14.0.2

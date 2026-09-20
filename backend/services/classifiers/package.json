@@ -24,7 +24,6 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
-    "@voucha/test-helpers": "workspace:^",
     "uuid": "^14.0.2"
   }
 }

@@ -139,7 +139,6 @@
     "@services/bluesky-follows": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/captcha": "workspace:^",
-    "@services/classifiers": "workspace:^",
     "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/community-agent-prompts": "workspace:^",
