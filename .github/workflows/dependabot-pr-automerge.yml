@@ -30,7 +30,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Evaluate Dependabot update
-        uses: vouchington/vouchington-tooling/.github/actions/dependabot-automerge@354ea1a198cefa66cce4b587bf50735d77a6c9df # v0.17.0
+        uses: vouchington/vouchington-tooling/.github/actions/dependabot-automerge@0ebeb98c9363faf3fa857154ac9d5447c297214f # v0.18.1
         with:
           automerge_token: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
 
@@ -47,6 +47,6 @@ jobs:
       pull-requests: read
     steps:
       - name: Disable stale Dependabot auto-merge
-        uses: vouchington/vouchington-tooling/.github/actions/dependabot-automerge@354ea1a198cefa66cce4b587bf50735d77a6c9df # v0.17.0
+        uses: vouchington/vouchington-tooling/.github/actions/dependabot-automerge@0ebeb98c9363faf3fa857154ac9d5447c297214f # v0.18.1
         with:
           automerge_token: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
