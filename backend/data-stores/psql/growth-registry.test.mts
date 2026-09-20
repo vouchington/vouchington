@@ -158,6 +158,17 @@ describe('schema growth registry', () => {
       strategy: 'LIST -> RANGE',
       accessClass: 'intentional-fanout',
     })
+    expect(PARTITION_POLICIES.get('topic_classifier_results')).toMatchObject({
+      strategy: 'RANGE',
+      key: 'topic_id',
+      children: 'default',
+    })
+    expect(PARTITION_POLICIES.get('story_classifier_results')).toMatchObject({
+      strategy: 'RANGE',
+      key: 'story_id',
+      children: 'default',
+    })
+    expect(UNBOUNDED_UNPARTITIONED_TABLES.has('classifier_candidate_thresholds')).toBe(true)
   })
 
   it('classifies RSS feed item identity and content storage separately', () => {

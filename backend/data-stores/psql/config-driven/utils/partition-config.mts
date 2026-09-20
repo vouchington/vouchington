@@ -40,6 +40,15 @@ export const POST_PARTITION_TABLES: string[] = [
 ]
 
 /**
+ * Classifier results retain one row per candidate. Topic and story ownership use
+ * separate parents so UUIDv7 RANGE pruning remains direct for either entity.
+ */
+export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
+  'topic_classifier_results',
+  'story_classifier_results',
+]
+
+/**
  * Conversation tables - partitioned by UUIDv7 timestamp
  * Monthly partitions for 30-day retention via partition drop
  */

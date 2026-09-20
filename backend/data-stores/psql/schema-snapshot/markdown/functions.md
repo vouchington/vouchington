@@ -459,6 +459,38 @@ CREATE OR REPLACE FUNCTION public.fn_refresh_rss_feed_item_unmapped_category_cou
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_classifier_append_only_update`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_append_only_update()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_candidate_identity_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_identity_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_identity_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_identity_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_classifier_prompt_version_identity_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_classifier_prompt_version_identity_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_membership_administrator_refund_request_mutation`
 
 ```sql
@@ -544,6 +576,38 @@ CREATE OR REPLACE FUNCTION public.fn_release_moderation_transparency_daily_rollu
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)
  RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_require_classifier_candidate_effective_thresholds`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_effective_thresholds()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_require_classifier_candidate_threshold_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_threshold_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_require_classifier_result_batch_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_require_global_classifier_candidate_override`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_global_classifier_candidate_override()
+ RETURNS trigger
  LANGUAGE plpgsql
 ```
 

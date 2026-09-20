@@ -1,4 +1,5 @@
 export type * from './agent-moderation.mts'
+export type * from './classifier.mts'
 export type * from './community.mts'
 export type * from './data-point.mts'
 export type * from './election.mts'
