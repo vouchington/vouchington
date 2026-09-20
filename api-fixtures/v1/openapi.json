@@ -81,6 +81,7 @@
           "apple_foundation",
           "openai_compatible",
           "openai",
+          "openrouter",
           "windows_foundry"
         ],
         "type": "string"
