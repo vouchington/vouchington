@@ -11,7 +11,6 @@ Top-level component taxonomy for [`web/components/`](./). See [../CLAUDE.md](../
 | [`asides/`](asides/)                               | Per-page right-sidebar content registered via `PageWithAside`                                                                                     |
 | [`auth/`](auth/)                                   | Authentication UI (login, signup, OAuth buttons, TOTP)                                                                                            |
 | [`brand/`](brand/)                                 | Voucha brand assets (logo, wordmark, avatar)                                                                                                      |
-| [`chat/`](chat/)                                   | Chat route wrappers and conversation-level layout                                                                                                 |
 | [`comments/`](comments/)                           | Comment threads, creation form, moderation actions                                                                                                |
 | [`communities/`](communities/)                     | Community pages, member management, community cards                                                                                               |
 | [`compare/`](compare/)                             | Side-by-side topic comparison UI                                                                                                                  |
