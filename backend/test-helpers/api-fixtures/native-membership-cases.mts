@@ -9,6 +9,7 @@ const membershipVerificationId = '00000000-0000-7000-8000-000000000807'
 const migratedFrom = [predecessorIssue(7880)]
 
 const nativeConsumers: ApiFixtureCase['consumers'] = ['swift-core', 'swift-ui', 'dotnet-core']
+const deferredNativeConsumers: ApiFixtureCase['consumers'] = []
 
 export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
   {
@@ -41,7 +42,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: responseBody('native.memberships.me.lifecycle.default'),
-    consumers: nativeConsumers,
+    consumers: deferredNativeConsumers,
     migratedFrom,
   },
   {
@@ -57,7 +58,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 201,
     body: responseBody('native.memberships.purchase-intent.apple.default'),
-    consumers: nativeConsumers,
+    consumers: deferredNativeConsumers,
     migratedFrom,
   },
   {
@@ -73,7 +74,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 201,
     body: responseBody('native.memberships.purchase-intent.google.default'),
-    consumers: nativeConsumers,
+    consumers: deferredNativeConsumers,
     migratedFrom,
   },
   {
@@ -89,7 +90,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 201,
     body: responseBody('native.memberships.purchase-intent.microsoft.default'),
-    consumers: nativeConsumers,
+    consumers: deferredNativeConsumers,
     migratedFrom,
   },
   {
@@ -101,7 +102,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: responseBody('native.memberships.microsoft.service-tickets.default'),
-    consumers: ['dotnet-core'],
+    consumers: deferredNativeConsumers,
     migratedFrom: [predecessorIssue(11535)],
   },
   {
@@ -117,7 +118,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 201,
     body: responseBody('native.memberships.purchase-intent.stripe.default'),
-    consumers: nativeConsumers,
+    consumers: deferredNativeConsumers,
     migratedFrom,
   },
   {
@@ -134,7 +135,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     status: 409,
     backendResponseContractKey: 'POST:/api/v1/membership-purchase-intents#conflict',
     body: responseBody('native.memberships.purchase-intent.conflict.default'),
-    consumers: nativeConsumers,
+    consumers: deferredNativeConsumers,
     migratedFrom,
   },
   {
@@ -151,7 +152,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 202,
     body: responseBody('native.memberships.verification.pending.default'),
-    consumers: nativeConsumers,
+    consumers: deferredNativeConsumers,
     migratedFrom,
   },
   {
@@ -165,7 +166,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: responseBody('native.memberships.verification-status.pending.default'),
-    consumers: nativeConsumers,
+    consumers: deferredNativeConsumers,
     migratedFrom,
   },
   ...(
@@ -187,7 +188,7 @@ export const nativeMembershipApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user' as const,
     status: 200,
     body: responseBody(`native.memberships.verification-status.${status}.default`),
-    consumers: nativeConsumers,
+    consumers: deferredNativeConsumers,
     migratedFrom,
   })),
   ...nativeMembershipGrantApiFixtureCases,

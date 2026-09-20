@@ -78,7 +78,9 @@ const apiMocks = [
 ]
 
 function webManifestFixtures() {
-  return manifest.fixtures.filter(entry => entry.consumers.includes('web') && entry.route)
+  return manifest.fixtures.filter(
+    entry => (entry.consumers as readonly string[]).includes('web') && entry.route,
+  )
 }
 
 function normalizeSearchParams(options: unknown): Record<string, string> {

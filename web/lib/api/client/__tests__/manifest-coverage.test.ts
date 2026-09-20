@@ -3,7 +3,9 @@ import manifest from '../../../../../api-fixtures/v1/manifest.json'
 import { mergeEndpointRegistries } from '../../../../test-helpers/lib/api/client/manifest-coverage/endpoint-registry'
 import { nonWebEndpointRegistry } from '../../../../test-helpers/lib/api/client/manifest-coverage/registry'
 
-const nonWebFixtures = manifest.fixtures.filter(entry => !entry.consumers.includes('web'))
+const nonWebFixtures = manifest.fixtures.filter(
+  entry => !(entry.consumers as readonly string[]).includes('web'),
+)
 
 describe('web API client manifest endpoint coverage', () => {
   it('rejects duplicate non-web endpoint IDs', () => {

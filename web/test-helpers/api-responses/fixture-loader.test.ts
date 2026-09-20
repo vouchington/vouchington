@@ -5,7 +5,7 @@ import { defineWebApiFixture } from './declarations/declaration'
 import { WEB_API_FIXTURE_IDS, loadWebApiFixture } from './fixture-loader'
 
 function webManifestFixtures() {
-  return manifest.fixtures.filter(entry => entry.consumers.includes('web'))
+  return manifest.fixtures.filter(entry => (entry.consumers as readonly string[]).includes('web'))
 }
 
 describe('web fixture declarations', () => {

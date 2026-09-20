@@ -53,6 +53,7 @@ describe('native membership fixtures', () => {
     })
     expect(currentMembership).toMatchObject({
       auth: 'fixture-user',
+      consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
       method: 'GET',
       path: '/api/v1/memberships/me',
       status: 200,
@@ -88,7 +89,7 @@ describe('native membership fixtures', () => {
     })
     expect(microsoftTickets).toMatchObject({
       auth: 'fixture-user',
-      consumers: ['dotnet-core'],
+      consumers: [],
       method: 'POST',
       body: {
         service_tickets: {
@@ -121,7 +122,7 @@ describe('native membership fixtures', () => {
     })
     expect(revokeGrant).toMatchObject({
       auth: 'fixture-admin',
-      consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+      consumers: [],
       method: 'DELETE',
       path: '/api/v1/membership-grants/00000000-0000-7000-8000-000000000802',
       requestBody: { reason: 'Incorrect grant' },
@@ -131,5 +132,28 @@ describe('native membership fixtures', () => {
       },
       status: 204,
     })
+
+    const deferredIds = [
+      'native.memberships.me.lifecycle.default',
+      'native.memberships.microsoft.service-tickets.default',
+      'native.memberships.purchase-intent.apple.default',
+      'native.memberships.purchase-intent.conflict.default',
+      'native.memberships.purchase-intent.google.default',
+      'native.memberships.purchase-intent.microsoft.default',
+      'native.memberships.purchase-intent.stripe.default',
+      'native.memberships.verification.pending.default',
+      'native.memberships.verification-status.conflict.default',
+      'native.memberships.verification-status.pending.default',
+      'native.memberships.verification-status.rejected.default',
+      'native.memberships.verification-status.verified.default',
+      'native.memberships.grant.delete.default',
+    ]
+    expect(
+      Object.fromEntries(
+        nativeMembershipApiFixtureCases
+          .filter(fixture => deferredIds.includes(fixture.id))
+          .map(fixture => [fixture.id, fixture.consumers]),
+      ),
+    ).toEqual(Object.fromEntries(deferredIds.map(id => [id, []])))
   })
 })
