@@ -35,6 +35,31 @@ function openRouterBody(): Record<string, unknown> {
 }
 
 describe('structured-decision transport contracts', () => {
+  it('preserves each validated direct-TypeSafe answer fragment without synthesizing an ID', async () => {
+    const body = openRouterBody()
+    delete body.provider
+    const result = await createStructuredDecisionClient({
+      transport: 'typesafe',
+      apiKey: 'test-key',
+      fetch: vi.fn<StructuredDecisionFetch>().mockResolvedValue(response(body)),
+      sleep: async () => undefined,
+    }).decide(request)
+
+    expect(result.answers).toMatchObject([
+      { id: 'spam', raw: { type: 'noul', noul: 0.2 } },
+      {
+        id: 'topic',
+        raw: {
+          type: 'choice',
+          choice: 'food',
+          confidence: 0.8,
+          probabilities: { food: 0.8, sports: 0.2 },
+        },
+      },
+    ])
+    expect(result.answers[0]?.raw).not.toHaveProperty('id')
+  })
+
   it('serializes direct TypeSafe questions as an ID-keyed native record and accepts its provider-less response', async () => {
     const body = openRouterBody()
     delete body.provider

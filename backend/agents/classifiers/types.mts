@@ -1,0 +1,91 @@
+import type {
+  StructuredDecisionClient,
+  StructuredDecisionRequest,
+} from '@modules/structured-decisions'
+import type {
+  ActiveClassifierConfiguration,
+  ClassifierDecisionScope,
+  PersistClassifierDecisionInput,
+  PersistClassifierDecisionResult,
+} from '@services/classifiers'
+import type { ClassifierChoiceKey, ClassifierSafeText } from './safe-content.mts'
+
+export type ClassifierDecisionSubject =
+  | { postId: string; rssFeedItemId: null }
+  | { postId: null; rssFeedItemId: string }
+
+export type TopicClassifierCandidate = {
+  candidateKind: 'topic'
+  topicId: string
+  storedCandidateId: string | null
+}
+
+export type StoryClassifierCandidate = {
+  candidateKind: 'story'
+  storyId: string
+  storedCandidateId: string | null
+}
+
+export type ClassifierDecisionCandidate = TopicClassifierCandidate | StoryClassifierCandidate
+
+export type NoulClassifierBinding = {
+  type: 'noul'
+  questionId: string
+  question: ClassifierSafeText
+  candidate: ClassifierDecisionCandidate
+}
+
+export type ChoiceClassifierCriterion = {
+  criterion: ClassifierChoiceKey
+  candidate: ClassifierDecisionCandidate | null
+}
+
+export type ChoiceClassifierBinding = {
+  type: 'choice'
+  questionId: string
+  question: ClassifierSafeText
+  criteria: readonly ChoiceClassifierCriterion[]
+}
+
+export type ClassifierQuestionBinding = NoulClassifierBinding | ChoiceClassifierBinding
+
+export type TypesafeClassifierContextPolicy = {
+  transport: 'typesafe'
+  model: string
+  measure: (request: StructuredDecisionRequest) => {
+    totalTokens: number
+    stateAndLongestQuestionTokens: number
+  }
+}
+
+export type OpenRouterClassifierContextPolicy = {
+  transport: 'openrouter'
+  model: string
+  measure: (request: StructuredDecisionRequest) => { totalTokens: number }
+}
+
+export type ClassifierContextPolicy =
+  | TypesafeClassifierContextPolicy
+  | OpenRouterClassifierContextPolicy
+
+export type ExecuteClassifierDecisionInput = {
+  batchId: string
+  classifierId: string
+  promptVersionId: string
+  subject: ClassifierDecisionSubject
+  scope: ClassifierDecisionScope
+  state: ClassifierSafeText
+  bindings: readonly ClassifierQuestionBinding[]
+  contextPolicy: ClassifierContextPolicy
+  client: StructuredDecisionClient
+  signal?: AbortSignal
+}
+
+export type ExecuteClassifierDecisionDependencies = {
+  getActiveClassifierConfiguration?: (
+    classifierId: string,
+  ) => Promise<ActiveClassifierConfiguration | null>
+  persistClassifierDecision?: (
+    input: PersistClassifierDecisionInput,
+  ) => Promise<PersistClassifierDecisionResult>
+}

@@ -393,6 +393,24 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/agents/classifiers:
+    dependencies:
+      '@jongleberry/vurst-prompt':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@modules/structured-decisions':
+        specifier: workspace:^
+        version: link:../../modules/structured-decisions
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../../services/classifiers
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+
   backend/agents/community-moderation:
     dependencies:
       '@agents/_shared':
@@ -1097,6 +1115,9 @@ importers:
       '@services/captcha':
         specifier: workspace:^
         version: link:../services/captcha
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../services/classifiers
       '@services/comments':
         specifier: workspace:^
         version: link:../services/comments
@@ -1719,6 +1740,9 @@ importers:
       '@services/captcha':
         specifier: workspace:^
         version: link:../../services/captcha
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../../services/classifiers
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../../services/elections-votes
@@ -4503,6 +4527,28 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+
+  backend/services/classifiers:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+      uuid:
+        specifier: ^14.0.2
+        version: 14.0.2
 
   backend/services/comments:
     dependencies:

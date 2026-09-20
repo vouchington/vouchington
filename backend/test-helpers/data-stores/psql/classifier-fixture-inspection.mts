@@ -50,6 +50,28 @@ export function buildClassifierFixtureInspection(data: ClassifierFixtureData) {
             WHERE batch_id = ${options.batchId}) AS results`)
       return rows[0]!
     },
+    async getDecisionPersistenceFacts(batchId: string) {
+      const { rows } = await read<{
+        batches: number
+        calls: number
+        snapshots: number
+        topic_results: number
+        story_results: number
+      }>(sql`/* getClassifierFixtureDecisionPersistenceFacts */
+        SELECT
+          (SELECT count(*)::integer FROM classifier_decision_batches
+            WHERE id = ${batchId}) AS batches,
+          (SELECT count(*)::integer FROM classifier_decision_calls
+            WHERE batch_id = ${batchId}) AS calls,
+          (SELECT count(*)::integer FROM classifier_decision_batch_candidates
+            WHERE batch_id = ${batchId}) AS snapshots,
+          (SELECT count(*)::integer FROM topic_classifier_results
+            WHERE batch_id = ${batchId}) AS topic_results,
+          (SELECT count(*)::integer FROM story_classifier_results
+            WHERE batch_id = ${batchId}) AS story_results
+      `)
+      return rows[0]!
+    },
     async getPartitionFacts() {
       const { rows } = await read<{
         parent: string

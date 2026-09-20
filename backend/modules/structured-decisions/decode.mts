@@ -20,12 +20,14 @@ export function decodeResult(
   for (const [id, answer] of entries) {
     if (!record(answer) || answers.has(id))
       invalid('Provider response contains invalid or duplicate answer IDs.')
-    answers.set(id, { ...answer, id: typeof answer.id === 'string' ? answer.id : id })
+    answers.set(id, answer)
   }
   if (answers.size !== request.questions.length)
     invalid('Provider response does not cover every requested question exactly once.')
   return {
-    answers: request.questions.map(question => decodeAnswer(answers.get(question.id), question)),
+    answers: request.questions.map(question =>
+      decodeAnswer(answers.get(question.id), question, question.id),
+    ),
     model: raw.model,
     provider: typeof raw.provider === 'string' ? raw.provider : fallbackProvider,
     raw,

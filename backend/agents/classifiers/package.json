@@ -1,0 +1,29 @@
+{
+  "name": "@agents/classifiers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bounded multi-candidate structured-decision orchestration",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/structured-decisions": "workspace:^",
+    "@modules/utils": "workspace:^",
+    "@services/classifiers": "workspace:^",
+    "@voucha/types": "workspace:^"
+  }
+}

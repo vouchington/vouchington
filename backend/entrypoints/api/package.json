@@ -35,6 +35,7 @@
     "@services/bluesky-accounts": "workspace:^",
     "@services/bluesky-follows": "workspace:^",
     "@services/captcha": "workspace:^",
+    "@services/classifiers": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-listener-reconciliation": "workspace:^",
     "@services/fediverse-instances": "workspace:^",

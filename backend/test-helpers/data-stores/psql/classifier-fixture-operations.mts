@@ -45,6 +45,19 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
     return rows[0]!.id
   }
 
+  async function activateClassifierConfigurations(): Promise<void> {
+    await using transaction = await beginTransaction()
+    await transaction(sql`/* activateClassifierFixtureConfigurations */
+      UPDATE classifiers SET activated_at = CURRENT_TIMESTAMP
+      WHERE id IN (${data.classifierId}, ${data.storyClassifierId})
+    `)
+    await transaction(sql`/* activateClassifierFixturePromptConfigurations */
+      UPDATE classifier_prompt_versions SET activated_at = CURRENT_TIMESTAMP
+      WHERE id IN (${data.promptVersionId}, ${data.storyPromptVersionId})
+    `)
+    await transaction.commit()
+  }
+
   async function createTopicBatch(options: BatchOptions = {}) {
     const scopeCategory = options.communityId ? 'community_ai' : 'global'
     await using transaction = await beginTransaction()
@@ -141,6 +154,7 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
       write(sql`/* deactivateClassifierFixturePrompt */
         UPDATE classifier_prompt_versions SET deactivated_at = CURRENT_TIMESTAMP
         WHERE id = ${data.promptVersionId}`),
+    activateClassifierConfigurations,
     createTopicBatch,
     createStoryBatch,
     createAdditionalCall,
