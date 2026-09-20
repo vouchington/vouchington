@@ -69,7 +69,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `dependabot-pr-automerge.yml`       | `automerge`                     | job    | `ubuntu-slim`                         | 5             |
 | `dependabot-pr-automerge.yml`       | `cleanup-retargeted-automerge`  | job    | `ubuntu-slim`                         | 5             |
 | `dispatch-completed-deploy.yml`     | `dispatch`                      | job    | `ubuntu-slim`                         | 5             |
-| `docs-publish.yml`                  | `complete`                      | job    | `ubuntu-slim`                         | 1             |
+| `docs-publish.yml`                  | `publish`                       | job    | `ubuntu-latest`                       | 10            |
 | `explain-analyze.yml`               | `explain-analyze`               | job    | `ubuntu-latest`                       | 10            |
 | `fix-dependabot.yml`                | `check-duplicates`              | job    | `ubuntu-latest`                       | 5             |
 | `fix-dependabot.yml`                | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |

@@ -2,6 +2,7 @@
   "keep": [
     "image-resize-lambda-*",
     "cloudflare-worker-*",
+    "docs-*",
     "storybook-*",
     "next-static-*",
     "browser-port-diagnostics-*",

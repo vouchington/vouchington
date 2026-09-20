@@ -33,7 +33,7 @@ export const jobInventory = {
   ),
   '.github/workflows/scheduled-prompts.yml': jobs('dispatch select-prompt'),
   '.github/workflows/dependabot-pr-automerge.yml': jobs('automerge cleanup-retargeted-automerge'),
-  '.github/workflows/docs-publish.yml': jobs('complete'),
+  '.github/workflows/docs-publish.yml': jobs('publish'),
   '.github/workflows/dispatch-completed-deploy.yml': jobs('dispatch'),
   '.github/workflows/explain-analyze.yml': jobs('explain-analyze'),
   '.github/workflows/ghcr-cleanup.yml': jobs('cleanup'),

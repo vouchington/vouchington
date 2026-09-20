@@ -31,16 +31,6 @@ const POLICY_TEST_FILE = relative(gitRoot, fileURLToPath(import.meta.url))
 const ALLOWED_WORKSPACE_IGNORE_DEPENDENCIES = new Map<string, readonly IgnoredDependencyEvidence[]>(
   [
     [
-      '.',
-      [
-        {
-          dependency: '@redocly/cli',
-          evidenceFiles: ['backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts'],
-          evidencePattern: /run\('pnpm', \['exec', 'redocly', 'lint'/,
-        },
-      ],
-    ],
-    [
       'backend/api',
       [
         {
