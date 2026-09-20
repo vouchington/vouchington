@@ -11,7 +11,7 @@ flowchart TD
     ci --> sca["static-code-analysis\n(cross-repo lint + policy)"]
     static-trigger --> sca
     ci --> gitleaks["gitleaks\n(secret scan)"]
-    trigger --> sync-articles["sync-articles\n(source completion)"]
+    trigger --> sync-articles["sync-articles\n(immutable articles artifact)"]
     trigger --> docs-publish["docs-publish\n(immutable docs artifact)"]
     artifact-cleanup-sweep-trigger["0 */6 * * * / manual dispatch"] --> cleanup-artifacts["cleanup-artifacts\n(reusable producer cleanup + stale sweep)"]
     ghcr-cleanup-trigger["0 4 * * 1 / manual dispatch"] --> ghcr-cleanup["ghcr-cleanup\n(prunes published container package versions)"]
@@ -162,6 +162,7 @@ flowchart TD
     build-web --> build
     tests --> build
 
+    sync-articles --> articles-artifact["articles-*\n(run/attempt artifact)"]
     docs-publish -. "workflow_run success" .-> dispatch-completed-deploy["dispatch-completed-deploy\n(trusted completion receiver)"]
     main-backend -. "workflow_run success" .-> dispatch-completed-deploy
     main-cloudflare-worker -. "workflow_run success" .-> dispatch-completed-deploy

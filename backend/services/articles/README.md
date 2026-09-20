@@ -1,6 +1,6 @@
 # @services/articles
 
-Parses article Markdown with `gray-matter` frontmatter extraction from the assets S3 bucket, and syncs it as posts in the database. The committed [`articles/`](../../../articles/) directory is the source of truth; `.github/workflows/sync-articles.yml` dispatches its source revision to private infrastructure for publication.
+Parses article Markdown with `gray-matter` frontmatter extraction from the assets S3 bucket, and syncs it as posts in the database. The committed [`articles/`](../../../articles/) directory is the source of truth; `.github/workflows/sync-articles.yml` packages its trusted-main Markdown into an immutable Actions artifact, while private infrastructure owns its S3/R2 publication boundary.
 
 ## Key exports
 

@@ -58,7 +58,7 @@ export const jobInventory = {
   '.github/workflows/pnpm-dedupe.yml': jobs('dedupe'),
   '.github/workflows/static-code-analysis.yml': jobs('no-mistakes-owned static-code-analysis'),
   '.github/workflows/storybook.yml': jobs('storybook'),
-  '.github/workflows/sync-articles.yml': jobs('complete'),
+  '.github/workflows/sync-articles.yml': jobs('publish'),
   '.github/workflows/tests-backend-credentialed.yml': jobs('backend-credentialed-tests'),
   '.github/workflows/tests-backend-modules.yml': jobs('backend-modules'),
   '.github/workflows/tests-backend-unit.yml': jobs('backend-tests prep'),

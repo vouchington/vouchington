@@ -60,6 +60,12 @@ HTML and source JSON plus the rendered PostgreSQL schema reference under its sol
 receiver selects that exact source-run artifact by immutable artifact ID. Filaments does not create
 the documentation landing page or hold provider credentials.
 
+For articles, the successful trusted-main workflow uploads one protected
+`articles-<run-id>-<run-attempt>` artifact with one-day retention. It contains only regular article
+Markdown files under its sole `articles/` root and excludes the source-only `README.md`; the receiver
+selects that exact source-run artifact by immutable artifact ID and retains destination mapping and
+S3/R2 publication ownership.
+
 ### Operations and failure handling
 
 - A successful Vouchington run proves validation and dispatch only. Confirm the matching private
