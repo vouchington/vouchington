@@ -17,7 +17,6 @@
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
-    "@services/copyright-notices": "workspace:^",
-    "openai": "^7.15.0"
+    "@services/copyright-notices": "workspace:^"
   }
 }

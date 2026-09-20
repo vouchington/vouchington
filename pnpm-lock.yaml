@@ -465,9 +465,6 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
-      openai:
-        specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
 
   backend/agents/copyright-email-intake:
     dependencies:
@@ -486,9 +483,6 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
-      openai:
-        specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
 
   backend/agents/copyright-form-screening:
     dependencies:
@@ -504,9 +498,6 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
-      openai:
-        specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
 
   backend/agents/crm-outreach:
     dependencies:
@@ -29599,14 +29590,6 @@ snapshots:
       define-lazy-prop: 3.0.0
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
-
-  openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2):
-    optionalDependencies:
-      '@aws-sdk/credential-provider-node': 3.972.83
-      '@smithy/signature-v4': 5.7.3
-      undici: 8.10.2
-      ws: 8.21.3
-      zod: 4.6.2
 
   openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2):
     optionalDependencies:
