@@ -67,7 +67,7 @@ describe('build-web workflow', () => {
     }
     expect(compositeActionSource).toContain('sentry-source-map-upload:')
     expect(compositeActionSource).toContain(
-      "SENTRY_AUTH_TOKEN=${{ inputs.sentry-source-map-upload == 'true' && env.SENTRY_AUTH_TOKEN || '' }}",
+      "SENTRY_AUTH_TOKEN=${{ inputs.sentry-source-map-upload == 'true' && inputs.sentry-auth-token || '' }}",
     )
     expect(compositeActionSource).toContain(
       "SENTRY_RELEASE=${{ inputs.sentry-source-map-upload == 'true' && (inputs.sentry-release || github.sha) || '' }}",
@@ -79,6 +79,7 @@ describe('build-web workflow', () => {
     expect(publishSource).toContain('[ -z "${SENTRY_AUTH_TOKEN:-}" ]')
     expect(publishSource).toContain('exit 1')
     expect(publishSource).toContain("sentry-source-map-upload: 'true'")
+    expect(publishSource).toContain('sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}')
     expect(publishSource).toContain('trusted_secret_context')
     expect(mainWebSource).toContain('trusted_secret_context: true')
     expect(mainWebSource).toContain('secrets: inherit')
