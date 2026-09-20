@@ -65,6 +65,12 @@ function makeOpenRouterBody(overrides: Record<string, unknown> = {}): unknown {
 }
 
 describe('createStructuredDecisionClient', () => {
+  it('requires a non-empty API key', () => {
+    expect(() =>
+      createStructuredDecisionClient({ transport: 'openrouter', apiKey: '   ' }),
+    ).toThrow('API key')
+  })
+
   it('normalizes OpenRouter native answers to request order and retains the raw body', async () => {
     const fetch = vi
       .fn<StructuredDecisionFetch>()

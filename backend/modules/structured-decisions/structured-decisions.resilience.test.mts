@@ -113,6 +113,38 @@ describe('structured-decision resilience', () => {
     expect(fetch).toHaveBeenCalledOnce()
   })
 
+  it('supports completion and cancellation with the default retry delay', async () => {
+    vi.useFakeTimers()
+    try {
+      const completes = vi
+        .fn<StructuredDecisionFetch>()
+        .mockResolvedValueOnce(response({}, 529))
+        .mockResolvedValueOnce(response(success))
+      const completion = createStructuredDecisionClient({
+        transport: 'openrouter',
+        apiKey: 'test-key',
+        fetch: completes,
+      }).decide(request)
+      await vi.advanceTimersByTimeAsync(100)
+      await expect(completion).resolves.toMatchObject({ provider: 'TypeSafe' })
+
+      const controller = new AbortController()
+      const cancelled = vi.fn<StructuredDecisionFetch>().mockResolvedValue(response({}, 529))
+      const cancellation = createStructuredDecisionClient({
+        transport: 'openrouter',
+        apiKey: 'test-key',
+        fetch: cancelled,
+      }).decide(request, controller.signal)
+      const rejection = expect(cancellation).rejects.toThrow('default delay cancelled')
+      await vi.advanceTimersByTimeAsync(0)
+      controller.abort(new Error('default delay cancelled'))
+      await rejection
+      expect(cancelled).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it.each([
     ['Noul probability', { food: { type: 'noul', noul: 1.1 } }],
     [
@@ -156,6 +188,41 @@ describe('structured-decision resilience', () => {
     { state: 1, questions: [] },
     { state: 'state', questions: [{ id: 'x', type: 'unknown', question: 'question' }] },
     { state: 'state', questions: [{ id: 'x', type: 'choice', question: 'question' }] },
+    {
+      state: 'state',
+      questions: [
+        { id: 'x', type: 'noul', question: 'question' },
+        { id: 'x', type: 'noul', question: 'duplicate' },
+      ],
+    },
+    {
+      state: 'state',
+      questions: [
+        {
+          id: 'score',
+          type: 'score',
+          question: 'question',
+          criteria: [
+            { value: 0, description: 'low' },
+            { value: 2, description: 'high' },
+          ],
+        },
+      ],
+    },
+    {
+      state: 'state',
+      questions: [
+        {
+          id: 'score',
+          type: 'score',
+          question: 'question',
+          criteria: [
+            { value: 0, description: 'same' },
+            { value: 1, description: 'same' },
+          ],
+        },
+      ],
+    },
   ])('fails malformed runtime input as invalid-request', async malformed => {
     const fetch = vi.fn<StructuredDecisionFetch>()
     await expect(
