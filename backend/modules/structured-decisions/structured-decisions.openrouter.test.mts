@@ -2,10 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { createStructuredDecisionClient } from './structured-decisions.mts'
 
 describe('OpenRouter Decisions', () => {
-  it('preserves native Jev Noul, Choice, and Score fields', async () => {
-    const apiKey = process.env.OPENROUTER_API_KEY
-    if (!apiKey) throw new Error('OPENROUTER_API_KEY is required for backend-openrouter tests.')
+  const apiKey = process.env.OPENROUTER_API_KEY ?? ''
 
+  it.skipIf(!apiKey)('preserves native Jev Noul, Choice, and Score fields', async () => {
     const result = await createStructuredDecisionClient({ transport: 'openrouter', apiKey }).decide(
       {
         state: 'A short local food review about a bakery.',
