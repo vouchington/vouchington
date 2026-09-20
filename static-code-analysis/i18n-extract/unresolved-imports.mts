@@ -1,4 +1,4 @@
-import type { ResolveCheckBatchResult } from 'no-mistakes'
+import type { ResolveCheckBatchResult, ResolveCheckImport } from 'no-mistakes'
 
 export type UnresolvedImportExclusion = {
   file: string
@@ -26,6 +26,15 @@ export function isLocalSpecifier(specifier: string): boolean {
   return specifier.startsWith('.') || specifier.startsWith('/') || specifier.startsWith('@/')
 }
 
+function isComputedImport(imported: ResolveCheckImport): boolean {
+  return imported.computed
+}
+
+function shouldReportUnresolved(imported: ResolveCheckImport): boolean {
+  if (imported.status === 'external' || imported.status === 'resolved') return false
+  return isComputedImport(imported) || isLocalSpecifier(imported.specifier)
+}
+
 export function unresolvedImportFailures(
   result: unknown,
   exclusions: readonly UnresolvedImportExclusion[] = UNRESOLVED_IMPORT_EXCLUSIONS,
@@ -35,8 +44,7 @@ export function unresolvedImportFailures(
   const failures: string[] = []
   for (const fileResult of batch.results) {
     for (const imported of fileResult.imports) {
-      if (imported.status === 'external' || imported.status === 'resolved') continue
-      if (!isLocalSpecifier(imported.specifier)) continue
+      if (!shouldReportUnresolved(imported)) continue
       if (
         exclusions.some(
           entry => entry.file === fileResult.file && entry.specifier === imported.specifier,
@@ -44,7 +52,8 @@ export function unresolvedImportFailures(
       ) {
         continue
       }
-      failures.push(`${fileResult.file}: ${imported.specifier} (${imported.status})`)
+      const detail = isComputedImport(imported) ? `${imported.status}, computed` : imported.status
+      failures.push(`${fileResult.file}: ${imported.specifier} (${detail})`)
     }
   }
   return failures

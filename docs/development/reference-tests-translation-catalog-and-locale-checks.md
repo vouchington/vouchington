@@ -74,13 +74,10 @@ checks guard that request-selection contract instead of catalog content:
   `workspace` relationships; no-mistakes follows dynamic import targets (including `next/dynamic`)
   recursively within that same closure. A second `analyzeProject` call then batches `resolveCheck`
   over the union of those closure files and fails on unresolved **local** specifiers (relative,
-  root, or `@/` aliases) except an explicit reviewed exclusion list (empty until an entry is
-  justified). Package specifiers stay external even when no-mistakes 0.62.1 labels workspace
-  packages unresolved. Computed `import()`
-  specifiers are omitted by no-mistakes 0.62.1
-  ([jonathanong/no-mistakes#1006](https://github.com/jonathanong/no-mistakes/issues/1006)); the
-  generator also fails those lexically, along with unbounded `t()` assembly and production
-  `as MessageKey` casts. It then matches quoted alias-shaped literals and fails when a quoted
+  root, or `@/` aliases) and on computed `import()`/`require()` rows, except an explicit reviewed
+  exclusion list (empty until an entry is justified). Package specifiers stay external. The
+  generator also fails computed `import()` lexically, along with unbounded `t()` assembly and
+  production `as MessageKey` casts. It then matches quoted alias-shaped literals and fails when a quoted
   token is not a web catalog alias. It does not parse `t()` with an AST, and
   `dynamic-import-closure.mts` does not exist. Finite registries of quoted aliases must live in a
   module the route/layout/chrome graph can reach. Add `--diagnostics` for stderr-only phase timings

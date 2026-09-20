@@ -15,8 +15,18 @@ const resolvedBatch = {
       file: 'web/lib/a.ts',
       allResolve: true,
       imports: [
-        { specifier: 'next/dynamic', kind: 'static' as const, status: 'external' as const },
-        { specifier: './recovery', kind: 'dynamic' as const, status: 'resolved' as const },
+        {
+          specifier: 'next/dynamic',
+          kind: 'static' as const,
+          status: 'external' as const,
+          computed: false,
+        },
+        {
+          specifier: './recovery',
+          kind: 'dynamic' as const,
+          status: 'resolved' as const,
+          computed: false,
+        },
       ],
       unresolved: [],
     },
@@ -31,7 +41,12 @@ const unresolvedBatch = {
       file: 'web/lib/a.ts',
       allResolve: false,
       imports: [
-        { specifier: './missing', kind: 'dynamic' as const, status: 'unresolved' as const },
+        {
+          specifier: './missing',
+          kind: 'dynamic' as const,
+          status: 'unresolved' as const,
+          computed: false,
+        },
       ],
       unresolved: ['./missing'],
     },
@@ -82,6 +97,7 @@ describe('unresolvedImportFailures', () => {
                 specifier: '@vouchington/utils/money',
                 kind: 'static',
                 status: 'unresolved',
+                computed: false,
               },
             ],
             unresolved: ['@vouchington/utils/money'],
@@ -89,6 +105,30 @@ describe('unresolvedImportFailures', () => {
         ],
       }),
     ).toEqual([])
+  })
+
+  it('fails computed unresolved imports even when the specifier is not local', () => {
+    expect(
+      unresolvedImportFailures({
+        allResolve: false,
+        unresolvedFiles: ['web/lib/a.ts'],
+        results: [
+          {
+            file: 'web/lib/a.ts',
+            allResolve: false,
+            imports: [
+              {
+                specifier: 'moduleName',
+                kind: 'dynamic',
+                status: 'unresolved',
+                computed: true,
+              },
+            ],
+            unresolved: ['moduleName'],
+          },
+        ],
+      }),
+    ).toEqual(['web/lib/a.ts: moduleName (unresolved, computed)'])
   })
 
   it('skips a reviewed exclusion', () => {

@@ -116,10 +116,9 @@ then format and compile.
   artifacts from no-mistakes dependency closures, which already follow dynamic imports (including
   `next/dynamic`) recursively, then a quoted-only lexical scan of alias-shaped literals. Quoted
   tokens that are not web catalog aliases fail generate/`--check`. Reachable `t()` template
-  interpolation or concatenation, production `as MessageKey` casts, and unresolved reachable
-  local imports also fail. Package specifiers stay external. Computed `import()` specifiers are omitted by no-mistakes 0.62.1
-  ([jonathanong/no-mistakes#1006](https://github.com/jonathanong/no-mistakes/issues/1006)); the
-  generator fails those lexically until that release. It does not parse `t()` arguments with an
+  interpolation or concatenation, production `as MessageKey` casts, unresolved reachable
+  local imports, and computed `import()`/`require()` rows also fail. Package specifiers stay
+  external. The generator also fails computed `import()` lexically. It does not parse `t()` arguments with an
   AST, and `dynamic-import-closure.mts` does not exist. Dynamic keys must be quoted aliases in a
   module the route/layout/chrome graph can reach, typically a finite `Record<Enum, MessageKey>`
   (or equivalent object of quoted aliases). Open `Record<string, MessageKey>` maps need a finite

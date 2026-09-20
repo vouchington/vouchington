@@ -18,13 +18,10 @@ including nested/transitive `next/dynamic` wrappers, re-exports, and type import
 for hundreds of routes, so it must stay even though `import-dynamic` alone looks like it should
 cover proven dynamic imports. A second `analyzeProject` call batches `resolveCheck` over the union
 of those closure files and fails generate/`--check` on unresolved local specifiers (relative, root,
-or `@/` aliases) except a reviewed exclusion list. Package specifiers stay external even when
-no-mistakes 0.62.1 labels workspace packages unresolved. Computed `import()` specifiers are omitted
-by no-mistakes 0.62.1
-([jonathanong/no-mistakes#1006](https://github.com/jonathanong/no-mistakes/issues/1006)) and are
-failed lexically until that release. The generator then scans quoted alias-shaped literals only,
-fails unknown catalog aliases, and fails unbounded `t()` assembly and production `as MessageKey`
-casts. It does not parse `t()` with an AST. Sidebar chrome aliases come from the layout graph
+or `@/` aliases) and on computed `import()`/`require()` rows, except a reviewed exclusion list.
+Package specifiers stay external. The generator also fails computed `import()` lexically. It then
+scans quoted alias-shaped literals only, fails unknown catalog aliases, and fails unbounded `t()`
+assembly and production `as MessageKey` casts. It does not parse `t()` with an AST. Sidebar chrome aliases come from the layout graph
 (`layout` → `RootAppShell` → `AppSidebar`); there is no catalog prefix dump. It writes the
 committed route selector map and the catalog's generated pattern-keyed route membership
 (`localization/catalog/routes.json`). Alias-less rows retain routes with no route-local copy. Run

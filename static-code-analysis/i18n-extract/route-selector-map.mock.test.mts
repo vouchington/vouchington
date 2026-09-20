@@ -235,7 +235,9 @@ describe('mocked web route graph closures', () => {
         {
           file: 'web/lib/dynamic.ts',
           allResolve: false,
-          imports: [{ specifier: './missing', kind: 'dynamic', status: 'unresolved' }],
+          imports: [
+            { specifier: './missing', kind: 'dynamic', status: 'unresolved', computed: false },
+          ],
           unresolved: ['./missing'],
         },
       ],
