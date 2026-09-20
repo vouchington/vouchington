@@ -132,7 +132,7 @@ describe('Harness scheduled automation prompt contracts', () => {
       'dotnet test',
       'dotnet-clients/Voucha.DotNet.sln',
       '--configuration Release',
-      'Filaments',
+      'Vouchington',
       'vouchington-clients',
     ])
       expect(prompt).toContain(token)
