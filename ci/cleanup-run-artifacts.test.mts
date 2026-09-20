@@ -45,6 +45,7 @@ describe('cleanupRunArtifacts', () => {
       artifact({ id: 3, name: 'unknown-debug-output' }),
       artifact({ id: 4, name: 'vitest-blob-web', expired: true }),
       artifact({ id: 5, name: 'browser-port-diagnostics-web' }),
+      artifact({ id: 6, name: 'browser-debug-log-storybook' }),
     ])
     const log = {
       info: vi.fn<(message: string) => void>(),
@@ -58,7 +59,7 @@ describe('cleanupRunArtifacts', () => {
         runId: '42',
         log,
       }),
-    ).resolves.toEqual({ deletedCount: 1, bytesFreed: 100 })
+    ).resolves.toEqual({ deletedCount: 2, bytesFreed: 200 })
 
     expect(stub.paginate).toHaveBeenCalledWith(stub.listWorkflowRunArtifacts, {
       owner: 'voucha',
@@ -71,7 +72,7 @@ describe('cleanupRunArtifacts', () => {
       repo: 'filaments',
       artifact_id: 1,
     })
-    expect(stub.deleteArtifact).toHaveBeenCalledTimes(1)
+    expect(stub.deleteArtifact).toHaveBeenCalledTimes(2)
   })
 
   it('logs a failed deletion and continues with the remaining artifacts', async () => {

@@ -49,6 +49,11 @@ autoscaling, worker placement, promotion, rollback, and serialization. Routes no
 use the legacy infrastructure-side build. The handoff is asynchronous: Filaments does not poll or
 wait for the receiver.
 
+For Storybook, the successful trusted-main workflow uploads one protected
+`storybook-<run-id>-<run-attempt>` artifact with one-day retention. The receiver selects that exact
+source-run artifact by immutable artifact ID and publishes the validated static tree without
+checking out or rebuilding product source. PR and dependency-bot Storybook runs stay test-only.
+
 ### Operations and failure handling
 
 - A successful Filaments run proves validation and dispatch only. Confirm the matching private

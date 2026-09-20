@@ -100,6 +100,10 @@ export const routePolicy = {
       '.github/workflows/main-cloudflare-worker.yml#static-checks',
       '.github/workflows/main-cloudflare-worker.yml#cloudflare-worker-tests',
     ),
+    edge(
+      '.github/workflows/main-storybook.yml#storybook-build',
+      '.github/workflows/main-storybook.yml#publish-storybook',
+    ),
   ],
   forbiddenDirectEdges: [
     edge('.github/workflows/ci.yml#detect-changes', '.github/workflows/ci.yml#build'),
@@ -118,6 +122,9 @@ export const routePolicy = {
   ),
   exactFanIns: {
     ...reviewFanIns,
+    '.github/workflows/main-storybook.yml#publish-storybook': splitIds(
+      '.github/workflows/main-storybook.yml#storybook-build',
+    ),
     '.github/workflows/ci.yml#detect-changes': [],
     '.github/workflows/ci.yml#test-coverage': splitIds(
       '.github/workflows/ci.yml#detect-changes .github/workflows/ci.yml#select-ci .github/workflows/ci.yml#storybook .github/workflows/ci.yml#test-backend-credentialed .github/workflows/ci.yml#test-backend-modules .github/workflows/ci.yml#test-backend-unit .github/workflows/ci.yml#test-cloudflare-worker .github/workflows/ci.yml#test-lambdas .github/workflows/ci.yml#test-portability .github/workflows/ci.yml#test-tooling .github/workflows/ci.yml#test-ts-shared .github/workflows/ci.yml#test-web .github/workflows/ci.yml#test-web-api .github/workflows/ci.yml#test-web-integration',

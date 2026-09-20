@@ -129,7 +129,7 @@ When a draft PR is marked ready for review without changing its head SHA, [`ci.y
 
 - <a id="coverage-provenance-and-transport"></a>[Coverage Provenance and Transport](reference-ci-coverage-provenance-and-transport.md)
 
-`storybook-static` is keep-classified for its one-day retention because the trusted Cloudflare Pages publisher consumes it only after the source workflow completes.
+The main-only protected Storybook artifact is keep-classified for its one-day retention because the trusted Cloudflare Pages publisher consumes the exact completed source-run artifact after the source workflow completes.
 
 ## CI operations references
 

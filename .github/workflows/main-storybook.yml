@@ -36,6 +36,40 @@ permissions:
   contents: read
 
 jobs:
+  publish-storybook:
+    needs: [storybook-build]
+    if: ${{ !cancelled() && needs.storybook-build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 3
+      - name: Build and protect Storybook artifact
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          STORYBOOK_BASE_PATH=/ pnpm run build:storybook
+          node ci/storybook-pages.mts protect web/storybook-static
+          mkdir -p delivery
+          mv web/storybook-static delivery/storybook
+      - name: Publish the protected Storybook artifact
+        timeout-minutes: 1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: storybook-${{ github.run_id }}-${{ github.run_attempt }}
+          path: delivery
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
   storybook-build:
     uses: ./.github/workflows/storybook.yml
     permissions:
