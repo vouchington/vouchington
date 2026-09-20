@@ -1,9 +1,6 @@
 import type { Post, TopicRecommendationStatus } from '@services/posts/types'
 
 export type { TopicRecommendationStatus }
-// Canonical definition lives in @voucha/types.
-// re-exported here for call-site stability.
-export type { SourceEntityType } from '@voucha/types/entities/topic-recommendation'
 
 export type TopicRecommendationPost = Post & {
   post_type: 'topic_recommendation'
