@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
-import { buildImagePath } from '@/lib/utils/image-url'
+import { buildPlacementImagePath } from '@/lib/utils/image-url'
 import { createProfilePageSchema } from '@/lib/seo/profile-page-schema'
 import { LandingPageTracker } from './landing-page-tracker'
 import type { PublicLandingPage } from '@/types/landing-pages'
@@ -21,7 +21,7 @@ export function PublicLandingPageView({ data, canonicalPath, t }: Props) {
     data.user.display_name ||
     data.user.username ||
     t('extracted.landingPages.publicLandingPage.user_b512d97e')
-  const profileImagePath = buildImagePath(data.user.profile_image_id)
+  const profileImagePath = buildPlacementImagePath(data.user.profile_image_placement)
 
   return (
     <>

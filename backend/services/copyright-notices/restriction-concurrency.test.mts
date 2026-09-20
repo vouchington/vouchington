@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import type { publishImagePlacementDeliveryRecord } from '@services/images/delivery-registry'
 import {
   createTestUserDirect,
+  getTestPostImagePlacement,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
@@ -16,6 +18,7 @@ import {
   createCounterNoticeDeadline,
   createEligibleCopyrightRestoreIntent,
   getCopyrightNoticePrivateAggregate,
+  processCopyrightActionIntent,
 } from './index.mts'
 
 describe('copyright restriction concurrency', () => {
@@ -45,6 +48,7 @@ describe('copyright restriction concurrency', () => {
       insertTestPostImage({ postId: targetPostId, imageId }),
       insertTestPostImage({ postId: unrelatedPostId, imageId }),
     ])
+    const targetPlacement = await requireTestPostImagePlacement(targetPostId, imageId)
     const notice = await createCopyrightNoticeAggregate({
       jurisdiction: 'us_dmca',
       receivedAt: new Date('2026-06-30T16:00:00.000Z'),
@@ -60,8 +64,8 @@ describe('copyright restriction concurrency', () => {
       },
       targets: [
         {
-          placementKey: `post-image:${targetPostId}:${imageId}`,
-          placementRevision: 1,
+          placementKey: `image-placement:${targetPlacement.placement_id}`,
+          placementRevision: targetPlacement.placement_revision,
           imageId,
           hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
         },
@@ -92,6 +96,30 @@ describe('copyright restriction concurrency', () => {
           .map(intent => intent.recipient_user_id),
       ),
     ).toEqual(new Set([targetPoster.id]))
+    expect(restricted?.actionIntents).toContainEqual(
+      expect.objectContaining({
+        action: 'withhold',
+        expected_placement_revision: targetPlacement.placement_revision,
+        state: 'pending',
+      }),
+    )
+    const withholdIntent = restricted?.actionIntents.find(intent => intent.action === 'withhold')
+    if (!withholdIntent) throw new Error('withhold intent disappeared')
+    const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
+    await expect(
+      processCopyrightActionIntent(withholdIntent.id, new Date('2026-07-01T12:01:00.000Z'), {
+        publishImagePlacementDeliveryRecord: publish,
+      }),
+    ).resolves.toBe('applied')
+    expect(publish).toHaveBeenCalledWith(expect.objectContaining({ state: 'withheld', imageId }))
+    const completed = await getCopyrightNoticePrivateAggregate(notice.id)
+    expect(completed?.actionIntents).toContainEqual(
+      expect.objectContaining({
+        id: withholdIntent.id,
+        state: 'completed',
+        completed_at_reason: 'completed',
+      }),
+    )
   })
 
   it('serializes mandatory review and restoration for one placement', async () => {
@@ -108,6 +136,7 @@ describe('copyright restriction concurrency', () => {
     })
     const imageId = await insertTestImage(claimant.id)
     await insertTestPostImage({ postId, imageId })
+    const placement = await requireTestPostImagePlacement(postId, imageId)
     const notice = await createCopyrightNoticeAggregate({
       jurisdiction: 'us_dmca',
       receivedAt: new Date('2026-06-30T16:00:00.000Z'),
@@ -123,8 +152,8 @@ describe('copyright restriction concurrency', () => {
       },
       targets: [
         {
-          placementKey: `post-image:${postId}:${imageId}`,
-          placementRevision: 1,
+          placementKey: `image-placement:${placement.placement_id}`,
+          placementRevision: placement.placement_revision,
           imageId,
           hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
         },
@@ -194,6 +223,7 @@ describe('copyright restriction concurrency', () => {
         restrictionId: restriction.id,
         currentUser: moderator,
         action: 'confirm',
+        rationale: 'The restriction remains appropriate after review.',
         reviewedAt: new Date('2026-07-02T12:00:00.000Z'),
       }),
       createEligibleCopyrightRestoreIntent({
@@ -203,7 +233,6 @@ describe('copyright restriction concurrency', () => {
         deadlineId: deadline.id,
         expectedPlacementRevision: target.placement_revision,
         now: new Date('2026-07-16T12:00:00.000Z'),
-        blockers: [],
       }),
     ])
 
@@ -215,3 +244,9 @@ describe('copyright restriction concurrency', () => {
     expect(['restore', 'Copyright restoration is not eligible']).toContain(restorationOutcome)
   })
 })
+
+async function requireTestPostImagePlacement(postId: string, imageId: string) {
+  const placement = await getTestPostImagePlacement(postId, imageId)
+  if (!placement) throw new Error(`Missing image placement for ${postId}`)
+  return placement
+}

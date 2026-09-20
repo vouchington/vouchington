@@ -1,13 +1,11 @@
-import { getImageByAny } from './get.mts'
 import type { ImageDeleteImageRollback, ImageDeleteResult } from './delete-rollback-types.mts'
+import { getImageByAny } from './get.mts'
 import { beginTransaction } from '@data-stores/psql'
-import { deleteKnownImageStorageFromS3 } from './s3-upload-lifecycle.mts'
-import { markImageUploadSourceDeleted } from './complete-upload-state.mts'
 import onError from '@modules/on-error'
 import { enqueueBulkOnPostUpdated } from '@queues/entity-listeners/enqueues'
 import { resetPostClearance } from '@services/post-clearance'
 import { createPostModerationContent } from '@services/posts/content'
-import { getPostByAny } from '@services/posts/get'
+import { getPostModerationInput } from '@services/posts/moderation-input'
 import sql from 'sql-template-strings'
 import { createImageDeletionPostRevision } from './delete-revisions.mts'
 import { rollbackImageDeletion } from './delete-rollback.mts'
@@ -15,24 +13,24 @@ import {
   getImageDeletePostRollbackSnapshots,
   type ImageDeletePostRollbackSnapshot,
 } from './delete-rollback-state.mts'
-import { withImageStorageLifecycleLock } from './storage-lifecycle-lock.mts'
 import {
   lockPostPublicationPostScopes,
   recordPostPublicationChange,
 } from '@services/post-publication'
+import {
+  retireImagePlacementsForDeletedImage,
+  type ImagePlacementRetirement,
+} from './placements.mts'
+import { retireImageSurfacePlacementsForDeletedImage } from './surface-placements.mts'
+import {
+  compensateFailedImageDeliveryMutation,
+  prepublishImageDeliveryDenials,
+} from './delivery-registry.mts'
+import { lockImageDeliveryMutation } from './delivery-lock.mts'
+import { cleanupDeletedImageStorage } from './delete-storage-cleanup.mts'
+export { deleteImageById } from './delete-entry.mts'
 
-export const deleteImageById = async (
-  imageId: string | Buffer,
-  omitRollback?: true,
-  { includeQuarantinePending = false }: { includeQuarantinePending?: boolean } = {},
-) => {
-  const image = await getImageByAny(imageId, { includeQuarantinePending })
-  if (!image) return
-  return await withImageStorageLifecycleLock(image.id, async () =>
-    deleteImageByIdWhileStorageLocked(image.id, omitRollback, includeQuarantinePending),
-  )
-}
-async function deleteImageByIdWhileStorageLocked(
+export async function deleteImageByIdWhileStorageLocked(
   imageId: string | Buffer,
   omitRollback: true | undefined,
   includeQuarantinePending: boolean,
@@ -50,6 +48,7 @@ async function deleteImageByIdWhileStorageLocked(
   async function deleteImageInTransaction(): Promise<ImageDeleteResult> {
     await using transaction = await beginTransaction()
     async function deleteImageRows(query: typeof transaction) {
+      await lockImageDeliveryMutation(query, { imageIds: [image.id] })
       const { rows: imageRollbackRows } = await query<
         ImageDeleteImageRollback & {
           id: string
@@ -78,16 +77,22 @@ async function deleteImageByIdWhileStorageLocked(
           deletedThisImage: false,
           imageRollback: null,
           postRollbacks: [],
+          retiredPlacements: [],
         }
       }
       /* v8 ignore stop */
       lockedStorageImage = imageRollback
+      await prepublishImageDeliveryDenials(image.id, { query })
 
       await query(sql`/* deleteImageById */
       UPDATE images
       SET deleted_at = CURRENT_TIMESTAMP
       WHERE id = ${image.id}
     `)
+      const retiredPlacements: ImagePlacementRetirement[] = [
+        ...(await retireImagePlacementsForDeletedImage(image.id, query)),
+        ...(await retireImageSurfacePlacementsForDeletedImage(image.id, query)),
+      ]
 
       const { rows: postRows } = await query<{
         post_id: string
@@ -121,7 +126,7 @@ async function deleteImageByIdWhileStorageLocked(
         const clearanceChanged = await resetPostClearance(post_id, null, { query })
         clearanceResetByPostId.set(post_id, clearanceChanged)
         // oxlint-disable-next-line no-await-in-loop -- the post read depends on this iteration's completed clearance reset
-        const post = await getPostByAny(post_id, { query })
+        const post = await getPostModerationInput(post_id, { query })
         if (!post) continue
         const { content_sha256 } = createPostModerationContent(post)
         // oxlint-disable-next-line no-await-in-loop -- each post hash update follows its reset and reread on the same transaction client
@@ -165,13 +170,17 @@ async function deleteImageByIdWhileStorageLocked(
             deletedClearanceChangeIdByPostId.get(rollback.post_id) ?? null,
           clearance_reset: clearanceResetByPostId.get(rollback.post_id) ?? false,
         })),
+        retiredPlacements,
       }
     }
     const result = await deleteImageRows(transaction)
     await transaction.commit()
     return result as ImageDeleteResult
   }
-  const deleteResult = await deleteImageInTransaction()
+  const deleteResult = await deleteImageInTransaction().catch(async error => {
+    await compensateFailedImageDeliveryMutation({ imageIds: [String(image.id)] }).catch(onError)
+    throw error
+  })
   if (!deleteResult.deletedThisImage) return
   try {
     await enqueueBulkOnPostUpdated(
@@ -183,13 +192,9 @@ async function deleteImageByIdWhileStorageLocked(
       onError(error as Error)
     } else {
       await rollbackImageDeletion(image.id, deleteResult)
+      await compensateFailedImageDeliveryMutation({ imageIds: [image.id] }).catch(onError)
       throw error
     }
   }
-  try {
-    await deleteKnownImageStorageFromS3(lockedStorageImage!)
-    await markImageUploadSourceDeleted(lockedStorageImage!.id)
-  } catch (error) {
-    onError(error as Error)
-  }
+  await cleanupDeletedImageStorage(lockedStorageImage!)
 }

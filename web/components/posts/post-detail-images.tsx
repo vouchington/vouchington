@@ -33,6 +33,8 @@ interface PostDetailImagesProps {
 
 interface PostDetailImageViewModel {
   imageId: string
+  placementId: string
+  placementRevision: number
   caption: string
 }
 
@@ -116,6 +118,7 @@ function SinglePostImage({
       <ImageButton
         alt={image.caption || heading}
         imageId={image.imageId}
+        placement={{ id: image.placementId, revision: image.placementRevision }}
         onClick={() => {
           setLightboxIndex(0)
           setLightboxOpen(true)
@@ -154,6 +157,7 @@ function PostCarouselImage({
       <ImageButton
         alt={image.caption || heading}
         imageId={image.imageId}
+        placement={{ id: image.placementId, revision: image.placementRevision }}
         onClick={() => {
           setLightboxIndex(index)
           setLightboxOpen(true)

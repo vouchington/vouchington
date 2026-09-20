@@ -1,7 +1,8 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
+export { insertTestImage, insertTestImageWithSha256 } from './images-insert.mts'
 
 export async function updateImageStatus(
   imageId: string,
@@ -81,37 +82,28 @@ export async function markImageComplete(imageId: string) {
   )
 }
 
-export async function setImageIdAndUploadStatus(
-  currentImageId: string,
-  newImageId: string,
-  uploadStatus?: 'pending' | 'processing' | 'complete',
+export async function backdateImageUploadStagedAt(
+  imageId: string,
+  uploadStagedAt: Date,
+  uploadStatus: 'pending' | 'processing' | 'complete' = 'pending',
 ) {
-  if (uploadStatus) {
-    const startedAt = uploadStatus !== 'pending' ? 'NOW()' : 'NULL'
-    const completedAt = uploadStatus === 'complete' ? 'NOW()' : 'NULL'
-    const digest = uploadStatus === 'complete' ? newImageId.replaceAll('-', '').repeat(2) : null
-    await write(
-      `
-      UPDATE images
-      SET id = $1,
-          upload_started_at = ${startedAt},
-          upload_completed_at = ${completedAt},
-          sha_256 = COALESCE(decode($2, 'hex'), sha_256),
-          s3_key = COALESCE($2, s3_key)
-      WHERE id = $3
-    `,
-      [newImageId, digest, currentImageId],
-    )
-    return
-  }
-
+  const timestamps =
+    uploadStatus === 'complete'
+      ? sql`upload_started_at = NOW(),
+          upload_completed_at = NOW(),
+          upload_failed_at = NULL,
+          sha_256 = decode(replace(${imageId}::text, '-', '') || replace(${imageId}::text, '-', ''), 'hex'),
+          s3_key = replace(${imageId}::text, '-', '') || replace(${imageId}::text, '-', '')`
+      : uploadStatus === 'processing'
+        ? sql`upload_started_at = NOW(), upload_completed_at = NULL, upload_failed_at = NULL`
+        : sql`upload_started_at = NULL, upload_completed_at = NULL, upload_failed_at = NULL`
   await write(
-    `
+    sql`
     UPDATE images
-    SET id = $1
-    WHERE id = $2
-  `,
-    [newImageId, currentImageId],
+    SET upload_staged_at = ${uploadStagedAt},
+        `.append(timestamps).append(sql`
+    WHERE id = ${imageId}
+  `),
   )
 }
 
@@ -136,36 +128,6 @@ export async function setImageCompleteWithData(
   )
 }
 
-export async function insertTestImage(userId: string): Promise<string> {
-  const sha256 = randomBytes(32)
-  const s3Key = `test/${randomBytes(16).toString('hex')}`
-  const { rows } = await write(sql`
-    INSERT INTO images (
-      created_by_id, sha_256, upload_started_at, upload_completed_at, data, s3_key,
-      openai_omni_moderation_flagged, openai_omni_moderation_created_at
-    )
-    VALUES (${userId}, ${sha256}, NOW(), NOW(), '{}', ${s3Key}, false, NOW())
-    RETURNING id
-  `)
-  return rows[0].id
-}
-
-export async function insertTestImageWithSha256(
-  userId: string,
-): Promise<{ id: string; sha256: Buffer }> {
-  const sha256 = randomBytes(32)
-  const s3Key = `test/${randomBytes(16).toString('hex')}`
-  const { rows } = await write(sql`
-    INSERT INTO images (
-      created_by_id, sha_256, upload_started_at, upload_completed_at, data, s3_key,
-      openai_omni_moderation_flagged, openai_omni_moderation_created_at
-    )
-    VALUES (${userId}, ${sha256}, NOW(), NOW(), '{}', ${s3Key}, false, NOW())
-    RETURNING id
-  `)
-  return { id: rows[0].id, sha256 }
-}
-
 export async function insertTestPostImage(data: {
   postId: string
   imageId: string
@@ -173,8 +135,24 @@ export async function insertTestPostImage(data: {
   caption?: string
 }): Promise<void> {
   await write(sql`
-    INSERT INTO post_images (post_id, image_id, order_index, caption)
-    VALUES (${data.postId}, ${data.imageId}, ${data.orderIndex ?? 0}, ${data.caption ?? ''})
+    WITH inserted_post_image AS (
+      INSERT INTO post_images (post_id, image_id, order_index, caption)
+      VALUES (${data.postId}, ${data.imageId}, ${data.orderIndex ?? 0}, ${data.caption ?? ''})
+      RETURNING post_id, image_id
+    ), missing_binding AS (
+      SELECT uuidv7() AS placement_id, post_id, image_id
+      FROM inserted_post_image
+      WHERE NOT EXISTS (
+        SELECT 1 FROM image_placements
+        WHERE post_id = inserted_post_image.post_id AND image_id = inserted_post_image.image_id
+      )
+    ), registered AS (
+      INSERT INTO media_placements (id, placement_kind)
+      SELECT placement_id, 'image' FROM missing_binding
+      RETURNING id
+    )
+    INSERT INTO image_placements (placement_id, post_id, image_id)
+    SELECT placement_id, post_id, image_id FROM missing_binding
   `)
 }
 

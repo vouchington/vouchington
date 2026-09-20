@@ -2,7 +2,7 @@ import { encryptSecret } from '@modules/token-secrets'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
 
 export type CopyrightFormScreeningRecommendation = 'not_obviously_invalid' | 'invalid_or_spam'
 /** @public Cross-workspace persistence boundary used by the copyright form-screening agent. */
@@ -124,26 +124,6 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
       substantiallyCompliant: true,
       copyrightFormScreeningId: intake.screening_id,
     }))
-  const { rows: targets } = await write<{
-    id: string
-  }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:targets */
-    SELECT target.id FROM copyright_notice_targets target
-    WHERE target.copyright_notice_id = ${intake.notice_id}
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_restrictions restriction
-        WHERE restriction.copyright_notice_target_id = target.id AND restriction.lifted_at IS NULL
-      )
-  `)
-  await Promise.all(
-    targets.map(target =>
-      acceptCopyrightNoticeAndImposeRestriction({
-        noticeId: intake.notice_id,
-        targetId: target.id,
-        assessmentId: assessment.id,
-        imposedAt: new Date(),
-        imposedById: null,
-      }),
-    ),
-  )
   await transaction.commit()
+  await processCopyrightEnforcementRequest(assessment.id)
 }

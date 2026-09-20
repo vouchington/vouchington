@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createTestUserDirect,
+  getTestPostImagePlacement,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
@@ -16,6 +17,7 @@ import {
   createEligibleCopyrightRestoreIntent,
   createOutboundCopyrightCorrespondence,
   getCopyrightNoticePrivateAggregate,
+  processCopyrightEnforcementRequest,
 } from './index.mts'
 
 async function createFixture() {
@@ -32,6 +34,8 @@ async function createFixture() {
   })
   const imageId = await insertTestImage(claimant.id)
   await insertTestPostImage({ postId, imageId })
+  const placement = await getTestPostImagePlacement(postId, imageId)
+  if (!placement) throw new Error('fixture image placement disappeared')
   const notice = await createCopyrightNoticeAggregate({
     jurisdiction: 'us_dmca',
     receivedAt: new Date('2026-06-30T16:00:00.000Z'),
@@ -47,8 +51,8 @@ async function createFixture() {
     },
     targets: [
       {
-        placementKey: `post-image:${postId}:${imageId}`,
-        placementRevision: 1,
+        placementKey: `image-placement:${placement.placement_id}`,
+        placementRevision: placement.placement_revision,
         imageId,
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
       },
@@ -84,6 +88,33 @@ async function createFixture() {
   return { aggregate, claimant, moderator, notice, noticeAssessment }
 }
 describe('copyright notice persistence', () => {
+  it('recovers a durable enforcement request after a post-assessment failure', async () => {
+    const { notice, noticeAssessment } = await createFixture()
+    const interrupted = vi
+      .fn<typeof acceptCopyrightNoticeAndImposeRestriction>()
+      .mockRejectedValueOnce(new Error('simulated worker interruption'))
+
+    await expect(
+      processCopyrightEnforcementRequest(noticeAssessment.id, {
+        imposeRestriction: interrupted,
+      }),
+    ).rejects.toThrow('simulated worker interruption')
+    await expect(getCopyrightNoticePrivateAggregate(notice.id)).resolves.toEqual(
+      expect.objectContaining({
+        notice: expect.objectContaining({ accepted_at: null }),
+        restrictions: [],
+      }),
+    )
+
+    await expect(processCopyrightEnforcementRequest(noticeAssessment.id)).resolves.toBe('completed')
+    await expect(getCopyrightNoticePrivateAggregate(notice.id)).resolves.toEqual(
+      expect.objectContaining({
+        notice: expect.objectContaining({ accepted_at: expect.any(Date) }),
+        restrictions: [expect.objectContaining({ authorizing_assessment_id: noticeAssessment.id })],
+      }),
+    )
+  })
+
   it('derives a deadline from the immutable qualifying counter-notice receipt', async () => {
     const { aggregate, claimant, moderator, notice } = await createFixture()
     const submission = await createCopyrightCounterNotice(
@@ -162,7 +193,6 @@ describe('copyright notice persistence', () => {
         deadlineId: deadline.id,
         expectedPlacementRevision: target.placement_revision,
         now: new Date('2026-07-16T12:00:00.000Z'),
-        blockers: [],
       }),
     ).rejects.toThrow('Copyright restoration is not eligible')
     await completeCopyrightMandatoryHumanReview({
@@ -170,6 +200,7 @@ describe('copyright notice persistence', () => {
       restrictionId: restriction.id,
       currentUser: moderator,
       action: 'confirm',
+      rationale: 'The restriction remains appropriate after review.',
       reviewedAt: new Date('2026-07-02T12:00:00.000Z'),
     })
     const intent = await createEligibleCopyrightRestoreIntent({
@@ -179,7 +210,6 @@ describe('copyright notice persistence', () => {
       deadlineId: deadline.id,
       expectedPlacementRevision: target.placement_revision,
       now: new Date(deadline.earliest_restoration_at.getTime() + 86_400_000),
-      blockers: [],
     })
     expect(intent.action).toBe('restore')
   })
@@ -254,11 +284,9 @@ describe('copyright notice persistence', () => {
         deadlineId: replacementDeadline.id,
         expectedPlacementRevision: target.placement_revision,
         now: new Date('2026-07-16T12:00:00.000Z'),
-        blockers: [],
       }),
     ).rejects.toThrow('Copyright notice restoration record not found')
     const refreshedAggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-
     expect(refreshedAggregate?.deadlines).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: staleDeadline.id, cancelled_at: expect.any(Date) }),

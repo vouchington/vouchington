@@ -10,13 +10,23 @@
       "roles": [],
       "username": "testuser"
     },
-    "hero_image_id": null,
+    "hero_image_id": "topic-hero-image-1",
+    "hero_image_placement": {
+      "image_id": "topic-hero-image-1",
+      "placement_id": "placement-topic-hero-image-1",
+      "placement_revision": 4
+    },
     "homepage_url_id": null,
     "hostname": null,
     "hostname_id": null,
     "id": "topic-1",
     "lingua_rs_detected_language": null,
-    "logo_image_id": null,
+    "logo_image_id": "topic-logo-image-1",
+    "logo_image_placement": {
+      "image_id": "topic-logo-image-1",
+      "placement_id": "placement-topic-logo-image-1",
+      "placement_revision": 3
+    },
     "markdown": "",
     "name": "Test Topic",
     "noindex": false,

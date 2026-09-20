@@ -15,6 +15,7 @@ import type {
   TopicMetrics as BackendTopicMetrics,
 } from '@voucha/types/entities/topic'
 import type { MessageKey } from '@ts-shared/ui-messages'
+import type { ImagePlacementTuple } from './user'
 
 // Re-export types from canonical backend definitions
 export type { TopicTypes, TopicElection }
@@ -158,6 +159,8 @@ interface TopicBasic {
   hostname?: TopicHostname | null
   logo_image_id: string | null
   hero_image_id: string | null
+  logo_image_placement?: ImagePlacementTuple | null
+  hero_image_placement?: ImagePlacementTuple | null
   rewards_program_id: string | null
   referral_program_id: string | null
   referral_program_slug?: string | null

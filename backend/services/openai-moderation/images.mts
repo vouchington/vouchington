@@ -1,21 +1,23 @@
 import { getImageByAny } from '@services/images/get'
-import { getPublicImageUrl } from '@services/images/url'
+import { presignImageReadUrl } from '@services/images/s3'
 import { enqueueCreateImageEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues'
 import { read, write } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
-import { imageStatePubSub } from '@data-stores/valkey-pubsub'
 import { deleteFlaggedImage } from './delete-flagged.mts'
 import { createOpenAIModeration } from './request.mts'
-
-const TERMINAL_STATE_PUBLISH_ATTEMPTS = 3
-const TERMINAL_STATE_PUBLISH_RETRY_MS = 100
+import { publishTerminalImageState } from './terminal-image-state.mts'
+import { prepublishImageDeliveryDenials } from '@services/images/delivery-registry'
 
 type UpsertImageModerationDependencies = {
   createOpenAIModeration: typeof createOpenAIModeration
+  presignImageReadUrl: typeof presignImageReadUrl
 }
 
-const defaultDependencies: UpsertImageModerationDependencies = { createOpenAIModeration }
+const defaultDependencies: UpsertImageModerationDependencies = {
+  createOpenAIModeration,
+  presignImageReadUrl,
+}
 
 export async function upsertImageOpenAIModeration(
   imageId: string,
@@ -56,6 +58,7 @@ export async function upsertImageOpenAIModeration(
 
   const existing = await findExistingImageOpenAIModeration(image.sha_256)
   if (existing) {
+    if (existing.flagged) await prepublishImageDeliveryDenials(imageId)
     const applied = await applyImageOpenAIModerationResults(
       imageId,
       existing.results,
@@ -82,12 +85,12 @@ export async function upsertImageOpenAIModeration(
     }
   }
 
-  const imageUrl = getPublicImageUrl(image.s3_key)
-  if (!imageUrl) return { skipped: true, reason: 'non_public_image_origin' }
+  const imageUrl = await dependencies.presignImageReadUrl(image.s3_key)
 
   const results = await dependencies.createOpenAIModeration([], [imageUrl])
   const flagged = results.some(result => result.flagged)
 
+  if (flagged) await prepublishImageDeliveryDenials(imageId)
   const applied = await applyImageOpenAIModerationResults(imageId, results, flagged)
   if (!applied) {
     return {
@@ -118,30 +121,6 @@ async function enqueueImageEmbeddingsBatch(): Promise<void> {
   } catch (error) {
     onError(error instanceof Error ? error : new Error(String(error)))
   }
-}
-
-async function publishTerminalImageState(imageId: string, flagged: boolean): Promise<void> {
-  let lastError: unknown
-  for (let attempt = 1; attempt <= TERMINAL_STATE_PUBLISH_ATTEMPTS; attempt++) {
-    try {
-      // oxlint-disable-next-line no-await-in-loop -- the next terminal-state publish runs only after this attempt fails
-      await imageStatePubSub.publish(imageId, {
-        id: imageId,
-        upload_status: 'complete',
-        upload_error: null,
-        ready: !flagged,
-        blocked: flagged,
-      })
-      return
-    } catch (err) {
-      lastError = err
-      if (attempt < TERMINAL_STATE_PUBLISH_ATTEMPTS) {
-        // oxlint-disable-next-line no-await-in-loop -- retry backoff must finish before the next publish attempt starts
-        await sleep(TERMINAL_STATE_PUBLISH_RETRY_MS)
-      }
-    }
-  }
-  onError(lastError instanceof Error ? lastError : new Error(String(lastError)))
 }
 
 async function applyImageOpenAIModerationResults(
@@ -193,8 +172,4 @@ async function findExistingImageOpenAIModeration(
     results: rows[0].openai_omni_moderation_results,
     flagged: rows[0].openai_omni_moderation_flagged,
   }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
 }

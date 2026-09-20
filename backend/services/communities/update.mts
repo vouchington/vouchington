@@ -22,6 +22,8 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateAllCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordPostPublicationChange } from '@services/post-publication'
+import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
+import { prepublishImageSurfaceDenial } from '@services/media-delivery-safety'
 
 export type UpdateCommunityInput = {
   name?: string
@@ -111,6 +113,18 @@ export async function updateCommunity(
       locked != null &&
       ((input.visibility !== undefined && input.visibility !== locked.visibility) ||
         (input.slug !== undefined && input.slug !== locked.slug))
+    if ('profile_image_id' in input && input.profile_image_id !== community.profile_image_id) {
+      await prepublishImageSurfaceDenial(
+        { surfaceKind: 'community-profile-image', communityId },
+        query,
+      )
+    }
+    if ('banner_image_id' in input && input.banner_image_id !== community.banner_image_id) {
+      await prepublishImageSurfaceDenial(
+        { surfaceKind: 'community-banner-image', communityId },
+        query,
+      )
+    }
     const { rowCount } = await query(updateQuery.text, updateQuery.values)
     if ((rowCount ?? 0) > 0 && publicationChanged) {
       await recordPostPublicationChange(query, {
@@ -129,6 +143,9 @@ export async function updateCommunity(
       await using transaction = await beginTransaction()
       await run(transaction)
       await transaction.commit()
+      if ('profile_image_id' in input || 'banner_image_id' in input) {
+        void enqueueReconcileMediaDeliveryRegistry()
+      }
     }
   } catch (error) {
     const pgError = error as { code?: string }

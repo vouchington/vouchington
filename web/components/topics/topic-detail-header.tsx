@@ -25,7 +25,10 @@ const FollowButton = dynamic<Parameters<typeof FollowButtonComponent>[0]>(() =>
 )
 
 interface TopicDetailHeaderProps {
-  topic: Pick<Topic, 'id' | 'name' | 'slug' | 'topic_type' | 'logo_image_id'>
+  topic: Pick<
+    Topic,
+    'id' | 'name' | 'slug' | 'topic_type' | 'logo_image_id' | 'logo_image_placement'
+  >
   metrics?: Pick<Partial<TopicMetrics>, 'ratings'>
   election?: Pick<TopicElection, 'id' | 'votes_count_up' | 'votes_count_down'> | null
   electionVote?: Pick<ElectionVote, 'choice'> | null
@@ -56,10 +59,10 @@ export function TopicDetailHeader({
       className='space-y-4'
     >
       <div className='flex items-start gap-3 sm:gap-4'>
-        {topic.logo_image_id && (
+        {topic.logo_image_placement && (
           <div>
             <TopicLogo
-              imageId={topic.logo_image_id}
+              placement={topic.logo_image_placement}
               name={displayName ?? topic.name}
             />
           </div>

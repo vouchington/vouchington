@@ -151,6 +151,7 @@ export interface PrivateIdentity {
   id: string
   username: string
   profile_image_id: string | null
+  profile_image_placement?: import('./user').ImagePlacementTuple | null
   use_display_name_from: UseDisplayNameFrom
   facebook_account?: OAuthAccountInfo | null
   apple_account?: OAuthAccountInfo | null

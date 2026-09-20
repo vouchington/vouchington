@@ -1,6 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { randomUUID } from 'node:crypto'
-import { createTestUser, setImageIdAndUploadStatus } from '@voucha/test-helpers'
+import { backdateImageUploadStagedAt, createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { cleanupAbandonedUploads } from './cleanup-abandoned-uploads.mts'
 import { createImageUploadUrl } from './create-upload-url.mts'
@@ -24,9 +23,12 @@ describe('cleanupAbandonedUploads staged-source concurrency', () => {
           contentType: 'image/jpeg',
           contentLength: 1024,
         })
-        const oldId = oldUuidV7()
-        await setImageIdAndUploadStatus(image_id, oldId, 'complete')
-        return oldId
+        await backdateImageUploadStagedAt(
+          image_id,
+          new Date(Date.now() - 2 * 60 * 60 * 1000),
+          'complete',
+        )
+        return image_id
       }),
     )
     let active = 0
@@ -51,9 +53,3 @@ describe('cleanupAbandonedUploads staged-source concurrency', () => {
     expect(result.stagedSourcesDeleted).toBeGreaterThanOrEqual(imageIds.length)
   })
 })
-
-function oldUuidV7(): string {
-  const milliseconds = Date.now() - 2 * 60 * 60 * 1000
-  const timestamp = milliseconds.toString(16).padStart(12, '0')
-  return `${timestamp.slice(0, 8)}-${timestamp.slice(8)}-7000-8000-${randomUUID().slice(24)}`
-}

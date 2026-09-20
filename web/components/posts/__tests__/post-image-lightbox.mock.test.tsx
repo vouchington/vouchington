@@ -80,8 +80,8 @@ vi.mock(import('@/components/ui/carousel'), () => {
 })
 
 const images = [
-  { imageId: 'img-1', caption: 'First image' },
-  { imageId: 'img-2', caption: '' },
+  { imageId: 'img-1', placementId: 'placement-1', placementRevision: 0, caption: 'First image' },
+  { imageId: 'img-2', placementId: 'placement-2', placementRevision: 0, caption: '' },
 ]
 
 describe('PostImageLightbox', () => {

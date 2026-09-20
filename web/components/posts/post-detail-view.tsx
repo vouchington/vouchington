@@ -218,12 +218,15 @@ export function PostDetailView({
             postId={post.id}
             images={(post.images ?? []).map(image => ({
               imageId: image.image_id,
+              placementId: image.placement_id,
+              placementRevision: image.placement_revision,
               caption: image.caption,
             }))}
             thumbnails={(post.images ?? []).map((image, index) => (
               <PostImage
                 key={image.image_id}
                 imageId={image.image_id}
+                placement={{ id: image.placement_id, revision: image.placement_revision }}
                 width={1200}
                 height={1200}
                 alt={image.caption || heading}

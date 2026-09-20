@@ -12,7 +12,7 @@ import { createProfilePageSchema } from '@/lib/seo/profile-page-schema'
 import { resolveProfileLinkUrls } from '@/lib/users/profile-link-href'
 import { getDisplayName, isProfileOwner } from '@/lib/users/user-helpers'
 import { getTranslations } from '@/lib/i18n/get-translations'
-import { buildImagePath } from '@/lib/utils/image-url'
+import { buildPlacementImagePath } from '@/lib/utils/image-url'
 
 interface PageProps {
   params: Promise<{ idOrUsername: string }>
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description: `Profile of ${displayName}`,
     path: createUserPathname(user),
-    imagePath: buildImagePath(user.profile_image_id),
+    imagePath: buildPlacementImagePath(user.profile_image_placement),
     ...(user.username ? { rssUrl: `/rss/posts?user=${encodeURIComponent(user.username)}` } : {}),
   })
 }
@@ -58,7 +58,7 @@ export default async function UserProfilePage({ params }: PageProps) {
   const user = profileData.user
 
   const canonicalPath = createUserPathname(user)
-  const profileImagePath = buildImagePath(user.profile_image_id)
+  const profileImagePath = buildPlacementImagePath(user.profile_image_placement)
   const sameAs = resolveProfileLinkUrls(profileData.profile_links ?? [])
 
   const isOwner = isProfileOwner(currentUser, user)

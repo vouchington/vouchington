@@ -4,7 +4,7 @@ import { useState } from 'react'
 import onError, { onSuccess } from '@/lib/on-error'
 import { updateMyIdentity } from '@/lib/api/client'
 import { isUsernameUUID } from '@ts-shared/utils/validation-core'
-import type { OAuthAccountInfo } from '@/types/user'
+import type { ImagePlacementTuple, OAuthAccountInfo } from '@/types/user'
 import type { UseDisplayNameFrom } from '@/types/my'
 import { IdentityProfileImageSection } from './identity-profile-image-section'
 import { IdentityDisplayNameSourceSection } from './identity-display-name-source-section'
@@ -15,6 +15,7 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 interface Props {
   initialUsername: string | null
   initialProfileImageId: string | null
+  initialProfileImagePlacement?: ImagePlacementTuple | null
   initialUseDisplayNameFrom: UseDisplayNameFrom
   initialFacebookAccount: OAuthAccountInfo | null
   hasOAuthAccount: boolean
@@ -23,6 +24,7 @@ interface Props {
 export function IdentityForm({
   initialUsername,
   initialProfileImageId,
+  initialProfileImagePlacement,
   initialUseDisplayNameFrom,
   initialFacebookAccount,
   hasOAuthAccount,
@@ -30,6 +32,7 @@ export function IdentityForm({
   const t = useTranslations()
   const [username, setUsername] = useState(initialUsername ?? '')
   const [profileImageId, setProfileImageId] = useState(initialProfileImageId)
+  const [profileImagePlacement, setProfileImagePlacement] = useState(initialProfileImagePlacement)
   const [useDisplayNameFrom, setUseDisplayNameFrom] =
     useState<UseDisplayNameFrom>(initialUseDisplayNameFrom)
   const [usernameLoading, setUsernameLoading] = useState(false)
@@ -66,6 +69,7 @@ export function IdentityForm({
     try {
       await updateMyIdentity({ profile_image_id: null })
       setProfileImageId(null)
+      setProfileImagePlacement(null)
       onSuccess(t('extracted.my.identityForm.profileImageRemoved_0324d161'))
     } catch (error) {
       onError(error, {
@@ -107,6 +111,7 @@ export function IdentityForm({
     try {
       await updateMyIdentity({ profile_image_id: imageId })
       setProfileImageId(imageId)
+      setProfileImagePlacement(null)
       onSuccess(t('extracted.my.identityForm.profileImageUpdated_4f3a12a1'))
     } catch (error) {
       onError(error, {
@@ -146,6 +151,7 @@ export function IdentityForm({
         handleRemoveImage={handleRemoveImage}
         imageLoading={imageLoading}
         profileImageId={profileImageId}
+        profileImagePlacement={profileImagePlacement}
         username={username}
       />
     </div>

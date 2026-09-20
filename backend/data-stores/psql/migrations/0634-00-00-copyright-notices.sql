@@ -113,6 +113,7 @@ CREATE TABLE copyright_notice_legal_hold_assessments (
   commenced_at timestamptz,
   received_by_designated_agent_at timestamptz,
   same_material boolean NOT NULL,
+  rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK ((proceeding_kind IS NULL AND commenced_at IS NULL) OR (proceeding_kind IS NOT NULL AND commenced_at IS NOT NULL)),
@@ -122,6 +123,8 @@ CREATE TABLE copyright_notice_legal_hold_assessments (
     (proceeding_kind IS DISTINCT FROM 'ccb' AND ccb_claim_kind IS NULL)
   )
 );
+
+COMMENT ON COLUMN copyright_notice_legal_hold_assessments.rationale_ciphertext IS 'Encrypted moderator rationale supporting the immutable legal-hold qualification assessment.';
 
 CREATE TABLE copyright_notice_legal_hold_assessment_targets (
   copyright_notice_legal_hold_assessment_id uuid NOT NULL REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE CASCADE,

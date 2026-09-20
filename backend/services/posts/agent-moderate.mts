@@ -6,6 +6,10 @@ import { createPostRevision } from '@services/post-revisions'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { enqueueOnPostDeleted } from '@queues/entity-listeners/enqueues'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { retirePostImagePlacements } from './image-placements.mts'
+import { preparePostImageDeliveryMutation } from './media-delivery.mts'
+import { compensateFailedImageDeliveryMutation } from '../images/delivery-registry.mts'
+import onError from '@modules/on-error'
 
 /**
  * Three-state result for agent-driven content removal:
@@ -40,44 +44,63 @@ export async function removeCommentAsAgent(commentId: string): Promise<AgentRemo
   if (row.deleted_at) return 'already-removed'
 
   const moderationSystemUserId = await getModerationSystemUserId()
-  await using query = await beginTransaction()
-  async function removeCommentInTransaction(query: TransactionQuery) {
-    await lockPostPublication(query, commentId)
-    const { rowCount } = await write(
-      sql`/* removeCommentAsAgent */
+  try {
+    await using query = await beginTransaction()
+    const result = await removeCommentInTransaction({
+      commentId,
+      communityId: row.community_id,
+      moderationSystemUserId,
+      query,
+    })
+    await query.commit()
+
+    if (result === 'removed') void enqueueOnPostDeleted(commentId)
+    return result
+  } catch (error) {
+    await compensateFailedImageDeliveryMutation({ postIds: [commentId] }).catch(onError)
+    throw error
+  }
+}
+
+async function removeCommentInTransaction(input: {
+  commentId: string
+  communityId: string | null
+  moderationSystemUserId: string
+  query: TransactionQuery
+}): Promise<Exclude<AgentRemovalResult, 'not-applicable'>> {
+  const { commentId, communityId, moderationSystemUserId, query } = input
+  await preparePostImageDeliveryMutation(query, { postId: commentId, imageIds: [] })
+  await lockPostPublication(query, commentId)
+  const { rowCount } = await write(
+    sql`/* removeCommentAsAgent */
       UPDATE posts
       SET deleted_at = CURRENT_TIMESTAMP,
           deleted_by_id = ${moderationSystemUserId}
       WHERE id = ${commentId}::uuid
         AND post_type = 'comment'
         AND deleted_at IS NULL`,
-      { query },
-    )
-    if ((rowCount ?? 0) === 0) return 'already-removed' as const
-    // ast-grep-ignore: no-three-sequential-awaits -- removal revision, publication capture, and moderator audit must commit in order
-    await createPostRevision(
-      commentId,
-      'delete',
-      { deleted_at: { before: null, after: 'now' } },
-      moderationSystemUserId,
-      { query },
-    )
-    await recordPostPublicationChange(query, {
-      scope: { type: 'post', postId: commentId },
-      reason: 'post_deleted',
-      impactedPostIds: [commentId],
-      footprint: { priorCommunityId: row.community_id ?? undefined },
-    })
-    await recordModeratorAction(
-      moderationSystemUserId,
-      { actionType: 'remove', communityId: row.community_id, postId: commentId },
-      { query },
-    )
-    return 'removed' as const
-  }
-  const result = await removeCommentInTransaction(query)
-  await query.commit()
-
-  if (result === 'removed') void enqueueOnPostDeleted(commentId)
-  return result
+    { query },
+  )
+  if ((rowCount ?? 0) === 0) return 'already-removed'
+  await retirePostImagePlacements(commentId, query)
+  // ast-grep-ignore: no-three-sequential-awaits -- removal revision, publication capture, and moderator audit must commit in order
+  await createPostRevision(
+    commentId,
+    'delete',
+    { deleted_at: { before: null, after: 'now' } },
+    moderationSystemUserId,
+    { query },
+  )
+  await recordPostPublicationChange(query, {
+    scope: { type: 'post', postId: commentId },
+    reason: 'post_deleted',
+    impactedPostIds: [commentId],
+    footprint: { priorCommunityId: communityId ?? undefined },
+  })
+  await recordModeratorAction(
+    moderationSystemUserId,
+    { actionType: 'remove', communityId, postId: commentId },
+    { query },
+  )
+  return 'removed'
 }

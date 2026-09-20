@@ -56,6 +56,8 @@ describe('cache-policy', () => {
     '/api/v1/auth/me',
     '/api/v1/auth/sessions',
     '/api/v1/session',
+    '/api/v1/copyright-notices/00000000-0000-7000-8000-000000000001/participant',
+    '/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000001/raw',
     '/api/v1/posts/comment-abc/ancestors',
   ])('bypasses private backend route %s before cache dispatch', pathname => {
     const result = getCachePolicy({

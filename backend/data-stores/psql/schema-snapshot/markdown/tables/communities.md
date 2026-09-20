@@ -85,3 +85,4 @@ _none_
 **Triggers:**
 
 - `trigger_communities_updated_at`: `CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_sync_community_image_placements`: `CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_sync_community_image_placements()`

@@ -117,7 +117,15 @@ const mockDiscussion: Post = {
 
 const postWithImages: Post = {
   ...mockDiscussion,
-  images: [{ image_id: 'img-1', order_index: 0, caption: '' }],
+  images: [
+    {
+      image_id: 'img-1',
+      placement_id: 'placement-1',
+      placement_revision: 0,
+      order_index: 0,
+      caption: '',
+    },
+  ],
 }
 
 describe('PostForm image state', () => {
@@ -147,6 +155,20 @@ describe('PostForm image state', () => {
     })
     expect(mockSetPostImages).not.toHaveBeenCalled()
     expect(mockRouterPush).toHaveBeenCalledWith('/discussion/post-1')
+  })
+
+  it('uses the persisted placement route for an existing image preview', () => {
+    const { container } = render(
+      <PostForm
+        postType='discussion'
+        post={postWithImages}
+      />,
+    )
+
+    expect(container.querySelector('[data-pw="post-image"]')).toHaveAttribute(
+      'src',
+      expect.stringContaining('/images/placements/placement-1/0/img-1?w=100'),
+    )
   })
 
   it('calls setPostImages when images are removed in edit mode', async () => {

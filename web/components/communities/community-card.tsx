@@ -5,7 +5,7 @@ import { ProxiedImage as Image } from '@/components/shared/proxied-image'
 import dynamic from 'next/dynamic'
 import { Badge } from '@/components/ui/badge'
 import { HoverableCard } from '@/components/shared/hoverable-card'
-import { getImageUrl } from '@/lib/utils/image-url'
+import { getPlacementImageUrl } from '@/lib/utils/image-url'
 import { communityHref } from '@/lib/links/entity-href'
 import type { Community, CommunityMember, CommunityMetrics } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -15,7 +15,10 @@ import type JoinButtonComponent from './join-button'
 const JoinButton = dynamic<Parameters<typeof JoinButtonComponent>[0]>(() => import('./join-button'))
 
 interface CommunityCardProps {
-  community: Pick<Community, 'slug' | 'name' | 'visibility' | 'markdown' | 'profile_image_id'>
+  community: Pick<
+    Community,
+    'slug' | 'name' | 'visibility' | 'markdown' | 'profile_image_id' | 'profile_image_placement'
+  >
   metrics?: Pick<CommunityMetrics, 'member_count' | 'post_count' | 'list_item_count'>
   membership?: CommunityMember | null
   hasPendingApplication?: boolean
@@ -81,9 +84,14 @@ export function CommunityCard({
           )}
         </div>
         <div className='flex shrink-0 flex-col items-end gap-2'>
-          {community.profile_image_id && (
+          {community.profile_image_placement && (
             <Image
-              src={getImageUrl(community.profile_image_id, { width: 80 })}
+              src={getPlacementImageUrl(
+                community.profile_image_placement.placement_id,
+                community.profile_image_placement.placement_revision,
+                community.profile_image_placement.image_id,
+                { width: 80 },
+              )}
               alt={`${community.name} icon`}
               width={40}
               height={40}

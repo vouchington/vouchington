@@ -100,7 +100,23 @@ export const webApiFixtureCases: ApiFixtureCase[] = [
     requestBody: { name: 'Tech', slug: 'tech', topic_type: 'topic' },
     auth: 'fixture-user',
     status: 201,
-    body: { topic },
+    body: {
+      topic: {
+        ...topic,
+        logo_image_id: 'topic-logo-image-1',
+        logo_image_placement: {
+          placement_id: 'placement-topic-logo-image-1',
+          placement_revision: 3,
+          image_id: 'topic-logo-image-1',
+        },
+        hero_image_id: 'topic-hero-image-1',
+        hero_image_placement: {
+          placement_id: 'placement-topic-hero-image-1',
+          placement_revision: 4,
+          image_id: 'topic-hero-image-1',
+        },
+      },
+    },
     consumers: ['web', 'dotnet-core'],
     migratedFrom: ['web/test-helpers/api-responses/topics.ts'],
   },

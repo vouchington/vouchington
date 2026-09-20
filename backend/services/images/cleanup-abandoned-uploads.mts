@@ -1,6 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
-import { getMinUUIDv7ForDate } from '@modules/utils'
 import { markImageUploadSourceDeleted } from './complete-upload-state.mts'
 import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 import { deleteKnownImageStorageFromS3 } from './s3-upload-lifecycle.mts'
@@ -20,12 +19,8 @@ interface AbandonedImageStorage {
 }
 
 export async function cleanupAbandonedUploads() {
-  const recoveryCutoffId = getMinUUIDv7ForDate(
-    new Date(Date.now() - RECOVERY_THRESHOLD_HOURS * 60 * 60 * 1000),
-  )
-  const cutoffId = getMinUUIDv7ForDate(
-    new Date(Date.now() - ABANDONED_THRESHOLD_HOURS * 60 * 60 * 1000),
-  )
+  const recoveryCutoff = new Date(Date.now() - RECOVERY_THRESHOLD_HOURS * 60 * 60 * 1000)
+  const abandonmentCutoff = new Date(Date.now() - ABANDONED_THRESHOLD_HOURS * 60 * 60 * 1000)
 
   await using stagedTransaction = await beginTransaction()
   const { rows: stagedSources } = await stagedTransaction<AbandonedImageStorage>(
@@ -40,7 +35,7 @@ export async function cleanupAbandonedUploads() {
       FROM images
       WHERE upload_staged_at IS NOT NULL
         AND upload_source_deleted_at IS NULL
-        AND id < $1
+        AND upload_staged_at < $1
         AND (
           deleted_at IS NOT NULL
           OR upload_failed_at IS NOT NULL
@@ -51,11 +46,11 @@ export async function cleanupAbandonedUploads() {
             AND s3_key = encode(sha_256, 'hex')
           )
         )
-      ORDER BY id
+      ORDER BY upload_staged_at, id
       LIMIT $2
       FOR UPDATE SKIP LOCKED
     `,
-    [recoveryCutoffId, CLEANUP_BATCH_SIZE],
+    [recoveryCutoff, CLEANUP_BATCH_SIZE],
   )
   await stagedTransaction.commit()
 
@@ -73,17 +68,18 @@ export async function cleanupAbandonedUploads() {
       SELECT id
       FROM images
       WHERE deleted_at IS NULL
+        AND upload_staged_at IS NOT NULL
+        AND upload_staged_at < $1
         AND upload_started_at IS NOT NULL
         AND upload_completed_at IS NULL
         AND upload_failed_at IS NULL
         AND sha_256 IS NOT NULL
         AND s3_key = encode(sha_256, 'hex')
-        AND id < $1
-      ORDER BY id
+      ORDER BY upload_staged_at, id
       LIMIT $2
       FOR UPDATE SKIP LOCKED
     `,
-    [recoveryCutoffId, CLEANUP_BATCH_SIZE],
+    [recoveryCutoff, CLEANUP_BATCH_SIZE],
   )
   await recoveryTransaction.commit()
 
@@ -96,6 +92,8 @@ export async function cleanupAbandonedUploads() {
         SELECT id
         FROM images
         WHERE deleted_at IS NULL
+          AND upload_staged_at IS NOT NULL
+          AND upload_staged_at < $1
           AND upload_completed_at IS NULL
           AND upload_failed_at IS NULL
           AND NOT (
@@ -103,8 +101,7 @@ export async function cleanupAbandonedUploads() {
             AND sha_256 IS NOT NULL
             AND s3_key = encode(sha_256, 'hex')
           )
-          AND id < $1
-        ORDER BY id
+        ORDER BY upload_staged_at, id
         LIMIT $2
         FOR UPDATE SKIP LOCKED
       )
@@ -118,7 +115,7 @@ export async function cleanupAbandonedUploads() {
         images.sha_256,
         images.upload_staged_at
     `,
-    [cutoffId, CLEANUP_BATCH_SIZE, ABANDONED_UPLOAD_ERROR],
+    [abandonmentCutoff, CLEANUP_BATCH_SIZE, ABANDONED_UPLOAD_ERROR],
   )
   await abandonmentTransaction.commit()
 

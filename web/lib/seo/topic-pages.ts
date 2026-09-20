@@ -6,7 +6,7 @@ import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { createBreadcrumbSchema, createTopicSchema } from './structured-data'
 import { getSchemaOrgType } from './schema-org-types'
 import { getTopicDisplayTitle } from '@/lib/topics/display-name'
-import { buildImagePath } from '@/lib/utils/image-url'
+import { buildPlacementImagePath } from '@/lib/utils/image-url'
 import type { Topic, TopicMetrics } from '@/types/topics'
 import type { Translator } from '@ts-shared/ui-messages'
 
@@ -29,7 +29,7 @@ export function createTopicSectionMetadata(
     title: `${getTopicDisplayTitle(topic)} ${section.label}`,
     description: createExcerpt(topic.html ?? topic.markdown),
     path: pagePath,
-    imagePath: buildImagePath(topic.hero_image_id ?? topic.logo_image_id),
+    imagePath: buildPlacementImagePath(topic.hero_image_placement ?? topic.logo_image_placement),
     ...(section.rssUrl ? { rssUrl: section.rssUrl } : {}),
   })
 }

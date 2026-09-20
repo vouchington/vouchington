@@ -5,7 +5,8 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
+import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
 
 export async function reviewCopyrightFormIntake(input: {
   intakeId: string
@@ -71,9 +72,13 @@ export async function reviewCopyrightFormIntake(input: {
     input.accepted,
   )
   if (input.accepted) {
-    await applyMissingRestrictions(intake.notice_id, assessmentId, input.currentUser.id)
+    await processCopyrightEnforcementRequest(assessmentId)
   } else {
-    await reverseAutomatedRestrictions(intake.notice_id, intake.submission_id, input.currentUser.id)
+    await reverseAutomatedCopyrightRestrictions(
+      intake.notice_id,
+      intake.submission_id,
+      input.currentUser.id,
+    )
   }
   return {
     noticeId: intake.notice_id,
@@ -132,59 +137,6 @@ async function getCurrentAssessment(
         )`,
   )
   return rows[0] ?? null
-}
-
-async function applyMissingRestrictions(
-  noticeId: string,
-  assessmentId: string,
-  moderatorId: string,
-): Promise<void> {
-  const { rows } = await write<{ id: string }>(sql`/* reviewCopyrightFormIntake:targets */
-    SELECT target.id FROM copyright_notice_targets target
-    WHERE target.copyright_notice_id = ${noticeId}
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_restrictions restriction
-        WHERE restriction.copyright_notice_target_id = target.id AND restriction.lifted_at IS NULL
-      )
-  `)
-  await Promise.all(
-    rows.map(target =>
-      acceptCopyrightNoticeAndImposeRestriction({
-        noticeId,
-        targetId: target.id,
-        assessmentId,
-        imposedAt: new Date(),
-        imposedById: moderatorId,
-      }),
-    ),
-  )
-}
-
-async function reverseAutomatedRestrictions(
-  noticeId: string,
-  submissionId: string,
-  moderatorId: string,
-): Promise<void> {
-  const reviewedAt = new Date()
-  await write(sql`/* reviewCopyrightFormIntake:reverseAutomatedRestrictions */
-    UPDATE copyright_restrictions restriction
-    SET human_reviewed_at = COALESCE(restriction.human_reviewed_at, ${reviewedAt}),
-      human_review_action = COALESCE(restriction.human_review_action, 'reverse'),
-      human_reviewed_by_id = CASE
-        WHEN restriction.human_reviewed_at IS NULL THEN ${moderatorId}
-        ELSE restriction.human_reviewed_by_id
-      END,
-      lifted_at = COALESCE(restriction.lifted_at, ${reviewedAt}),
-      lifted_by_id = CASE WHEN restriction.lifted_at IS NULL THEN ${moderatorId} ELSE restriction.lifted_by_id END
-    FROM copyright_notice_submission_assessments assessment
-    CROSS JOIN copyright_notice_targets target
-    WHERE restriction.authorizing_assessment_id = assessment.id
-      AND target.id = restriction.copyright_notice_target_id
-      AND assessment.copyright_notice_submission_id = ${submissionId}
-      AND assessment.assessed_by_id IS NULL
-      AND target.copyright_notice_id = ${noticeId}
-      AND restriction.lifted_at IS NULL
-  `)
 }
 
 function isConflict(error: unknown): boolean {

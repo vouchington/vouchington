@@ -1,5 +1,5 @@
 /* oxlint-disable max-lines -- Email admission keeps evidence, provenance, threading, and delivery atomic. */
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -15,7 +15,7 @@ import {
   assertStatutoryEmailFields,
   type PromoteCopyrightEmailIntakeInput,
 } from './email-promotion-input.mts'
-import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
+import { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
 
 export type { PromoteCopyrightEmailIntakeInput } from './email-promotion-input.mts'
 
@@ -27,27 +27,7 @@ export async function promoteCopyrightEmailIntake(
   assertStatutoryEmailFields(input)
   const admitted = await admitCopyrightEmailIntake(input)
   const assessment = await getOrCreateEmailAssessment(input.currentUser, admitted)
-  const { rows: targets } = await write<{
-    id: string
-  }>(sql`/* promoteCopyrightEmailIntake:targets */
-    SELECT target.id FROM copyright_notice_targets target
-    WHERE target.copyright_notice_id = ${admitted.noticeId}
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_restrictions restriction
-        WHERE restriction.copyright_notice_target_id = target.id AND restriction.lifted_at IS NULL
-      )
-  `)
-  await Promise.all(
-    targets.map(target =>
-      acceptCopyrightNoticeAndImposeRestriction({
-        noticeId: admitted.noticeId,
-        targetId: target.id,
-        assessmentId: assessment.id,
-        imposedAt: new Date(),
-        imposedById: input.currentUser.id,
-      }),
-    ),
-  )
+  await processCopyrightEnforcementRequest(assessment.id)
   return admitted
 }
 
@@ -62,6 +42,7 @@ async function admitCopyrightEmailIntake(
   `)
   const intake = intakeRows[0]
   assert(intake, 404, 'Copyright email intake not found')
+  await assertNotUnresolvedThreadReply(transaction, intake.id)
   await assertNoThreadCorrespondenceDecision(transaction, intake.id)
   const { rows: priorPromotions } = await transaction<{
     accepted: boolean
@@ -110,6 +91,24 @@ async function admitCopyrightEmailIntake(
   const submissionId = await recordEmailPromotion(transaction, intake, notice.id, input, purpose)
   await transaction.commit()
   return { noticeId: notice.id, submissionId }
+}
+
+async function assertNotUnresolvedThreadReply(
+  transaction: TransactionQuery,
+  intakeId: string,
+): Promise<void> {
+  const { rows } = await transaction(sql`/* promoteCopyrightEmailIntake:unresolvedReply */
+    SELECT 1 FROM copyright_notice_email_thread_references reference
+    WHERE reference.copyright_notice_email_intake_id = ${intakeId}
+      AND reference.reference_kind = 'reply_reference'
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_id = ${intakeId}
+          AND link.link_kind = 'thread'
+      )
+    LIMIT 1
+  `)
+  assert(!rows[0], 409, 'Unresolved reply email must wait for its root case')
 }
 
 async function assertNoThreadCorrespondenceDecision(

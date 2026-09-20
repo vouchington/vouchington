@@ -1,6 +1,6 @@
 import { isOfficialAccount } from './official-account'
 import { userHref } from '@/lib/links/entity-href'
-import type { User } from '@/types/user'
+import type { ImagePlacementTuple, User } from '@/types/user'
 
 export interface ClientAuthUser {
   id: string
@@ -13,6 +13,7 @@ export interface ProfileMenuUser {
   displayLabel: string
   href: string
   profileImageId: string | null
+  profileImagePlacement?: ImagePlacementTuple | null
 }
 
 export interface SuspensionNotice {
@@ -35,6 +36,7 @@ export function toProfileMenuUser(user: User): ProfileMenuUser {
     displayLabel: trimmedUsername || user.email_address || 'User',
     href: userHref({ id: user.id, username: trimmedUsername }),
     profileImageId: user.profile_image_id ?? null,
+    profileImagePlacement: user.profile_image_placement ?? null,
   }
 }
 

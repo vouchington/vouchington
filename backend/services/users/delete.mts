@@ -19,6 +19,7 @@ import {
   softDeleteAndScrubUserProfile,
 } from './delete-profile-pii.mts'
 import type { PrivateUser } from './types.mts'
+import { prepublishImageSurfaceDenial } from '@services/media-delivery-safety'
 
 type UserDeletionTarget = {
   id: string
@@ -88,6 +89,7 @@ async function scrubUserDeletionIdentities(
   userId: string,
   requestedById: string,
 ): Promise<void> {
+  await prepublishImageSurfaceDenial({ surfaceKind: 'user-profile-image', userId }, query)
   const softDeleteRowCount = await softDeleteAndScrubUserProfile(userId, requestedById, query)
   assert(softDeleteRowCount > 0, 409, 'User is already deleted')
   await revokeVerifiedIdentitiesForDeletedUser(userId, query)

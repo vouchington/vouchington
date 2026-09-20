@@ -135,6 +135,7 @@ export type CopyrightLegalHoldAssessmentRecord = {
   commenced_at: Date | null
   received_by_designated_agent_at: Date | null
   same_material: boolean
+  rationale_ciphertext: string
   target_ids: string[]
 }
 
@@ -186,7 +187,13 @@ export type CopyrightActionIntentRecord = {
   copyright_notice_deadline_id: string | null
   expected_placement_revision: number
   action: 'withhold' | 'restore'
+  state: 'pending' | 'claimed' | 'completed' | 'stale' | 'blocked' | 'failed'
+  delivery_attempt_count: number
+  claimed_at: Date | null
   completed_at: Date | null
+  completed_at_reason: 'completed' | 'stale' | 'blocked' | 'failed' | null
+  failure_message: string | null
+  next_attempt_at: Date | null
 }
 
 export type CopyrightAppealReviewRecord = {

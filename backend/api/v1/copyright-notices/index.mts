@@ -8,6 +8,11 @@ import {
   createCopyrightFormIntake,
   createCopyrightGuestIdentity,
   assertCopyrightIntakeEnabled,
+  getCopyrightParticipantNoticeDetail,
+  getCopyrightPublicNoticeDetail,
+  listAcceptedCopyrightNotices,
+  listCopyrightStaffQueue,
+  currentUserCanReviewCopyrightNotices,
 } from '@services/copyright-notices'
 import {
   boundedString,
@@ -22,9 +27,48 @@ import {
   requireAuth,
   validateUUIDParam,
 } from '../../response-helpers.mts'
+import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import './moderator-routes.mts'
 
+app.route('/api/v1/copyright-notices').get(async (ctx: Context) => {
+  setPrivateNoStoreCacheHeaders(ctx)
+  await requireAuth(ctx, 'GET:/api/v1/copyright-notices')
+  ctx.json({ copyright_notices: await listAcceptedCopyrightNotices() })
+})
+
+app.route('/api/v1/copyright-notices/review-queue').get(async (ctx: Context) => {
+  setPrivateNoStoreCacheHeaders(ctx)
+  const currentUser = await requireAuth(ctx, 'GET:/api/v1/copyright-notices/review-queue')
+  assertNotSuspended(currentUser)
+  ctx.assert(
+    currentUserCanReviewCopyrightNotices(currentUser),
+    403,
+    'Copyright review staff required',
+  )
+  ctx.json({ copyright_notices: await listCopyrightStaffQueue(currentUser) })
+})
+
+app.route('/api/v1/copyright-notices/:id').get(async (ctx: Context) => {
+  setPrivateNoStoreCacheHeaders(ctx)
+  await requireAuth(ctx, 'GET:/api/v1/copyright-notices/:id')
+  const notice = await getCopyrightPublicNoticeDetail(validateUUIDParam(ctx, 'id'))
+  ctx.assert(notice, 404, 'Copyright notice not found')
+  ctx.json({ copyright_notice: notice })
+})
+
+app.route('/api/v1/copyright-notices/:id/participant').get(async (ctx: Context) => {
+  setPrivateNoStoreCacheHeaders(ctx)
+  const currentUser = await requireAuth(ctx, 'GET:/api/v1/copyright-notices/:id/participant')
+  const notice = await getCopyrightParticipantNoticeDetail(
+    validateUUIDParam(ctx, 'id'),
+    currentUser,
+  )
+  ctx.assert(notice, 403, 'You are not a participant in this copyright notice')
+  ctx.json({ copyright_notice: notice })
+})
+
 app.route('/api/v1/copyright-notices').post(async (ctx: Context) => {
+  setPrivateNoStoreCacheHeaders(ctx)
   assertCopyrightIntakeEnabled()
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'POST:/api/v1/copyright-notices')
@@ -53,7 +97,7 @@ app.route('/api/v1/copyright-notices').post(async (ctx: Context) => {
 })
 
 app.route('/api/v1/copyright-notices/:id/appeals').post(async (ctx: Context) => {
-  assertCopyrightIntakeEnabled()
+  setPrivateNoStoreCacheHeaders(ctx)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/copyright-notices/:id/appeals')
   assertNotSuspended(currentUser)
@@ -73,7 +117,7 @@ app.route('/api/v1/copyright-notices/:id/appeals').post(async (ctx: Context) => 
 })
 
 app.route('/api/v1/copyright-notices/:id/counter-notices').post(async (ctx: Context) => {
-  assertCopyrightIntakeEnabled()
+  setPrivateNoStoreCacheHeaders(ctx)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/copyright-notices/:id/counter-notices')
   assertNotSuspended(currentUser)

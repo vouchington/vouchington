@@ -21,6 +21,8 @@ import { PostImage } from '@/components/shared/post-image'
 
 interface LightboxImage {
   imageId: string
+  placementId: string
+  placementRevision: number
   caption: string
 }
 
@@ -63,6 +65,10 @@ export function PostImageLightbox({
           <div className='flex flex-col items-center gap-2'>
             <PostImage
               imageId={images[0]!.imageId}
+              placement={{
+                id: images[0]!.placementId,
+                revision: images[0]!.placementRevision,
+              }}
               width={1600}
               height={1600}
               alt={images[0]!.caption || alt}
@@ -83,6 +89,7 @@ export function PostImageLightbox({
                   <div className='flex flex-col items-center gap-2'>
                     <PostImage
                       imageId={img.imageId}
+                      placement={{ id: img.placementId, revision: img.placementRevision }}
                       width={1600}
                       height={1600}
                       alt={img.caption || alt}

@@ -41,6 +41,21 @@ CREATE OR REPLACE VIEW view_embedded_users AS
     END AS display_account,
 
     users.profile_image_id,
+    (
+      SELECT jsonb_build_object(
+        'placement_id', placement.id,
+        'placement_revision', placement.revision,
+        'image_id', surface.image_id
+      )
+      FROM image_surface_placements surface
+      JOIN media_placements placement ON placement.id = surface.placement_id
+      WHERE surface.surface_kind = 'user-profile-image'
+        AND surface.user_id = users.id
+        AND placement.retired_at IS NULL
+        AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
+      ORDER BY placement.id DESC
+      LIMIT 1
+    ) AS profile_image_placement,
     ARRAY[]::text[] AS roles,
 
     COALESCE(
@@ -131,6 +146,21 @@ CREATE OR REPLACE VIEW view_users_private AS
 
     users.individual_id,
     users.profile_image_id,
+    (
+      SELECT jsonb_build_object(
+        'placement_id', placement.id,
+        'placement_revision', placement.revision,
+        'image_id', surface.image_id
+      )
+      FROM image_surface_placements surface
+      JOIN media_placements placement ON placement.id = surface.placement_id
+      WHERE surface.surface_kind = 'user-profile-image'
+        AND surface.user_id = users.id
+        AND placement.retired_at IS NULL
+        AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
+      ORDER BY placement.id DESC
+      LIMIT 1
+    ) AS profile_image_placement,
     users.markdown,
     users.cards_visibility,
     users.rewards_program_statuses_visibility,

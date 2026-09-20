@@ -29,7 +29,7 @@ import { buildCommentsForSchema, buildInteractionStats } from '@/lib/seo/post-sc
 import { createPostSchema } from '@/lib/seo/post-schema'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { createBreadcrumbSchema } from '@/lib/seo/structured-data'
-import { buildImagePath } from '@/lib/utils/image-url'
+import { buildPlacementImagePath } from '@/lib/utils/image-url'
 import { getSchemaOrgType } from '@/lib/seo/schema-org-types'
 import { communityHref, topicHref, userHref } from '@/lib/links/entity-href'
 import { getEffectiveContentLanguage } from '@ts-shared/languages/content-languages'
@@ -66,7 +66,7 @@ export function createPostDetailPage(postType: PostType, slug: string) {
         description: createExcerpt(postResponse.html ?? post.markdown),
         path: canonicalPath,
         noIndex,
-        imagePath: buildImagePath(post.images?.[0]?.image_id),
+        imagePath: buildPlacementImagePath(post.images?.[0]),
         type: 'article',
         publishedTime: post.created_at,
         modifiedTime: post.updated_at,
@@ -189,7 +189,7 @@ export function createPostDetailPage(postType: PostType, slug: string) {
               updatedAt: post.updated_at,
               authorName: post.is_anonymous ? undefined : post.created_by?.username,
               authorUrl: post.created_by ? userHref(post.created_by) : undefined,
-              imagePath: buildImagePath(post.images?.[0]?.image_id),
+              imagePath: buildPlacementImagePath(post.images?.[0]),
               reviewRating: firstRating?.rating,
               itemName: firstRating?.topic?.name ?? primaryTopic?.name,
               comments: isDiscussionPost ? buildCommentsForSchema(descendants) : undefined,

@@ -2,8 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { createPostModerationContent } from '@services/posts/content'
-import { getPostByAny } from '@services/posts/get'
-import type { Post } from '@services/posts/types'
+import { getPostModerationInput } from '@services/posts/moderation-input'
 import {
   approveTestPost,
   countPostImageRevisions,
@@ -99,7 +98,8 @@ describe('deleteImageById rollback', () => {
     await setImageOpenAIModerationResults(imageId, [{ category: 'old-image-state' }], true)
 
     for (const postId of postIds) {
-      const post = (await getPostByAny(postId, { readOnly: false })) as Post
+      const post = await getPostModerationInput(postId)
+      if (!post) throw new Error('post was not found')
       await setPostLLMModerationContentSha256(
         postId,
         createPostModerationContent(post).content_sha256,
@@ -245,7 +245,8 @@ describe('deleteImageById rollback', () => {
     const imageId = await insertTestImage(creator!.id)
     await insertTestPostImage({ postId, imageId })
     await setImageOpenAIModerationResults(imageId, [{ category: 'old-image-state' }], true)
-    const originalPost = (await getPostByAny(postId, { readOnly: false })) as Post
+    const originalPost = await getPostModerationInput(postId)
+    if (!originalPost) throw new Error('post was not found')
     await setPostLLMModerationContentSha256(
       postId,
       createPostModerationContent(originalPost).content_sha256,
@@ -271,7 +272,8 @@ describe('deleteImageById rollback', () => {
 
     const afterPost = await getPostModerationResetState(postId)
     expect(afterPost).not.toEqual(beforePost)
-    const restoredPost = (await getPostByAny(postId, { readOnly: false })) as Post
+    const restoredPost = await getPostModerationInput(postId)
+    if (!restoredPost) throw new Error('restored post was not found')
     const restoredHash = createPostModerationContent(restoredPost).content_sha256
     await expect(getPostLLMModerationContentSha256(postId)).resolves.toEqual(restoredHash)
     expect(restoredHash).not.toEqual(editedHash)

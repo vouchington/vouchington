@@ -231,7 +231,15 @@ function makeResponse(): AdminReviewQueueResponse {
         },
         media_reveal: {
           requires_reveal: true,
-          images: [{ image_id: 'image-1', order_index: 0, caption: 'Flagged image' }],
+          images: [
+            {
+              image_id: 'image-1',
+              placement_id: 'placement-1',
+              placement_revision: 0,
+              order_index: 0,
+              caption: 'Flagged image',
+            },
+          ],
         },
       },
       {

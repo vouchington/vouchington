@@ -1,0 +1,12 @@
+{
+  "availability": "available",
+  "copyright_image_similarity_candidates": [
+    {
+      "image_id": "00000000-0000-7000-8000-000000000802",
+      "placement_id": "00000000-0000-7000-8000-000000000803",
+      "placement_revision": 1,
+      "post_id": "00000000-0000-7000-8000-000000000801",
+      "similarity": 0.98
+    }
+  ]
+}

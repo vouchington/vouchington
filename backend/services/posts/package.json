@@ -23,6 +23,7 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/aws": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
@@ -32,6 +33,7 @@
     "@queues/bedrock-embeddings": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
+    "@queues/notifications": "workspace:^",
     "@queues/openai-moderation": "workspace:^",
     "@queues/rss-feed-discoverability": "workspace:^",
     "@queues/spam-detection": "workspace:^",

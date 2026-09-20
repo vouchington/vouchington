@@ -43,4 +43,32 @@ describe('PostImage', () => {
 
     expect(screen.getByAltText('Wide image')).toHaveAttribute('height', '240')
   })
+
+  it('uses the placement route only when both placement fields are present', () => {
+    const { rerender } = render(
+      <PostImage
+        imageId='image-789'
+        width={320}
+        alt='Placed image'
+        placement={{ id: 'placement-123', revision: 0 }}
+      />,
+    )
+
+    expect(screen.getByAltText('Placed image')).toHaveAttribute(
+      'src',
+      '/images/placements/placement-123/0/image-789?w=320',
+    )
+
+    rerender(
+      <PostImage
+        imageId='upload-preview'
+        width={320}
+        alt='Upload preview'
+      />,
+    )
+    expect(screen.getByAltText('Upload preview')).toHaveAttribute(
+      'src',
+      '/images/upload-preview?w=320',
+    )
+  })
 })

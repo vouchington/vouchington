@@ -180,7 +180,15 @@ export async function deletePostRating(postId: string, topicId: string): Promise
 export async function setPostImages(
   postId: string,
   images: Array<{ image_id: string; order_index: number; caption?: string }>,
-): Promise<{ images: Array<{ image_id: string; order_index: number; caption: string }> }> {
+): Promise<{
+  images: Array<{
+    image_id: string
+    placement_id: string
+    placement_revision: number
+    order_index: number
+    caption: string
+  }>
+}> {
   return clientApi.put(`/api/v1/posts/${postId}/images`, { images })
 }
 

@@ -7,11 +7,61 @@ import { notifications } from '../queues.mts'
 import { PRIORITY_DEFAULT, QUEUE_NAME } from '../config.mts'
 import {
   enqueueCommunityActivityDigestScheduleTick,
+  enqueueReconcileCopyrightActionIntents,
   enqueueReconcileCopyrightDeliveryIntents,
+  enqueueReconcileMediaDeliveryRegistry,
   enqueueReconcileNotificationPushIntents,
 } from '../enqueues.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+  {
+    schedulerId: 'media-delivery-registry-reconciliation',
+    repeat: { pattern: '*/5 * * * *' },
+    template: {
+      name: 'processReconcileMediaDeliveryRegistry',
+      data: {},
+      opts: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+        removeOnComplete: 100,
+        removeOnFail: 100,
+        priority: PRIORITY_DEFAULT,
+      } satisfies JobOptions,
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'media-delivery-registry-reconciliation',
+        schedule: '*/5 * * * *',
+        description: 'Converge exact media delivery tuples to the edge registry',
+        trigger: enqueueReconcileMediaDeliveryRegistry,
+      },
+    ],
+  },
+  {
+    schedulerId: 'copyright-action-reconciliation',
+    repeat: { pattern: '*/5 * * * *' },
+    template: {
+      name: 'processReconcileCopyrightActionIntents',
+      data: {},
+      opts: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+        removeOnComplete: 100,
+        removeOnFail: 100,
+        priority: PRIORITY_DEFAULT,
+      } satisfies JobOptions,
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'copyright-action-reconciliation',
+        schedule: '*/5 * * * *',
+        description: 'Re-enqueue pending copyright media action intents',
+        trigger: enqueueReconcileCopyrightActionIntents,
+      },
+    ],
+  },
   {
     schedulerId: 'copyright-delivery-reconciliation',
     repeat: { pattern: '*/5 * * * *' },

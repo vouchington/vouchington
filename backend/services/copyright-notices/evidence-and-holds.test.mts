@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
+  getTestPostImagePlacement,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
@@ -44,12 +45,18 @@ async function createTwoTargetFixture() {
     workDescription: `work-${crypto.randomUUID()}`,
     policyVersion: 'test-v1',
     initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'notice' },
-    targets: imageIds.map((imageId, index) => ({
-      placementKey: `post-image:${postId}:${imageId}`,
-      placementRevision: index + 1,
-      imageId,
-      hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
-    })),
+    targets: await Promise.all(
+      imageIds.map(async imageId => {
+        const placement = await getTestPostImagePlacement(postId, imageId)
+        if (!placement) throw new Error('fixture image placement disappeared')
+        return {
+          placementKey: `image-placement:${placement.placement_id}`,
+          placementRevision: placement.placement_revision,
+          imageId,
+          hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
+        }
+      }),
+    ),
   })
   const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
   if (!aggregate) throw new Error('fixture notice disappeared')
@@ -147,6 +154,7 @@ describe('copyright notice evidence and holds', () => {
       receivedByDesignatedAgentAt: new Date('2026-07-01T12:00:00.000Z'),
       sameMaterial: true,
       targetIds: [heldTarget.id],
+      rationale: 'Verified qualifying CCB filing.',
     })
     await expect(
       createEligibleCopyrightRestoreIntent({
@@ -156,7 +164,6 @@ describe('copyright notice evidence and holds', () => {
         deadlineId: deadline.id,
         expectedPlacementRevision: heldTarget.placement_revision,
         now: restorationNow,
-        blockers: [],
       }),
     ).rejects.toThrow('Copyright restoration is not eligible')
     const intent = await createEligibleCopyrightRestoreIntent({
@@ -166,14 +173,13 @@ describe('copyright notice evidence and holds', () => {
       deadlineId: deadline.id,
       expectedPlacementRevision: otherTarget.placement_revision,
       now: restorationNow,
-      blockers: [],
     })
     const resolution = await resolveCopyrightLegalHold({
       currentUser: moderator,
       assessmentId: hold.id,
       resolvedAt: new Date(restorationNow.getTime() + 60_000),
       resolutionKind: 'dismissed',
-      rationaleCiphertext: `resolution-${crypto.randomUUID()}`,
+      rationale: `resolution-${crypto.randomUUID()}`,
     })
     const heldIntent = await createEligibleCopyrightRestoreIntent({
       noticeId: notice.id,
@@ -182,7 +188,6 @@ describe('copyright notice evidence and holds', () => {
       deadlineId: deadline.id,
       expectedPlacementRevision: heldTarget.placement_revision,
       now: new Date(restorationNow.getTime() + 120_000),
-      blockers: [],
     })
     const refreshed = await getCopyrightNoticePrivateAggregate(notice.id)
 

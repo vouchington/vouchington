@@ -1,18 +1,23 @@
 import { beginTransaction } from '@data-stores/psql'
+import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightHumanReviewAction, CopyrightRestrictionRecord } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
 
 export async function completeCopyrightMandatoryHumanReview(input: {
   currentUser: PrivateUser
   noticeId: string
   restrictionId: string
   action: CopyrightHumanReviewAction
+  rationale: string
   reviewedAt: Date
 }): Promise<CopyrightRestrictionRecord> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
+  assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   await using transaction = await beginTransaction()
   const { rows: placementRows } = await transaction<{ placement_key: string }>(
     sql`/* completeCopyrightMandatoryHumanReview:findPlacement */
@@ -44,9 +49,7 @@ export async function completeCopyrightMandatoryHumanReview(input: {
     await transaction<CopyrightRestrictionRecord>(sql`/* completeCopyrightMandatoryHumanReview */
     UPDATE copyright_restrictions
     SET human_reviewed_at = ${input.reviewedAt}, human_review_action = ${input.action},
-      human_reviewed_by_id = ${input.currentUser.id},
-      lifted_at = CASE WHEN ${input.action} = 'reverse' THEN ${input.reviewedAt} ELSE lifted_at END,
-      lifted_by_id = CASE WHEN ${input.action} = 'reverse' THEN ${input.currentUser.id} ELSE lifted_by_id END
+      human_reviewed_by_id = ${input.currentUser.id}
     WHERE id = ${input.restrictionId}
       AND lifted_at IS NULL
       AND human_reviewed_at IS NULL
@@ -61,11 +64,27 @@ export async function completeCopyrightMandatoryHumanReview(input: {
   `)
   const restriction = rows[0]
   assert(restriction, 409, 'Copyright restriction is not awaiting mandatory human review')
+  let restoreIntentId: string | null = null
+  if (input.action === 'reverse') {
+    const intent = await createCopyrightRestoreIntentForReversalInTransaction(
+      restriction.id,
+      transaction,
+    )
+    restoreIntentId = intent.id
+  }
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
     VALUES (${input.noticeId}, 'mandatory_human_review_completed', ${input.currentUser.id},
-      ${JSON.stringify({ restrictionId: input.restrictionId, action: input.action })}::jsonb)
+      ${JSON.stringify({
+        restrictionId: input.restrictionId,
+        action: input.action,
+        rationaleCiphertext: encryptSecret(
+          input.rationale,
+          `copyright-restriction-review:${input.restrictionId}`,
+        ),
+      })}::jsonb)
   `)
   await transaction.commit()
+  if (restoreIntentId) void enqueueApplyCopyrightAction(restoreIntentId)
   return restriction
 }

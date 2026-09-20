@@ -22,7 +22,15 @@ describe('ReviewQueueMedia', () => {
         postId='post-1'
         mediaReveal={{
           requires_reveal: false,
-          images: [{ image_id: 'image-1', order_index: 0, caption: 'Evidence' }],
+          images: [
+            {
+              image_id: 'image-1',
+              placement_id: 'placement-1',
+              placement_revision: 0,
+              order_index: 0,
+              caption: 'Evidence',
+            },
+          ],
         }}
         onReveal={vi.fn<(postId: string) => void>()}
         revealDisabled={false}
@@ -41,8 +49,20 @@ describe('ReviewQueueMedia', () => {
         mediaReveal={{
           requires_reveal: true,
           images: [
-            { image_id: 'image-1', order_index: 0, caption: 'First' },
-            { image_id: 'image-2', order_index: 1, caption: 'Second' },
+            {
+              image_id: 'image-1',
+              placement_id: 'placement-1',
+              placement_revision: 0,
+              order_index: 0,
+              caption: 'First',
+            },
+            {
+              image_id: 'image-2',
+              placement_id: 'placement-2',
+              placement_revision: 0,
+              order_index: 1,
+              caption: 'Second',
+            },
           ],
         }}
         onReveal={onReveal}
@@ -65,7 +85,15 @@ describe('ReviewQueueMedia', () => {
         postId='post-1'
         mediaReveal={{
           requires_reveal: true,
-          images: [{ image_id: 'image-1', order_index: 0, caption: 'Sensitive' }],
+          images: [
+            {
+              image_id: 'image-1',
+              placement_id: 'placement-1',
+              placement_revision: 0,
+              order_index: 0,
+              caption: 'Sensitive',
+            },
+          ],
         }}
         onReveal={onReveal}
         revealDisabled

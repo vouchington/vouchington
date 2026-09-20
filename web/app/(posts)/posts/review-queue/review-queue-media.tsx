@@ -28,6 +28,7 @@ export function ReviewQueueMedia({
         <PostImage
           key={image.image_id}
           imageId={image.image_id}
+          placement={{ id: image.placement_id, revision: image.placement_revision }}
           width={240}
           height={160}
           alt={image.caption}

@@ -107,7 +107,7 @@ describe('setPostImages', () => {
       setPostImages(creator!, post, [{ image_id: replacementImageId, order_index: 0 }]),
     ).rejects.toThrow(enqueueError)
 
-    await expect(getPostImages(postId)).resolves.toEqual([
+    await expect(getPostImages(postId)).resolves.toMatchObject([
       { image_id: originalImageId, order_index: 0, caption: '' },
     ])
     await expect(countPostImageRevisions(postId)).resolves.toBe(0)
@@ -177,7 +177,7 @@ describe('setPostImages', () => {
         }),
       ),
     ).resolves.toBe(false)
-    await expect(getPostImages(postId)).resolves.toEqual([
+    await expect(getPostImages(postId)).resolves.toMatchObject([
       { image_id: imageId, order_index: 0, caption: '' },
     ])
   })
@@ -214,7 +214,7 @@ describe('setPostImages', () => {
         }),
       ),
     ).resolves.toBe(false)
-    await expect(getPostImages(postId)).resolves.toEqual([
+    await expect(getPostImages(postId)).resolves.toMatchObject([
       { image_id: currentImageId, order_index: 0, caption: '' },
     ])
   })

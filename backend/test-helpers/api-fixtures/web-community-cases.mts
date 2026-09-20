@@ -46,7 +46,21 @@ export const webCommunityApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 200,
     body: {
-      community,
+      community: {
+        ...community,
+        profile_image_id: 'community-profile-image-1',
+        profile_image_placement: {
+          placement_id: 'placement-community-profile-image-1',
+          placement_revision: 2,
+          image_id: 'community-profile-image-1',
+        },
+        banner_image_id: 'community-banner-image-1',
+        banner_image_placement: {
+          placement_id: 'placement-community-banner-image-1',
+          placement_revision: 5,
+          image_id: 'community-banner-image-1',
+        },
+      },
       user: communityOwner,
       membership: null,
       community_metrics: communityMetrics,

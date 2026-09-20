@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@queues/ban-evasion": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/urls": "workspace:^",
     "@types/pg-copy-streams": "^1.2.5",
     "@voucha/test-helpers": "workspace:^"

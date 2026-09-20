@@ -21,16 +21,20 @@ export type ImageDeletePostRollback = {
   deleted_clearance_change_id: string | null
 }
 
+export type ImagePlacementRetirement = { placementId: string; revision: number }
+
 export type ImageDeleteResult =
   | {
       affectedPostIds: []
       deletedThisImage: false
       imageRollback: null
       postRollbacks: []
+      retiredPlacements: []
     }
   | {
       affectedPostIds: string[]
       deletedThisImage: true
       imageRollback: ImageDeleteImageRollback
       postRollbacks: ImageDeletePostRollback[]
+      retiredPlacements: ImagePlacementRetirement[]
     }

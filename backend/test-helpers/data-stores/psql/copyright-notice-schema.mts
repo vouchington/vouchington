@@ -37,7 +37,7 @@ export async function createCopyrightNoticeSchemaFixture(): Promise<CopyrightNot
       RETURNING id
     ), target AS (
       INSERT INTO copyright_notice_targets (copyright_notice_id, placement_key, placement_revision, hosted_use_url)
-      SELECT id, ${`post-image:${randomUUID()}`}, 1, ${`https://example.test/${randomUUID()}`} FROM notice
+      SELECT id, ${`image-placement:${randomUUID()}`}, 1, ${`https://example.test/${randomUUID()}`} FROM notice
       RETURNING id
     ), image_target AS (
       INSERT INTO copyright_notice_target_images (copyright_notice_target_id, image_id)

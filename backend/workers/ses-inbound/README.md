@@ -24,6 +24,10 @@ pins the source version and ETag and uses a content-addressed evidence key. Conf
 access, and an approved retention policy before enabling intake. Malformed MIME remains preserved
 as a failed parse for staff review.
 
+When `COPYRIGHT_INTAKE_ENABLED` is false, the worker neither scans copyright-inbound objects nor
+copies, parses, deletes, or sends their contents to an agent. Existing source objects remain for a
+future enabled reconciliation pass.
+
 ## Related
 
 - Upstream SQS producer (provisioned, idle until production goes live — the S3 notification

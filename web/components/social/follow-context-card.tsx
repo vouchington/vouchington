@@ -39,6 +39,7 @@ function FollowContextUserList({ users }: { users: PublicUser[] }) {
             {user.profile_image_id && (
               <UserAvatar
                 profileImageId={user.profile_image_id}
+                profileImagePlacement={user.profile_image_placement}
                 username={label}
                 size='sm'
                 className='flex-shrink-0'

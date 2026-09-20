@@ -8,6 +8,9 @@ reusing staff authorization, notifications, modlog, and approved-correspondence 
 The implementation remains disabled by default through `COPYRIGHT_INTAKE_ENABLED`. It must not be
 enabled until CAPTCHA, agent recovery, notification, reversible-media, staff UI, and production
 evidence-storage dependencies are deployed and the activation checklist below is complete.
+The flag controls only new form/email intake and new agent disclosure. Disabling intake must never
+hide accepted complaints or interrupt an existing case's staff review, appeal, counter-notice,
+hold, delivery, enforcement, or restoration obligations.
 
 ## Ownership boundaries
 
@@ -38,6 +41,30 @@ can correlate it. Copyright emails opt out of the generic operational BCC becaus
 statutory personal information. The email transport worker is activation-blocking infrastructure: it must claim these
 rows, resolve private recipient evidence case-scoped, and report SES bounces before
 `COPYRIGHT_INTAKE_ENABLED` is enabled.
+
+## Placement enforcement boundary
+
+Hosted post media is addressed by a durable, media-neutral placement identity. The image binding is
+immutable, while a monotonic placement revision advances whenever the attachment is retired,
+reactivated, withheld, or restored. Copyright action workers re-read and lock that authoritative
+placement, the exact image binding, the expected revision, every legal blocker, and the restriction
+state before applying an intent. Withholding one placement never deletes the source image or blocks
+another post that independently uses the same image.
+
+Application projections omit retired or withheld placements, and persisted post image URLs use
+`/images/placements/<placement-id>/<revision>/<image-id>`. The resize Lambda validates the route
+shape and keeps the placement segments out of the S3 key. Those application controls do not by
+themselves revoke a warm CDN response or prevent a caller from trying a historical generic image
+URL. Complete delivery enforcement therefore also requires the separately deployed infrastructure
+edge registry, viewer authorization, direct-origin denial, legacy-route retirement, cache
+invalidation, and cross-store reconciliation. Intake must remain disabled until those controls pass
+cold-cache, warm-cache, stale-revision, mismatched-image, and direct-origin tests.
+
+Staff may request image-similarity candidates from existing embeddings. Candidates are advisory,
+exclude unavailable or moderated media, and return placement identifiers and state rather than S3
+keys, vectors, or public URLs. They never expand a notice target or apply a restriction
+automatically; a missing source embedding schedules the ordinary batch pipeline without delaying
+the legal case.
 
 ## Derived state machine
 
@@ -120,6 +147,36 @@ Private contact details, signatures, raw text, attachments, staff rationale, age
 storage keys are never member fields. Accepted cases use an explicit authenticated-member allowlist.
 The claimant link comes from the account's current public profile, not a legal-name or signature
 snapshot. A target reference is returned only when that viewer may otherwise see the target.
+
+## Member and staff surfaces
+
+`/copyright/notices` and `/copyright/notices/:id` require authentication. They list only accepted
+US cases and project case identifier, dates, target URL, restriction state, and a metadata-free
+lifecycle timeline. They never expose claimant or poster identity, email, mailing address, signature,
+raw email, evidence artifacts, encrypted fields, moderator rationale, or agent recommendation.
+
+Claimants and affected posters receive a participant projection for their own submissions. Copyright
+review staff receive a separate queue and private case projection. Staff-only routes may expose
+evidence metadata and agent recommendations needed to perform human review, but not to ordinary
+members. All mutation routes remain server-authorized even when an authenticated page renders an
+appeal or counter-notice form.
+
+The web uses Turnstile for each notice, appeal, and counter-notice form. Native clients use the
+attestation route described by the CAPTCHA boundary. CAPTCHA is an intake abuse control, not a
+legal-validity or merits assessment.
+
+## Global launch gate
+
+The product is a US startup, but it targets users globally. The currently implemented public intake
+is US DMCA-only and remains disabled until a designated agent is registered with the US Copyright
+Office, its published contact channel is monitored, and the runbook activation checklist passes.
+Do not claim that a designated agent is active before those facts are true.
+
+Before accepting EU notices, appoint any required DSA legal representative and contact points,
+implement Article 16 notice handling and Article 17 statements of reasons, assess Article 24(5)
+transparency reporting, and obtain counsel's Article 17 DSM analysis. Before accepting UK notices,
+complete a UK copyright and Online Safety Act applicability assessment and publish the resulting
+process. These are activation requirements, not claims of current compliance.
 
 ## US counter-notice timing
 

@@ -140,6 +140,7 @@ describe('SES copyright inbound routing', () => {
   })
 
   it('keeps malformed MIME as a staff-visible failed intake before cleanup', async () => {
+    vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
     const data = {
       sesMessageId: 'ses-malformed-copyright',
       objectKey: 'copyright-incoming/ses-malformed-copyright',
@@ -189,5 +190,6 @@ describe('SES copyright inbound routing', () => {
     })
     expect(enqueue).not.toHaveBeenCalled()
     expect(deleteObject).toHaveBeenCalledWith(data.objectKey)
+    vi.unstubAllEnvs()
   })
 })

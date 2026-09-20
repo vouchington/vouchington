@@ -5,6 +5,7 @@ import { read, write } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { recordImageAutoRemoval } from './image-auto-removal-audit.mts'
+import { prepublishImageDeliveryDenials } from '@services/images/delivery-registry'
 
 export const IMAGE_QUARANTINE_RECONCILIATION_BATCH_SIZE = 25
 
@@ -18,6 +19,7 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
   const isSexualMinors = results?.some(r => r.categories?.['sexual/minors'] === true) ?? false
 
   if (isSexualMinors) {
+    await prepublishImageDeliveryDenials(image.id)
     const pending = await markImageQuarantinePending(image.id)
     if (!pending) return false
 
@@ -56,6 +58,7 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
     return true
   }
 
+  await prepublishImageDeliveryDenials(imageId)
   await deleteImageById(imageId)
   try {
     await recordImageAutoRemoval(imageId)

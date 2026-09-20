@@ -19,6 +19,7 @@ import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-f
 import { validateCreateCommunityInput } from './create-validation.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
+import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 
 export type CreateCommunityInput = {
   name: string
@@ -105,6 +106,7 @@ export async function createCommunity(
 
     community = await getCommunity(newCommunity.id, options)
     await query.commit()
+    void enqueueReconcileMediaDeliveryRegistry()
   } catch (error) {
     const pgError = error as { code?: string; constraint?: string }
     if (pgError.code === '23505') {

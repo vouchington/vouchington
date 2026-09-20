@@ -38,6 +38,14 @@ export {
   processDeliverCopyrightNotice,
   processReconcileCopyrightDeliveryIntents,
 } from './processors/copyright-delivery.mts'
+export {
+  processApplyCopyrightAction,
+  processReconcileCopyrightActionIntents,
+} from './processors/copyright-action.mts'
+export {
+  processApplyMediaDeliveryRegistryRecord,
+  processReconcileMediaDeliveryRegistry,
+} from './processors/media-delivery-registry.mts'
 
 async function dispatchCreatedNotificationPushes(
   createdNotifications: CreatedNotification[] | undefined,

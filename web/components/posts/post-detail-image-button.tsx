@@ -9,6 +9,7 @@ interface ImageButtonProps {
   alt: string
   ariaLabel?: string
   imageId: string
+  placement: { id: string; revision: number }
   onClick: () => void
   priority: boolean
   children?: ReactNode
@@ -18,6 +19,7 @@ export function ImageButton({
   alt,
   ariaLabel,
   imageId,
+  placement,
   onClick,
   priority,
   children,
@@ -38,6 +40,7 @@ export function ImageButton({
       ) : (
         <PostImage
           imageId={imageId}
+          placement={placement}
           width={1200}
           height={1200}
           alt={alt}

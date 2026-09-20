@@ -56,6 +56,12 @@ export type OAuthAccountInfo = {
   email_address: string | null
 }
 
+export type ImagePlacementTuple = {
+  placement_id: string
+  placement_revision: number
+  image_id: string
+}
+
 // AT Protocol account linking (Phase D) has no numeric provider ID or email — identity is the DID,
 // with handle as the mutable human-readable label — so it does not fit OAuthAccountInfo's shape.
 export type BlueskyAccountInfo = {
@@ -71,6 +77,7 @@ export type BasicUser = {
   use_display_name_from?: DisplayNameSource
   roles: readonly string[]
   profile_image_id?: string | null
+  profile_image_placement?: ImagePlacementTuple | null
   markdown?: string | null
   is_agent?: boolean
   verification_status?: IdentityVerificationStatus | null

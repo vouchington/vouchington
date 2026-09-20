@@ -128,5 +128,8 @@ _none_
 **Triggers:**
 
 - `trigger_create_user_metrics`: `CREATE TRIGGER trigger_create_user_metrics AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_metrics_on_insert()`
+- `trigger_handoff_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces BEFORE DELETE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_handoff_deleted_user_image_surfaces()`
+- `trigger_retire_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_retire_deleted_user_image_surfaces()`
+- `trigger_sync_user_profile_image_placement`: `CREATE TRIGGER trigger_sync_user_profile_image_placement AFTER INSERT OR UPDATE OF profile_image_id ON public.users FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_image_placement()`
 - `trigger_users_create_individual_household`: `CREATE TRIGGER trigger_users_create_individual_household AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_individual_household()`
 - `trigger_users_updated_at`: `CREATE TRIGGER trigger_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

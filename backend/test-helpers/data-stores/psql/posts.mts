@@ -77,3 +77,28 @@ export async function queryLocalTestPostOpenAIModerationFlag(
   `)
   return rows[0]?.openai_omni_moderation_flagged
 }
+
+export async function queryLocalTestPostImageIds(postId: string): Promise<string[]> {
+  const { rows } = await read<{ image_id: string }>(sql`
+    /* queryLocalTestPostImageIds */
+    SELECT image->>'image_id' AS image_id
+    FROM view_posts, json_array_elements(images) AS image
+    WHERE id = ${postId}
+  `)
+  return rows.map(row => row.image_id)
+}
+
+export async function completeLocalTestImagePlacementDeliveryRecord(input: {
+  placementId: string
+  revision: number
+  imageId: string
+}): Promise<void> {
+  const deliveryKey = `image-placement:${input.placementId}:${input.revision}:${input.imageId}`
+  await write(sql`
+    /* completeLocalTestImagePlacementDeliveryRecord */
+    UPDATE media_delivery_registry_records
+    SET state = 'completed', completed_at = CURRENT_TIMESTAMP
+    WHERE delivery_key = ${deliveryKey}
+      AND desired_state = 'allow'
+  `)
+}

@@ -30,6 +30,7 @@ export function ReferralLinkFeedCard({ item, user }: ReferralLinkFeedCardProps) 
             <div className='flex items-center gap-2'>
               <UserAvatar
                 profileImageId={user.profile_image_id}
+                profileImagePlacement={user.profile_image_placement}
                 username={user.username}
                 size='sm'
               />

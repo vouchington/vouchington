@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { BasicUser } from './user.mts'
+import type { BasicUser, ImagePlacementTuple } from './user.mts'
 
 type TopicTypeConfig = {
   slug: string // e.g. /<slug>/<topic.id>
@@ -102,6 +102,8 @@ type TopicBasic = {
   homepage_url_id: string | null
   logo_image_id: string | null
   hero_image_id: string | null
+  logo_image_placement?: ImagePlacementTuple | null
+  hero_image_placement?: ImagePlacementTuple | null
   rewards_program_id: string | null
   referral_program_id: string | null
   referral_program_slug?: string | null

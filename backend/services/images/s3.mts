@@ -6,6 +6,7 @@ import {
   ListObjectsV2Command,
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getS3EnvironmentKey, S3Buckets, S3ImagesClient } from '@modules/aws'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 
@@ -108,6 +109,16 @@ export const getImageFromS3 = async (env: string, key: string) => {
       Bucket: bucket,
       Key: key,
     }),
+  )
+}
+
+/** A short-lived private S3 read URL for external AI providers; never route AI through public CDN delivery. */
+/* no-mistakes: integration=aws */
+export async function presignImageReadUrl(key: string, expiresInSeconds = 300): Promise<string> {
+  return await getSignedUrl(
+    S3ImagesClient,
+    new GetObjectCommand({ Bucket: S3Buckets.images, Key: key }),
+    { expiresIn: expiresInSeconds },
   )
 }
 

@@ -5,34 +5,9 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import type {
   CopyrightNoticeSubmissionAssessmentRecord,
-  CopyrightNoticeSubmissionRecord,
   CopyrightSubmissionKind,
   CopyrightSubmissionSourceKind,
 } from './types.mts'
-
-export async function appendCopyrightNoticeSubmission(input: {
-  noticeId: string
-  kind: CopyrightSubmissionKind
-  receivedAt: Date
-  sourceKind: CopyrightSubmissionSourceKind
-  submittedByUserId: string | null
-  bodyCiphertext: string
-}): Promise<CopyrightNoticeSubmissionRecord> {
-  await using transaction = await beginTransaction()
-  const { rows } =
-    await transaction<CopyrightNoticeSubmissionRecord>(sql`/* appendCopyrightNoticeSubmission */
-    INSERT INTO copyright_notice_submissions (
-      copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
-    ) VALUES (
-      ${input.noticeId}, ${input.kind}, ${input.receivedAt}, ${input.sourceKind}, ${input.submittedByUserId}, ${input.bodyCiphertext}
-    )
-    RETURNING id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
-  `)
-  const submission = rows[0]
-  assert(submission, 500, 'Failed to append copyright notice submission')
-  await transaction.commit()
-  return submission
-}
 
 export async function appendCopyrightSubmissionAssessment(input: {
   submissionId: string
@@ -156,6 +131,15 @@ export async function appendCopyrightSubmissionAssessment(input: {
   `)
   const assessment = rows[0] as CopyrightNoticeSubmissionAssessmentRecord | undefined
   assert(assessment, 500, 'Failed to append copyright submission assessment')
+  if (submissionRows[0].kind === 'notice' && input.substantiallyCompliant) {
+    await transaction(sql`/* appendCopyrightSubmissionAssessment:enforcementRequest */
+      INSERT INTO copyright_notice_enforcement_requests (
+        copyright_notice_submission_assessment_id, copyright_notice_id, imposed_by_id
+      ) VALUES (
+        ${assessment.id}, ${submissionRows[0].copyright_notice_id}, ${input.currentUser?.id ?? null}
+      )
+    `)
+  }
   if (input.targetIds) {
     const { rows: scopedTargets } = await transaction<{ id: string }>(
       sql`/* appendCopyrightSubmissionAssessment:scopeCounterNoticeTargets */

@@ -19,9 +19,10 @@ export function httpRequestToLambdaEvent(req: http.IncomingMessage): APIGatewayP
   // S3 route: /images/{key} — key can contain slashes.
   // Path params take precedence over same-named query params, mirroring
   // API Gateway path-parameter semantics.
+  const placementMatch = path.match(/^\/images\/placements\/[^/]+\/[^/]+\/(.+)$/)
   const s3Match = path.match(/^\/images\/(.+)$/)
   if (s3Match) {
-    queryStringParameters.key = s3Match[1]
+    queryStringParameters.key = placementMatch?.[1] ?? s3Match[1]
   }
 
   // Sideload route: /sideload/{base64url} — extract base64url into pathParameters

@@ -1,19 +1,22 @@
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
-import { getPublicImageUrl } from '@services/images'
-import { fetch } from 'undici'
+import { getImageFromS3 } from '@services/images/s3'
+import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import { lockExistsClause } from '@services/bedrock-embeddings/batch/lock-targets'
 import { BatchFileBuilder } from '../orchestrator/file-builder.mts'
 
-const IMAGE_EMBEDDING_WIDTH = 400
 const MAX_IMAGE_EMBEDDING_BYTES = 4 * 1024 * 1024
-const BEDROCK_IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp'
 
 type PendingImage = {
   id: string
   s3_key: string
   sha_256: Buffer
 }
+
+type ImageReadDependencies = {
+  getImageFromS3: typeof getImageFromS3
+}
+
+const defaultImageReadDependencies: ImageReadDependencies = { getImageFromS3 }
 
 export async function* streamPendingImages(): AsyncGenerator<PendingImage, void, unknown> {
   const query = `/* streamPendingImages */
@@ -39,44 +42,38 @@ export async function addImageToBatch(
   fileBuilder: BatchFileBuilder,
   image: PendingImage,
   maxInputSizeMB: number,
+  dependencyOverrides: Partial<ImageReadDependencies> = {},
 ): Promise<boolean> {
-  const imageUrl = getPublicImageUrl(image.s3_key, IMAGE_EMBEDDING_WIDTH)
-  if (!imageUrl) {
-    throw new Error(`Refusing to fetch non-public image URL for image ${image.id}`)
-  }
-  const response = await fetch(imageUrl, {
-    dispatcher: getExternalRequestDispatcher(),
-    headers: {
-      accept: BEDROCK_IMAGE_ACCEPT,
-    },
-  })
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image ${image.id}: ${response.status}`)
-  }
-
-  const bytes = await readImageBytes(response, image.id)
+  const dependencies = { ...defaultImageReadDependencies, ...dependencyOverrides }
+  const response = await dependencies.getImageFromS3(getDeployEnvironment(), image.s3_key)
+  const bytes = await readImageBytes(response.Body, image.id)
 
   return await fileBuilder.addImageIfFits(
     {
       entity_id: image.id,
       image_sha_256: image.sha_256,
-      format: getImageFormat(response.headers.get('content-type')),
+      format: getImageFormat(response.ContentType ?? null),
       bytes: bytes.toString('base64'),
     },
     maxInputSizeMB,
   )
 }
 
-async function readImageBytes(response: Response, imageId: string): Promise<Buffer> {
-  const contentLength = Number.parseInt(response.headers.get('content-length') || '', 10)
-  if (Number.isFinite(contentLength) && contentLength > MAX_IMAGE_EMBEDDING_BYTES) {
-    throw new Error(`Image ${imageId} exceeds Bedrock embedding input limit`)
+async function readImageBytes(body: unknown, imageId: string): Promise<Buffer> {
+  const transformable = body as { transformToByteArray?: () => Promise<Uint8Array> } | undefined
+  if (transformable?.transformToByteArray) {
+    const bytes = Buffer.from(await transformable.transformToByteArray())
+    if (bytes.byteLength > MAX_IMAGE_EMBEDDING_BYTES) {
+      throw new Error(`Image ${imageId} exceeds Bedrock embedding input limit`)
+    }
+    return bytes
   }
-  if (!response.body) return Buffer.alloc(0)
+  const iterable = body as AsyncIterable<Uint8Array> | undefined
+  if (!iterable) return Buffer.alloc(0)
 
   const chunks: Uint8Array[] = []
   let totalBytes = 0
-  for await (const value of response.body) {
+  for await (const value of iterable) {
     totalBytes += value.byteLength
     if (totalBytes > MAX_IMAGE_EMBEDDING_BYTES) {
       throw new Error(`Image ${imageId} exceeds Bedrock embedding input limit`)

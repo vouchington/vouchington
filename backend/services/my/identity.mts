@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { validateUsername } from '@modules/utils'
@@ -6,6 +6,8 @@ import onError from '@modules/on-error'
 import { getPrivateUserByAny } from '@services/users'
 import { ensureDefaultLandingPage } from './landing-pages/index.mts'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
+import { syncImageSurfacePlacement } from '@services/images/surface-placements'
+import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 
 export async function updateUsername(userId: string, username: string): Promise<void> {
   const validated = validateUsername(username)
@@ -29,8 +31,17 @@ export async function updateProfileImageId(
     )
     assert(rows.length > 0, 400, 'Image not found or does not belong to you')
   }
-  await write(
+  await using transaction = await beginTransaction()
+  await syncImageSurfacePlacement(
+    { surfaceKind: 'user-profile-image', userId },
+    profileImageId,
+    transaction,
+  )
+  const { rowCount } = await transaction(
     sql`/* updateProfileImageId */ UPDATE users SET profile_image_id = ${profileImageId} WHERE id = ${userId} AND deleted_at IS NULL`,
   )
+  assert(rowCount === 1, 404, 'User not found')
+  await transaction.commit()
+  void enqueueReconcileMediaDeliveryRegistry()
   void enqueueOnUserUpdated(userId)
 }

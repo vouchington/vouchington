@@ -610,7 +610,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_admin_import_batch_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.import_type IS DISTINCT FROM NEW.import_type THEN\n    RAISE EXCEPTION 'admin import batch type cannot change'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_action_intent": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_action_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright action intents are durable saga records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(OLD.copyright_restriction_id, OLD.expected_placement_revision, OLD.action)\n    IS DISTINCT FROM ROW(NEW.copyright_restriction_id, NEW.expected_placement_revision, NEW.action) THEN\n    RAISE EXCEPTION 'copyright action intent identity and revision fence are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.completed_at IS NOT NULL AND OLD.completed_at IS DISTINCT FROM NEW.completed_at THEN\n    RAISE EXCEPTION 'copyright action intent completion is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_action_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright action intents are durable saga records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(OLD.copyright_restriction_id, OLD.copyright_notice_deadline_id,\n      OLD.expected_placement_revision, OLD.action)\n    IS DISTINCT FROM ROW(NEW.copyright_restriction_id, NEW.copyright_notice_deadline_id,\n      NEW.expected_placement_revision, NEW.action) THEN\n    RAISE EXCEPTION 'copyright action intent identity and revision fence are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state IN ('completed', 'stale') AND NEW.state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright action intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state IN ('blocked', 'failed') AND NEW.state IS DISTINCT FROM OLD.state\n    AND NOT (NEW.state = 'pending' AND NEW.completed_at IS NULL\n      AND NEW.completed_at_reason IS NULL AND NEW.claimed_at IS NULL\n      AND NEW.delivery_attempt_count = 0) THEN\n    RAISE EXCEPTION 'blocked and failed copyright actions may only be explicitly replayed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (NEW.delivery_attempt_count < OLD.delivery_attempt_count\n      AND NOT (OLD.state IN ('blocked', 'failed') AND NEW.state = 'pending'\n        AND NEW.delivery_attempt_count = 0))\n    OR NEW.delivery_attempt_count > OLD.delivery_attempt_count + 1 THEN\n    RAISE EXCEPTION 'copyright action intent attempts must advance one at a time' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.completed_at IS NOT NULL AND OLD.completed_at IS DISTINCT FROM NEW.completed_at\n    AND NOT (OLD.state IN ('blocked', 'failed') AND NEW.state = 'pending' AND NEW.completed_at IS NULL) THEN\n    RAISE EXCEPTION 'copyright action intent completion is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_assessment_source": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_assessment_source()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1\n    FROM copyright_notice_submissions submission\n    WHERE submission.id = NEW.copyright_notice_submission_id\n      AND submission.source_kind IN ('guest_form', 'email')\n  ) AND NEW.assessed_by_id IS NULL THEN\n    RAISE EXCEPTION 'guest and email copyright assessments require a human assessor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -18577,11 +18577,153 @@
       },
       "uniqueConstraints": {}
     },
+    "copyright_legal_hold_restrictions": {
+      "checkConstraints": {},
+      "columns": {
+        "copyright_notice_legal_hold_assessment_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_restriction_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Typed provenance binding for restrictions reactivated by qualifying legal holds.",
+      "foreignKeys": {
+        "copyright_legal_hold_restrict_copyright_notice_legal_hold__fkey": {
+          "columns": [
+            "copyright_notice_legal_hold_assessment_id"
+          ],
+          "definition": "FOREIGN KEY (copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "copyright_notice_legal_hold_assessments",
+          "validated": true
+        },
+        "copyright_legal_hold_restrictions_copyright_restriction_id_fkey": {
+          "columns": [
+            "copyright_restriction_id"
+          ],
+          "definition": "FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "copyright_restrictions",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key ON public.copyright_legal_hold_restrictions USING btree (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_legal_hold_assessment_id",
+              "descending": false,
+              "expression": "copyright_notice_legal_hold_assessment_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_restriction_id",
+              "descending": false,
+              "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_legal_hold_restrictions_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_legal_hold_restrictions_pkey ON public.copyright_legal_hold_restrictions USING btree (copyright_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_restriction_id",
+              "descending": false,
+              "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": [
+          "copyright_restriction_id"
+        ],
+        "definition": "PRIMARY KEY (copyright_restriction_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key": {
+          "columns": [
+            "copyright_notice_legal_hold_assessment_id",
+            "copyright_restriction_id"
+          ],
+          "definition": "UNIQUE (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)"
+        }
+      }
+    },
     "copyright_notice_action_intents": {
       "checkConstraints": {
+        "copyright_action_intents_delivery_state": "CHECK ((((state = 'pending'::text) AND (completed_at IS NULL) AND (completed_at_reason IS NULL) AND (claimed_at IS NULL)) OR ((state = 'claimed'::text) AND (completed_at IS NULL) AND (completed_at_reason IS NULL) AND (claimed_at IS NOT NULL)) OR ((state = ANY (ARRAY['completed'::text, 'stale'::text, 'blocked'::text, 'failed'::text])) AND (completed_at IS NOT NULL) AND (completed_at_reason = state) AND (next_attempt_at IS NULL))))",
+        "copyright_action_intents_retry_schedule": "CHECK (((((state = 'pending'::text) AND ((delivery_attempt_count = 0) OR (next_attempt_at IS NOT NULL))) OR (state <> 'pending'::text)) AND ((state <> 'claimed'::text) OR (next_attempt_at IS NULL))))",
         "copyright_notice_action_inten_expected_placement_revision_check": "CHECK ((expected_placement_revision >= 0))",
         "copyright_notice_action_intents_action_check": "CHECK ((action = ANY (ARRAY['withhold'::text, 'restore'::text])))",
-        "copyright_notice_action_intents_check": "CHECK (((copyright_notice_deadline_id IS NULL) OR (action = 'restore'::text)))"
+        "copyright_notice_action_intents_check": "CHECK (((copyright_notice_deadline_id IS NULL) OR (action = 'restore'::text)))",
+        "copyright_notice_action_intents_completed_at_reason_check": "CHECK (((completed_at_reason IS NULL) OR (completed_at_reason = ANY (ARRAY['completed'::text, 'stale'::text, 'blocked'::text, 'failed'::text]))))",
+        "copyright_notice_action_intents_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
+        "copyright_notice_action_intents_failure_message_check": "CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 4096))))",
+        "copyright_notice_action_intents_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text, 'stale'::text, 'blocked'::text, 'failed'::text])))"
       },
       "columns": {
         "action": {
@@ -18595,6 +18737,17 @@
           "ordinalPosition": 5,
           "type": "text"
         },
+        "claimed_at": {
+          "collation": null,
+          "comment": "Latest time a worker claimed the intent before rechecking and applying the placement transition.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
         "completed_at": {
           "collation": null,
           "comment": "One-way timestamp set only after the fenced delivery transition is durably confirmed.",
@@ -18605,6 +18758,17 @@
           "nullable": true,
           "ordinalPosition": 6,
           "type": "timestamp with time zone"
+        },
+        "completed_at_reason": {
+          "collation": null,
+          "comment": "Terminal action-delivery outcome, retained with its completion timestamp.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "text"
         },
         "copyright_notice_deadline_id": {
           "collation": null,
@@ -18639,6 +18803,17 @@
           "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
+        "delivery_attempt_count": {
+          "collation": null,
+          "comment": "Bounded count of worker claims for this media-delivery saga.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "integer"
+        },
         "expected_placement_revision": {
           "collation": null,
           "comment": "Revision fence that must still match before delivery state changes.",
@@ -18650,6 +18825,17 @@
           "ordinalPosition": 4,
           "type": "integer"
         },
+        "failure_message": {
+          "collation": null,
+          "comment": "Bounded staff-visible reason for a transient or terminal delivery failure.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "text"
+        },
         "id": {
           "collation": null,
           "comment": null,
@@ -18660,6 +18846,28 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
+        },
+        "next_attempt_at": {
+          "collation": null,
+          "comment": "Earliest durable retry time after a retryable media-delivery failure.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "state": {
+          "collation": null,
+          "comment": "Durable media-delivery state: pending, worker-claimed, or terminal completed, stale, blocked, or failed.",
+          "defaultExpression": "'pending'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
         },
         "updated_at": {
           "collation": null,
@@ -18748,6 +18956,33 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_copyright_notice_action_intents__recoverable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_action_intents__recoverable ON public.copyright_notice_action_intents USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "next_attempt_at",
+              "descending": false,
+              "expression": "next_attempt_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(state = 'pending'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_copyright_notice_intents__deadline": {
@@ -18921,11 +19156,15 @@
       "comment": "Immutable advisory recommendations for a moderator evaluating an ordinary copyright appeal; never an authorization to alter material availability.",
       "foreignKeys": {
         "copyright_notice_appeal_recom_copyright_notice_submission__fkey": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         }
@@ -19044,7 +19283,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -19053,11 +19294,18 @@
       },
       "uniqueConstraints": {
         "copyright_appeal_recommendations_id_submission_unique": {
-          "columns": ["id", "copyright_notice_submission_id"],
+          "columns": [
+            "id",
+            "copyright_notice_submission_id"
+          ],
           "definition": "UNIQUE (id, copyright_notice_submission_id)"
         },
         "copyright_notice_appeal_recom_copyright_notice_submission_i_key": {
-          "columns": ["copyright_notice_submission_id", "input_sha256", "prompt_version"],
+          "columns": [
+            "copyright_notice_submission_id",
+            "input_sha256",
+            "prompt_version"
+          ],
           "definition": "UNIQUE (copyright_notice_submission_id, input_sha256, prompt_version)"
         }
       }
@@ -19202,34 +19450,49 @@
           "definition": "FOREIGN KEY (copyright_notice_appeal_recommendation_id, copyright_notice_submission_id) REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id", "copyright_notice_submission_id"],
+          "referencedColumns": [
+            "id",
+            "copyright_notice_submission_id"
+          ],
           "referencedTable": "copyright_notice_appeal_recommendations",
           "validated": true
         },
         "copyright_notice_appeal_revie_copyright_notice_submission__fkey": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_appeal_reviews_copyright_restriction_id_fkey": {
-          "columns": ["copyright_restriction_id"],
+          "columns": [
+            "copyright_restriction_id"
+          ],
           "definition": "FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_restrictions",
           "validated": true
         },
         "copyright_notice_appeal_reviews_reviewed_by_id_fkey": {
-          "columns": ["reviewed_by_id"],
+          "columns": [
+            "reviewed_by_id"
+          ],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "users",
           "validated": true
         }
@@ -19347,7 +19610,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -19357,7 +19622,10 @@
       },
       "uniqueConstraints": {
         "copyright_notice_appeal_revie_copyright_notice_submission_i_key": {
-          "columns": ["copyright_notice_submission_id", "copyright_restriction_id"],
+          "columns": [
+            "copyright_notice_submission_id",
+            "copyright_restriction_id"
+          ],
           "definition": "UNIQUE (copyright_notice_submission_id, copyright_restriction_id)"
         }
       }
@@ -19570,11 +19838,15 @@
           "validated": true
         },
         "fk_copyright_correspondence__email_intake": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -19749,7 +20021,10 @@
       },
       "uniqueConstraints": {
         "copyright_notice_correspondence_id_notice_unique": {
-          "columns": ["id", "copyright_notice_id"],
+          "columns": [
+            "id",
+            "copyright_notice_id"
+          ],
           "definition": "UNIQUE (id, copyright_notice_id)"
         }
       }
@@ -20013,38 +20288,54 @@
       "comment": "Immutable moderator formal-compliance decisions for statutory US counter-notices.",
       "foreignKeys": {
         "copyright_notice_counter_not_copyright_notice_submission__fkey1": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_counter_not_copyright_notice_submission__fkey2": {
-          "columns": ["copyright_notice_submission_assessment_id"],
+          "columns": [
+            "copyright_notice_submission_assessment_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_submission_assessments",
           "validated": true
         },
         "copyright_notice_counter_noti_copyright_notice_deadline_id_fkey": {
-          "columns": ["copyright_notice_deadline_id"],
+          "columns": [
+            "copyright_notice_deadline_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_deadlines",
           "validated": true
         },
         "copyright_notice_counter_notice_reviews_reviewed_by_id_fkey": {
-          "columns": ["reviewed_by_id"],
+          "columns": [
+            "reviewed_by_id"
+          ],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "users",
           "validated": true
         }
@@ -20155,7 +20446,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -20165,15 +20458,21 @@
       },
       "uniqueConstraints": {
         "copyright_notice_counter_noti_copyright_notice_submission_a_key": {
-          "columns": ["copyright_notice_submission_assessment_id"],
+          "columns": [
+            "copyright_notice_submission_assessment_id"
+          ],
           "definition": "UNIQUE (copyright_notice_submission_assessment_id)"
         },
         "copyright_notice_counter_noti_copyright_notice_submission_i_key": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "UNIQUE (copyright_notice_submission_id)"
         },
         "copyright_notice_counter_notic_copyright_notice_deadline_id_key": {
-          "columns": ["copyright_notice_deadline_id"],
+          "columns": [
+            "copyright_notice_deadline_id"
+          ],
           "definition": "UNIQUE (copyright_notice_deadline_id)"
         }
       }
@@ -20698,38 +20997,58 @@
       "comment": "Durable, idempotent legal-notice delivery obligations. Transport workers claim and transition intents; they cannot alter case facts.",
       "foreignKeys": {
         "copyright_notice_delivery_int_copyright_notice_corresponde_fkey": {
-          "columns": ["copyright_notice_correspondence_message_id", "copyright_notice_id"],
+          "columns": [
+            "copyright_notice_correspondence_message_id",
+            "copyright_notice_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id) REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id", "copyright_notice_id"],
+          "referencedColumns": [
+            "id",
+            "copyright_notice_id"
+          ],
           "referencedTable": "copyright_notice_correspondence_messages",
           "validated": true
         },
         "copyright_notice_delivery_int_copyright_notice_submission__fkey": {
-          "columns": ["copyright_notice_submission_id", "copyright_notice_id"],
+          "columns": [
+            "copyright_notice_submission_id",
+            "copyright_notice_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id", "copyright_notice_id"],
+          "referencedColumns": [
+            "id",
+            "copyright_notice_id"
+          ],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_delivery_intents_copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
+          "columns": [
+            "copyright_notice_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notices",
           "validated": true
         },
         "copyright_notice_delivery_intents_recipient_user_id_fkey": {
-          "columns": ["recipient_user_id"],
+          "columns": [
+            "recipient_user_id"
+          ],
           "definition": "FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "users",
           "validated": true
         }
@@ -20928,7 +21247,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -20938,7 +21259,9 @@
       },
       "uniqueConstraints": {
         "copyright_notice_delivery_intents_idempotency_key_key": {
-          "columns": ["idempotency_key"],
+          "columns": [
+            "idempotency_key"
+          ],
           "definition": "UNIQUE (idempotency_key)"
         }
       }
@@ -21007,11 +21330,15 @@
       "comment": "Intent-scoped encrypted email recipients for legal delivery. This avoids reusing or guessing evidence-encryption purposes.",
       "foreignKeys": {
         "copyright_notice_delivery_rec_copyright_notice_delivery_in_fkey": {
-          "columns": ["copyright_notice_delivery_intent_id"],
+          "columns": [
+            "copyright_notice_delivery_intent_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_delivery_intents",
           "validated": true
         }
@@ -21062,7 +21389,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -21072,7 +21401,9 @@
       },
       "uniqueConstraints": {
         "copyright_notice_delivery_rec_copyright_notice_delivery_int_key": {
-          "columns": ["copyright_notice_delivery_intent_id"],
+          "columns": [
+            "copyright_notice_delivery_intent_id"
+          ],
           "definition": "UNIQUE (copyright_notice_delivery_intent_id)"
         }
       }
@@ -21246,56 +21577,80 @@
       "comment": "Append-only pending and moderator decisions for matched inbound copyright email; no decision is automatic.",
       "foreignKeys": {
         "copyright_notice_email_corre_copyright_notice_email_intak_fkey1": {
-          "columns": ["copyright_notice_email_intake_recommendation_id"],
+          "columns": [
+            "copyright_notice_email_intake_recommendation_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intake_recommendations",
           "validated": true
         },
         "copyright_notice_email_corres_copyright_notice_corresponde_fkey": {
-          "columns": ["copyright_notice_correspondence_id"],
+          "columns": [
+            "copyright_notice_correspondence_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_correspondence_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_correspondence_messages",
           "validated": true
         },
         "copyright_notice_email_corres_copyright_notice_email_intak_fkey": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         },
         "copyright_notice_email_corres_copyright_notice_submission__fkey": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_email_correspondence__copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
+          "columns": [
+            "copyright_notice_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notices",
           "validated": true
         },
         "copyright_notice_email_correspondence_revie_reviewed_by_id_fkey": {
-          "columns": ["reviewed_by_id"],
+          "columns": [
+            "reviewed_by_id"
+          ],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "users",
           "validated": true
         }
@@ -21480,7 +21835,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -21491,15 +21848,22 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_corres_copyright_notice_corresponden_key": {
-          "columns": ["copyright_notice_correspondence_id"],
+          "columns": [
+            "copyright_notice_correspondence_id"
+          ],
           "definition": "UNIQUE (copyright_notice_correspondence_id)"
         },
         "copyright_notice_email_corres_copyright_notice_email_intake_key": {
-          "columns": ["copyright_notice_email_intake_id", "action"],
+          "columns": [
+            "copyright_notice_email_intake_id",
+            "action"
+          ],
           "definition": "UNIQUE (copyright_notice_email_intake_id, action)"
         },
         "copyright_notice_email_corres_copyright_notice_submission_i_key": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "UNIQUE (copyright_notice_submission_id)"
         }
       }
@@ -21628,11 +21992,15 @@
       "comment": "Private parsed attachment metadata; attachment bytes remain preserved inside the original MIME object until a moderator admits them as case evidence.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey1": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -21717,7 +22085,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -21726,7 +22096,10 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake_copyright_notice_email_intak_key1": {
-          "columns": ["copyright_notice_email_intake_id", "ordinal"],
+          "columns": [
+            "copyright_notice_email_intake_id",
+            "ordinal"
+          ],
           "definition": "UNIQUE (copyright_notice_email_intake_id, ordinal)"
         }
       }
@@ -21829,29 +22202,41 @@
       "comment": "Immutable private association between an email intake and its admitted or matched copyright case.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey5": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         },
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey6": {
-          "columns": ["copyright_notice_email_intake_recommendation_id"],
+          "columns": [
+            "copyright_notice_email_intake_recommendation_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intake_recommendations",
           "validated": true
         },
         "copyright_notice_email_intake_notice_l_copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
+          "columns": [
+            "copyright_notice_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notices",
           "validated": true
         }
@@ -21949,7 +22334,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -21958,7 +22345,9 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake_copyright_notice_email_intak_key4": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "UNIQUE (copyright_notice_email_intake_id)"
         }
       }
@@ -22111,11 +22500,15 @@
       "comment": "Append-only bounded MIME parse result. Failed parsing remains a staff-visible legal intake with the immutable original attached.",
       "foreignKeys": {
         "copyright_notice_email_intake_copyright_notice_email_intak_fkey": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -22166,7 +22559,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -22175,7 +22570,9 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake_copyright_notice_email_intake_key": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "UNIQUE (copyright_notice_email_intake_id)"
         }
       }
@@ -22280,11 +22677,15 @@
       "comment": "Immutable agent extraction and recommendation. It is advisory only and cannot impose a copyright restriction.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey2": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -22376,7 +22777,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -22385,7 +22788,11 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake_copyright_notice_email_intak_key2": {
-          "columns": ["copyright_notice_email_intake_id", "input_sha256", "prompt_version"],
+          "columns": [
+            "copyright_notice_email_intake_id",
+            "input_sha256",
+            "prompt_version"
+          ],
           "definition": "UNIQUE (copyright_notice_email_intake_id, input_sha256, prompt_version)"
         }
       }
@@ -22620,11 +23027,15 @@
       "comment": "Private, durable responses to rejected or incomplete email intakes. These rows never create a copyright case.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey7": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -22742,7 +23153,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -22752,11 +23165,15 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake_copyright_notice_email_intak_key5": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "UNIQUE (copyright_notice_email_intake_id)"
         },
         "copyright_notice_email_intake_responses_idempotency_key_key": {
-          "columns": ["idempotency_key"],
+          "columns": [
+            "idempotency_key"
+          ],
           "definition": "UNIQUE (idempotency_key)"
         }
       }
@@ -22881,38 +23298,54 @@
       "comment": "Append-only moderator approval or rejection of an email extraction. A moderator must review before an email can create or affect a copyright case.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey3": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         },
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey4": {
-          "columns": ["copyright_notice_email_intake_recommendation_id"],
+          "columns": [
+            "copyright_notice_email_intake_recommendation_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intake_recommendations",
           "validated": true
         },
         "copyright_notice_email_intake_promoted_copyright_notice_id_fkey": {
-          "columns": ["promoted_copyright_notice_id"],
+          "columns": [
+            "promoted_copyright_notice_id"
+          ],
           "definition": "FOREIGN KEY (promoted_copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notices",
           "validated": true
         },
         "copyright_notice_email_intake_reviews_reviewed_by_id_fkey": {
-          "columns": ["reviewed_by_id"],
+          "columns": [
+            "reviewed_by_id"
+          ],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "users",
           "validated": true
         }
@@ -23057,7 +23490,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -23068,11 +23503,15 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake__promoted_copyright_notice_id_key": {
-          "columns": ["promoted_copyright_notice_id"],
+          "columns": [
+            "promoted_copyright_notice_id"
+          ],
           "definition": "UNIQUE (promoted_copyright_notice_id)"
         },
         "copyright_notice_email_intake_copyright_notice_email_intak_key3": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "UNIQUE (copyright_notice_email_intake_id)"
         }
       }
@@ -23234,7 +23673,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -23243,7 +23684,9 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intakes_ses_message_id_key": {
-          "columns": ["ses_message_id"],
+          "columns": [
+            "ses_message_id"
+          ],
           "definition": "UNIQUE (ses_message_id)"
         }
       }
@@ -23324,11 +23767,15 @@
       "comment": "Keyed RFC Message-ID and In-Reply-To/References values used only for private case correlation.",
       "foreignKeys": {
         "copyright_notice_email_thread_copyright_notice_email_intak_fkey": {
-          "columns": ["copyright_notice_email_intake_id"],
+          "columns": [
+            "copyright_notice_email_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -23420,7 +23867,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -23429,10 +23878,277 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_thread_copyright_notice_email_intake_key": {
-          "columns": ["copyright_notice_email_intake_id", "lookup_token", "reference_kind"],
+          "columns": [
+            "copyright_notice_email_intake_id",
+            "lookup_token",
+            "reference_kind"
+          ],
           "definition": "UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)"
         }
       }
+    },
+    "copyright_notice_enforcement_requests": {
+      "checkConstraints": {
+        "copyright_notice_enforcement_requests_attempt_count_check": "CHECK ((attempt_count >= 0))",
+        "copyright_notice_enforcement_requests_check": "CHECK (((state = 'completed'::text) = (completed_at IS NOT NULL)))",
+        "copyright_notice_enforcement_requests_check1": "CHECK (((state = 'claimed'::text) = (claimed_at IS NOT NULL)))",
+        "copyright_notice_enforcement_requests_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text])))"
+      },
+      "columns": {
+        "attempt_count": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "integer"
+        },
+        "claimed_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_notice_submission_assessment_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "imposed_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "last_attempt_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "state": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "'pending'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable outbox created atomically with every compliant initial-notice assessment and completed only after every target has an active restriction.",
+      "foreignKeys": {
+        "copyright_notice_enforcement__copyright_notice_submission__fkey": {
+          "columns": [
+            "copyright_notice_submission_assessment_id"
+          ],
+          "definition": "FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "copyright_notice_submission_assessments",
+          "validated": true
+        },
+        "copyright_notice_enforcement_requests_copyright_notice_id_fkey": {
+          "columns": [
+            "copyright_notice_id"
+          ],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "copyright_notice_enforcement_requests_imposed_by_id_fkey": {
+          "columns": [
+            "imposed_by_id"
+          ],
+          "definition": "FOREIGN KEY (imposed_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "copyright_notice_enforcement_requests_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_enforcement_requests_pkey ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_submission_assessment_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_assessment_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_assessment_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_notice_enforcement_requests__imposed_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__imposed_by ON public.copyright_notice_enforcement_requests USING btree (imposed_by_id) WHERE (imposed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "imposed_by_id",
+              "descending": false,
+              "expression": "imposed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(imposed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_enforcement_requests__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__notice ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_enforcement_requests__pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__pending ON public.copyright_notice_enforcement_requests USING btree (updated_at, copyright_notice_submission_assessment_id) WHERE (state = 'pending'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "copyright_notice_submission_assessment_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_assessment_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(state = 'pending'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": [
+          "copyright_notice_submission_assessment_id"
+        ],
+        "definition": "PRIMARY KEY (copyright_notice_submission_assessment_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
     },
     "copyright_notice_evidence_artifacts": {
       "checkConstraints": {
@@ -23705,20 +24421,28 @@
       "comment": "Immutable moderator approval or rejection required for guest forms and signed-in forms flagged by anti-spam.",
       "foreignKeys": {
         "copyright_notice_form_intake__copyright_notice_form_intake_fkey": {
-          "columns": ["copyright_notice_form_intake_id"],
+          "columns": [
+            "copyright_notice_form_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_form_intakes",
           "validated": true
         },
         "copyright_notice_form_intake_reviews_reviewed_by_id_fkey": {
-          "columns": ["reviewed_by_id"],
+          "columns": [
+            "reviewed_by_id"
+          ],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "users",
           "validated": true
         }
@@ -23789,7 +24513,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -23799,7 +24525,9 @@
       },
       "uniqueConstraints": {
         "copyright_notice_form_intake__copyright_notice_form_intake__key": {
-          "columns": ["copyright_notice_form_intake_id"],
+          "columns": [
+            "copyright_notice_form_intake_id"
+          ],
           "definition": "UNIQUE (copyright_notice_form_intake_id)"
         }
       }
@@ -23947,29 +24675,41 @@
       "comment": "Idempotent structured web-form copyright admissions. Anonymous identities are one-way digests, not retained IP addresses.",
       "foreignKeys": {
         "copyright_notice_form_intakes_copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
+          "columns": [
+            "copyright_notice_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notices",
           "validated": true
         },
         "copyright_notice_form_intakes_copyright_notice_submission__fkey": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_form_intakes_requester_user_id_fkey": {
-          "columns": ["requester_user_id"],
+          "columns": [
+            "requester_user_id"
+          ],
           "definition": "FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "users",
           "validated": true
         }
@@ -24094,7 +24834,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -24103,15 +24845,22 @@
       },
       "uniqueConstraints": {
         "copyright_notice_form_intakes_copyright_notice_id_key": {
-          "columns": ["copyright_notice_id"],
+          "columns": [
+            "copyright_notice_id"
+          ],
           "definition": "UNIQUE (copyright_notice_id)"
         },
         "copyright_notice_form_intakes_copyright_notice_submission_i_key": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "UNIQUE (copyright_notice_submission_id)"
         },
         "copyright_notice_form_intakes_requester_identity_sha256_ide_key": {
-          "columns": ["requester_identity_sha256", "idempotency_key"],
+          "columns": [
+            "requester_identity_sha256",
+            "idempotency_key"
+          ],
           "definition": "UNIQUE (requester_identity_sha256, idempotency_key)"
         }
       }
@@ -24228,11 +24977,15 @@
       "comment": "Immutable advisory anti-spam recommendations. Only a workflow service, never an agent, may act on a signed-in intake that is not obviously invalid.",
       "foreignKeys": {
         "copyright_notice_form_screeni_copyright_notice_form_intake_fkey": {
-          "columns": ["copyright_notice_form_intake_id"],
+          "columns": [
+            "copyright_notice_form_intake_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_form_intakes",
           "validated": true
         }
@@ -24324,7 +25077,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -24333,7 +25088,11 @@
       },
       "uniqueConstraints": {
         "copyright_notice_form_screeni_copyright_notice_form_intake__key": {
-          "columns": ["copyright_notice_form_intake_id", "input_sha256", "prompt_version"],
+          "columns": [
+            "copyright_notice_form_intake_id",
+            "input_sha256",
+            "prompt_version"
+          ],
           "definition": "UNIQUE (copyright_notice_form_intake_id, input_sha256, prompt_version)"
         }
       }
@@ -24479,6 +25238,7 @@
     },
     "copyright_notice_legal_hold_assessments": {
       "checkConstraints": {
+        "copyright_notice_legal_hold_assessme_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))",
         "copyright_notice_legal_hold_assessments_ccb_claim_kind_check": "CHECK ((ccb_claim_kind = ANY (ARRAY['claim'::text, 'counterclaim'::text])))",
         "copyright_notice_legal_hold_assessments_check": "CHECK ((((proceeding_kind IS NULL) AND (commenced_at IS NULL)) OR ((proceeding_kind IS NOT NULL) AND (commenced_at IS NOT NULL))))",
         "copyright_notice_legal_hold_assessments_check1": "CHECK ((((proceeding_kind = 'ccb'::text) AND (ccb_claim_kind IS NOT NULL)) OR ((proceeding_kind IS DISTINCT FROM 'ccb'::text) AND (ccb_claim_kind IS NULL))))",
@@ -24548,7 +25308,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "from_original_claimant": {
@@ -24584,6 +25344,17 @@
           "ordinalPosition": 6,
           "type": "text"
         },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted moderator rationale supporting the immutable legal-hold qualification assessment.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "text"
+        },
         "received_by_designated_agent_at": {
           "collation": null,
           "comment": "When the designated agent received proof of the commenced proceeding; NULL when delivered elsewhere or not proven.",
@@ -24614,7 +25385,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         }
       },
@@ -25253,11 +26024,15 @@
           "validated": true
         },
         "fk_copyright_assessments__form_screening": {
-          "columns": ["copyright_notice_form_screening_id"],
+          "columns": [
+            "copyright_notice_form_screening_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_form_screenings",
           "validated": true
         }
@@ -25478,20 +26253,28 @@
       "comment": "Idempotency records for authenticated appeal and counter-notice submissions.",
       "foreignKeys": {
         "copyright_notice_submission_r_copyright_notice_submission__fkey": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_submission_requests_requester_user_id_fkey": {
-          "columns": ["requester_user_id"],
+          "columns": [
+            "requester_user_id"
+          ],
           "definition": "FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "users",
           "validated": true
         }
@@ -25569,7 +26352,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -25578,11 +26363,16 @@
       },
       "uniqueConstraints": {
         "copyright_notice_submission_r_copyright_notice_submission_i_key": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "UNIQUE (copyright_notice_submission_id)"
         },
         "copyright_notice_submission_r_requester_user_id_idempotency_key": {
-          "columns": ["requester_user_id", "idempotency_key"],
+          "columns": [
+            "requester_user_id",
+            "idempotency_key"
+          ],
           "definition": "UNIQUE (requester_user_id, idempotency_key)"
         }
       }
@@ -25649,20 +26439,28 @@
       "comment": "Exact case targets selected by an appellant or statutory counter-notice sender before compliance assessment.",
       "foreignKeys": {
         "copyright_notice_submission_t_copyright_notice_submission__fkey": {
-          "columns": ["copyright_notice_submission_id"],
+          "columns": [
+            "copyright_notice_submission_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_submission_tar_copyright_notice_target_id_fkey": {
-          "columns": ["copyright_notice_target_id"],
+          "columns": [
+            "copyright_notice_target_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_target_id) REFERENCES copyright_notice_targets(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_targets",
           "validated": true
         }
@@ -25747,7 +26545,9 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
+        "columns": [
+          "id"
+        ],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -25757,7 +26557,10 @@
       },
       "uniqueConstraints": {
         "copyright_notice_submission_t_copyright_notice_submission_i_key": {
-          "columns": ["copyright_notice_submission_id", "copyright_notice_target_id"],
+          "columns": [
+            "copyright_notice_submission_id",
+            "copyright_notice_target_id"
+          ],
           "definition": "UNIQUE (copyright_notice_submission_id, copyright_notice_target_id)"
         }
       }
@@ -26006,7 +26809,10 @@
       },
       "uniqueConstraints": {
         "copyright_notice_submissions_id_notice_unique": {
-          "columns": ["id", "copyright_notice_id"],
+          "columns": [
+            "id",
+            "copyright_notice_id"
+          ],
           "definition": "UNIQUE (id, copyright_notice_id)"
         }
       }
@@ -26733,11 +27539,15 @@
           "validated": true
         },
         "fk_copyright_restrictions__authorizing_assessment": {
-          "columns": ["authorizing_assessment_id"],
+          "columns": [
+            "authorizing_assessment_id"
+          ],
           "definition": "FOREIGN KEY (authorizing_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notice_submission_assessments",
           "validated": true
         }
@@ -51237,11 +52047,15 @@
           "validated": true
         },
         "fk_notifications__copyright_notice": {
-          "columns": ["copyright_notice_id"],
+          "columns": [
+            "copyright_notice_id"
+          ],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": [
+            "id"
+          ],
           "referencedTable": "copyright_notices",
           "validated": true
         },

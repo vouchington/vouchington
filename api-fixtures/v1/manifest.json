@@ -964,7 +964,7 @@
     },
     "GET:/api/v1/admin/landing-pages/:pageId/analytics": {
       "bodyKind": "content",
-      "hash": "43c5583374f1f65df702e447289c1b0770758988f12c4da05a333a2dad872639",
+      "hash": "24ebcda04fe68d42d11d8a9ef30ba0babbe90c88b7ed57a16e762119cc4bb4e9",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -993,6 +993,30 @@
                 }
               },
               "visits": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
                 "required": true,
                 "schema": {
                   "type": "number"
@@ -1527,6 +1551,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -2729,6 +2768,30 @@
               }
             ]
           },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "Omit<BasicUser,\"individual_id\" | \"is_agent\">": {
             "additionalProperties": false,
             "properties": {
@@ -2769,6 +2832,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -4712,7 +4790,7 @@
     },
     "GET:/api/v1/communities/:communitySlug": {
       "bodyKind": "content",
-      "hash": "1cc51442c61e2a415a53c7d1c31ea546805701a6e8b9a788328debdce7b9b0a9",
+      "hash": "bd2cf7793d9ac84d576fee29d93d44251df8fbbe0cde272a8cf9333c713bcbca",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -4942,6 +5020,30 @@
                 "value": "public"
               }
             ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -5009,6 +5111,21 @@
                         },
                         {
                           "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "banner_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }
@@ -5171,6 +5288,21 @@
                         },
                         {
                           "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "profile_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }
@@ -11048,6 +11180,83 @@
       "source": "backend/api/v1/communities/reports.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
+      "bodyKind": "content",
+      "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "availability": {
+              "required": true,
+              "schema": {
+                "type": "union",
+                "variants": [
+                  {
+                    "type": "literal",
+                    "value": "available"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "unavailable"
+                  }
+                ]
+              }
+            },
+            "copyright_image_similarity_candidates": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "image_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "placement_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "placement_revision": {
+                      "required": true,
+                      "schema": {
+                        "type": "number"
+                      }
+                    },
+                    "post_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "similarity": {
+                      "required": true,
+                      "schema": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/crm/contacts": {
       "bodyKind": "content",
       "hash": "f5166fcdbc44ec3cccbb6339f96a2261b5fd1b8a79d3fcdab5be863a4fbbacc8",
@@ -14485,7 +14694,7 @@
     },
     "GET:/api/v1/fediverse/instances": {
       "bodyKind": "content",
-      "hash": "61bf1e3eac1dbbdd86ac9741113583e49cee6c5600f1c561d7fd328f16cbc6f7",
+      "hash": "82ff3c2d09281cbef54a8d67f314b243bd67b7143dc816f6201b57a6fba06180",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -14544,6 +14753,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -14736,6 +14960,30 @@
                 "value": "vouch"
               }
             ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
           },
           "PageInfo": {
             "additionalProperties": false,
@@ -15054,6 +15302,21 @@
                   ]
                 }
               },
+              "hero_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "homepage_url_id": {
                 "required": true,
                 "schema": {
@@ -15133,6 +15396,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "logo_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -15603,7 +15881,7 @@
     },
     "GET:/api/v1/fediverse/instances/:id": {
       "bodyKind": "content",
-      "hash": "99020247343c19c36e8283d6851db1f029388c8e4ef03758c0faff8ecc8635a2",
+      "hash": "f6472f12c6c23386b64cb4cccc3545382aa077a5da757b5581e4bc4b6837e63f",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -15662,6 +15940,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -15787,6 +16080,30 @@
                       "type": "string"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
                 }
               }
             },
@@ -15971,6 +16288,21 @@
                   ]
                 }
               },
+              "hero_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "homepage_url_id": {
                 "required": true,
                 "schema": {
@@ -16050,6 +16382,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "logo_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -17091,7 +17438,7 @@
     },
     "GET:/api/v1/hostnames": {
       "bodyKind": "content",
-      "hash": "c18637ccd56bbf8eadf16d9873c252930f5e78c9a90d4489f410099e79096fd5",
+      "hash": "bf6993614404963e5c4a33257a23e5938dcc147bc5fb5f54db28371d5cc85869",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -17150,6 +17497,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -17342,6 +17704,30 @@
                 "value": "vouch"
               }
             ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
           },
           "PageInfo": {
             "additionalProperties": false,
@@ -17547,6 +17933,21 @@
                   ]
                 }
               },
+              "hero_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "homepage_url_id": {
                 "required": true,
                 "schema": {
@@ -17626,6 +18027,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "logo_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -17860,7 +18276,7 @@
     },
     "GET:/api/v1/hostnames/:id#public": {
       "bodyKind": "content",
-      "hash": "9d70f6d5ee043cbe9f22ec1c12e9ee3c3d00b6fcbb5f8fc9e3a3ebe9bda3e522",
+      "hash": "f8cbc05f11578490442e7cf64cf8035b7466a20b8ce22bfeea53b7800bce84cc",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -17919,6 +18335,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -18111,6 +18542,30 @@
                 "value": "vouch"
               }
             ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
           },
           "PodcastShow": {
             "additionalProperties": false,
@@ -18316,6 +18771,21 @@
                   ]
                 }
               },
+              "hero_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "homepage_url_id": {
                 "required": true,
                 "schema": {
@@ -18395,6 +18865,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "logo_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -23090,7 +23575,7 @@
     },
     "GET:/api/v1/my/friend-recommendations": {
       "bodyKind": "content",
-      "hash": "86836d62cd3185aa0121266e7c9cbe4e1660a394c37abbcee7cedbd256443215",
+      "hash": "a00cf58f49f0b4b01b6a02e4bead6df32083ba75966c8be49a62328e4d88f599",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -23142,6 +23627,30 @@
             },
             "type": "object"
           },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "Omit<BasicUser,\"individual_id\" | \"is_agent\">": {
             "additionalProperties": false,
             "properties": {
@@ -23182,6 +23691,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -23488,7 +24012,7 @@
     },
     "GET:/api/v1/my/identity": {
       "bodyKind": "content",
-      "hash": "20334ee2a5a3fe1b19845946fe49d5a2eaacb2083038c418ed297dbf0ef23291",
+      "hash": "cf0290a8d2f0f0152a3571f6c8db830f14133cfb30a9df7ef7f352fa5932a513",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -23516,6 +24040,30 @@
                       "type": "string"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
                 }
               }
             },
@@ -23987,6 +24535,21 @@
                         },
                         {
                           "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "profile_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }
@@ -24582,13 +25145,37 @@
     },
     "GET:/api/v1/my/landing-pages/:pageId": {
       "bodyKind": "content",
-      "hash": "b1b4878ebd328942902eb3925b574f1e857f3706c2030b931d59784a5d50341a",
+      "hash": "7f5b6764dd66d596835103ede61b174d6266fdfd349f1684eabd5abb273b2f91",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/my/landing-pages/:pageId",
       "schema": {
         "definitions": {
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "LandingPage": {
             "additionalProperties": false,
             "properties": {
@@ -25095,6 +25682,21 @@
                   ]
                 }
               },
+              "image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "link_type": {
                 "required": true,
                 "schema": {
@@ -25431,13 +26033,37 @@
     },
     "GET:/api/v1/my/landing-pages/candidates": {
       "bodyKind": "content",
-      "hash": "da11321d2e566d004ab980e539740c719e369b7572b73f413f36fc1342ca22ac",
+      "hash": "272b995592a5244f5268c55146265793bbbf287bb75c03a3bca8b93ff6d7a589",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/my/landing-pages/candidates",
       "schema": {
         "definitions": {
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "LandingPageCandidateReferralLink": {
             "additionalProperties": false,
             "properties": {
@@ -25683,6 +26309,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -27200,13 +27841,37 @@
     },
     "GET:/api/v1/my/referral-clicks": {
       "bodyKind": "content",
-      "hash": "ceee9fc2d1d43ab1e6efde48538e09e34dccea99fa9e4d316c016571ac31b49e",
+      "hash": "ba13e4df57ff9dab9979c0203cad83ca88d31395d924d759e58cdce2af1d90f4",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/my/referral-clicks",
       "schema": {
         "definitions": {
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "Omit<BasicUser,\"individual_id\" | \"is_agent\">": {
             "additionalProperties": false,
             "properties": {
@@ -27247,6 +27912,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -28784,6 +29464,21 @@
                   ]
                 }
               },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "roles": {
                 "required": true,
                 "schema": {
@@ -29239,6 +29934,30 @@
             },
             "type": "object"
           },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "PageInfo": {
             "additionalProperties": false,
             "properties": {
@@ -29540,6 +30259,18 @@
                         }
                       },
                       "order_index": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "placement_id": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "placement_revision": {
                         "required": true,
                         "schema": {
                           "type": "number"
@@ -31327,6 +32058,72 @@
       "source": "backend/api/v1/posts/post-routes/clearance-route.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/posts/:idOrSlug/images": {
+      "bodyKind": "content",
+      "hash": "75b05a8f6061c99e3b2ce53db88c71a6cb927708d2dfe55c97f0a47420650bdf",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/posts/:idOrSlug/images",
+      "schema": {
+        "definitions": {
+          "PostImagePlacement": {
+            "additionalProperties": false,
+            "properties": {
+              "caption": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "order_index": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "images": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "PostImagePlacement",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/posts/post-images.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/posts/:postIdOrSlug": {
       "bodyKind": "content",
       "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e",
@@ -31354,7 +32151,7 @@
     },
     "GET:/api/v1/posts/review-queue": {
       "bodyKind": "content",
-      "hash": "d6153e066ff619f840f8d1b3065a969bf37a229cea1d49f5ad1bf2584f669499",
+      "hash": "d4cd66850458ea397c1a1958762f4931f29a85767cc7cce690a01cb757e6daf5",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -31508,6 +32305,18 @@
                               }
                             },
                             "order_index": {
+                              "required": true,
+                              "schema": {
+                                "type": "number"
+                              }
+                            },
+                            "placement_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "placement_revision": {
                               "required": true,
                               "schema": {
                                 "type": "number"
@@ -35121,7 +35930,7 @@
     },
     "GET:/api/v1/rss-feeds": {
       "bodyKind": "content",
-      "hash": "21a3d7f30311c3a0f5ce463b044a09c95b9164513090c19b83fcdbd6a8cda37b",
+      "hash": "5851a5bed6fc8578bcc3e9901f0f9a78ad9e55bcab3aa5e8bf57465077c5c955",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -35180,6 +35989,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -35396,6 +36220,30 @@
                 "value": "vouch"
               }
             ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
           },
           "PageInfo": {
             "additionalProperties": false,
@@ -35680,6 +36528,21 @@
                   ]
                 }
               },
+              "hero_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "homepage_url_id": {
                 "required": true,
                 "schema": {
@@ -35759,6 +36622,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "logo_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -37850,7 +38728,7 @@
     },
     "GET:/api/v1/topic-recommendations/top-hashtags": {
       "bodyKind": "content",
-      "hash": "cc3be08456010e2c9b1b298485b0c4ee72417aa3a2b7bcc773f9114011e4ff47",
+      "hash": "fa34e1e8ad762b089ed3cfda093201257d0242fa93ba8cc4cfd465558a625c9e",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -37909,6 +38787,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -38034,6 +38927,30 @@
                       "type": "string"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
                 }
               }
             },
@@ -38206,6 +39123,21 @@
                   ]
                 }
               },
+              "hero_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "homepage_url_id": {
                 "required": true,
                 "schema": {
@@ -38285,6 +39217,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "logo_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -41050,7 +41997,7 @@
     },
     "GET:/api/v1/users#search": {
       "bodyKind": "content",
-      "hash": "a7b5b20ea79247e5b846dd239422a9d4a831ce74cea0fb8e0b940ab72f4c882e",
+      "hash": "7d41e67bfdbfef8149dcd0be28fdb827f6761f0795c38355c797a4d0efe7f9fb",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -41109,6 +42056,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -41265,6 +42227,30 @@
             },
             "type": "object"
           },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "OAuthAccountInfo": {
             "additionalProperties": false,
             "properties": {
@@ -41337,6 +42323,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -42249,7 +43250,7 @@
     },
     "GET:/api/v1/users/:id/vouch-context": {
       "bodyKind": "content",
-      "hash": "de50ba21c16eb6e6a255c6c32b2976e85a34bc6e7f2977591afd64ebb0632000",
+      "hash": "03facfe33276d3f260c9839d4d4486de483c5e70d4444009e7f611d0f18b54b7",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -42430,6 +43431,30 @@
             },
             "type": "object"
           },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "Omit<BasicUser,\"individual_id\" | \"is_agent\">": {
             "additionalProperties": false,
             "properties": {
@@ -42470,6 +43495,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -42668,7 +43708,7 @@
     },
     "GET:/api/v1/users/:idOrSlug": {
       "bodyKind": "content",
-      "hash": "e7ee3a5854607621566647c9b319fb586ef92e42715c574e54fa1c97333fc45e",
+      "hash": "e63e223bef042d1a68efb77002493f5816538b2a67b7f50ec3de6b50c56ac4cb",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -42727,6 +43767,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -42883,6 +43938,30 @@
             },
             "type": "object"
           },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "OAuthAccountInfo": {
             "additionalProperties": false,
             "properties": {
@@ -42955,6 +44034,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -43124,6 +44218,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -44366,7 +45475,7 @@
     },
     "GET:/api/v1/users/:idOrSlug#self": {
       "bodyKind": "content",
-      "hash": "e75f50254e53bccf64823609f9d81e3be3f7fce4297449491ec69ff40f184322",
+      "hash": "c9b0f3c076d91f110542f6fbcafeb310b83ab7e361e7909753c4b8d17f82a08f",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -44425,6 +45534,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -44581,6 +45705,30 @@
             },
             "type": "object"
           },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "OAuthAccountInfo": {
             "additionalProperties": false,
             "properties": {
@@ -44652,6 +45800,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -45794,7 +46957,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/communities/:listType": {
       "bodyKind": "content",
-      "hash": "e34ce002a34609f7ff3a8086e34bd6fbb063553b16bf263720c62aa475ec2a2f",
+      "hash": "99fc07491b161cb13e177ccc8bd03e06b194cc897b0d3cc59ff9132015fd8f8d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -45861,6 +47024,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "banner_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -46027,6 +47205,21 @@
                   ]
                 }
               },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "rules_markdown": {
                 "required": true,
                 "schema": {
@@ -46136,6 +47329,30 @@
                 "value": "public"
               }
             ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
           },
           "PageInfo": {
             "additionalProperties": false,
@@ -46572,6 +47789,21 @@
                   ]
                 }
               },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "roles": {
                 "required": true,
                 "schema": {
@@ -46718,6 +47950,30 @@
                 "value": "rejected"
               }
             ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
           },
           "PageInfo": {
             "additionalProperties": false,
@@ -47001,6 +48257,18 @@
                         }
                       },
                       "order_index": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "placement_id": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "placement_revision": {
                         "required": true,
                         "schema": {
                           "type": "number"
@@ -47861,7 +49129,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/rss-feed-items/:listType": {
       "bodyKind": "content",
-      "hash": "2f13287199cf19ede142e903d616116da6e4d1479896354311242427a13c7e1e",
+      "hash": "6304ce19bab162bdd0a784efc90bc01be5c0e5fdc8d25af49ed0273d88e31bd3",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -47920,6 +49188,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -48266,6 +49549,30 @@
                       "type": "string"
                     }
                   ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
                 }
               }
             },
@@ -48862,6 +50169,21 @@
                   ]
                 }
               },
+              "hero_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "homepage_url_id": {
                 "required": true,
                 "schema": {
@@ -48941,6 +50263,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "logo_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -50091,7 +51428,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/rss-feeds/:listType": {
       "bodyKind": "content",
-      "hash": "21a3d7f30311c3a0f5ce463b044a09c95b9164513090c19b83fcdbd6a8cda37b",
+      "hash": "5851a5bed6fc8578bcc3e9901f0f9a78ad9e55bcab3aa5e8bf57465077c5c955",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -50150,6 +51487,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -50366,6 +51718,30 @@
                 "value": "vouch"
               }
             ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
           },
           "PageInfo": {
             "additionalProperties": false,
@@ -50650,6 +52026,21 @@
                   ]
                 }
               },
+              "hero_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "homepage_url_id": {
                 "required": true,
                 "schema": {
@@ -50729,6 +52120,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "logo_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -51400,7 +52806,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/topics/:listType": {
       "bodyKind": "content",
-      "hash": "f6efe3d3b3e3cf4952fdb8a44b4dc3a035d3c3aaefc047e6439cc174222f9c45",
+      "hash": "2ac9e7fa5380eba2caeef99b2b9e9fd5a5a1e9699dcf7c5fd0c2f3bbcbfe6427",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -51459,6 +52865,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -51589,6 +53010,30 @@
             },
             "type": "object"
           },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "PageInfo": {
             "additionalProperties": false,
             "properties": {
@@ -51713,6 +53158,21 @@
                   ]
                 }
               },
+              "hero_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "homepage_url_id": {
                 "required": true,
                 "schema": {
@@ -51792,6 +53252,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "logo_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -52210,13 +53685,37 @@
     },
     "GET:/api/v1/users/:idOrSlug/users/:listType": {
       "bodyKind": "content",
-      "hash": "dc650d03c1192d8063d487ffcf00a939102320b7ffe2a17891d84da8e4b4b340",
+      "hash": "399597e28d2816f7534fae9b15bb2f8accf78bb75fd3696d16902925d1438ae5",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/users/:idOrSlug/users/:listType",
       "schema": {
         "definitions": {
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "Omit<BasicUser,\"individual_id\" | \"is_agent\">": {
             "additionalProperties": false,
             "properties": {
@@ -52257,6 +53756,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -53619,7 +55133,7 @@
     },
     "PATCH:/api/v1/communities/:communitySlug": {
       "bodyKind": "content",
-      "hash": "3edece41173876bbbe97a93f60a48496ebe14ec5f4e8688f8ed1a2ed231a3414",
+      "hash": "6d218c219f37f28f861d520865f8c5997aed4c80a8cf798d7634ab1c2bdfdf72",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -53659,6 +55173,30 @@
                 "value": "public"
               }
             ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -53726,6 +55264,21 @@
                         },
                         {
                           "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "banner_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }
@@ -53888,6 +55441,21 @@
                         },
                         {
                           "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "profile_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }
@@ -53952,7 +55520,7 @@
     },
     "PATCH:/api/v1/communities/:communitySlug/post-type-settings": {
       "bodyKind": "content",
-      "hash": "3edece41173876bbbe97a93f60a48496ebe14ec5f4e8688f8ed1a2ed231a3414",
+      "hash": "6d218c219f37f28f861d520865f8c5997aed4c80a8cf798d7634ab1c2bdfdf72",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -53992,6 +55560,30 @@
                 "value": "public"
               }
             ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -54059,6 +55651,21 @@
                         },
                         {
                           "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "banner_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }
@@ -54221,6 +55828,21 @@
                         },
                         {
                           "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "profile_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }
@@ -67242,7 +68864,7 @@
     },
     "POST:/api/v1/topics": {
       "bodyKind": "content",
-      "hash": "105f204afabe661ed5b3f88bc900a17c6e74d7b50941e686ba00d9b1cd039112",
+      "hash": "d8dc6fdffab34506360f394dc9940635960f602635056936ba326e87a2d7094f",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -67301,6 +68923,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -67431,6 +69068,30 @@
             },
             "type": "object"
           },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "PublicViewHostname": {
             "additionalProperties": false,
             "properties": {
@@ -67515,6 +69176,21 @@
                   ]
                 }
               },
+              "hero_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "homepage_url_id": {
                 "required": true,
                 "schema": {
@@ -67594,6 +69270,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "logo_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -68603,13 +70294,37 @@
     },
     "PUT:/api/v1/my/landing-pages/:pageId/items": {
       "bodyKind": "content",
-      "hash": "b1b4878ebd328942902eb3925b574f1e857f3706c2030b931d59784a5d50341a",
+      "hash": "7f5b6764dd66d596835103ede61b174d6266fdfd349f1684eabd5abb273b2f91",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PUT",
       "routeTemplate": "/api/v1/my/landing-pages/:pageId/items",
       "schema": {
         "definitions": {
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
           "LandingPage": {
             "additionalProperties": false,
             "properties": {
@@ -69112,6 +70827,21 @@
                     },
                     {
                       "type": "string"
+                    }
+                  ]
+                }
+              },
+              "image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -71311,7 +73041,7 @@
       "migratedFrom": ["web/test-helpers/api-responses/communities.ts"],
       "path": "/api/v1/communities/test-community",
       "responseSchema": {
-        "hash": "a352ce798cb1e5a0ac561b2345af2ec2c57b613622e1461c401317f389a61ab6",
+        "hash": "6ad5dc421391d481a8306aa7e216b59d7377611cb9c4f303cf8e0bce297cd1cf",
         "key": "web.communities.show.default"
       },
       "route": {
@@ -72384,7 +74114,7 @@
         "topic_type": "topic"
       },
       "responseSchema": {
-        "hash": "002419b3b3c569cc45683ebe0f1b1f4d652882396bde000cdb93e87c00e1b12e",
+        "hash": "417a3966cf8529dd04195bdfb1460ea23d66004438a8ce891a58c081d03702f1",
         "key": "web.topics.mutation.default"
       },
       "route": {
@@ -77355,7 +79085,7 @@
         "limit": "2"
       },
       "responseSchema": {
-        "hash": "0500448b7bf921514405b9c1f7db11af3916f94ef8efb4277453090134c4ecf7",
+        "hash": "2355fd8c07e7d65a37fe36da4170c1567ac866c59bc3061b5a1ab8398a633de0",
         "key": "native.moderation.review-queue.default"
       },
       "route": {
@@ -78393,7 +80123,7 @@
         "include_bio": "1"
       },
       "responseSchema": {
-        "hash": "8d88ab66b68577f3663be941231bfbd8ef36afe27266fad86758634be8114b4c",
+        "hash": "7b56018e004405e035c40d2ee5caf8bf84c25de5e16def6b37535bf1ff6381b8",
         "key": "native.users.profile.default"
       },
       "route": {
@@ -79009,6 +80739,55 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-paid-crawl-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/posts/:idOrSlug/images",
+      "bodyFile": "responses/native.posts.images.placement.default.json",
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.posts.images.placement.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/posts/post-images.mts"],
+      "path": "/api/v1/posts/00000000-0000-7000-8000-000000000801/images",
+      "responseSchema": {
+        "hash": "32ffb9be770f59a9b2e1c48ba25c67d1f23a4ebd155a3e8f601c20b51973c1fb",
+        "key": "native.posts.images.placement.default"
+      },
+      "route": {
+        "pathParams": {
+          "idOrSlug": "00000000-0000-7000-8000-000000000801"
+        },
+        "routeTemplate": "/api/v1/posts/:idOrSlug/images"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates",
+      "bodyFile": "responses/native.moderation.copyright.image-similarity-candidates.default.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.copyright.image-similarity-candidates.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/copyright-notices/moderator-routes.mts"],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/targets/00000000-0000-7000-8000-000000000805/image-similarity-candidates",
+      "responseSchema": {
+        "hash": "c815800aaa3c767ed4c7a0bf9c47eb77325b9dda089b8c761bad59ed8f2dcc72",
+        "key": "native.moderation.copyright.image-similarity-candidates.default"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000804",
+          "targetId": "00000000-0000-7000-8000-000000000805"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
       },
       "status": 200
     },

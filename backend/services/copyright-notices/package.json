@@ -18,10 +18,15 @@
     }
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1131.0",
     "@data-stores/psql": "workspace:^",
+    "@modules/aws": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/notifications": "workspace:^",
     "@services/contribution-gating": "workspace:^",
+    "@services/entity-cache": "workspace:^",
+    "@services/images": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",

@@ -126,7 +126,7 @@ describe('setPostImages clearance rollback', () => {
       setPostImages(creator, post, [{ image_id: replacementImageId, order_index: 0 }]),
     ).rejects.toThrow(enqueueError)
 
-    await expect(getPostImages(postId)).resolves.toEqual([
+    await expect(getPostImages(postId)).resolves.toMatchObject([
       { image_id: replacementImageId, order_index: 0, caption: '' },
     ])
     const currentPost = (await getPostByAny(postId, { readOnly: false })) as Post

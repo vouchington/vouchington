@@ -50,7 +50,13 @@ export type Post = {
   clearance_status: ClearanceStatus
   clearance_reason: string | null
   clearance_updated_at: Date | null
-  images?: Array<{ image_id: string; order_index: number; caption: string }>
+  images?: Array<{
+    image_id: string
+    placement_id: string
+    placement_revision: number
+    order_index: number
+    caption: string
+  }>
   review_topic_ratings?: Array<{
     topic_id: string
     rating: number

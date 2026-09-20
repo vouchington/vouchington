@@ -30,6 +30,8 @@ export type ReviewQueuePost = {
     requires_reveal: boolean
     images: Array<{
       image_id: string
+      placement_id: string
+      placement_revision: number
       order_index: number
       caption: string
     }>
@@ -143,15 +145,22 @@ export async function searchPostsForAdminReview(
       SELECT jsonb_agg(
         jsonb_build_object(
           'image_id', bounded_images.image_id,
+          'placement_id', bounded_images.placement_id,
+          'placement_revision', bounded_images.placement_revision,
           'order_index', bounded_images.order_index,
           'caption', bounded_images.caption
         )
         ORDER BY bounded_images.order_index, bounded_images.image_id
       ) AS images
       FROM (
-        SELECT pi.image_id, pi.order_index, pi.caption
+        SELECT pi.image_id, placement.id AS placement_id,
+          placement.revision AS placement_revision, pi.order_index, pi.caption
         FROM post_images pi
         JOIN images i ON i.id = pi.image_id
+        JOIN image_placements image_placement
+          ON image_placement.post_id = pi.post_id AND image_placement.image_id = pi.image_id
+        JOIN media_placements placement
+          ON placement.id = image_placement.placement_id AND placement.retired_at IS NULL
         WHERE pi.post_id = p.id
           AND i.deleted_at IS NULL
           AND i.upload_completed_at IS NOT NULL

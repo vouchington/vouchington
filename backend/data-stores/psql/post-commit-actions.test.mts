@@ -3,6 +3,7 @@ import {
   beginBoundedTransaction,
   beginTransaction,
   registerPostCommitAction,
+  registerPostRollbackAction,
   withTransactionOptions,
 } from './setup.mts'
 import {
@@ -14,6 +15,29 @@ import {
 } from '../../test-helpers/data-stores/psql/post-commit-actions.mts'
 
 describe('transaction post-commit actions', () => {
+  it('runs rollback actions after an explicit rollback but never after commit', async () => {
+    const rolledBack = vi.fn<() => Promise<void>>(async () => undefined)
+    await using rollbackTransaction = await beginTransaction()
+    registerPostRollbackAction(rollbackTransaction, rolledBack)
+    await rollbackTransaction.rollback()
+    expect(rolledBack).toHaveBeenCalledOnce()
+
+    const committed = vi.fn<() => Promise<void>>(async () => undefined)
+    await using commitTransaction = await beginTransaction()
+    registerPostRollbackAction(commitTransaction, committed)
+    await commitTransaction.commit()
+    expect(committed).not.toHaveBeenCalled()
+  })
+
+  it('runs rollback actions when an uncommitted resource disposes', async () => {
+    const action = vi.fn<() => Promise<void>>(async () => undefined)
+    {
+      await using transaction = await beginTransaction()
+      registerPostRollbackAction(transaction, action)
+    }
+    expect(action).toHaveBeenCalledOnce()
+  })
+
   it('runs actions only after an explicit commit', async () => {
     const action = vi.fn<() => Promise<void>>(async () => undefined)
     const actionRanBeforeCommit = await runExplicitCommitActionProbe(action)

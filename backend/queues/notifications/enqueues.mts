@@ -12,6 +12,8 @@ type DeleteNotificationData = { userId: string; notificationId: string }
 type ReconcilePostNotificationData = { postId: string }
 type ReconcileRssFeedItemNotificationData = { rssFeedItemId: string }
 type CopyrightDeliveryIntentData = { intentId: string }
+type CopyrightActionIntentData = { intentId: string }
+type MediaDeliveryRegistryRecordData = { deliveryKey: string }
 const enqueueBulkFollowNotificationJobs = createBulkEnqueueFunction<
   FollowNotificationData,
   FollowNotificationData,
@@ -113,6 +115,34 @@ const enqueueReconcileCopyrightDeliveryIntentsJob = createEnqueueFunction<
   jobName: 'processReconcileCopyrightDeliveryIntents',
 })
 
+const enqueueApplyCopyrightActionJob = createEnqueueFunction<
+  CopyrightActionIntentData,
+  'processApplyCopyrightAction'
+>({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processApplyCopyrightAction' })
+
+const enqueueReconcileCopyrightActionIntentsJob = createEnqueueFunction<
+  Record<string, never>,
+  'processReconcileCopyrightActionIntents'
+>({
+  queue: notifications,
+  queueName: QUEUE_NAME,
+  jobName: 'processReconcileCopyrightActionIntents',
+})
+
+const enqueueApplyMediaDeliveryRegistryRecordJob = createEnqueueFunction<
+  MediaDeliveryRegistryRecordData,
+  'processApplyMediaDeliveryRegistryRecord'
+>({
+  queue: notifications,
+  queueName: QUEUE_NAME,
+  jobName: 'processApplyMediaDeliveryRegistryRecord',
+})
+
+const enqueueReconcileMediaDeliveryRegistryJob = createEnqueueFunction<
+  Record<string, never>,
+  'processReconcileMediaDeliveryRegistry'
+>({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processReconcileMediaDeliveryRegistry' })
+
 export function enqueueBulkFollowNotification(pairs: FollowNotificationData[]): EnqueueReturnType {
   return enqueueBulkFollowNotificationJobs(pairs, { priority: PRIORITY_DEFAULT })
 }
@@ -192,6 +222,78 @@ export function enqueueReconcileCopyrightDeliveryIntents(): EnqueueReturnType {
       priority: PRIORITY_DEFAULT,
       deduplication: {
         id: 'copyright-delivery-reconciliation',
+        mode: 'throttle',
+        ttl: FIVE_MINUTES_MS,
+      },
+    },
+  )
+}
+
+export function enqueueApplyCopyrightAction(intentId: string): EnqueueReturnType {
+  return enqueueApplyCopyrightActionJob(
+    { intentId },
+    {
+      attempts: 5,
+      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+      priority: PRIORITY_DEFAULT,
+      deduplication: {
+        id: `copyright-action:${intentId}`,
+        mode: 'throttle',
+        ttl: FIVE_MINUTES_MS,
+      },
+    },
+  )
+}
+
+export function enqueueReconcileCopyrightActionIntents(): EnqueueReturnType {
+  return enqueueReconcileCopyrightActionIntentsJob(
+    {},
+    {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+      priority: PRIORITY_DEFAULT,
+      deduplication: {
+        id: 'copyright-action-reconciliation',
+        mode: 'throttle',
+        ttl: FIVE_MINUTES_MS,
+      },
+    },
+  )
+}
+
+export function enqueueApplyMediaDeliveryRegistryRecord(deliveryKey: string): EnqueueReturnType {
+  return enqueueApplyMediaDeliveryRegistryRecordJob(
+    { deliveryKey },
+    {
+      attempts: 5,
+      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+      priority: PRIORITY_DEFAULT,
+      deduplication: {
+        id: `media-delivery-registry:${deliveryKey}`,
+        mode: 'throttle',
+        ttl: FIVE_MINUTES_MS,
+      },
+    },
+  )
+}
+
+export function enqueueReconcileMediaDeliveryRegistry(): EnqueueReturnType {
+  return enqueueReconcileMediaDeliveryRegistryJob(
+    {},
+    {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+      priority: PRIORITY_DEFAULT,
+      deduplication: {
+        id: 'media-delivery-registry-reconciliation',
         mode: 'throttle',
         ttl: FIVE_MINUTES_MS,
       },

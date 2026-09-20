@@ -18,6 +18,9 @@ async function assertImagesExistForUser(
       AND upload_completed_at IS NOT NULL
       AND deleted_at IS NULL
       AND quarantine_pending_at IS NULL
+      AND openai_omni_moderation_flagged = FALSE
+      AND openai_omni_moderation_results IS NOT NULL
+      AND openai_omni_moderation_created_at IS NOT NULL
   `)
 
   const rowMap = new Map(rows.map((r: { id: string; created_by_id: string }) => [r.id, r]))

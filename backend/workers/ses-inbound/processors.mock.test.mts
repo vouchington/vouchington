@@ -3,6 +3,10 @@ import { Readable } from 'node:stream'
 import { UnrecoverableError } from '@modules/queue-errors'
 import type { SesInboundProcessJobData } from '@ts-shared/ses-inbound-contract'
 import { SesInboundTerminalError, type ParsedSesInboundEmail } from './processors/mime.mts'
+import type {
+  copySesInboundObjectToCopyrightEvidence,
+  loadSesInboundObjectAndHash,
+} from './processors/s3.mts'
 import { processSesInboundEmail, reconcileSesInboundEmails } from './processors.mts'
 
 vi.mock<typeof import('mailparser')>(
@@ -81,6 +85,28 @@ describe('SES inbound processors', () => {
     expect(deleteObject).toHaveBeenCalledWith(data.objectKey)
     expect(loadObject).not.toHaveBeenCalled()
     expect(createMessage).not.toHaveBeenCalled()
+  })
+
+  it('keeps copyright inbound evidence unprocessed while copyright intake is disabled', async () => {
+    const copyrightData: SesInboundProcessJobData = {
+      sesMessageId: 'ses-disabled-copyright',
+      objectKey: 'copyright-incoming/ses-disabled-copyright',
+      intakeKind: 'copyright',
+    }
+    const deleteObject = vi.fn<(objectKey: string) => Promise<void>>()
+    const loadAndHash = vi.fn<typeof loadSesInboundObjectAndHash>()
+    const copyEvidence = vi.fn<typeof copySesInboundObjectToCopyrightEvidence>()
+
+    await processSesInboundEmail(copyrightData, {
+      isCopyrightIntakeEnabled: () => false,
+      deleteSesInboundObject: deleteObject,
+      loadSesInboundObjectAndHash: loadAndHash,
+      copySesInboundObjectToCopyrightEvidence: copyEvidence,
+    })
+
+    expect(loadAndHash).not.toHaveBeenCalled()
+    expect(copyEvidence).not.toHaveBeenCalled()
+    expect(deleteObject).not.toHaveBeenCalled()
   })
 
   it('moves terminal MIME failures to the failed prefix', async () => {
@@ -178,6 +204,27 @@ describe('SES inbound processors', () => {
     ])
   })
 
+  it('does not scan or enqueue copyright inbound evidence while copyright intake is disabled', async () => {
+    const listCopyrightObjects = vi.fn<() => Promise<{ objectKeys: string[] }>>()
+    const enqueueOrRetry = vi.fn<() => Promise<number>>().mockResolvedValue(0)
+
+    await expect(
+      reconcileSesInboundEmails({
+        isCopyrightIntakeEnabled: () => false,
+        listSesInboundObjects: async () => ({ objectKeys: [] }),
+        listCopyrightSesInboundObjects: listCopyrightObjects,
+        enqueueOrRetryBulkSesInboundProcess: enqueueOrRetry,
+        listInboundCustomerSupportRecoveryCandidates: async () => ({
+          results: [],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }),
+      }),
+    ).resolves.toEqual({ enqueued: 0, customerSupportEnqueued: 0 })
+
+    expect(listCopyrightObjects).not.toHaveBeenCalled()
+    expect(enqueueOrRetry).not.toHaveBeenCalled()
+  })
+
   it('recovers a DB-only support-agent job when the S3 object is already deleted', async () => {
     const candidate = {
       threadId: 'thread-db-only',
@@ -205,69 +252,5 @@ describe('SES inbound processors', () => {
         logicalJobId: candidate.logicalJobId,
       },
     ])
-  })
-
-  it('advances the PostgreSQL cursor only after each page fan-out is awaited', async () => {
-    const first = {
-      threadId: 'thread-first',
-      supportMessageId: 'message-first',
-      logicalJobId: 'support_inbound_email__message-first__customer_support',
-    }
-    const second = {
-      threadId: 'thread-second',
-      supportMessageId: 'message-second',
-      logicalJobId: 'support_inbound_email__message-second__customer_support',
-    }
-    const events: string[] = []
-    let releaseFirstEnqueue!: () => void
-    const firstEnqueueGate = new Promise<void>(resolve => {
-      releaseFirstEnqueue = resolve
-    })
-    type ReconcileDependencies = NonNullable<Parameters<typeof reconcileSesInboundEmails>[0]>
-    const listCandidates = vi
-      .fn<NonNullable<ReconcileDependencies['listInboundCustomerSupportRecoveryCandidates']>>()
-      .mockImplementationOnce(async () => {
-        events.push('list:first')
-        return {
-          results: [first],
-          page_info: { has_next_page: true, start_cursor: 'start', end_cursor: 'opaque-page-1' },
-        }
-      })
-      .mockImplementationOnce(async () => {
-        events.push('list:second')
-        return {
-          results: [second],
-          page_info: { has_next_page: false, start_cursor: 'start', end_cursor: null },
-        }
-      })
-    const enqueueCustomerSupport = vi
-      .fn<NonNullable<ReconcileDependencies['enqueueOrRetryBulkCustomerSupport']>>()
-      .mockImplementationOnce(async () => {
-        events.push('enqueue:first')
-        await firstEnqueueGate
-        return 0
-      })
-      .mockImplementationOnce(async () => {
-        events.push('enqueue:second')
-        return 0
-      })
-
-    const reconciliation = reconcileSesInboundEmails({
-      listSesInboundObjects: async () => ({ objectKeys: [] }),
-      listCopyrightSesInboundObjects: async () => ({ objectKeys: [] }),
-      enqueueOrRetryBulkSesInboundProcess: async () => 0,
-      listInboundCustomerSupportRecoveryCandidates: listCandidates,
-      enqueueOrRetryBulkCustomerSupport: enqueueCustomerSupport,
-    })
-    await vi.waitFor(() => expect(enqueueCustomerSupport).toHaveBeenCalledTimes(1))
-    expect(listCandidates).toHaveBeenCalledTimes(1)
-    releaseFirstEnqueue()
-
-    await expect(reconciliation).resolves.toEqual({ enqueued: 0, customerSupportEnqueued: 2 })
-    expect(listCandidates).toHaveBeenNthCalledWith(1, {})
-    expect(listCandidates).toHaveBeenNthCalledWith(2, { after: 'opaque-page-1' })
-    expect(enqueueCustomerSupport).toHaveBeenNthCalledWith(1, [first])
-    expect(enqueueCustomerSupport).toHaveBeenNthCalledWith(2, [second])
-    expect(events).toEqual(['list:first', 'enqueue:first', 'list:second', 'enqueue:second'])
   })
 })

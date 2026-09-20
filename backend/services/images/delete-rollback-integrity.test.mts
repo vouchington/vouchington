@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createPostModerationContent } from '@services/posts/content'
-import { getPostByAny } from '@services/posts/get'
-import type { Post } from '@services/posts/types'
+import { getPostModerationInput } from '@services/posts/moderation-input'
 import {
   createTestUserDirect,
   getPostModerationResetState,
@@ -57,7 +56,8 @@ async function createRollbackFixture() {
     clearanceStatus: 'pending',
   })
   const imageId = await insertTestImage(creator!.id)
-  const post = (await getPostByAny(postId, { readOnly: false })) as Post
+  const post = await getPostModerationInput(postId)
+  if (!post) throw new Error('post was not found')
   const hash = createPostModerationContent(post).content_sha256
   await setPostLLMModerationContentSha256(postId, hash)
   const state = await getPostModerationResetState(postId)
@@ -77,6 +77,7 @@ function createDeleteResult(
       openai_omni_moderation_flagged: null,
       openai_omni_moderation_created_at: null,
     },
+    retiredPlacements: [],
     postRollbacks: [
       {
         post_id: fixture.postId,
