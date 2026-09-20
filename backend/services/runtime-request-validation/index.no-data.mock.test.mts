@@ -4,7 +4,7 @@ import {
   runtimeRequestValidatorRegistry,
   RuntimeRequestValidatorRegistry,
   validateAuthenticatedRequest,
-} from './runtime-request-validation.mts'
+} from './index.mts'
 
 describe('RuntimeRequestValidatorRegistry', () => {
   const registry = new RuntimeRequestValidatorRegistry({

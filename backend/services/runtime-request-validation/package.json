@@ -1,0 +1,20 @@
+{
+  "name": "@services/runtime-request-validation",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    }
+  },
+  "dependencies": {
+    "@voucha/api-fixtures": "workspace:^",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}
