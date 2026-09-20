@@ -93,6 +93,31 @@ describe('OAuth client and authorization validation', () => {
   })
 
   it.each([
+    ['an unsupported authentication method', { token_endpoint_auth_method: 'client_secret_post' }],
+    ['invalid grant types', { grant_types: [] }],
+    ['an unsupported response type', { response_types: ['token'] }],
+  ])('rejects registration metadata with %s', async (_name, override) => {
+    await expect(
+      registerOAuthClient({
+        client_name: `Unsupported registration ${randomBytes(6).toString('hex')}`,
+        redirect_uris: [randomTestOAuthRedirectUri()],
+        scope: TEST_OAUTH_SCOPE,
+        ...override,
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_client_metadata' })
+  })
+
+  it('rewrites scope validation failures as invalid client metadata', async () => {
+    await expect(
+      registerOAuthClient({
+        client_name: `Invalid scope registration ${randomBytes(6).toString('hex')}`,
+        redirect_uris: [randomTestOAuthRedirectUri()],
+        scope: 'mcp.user:read invalid:scope',
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_client_metadata' })
+  })
+
+  it.each([
     ['missing state', { state: undefined }, 'invalid_request'],
     ['plain PKCE', { codeChallengeMethod: 'plain' }, 'invalid_request'],
     ['an unknown scope', { scope: 'mcp.user:read unknown:scope' }, 'invalid_scope'],
@@ -118,5 +143,27 @@ describe('OAuth client and authorization validation', () => {
         ...override,
       }),
     ).rejects.toMatchObject({ code: errorCode })
+  })
+
+  it('rejects an authorization redirect URI that is not registered to the client', async () => {
+    const client = await registerOAuthClient({
+      client_name: `Redirect registration ${randomBytes(6).toString('hex')}`,
+      redirect_uris: [randomTestOAuthRedirectUri()],
+      scope: TEST_OAUTH_SCOPE,
+    })
+    const verifier = randomBytes(32).toString('base64url')
+
+    await expect(
+      validateOAuthAuthorizationRequest({
+        clientId: client.client_id,
+        codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
+        codeChallengeMethod: 'S256',
+        redirectUri: randomTestOAuthRedirectUri(),
+        resource: TEST_OAUTH_RESOURCE,
+        responseType: 'code',
+        scope: TEST_OAUTH_SCOPE,
+        state: randomBytes(16).toString('base64url'),
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_request' })
   })
 })

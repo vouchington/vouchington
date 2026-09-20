@@ -89,6 +89,23 @@ describe('OAuth authorization routes', () => {
     expect(token.body).toMatchObject({ token_type: 'Bearer', scope: SCOPE, expires_in: 3600 })
     expect(token.headers['cache-control']).toBe('no-store')
 
+    const refreshed = await createRequest()
+      .post('/token')
+      .type('form')
+      .send({
+        client_id: registration.body.client_id,
+        grant_type: 'refresh_token',
+        refresh_token: token.body.refresh_token,
+      })
+      .expect(200)
+    expect(refreshed.body).toMatchObject({ token_type: 'Bearer', scope: SCOPE })
+
+    await createRequest()
+      .post('/revoke')
+      .type('form')
+      .send({ client_id: registration.body.client_id, token: refreshed.body.refresh_token })
+      .expect(200)
+
     await createRequest()
       .post('/token')
       .type('form')
@@ -230,6 +247,38 @@ describe('OAuth authorization routes', () => {
       .expect(400)
     expect(response.headers.location).toBeUndefined()
     expect(response.body).toMatchObject({ error: 'unsupported_response_type' })
+  })
+
+  it('redirects a protocol error only to the registered callback', async () => {
+    const user = await createTestUserDirect()
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const redirectUri = randomRedirectUri()
+    const registration = await request
+      .post('/register')
+      .send({
+        client_name: 'Registered authorization error client',
+        redirect_uris: [redirectUri],
+        scope: SCOPE,
+      })
+      .expect(201)
+
+    const response = await request
+      .get('/authorize')
+      .query({
+        client_id: registration.body.client_id,
+        redirect_uri: redirectUri,
+        response_type: 'token',
+        state: 'registered-error-state',
+      })
+      .expect(302)
+
+    const location = response.headers.location
+    if (!location) throw new Error('authorization error redirect was not returned')
+    const callback = new URL(location)
+    expect(callback.origin + callback.pathname).toBe(redirectUri)
+    expect(callback.searchParams.get('error')).toBe('unsupported_response_type')
+    expect(callback.searchParams.get('state')).toBe('registered-error-state')
   })
 })
 

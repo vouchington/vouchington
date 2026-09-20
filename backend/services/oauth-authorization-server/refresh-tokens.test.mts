@@ -151,6 +151,28 @@ describe('OAuth refresh tokens', () => {
     ).rejects.toMatchObject({ code: 'invalid_grant' })
   })
 
+  it('rejects a refresh token presented by a different client', async () => {
+    const flow = await createApprovedAuthorization(owner)
+    const initial = await exchangeOAuthAuthorizationCode({
+      clientId: flow.client.client_id,
+      code: flow.code,
+      codeVerifier: flow.verifier,
+      redirectUri: flow.redirectUri,
+    })
+    const otherClient = await registerOAuthClient({
+      client_name: `Other refresh client ${randomBytes(6).toString('hex')}`,
+      redirect_uris: [randomRedirectUri()],
+      scope: SCOPE,
+    })
+
+    await expect(
+      exchangeOAuthRefreshToken({
+        clientId: otherClient.client_id,
+        refreshToken: initial.refresh_token,
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_grant' })
+  })
+
   it('does not issue an access token beyond the refresh family expiry', async () => {
     const flow = await createApprovedAuthorization(owner)
     const initial = await exchangeOAuthAuthorizationCode({
