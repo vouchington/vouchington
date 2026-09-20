@@ -55,7 +55,7 @@ describe('OAuth client and authorization validation', () => {
     ['an empty list', []],
     ['a non-string entry', [42]],
     ['a malformed URI', ['not a URI']],
-    ['userinfo', ['https://user@example.com/callback']],
+    ['userinfo', ['https://tests+oauth-redirect@voucha.ai/callback']],
     ['a fragment', ['https://example.com/callback#fragment']],
     ['duplicate URIs', ['https://example.com/callback', 'https://example.com/callback']],
   ])('rejects redirect metadata with %s', (_name, redirectUris) => {
@@ -68,7 +68,7 @@ describe('OAuth client and authorization validation', () => {
     ['a missing value', undefined],
     ['a malformed URI', 'not a URI'],
     ['a non-HTTPS remote URI', 'http://example.com/api/v1/mcp'],
-    ['userinfo', 'https://user@example.com/api/v1/mcp'],
+    ['userinfo', 'https://tests+oauth-resource@voucha.ai/api/v1/mcp'],
     ['a query', 'https://example.com/api/v1/mcp?debug=true'],
     ['an unsupported path', 'https://example.com/api/v1/other'],
   ])('rejects a resource with %s', (_name, resource) => {
