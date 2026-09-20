@@ -24,6 +24,7 @@ type ToolEntry = {
   name: string
   description: string | null
   surfaces: string[]
+  requiredScopes: string[]
   readOnlyHint: boolean
   destructiveHint: boolean
   api: ApiEndpoint[] | null
@@ -76,6 +77,11 @@ function extractSurfaces(src: string): string[] {
   return [...m[1].matchAll(/'(\w+)'/g)].map(x => x[1])
 }
 
+function extractRequiredScopes(src: string): string[] {
+  const block = /requiredScopes:\s*\{([\s\S]*?)\}/.exec(src)?.[1]
+  return block == null ? [] : [...block.matchAll(/'([^']+:[^']+)'/g)].map(match => match[1])
+}
+
 function extractApi(src: string): ApiEndpoint[] | null {
   if (/api:\s*null/.test(src)) return null
   const apiBlockRe = /api:\s*\[([^\]]*)\]/s
@@ -99,6 +105,7 @@ function parseToolFile(filePath: string): ToolEntry | null {
     name,
     description: extractDescription(src),
     surfaces: extractSurfaces(src),
+    requiredScopes: extractRequiredScopes(src),
     readOnlyHint: /readOnlyHint:\s*true/.test(src),
     destructiveHint: /destructiveHint:\s*true/.test(src),
     api: extractApi(src),
@@ -111,11 +118,11 @@ function generateToolTable(tools: ToolEntry[]): string {
     const hintStr = tool.readOnlyHint ? 'read-only' : tool.destructiveHint ? 'mutating' : '—'
     const apiStr =
       tool.api == null ? '—' : tool.api.map(e => `\`${e.method} ${e.path}\``).join(', ')
-    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${hintStr} | ${apiStr} |`
+    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${tool.requiredScopes.join(', ') || '—'} | ${hintStr} | ${apiStr} |`
   })
   return [
-    '| Tool | Description | Surfaces | Hint | REST Equivalent |',
-    '| ---- | ----------- | -------- | ---- | --------------- |',
+    '| Tool | Description | Surfaces | Required scopes | Hint | REST Equivalent |',
+    '| ---- | ----------- | -------- | --------------- | ---- | --------------- |',
     ...rows,
   ].join('\n')
 }
@@ -192,6 +199,7 @@ describe('docs freshness', () => {
         description: tool.description,
         parameters: null,
         api: tool.api,
+        requiredScopes: tool.requiredScopes,
       })),
     })
   })

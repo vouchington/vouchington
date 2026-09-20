@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { SCOPE_DEFINITIONS, hasScope, parseApiScope, validateScopeSet } from './scopes.mts'
+import {
+  SCOPE_DEFINITIONS,
+  hasEveryScope,
+  hasScope,
+  parseApiScope,
+  validateScopeSet,
+} from './scopes.mts'
 
 describe('validateScopeSet', () => {
   it('parses only exact catalogue values', () => {
@@ -10,6 +16,12 @@ describe('validateScopeSet', () => {
   it('checks typed scope membership', () => {
     expect(hasScope(['mcp.user:read'], 'mcp.user:read')).toBe(true)
     expect(hasScope(['mcp.user:read'], 'mcp.user:write')).toBe(false)
+  })
+
+  it('lets legacy broad MCP grants satisfy resource-scoped requests', () => {
+    expect(hasScope(['mcp.user:read'], 'topics:read')).toBe(true)
+    expect(hasScope(['mcp.user:read'], 'cards:write')).toBe(false)
+    expect(hasEveryScope(['cards:read', 'cards:write'], ['cards:write'])).toBe(true)
   })
 
   it('returns scopes in canonical order with audience metadata', () => {
@@ -75,40 +87,16 @@ describe('validateScopeSet', () => {
     }
   })
 
-  it('declares every scope audience and supported credential surface', () => {
-    expect(SCOPE_DEFINITIONS).toEqual({
-      'mcp.admin:read': {
-        action: 'read',
-        audience: 'admin',
-        resource: 'mcp.admin',
-        surfaces: ['api-key', 'oauth'],
-      },
-      'mcp.admin:write': {
-        action: 'write',
-        audience: 'admin',
-        requires: 'mcp.admin:read',
-        resource: 'mcp.admin',
-        surfaces: ['api-key', 'oauth'],
-      },
-      'mcp.user:read': {
-        action: 'read',
-        audience: 'user',
-        resource: 'mcp.user',
-        surfaces: ['api-key', 'oauth'],
-      },
-      'mcp.user:write': {
-        action: 'write',
-        audience: 'user',
-        requires: 'mcp.user:read',
-        resource: 'mcp.user',
-        surfaces: ['api-key', 'oauth'],
-      },
-      'rss:read': {
-        action: 'read',
-        audience: 'api',
-        resource: 'rss',
-        surfaces: ['api-key', 'oauth'],
-      },
+  it('declares canonical resource scopes with audience and prerequisites', () => {
+    expect(SCOPE_DEFINITIONS['topics:read']).toMatchObject({ audience: 'user', action: 'read' })
+    expect(SCOPE_DEFINITIONS['cards:write']).toMatchObject({
+      audience: 'user',
+      action: 'write',
+      requires: 'cards:read',
+    })
+    expect(SCOPE_DEFINITIONS['support-messages:read']).toMatchObject({
+      audience: 'admin',
+      action: 'read',
     })
   })
 })

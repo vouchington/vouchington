@@ -7,7 +7,7 @@ import { checkApiKeyBloomFilter } from './bloom-filter.mts'
 import { getApiKeyByHash } from './get.mts'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import type { ApiKey } from './types.mts'
-import { hasScope, type ApiScope } from '@modules/scopes'
+import { hasScope, hasScopeAudience, type ApiScope, type ScopeAudience } from '@modules/scopes'
 import { validateApiKeyScopeSet } from './permissions.mts'
 
 export async function validateApiKey(
@@ -54,4 +54,38 @@ export async function validateApiKey(
     valid: true,
     apiKey: { ...apiKey, permissions: persistedScopes.permissions },
   }
+}
+
+export async function validateApiKeyForMcpAudience(
+  rawKey: string,
+  audience: Exclude<ScopeAudience, 'api'>,
+): Promise<{
+  valid: boolean
+  apiKey?: Omit<ApiKey, 'permissions'> & { permissions: ApiScope[] }
+}> {
+  if (!validateApiKeyChecksum(rawKey)) return { valid: false }
+
+  const keyHash = hashApiKey(rawKey)
+  const { apiKeyBloomFilterEnabled } = bloomFilterConfig.getFields()
+  if (apiKeyBloomFilterEnabled) {
+    const bloomFilterResult = await checkApiKeyBloomFilter(keyHash)
+    if (bloomFilterResult === false) return { valid: false }
+  }
+
+  const apiKey = await getApiKeyByHash(keyHash)
+  if (!apiKey) return { valid: false }
+
+  const persistedScopes = validateApiKeyScopeSet(apiKey.type, apiKey.permissions)
+  if (!persistedScopes.valid || !hasScopeAudience(persistedScopes.permissions, audience)) {
+    return { valid: false }
+  }
+
+  write(sql`/* validateApiKeyForMcpAudience */
+    UPDATE api_keys SET last_used_at = NOW()
+    WHERE key_hash = ${keyHash} AND revoked_at IS NULL
+  `).catch((err: unknown) => {
+    onError(err instanceof Error ? err : new Error(String(err)))
+  })
+
+  return { valid: true, apiKey: { ...apiKey, permissions: persistedScopes.permissions } }
 }

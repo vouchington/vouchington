@@ -2,7 +2,7 @@ import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS, getRegisteredToolByName } from './index.mts'
-import { isToolMcpEligible, listToolsForSurface } from './select.mts'
+import { getToolRequiredScopes, isToolMcpEligible, listToolsForSurface } from './select.mts'
 
 const TOOLS_DIR = path.join(import.meta.dirname, '..')
 
@@ -77,6 +77,19 @@ describe('tool registry', () => {
       return tool.meta == null || !('api' in tool.meta)
     })
     expect(missing.map(t => t.schema.name)).toEqual([])
+  })
+
+  it('every MCP surface tool declares canonical, surface-correct scopes', () => {
+    const missing = ALL_TOOLS.flatMap(tool => {
+      const surfaces = tool.meta?.surfaces ?? ['internal']
+      return surfaces
+        .filter(
+          (surface): surface is 'mcp' | 'admin_mcp' => surface === 'mcp' || surface === 'admin_mcp',
+        )
+        .filter(surface => getToolRequiredScopes(tool, surface) == null)
+        .map(surface => `${tool.schema.name}:${surface}`)
+    })
+    expect(missing).toEqual([])
   })
 
   it('curried tools are internal-only', () => {

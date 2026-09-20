@@ -1,5 +1,4 @@
 import {
-  SCOPE_DEFINITIONS,
   validateScopeSet,
   type ApiScope,
   type ScopeAudience,
@@ -30,11 +29,11 @@ export function validateApiKeyScopeSet(
   })
   if (!result.valid) return result
 
-  const resources = result.scopes.map(scope => SCOPE_DEFINITIONS[scope].resource)
   const matchesType =
     type === 'rss'
       ? result.scopes.length === 1 && result.scopes[0] === 'rss:read'
-      : resources.every(resource => resource === 'mcp.user' || resource === 'mcp.admin')
+      : result.audiences.length === 1 &&
+        (result.audiences[0] === 'user' || result.audiences[0] === 'admin')
   if (!matchesType) return { valid: false, code: 'scope-type-mismatch' }
 
   const audience = result.audiences[0]
@@ -80,7 +79,7 @@ function apiKeyScopeValidationError(
     case 'scope-type-mismatch':
       return type === 'rss'
         ? 'rss keys must use rss:read'
-        : 'mcp keys must use only mcp.user or mcp.admin scopes'
+        : 'mcp keys must use scopes for one user or admin audience'
     case 'unknown-scope':
       return `unknown or noncanonical scope: ${result.scope}`
     case 'unsupported-surface':

@@ -1,4 +1,5 @@
 import type { BasicUser } from '@services/users/types'
+import type { ApiScope } from '@modules/scopes'
 
 type ToolSchema = {
   name: string
@@ -41,6 +42,8 @@ export type ToolMeta = {
   // Minimum membership plan required. Default 'free'. No tools plan-gated initially (mechanism only).
   plan?: 'free' | 'plus' | 'pro'
   annotations?: ToolAnnotations
+  // Canonical scopes required for an externally callable surface. Internal and client-only tools need none.
+  requiredScopes?: Partial<Record<'mcp' | 'admin_mcp', readonly ApiScope[]>>
   // Equivalent existing REST endpoint(s), or null if none exist.
   api: readonly ToolApiEndpoint[] | null
 }
