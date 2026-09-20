@@ -15,6 +15,7 @@ Not partitioned — growth: bounded.
 | `retirement_reason`     | `text`                     | yes      |                              |          |           |           | Why the placement retired. Owner removal supersedes an asset retirement, fencing image-delete rollback from restoring a detached use. |
 | `copyright_withheld_at` | `timestamp with time zone` | yes      |                              |          |           |           | Placement-specific copyright withholding state; shared source assets remain recoverable.                                              |
 | `created_at`            | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                       |
+| `updated_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                       |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -38,3 +39,4 @@ _none_
 **Triggers:**
 
 - `trigger_media_placement_guard`: `CREATE TRIGGER trigger_media_placement_guard BEFORE DELETE OR UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_media_placement()`
+- `trigger_media_placements_updated_at`: `CREATE TRIGGER trigger_media_placements_updated_at BEFORE UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

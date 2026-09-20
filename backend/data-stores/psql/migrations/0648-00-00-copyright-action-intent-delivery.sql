@@ -105,6 +105,7 @@ CREATE TABLE media_delivery_registry_records (
   failure_message text CHECK (failure_message IS NULL OR char_length(failure_message) BETWEEN 1 AND 4096),
   next_attempt_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (
     (route_kind = 'placement' AND placement_id IS NOT NULL AND placement_revision IS NOT NULL)
     OR (route_kind = 'legacy-image' AND placement_id IS NULL AND placement_revision IS NULL AND media_kind = 'image')
@@ -125,6 +126,24 @@ CREATE INDEX idx_media_delivery_registry_records__placement
 CREATE INDEX idx_media_delivery_registry_records__asset
   ON media_delivery_registry_records (asset_id);
 
+CREATE TRIGGER trigger_media_delivery_registry_records_updated_at
+BEFORE UPDATE ON media_delivery_registry_records
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
 COMMENT ON TABLE media_delivery_registry_records IS 'Durable exact delivery-tuple projection to the edge DynamoDB authority. Absence is denied by the edge. New media kinds add their own foreign-key column and check branch in a later migration.';
 COMMENT ON COLUMN media_delivery_registry_records.delivery_key IS 'Exact edge identity: image-placement:<placement UUID>:<revision>:<image UUID>, video-placement equivalent, or legacy-image:<image UUID>.';
+COMMENT ON COLUMN media_delivery_registry_records.media_kind IS 'Media family served by this delivery tuple; the check grows only when a typed asset branch is added.';
+COMMENT ON COLUMN media_delivery_registry_records.route_kind IS 'Trusted delivery route shape: revision-fenced placement or the retained legacy image route.';
+COMMENT ON COLUMN media_delivery_registry_records.placement_id IS 'Optional typed placement owner required for revision-fenced placement routes.';
+COMMENT ON COLUMN media_delivery_registry_records.placement_revision IS 'Exact placement revision required by a placement route; stale revisions are independently withheld.';
+COMMENT ON COLUMN media_delivery_registry_records.asset_id IS 'Typed immutable image asset authorized or withheld by this exact tuple.';
 COMMENT ON COLUMN media_delivery_registry_records.desired_state IS 'Desired legal delivery state; DynamoDB is updated before this row becomes completed.';
+COMMENT ON COLUMN media_delivery_registry_records.generation IS 'Monotonic delivery generation; an intent completes only for the generation it claimed.';
+COMMENT ON COLUMN media_delivery_registry_records.state IS 'Durable edge-projection workflow state: pending, claimed, completed, or failed.';
+COMMENT ON COLUMN media_delivery_registry_records.delivery_attempt_count IS 'Bounded count of worker claims for this edge-projection operation.';
+COMMENT ON COLUMN media_delivery_registry_records.claimed_at IS 'Time the current worker claim began before it rechecks the authoritative tuple.';
+COMMENT ON COLUMN media_delivery_registry_records.projected_at IS 'Time the worker successfully wrote the desired tuple to the edge authority.';
+COMMENT ON COLUMN media_delivery_registry_records.invalidated_at IS 'Time a superseded edge tuple was explicitly invalidated.';
+COMMENT ON COLUMN media_delivery_registry_records.completed_at IS 'Time this generation reached its terminal projection outcome.';
+COMMENT ON COLUMN media_delivery_registry_records.failure_message IS 'Bounded diagnostic for a retryable or terminal edge-projection failure.';
+COMMENT ON COLUMN media_delivery_registry_records.next_attempt_at IS 'Earliest durable retry time for a pending edge-projection operation.';

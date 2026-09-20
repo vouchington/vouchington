@@ -709,7 +709,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_terminal_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  terminal_column TEXT;\n  old_row JSONB := to_jsonb(OLD);\n  new_row JSONB := to_jsonb(NEW);\n  was_terminal BOOLEAN := FALSE;\nBEGIN\n  FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n    IF old_row -> terminal_column <> 'null'::jsonb THEN\n      was_terminal := TRUE;\n    END IF;\n  END LOOP;\n\n  IF was_terminal THEN\n    FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n      IF old_row -> terminal_column IS DISTINCT FROM new_row -> terminal_column THEN\n        RAISE EXCEPTION '% terminal lifecycle cannot transition after completion', TG_TABLE_NAME\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END LOOP;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.openai_omni_moderation_flagged = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND NOT EXISTS (\n        SELECT 1\n        FROM media_delivery_registry_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'withheld'\n      )\n  );\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.openai_omni_moderation_flagged = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND EXISTS (\n        SELECT 1\n        FROM media_delivery_registry_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'allow'\n          AND registry.state = 'completed'\n      )\n  );\n$function$\n"
     },
     "fn_immutable_array_to_string(p_array text[], p_delimiter text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p_delimiter text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT array_to_string(p_array, p_delimiter)\n$function$\n"
@@ -18609,7 +18609,7 @@
       "columns": {
         "copyright_notice_legal_hold_assessment_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Legal-hold assessment that established this immutable restriction provenance binding.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -18620,7 +18620,7 @@
         },
         "copyright_restriction_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Restriction reactivated because a qualifying legal hold requires it to remain active.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -23924,7 +23924,7 @@
       "columns": {
         "attempt_count": {
           "collation": null,
-          "comment": null,
+          "comment": "Count of durable worker claims made to impose the request.",
           "defaultExpression": "0",
           "generated": null,
           "generatedExpression": null,
@@ -23935,7 +23935,7 @@
         },
         "claimed_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time the current worker claim began.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -23946,7 +23946,7 @@
         },
         "completed_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time all required target restrictions became active.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -23957,7 +23957,7 @@
         },
         "copyright_notice_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Initial notice whose compliant assessment requires every target restriction to be active.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -23968,7 +23968,7 @@
         },
         "copyright_notice_submission_assessment_id": {
           "collation": null,
-          "comment": null,
+          "comment": "One-to-one assessment that authorized this enforcement request and supplies its idempotency identity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -23990,7 +23990,7 @@
         },
         "imposed_by_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Optional moderator whose approval imposed the associated assessment; NULL for automated form enforcement.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -24001,7 +24001,7 @@
         },
         "last_attempt_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Most recent time a worker attempted to impose the required restrictions.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -24012,7 +24012,7 @@
         },
         "state": {
           "collation": null,
-          "comment": null,
+          "comment": "Outbox lifecycle state: pending, worker-claimed, or completed after every target restriction is active.",
           "defaultExpression": "'pending'::text",
           "generated": null,
           "generatedExpression": null,
@@ -24174,7 +24174,9 @@
         "definition": "PRIMARY KEY (copyright_notice_submission_assessment_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_copyright_notice_enforcement_requests_updated_at": "CREATE TRIGGER trigger_copyright_notice_enforcement_requests_updated_at BEFORE UPDATE ON public.copyright_notice_enforcement_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
       "uniqueConstraints": {}
     },
     "copyright_notice_evidence_artifacts": {
@@ -34090,7 +34092,7 @@
       "columns": {
         "image_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Immutable byte asset bound to this post placement; an asset can have multiple separately authorized placements.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34112,7 +34114,7 @@
         },
         "post_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Hosting post for this immutable image use; retained with the placement so delivery authorization is scoped to the use.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34264,7 +34266,7 @@
       "columns": {
         "community_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Community owner for a profile or banner image surface.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34275,7 +34277,7 @@
         },
         "image_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Immutable byte asset bound to this surface placement.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34286,7 +34288,7 @@
         },
         "placement_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Stable media placement identifier that scopes public delivery to this persisted surface use.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34297,7 +34299,7 @@
         },
         "retired_user_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Tombstone user UUID retained after hard deletion so the immutable surface provenance remains auditable without a foreign key.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34308,7 +34310,7 @@
         },
         "retired_user_profile_link_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Tombstone profile-link UUID retained after hard deletion so immutable surface provenance remains auditable without a foreign key.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34319,7 +34321,7 @@
         },
         "surface_kind": {
           "collation": null,
-          "comment": null,
+          "comment": "Typed persisted surface owning this image use; exactly one matching owner branch is required.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34330,7 +34332,7 @@
         },
         "topic_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Topic owner for a logo or hero image surface.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34339,9 +34341,20 @@
           "ordinalPosition": 6,
           "type": "uuid"
         },
-        "user_id": {
+        "updated_at": {
           "collation": null,
           "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Current user owner for a profile-image surface; replaced by retired_user_id only during hard deletion.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34352,7 +34365,7 @@
         },
         "user_profile_link_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Current profile-link owner; set NULL by the foreign-key deletion action before the tombstone handoff.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34738,7 +34751,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_image_surface_placement_guard": "CREATE TRIGGER trigger_image_surface_placement_guard BEFORE DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement()"
+        "trigger_image_surface_placement_guard": "CREATE TRIGGER trigger_image_surface_placement_guard BEFORE DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement()",
+        "trigger_image_surface_placements_updated_at": "CREATE TRIGGER trigger_image_surface_placements_updated_at BEFORE UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -37173,7 +37187,7 @@
       "columns": {
         "asset_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Typed immutable image asset authorized or withheld by this exact tuple.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37184,7 +37198,7 @@
         },
         "claimed_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time the current worker claim began before it rechecks the authoritative tuple.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37195,7 +37209,7 @@
         },
         "completed_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time this generation reached its terminal projection outcome.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37217,7 +37231,7 @@
         },
         "delivery_attempt_count": {
           "collation": null,
-          "comment": null,
+          "comment": "Bounded count of worker claims for this edge-projection operation.",
           "defaultExpression": "0",
           "generated": null,
           "generatedExpression": null,
@@ -37250,7 +37264,7 @@
         },
         "failure_message": {
           "collation": null,
-          "comment": null,
+          "comment": "Bounded diagnostic for a retryable or terminal edge-projection failure.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37261,7 +37275,7 @@
         },
         "generation": {
           "collation": null,
-          "comment": null,
+          "comment": "Monotonic delivery generation; an intent completes only for the generation it claimed.",
           "defaultExpression": "0",
           "generated": null,
           "generatedExpression": null,
@@ -37272,7 +37286,7 @@
         },
         "invalidated_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time a superseded edge tuple was explicitly invalidated.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37283,7 +37297,7 @@
         },
         "media_kind": {
           "collation": null,
-          "comment": null,
+          "comment": "Media family served by this delivery tuple; the check grows only when a typed asset branch is added.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37294,7 +37308,7 @@
         },
         "next_attempt_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Earliest durable retry time for a pending edge-projection operation.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37305,7 +37319,7 @@
         },
         "placement_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Optional typed placement owner required for revision-fenced placement routes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37316,7 +37330,7 @@
         },
         "placement_revision": {
           "collation": null,
-          "comment": null,
+          "comment": "Exact placement revision required by a placement route; stale revisions are independently withheld.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37327,7 +37341,7 @@
         },
         "projected_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time the worker successfully wrote the desired tuple to the edge authority.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37338,7 +37352,7 @@
         },
         "route_kind": {
           "collation": null,
-          "comment": null,
+          "comment": "Trusted delivery route shape: revision-fenced placement or the retained legacy image route.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -37349,7 +37363,7 @@
         },
         "state": {
           "collation": null,
-          "comment": null,
+          "comment": "Durable edge-projection workflow state: pending, claimed, completed, or failed.",
           "defaultExpression": "'pending'::text",
           "generated": null,
           "generatedExpression": null,
@@ -37357,6 +37371,17 @@
           "nullable": false,
           "ordinalPosition": 9,
           "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 18,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Durable exact delivery-tuple projection to the edge DynamoDB authority. Absence is denied by the edge. New media kinds add their own foreign-key column and check branch in a later migration.",
@@ -37487,7 +37512,9 @@
         "definition": "PRIMARY KEY (delivery_key)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_media_delivery_registry_records_updated_at": "CREATE TRIGGER trigger_media_delivery_registry_records_updated_at BEFORE UPDATE ON public.media_delivery_registry_records FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
       "uniqueConstraints": {}
     },
     "media_placements": {
@@ -37574,6 +37601,17 @@
           "nullable": false,
           "ordinalPosition": 3,
           "type": "integer"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Media-neutral, durable hosted-use placements. Delivery availability is revision-fenced and never inferred from an asset alone.",
@@ -37611,7 +37649,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_media_placement_guard": "CREATE TRIGGER trigger_media_placement_guard BEFORE DELETE OR UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_media_placement()"
+        "trigger_media_placement_guard": "CREATE TRIGGER trigger_media_placement_guard BEFORE DELETE OR UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_media_placement()",
+        "trigger_media_placements_updated_at": "CREATE TRIGGER trigger_media_placements_updated_at BEFORE UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },

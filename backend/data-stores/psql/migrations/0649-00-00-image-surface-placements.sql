@@ -27,6 +27,7 @@ CREATE TABLE image_surface_placements (
   community_id uuid REFERENCES communities(id) ON DELETE RESTRICT,
   user_profile_link_id uuid REFERENCES user_profile_links(id) ON DELETE SET NULL,
   retired_user_profile_link_id uuid,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (
     (surface_kind = 'user-profile-image' AND num_nonnulls(user_id, retired_user_id) = 1
       AND topic_id IS NULL AND community_id IS NULL AND user_profile_link_id IS NULL)
@@ -122,6 +123,10 @@ $$;
 CREATE TRIGGER trigger_image_surface_placement_guard
 BEFORE UPDATE OR DELETE ON image_surface_placements
 FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement();
+
+CREATE TRIGGER trigger_image_surface_placements_updated_at
+BEFORE UPDATE ON image_surface_placements
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 WITH bindings AS (
   SELECT uuidv7() AS placement_id, 'user-profile-image'::text AS surface_kind, profile_image_id AS image_id,
@@ -397,4 +402,13 @@ RETURNS boolean LANGUAGE sql STABLE AS $$
 $$;
 
 COMMENT ON TABLE image_surface_placements IS 'Immutable bindings for non-post persisted public image surfaces. Each surface has typed foreign-key columns; no polymorphic owner reference is permitted.';
+COMMENT ON COLUMN image_surface_placements.placement_id IS 'Stable media placement identifier that scopes public delivery to this persisted surface use.';
+COMMENT ON COLUMN image_surface_placements.surface_kind IS 'Typed persisted surface owning this image use; exactly one matching owner branch is required.';
+COMMENT ON COLUMN image_surface_placements.image_id IS 'Immutable byte asset bound to this surface placement.';
+COMMENT ON COLUMN image_surface_placements.user_id IS 'Current user owner for a profile-image surface; replaced by retired_user_id only during hard deletion.';
+COMMENT ON COLUMN image_surface_placements.retired_user_id IS 'Tombstone user UUID retained after hard deletion so the immutable surface provenance remains auditable without a foreign key.';
+COMMENT ON COLUMN image_surface_placements.topic_id IS 'Topic owner for a logo or hero image surface.';
+COMMENT ON COLUMN image_surface_placements.community_id IS 'Community owner for a profile or banner image surface.';
+COMMENT ON COLUMN image_surface_placements.user_profile_link_id IS 'Current profile-link owner; set NULL by the foreign-key deletion action before the tombstone handoff.';
+COMMENT ON COLUMN image_surface_placements.retired_user_profile_link_id IS 'Tombstone profile-link UUID retained after hard deletion so immutable surface provenance remains auditable without a foreign key.';
 COMMENT ON COLUMN images.id IS 'Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.';

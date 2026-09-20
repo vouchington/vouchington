@@ -66,6 +66,14 @@ export function noContentContract(source: string): ExtractedResponseContract {
   return { source, schema, hash: hashContractSchema(schema) }
 }
 
+export function binaryContentContract(source: string): ExtractedResponseContract {
+  const schema: ContractSchema = {
+    root: { type: 'string', format: 'binary' },
+    definitions: {},
+  }
+  return { source, schema, hash: hashContractSchema(schema) }
+}
+
 export function sourceLocation(sourceFile: ts.SourceFile, _node: ts.Node): string {
   const file = sourceFile.fileName.startsWith(repoRoot)
     ? relative(repoRoot, sourceFile.fileName)

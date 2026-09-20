@@ -35599,12 +35599,21 @@
           }
         ],
         "responses": {
+          "200": {
+            "content": {
+              "message/rfc822": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          },
           "default": {
             "$ref": "#/components/responses/Error"
           }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "route can send a raw buffered response body (ctx.response.buffer) whose shape is not statically determinable"
+        }
       }
     },
     "/api/v1/copyright-email-intakes/{id}/rejections": {
@@ -72678,7 +72687,6 @@
     "GET:/api/v1/admin/postgresql/stream",
     "GET:/api/v1/admin/valkey/stream",
     "GET:/api/v1/article-syncs/:jobId",
-    "GET:/api/v1/copyright-email-intakes/:id/raw",
     "GET:/api/v1/hostnames",
     "GET:/api/v1/hostnames/social",
     "GET:/api/v1/hostnames/top",

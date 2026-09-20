@@ -43,6 +43,14 @@ const sources = {
       )
     })
   `,
+  'raw-response': `
+    declare const app: any
+    declare const stream: unknown
+    declare function apiOpenApiRawResponse<K extends string, T>(key: K, mediaType: string, body: T): T
+    app.route('/api/v1/items/:id/raw').get((ctx: any) => {
+      ctx.pipeline(apiOpenApiRawResponse('GET:/api/v1/items/:id/raw', 'message/rfc822', stream))
+    })
+  `,
   'non-context-pipeline': `
     declare const worker: { pipeline(value: unknown): void }
     declare function apiResponse<K extends string, T>(key: K, body: T): T
@@ -162,6 +170,24 @@ describe('API response contract registry', () => {
     const response = operation.responses['200'] as OpenApiResponse
     expect(response.content!['application/json'].schema.anyOf).toHaveLength(2)
     expect(operation).not.toHaveProperty('x-schema-unavailable')
+    expect(document['x-unavailable-routes']).toEqual([])
+  })
+
+  it('publishes explicitly marked raw responses with their fixed media type', () => {
+    const contracts = discover('raw-response')
+    const document = buildOpenApiDocument(contracts, {})
+    expect(contracts['GET:/api/v1/items/:id/raw']).toMatchObject({
+      mediaType: 'message/rfc822',
+      statusKnowledge: 'default',
+      schema: { root: { type: 'string', format: 'binary' } },
+    })
+    const response = document.paths['/api/v1/items/{id}/raw']!.get!.responses[
+      '200'
+    ] as OpenApiResponse
+
+    expect(response).toMatchObject({
+      content: { 'message/rfc822': { schema: { type: 'string', format: 'binary' } } },
+    })
     expect(document['x-unavailable-routes']).toEqual([])
   })
 

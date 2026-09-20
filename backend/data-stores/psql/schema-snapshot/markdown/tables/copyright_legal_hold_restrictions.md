@@ -6,11 +6,11 @@ Typed provenance binding for restrictions reactivated by qualifying legal holds.
 
 Not partitioned — growth: bounded.
 
-| Column                                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment |
-| ------------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------- |
-| `copyright_restriction_id`                  | `uuid`                     | no       |                     |          |           |           |         |
-| `copyright_notice_legal_hold_assessment_id` | `uuid`                     | no       |                     |          |           |           |         |
-| `created_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |         |
+| Column                                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                               |
+| ------------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------- |
+| `copyright_restriction_id`                  | `uuid`                     | no       |                     |          |           |           | Restriction reactivated because a qualifying legal hold requires it to remain active. |
+| `copyright_notice_legal_hold_assessment_id` | `uuid`                     | no       |                     |          |           |           | Legal-hold assessment that established this immutable restriction provenance binding. |
+| `created_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                       |
 
 **Primary key:** `PRIMARY KEY (copyright_restriction_id)`
 

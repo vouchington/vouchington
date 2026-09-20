@@ -6,18 +6,18 @@ Durable outbox created atomically with every compliant initial-notice assessment
 
 Not partitioned — growth: bounded.
 
-| Column                                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment |
-| ------------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------- |
-| `copyright_notice_submission_assessment_id` | `uuid`                     | no       |                     |          |           |           |         |
-| `copyright_notice_id`                       | `uuid`                     | no       |                     |          |           |           |         |
-| `imposed_by_id`                             | `uuid`                     | yes      |                     |          |           |           |         |
-| `state`                                     | `text`                     | no       | `'pending'::text`   |          |           |           |         |
-| `attempt_count`                             | `integer`                  | no       | `0`                 |          |           |           |         |
-| `last_attempt_at`                           | `timestamp with time zone` | yes      |                     |          |           |           |         |
-| `completed_at`                              | `timestamp with time zone` | yes      |                     |          |           |           |         |
-| `created_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |         |
-| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |         |
-| `claimed_at`                                | `timestamp with time zone` | yes      |                     |          |           |           |         |
+| Column                                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                   |
+| ------------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_submission_assessment_id` | `uuid`                     | no       |                     |          |           |           | One-to-one assessment that authorized this enforcement request and supplies its idempotency identity.     |
+| `copyright_notice_id`                       | `uuid`                     | no       |                     |          |           |           | Initial notice whose compliant assessment requires every target restriction to be active.                 |
+| `imposed_by_id`                             | `uuid`                     | yes      |                     |          |           |           | Optional moderator whose approval imposed the associated assessment; NULL for automated form enforcement. |
+| `state`                                     | `text`                     | no       | `'pending'::text`   |          |           |           | Outbox lifecycle state: pending, worker-claimed, or completed after every target restriction is active.   |
+| `attempt_count`                             | `integer`                  | no       | `0`                 |          |           |           | Count of durable worker claims made to impose the request.                                                |
+| `last_attempt_at`                           | `timestamp with time zone` | yes      |                     |          |           |           | Most recent time a worker attempted to impose the required restrictions.                                  |
+| `completed_at`                              | `timestamp with time zone` | yes      |                     |          |           |           | Time all required target restrictions became active.                                                      |
+| `created_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                           |
+| `updated_at`                                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                           |
+| `claimed_at`                                | `timestamp with time zone` | yes      |                     |          |           |           | Time the current worker claim began.                                                                      |
 
 **Primary key:** `PRIMARY KEY (copyright_notice_submission_assessment_id)`
 
@@ -45,4 +45,5 @@ _none_
 - `idx_copyright_notice_enforcement_requests__pending`: `CREATE INDEX idx_copyright_notice_enforcement_requests__pending ON public.copyright_notice_enforcement_requests USING btree (updated_at, copyright_notice_submission_assessment_id) WHERE (state = 'pending'::text)`
 
 **Triggers:**
-_none_
+
+- `trigger_copyright_notice_enforcement_requests_updated_at`: `CREATE TRIGGER trigger_copyright_notice_enforcement_requests_updated_at BEFORE UPDATE ON public.copyright_notice_enforcement_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

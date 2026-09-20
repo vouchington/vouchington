@@ -36,6 +36,7 @@ import {
 import { assertNotSuspended } from '@services/users'
 import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
+import { apiOpenApiRawResponse } from '../../response-contract.mts'
 import {
   parseCopyrightCorrespondenceSubmission,
   parseCopyrightManualFallbackReason,
@@ -82,7 +83,15 @@ app.route('/api/v1/copyright-email-intakes/:id/raw').get(async (ctx: Context) =>
   ctx.set('Content-Disposition', 'attachment; filename="original-email.eml"')
   ctx.set('X-Content-Type-Options', 'nosniff')
   ctx.set('Digest', `sha-256=${Buffer.from(evidence.sha256, 'hex').toString('base64')}`)
-  await ctx.pipeline(Readable.from([evidence.bytes]))
+  await ctx.pipeline(
+    Readable.from([
+      apiOpenApiRawResponse(
+        'GET:/api/v1/copyright-email-intakes/:id/raw',
+        'message/rfc822',
+        evidence.bytes,
+      ),
+    ]),
+  )
 })
 
 app

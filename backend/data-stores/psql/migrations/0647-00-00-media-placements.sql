@@ -9,7 +9,8 @@ CREATE TABLE media_placements (
     (retired_at IS NULL AND retirement_reason IS NULL)
     OR (retired_at IS NOT NULL AND retirement_reason IS NOT NULL)
   ),
-  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE image_placements (
@@ -45,6 +46,10 @@ $$;
 CREATE TRIGGER trigger_media_placement_guard
 BEFORE UPDATE OR DELETE ON media_placements
 FOR EACH ROW EXECUTE FUNCTION fn_guard_media_placement();
+
+CREATE TRIGGER trigger_media_placements_updated_at
+BEFORE UPDATE ON media_placements
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE OR REPLACE FUNCTION fn_guard_image_placement()
 RETURNS trigger LANGUAGE plpgsql AS $$
@@ -91,3 +96,5 @@ COMMENT ON COLUMN media_placements.retirement_reason IS 'Why the placement retir
 COMMENT ON COLUMN media_placements.copyright_withheld_at IS 'Placement-specific copyright withholding state; shared source assets remain recoverable.';
 COMMENT ON TABLE image_placements IS 'Immutable image binding for a media placement. A post/image pair retains one stable placement identity across detach and reattach.';
 COMMENT ON COLUMN image_placements.placement_id IS 'Stable media placement identifier used by trusted delivery routes.';
+COMMENT ON COLUMN image_placements.post_id IS 'Hosting post for this immutable image use; retained with the placement so delivery authorization is scoped to the use.';
+COMMENT ON COLUMN image_placements.image_id IS 'Immutable byte asset bound to this post placement; an asset can have multiple separately authorized placements.';

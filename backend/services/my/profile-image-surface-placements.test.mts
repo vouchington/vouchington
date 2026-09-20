@@ -10,6 +10,7 @@ import {
 } from '@services/media-delivery-safety'
 import {
   createTestUserDirect,
+  completeTestMediaDeliveryRecord,
   getTestImageSurfacePlacements,
   getTestMediaDeliveryRecord,
   hardDeleteTestUser,
@@ -150,7 +151,7 @@ describe('image surface placement lifecycle', () => {
     ])
   })
 
-  it('projects safe surface tuples during registry rollout and hides withheld tuples immediately', async () => {
+  it('projects only completed allow tuples and hides withheld tuples immediately', async () => {
     const user = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
     await updateProfileImageId(user.id, imageId)
@@ -168,13 +169,22 @@ describe('image surface placement lifecycle', () => {
         revision: placement!.placement_revision,
         imageId,
       }),
-    ).toBe(true)
+    ).toBe(false)
 
     await stageAllCurrentImagePlacementDeliveryRecords()
     expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({ desired_state: 'allow' })
     expect(await getTestMediaDeliveryRecord(getLegacyImageDeliveryKey(imageId))).toMatchObject({
       desired_state: 'withheld',
     })
+    expect(
+      await isTestImagePlacementPubliclyProjected({
+        placementId: placement!.placement_id,
+        revision: placement!.placement_revision,
+        imageId,
+      }),
+    ).toBe(false)
+
+    await completeTestMediaDeliveryRecord(deliveryKey)
     expect(
       await isTestImagePlacementPubliclyProjected({
         placementId: placement!.placement_id,

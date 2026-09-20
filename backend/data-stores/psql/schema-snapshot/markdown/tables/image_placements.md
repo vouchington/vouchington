@@ -6,11 +6,11 @@ Immutable image binding for a media placement. A post/image pair retains one sta
 
 Not partitioned — growth: bounded.
 
-| Column         | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                            |
-| -------------- | ------ | -------- | ------- | -------- | --------- | --------- | ------------------------------------------------------------------ |
-| `placement_id` | `uuid` | no       |         |          |           |           | Stable media placement identifier used by trusted delivery routes. |
-| `post_id`      | `uuid` | no       |         |          |           |           |                                                                    |
-| `image_id`     | `uuid` | no       |         |          |           |           |                                                                    |
+| Column         | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                                |
+| -------------- | ------ | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `placement_id` | `uuid` | no       |         |          |           |           | Stable media placement identifier used by trusted delivery routes.                                                     |
+| `post_id`      | `uuid` | no       |         |          |           |           | Hosting post for this immutable image use; retained with the placement so delivery authorization is scoped to the use. |
+| `image_id`     | `uuid` | no       |         |          |           |           | Immutable byte asset bound to this post placement; an asset can have multiple separately authorized placements.        |
 
 **Primary key:** `PRIMARY KEY (placement_id)`
 
