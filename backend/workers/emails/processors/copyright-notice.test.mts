@@ -7,8 +7,11 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import {
+  createCopyrightEmailIntake,
   createCopyrightFormIntake,
   getCopyrightNoticePrivateAggregate,
+  recordCopyrightEmailParse,
+  rejectCopyrightEmailIntake,
 } from '@services/copyright-notices'
 import { processSendCopyrightNoticeEmail } from './copyright-notice.mts'
 
@@ -42,6 +45,40 @@ async function createEmailDeliveryIntent(): Promise<{ intentId: string; noticeId
   const intent = aggregate?.deliveryIntents.find(intent => intent.channel === 'email')
   if (!intent) throw new Error('fixture email delivery intent missing')
   return { intentId: intent.id, noticeId: intake.intake.copyright_notice_id }
+}
+
+async function createEmailIntakeResponse(): Promise<string> {
+  const moderatorRecord = await createTestUser()
+  const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+  const sesMessageId = `ses-intake-response-${crypto.randomUUID()}`
+  const { intake } = await createCopyrightEmailIntake({
+    sesMessageId,
+    receivedAt: new Date(),
+    rawStorageKey: `email/${sesMessageId}/original.eml`,
+    rawSha256: Buffer.alloc(32, 9),
+    rawMimeType: 'message/rfc822',
+    rawByteSize: 12,
+  })
+  await recordCopyrightEmailParse(intake, {
+    status: 'succeeded',
+    fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
+    subject: 'Copyright complaint',
+    bodyText: 'A copyright complaint.',
+    messageId: `<${crypto.randomUUID()}@example.test>`,
+    replyReferences: [],
+    attachments: [],
+  })
+  const rejected = await rejectCopyrightEmailIntake({
+    currentUser: moderator,
+    intakeId: intake.id,
+    recommendationId: null,
+    manualFallbackReason: 'The extraction agent was unavailable.',
+    rationale: 'The message needs more statutory information.',
+    responseKind: 'needs_information',
+    responseMessage: 'Please identify the work and material.',
+  })
+  if (!rejected.responseId) throw new Error('email response fixture missing')
+  return rejected.responseId
 }
 
 describe('processSendCopyrightNoticeEmail', () => {
@@ -99,5 +136,20 @@ describe('processSendCopyrightNoticeEmail', () => {
       processSendCopyrightNoticeEmail({ intentId: '00000000-0000-7000-8000-000000000041' }),
     ).resolves.toBe(false)
     expect(ses.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('sends a claimed staff response to a rejected inbound copyright email', async () => {
+    vi.spyOn(ses, 'sendEmail').mockResolvedValue({
+      MessageId: `ses-${crypto.randomUUID()}`,
+    } as never)
+    const intakeResponseId = await createEmailIntakeResponse()
+
+    await expect(processSendCopyrightNoticeEmail({ intakeResponseId })).resolves.toBe(true)
+    expect(ses.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: 'More information is needed for your copyright notice',
+        allowGlobalBcc: false,
+      }),
+    )
   })
 })
