@@ -2436,7 +2436,8 @@ rules:
     scope: repository
     options:
       allow:
-        - path: .github/workflows/docs-publish.test.mts
+        - file: .github/workflows/docs-publish.test.mts
+          text: "'timeout-minutes': 10,"
           reason: The exact job timeout is part of the immutable documentation-artifact contract.
 
   - name: setup-aws steps pair caller and nested timeouts
