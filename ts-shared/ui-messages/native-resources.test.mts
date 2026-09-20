@@ -82,6 +82,21 @@ describe('native UI message resources', () => {
     }
   })
 
+  it('does not export retired .NET agent-inspector messages', () => {
+    const files = generateNativeResourceFiles()
+    const dotnetEnglish = files.find(file => file.path.endsWith('/UiMessages.resx'))!
+
+    for (const key of [
+      'native.dotnet.engineering.agentConversationTitle',
+      'native.dotnet.engineering.agentConversationsTitle',
+      'native.swift.routeSurface.agentType',
+      'native.swift.routeSurface.agentUser',
+      'native.swift.routeSurface.created',
+    ]) {
+      expect(dotnetEnglish.content).not.toContain(`name="${key}"`)
+    }
+  })
+
   it('escapes resource values without changing their placeholders', () => {
     const catalogs = {
       en: structuredClone(enMessages),

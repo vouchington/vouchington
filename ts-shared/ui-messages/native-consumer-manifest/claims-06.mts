@@ -76,8 +76,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_06 = [
   { key: 'native.dotnet.dynamic.unmuteTopic', consumers: ['dotnet'] },
   { key: 'native.dotnet.dynamic.unread', consumers: ['dotnet'] },
   { key: 'native.dotnet.dynamic.unsave', consumers: ['dotnet'] },
-  { key: 'native.dotnet.engineering.agentConversationTitle', consumers: ['dotnet'] },
-  { key: 'native.dotnet.engineering.agentConversationsTitle', consumers: ['dotnet'] },
   { key: 'native.dotnet.engineering.databaseDescription', consumers: ['dotnet'] },
   { key: 'native.dotnet.engineering.description', consumers: ['dotnet'] },
   { key: 'native.dotnet.engineering.messageQueues', consumers: ['dotnet'] },
