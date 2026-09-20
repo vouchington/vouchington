@@ -322,6 +322,9 @@ importers:
         specifier: ^7.15.0
         version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.5.4)
     devDependencies:
+      '@modules/openrouter-utils':
+        specifier: workspace:^
+        version: link:../../modules/openrouter-utils
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds

@@ -38,6 +38,7 @@
     "openai": "^7.15.0"
   },
   "devDependencies": {
+    "@modules/openrouter-utils": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
