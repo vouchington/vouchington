@@ -43,15 +43,23 @@ function collectParameterSchemas(parameters: unknown): Record<string, unknown> {
       continue
     }
     if (!schema || typeof schema !== 'object') continue
-    const target = (grouped[carrier] ??= { type: 'object', properties: {}, required: [] })
+    let target = grouped[carrier]
+    if (!target) {
+      target = { type: 'object', properties: {}, required: [] }
+      grouped[carrier] = target
+    }
     // Node's IncomingHttpHeaders normalizes field names to lowercase. Keep the generated
     // contract aligned with the runtime carrier instead of preserving documentation casing.
     const propertyName = carrier === 'header' ? name.toLowerCase() : name
     ;(target.properties as Record<string, unknown>)[propertyName] = schema
     if (required === true) (target.required as string[]).push(propertyName)
   }
-  for (const target of Object.values(grouped)) {
-    if ((target.required as string[]).length === 0) delete target.required
-  }
-  return grouped
+  return Object.fromEntries(
+    Object.entries(grouped).map(([carrier, target]) => {
+      const required = target.required as string[]
+      if (required.length > 0) return [carrier, target]
+      const { required: _required, ...optionalTarget } = target
+      return [carrier, optionalTarget]
+    }),
+  )
 }

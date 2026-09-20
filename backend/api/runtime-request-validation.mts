@@ -19,6 +19,9 @@ export type RuntimeRequestValidationError = {
   message: string
 }
 
+type RequestCarrier = 'body' | 'header' | 'path' | 'query'
+const requestCarriers: readonly RequestCarrier[] = ['body', 'header', 'path', 'query']
+
 /**
  * Compiles the generated contract bundle once. Route families opt in after their standard
  * authentication/authorization preamble, so this boundary cannot disclose schemas to an
@@ -62,9 +65,6 @@ export class RuntimeRequestValidatorRegistry {
     return this.validators.has(operation)
   }
 }
-
-type RequestCarrier = 'body' | 'header' | 'path' | 'query'
-const requestCarriers: readonly RequestCarrier[] = ['body', 'header', 'path', 'query']
 
 /** Shared generated registry for B7b–e route-family adoption after auth and authorization. */
 export const runtimeRequestValidatorRegistry = new RuntimeRequestValidatorRegistry(
