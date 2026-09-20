@@ -22,6 +22,7 @@ export type AIAgentJobName =
   | 'appeal-resolution'
   | 'copyright-email-intake'
   | 'copyright-form-screening'
+  | 'copyright-appeal-recommendation'
   | 'story-clustering'
   | 'story-post'
   | 'backfill_report_judgements'
@@ -44,6 +45,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'appeal-resolution': 9,
   'copyright-email-intake': 9,
   'copyright-form-screening': 9,
+  'copyright-appeal-recommendation': 9,
   'story-post': 10,
   'story-clustering': 15,
   'autotagger-post': 20,
@@ -100,6 +102,7 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'appeal-resolution': true,
   'copyright-email-intake': true,
   'copyright-form-screening': true,
+  'copyright-appeal-recommendation': true,
   'story-post': true,
   'story-clustering': true,
   'autotagger-post': true,

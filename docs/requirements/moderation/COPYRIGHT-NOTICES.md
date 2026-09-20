@@ -22,6 +22,23 @@ evidence-storage dependencies are deployed and the activation checklist below is
 No caller may update copyright tables directly. In particular, a delivery worker cannot decide that
 a counter-notice is compliant or that a hold is qualifying.
 
+## Delivery obligations
+
+Each claimant receipt, poster restriction notice, status update, and counter-notice forwarding is
+recorded as an idempotent `copyright_notice_delivery_intents` row before it reaches a transport.
+The row is staff-visible through the private case aggregate and transitions from `pending` to
+`claimed`, then `sent`, `failed`, or `bounced`. A retryable failure returns to `pending`; bounded
+retry uses exponential backoff and stops after five attempts so poison deliveries cannot
+starve newer obligations; terminal failures remain staff-visible. A sent or bounced delivery cannot
+be rewritten. The transport records its SES message ID when available, so the
+SES bounce/complaint stream can be correlated without treating an attempted send as proof of
+delivery. Because SES acceptance precedes the database transition, a crash in that narrow window
+can produce a duplicate legal email; every send keeps the stable case and delivery identity so staff
+can correlate it. Copyright emails opt out of the generic operational BCC because they may contain
+statutory personal information. The email transport worker is activation-blocking infrastructure: it must claim these
+rows, resolve private recipient evidence case-scoped, and report SES bounces before
+`COPYRIGHT_INTAKE_ENABLED` is enabled.
+
 ## Derived state machine
 
 There is no mutable `status` column. State is derived from immutable facts and one-way timestamps.
@@ -46,7 +63,7 @@ stateDiagram-v2
 ```
 
 Every automatic provisional restriction, including a later restriction added to an already reviewed
-case, must receive its own recorded `confirm`, `modify`, or `reverse` decision from an identified
+case, must receive its own recorded `confirm` or `reverse` decision from an identified
 staff user. It cannot become final merely because no appeal arrived. Each restriction is independent.
 Reversing or lifting one does not override another copyright case, a safety restriction, deletion,
 replacement, or a court order affecting the same placement. Erasing a staff account may null its
@@ -75,14 +92,19 @@ case lifecycle, even when the recommendation is `potentially_valid`.
 Email extraction includes the claimant, contact, work, hosted URLs, signature, and both statutory
 declarations, with short source excerpts for moderator verification. Missing declarations remain
 null; the agent cannot infer them. RFC `Message-ID`, `In-Reply-To`, and `References` values are
-encrypted and retained for later case-scoped correspondence threading. An approval normally names
+encrypted and retained for case-scoped correspondence threading using keyed digests only. A matched reply keeps
+its original MIME evidence, still receives the same advisory structured extraction and recommendation, and waits
+for moderator classification; it cannot trigger a restriction or outbound message automatically. An approval normally names
 the recommendation reviewed. If the agent is unavailable or fails, staff must instead record an
 explicit manual-fallback reason while reviewing the preserved original.
 
 The signed-in form is already structured. Its agent is only an anti-spam and obvious-invalidity
-screen, not a legal merits decision. A complete signed-in submission with a `clear` screen may be
+screen, not a legal merits decision. A complete signed-in submission with a
+`not_obviously_invalid` screen may be
 provisionally withheld automatically, but it enters urgent mandatory human review. Guest forms
-always require moderator approval. Form routes require Turnstile, enforce CSRF through the normal
+always require moderator approval. A signed-in form classified as `invalid_or_spam`, or left without
+a result after agent failure, is held for a moderator decision so a false positive or exhausted
+agent outage cannot strand a legal notice. Form routes require Turnstile, enforce CSRF through the normal
 authenticated route boundary, apply route-scoped rate limits, and store only a purpose-separated
 HMAC-derived guest network digest rather than the source address.
 

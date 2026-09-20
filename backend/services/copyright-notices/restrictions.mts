@@ -2,6 +2,8 @@ import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightRestrictionRecord } from './types.mts'
+import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 
 export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   noticeId: string
@@ -81,14 +83,71 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const { rows } =
     await transaction<CopyrightRestrictionRecord>(sql`/* acceptCopyrightNoticeAndImposeRestriction */
     INSERT INTO copyright_restrictions (
-      copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id
-    ) VALUES (${input.targetId}, ${input.assessmentId}, ${input.imposedAt}, ${input.imposedById})
+      copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id,
+      human_reviewed_at, human_review_action, human_reviewed_by_id
+    ) VALUES (
+      ${input.targetId}, ${input.assessmentId}, ${input.imposedAt}, ${input.imposedById},
+      ${input.imposedById ? input.imposedAt : null}, ${input.imposedById ? 'confirm' : null},
+      ${input.imposedById}
+    )
     ON CONFLICT (copyright_notice_target_id) WHERE lifted_at IS NULL DO NOTHING
     RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
       human_reviewed_at, human_review_action, human_reviewed_by_id
   `)
   const restriction = rows[0]
   assert(restriction, 409, 'An active copyright restriction already exists for this target')
+  const { rows: posterRows } = await transaction<{
+    user_id: string
+  }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:posters */
+    SELECT DISTINCT post.created_by_id AS user_id
+    FROM copyright_notice_target_images target_image
+    JOIN copyright_notice_targets target ON target.id = target_image.copyright_notice_target_id
+    JOIN post_images post_image ON post_image.image_id = target_image.image_id
+    JOIN posts post ON post.id = post_image.post_id
+    WHERE target_image.copyright_notice_target_id = ${input.targetId}
+      AND target.placement_key = concat('post-image:', post_image.post_id, ':', target_image.image_id)
+      AND post.deleted_at IS NULL
+  `)
+  for (const poster of posterRows) {
+    // oxlint-disable-next-line no-await-in-loop -- each unique recipient has an independent legal delivery obligation.
+    await createCopyrightDeliveryIntent(
+      {
+        noticeId: input.noticeId,
+        submissionId: null,
+        correspondenceId: null,
+        recipientUserId: poster.user_id,
+        recipientRole: 'poster',
+        deliveryKind: 'poster_restriction_notice',
+        channel: 'in_app',
+        idempotencyKey: `copyright-restriction:${restriction.id}:poster:${poster.user_id}`,
+      },
+      transaction,
+    )
+    // oxlint-disable-next-line no-await-in-loop -- correspondence follows its recipient's durable in-app obligation.
+    const correspondence = await createDeterministicCopyrightCorrespondenceInTransaction(
+      {
+        noticeId: input.noticeId,
+        submissionId: null,
+        correspondenceKind: 'restriction_notice',
+        bodyText: `Material associated with your account has been restricted in response to copyright case ${input.noticeId}. You may submit an appeal or counter-notice through the case page.`,
+      },
+      transaction,
+    )
+    // oxlint-disable-next-line no-await-in-loop -- each affected poster has independent legal email evidence and delivery.
+    await createCopyrightDeliveryIntent(
+      {
+        noticeId: input.noticeId,
+        submissionId: null,
+        correspondenceId: correspondence.id,
+        recipientUserId: poster.user_id,
+        recipientRole: 'poster',
+        deliveryKind: 'poster_restriction_notice',
+        channel: 'email',
+        idempotencyKey: `copyright-restriction:${restriction.id}:poster:${poster.user_id}:email`,
+      },
+      transaction,
+    )
+  }
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
     VALUES (${input.noticeId}, 'provisional_restriction_imposed', ${input.imposedById}, '{}'::jsonb)

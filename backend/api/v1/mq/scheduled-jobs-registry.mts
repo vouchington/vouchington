@@ -8,6 +8,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'ses-inbound-reconciliation',
   'community-activity-digest-weekly',
   'notification-push-intent-recovery',
+  'copyright-delivery-reconciliation',
   'dispatchRssFeeds',
   'refreshRssFeedCrawlTiers',
   'refreshTopHashtags',

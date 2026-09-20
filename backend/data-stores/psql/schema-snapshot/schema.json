@@ -380,7 +380,8 @@
         "community_application_decision",
         "community_role_change",
         "community_ownership_transfer",
-        "community_activity_digest"
+        "community_activity_digest",
+        "copyright_notice"
       ]
     },
     "notification_push_endpoint_status": {
@@ -618,7 +619,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_assessment_supersession()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.supersedes_assessment_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submission_assessments prior\n    WHERE prior.id = NEW.supersedes_assessment_id\n      AND prior.copyright_notice_submission_id = NEW.copyright_notice_submission_id\n  ) THEN\n    RAISE EXCEPTION 'copyright assessment corrections must stay within one submission' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_automated_assessment_screening": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_automated_assessment_screening()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.assessed_by_id IS NOT NULL\n    AND NEW.assessed_by_id IS NULL AND NEW.copyright_notice_form_screening_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF NEW.assessed_by_id IS NULL AND NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_form_screenings screening\n    JOIN copyright_notice_form_intakes intake\n      ON intake.id = screening.copyright_notice_form_intake_id\n    WHERE screening.id = NEW.copyright_notice_form_screening_id\n      AND screening.recommendation = 'clear'\n      AND intake.copyright_notice_submission_id = NEW.copyright_notice_submission_id\n  ) THEN\n    RAISE EXCEPTION 'automated copyright assessment requires its exact clear form screening'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.assessed_by_id IS NOT NULL AND NEW.copyright_notice_form_screening_id IS NOT NULL THEN\n    RAISE EXCEPTION 'human copyright assessment cannot claim an automated form screening'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_automated_assessment_screening()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.assessed_by_id IS NOT NULL\n    AND NEW.assessed_by_id IS NULL AND NEW.copyright_notice_form_screening_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF NEW.assessed_by_id IS NULL AND NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_form_screenings screening\n    JOIN copyright_notice_form_intakes intake\n      ON intake.id = screening.copyright_notice_form_intake_id\n    WHERE screening.id = NEW.copyright_notice_form_screening_id\n      AND screening.recommendation = 'not_obviously_invalid'\n      AND intake.copyright_notice_submission_id = NEW.copyright_notice_submission_id\n  ) THEN\n    RAISE EXCEPTION 'automated copyright assessment requires its exact non-spam form screening'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.assessed_by_id IS NOT NULL AND NEW.copyright_notice_form_screening_id IS NOT NULL THEN\n    RAISE EXCEPTION 'human copyright assessment cannot claim an automated form screening'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_correspondence": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_correspondence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright correspondence is a retained legal record' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.copyright_notice_id,\n    OLD.copyright_notice_submission_id,\n    OLD.direction,\n    OLD.composition_kind,\n    OLD.correspondence_kind,\n    NULL\n  ) IS DISTINCT FROM ROW(\n    NEW.copyright_notice_id,\n    NEW.copyright_notice_submission_id,\n    NEW.direction,\n    NEW.composition_kind,\n    NEW.correspondence_kind,\n    NULL\n  ) THEN\n    RAISE EXCEPTION 'copyright correspondence identity is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.direction = 'inbound' AND OLD.body_ciphertext IS DISTINCT FROM NEW.body_ciphertext THEN\n    RAISE EXCEPTION 'inbound copyright correspondence body is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_at IS NOT NULL AND ROW(\n    OLD.body_ciphertext,\n    OLD.approved_at\n  ) IS DISTINCT FROM ROW(\n    NEW.body_ciphertext,\n    NEW.approved_at\n  ) THEN\n    RAISE EXCEPTION 'approved copyright correspondence is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.sent_at IS NOT NULL AND OLD.body_ciphertext IS DISTINCT FROM NEW.body_ciphertext THEN\n    RAISE EXCEPTION 'sent copyright correspondence body is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_at IS NULL AND NEW.approved_at IS NOT NULL AND NEW.approved_by_id IS NULL THEN\n    RAISE EXCEPTION 'copyright correspondence approval requires an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.drafted_by_id IS DISTINCT FROM NEW.drafted_by_id AND NEW.drafted_by_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright correspondence drafter cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_by_id IS DISTINCT FROM NEW.approved_by_id\n    AND OLD.approved_by_id IS NOT NULL\n    AND NEW.approved_by_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright correspondence approver cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.sent_at IS NOT NULL AND OLD.sent_at IS DISTINCT FROM NEW.sent_at THEN\n    RAISE EXCEPTION 'copyright correspondence delivery is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -628,6 +629,12 @@
     },
     "fn_guard_copyright_deadline": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_deadline()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright deadlines are durable statutory records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.copyright_notice_id,\n    OLD.qualifying_counter_notice_assessment_id,\n    OLD.earliest_restoration_at,\n    OLD.escalation_at,\n    OLD.restoration_deadline_at\n  ) IS DISTINCT FROM ROW(\n    NEW.copyright_notice_id,\n    NEW.qualifying_counter_notice_assessment_id,\n    NEW.earliest_restoration_at,\n    NEW.escalation_at,\n    NEW.restoration_deadline_at\n  ) THEN\n    RAISE EXCEPTION 'copyright deadline origin and schedule are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.resolved_at IS NOT NULL OR OLD.cancelled_at IS NOT NULL)\n    AND ROW(OLD.resolved_at, OLD.cancelled_at) IS DISTINCT FROM ROW(NEW.resolved_at, NEW.cancelled_at) THEN\n    RAISE EXCEPTION 'copyright deadline terminal outcome is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_delivery_intent_transition": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_delivery_intent_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id\n    OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id\n    OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id\n    OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role\n    OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind\n    OR NEW.channel IS DISTINCT FROM OLD.channel\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.recipient_user_id IS DISTINCT FROM NEW.recipient_user_id THEN\n    IF OLD.recipient_user_id IS NULL OR NEW.recipient_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright delivery recipient cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.recipient_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN\n    RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.state IN ('bounced', 'failed') AND NEW.state IS DISTINCT FROM OLD.state)\n    OR (OLD.state = 'sent' AND NEW.state NOT IN ('sent', 'bounced')) THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_email_correspondence_recommendation_scope": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_correspondence_recommendation_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.copyright_notice_email_intake_recommendation_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation\n    WHERE recommendation.id = NEW.copyright_notice_email_intake_recommendation_id\n      AND recommendation.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id\n  ) THEN\n    RAISE EXCEPTION 'copyright email correspondence recommendation must belong to the same intake' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_email_review_recommendation_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_review_recommendation_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.copyright_notice_email_intake_recommendation_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation\n    WHERE recommendation.id = NEW.copyright_notice_email_intake_recommendation_id\n      AND recommendation.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id\n  ) THEN\n    RAISE EXCEPTION 'copyright email review recommendation must belong to the same intake' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -18799,9 +18806,562 @@
         }
       }
     },
+    "copyright_notice_appeal_recommendations": {
+      "checkConstraints": {
+        "copyright_notice_appeal_recommendati_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))",
+        "copyright_notice_appeal_recommendations_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
+        "copyright_notice_appeal_recommendations_model_check": "CHECK (((char_length(model) >= 1) AND (char_length(model) <= 255)))",
+        "copyright_notice_appeal_recommendations_prompt_version_check": "CHECK (((char_length(prompt_version) >= 1) AND (char_length(prompt_version) <= 100)))",
+        "copyright_notice_appeal_recommendations_recommendation_check": "CHECK ((recommendation = ANY (ARRAY['confirm'::text, 'modify'::text, 'reverse'::text, 'uncertain'::text])))"
+      },
+      "columns": {
+        "copyright_notice_submission_id": {
+          "collation": null,
+          "comment": "The immutable ordinary appeal receipt evaluated by the agent.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "input_sha256": {
+          "collation": null,
+          "comment": "Digest of the structured appeal and notice context supplied to the model.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "bytea"
+        },
+        "model": {
+          "collation": null,
+          "comment": "Model identifier recorded for recommendation provenance.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "prompt_version": {
+          "collation": null,
+          "comment": "Versioned advisory recommendation prompt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted bounded agent rationale visible only to authorized staff.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "recommendation": {
+          "collation": null,
+          "comment": "Bounded advisory disposition for a moderator; no worker acts on it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable advisory recommendations for a moderator evaluating an ordinary copyright appeal; never an authorization to alter material availability.",
+      "foreignKeys": {
+        "copyright_notice_appeal_recom_copyright_notice_submission__fkey": {
+          "columns": ["copyright_notice_submission_id"],
+          "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_appeal_recommendations_id_submission_unique": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_appeal_recommendations_id_submission_unique ON public.copyright_notice_appeal_recommendations USING btree (id, copyright_notice_submission_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_appeal_recom_copyright_notice_submission_i_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_appeal_recom_copyright_notice_submission_i_key ON public.copyright_notice_appeal_recommendations USING btree (copyright_notice_submission_id, input_sha256, prompt_version)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "input_sha256",
+              "descending": false,
+              "expression": "input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            },
+            {
+              "column": "prompt_version",
+              "descending": false,
+              "expression": "prompt_version",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_appeal_recommendations_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_appeal_recommendations_pkey ON public.copyright_notice_appeal_recommendations USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_appeal_recommendations__submission": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_appeal_recommendations__submission ON public.copyright_notice_appeal_recommendations USING btree (copyright_notice_submission_id, id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_appeal_recommendations_immutable": "CREATE TRIGGER trigger_copyright_appeal_recommendations_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_appeal_recommendations FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()"
+      },
+      "uniqueConstraints": {
+        "copyright_appeal_recommendations_id_submission_unique": {
+          "columns": ["id", "copyright_notice_submission_id"],
+          "definition": "UNIQUE (id, copyright_notice_submission_id)"
+        },
+        "copyright_notice_appeal_recom_copyright_notice_submission_i_key": {
+          "columns": ["copyright_notice_submission_id", "input_sha256", "prompt_version"],
+          "definition": "UNIQUE (copyright_notice_submission_id, input_sha256, prompt_version)"
+        }
+      }
+    },
+    "copyright_notice_appeal_reviews": {
+      "checkConstraints": {
+        "copyright_notice_appeal_revi_manual_fallback_reason_ciphe_check": "CHECK (((manual_fallback_reason_ciphertext IS NULL) OR ((char_length(manual_fallback_reason_ciphertext) >= 1) AND (char_length(manual_fallback_reason_ciphertext) <= 1048576))))",
+        "copyright_notice_appeal_reviews_action_check": "CHECK ((action = ANY (ARRAY['confirm'::text, 'reverse'::text])))",
+        "copyright_notice_appeal_reviews_check": "CHECK (((copyright_notice_appeal_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL)))",
+        "copyright_notice_appeal_reviews_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))"
+      },
+      "columns": {
+        "action": {
+          "collation": null,
+          "comment": "Confirm, modify, or reverse decision for the restriction.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "copyright_notice_appeal_recommendation_id": {
+          "collation": null,
+          "comment": "Advisory agent recommendation retained as provenance.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "copyright_notice_submission_id": {
+          "collation": null,
+          "comment": "Informal appeal decided by the moderator.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_restriction_id": {
+          "collation": null,
+          "comment": "Target restriction affected by the decision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "manual_fallback_reason_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted reason staff proceeded without an agent recommendation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted moderator rationale.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "reviewed_at": {
+          "collation": null,
+          "comment": "Time the moderator decided the appeal.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "reviewed_by_id": {
+          "collation": null,
+          "comment": "Moderator who decided the appeal.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable target-level moderator decisions on informal copyright appeals; agent recommendations remain advisory.",
+      "foreignKeys": {
+        "copyright_notice_appeal_revie_copyright_notice_appeal_reco_fkey": {
+          "columns": [
+            "copyright_notice_appeal_recommendation_id",
+            "copyright_notice_submission_id"
+          ],
+          "definition": "FOREIGN KEY (copyright_notice_appeal_recommendation_id, copyright_notice_submission_id) REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "copyright_notice_submission_id"],
+          "referencedTable": "copyright_notice_appeal_recommendations",
+          "validated": true
+        },
+        "copyright_notice_appeal_revie_copyright_notice_submission__fkey": {
+          "columns": ["copyright_notice_submission_id"],
+          "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        },
+        "copyright_notice_appeal_reviews_copyright_restriction_id_fkey": {
+          "columns": ["copyright_restriction_id"],
+          "definition": "FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_restrictions",
+          "validated": true
+        },
+        "copyright_notice_appeal_reviews_reviewed_by_id_fkey": {
+          "columns": ["reviewed_by_id"],
+          "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_notice_appeal_revie_copyright_notice_submission_i_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_appeal_revie_copyright_notice_submission_i_key ON public.copyright_notice_appeal_reviews USING btree (copyright_notice_submission_id, copyright_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_restriction_id",
+              "descending": false,
+              "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_appeal_reviews_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_appeal_reviews_pkey ON public.copyright_notice_appeal_reviews USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_appeal_reviews__recommendation": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_appeal_reviews__recommendation ON public.copyright_notice_appeal_reviews USING btree (copyright_notice_appeal_recommendation_id) WHERE (copyright_notice_appeal_recommendation_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_appeal_recommendation_id",
+              "descending": false,
+              "expression": "copyright_notice_appeal_recommendation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_appeal_recommendation_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_appeal_reviews__restriction": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_appeal_reviews__restriction ON public.copyright_notice_appeal_reviews USING btree (copyright_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_restriction_id",
+              "descending": false,
+              "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_appeal_reviews__reviewer": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_appeal_reviews__reviewer ON public.copyright_notice_appeal_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reviewed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_appeal_reviews_immutable": "CREATE TRIGGER trigger_copyright_appeal_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('reviewed_by_id')",
+        "trigger_copyright_appeal_reviews_require_actor": "CREATE TRIGGER trigger_copyright_appeal_reviews_require_actor BEFORE INSERT ON public.copyright_notice_appeal_reviews FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('reviewed_by_id')"
+      },
+      "uniqueConstraints": {
+        "copyright_notice_appeal_revie_copyright_notice_submission_i_key": {
+          "columns": ["copyright_notice_submission_id", "copyright_restriction_id"],
+          "definition": "UNIQUE (copyright_notice_submission_id, copyright_restriction_id)"
+        }
+      }
+    },
     "copyright_notice_correspondence_messages": {
       "checkConstraints": {
-        "copyright_notice_correspondence_messa_correspondence_kind_check": "CHECK ((correspondence_kind = ANY (ARRAY['receipt'::text, 'request_information'::text, 'restriction_notice'::text, 'counter_notice_forwarding'::text, 'restoration_notice'::text, 'status_update'::text])))",
+        "copyright_correspondence_kind_check": "CHECK ((correspondence_kind = ANY (ARRAY['receipt'::text, 'request_information'::text, 'restriction_notice'::text, 'counter_notice_forwarding'::text, 'restoration_notice'::text, 'status_update'::text, 'inbound_message'::text])))",
         "copyright_notice_correspondence_messages_body_ciphertext_check": "CHECK (((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 1048576)))",
         "copyright_notice_correspondence_messages_check": "CHECK (((approved_at IS NULL) OR (composition_kind = 'agent'::text)))",
         "copyright_notice_correspondence_messages_check1": "CHECK (((approved_at IS NOT NULL) OR (approved_by_id IS NULL)))",
@@ -18856,6 +19416,17 @@
           "nullable": false,
           "ordinalPosition": 5,
           "type": "text"
+        },
+        "copyright_notice_email_intake_id": {
+          "collation": null,
+          "comment": "Immutable original email intake containing the raw MIME evidence for an inbound correspondence.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "uuid"
         },
         "copyright_notice_id": {
           "collation": null,
@@ -18994,10 +19565,46 @@
           "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
+        },
+        "fk_copyright_correspondence__email_intake": {
+          "columns": ["copyright_notice_email_intake_id"],
+          "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
         }
       },
       "growth": "unbounded",
       "indexes": {
+        "copyright_notice_correspondence_id_notice_unique": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_correspondence_id_notice_unique ON public.copyright_notice_correspondence_messages USING btree (id, copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "copyright_notice_correspondence_messages_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -19016,6 +19623,26 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_copyright_correspondence__email_intake": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_correspondence__email_intake ON public.copyright_notice_correspondence_messages USING btree (copyright_notice_email_intake_id) WHERE (copyright_notice_email_intake_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_email_intake_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_copyright_notice_correspondence__approved_by": {
@@ -19117,7 +19744,12 @@
         "trigger_copyright_correspondence_guard": "CREATE TRIGGER trigger_copyright_correspondence_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_correspondence()",
         "trigger_copyright_correspondence_updated_at": "CREATE TRIGGER trigger_copyright_correspondence_updated_at BEFORE UPDATE ON public.copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "copyright_notice_correspondence_id_notice_unique": {
+          "columns": ["id", "copyright_notice_id"],
+          "definition": "UNIQUE (id, copyright_notice_id)"
+        }
+      }
     },
     "copyright_notice_counter_notice_assessment_targets": {
       "checkConstraints": {},
@@ -19257,6 +19889,291 @@
         "trigger_copyright_notice_counter_assessment_targets_scope": "CREATE TRIGGER trigger_copyright_notice_counter_assessment_targets_scope BEFORE INSERT ON public.copyright_notice_counter_notice_assessment_targets FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_counter_notice_assessment_target_scope()"
       },
       "uniqueConstraints": {}
+    },
+    "copyright_notice_counter_notice_reviews": {
+      "checkConstraints": {
+        "copyright_notice_counter_notice_revi_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))",
+        "copyright_notice_counter_notice_reviews_check": "CHECK ((accepted = (copyright_notice_deadline_id IS NOT NULL)))"
+      },
+      "columns": {
+        "accepted": {
+          "collation": null,
+          "comment": "Whether the counter-notice was formally compliant.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "boolean"
+        },
+        "copyright_notice_deadline_id": {
+          "collation": null,
+          "comment": "Restoration clock created for an accepted counter-notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "copyright_notice_submission_assessment_id": {
+          "collation": null,
+          "comment": "Human compliance assessment created by the review.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "copyright_notice_submission_id": {
+          "collation": null,
+          "comment": "Statutory counter-notice reviewed by staff.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted moderator rationale.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "reviewed_at": {
+          "collation": null,
+          "comment": "Time the moderator completed formal review.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "reviewed_by_id": {
+          "collation": null,
+          "comment": "Moderator who completed formal review.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable moderator formal-compliance decisions for statutory US counter-notices.",
+      "foreignKeys": {
+        "copyright_notice_counter_not_copyright_notice_submission__fkey1": {
+          "columns": ["copyright_notice_submission_id"],
+          "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        },
+        "copyright_notice_counter_not_copyright_notice_submission__fkey2": {
+          "columns": ["copyright_notice_submission_assessment_id"],
+          "definition": "FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_submission_assessments",
+          "validated": true
+        },
+        "copyright_notice_counter_noti_copyright_notice_deadline_id_fkey": {
+          "columns": ["copyright_notice_deadline_id"],
+          "definition": "FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_deadlines",
+          "validated": true
+        },
+        "copyright_notice_counter_notice_reviews_reviewed_by_id_fkey": {
+          "columns": ["reviewed_by_id"],
+          "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_notice_counter_noti_copyright_notice_submission_a_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_counter_noti_copyright_notice_submission_a_key ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_submission_assessment_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_assessment_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_assessment_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_counter_noti_copyright_notice_submission_i_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_counter_noti_copyright_notice_submission_i_key ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_submission_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_counter_notic_copyright_notice_deadline_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_counter_notic_copyright_notice_deadline_id_key ON public.copyright_notice_counter_notice_reviews USING btree (copyright_notice_deadline_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_deadline_id",
+              "descending": false,
+              "expression": "copyright_notice_deadline_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_counter_notice_reviews_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_counter_notice_reviews_pkey ON public.copyright_notice_counter_notice_reviews USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_counter_notice_reviews__reviewer": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_counter_notice_reviews__reviewer ON public.copyright_notice_counter_notice_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reviewed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_counter_reviews_immutable": "CREATE TRIGGER trigger_copyright_counter_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_counter_notice_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('reviewed_by_id')",
+        "trigger_copyright_counter_reviews_require_actor": "CREATE TRIGGER trigger_copyright_counter_reviews_require_actor BEFORE INSERT ON public.copyright_notice_counter_notice_reviews FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('reviewed_by_id')"
+      },
+      "uniqueConstraints": {
+        "copyright_notice_counter_noti_copyright_notice_submission_a_key": {
+          "columns": ["copyright_notice_submission_assessment_id"],
+          "definition": "UNIQUE (copyright_notice_submission_assessment_id)"
+        },
+        "copyright_notice_counter_noti_copyright_notice_submission_i_key": {
+          "columns": ["copyright_notice_submission_id"],
+          "definition": "UNIQUE (copyright_notice_submission_id)"
+        },
+        "copyright_notice_counter_notic_copyright_notice_deadline_id_key": {
+          "columns": ["copyright_notice_deadline_id"],
+          "definition": "UNIQUE (copyright_notice_deadline_id)"
+        }
+      }
     },
     "copyright_notice_deadlines": {
       "checkConstraints": {
@@ -19512,6 +20429,1078 @@
         }
       }
     },
+    "copyright_notice_delivery_intents": {
+      "checkConstraints": {
+        "copyright_delivery_intents_email_correspondence": "CHECK (((channel <> 'email'::text) OR (copyright_notice_correspondence_message_id IS NOT NULL)))",
+        "copyright_notice_delivery_intents_channel_check": "CHECK ((channel = ANY (ARRAY['in_app'::text, 'email'::text])))",
+        "copyright_notice_delivery_intents_check": "CHECK (((recipient_role <> 'poster'::text) OR (recipient_user_id IS NOT NULL) OR (recipient_user_erased_at IS NOT NULL)))",
+        "copyright_notice_delivery_intents_check1": "CHECK (((recipient_role <> 'correspondent'::text) OR (recipient_user_id IS NULL)))",
+        "copyright_notice_delivery_intents_check2": "CHECK (((recipient_user_erased_at IS NULL) OR (recipient_user_id IS NULL)))",
+        "copyright_notice_delivery_intents_check3": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'sent'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'failed'::text) AND (delivery_attempted_at IS NOT NULL) AND (failed_at IS NOT NULL) AND (sent_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'bounced'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (bounced_at IS NOT NULL) AND (failed_at IS NULL))))",
+        "copyright_notice_delivery_intents_check4": "CHECK (((failure_ciphertext IS NULL) OR (state = ANY (ARRAY['pending'::text, 'failed'::text]))))",
+        "copyright_notice_delivery_intents_check5": "CHECK ((((state = 'pending'::text) AND ((delivery_attempt_count = 0) OR (next_attempt_at IS NOT NULL))) OR ((state <> 'pending'::text) AND (next_attempt_at IS NULL))))",
+        "copyright_notice_delivery_intents_check6": "CHECK (((ses_message_id IS NULL) OR (channel = 'email'::text)))",
+        "copyright_notice_delivery_intents_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
+        "copyright_notice_delivery_intents_delivery_kind_check": "CHECK ((delivery_kind = ANY (ARRAY['claimant_receipt'::text, 'status_update'::text, 'poster_restriction_notice'::text, 'counter_notice_forwarding'::text])))",
+        "copyright_notice_delivery_intents_failure_ciphertext_check": "CHECK (((failure_ciphertext IS NULL) OR ((char_length(failure_ciphertext) >= 1) AND (char_length(failure_ciphertext) <= 1048576))))",
+        "copyright_notice_delivery_intents_idempotency_key_check": "CHECK (((char_length(idempotency_key) >= 1) AND (char_length(idempotency_key) <= 512)))",
+        "copyright_notice_delivery_intents_recipient_role_check": "CHECK ((recipient_role = ANY (ARRAY['claimant'::text, 'poster'::text, 'correspondent'::text])))",
+        "copyright_notice_delivery_intents_ses_message_id_check": "CHECK (((ses_message_id IS NULL) OR ((char_length(ses_message_id) >= 1) AND (char_length(ses_message_id) <= 1024))))",
+        "copyright_notice_delivery_intents_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'sent'::text, 'failed'::text, 'bounced'::text])))"
+      },
+      "columns": {
+        "bounced_at": {
+          "collation": null,
+          "comment": "Time SES reported a bounce or complaint for an accepted email.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18,
+          "type": "timestamp with time zone"
+        },
+        "channel": {
+          "collation": null,
+          "comment": "Transport channel used for the delivery.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "claimed_at": {
+          "collation": null,
+          "comment": "Time a transport worker most recently claimed the obligation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "copyright_notice_correspondence_message_id": {
+          "collation": null,
+          "comment": "Optional private correspondence body delivered by this obligation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Copyright case that owns the delivery obligation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_notice_submission_id": {
+          "collation": null,
+          "comment": "Optional immutable submission that caused the delivery.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
+          "type": "timestamp with time zone"
+        },
+        "delivery_attempt_count": {
+          "collation": null,
+          "comment": "Number of claimed transport attempts, capped to prevent an unhealthy obligation starving other delivery work.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "integer"
+        },
+        "delivery_attempted_at": {
+          "collation": null,
+          "comment": "Time the terminal transport attempt began.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "delivery_kind": {
+          "collation": null,
+          "comment": "Legal event communicated by this delivery.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "failed_at": {
+          "collation": null,
+          "comment": "Time the most recent retryable transport attempt failed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "timestamp with time zone"
+        },
+        "failure_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted bounded transport failure visible to staff; retries retain the failure history through lifecycle events.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "idempotency_key": {
+          "collation": null,
+          "comment": "Stable domain key preventing duplicate delivery obligations.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "text"
+        },
+        "next_attempt_at": {
+          "collation": null,
+          "comment": "Earliest retry time after a retryable transport failure; NULL for terminal states.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "timestamp with time zone"
+        },
+        "recipient_role": {
+          "collation": null,
+          "comment": "Legal role of the recipient: claimant, affected poster, or external email correspondent.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "recipient_user_erased_at": {
+          "collation": null,
+          "comment": "Time account erasure removed a poster recipient reference while retaining the legal delivery record.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "recipient_user_id": {
+          "collation": null,
+          "comment": "Voucha user receiving the notice when the recipient has an account.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "sent_at": {
+          "collation": null,
+          "comment": "Time the provider accepted the delivery.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "timestamp with time zone"
+        },
+        "ses_message_id": {
+          "collation": null,
+          "comment": "SES provider identifier used to correlate delivery feedback.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "text"
+        },
+        "state": {
+          "collation": null,
+          "comment": "Durable transport lifecycle state.",
+          "defaultExpression": "'pending'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 22,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable, idempotent legal-notice delivery obligations. Transport workers claim and transition intents; they cannot alter case facts.",
+      "foreignKeys": {
+        "copyright_notice_delivery_int_copyright_notice_corresponde_fkey": {
+          "columns": ["copyright_notice_correspondence_message_id", "copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id) REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "copyright_notice_id"],
+          "referencedTable": "copyright_notice_correspondence_messages",
+          "validated": true
+        },
+        "copyright_notice_delivery_int_copyright_notice_submission__fkey": {
+          "columns": ["copyright_notice_submission_id", "copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "copyright_notice_id"],
+          "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        },
+        "copyright_notice_delivery_intents_copyright_notice_id_fkey": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "copyright_notice_delivery_intents_recipient_user_id_fkey": {
+          "columns": ["recipient_user_id"],
+          "definition": "FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_notice_delivery_intents_idempotency_key_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_delivery_intents_idempotency_key_key ON public.copyright_notice_delivery_intents USING btree (idempotency_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "idempotency_key",
+              "descending": false,
+              "expression": "idempotency_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_delivery_intents_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_delivery_intents_pkey ON public.copyright_notice_delivery_intents USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_delivery_intents__correspondence": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_delivery_intents__correspondence ON public.copyright_notice_delivery_intents USING btree (copyright_notice_correspondence_message_id, copyright_notice_id) WHERE (copyright_notice_correspondence_message_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_correspondence_message_id",
+              "descending": false,
+              "expression": "copyright_notice_correspondence_message_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_correspondence_message_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_delivery_intents__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_delivery_intents__notice ON public.copyright_notice_delivery_intents USING btree (copyright_notice_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_delivery_intents__pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_delivery_intents__pending ON public.copyright_notice_delivery_intents USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "next_attempt_at",
+              "descending": false,
+              "expression": "next_attempt_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(state = 'pending'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_delivery_intents__recipient_user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_delivery_intents__recipient_user ON public.copyright_notice_delivery_intents USING btree (recipient_user_id) WHERE (recipient_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "recipient_user_id",
+              "descending": false,
+              "expression": "recipient_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(recipient_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_delivery_intents__ses_message": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_delivery_intents__ses_message ON public.copyright_notice_delivery_intents USING btree (ses_message_id) WHERE (ses_message_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "ses_message_id",
+              "descending": false,
+              "expression": "ses_message_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(ses_message_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_delivery_intents__submission": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_delivery_intents__submission ON public.copyright_notice_delivery_intents USING btree (copyright_notice_submission_id, copyright_notice_id) WHERE (copyright_notice_submission_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_submission_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_delivery_intent_transition": "CREATE TRIGGER trigger_copyright_delivery_intent_transition BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_intents FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_delivery_intent_transition()",
+        "trigger_copyright_delivery_intents_updated_at": "CREATE TRIGGER trigger_copyright_delivery_intents_updated_at BEFORE UPDATE ON public.copyright_notice_delivery_intents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "copyright_notice_delivery_intents_idempotency_key_key": {
+          "columns": ["idempotency_key"],
+          "definition": "UNIQUE (idempotency_key)"
+        }
+      }
+    },
+    "copyright_notice_delivery_recipients": {
+      "checkConstraints": {
+        "copyright_notice_delivery_recipients_email_ciphertext_check": "CHECK (((char_length(email_ciphertext) >= 1) AND (char_length(email_ciphertext) <= 1048576)))"
+      },
+      "columns": {
+        "copyright_notice_delivery_intent_id": {
+          "collation": null,
+          "comment": "Email delivery obligation that owns this recipient address.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "email_ciphertext": {
+          "collation": null,
+          "comment": "Intent-scoped encrypted recipient email address.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Intent-scoped encrypted email recipients for legal delivery. This avoids reusing or guessing evidence-encryption purposes.",
+      "foreignKeys": {
+        "copyright_notice_delivery_rec_copyright_notice_delivery_in_fkey": {
+          "columns": ["copyright_notice_delivery_intent_id"],
+          "definition": "FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_delivery_intents",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_notice_delivery_rec_copyright_notice_delivery_int_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_delivery_rec_copyright_notice_delivery_int_key ON public.copyright_notice_delivery_recipients USING btree (copyright_notice_delivery_intent_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_delivery_intent_id",
+              "descending": false,
+              "expression": "copyright_notice_delivery_intent_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_delivery_recipients_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_delivery_recipients_pkey ON public.copyright_notice_delivery_recipients USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_delivery_recipients_immutable": "CREATE TRIGGER trigger_copyright_delivery_recipients_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()",
+        "trigger_copyright_delivery_recipients_updated_at": "CREATE TRIGGER trigger_copyright_delivery_recipients_updated_at BEFORE UPDATE ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "copyright_notice_delivery_rec_copyright_notice_delivery_int_key": {
+          "columns": ["copyright_notice_delivery_intent_id"],
+          "definition": "UNIQUE (copyright_notice_delivery_intent_id)"
+        }
+      }
+    },
+    "copyright_notice_email_correspondence_reviews": {
+      "checkConstraints": {
+        "copyright_notice_email_corre_manual_fallback_reason_ciphe_check": "CHECK (((manual_fallback_reason_ciphertext IS NULL) OR ((char_length(manual_fallback_reason_ciphertext) >= 1) AND (char_length(manual_fallback_reason_ciphertext) <= 65536))))",
+        "copyright_notice_email_correspondenc_rationale_ciphertext_check": "CHECK (((rationale_ciphertext IS NULL) OR ((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536))))",
+        "copyright_notice_email_correspondence_reviews_action_check": "CHECK ((action = ANY (ARRAY['pending'::text, 'admitted'::text, 'rejected'::text])))",
+        "copyright_notice_email_correspondence_reviews_check": "CHECK ((((action = 'pending'::text) AND (reviewed_at IS NULL) AND (reviewed_by_id IS NULL) AND (kind IS NULL)) OR ((action = ANY (ARRAY['admitted'::text, 'rejected'::text])) AND (reviewed_at IS NOT NULL) AND (reviewed_by_id IS NOT NULL) AND (kind IS NOT NULL))))",
+        "copyright_notice_email_correspondence_reviews_check1": "CHECK (((action = 'admitted'::text) = ((copyright_notice_submission_id IS NOT NULL) AND (copyright_notice_correspondence_id IS NOT NULL))))",
+        "copyright_notice_email_correspondence_reviews_check2": "CHECK (((action = 'pending'::text) OR ((copyright_notice_email_intake_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL))))",
+        "copyright_notice_email_correspondence_reviews_kind_check": "CHECK ((kind = ANY (ARRAY['supplement'::text, 'appeal'::text, 'counter_notice'::text, 'withdrawal'::text, 'court_or_ccb_hold'::text])))"
+      },
+      "columns": {
+        "action": {
+          "collation": null,
+          "comment": "Pending, admitted, or rejected human-review outcome.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "copyright_notice_correspondence_id": {
+          "collation": null,
+          "comment": "Private inbound correspondence created when admitted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "copyright_notice_email_intake_id": {
+          "collation": null,
+          "comment": "Matched inbound email reviewed by staff.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_notice_email_intake_recommendation_id": {
+          "collation": null,
+          "comment": "Agent recommendation consulted by the moderator.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Copyright case to which the email was matched.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "copyright_notice_submission_id": {
+          "collation": null,
+          "comment": "Immutable submission created when the email is admitted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "kind": {
+          "collation": null,
+          "comment": "Moderator-classified legal meaning of the email.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "manual_fallback_reason_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted reason staff proceeded without an agent recommendation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "text"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted moderator rationale.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "text"
+        },
+        "reviewed_at": {
+          "collation": null,
+          "comment": "Time a moderator made the terminal decision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "reviewed_by_id": {
+          "collation": null,
+          "comment": "Moderator who made the terminal decision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Append-only pending and moderator decisions for matched inbound copyright email; no decision is automatic.",
+      "foreignKeys": {
+        "copyright_notice_email_corre_copyright_notice_email_intak_fkey1": {
+          "columns": ["copyright_notice_email_intake_recommendation_id"],
+          "definition": "FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intake_recommendations",
+          "validated": true
+        },
+        "copyright_notice_email_corres_copyright_notice_corresponde_fkey": {
+          "columns": ["copyright_notice_correspondence_id"],
+          "definition": "FOREIGN KEY (copyright_notice_correspondence_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_correspondence_messages",
+          "validated": true
+        },
+        "copyright_notice_email_corres_copyright_notice_email_intak_fkey": {
+          "columns": ["copyright_notice_email_intake_id"],
+          "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        },
+        "copyright_notice_email_corres_copyright_notice_submission__fkey": {
+          "columns": ["copyright_notice_submission_id"],
+          "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        },
+        "copyright_notice_email_correspondence__copyright_notice_id_fkey": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "copyright_notice_email_correspondence_revie_reviewed_by_id_fkey": {
+          "columns": ["reviewed_by_id"],
+          "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_notice_email_corres_copyright_notice_corresponden_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_corres_copyright_notice_corresponden_key ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_correspondence_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_correspondence_id",
+              "descending": false,
+              "expression": "copyright_notice_correspondence_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_email_corres_copyright_notice_email_intake_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_corres_copyright_notice_email_intake_key ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_id, action)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "action",
+              "descending": false,
+              "expression": "action",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_email_corres_copyright_notice_submission_i_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_corres_copyright_notice_submission_i_key ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_submission_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_email_correspondence_reviews_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_correspondence_reviews_pkey ON public.copyright_notice_email_correspondence_reviews USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_email_correspondence_reviews__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_email_correspondence_reviews__notice ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_email_correspondence_reviews__recommendation": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_email_correspondence_reviews__recommendation ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_recommendation_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_recommendation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_email_intake_recommendation_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_email_correspondence_reviews__reviewer": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_email_correspondence_reviews__reviewer ON public.copyright_notice_email_correspondence_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reviewed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_email_correspondence_reviews__terminal": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_copyright_email_correspondence_reviews__terminal ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_id) WHERE (action = ANY (ARRAY['admitted'::text, 'rejected'::text]))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(action = ANY (ARRAY['admitted'::text, 'rejected'::text]))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_email_correspondence_recommendation_scope": "CREATE TRIGGER trigger_copyright_email_correspondence_recommendation_scope BEFORE INSERT ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_email_correspondence_recommendation_scope()",
+        "trigger_copyright_email_correspondence_reviews_immutable": "CREATE TRIGGER trigger_copyright_email_correspondence_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('reviewed_by_id')",
+        "trigger_copyright_email_correspondence_reviews_require_actor": "CREATE TRIGGER trigger_copyright_email_correspondence_reviews_require_actor BEFORE INSERT ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW WHEN ((new.action <> 'pending'::text)) EXECUTE FUNCTION fn_require_copyright_human_actor('reviewed_by_id')"
+      },
+      "uniqueConstraints": {
+        "copyright_notice_email_corres_copyright_notice_corresponden_key": {
+          "columns": ["copyright_notice_correspondence_id"],
+          "definition": "UNIQUE (copyright_notice_correspondence_id)"
+        },
+        "copyright_notice_email_corres_copyright_notice_email_intake_key": {
+          "columns": ["copyright_notice_email_intake_id", "action"],
+          "definition": "UNIQUE (copyright_notice_email_intake_id, action)"
+        },
+        "copyright_notice_email_corres_copyright_notice_submission_i_key": {
+          "columns": ["copyright_notice_submission_id"],
+          "definition": "UNIQUE (copyright_notice_submission_id)"
+        }
+      }
+    },
     "copyright_notice_email_intake_attachments": {
       "checkConstraints": {
         "copyright_notice_email_intake_attac_content_id_ciphertext_check": "CHECK (((char_length(content_id_ciphertext) >= 1) AND (char_length(content_id_ciphertext) <= 16384)))",
@@ -19736,6 +21725,238 @@
         "copyright_notice_email_intake_copyright_notice_email_intak_key1": {
           "columns": ["copyright_notice_email_intake_id", "ordinal"],
           "definition": "UNIQUE (copyright_notice_email_intake_id, ordinal)"
+        }
+      }
+    },
+    "copyright_notice_email_intake_notice_links": {
+      "checkConstraints": {
+        "copyright_notice_email_intake_no_matched_reference_lookup_check": "CHECK (((matched_reference_lookup IS NULL) OR (char_length(matched_reference_lookup) = 64)))",
+        "copyright_notice_email_intake_notice_links_link_kind_check": "CHECK ((link_kind = ANY (ARRAY['initial'::text, 'thread'::text])))"
+      },
+      "columns": {
+        "copyright_notice_email_intake_id": {
+          "collation": null,
+          "comment": "Inbound email associated with the case.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_notice_email_intake_recommendation_id": {
+          "collation": null,
+          "comment": "Agent recommendation retained as provenance for the link.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Copyright case associated with the inbound email.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "link_kind": {
+          "collation": null,
+          "comment": "Whether the email opened the case or matched its thread.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "matched_reference_lookup": {
+          "collation": null,
+          "comment": "Keyed digest that caused thread correlation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable private association between an email intake and its admitted or matched copyright case.",
+      "foreignKeys": {
+        "copyright_notice_email_intak_copyright_notice_email_intak_fkey5": {
+          "columns": ["copyright_notice_email_intake_id"],
+          "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        },
+        "copyright_notice_email_intak_copyright_notice_email_intak_fkey6": {
+          "columns": ["copyright_notice_email_intake_recommendation_id"],
+          "definition": "FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intake_recommendations",
+          "validated": true
+        },
+        "copyright_notice_email_intake_notice_l_copyright_notice_id_fkey": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_notice_email_intake_copyright_notice_email_intak_key4": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key4 ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_email_intake_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_email_intake_notice_links_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_intake_notice_links_pkey ON public.copyright_notice_email_intake_notice_links USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_email_thread_links__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_email_thread_links__notice ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_email_thread_links__recommendation": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_email_thread_links__recommendation ON public.copyright_notice_email_intake_notice_links USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_recommendation_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_recommendation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_email_intake_recommendation_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_email_thread_links_immutable": "CREATE TRIGGER trigger_copyright_email_thread_links_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()"
+      },
+      "uniqueConstraints": {
+        "copyright_notice_email_intake_copyright_notice_email_intak_key4": {
+          "columns": ["copyright_notice_email_intake_id"],
+          "definition": "UNIQUE (copyright_notice_email_intake_id)"
         }
       }
     },
@@ -20653,6 +22874,192 @@
         }
       }
     },
+    "copyright_notice_email_thread_references": {
+      "checkConstraints": {
+        "copyright_notice_email_thread_references_lookup_token_check": "CHECK ((char_length(lookup_token) = 64))",
+        "copyright_notice_email_thread_references_reference_kind_check": "CHECK ((reference_kind = ANY (ARRAY['message_id'::text, 'reply_reference'::text])))"
+      },
+      "columns": {
+        "copyright_notice_email_intake_id": {
+          "collation": null,
+          "comment": "Inbound email whose private thread token was recorded.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "lookup_token": {
+          "collation": null,
+          "comment": "Keyed digest of a normalized RFC message reference.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "reference_kind": {
+          "collation": null,
+          "comment": "Whether the token names this message or a referenced parent.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Keyed RFC Message-ID and In-Reply-To/References values used only for private case correlation.",
+      "foreignKeys": {
+        "copyright_notice_email_thread_copyright_notice_email_intak_fkey": {
+          "columns": ["copyright_notice_email_intake_id"],
+          "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_notice_email_thread_copyright_notice_email_intake_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_thread_copyright_notice_email_intake_key ON public.copyright_notice_email_thread_references USING btree (copyright_notice_email_intake_id, lookup_token, reference_kind)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "lookup_token",
+              "descending": false,
+              "expression": "lookup_token",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "reference_kind",
+              "descending": false,
+              "expression": "reference_kind",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_email_thread_references_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_thread_references_pkey ON public.copyright_notice_email_thread_references USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_email_thread_references__lookup": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_email_thread_references__lookup ON public.copyright_notice_email_thread_references USING btree (lookup_token, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lookup_token",
+              "descending": false,
+              "expression": "lookup_token",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_email_thread_references_immutable": "CREATE TRIGGER trigger_copyright_email_thread_references_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_thread_references FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_immutable_evidence()"
+      },
+      "uniqueConstraints": {
+        "copyright_notice_email_thread_copyright_notice_email_intake_key": {
+          "columns": ["copyright_notice_email_intake_id", "lookup_token", "reference_kind"],
+          "definition": "UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)"
+        }
+      }
+    },
     "copyright_notice_evidence_artifacts": {
       "checkConstraints": {
         "copyright_notice_evidence_artifacts_byte_size_check": "CHECK ((byte_size >= 0))",
@@ -20845,7 +23252,7 @@
         },
         "copyright_notice_form_intake_id": {
           "collation": null,
-          "comment": "Guest form intake reviewed by a moderator.",
+          "comment": "Form intake reviewed by a moderator.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -20921,7 +23328,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Immutable moderator approval or rejection required before a guest form may affect hosted material.",
+      "comment": "Immutable moderator approval or rejection required for guest forms and signed-in forms flagged by anti-spam.",
       "foreignKeys": {
         "copyright_notice_form_intake__copyright_notice_form_intake_fkey": {
           "columns": ["copyright_notice_form_intake_id"],
@@ -21341,7 +23748,7 @@
         "copyright_notice_form_screenings_model_check": "CHECK (((char_length(model) >= 1) AND (char_length(model) <= 255)))",
         "copyright_notice_form_screenings_prompt_version_check": "CHECK (((char_length(prompt_version) >= 1) AND (char_length(prompt_version) <= 100)))",
         "copyright_notice_form_screenings_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))",
-        "copyright_notice_form_screenings_recommendation_check": "CHECK ((recommendation = ANY (ARRAY['clear'::text, 'invalid_or_spam'::text, 'uncertain'::text])))"
+        "copyright_notice_form_screenings_recommendation_check": "CHECK ((recommendation = ANY (ARRAY['clear'::text, 'uncertain'::text, 'not_obviously_invalid'::text, 'invalid_or_spam'::text])))"
       },
       "columns": {
         "copyright_notice_form_intake_id": {
@@ -21444,7 +23851,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Immutable advisory anti-spam recommendations. Only a workflow service, never an agent, may decide whether a clear signed-in intake gets a provisional restriction.",
+      "comment": "Immutable advisory anti-spam recommendations. Only a workflow service, never an agent, may act on a signed-in intake that is not obviously invalid.",
       "foreignKeys": {
         "copyright_notice_form_screeni_copyright_notice_form_intake_fkey": {
           "columns": ["copyright_notice_form_intake_id"],
@@ -23111,6 +25518,33 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "copyright_notice_submissions_id_notice_unique": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_submissions_id_notice_unique ON public.copyright_notice_submissions USING btree (id, copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "copyright_notice_submissions_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -23196,7 +25630,12 @@
       "triggers": {
         "trigger_copyright_notice_submissions_immutable": "CREATE TRIGGER trigger_copyright_notice_submissions_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_submission()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "copyright_notice_submissions_id_notice_unique": {
+          "columns": ["id", "copyright_notice_id"],
+          "definition": "UNIQUE (id, copyright_notice_id)"
+        }
+      }
     },
     "copyright_notice_target_images": {
       "checkConstraints": {},
@@ -23745,7 +26184,7 @@
         "copyright_restrictions_check": "CHECK (((lifted_at IS NULL) OR (lifted_at >= imposed_at)))",
         "copyright_restrictions_check1": "CHECK (((human_reviewed_at IS NULL) OR (human_reviewed_at >= imposed_at)))",
         "copyright_restrictions_check2": "CHECK ((((human_reviewed_at IS NULL) AND (human_review_action IS NULL) AND (human_reviewed_by_id IS NULL)) OR ((human_reviewed_at IS NOT NULL) AND (human_review_action IS NOT NULL))))",
-        "copyright_restrictions_human_review_action_check": "CHECK ((human_review_action = ANY (ARRAY['confirm'::text, 'modify'::text, 'reverse'::text])))"
+        "copyright_restrictions_human_review_action_check": "CHECK ((human_review_action = ANY (ARRAY['confirm'::text, 'reverse'::text])))"
       },
       "columns": {
         "authorizing_assessment_id": {
@@ -23783,7 +26222,7 @@
         },
         "human_review_action": {
           "collation": null,
-          "comment": "Human outcome for this restriction: confirm, modify, or reverse.",
+          "comment": "Human outcome for this target restriction: confirm or reverse.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -48056,6 +50495,7 @@
         "chk_notifications__target": "CHECK ((num_nonnulls(target_path, target_entity, target_intent) = 1))",
         "notifications_actor_label_check": "CHECK (((actor_label IS NULL) OR (length(actor_label) <= 100)))",
         "notifications_body_check": "CHECK ((length(body) <= 1000))",
+        "notifications_copyright_notice_entity_shape": "CHECK ((((entity_type = 'copyright_notice'::notification_entity_types) AND (copyright_notice_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL) AND (conversation_id IS NULL) AND (community_id IS NULL)) OR ((entity_type <> 'copyright_notice'::notification_entity_types) AND (copyright_notice_id IS NULL))))",
         "notifications_target_path_check": "CHECK (((target_path IS NULL) OR (length(target_path) > 0)))",
         "notifications_title_check": "CHECK ((length(title) <= 300))"
       },
@@ -48124,6 +50564,17 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 12,
+          "type": "uuid"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Private copyright case associated with a member notification; the notification body contains no claimant or evidence data.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 31,
           "type": "uuid"
         },
         "created_at": {
@@ -48411,6 +50862,15 @@
           "referencedTable": "communities",
           "validated": true
         },
+        "fk_notifications__copyright_notice": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
         "fk_notifications__moderation_appeal_id": {
           "columns": ["moderation_appeal_id"],
           "definition": "FOREIGN KEY (moderation_appeal_id) REFERENCES moderation_appeals(id) ON DELETE SET NULL",
@@ -48599,6 +51059,26 @@
             }
           ],
           "predicate": "(conversation_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_notifications__copyright_notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_notifications__copyright_notice ON ONLY public.notifications USING btree (copyright_notice_id) WHERE (copyright_notice_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

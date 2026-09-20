@@ -6,30 +6,32 @@ Private inbound and outbound legal correspondence; agent-composed outbound text 
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                              |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------ |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                      |
-| `copyright_notice_id`            | `uuid`                     | no       |                              |          |           |           | Legal case to which this correspondence belongs.                                     |
-| `copyright_notice_submission_id` | `uuid`                     | yes      |                              |          |           |           | Inbound submission represented by this message; NULL for outbound correspondence.    |
-| `direction`                      | `text`                     | no       |                              |          |           |           | Inbound receipt or outbound legal communication.                                     |
-| `composition_kind`               | `text`                     | no       |                              |          |           |           | Inbound source, deterministic template, human staff text, or agent-composed text.    |
-| `correspondence_kind`            | `text`                     | no       |                              |          |           |           | Purpose of the legal communication.                                                  |
-| `body_ciphertext`                | `text`                     | no       |                              |          |           |           | Authenticated ciphertext of the private message body.                                |
-| `drafted_by_id`                  | `uuid`                     | yes      |                              |          |           |           | Staff drafter for human-authored text; NULL for inbound, templates, or agent drafts. |
-| `approved_at`                    | `timestamp with time zone` | yes      |                              |          |           |           | When staff approved agent-composed outbound text.                                    |
-| `approved_by_id`                 | `uuid`                     | yes      |                              |          |           |           | Staff user that approved agent-composed outbound text.                               |
-| `sent_at`                        | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp set after durable delivery intent is recorded.                     |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                      |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                      |
+| Column                             | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                         |
+| ---------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
+| `id`                               | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                 |
+| `copyright_notice_id`              | `uuid`                     | no       |                              |          |           |           | Legal case to which this correspondence belongs.                                                |
+| `copyright_notice_submission_id`   | `uuid`                     | yes      |                              |          |           |           | Inbound submission represented by this message; NULL for outbound correspondence.               |
+| `direction`                        | `text`                     | no       |                              |          |           |           | Inbound receipt or outbound legal communication.                                                |
+| `composition_kind`                 | `text`                     | no       |                              |          |           |           | Inbound source, deterministic template, human staff text, or agent-composed text.               |
+| `correspondence_kind`              | `text`                     | no       |                              |          |           |           | Purpose of the legal communication.                                                             |
+| `body_ciphertext`                  | `text`                     | no       |                              |          |           |           | Authenticated ciphertext of the private message body.                                           |
+| `drafted_by_id`                    | `uuid`                     | yes      |                              |          |           |           | Staff drafter for human-authored text; NULL for inbound, templates, or agent drafts.            |
+| `approved_at`                      | `timestamp with time zone` | yes      |                              |          |           |           | When staff approved agent-composed outbound text.                                               |
+| `approved_by_id`                   | `uuid`                     | yes      |                              |          |           |           | Staff user that approved agent-composed outbound text.                                          |
+| `sent_at`                          | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp set after durable delivery intent is recorded.                                |
+| `created_at`                       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                 |
+| `updated_at`                       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                 |
+| `copyright_notice_email_intake_id` | `uuid`                     | yes      |                              |          |           |           | Immutable original email intake containing the raw MIME evidence for an inbound correspondence. |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `copyright_notice_correspondence_id_notice_unique`: `UNIQUE (id, copyright_notice_id)`
 
 **Check constraints:**
 
-- `copyright_notice_correspondence_messa_correspondence_kind_check`: `CHECK ((correspondence_kind = ANY (ARRAY['receipt'::text, 'request_information'::text, 'restriction_notice'::text, 'counter_notice_forwarding'::text, 'restoration_notice'::text, 'status_update'::text])))`
+- `copyright_correspondence_kind_check`: `CHECK ((correspondence_kind = ANY (ARRAY['receipt'::text, 'request_information'::text, 'restriction_notice'::text, 'counter_notice_forwarding'::text, 'restoration_notice'::text, 'status_update'::text, 'inbound_message'::text])))`
 - `copyright_notice_correspondence_messages_body_ciphertext_check`: `CHECK (((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 1048576)))`
 - `copyright_notice_correspondence_messages_check`: `CHECK (((approved_at IS NULL) OR (composition_kind = 'agent'::text)))`
 - `copyright_notice_correspondence_messages_check1`: `CHECK (((approved_at IS NOT NULL) OR (approved_by_id IS NULL)))`
@@ -46,10 +48,13 @@ _none_
 - `copyright_notice_correspondence_messag_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 - `copyright_notice_correspondence_messages_approved_by_id_fkey`: `FOREIGN KEY (approved_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `copyright_notice_correspondence_messages_drafted_by_id_fkey`: `FOREIGN KEY (drafted_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_correspondence__email_intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `copyright_notice_correspondence_id_notice_unique`: `CREATE UNIQUE INDEX copyright_notice_correspondence_id_notice_unique ON public.copyright_notice_correspondence_messages USING btree (id, copyright_notice_id)`
 - `copyright_notice_correspondence_messages_pkey`: `CREATE UNIQUE INDEX copyright_notice_correspondence_messages_pkey ON public.copyright_notice_correspondence_messages USING btree (id)`
+- `idx_copyright_correspondence__email_intake`: `CREATE INDEX idx_copyright_correspondence__email_intake ON public.copyright_notice_correspondence_messages USING btree (copyright_notice_email_intake_id) WHERE (copyright_notice_email_intake_id IS NOT NULL)`
 - `idx_copyright_notice_correspondence__approved_by`: `CREATE INDEX idx_copyright_notice_correspondence__approved_by ON public.copyright_notice_correspondence_messages USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)`
 - `idx_copyright_notice_correspondence__drafted_by`: `CREATE INDEX idx_copyright_notice_correspondence__drafted_by ON public.copyright_notice_correspondence_messages USING btree (drafted_by_id) WHERE (drafted_by_id IS NOT NULL)`
 - `idx_copyright_notice_correspondence__notice`: `CREATE INDEX idx_copyright_notice_correspondence__notice ON public.copyright_notice_correspondence_messages USING btree (copyright_notice_id, id)`

@@ -1,5 +1,9 @@
+/* oxlint-disable max-lines -- Copyright domain records stay together as the aggregate's canonical contract. */
+import type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
+export type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
+
 export type CopyrightJurisdiction = 'us_dmca' | 'eu_dsa' | 'uk' | 'other'
-export type CopyrightHumanReviewAction = 'confirm' | 'modify' | 'reverse'
+export type CopyrightHumanReviewAction = 'confirm' | 'reverse'
 type CopyrightFormSubmissionKind = 'notice' | 'appeal' | 'counter_notice' | 'withdrawal'
 type CopyrightLegalFollowupSubmissionKind = 'court_or_ccb_hold' | 'supplement'
 export type CopyrightSubmissionKind =
@@ -16,6 +20,7 @@ export type CopyrightCorrespondenceKind =
   | 'counter_notice_forwarding'
   | 'restoration_notice'
   | 'status_update'
+  | 'inbound_message'
 
 export type CopyrightNoticeTargetInput = {
   placementKey: string
@@ -96,6 +101,18 @@ export type CopyrightNoticeSubmissionAssessmentRecord = {
   supersedes_assessment_id: string | null
 }
 
+export type CopyrightAppealRecommendationRecord = {
+  id: string
+  copyright_notice_submission_id: string
+  input_sha256: Buffer
+  prompt_version: string
+  model: string
+  recommendation: 'confirm' | 'modify' | 'reverse' | 'uncertain'
+  rationale_ciphertext: string
+  created_at: Date
+  updated_at: Date
+}
+
 export type CopyrightNoticeDeadlineRecord = {
   id: string
   copyright_notice_id: string
@@ -134,6 +151,7 @@ export type CopyrightCorrespondenceRecord = {
   id: string
   copyright_notice_id: string
   copyright_notice_submission_id: string | null
+  copyright_notice_email_intake_id: string | null
   direction: CopyrightCorrespondenceDirection
   composition_kind: 'inbound' | 'deterministic_template' | 'staff' | 'agent'
   correspondence_kind: CopyrightCorrespondenceKind
@@ -171,11 +189,48 @@ export type CopyrightActionIntentRecord = {
   completed_at: Date | null
 }
 
+export type CopyrightAppealReviewRecord = {
+  id: string
+  copyright_notice_submission_id: string
+  copyright_restriction_id: string
+  copyright_notice_appeal_recommendation_id: string | null
+  reviewed_at: Date
+  reviewed_by_id: string | null
+  action: CopyrightHumanReviewAction
+  rationale_ciphertext: string
+  manual_fallback_reason_ciphertext: string | null
+}
+
+export type CopyrightCounterNoticeReviewRecord = {
+  id: string
+  copyright_notice_submission_id: string
+  copyright_notice_submission_assessment_id: string
+  copyright_notice_deadline_id: string | null
+  reviewed_at: Date
+  reviewed_by_id: string | null
+  accepted: boolean
+  rationale_ciphertext: string
+}
+
+export type CopyrightEmailCorrespondenceReviewRecord = {
+  id: string
+  copyright_notice_email_intake_id: string
+  copyright_notice_id: string
+  action: 'pending' | 'admitted' | 'rejected'
+  kind: 'supplement' | 'appeal' | 'counter_notice' | 'withdrawal' | 'court_or_ccb_hold' | null
+  reviewed_at: Date | null
+  reviewed_by_id: string | null
+}
+
 export type CopyrightNoticePrivateAggregate = {
   notice: CopyrightNoticeRecord
   targets: CopyrightNoticeTargetRecord[]
   restrictions: CopyrightRestrictionRecord[]
   submissions: CopyrightNoticeSubmissionRecord[]
+  appealRecommendations: CopyrightAppealRecommendationRecord[]
+  appealReviews: CopyrightAppealReviewRecord[]
+  counterNoticeReviews: CopyrightCounterNoticeReviewRecord[]
+  emailCorrespondenceReviews: CopyrightEmailCorrespondenceReviewRecord[]
   assessments: CopyrightNoticeSubmissionAssessmentRecord[]
   deadlines: CopyrightNoticeDeadlineRecord[]
   holdAssessments: CopyrightLegalHoldAssessmentRecord[]
@@ -184,4 +239,5 @@ export type CopyrightNoticePrivateAggregate = {
   correspondence: CopyrightCorrespondenceRecord[]
   lifecycleEvents: CopyrightLifecycleEventRecord[]
   actionIntents: CopyrightActionIntentRecord[]
+  deliveryIntents: CopyrightDeliveryIntentRecord[]
 }

@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 
-export type CopyrightFormScreeningRecommendation = 'clear' | 'invalid_or_spam' | 'uncertain'
+export type CopyrightFormScreeningRecommendation = 'not_obviously_invalid' | 'invalid_or_spam'
 /** @public Cross-workspace read boundary used by the copyright form-screening agent. */
 export async function getCopyrightFormIntakeForScreening(submissionId: string): Promise<{
   intakeId: string
@@ -68,7 +68,7 @@ export async function appendCopyrightFormScreening(input: {
   return existing[0].id
 }
 /** Workflow-owned automation gate. Agents only return a recommendation; they cannot call this. */
-export async function applyClearSignedInCopyrightFormScreening(
+export async function applyNonSpamSignedInCopyrightFormScreening(
   submissionId: string,
 ): Promise<void> {
   const { rows } = await write<{
@@ -76,7 +76,7 @@ export async function applyClearSignedInCopyrightFormScreening(
     notice_id: string
     screening_id: string
     source_kind: 'signed_in_form' | 'guest_form'
-  }>(sql`/* applyClearSignedInCopyrightFormScreening */
+  }>(sql`/* applyNonSpamSignedInCopyrightFormScreening */
     SELECT intake.id AS intake_id, intake.copyright_notice_id AS notice_id, submission.source_kind,
       (SELECT screening.id FROM copyright_notice_form_screenings screening
        WHERE screening.copyright_notice_form_intake_id = intake.id
@@ -89,13 +89,13 @@ export async function applyClearSignedInCopyrightFormScreening(
         WHERE screening.copyright_notice_form_intake_id = intake.id
         ORDER BY screening.id DESC
         LIMIT 1
-      ) = 'clear'
+      ) = 'not_obviously_invalid'
   `)
   const intake = rows[0]
   if (!intake || intake.source_kind !== 'signed_in_form') return
   const { rows: existingAssessments } = await write<{
     id: string
-  }>(sql`/* applyClearSignedInCopyrightFormScreening:existingAssessment */
+  }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:existingAssessment */
     SELECT id FROM copyright_notice_submission_assessments
     WHERE copyright_notice_submission_id = ${submissionId}
       AND NOT EXISTS (SELECT 1 FROM copyright_notice_submission_assessments newer WHERE newer.supersedes_assessment_id = copyright_notice_submission_assessments.id)
@@ -110,7 +110,7 @@ export async function applyClearSignedInCopyrightFormScreening(
   if (!assessment) return
   const { rows: targets } = await write<{
     id: string
-  }>(sql`/* applyClearSignedInCopyrightFormScreening:targets */
+  }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:targets */
     SELECT target.id FROM copyright_notice_targets target
     WHERE target.copyright_notice_id = ${intake.notice_id}
       AND NOT EXISTS (

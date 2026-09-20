@@ -9,17 +9,21 @@ import {
   countCopyrightActiveRestrictionsForNotice,
   readCopyrightNoticeTargetId,
   readCopyrightNoticeTargetIds,
-} from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
+} from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
+  copyrightAppealRecommendations,
   appendCopyrightSubmissionAssessment,
+  createCopyrightAppeal,
   createCopyrightCounterNotice,
   createCopyrightFormIntake,
-  reviewCopyrightGuestFormIntake,
+  getCopyrightNoticePrivateAggregate,
+  getPendingCopyrightAgentDispatches,
+  reviewCopyrightFormIntake,
 } from './index.mts'
 import {
   appendCopyrightFormScreening,
-  applyClearSignedInCopyrightFormScreening,
+  applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
 
 describe('copyright form intakes', () => {
@@ -41,6 +45,7 @@ describe('copyright form intakes', () => {
         jurisdiction: 'us_dmca' as const,
         claimantDisplayName: 'Claimant',
         claimantContact: 'claimant@example.test',
+        claimantEmail: 'claimant@example.test',
         workDescription: 'My photograph',
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
@@ -76,6 +81,7 @@ describe('copyright form intakes', () => {
         jurisdiction: 'us_dmca',
         claimantDisplayName: 'Claimant',
         claimantContact: 'claimant@example.test',
+        claimantEmail: 'claimant@example.test',
         workDescription: 'My photograph',
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
@@ -110,6 +116,32 @@ describe('copyright form intakes', () => {
     )
     expect(first.isDuplicate).toBe(false)
     expect(replay).toMatchObject({ isDuplicate: true, submission: { id: first.submission.id } })
+
+    const appeal = await createCopyrightAppeal(
+      poster,
+      notice.intake.copyright_notice_id,
+      crypto.randomUUID(),
+      { reason: 'The reported image is my original work.', targetIds: [targetId] },
+    )
+    await expect(getPendingCopyrightAgentDispatches()).resolves.toContainEqual({
+      kind: 'appeal',
+      submissionId: appeal.submission.id,
+    })
+    await copyrightAppealRecommendations.append({
+      submissionId: appeal.submission.id,
+      inputSha256: Buffer.alloc(32, 7),
+      promptVersion: 'copyright-appeal-v1',
+      model: 'test-model',
+      recommendation: 'uncertain',
+      rationale: 'Needs a moderator review.',
+    })
+    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    expect(aggregate?.appealRecommendations).toEqual([
+      expect.objectContaining({
+        copyright_notice_submission_id: appeal.submission.id,
+        recommendation: 'uncertain',
+      }),
+    ])
   })
 
   it('resumes any missing target restrictions after a partial automated run', async () => {
@@ -130,6 +162,7 @@ describe('copyright form intakes', () => {
         jurisdiction: 'us_dmca',
         claimantDisplayName: 'Claimant',
         claimantContact: 'claimant@example.test',
+        claimantEmail: 'claimant@example.test',
         workDescription: 'Two photographs',
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
@@ -144,9 +177,9 @@ describe('copyright form intakes', () => {
     const screeningId = await appendCopyrightFormScreening({
       intakeId: notice.intake.id,
       inputSha256: Buffer.alloc(32, 9),
-      recommendation: 'clear',
+      recommendation: 'not_obviously_invalid',
       rationale: 'No obvious spam markers.',
-      promptVersion: 'copyright-form-screening-v1',
+      promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     })
     const assessment = await appendCopyrightSubmissionAssessment({
@@ -165,7 +198,7 @@ describe('copyright form intakes', () => {
       imposedById: null,
     })
 
-    await applyClearSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
+    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
 
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
@@ -191,6 +224,7 @@ describe('copyright form intakes', () => {
         jurisdiction: 'us_dmca',
         claimantDisplayName: 'Guest claimant',
         claimantContact: 'guest@example.test',
+        claimantEmail: 'guest@example.test',
         workDescription: 'Guest-owned photograph',
         goodFaithBelief: true,
         accuracyAuthorityUnderPenaltyOfPerjury: true,
@@ -202,7 +236,7 @@ describe('copyright form intakes', () => {
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
     ).resolves.toBe(0)
-    await reviewCopyrightGuestFormIntake({
+    await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: moderator,
       accepted: true,

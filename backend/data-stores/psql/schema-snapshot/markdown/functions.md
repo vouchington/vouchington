@@ -186,6 +186,22 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_deadline()
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_copyright_delivery_intent_transition`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_delivery_intent_transition()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_email_correspondence_recommendation_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_correspondence_recommendation_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_copyright_email_review_recommendation_scope`
 
 ```sql

@@ -3,7 +3,10 @@ import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret, hashToken } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import { createCopyrightNoticeAggregateInTransaction } from './create.mts'
+import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import type { CopyrightJurisdiction, CopyrightNoticeTargetInput } from './types.mts'
 import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 
@@ -15,6 +18,7 @@ export type CreateCopyrightFormIntakeInput = {
     jurisdiction: CopyrightJurisdiction
     claimantDisplayName: string | null
     claimantContact: string
+    claimantEmail: string
     workDescription: string
     goodFaithBelief: boolean
     accuracyAuthorityUnderPenaltyOfPerjury: boolean
@@ -33,6 +37,11 @@ export type CopyrightFormIntakeRecord = {
 export async function createCopyrightFormIntake(
   input: CreateCopyrightFormIntakeInput,
 ): Promise<{ intake: CopyrightFormIntakeRecord; isDuplicate: boolean }> {
+  assert(
+    input.request.claimantEmail.length <= 254 && isEmailAddress(input.request.claimantEmail),
+    422,
+    'claimant contact must be a valid email address',
+  )
   const requestSha256 = createHash('sha256').update(stableRequestJson(input.request)).digest()
   const requesterIdentitySha256 = createHash('sha256').update(input.requesterIdentity).digest()
   await using transaction = await beginTransaction()
@@ -115,6 +124,44 @@ export async function createCopyrightFormIntake(
   `)
   const intake = rows[0]
   assert(intake, 500, 'Copyright form intake was not created')
+  const claimantReceipt = await createDeterministicCopyrightCorrespondenceInTransaction(
+    {
+      noticeId: notice.id,
+      submissionId: submission.id,
+      correspondenceKind: 'receipt',
+      bodyText: `We received your copyright notice for case ${notice.id}. We will review it and contact you if we need more information.`,
+    },
+    transaction,
+  )
+  await createCopyrightDeliveryIntent(
+    {
+      noticeId: notice.id,
+      submissionId: submission.id,
+      correspondenceId: claimantReceipt.id,
+      recipientUserId: null,
+      recipientRole: 'claimant',
+      deliveryKind: 'claimant_receipt',
+      channel: 'email',
+      idempotencyKey: `copyright-notice:${notice.id}:claimant-email-receipt`,
+      recipientEmail: input.request.claimantEmail,
+    },
+    transaction,
+  )
+  if (input.requesterUserId) {
+    await createCopyrightDeliveryIntent(
+      {
+        noticeId: notice.id,
+        submissionId: submission.id,
+        correspondenceId: null,
+        recipientUserId: input.requesterUserId,
+        recipientRole: 'claimant',
+        deliveryKind: 'claimant_receipt',
+        channel: 'in_app',
+        idempotencyKey: `copyright-notice:${notice.id}:claimant-in-app-receipt`,
+      },
+      transaction,
+    )
+  }
   await transaction.commit()
   return { intake, isDuplicate: false }
 }

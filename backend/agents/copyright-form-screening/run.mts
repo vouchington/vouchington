@@ -14,11 +14,11 @@ import {
 } from '@services/copyright-notices/form-screenings'
 
 const PROMPT =
-  'Classify this already structured copyright form only for obvious spam or invalidity. Return JSON {"recommendation":"clear"|"invalid_or_spam"|"uncertain","rationale":"..."}. Do not decide legal ownership or take action.'
-const PROMPT_VERSION = 'copyright-form-screening-v1'
+  'This is only an anti-spam gate for an already structured copyright form. Return invalid_or_spam only for obvious spam or obvious invalidity; otherwise return not_obviously_invalid, including when legal merits are uncertain. Return JSON {"recommendation":"not_obviously_invalid"|"invalid_or_spam","rationale":"..."}. Do not decide legal ownership or take action.'
+const PROMPT_VERSION = 'copyright-form-screening-v2'
 export async function runCopyrightFormScreeningAgent(
   submissionId: string,
-): Promise<'clear' | 'invalid_or_spam' | 'uncertain' | null> {
+): Promise<'not_obviously_invalid' | 'invalid_or_spam' | null> {
   const intake = await getCopyrightFormIntakeForScreening(submissionId)
   if (!intake) return null
   const input = JSON.stringify({
@@ -59,7 +59,7 @@ export async function runCopyrightFormScreeningAgent(
 }
 
 export function parseCopyrightFormScreeningOutput(text: string): {
-  recommendation: 'clear' | 'invalid_or_spam' | 'uncertain'
+  recommendation: 'not_obviously_invalid' | 'invalid_or_spam'
   rationale: string
 } {
   let output: { recommendation?: unknown; rationale?: unknown } | null
@@ -71,9 +71,7 @@ export function parseCopyrightFormScreeningOutput(text: string): {
   const recommendation = output?.recommendation
   const rationale = output?.rationale
   if (
-    (recommendation !== 'clear' &&
-      recommendation !== 'invalid_or_spam' &&
-      recommendation !== 'uncertain') ||
+    (recommendation !== 'not_obviously_invalid' && recommendation !== 'invalid_or_spam') ||
     typeof rationale !== 'string' ||
     rationale.length > 10_000
   )

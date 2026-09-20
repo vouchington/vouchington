@@ -1,0 +1,208 @@
+import { describe, expect, it } from 'vitest'
+import {
+  createTestUserDirect,
+  insertTestImage,
+  insertTestPost,
+  insertTestPostImage,
+} from '@voucha/test-helpers'
+import {
+  appendCopyrightNoticeSubmission,
+  appendCopyrightSubmissionAssessment,
+  approveCopyrightCorrespondence,
+  claimCopyrightDeliveryIntent,
+  createCopyrightDeliveryIntent,
+  createCopyrightNoticeAggregate,
+  createEligibleCopyrightRestoreIntent,
+  createOutboundCopyrightCorrespondence,
+  getCopyrightNoticePrivateAggregate,
+  markCopyrightDeliveryIntentBouncedBySesMessageId,
+  markCopyrightDeliveryIntentFailed,
+  markCopyrightDeliveryIntentSent,
+} from './index.mts'
+
+async function createFixture() {
+  const [claimant, moderatorRecord] = await Promise.all([
+    createTestUserDirect(),
+    createTestUserDirect(),
+  ])
+  const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+  const postId = await insertTestPost({
+    title: `copyright persistence ${crypto.randomUUID()}`,
+    slug: `copyright-persistence-${crypto.randomUUID()}`,
+    createdById: claimant.id,
+    markdown: 'image',
+  })
+  const imageId = await insertTestImage(claimant.id)
+  await insertTestPostImage({ postId, imageId })
+  const notice = await createCopyrightNoticeAggregate({
+    jurisdiction: 'us_dmca',
+    receivedAt: new Date('2026-06-30T16:00:00.000Z'),
+    claimantUserId: claimant.id,
+    claimantDisplayName: 'private snapshot',
+    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    workDescription: `work-${crypto.randomUUID()}`,
+    policyVersion: 'test-v1',
+    initialSubmission: {
+      kind: 'notice',
+      sourceKind: 'signed_in_form',
+      bodyCiphertext: `notice-${crypto.randomUUID()}`,
+    },
+    targets: [
+      {
+        placementKey: `post-image:${postId}:${imageId}`,
+        placementRevision: 1,
+        imageId,
+        hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
+      },
+    ],
+  })
+  const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
+  if (!aggregate) throw new Error('fixture notice disappeared')
+  return { aggregate, moderator, notice }
+}
+
+describe('copyright delivery and correspondence persistence', () => {
+  it('retains a retryable legal delivery obligation and exposes its terminal state', async () => {
+    const { notice } = await createFixture()
+    const correspondence = await createOutboundCopyrightCorrespondence({
+      noticeId: notice.id,
+      submissionId: null,
+      correspondenceKind: 'receipt',
+      compositionKind: 'deterministic_template',
+      bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+      draftedById: null,
+    })
+    const recipientEmail = `tests+copyright-delivery-${crypto.randomUUID()}@voucha.ai`
+    const intent = await createCopyrightDeliveryIntent({
+      noticeId: notice.id,
+      submissionId: null,
+      correspondenceId: correspondence.id,
+      recipientUserId: null,
+      recipientRole: 'claimant',
+      deliveryKind: 'claimant_receipt',
+      channel: 'email',
+      idempotencyKey: `copyright-delivery-${crypto.randomUUID()}`,
+      recipientEmail,
+    })
+    expect((await claimCopyrightDeliveryIntent(intent.id))?.state).toBe('claimed')
+    expect(
+      await markCopyrightDeliveryIntentFailed({ intentId: intent.id, error: 'temporary' }),
+    ).toBe(true)
+    expect(await claimCopyrightDeliveryIntent(intent.id)).toBeNull()
+    const bounceRecipientEmail = `tests+copyright-delivery-${crypto.randomUUID()}@voucha.ai`
+    const bounceIntent = await createCopyrightDeliveryIntent({
+      noticeId: notice.id,
+      submissionId: null,
+      correspondenceId: correspondence.id,
+      recipientUserId: null,
+      recipientRole: 'claimant',
+      deliveryKind: 'claimant_receipt',
+      channel: 'email',
+      idempotencyKey: `copyright-delivery-${crypto.randomUUID()}`,
+      recipientEmail: bounceRecipientEmail,
+    })
+    expect((await claimCopyrightDeliveryIntent(bounceIntent.id))?.state).toBe('claimed')
+    const sesMessageId = `ses-${crypto.randomUUID()}`
+    expect(await markCopyrightDeliveryIntentSent({ intentId: bounceIntent.id, sesMessageId })).toBe(
+      true,
+    )
+    expect(
+      await markCopyrightDeliveryIntentBouncedBySesMessageId({
+        sesMessageId,
+        recipientEmails: [`tests+unrelated-${crypto.randomUUID()}@voucha.ai`],
+      }),
+    ).toBe(0)
+    expect(
+      await markCopyrightDeliveryIntentBouncedBySesMessageId({
+        sesMessageId,
+        recipientEmails: [bounceRecipientEmail],
+      }),
+    ).toBe(1)
+    const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
+    expect(aggregate?.deliveryIntents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: intent.id, state: 'pending', ses_message_id: null }),
+        expect.objectContaining({
+          id: bounceIntent.id,
+          state: 'bounced',
+          ses_message_id: sesMessageId,
+        }),
+      ]),
+    )
+  })
+
+  it('creates an immutable notice aggregate transactionally', async () => {
+    const { aggregate, notice } = await createFixture()
+    expect(aggregate.notice.id).toBe(notice.id)
+    expect(aggregate.targets).toHaveLength(1)
+    expect(aggregate.lifecycleEvents.map(event => event.event_type)).toContain('notice_received')
+  })
+
+  it('requires a reviewer for email and guest-form compliance assessments', async () => {
+    const { notice } = await createFixture()
+    const submission = await appendCopyrightNoticeSubmission({
+      noticeId: notice.id,
+      kind: 'notice',
+      receivedAt: new Date('2026-07-01T12:00:00.000Z'),
+      sourceKind: 'guest_form',
+      submittedByUserId: null,
+      bodyCiphertext: `guest-${crypto.randomUUID()}`,
+    })
+    await expect(
+      appendCopyrightSubmissionAssessment({
+        submissionId: submission.id,
+        assessedAt: new Date('2026-07-01T12:01:00.000Z'),
+        currentUser: null,
+        substantiallyCompliant: true,
+      }),
+    ).rejects.toThrow('Email and guest-form assessments require a copyright reviewer')
+  })
+
+  it('rejects an explicit non-copyright placement blocker', async () => {
+    const { aggregate, notice } = await createFixture()
+    const target = aggregate.targets[0]
+    await expect(
+      createEligibleCopyrightRestoreIntent({
+        noticeId: notice.id,
+        targetId: target.id,
+        restrictionId: crypto.randomUUID(),
+        deadlineId: crypto.randomUUID(),
+        expectedPlacementRevision: target.placement_revision,
+        now: new Date(),
+        blockers: ['deletion'],
+      }),
+    ).rejects.toThrow('A non-copyright placement blocker prevents restoration')
+  })
+
+  it('keeps outbound correspondence scoped to its own case and audits approval', async () => {
+    const first = await createFixture()
+    const second = await createFixture()
+    await expect(
+      createOutboundCopyrightCorrespondence({
+        noticeId: first.notice.id,
+        submissionId: second.aggregate.submissions[0].id,
+        correspondenceKind: 'status_update',
+        compositionKind: 'agent',
+        bodyCiphertext: `draft-${crypto.randomUUID()}`,
+        draftedById: null,
+      }),
+    ).rejects.toThrow('Copyright notice or case submission not found')
+    const draft = await createOutboundCopyrightCorrespondence({
+      noticeId: first.notice.id,
+      submissionId: first.aggregate.submissions[0].id,
+      correspondenceKind: 'status_update',
+      compositionKind: 'agent',
+      bodyCiphertext: `draft-${crypto.randomUUID()}`,
+      draftedById: null,
+    })
+    await approveCopyrightCorrespondence({
+      currentUser: first.moderator,
+      correspondenceId: draft.id,
+      approvedAt: new Date('2026-07-01T12:00:00.000Z'),
+    })
+    const aggregate = await getCopyrightNoticePrivateAggregate(first.notice.id)
+    expect(aggregate?.lifecycleEvents.map(event => event.event_type)).toEqual(
+      expect.arrayContaining(['outbound_correspondence_created', 'agent_correspondence_approved']),
+    )
+  })
+})

@@ -1,5 +1,6 @@
 import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
+import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import type { CopyrightJurisdiction } from './types.mts'
 
 const JURISDICTIONS = new Set<CopyrightJurisdiction>(['us_dmca'])
@@ -8,6 +9,7 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
   const jurisdiction = body.jurisdiction
   const claimantDisplayName = body.claimant_display_name
   const claimantContact = body.claimant_contact
+  const claimantEmail = body.claimant_email
   const workDescription = body.work_description
   const goodFaithBelief = body.good_faith_belief
   const accuracyAuthorityUnderPenaltyOfPerjury = body.accuracy_authority_under_penalty_of_perjury
@@ -19,6 +21,11 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
     'Invalid claimant_display_name',
   )
   assert(boundedString(claimantContact, 4096), 422, 'claimant_contact is required')
+  assert(
+    boundedString(claimantEmail, 254) && isEmailAddress(claimantEmail),
+    422,
+    'claimant_email must be a valid email address',
+  )
   assert(boundedString(workDescription, 50_000), 422, 'work_description is required')
   assert(goodFaithBelief === true, 422, 'good_faith_belief must be accepted')
   assert(
@@ -55,6 +62,7 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
     jurisdiction: jurisdiction as CopyrightJurisdiction,
     claimantDisplayName: claimantDisplayName as string | null,
     claimantContact,
+    claimantEmail,
     workDescription,
     goodFaithBelief,
     accuracyAuthorityUnderPenaltyOfPerjury,

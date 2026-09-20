@@ -11,7 +11,7 @@ import { getCopyrightEmailIntakeForAgent } from '@services/copyright-notices/ema
 import onError from '@modules/on-error'
 import { callCopyrightEmailIntakeModel, type CopyrightEmailIntakeModelCaller } from './model.mts'
 
-const PROMPT_VERSION = 'copyright-email-intake-v2'
+const PROMPT_VERSION = 'copyright-email-intake-v3'
 
 export type { CopyrightEmailIntakeModelCaller } from './model.mts'
 
@@ -39,7 +39,7 @@ export async function runCopyrightEmailIntakeAgent(
   const sanitized = await sanitizePromptInjection(rawInput)
   const input = wrapExternalContent(sanitized, {
     source: 'inbound_email',
-    contentType: 'copyright-complaint',
+    contentType: 'copyright-submission',
   })
   const inputSha256 = createHash('sha256').update(input).digest()
   const safetyIdentifier = createHash('sha256').update(intake.ses_message_id).digest('hex')
@@ -69,9 +69,19 @@ export function parseCopyrightEmailIntakeOutput(text: string): Record<string, un
     !parsed ||
     typeof parsed.recommendation !== 'string' ||
     !recommendations.has(parsed.recommendation) ||
-    parsed.submission_kind !== 'notice' ||
+    !isSubmissionKind(parsed.submission_kind) ||
+    !isOptionalString(parsed.submission_summary, 10_000) ||
+    !isOptionalString(parsed.appeal_reason, 10_000) ||
+    !isOptionalString(parsed.counter_notice_name, 200) ||
+    !isOptionalString(parsed.counter_notice_address, 4096) ||
+    !isOptionalString(parsed.counter_notice_telephone, 200) ||
+    !isOptionalBoolean(parsed.consent_to_federal_jurisdiction) ||
+    !isOptionalBoolean(parsed.consent_to_service_of_process) ||
+    !isOptionalBoolean(parsed.good_faith_misidentification_under_penalty_of_perjury) ||
+    !isOptionalString(parsed.counter_notice_electronic_signature, 500) ||
     !isOptionalString(parsed.claimant_name, 200) ||
     !isOptionalString(parsed.claimant_contact, 4096) ||
+    !isOptionalString(parsed.claimant_email, 254) ||
     !isOptionalString(parsed.work_description, 50_000) ||
     !isOptionalBoolean(parsed.good_faith_belief) ||
     !isOptionalBoolean(parsed.accuracy_authority_under_penalty_of_perjury) ||
@@ -91,14 +101,36 @@ function isOptionalBoolean(value: unknown): boolean {
 }
 
 const SOURCE_FIELDS = new Set([
+  'submission_kind',
+  'submission_summary',
+  'appeal_reason',
+  'counter_notice_name',
+  'counter_notice_address',
+  'counter_notice_telephone',
+  'consent_to_federal_jurisdiction',
+  'consent_to_service_of_process',
+  'good_faith_misidentification_under_penalty_of_perjury',
+  'counter_notice_electronic_signature',
   'claimant_name',
   'claimant_contact',
+  'claimant_email',
   'work_description',
   'good_faith_belief',
   'accuracy_authority_under_penalty_of_perjury',
   'electronic_signature',
   'target_url',
 ])
+
+function isSubmissionKind(value: unknown): boolean {
+  return (
+    value === 'notice' ||
+    value === 'appeal' ||
+    value === 'counter_notice' ||
+    value === 'withdrawal' ||
+    value === 'court_or_ccb_hold' ||
+    value === 'supplement'
+  )
+}
 
 function isSourceEvidence(value: unknown): boolean {
   return (

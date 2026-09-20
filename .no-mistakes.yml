@@ -1752,6 +1752,16 @@ rules:
           column: copyright_notice_form_screening_id
           type: UUID
           nullable: true
+        - path: backend/data-stores/psql/migrations/0641-00-00-copyright-delivery-transport.sql
+          table: notifications
+          column: copyright_notice_id
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0639-00-00-copyright-email-threading.sql
+          table: copyright_notice_correspondence_messages
+          column: copyright_notice_email_intake_id
+          type: UUID
+          nullable: true
         - path: backend/data-stores/psql/migrations/0630-00-00-membership-ineligible-purchase-reversal-refund-scan-cycles.sql
           table: membership_ineligible_purchase_reversal_refund_scans
           column: registered_cycle_generation

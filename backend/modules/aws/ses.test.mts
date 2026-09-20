@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRawEmailMessage, resolveBccAddress } from './ses.mts'
+import { buildRawEmailMessage, getBccAddresses, resolveBccAddress } from './ses.mts'
 
 describe('buildRawEmailMessage', () => {
   it('preserves Gmail one-click unsubscribe headers in multipart email', () => {
@@ -78,5 +78,12 @@ describe('resolveBccAddress', () => {
 
   it('uses the dev mailbox everywhere else, including staging (NODE_ENV=production there too)', () => {
     expect(resolveBccAddress(undefined, false)).toBe('bcc-dev@voucha.ai')
+  })
+})
+
+describe('getBccAddresses', () => {
+  it('requires an explicit opt-out before omitting the global operational BCC', () => {
+    expect(getBccAddresses({})).toHaveLength(1)
+    expect(getBccAddresses({ allowGlobalBcc: false })).toEqual([])
   })
 })

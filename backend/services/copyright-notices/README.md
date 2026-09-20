@@ -11,6 +11,18 @@ but remains disabled by default with `COPYRIGHT_INTAKE_ENABLED`. Later enforceme
 layers must use these boundaries instead of treating a generic content report or ordinary appeal as
 a statutory notice.
 
+Delivery obligations are durable `copyright_notice_delivery_intents` rows. Claimant addresses are
+re-encrypted into an intent-scoped private recipient record, while poster addresses resolve from
+the affected member's current verified address only at send time. Every legal email references an
+immutable deterministic correspondence body; SES acceptance records its MessageId and sets the
+correspondence `sent_at` in the same database transaction as the intent receipt. The five-minute
+notification-queue reconciliation re-enqueues pending, failed, and expired claims. Bounce and
+complaint feedback transitions only the correlated SES intent to `bounced`.
+
+A statutory counter-notice forwarding intent is created only inside the qualifying deadline
+transaction, after an identified reviewer has found the immutable counter-notice compliant. The
+forwarded body and restoration date derive from that assessed submission and exact target scope.
+
 The form-intake layer adds a deliberately small authoritative resolver for the currently supported
 post-image placement: it accepts a hosted post URL plus image ID, verifies the association in the
 primary database, and derives the placement key server-side. It does not accept caller-supplied
@@ -18,13 +30,19 @@ placement keys or revisions. The full authoritative revision and delivery transi
 media-placement layer.
 
 Signed-in forms may create a provisional restriction only after the exact current structured
-intake receives a `clear` anti-spam screen; PostgreSQL binds the assessment and restriction to that
+intake receives a `not_obviously_invalid` anti-spam screen; PostgreSQL binds the assessment and restriction to that
 screening record. Guest forms and every email intake remain moderator-gated. Email admission uses
 the trusted SES `intakeKind`/S3-prefix contract, preserves the exact raw object version before
 parsing, retains encrypted threading headers, and retains malformed messages for manual review.
 The extraction records all statutory fields plus bounded source excerpts without inventing missing
 declarations. Ordinary approval identifies the recommendation reviewed; an agent failure requires
 an explicit manual-fallback reason.
+
+After an email intake is admitted, its Message-ID and reply references are correlated with keyed
+digests only. A matched inbound reply receives an immutable pending-review record and remains attached
+to the original MIME evidence and still receives the advisory extraction/recommendation. Staff must
+classify and admit it through the correspondence endpoint; the admission creates the case submission and inbound correspondence without allowing the agent to trigger a
+restriction, deadline, or outbound delivery.
 
 ## Invariants
 

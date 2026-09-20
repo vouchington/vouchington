@@ -6,6 +6,8 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
   assessedById: null
   draftedById: null
   actorUserId: null
+  recipientUserId: null
+  recipientUserErasedAt: Date
 }> {
   const { rows } = await write<{ actor_id: string; notice_id: string; submission_id: string }>(
     sql`/* createCopyrightErasureAuditFixture */
@@ -25,25 +27,41 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
       ), event AS (
         INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id)
         SELECT notice.id, 'test_actor_action', actor.id FROM notice CROSS JOIN actor
+      ), delivery_intent AS (
+        INSERT INTO copyright_notice_delivery_intents (
+          copyright_notice_id, recipient_user_id, recipient_role, delivery_kind, channel, idempotency_key
+        ) SELECT notice.id, actor.id, 'poster', 'poster_restriction_notice', 'in_app',
+          ${`copyright-erasure-delivery-${randomUUID()}`} FROM notice CROSS JOIN actor
       )
       SELECT actor.id AS actor_id, notice.id AS notice_id, submission.id AS submission_id FROM actor CROSS JOIN notice CROSS JOIN submission`,
   )
   const fixture = rows[0]!
   await write(sql`/* eraseCopyrightAuditActor */ DELETE FROM users WHERE id = ${fixture.actor_id}`)
-  const result = await read<{ assessed_by_id: null; drafted_by_id: null; actor_user_id: null }>(
+  const result = await read<{
+    assessed_by_id: null
+    drafted_by_id: null
+    actor_user_id: null
+    recipient_user_id: null
+    recipient_user_erased_at: Date
+  }>(
     sql`/* readCopyrightErasedAuditActors */
-      SELECT assessment.assessed_by_id, correspondence.drafted_by_id, event.actor_user_id
+      SELECT assessment.assessed_by_id, correspondence.drafted_by_id, event.actor_user_id,
+        delivery_intent.recipient_user_id, delivery_intent.recipient_user_erased_at
       FROM copyright_notice_submission_assessments assessment
       CROSS JOIN copyright_notice_correspondence_messages correspondence
       CROSS JOIN copyright_notice_lifecycle_events event
+      CROSS JOIN copyright_notice_delivery_intents delivery_intent
       WHERE assessment.copyright_notice_submission_id = ${fixture.submission_id}
         AND correspondence.copyright_notice_id = ${fixture.notice_id}
         AND event.copyright_notice_id = ${fixture.notice_id}
-        AND event.event_type = 'test_actor_action'`,
+        AND event.event_type = 'test_actor_action'
+        AND delivery_intent.copyright_notice_id = ${fixture.notice_id}`,
   )
   return {
     assessedById: result.rows[0]!.assessed_by_id,
     draftedById: result.rows[0]!.drafted_by_id,
     actorUserId: result.rows[0]!.actor_user_id,
+    recipientUserId: result.rows[0]!.recipient_user_id,
+    recipientUserErasedAt: result.rows[0]!.recipient_user_erased_at,
   }
 }

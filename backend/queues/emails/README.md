@@ -11,6 +11,8 @@ All emails should flow through this queue for reliability and for metrics (e.g. 
   - Concurrency: Configurable per worker
   - Each job processes one email recipient
   - Dispatcher jobs fan out engagement onboarding and moderation summary sends
+  - `processSendCopyrightNoticeEmail` resolves a claimed legal-delivery intent at send time; no
+    recipient address or legal body is carried in the queue payload.
   - Jobs may carry an optional `uiLocale`; processors render Voucha-authored copy in `en`, `es`, `fr`, or `pt`, falling back to English.
   - JobId format: `email:{type}:{recipient}:{timestamp}` for deduplication
 

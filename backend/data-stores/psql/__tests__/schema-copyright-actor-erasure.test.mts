@@ -12,6 +12,8 @@ describe('copyright actor erasure', () => {
       assessedById: null,
       draftedById: null,
       actorUserId: null,
+      recipientUserId: null,
+      recipientUserErasedAt: expect.any(Date),
     })
   })
 })

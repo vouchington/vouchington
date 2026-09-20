@@ -36,6 +36,7 @@ export function mapNotificationRow(row: Record<string, unknown>): Notification {
     user_warning_id: (row.user_warning_id as string | null) ?? null,
     conversation_id: (row.conversation_id as string | null) ?? null,
     community_id: (row.community_id as string | null) ?? null,
+    copyright_notice_id: (row.copyright_notice_id as string | null) ?? null,
     event_key: (row.event_key as string | null) ?? null,
     title: row.title as string,
     body: row.body as string,

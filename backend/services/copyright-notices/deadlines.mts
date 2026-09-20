@@ -2,6 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightNoticeDeadlineRecord } from './types.mts'
+import { createCounterNoticeForwardingInTransaction } from './counter-notice-forwarding.mts'
 
 const NEW_YORK = 'America/New_York'
 const NEW_YORK_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
@@ -177,6 +178,10 @@ export async function createCounterNoticeDeadline(input: {
   `)
   const deadline = result.rows[0]
   assert(deadline, 409, 'A restoration deadline already exists for this counter-notice')
+  await createCounterNoticeForwardingInTransaction(
+    { assessmentId: input.assessmentId, earliestRestorationAt: deadline.earliest_restoration_at },
+    transaction,
+  )
   await transaction(sql`/* createCounterNoticeDeadline:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, metadata)
     VALUES (${qualifying.copyright_notice_id}, 'counter_notice_deadline_started', '{}'::jsonb)

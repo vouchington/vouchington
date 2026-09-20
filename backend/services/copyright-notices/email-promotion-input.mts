@@ -1,4 +1,5 @@
 import assert from 'http-assert'
+import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import type { PrivateUser } from '@services/users/types'
 import type { CopyrightJurisdiction, CopyrightNoticeTargetInput } from './types.mts'
 
@@ -10,6 +11,7 @@ export type PromoteCopyrightEmailIntakeInput = {
   jurisdiction: CopyrightJurisdiction
   claimantDisplayName: string | null
   claimantContact: string
+  claimantEmail: string
   workDescription: string
   goodFaithBelief: boolean
   accuracyAuthorityUnderPenaltyOfPerjury: boolean
@@ -19,6 +21,11 @@ export type PromoteCopyrightEmailIntakeInput = {
 }
 
 export function assertStatutoryEmailFields(input: PromoteCopyrightEmailIntakeInput): void {
+  assert(
+    input.claimantEmail.length <= 254 && isEmailAddress(input.claimantEmail),
+    422,
+    'claimant email must be a valid email address',
+  )
   assert(input.claimantContact.trim(), 422, 'claimant contact is required')
   assert(input.workDescription.trim(), 422, 'work description is required')
   assert(input.goodFaithBelief, 422, 'good-faith belief is required')

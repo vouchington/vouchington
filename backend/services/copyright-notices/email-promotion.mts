@@ -1,3 +1,4 @@
+/* oxlint-disable max-lines -- Email admission keeps evidence, provenance, threading, and delivery atomic. */
 import { beginTransaction, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
@@ -6,7 +7,10 @@ import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { getOrCreateEmailAssessment } from './email-assessment.mts'
 import { createCopyrightNoticeAggregateInTransaction } from './create.mts'
+import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { copyrightEmailIntakePurpose, type CopyrightEmailIntake } from './email-intakes.mts'
+import { linkPendingCopyrightEmailRepliesInTransaction } from './email-threading.mts'
 import {
   assertStatutoryEmailFields,
   type PromoteCopyrightEmailIntakeInput,
@@ -58,6 +62,7 @@ async function admitCopyrightEmailIntake(
   `)
   const intake = intakeRows[0]
   assert(intake, 404, 'Copyright email intake not found')
+  await assertNoThreadCorrespondenceDecision(transaction, intake.id)
   const { rows: priorPromotions } = await transaction<{
     accepted: boolean
     promoted_copyright_notice_id: string | null
@@ -79,6 +84,17 @@ async function admitCopyrightEmailIntake(
       409,
       'Copyright email intake was already rejected',
     )
+    // ast-grep-ignore: no-three-sequential-awaits -- the case link and reply backfill must commit before returning an idempotent promotion.
+    await transaction(sql`/* promoteCopyrightEmailIntake:initialThreadLink */
+      INSERT INTO copyright_notice_email_intake_notice_links (
+        copyright_notice_email_intake_id, copyright_notice_id, link_kind
+      ) VALUES (${intake.id}, ${prior.promoted_copyright_notice_id}, 'initial')
+      ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+    `)
+    await linkPendingCopyrightEmailRepliesInTransaction(
+      { initialIntakeId: intake.id, noticeId: prior.promoted_copyright_notice_id },
+      transaction,
+    )
     await transaction.commit()
     return {
       noticeId: prior.promoted_copyright_notice_id,
@@ -94,6 +110,25 @@ async function admitCopyrightEmailIntake(
   const submissionId = await recordEmailPromotion(transaction, intake, notice.id, input, purpose)
   await transaction.commit()
   return { noticeId: notice.id, submissionId }
+}
+
+async function assertNoThreadCorrespondenceDecision(
+  transaction: TransactionQuery,
+  intakeId: string,
+): Promise<void> {
+  const { rows } = await transaction(sql`/* promoteCopyrightEmailIntake:threadReview */
+    SELECT 1
+    FROM copyright_notice_email_intake_notice_links link
+    WHERE link.copyright_notice_email_intake_id = ${intakeId}
+      AND link.link_kind = 'thread'
+    UNION ALL
+    SELECT 1
+    FROM copyright_notice_email_correspondence_reviews review
+    WHERE review.copyright_notice_email_intake_id = ${intakeId}
+      AND review.action IN ('admitted', 'rejected')
+    LIMIT 1
+  `)
+  assert(!rows[0], 409, 'Thread-linked copyright email cannot be approved as an initial intake')
 }
 
 async function assertRecommendationScope(
@@ -154,6 +189,7 @@ async function recordEmailPromotion(
   `)
   const submission = rows[0]
   assert(submission, 500, 'Email copyright submission was not created')
+  // ast-grep-ignore: no-three-sequential-awaits -- immutable evidence, human review, thread linking, and delivery obligations are ordered in one transaction.
   await transaction(sql`/* promoteCopyrightEmailIntake:evidence */
     INSERT INTO copyright_notice_evidence_artifacts (copyright_notice_submission_id, storage_key, sha256, mime_type, byte_size)
     VALUES (${submission.id}, ${intake.raw_storage_key}, ${intake.raw_sha256}, ${intake.raw_mime_type}, ${intake.raw_byte_size})
@@ -171,5 +207,38 @@ async function recordEmailPromotion(
         purpose,
       )}, ${noticeId})
   `)
+  await transaction(sql`/* promoteCopyrightEmailIntake:initialThreadLink */
+    INSERT INTO copyright_notice_email_intake_notice_links (
+      copyright_notice_email_intake_id, copyright_notice_id, link_kind
+    ) VALUES (${intake.id}, ${noticeId}, 'initial')
+    ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+  `)
+  await linkPendingCopyrightEmailRepliesInTransaction(
+    { initialIntakeId: intake.id, noticeId },
+    transaction,
+  )
+  const claimantReceipt = await createDeterministicCopyrightCorrespondenceInTransaction(
+    {
+      noticeId,
+      submissionId: submission.id,
+      correspondenceKind: 'receipt',
+      bodyText: `We received your copyright notice for case ${noticeId}. We will review it and contact you if we need more information.`,
+    },
+    transaction,
+  )
+  await createCopyrightDeliveryIntent(
+    {
+      noticeId,
+      submissionId: submission.id,
+      correspondenceId: claimantReceipt.id,
+      recipientUserId: null,
+      recipientRole: 'claimant',
+      deliveryKind: 'claimant_receipt',
+      channel: 'email',
+      idempotencyKey: `copyright-email-intake:${intake.id}:claimant-receipt`,
+      recipientEmail: input.claimantEmail,
+    },
+    transaction,
+  )
   return submission.id
 }

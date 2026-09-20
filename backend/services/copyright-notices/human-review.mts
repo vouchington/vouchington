@@ -44,7 +44,9 @@ export async function completeCopyrightMandatoryHumanReview(input: {
     await transaction<CopyrightRestrictionRecord>(sql`/* completeCopyrightMandatoryHumanReview */
     UPDATE copyright_restrictions
     SET human_reviewed_at = ${input.reviewedAt}, human_review_action = ${input.action},
-      human_reviewed_by_id = ${input.currentUser.id}
+      human_reviewed_by_id = ${input.currentUser.id},
+      lifted_at = CASE WHEN ${input.action} = 'reverse' THEN ${input.reviewedAt} ELSE lifted_at END,
+      lifted_by_id = CASE WHEN ${input.action} = 'reverse' THEN ${input.currentUser.id} ELSE lifted_by_id END
     WHERE id = ${input.restrictionId}
       AND lifted_at IS NULL
       AND human_reviewed_at IS NULL

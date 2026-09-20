@@ -1,14 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestImage,
+  insertTestPost,
+  insertTestPostImage,
+} from '@voucha/test-helpers'
 import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import {
   createCopyrightEmailIntake,
+  createCopyrightNoticeAggregate,
   getPendingCopyrightAgentDispatches,
+  promoteCopyrightEmailIntake,
   recordCopyrightEmailParse,
   rejectCopyrightEmailIntake,
 } from './index.mts'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { getCopyrightEmailIntakeForAgent } from './email-intake-parses.mts'
+import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 
 describe('copyright email intake persistence', () => {
   it('keeps the source and advisory recommendation private and replay-safe', async () => {
@@ -116,6 +124,7 @@ describe('copyright email intake persistence', () => {
       currentUser: moderator,
       intakeId: intake.id,
       recommendationId: null,
+      manualFallbackReason: 'The extraction agent was unavailable.',
       rationale: 'The message is unrelated spam.',
     }
 
@@ -125,5 +134,86 @@ describe('copyright email intake persistence', () => {
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
       { accepted: false, promoted_copyright_notice_id: null },
     ])
+  })
+
+  it('does not let a thread-linked email receive an initial-case decision', async () => {
+    const moderatorRecord = await createTestUser()
+    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+    const poster = await createTestUser()
+    const postId = await insertTestPost({
+      title: `Copyright thread ${crypto.randomUUID()}`,
+      slug: `copyright-thread-${crypto.randomUUID()}`,
+      createdById: poster.id,
+      markdown: 'image',
+    })
+    const imageId = await insertTestImage(poster.id)
+    await insertTestPostImage({ postId, imageId })
+    const notice = await createCopyrightNoticeAggregate({
+      jurisdiction: 'us_dmca',
+      receivedAt: new Date(),
+      claimantUserId: null,
+      claimantDisplayName: null,
+      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      workDescription: 'Original photograph',
+      policyVersion: 'test-v1',
+      initialSubmission: { kind: 'notice', sourceKind: 'email', bodyCiphertext: 'ciphertext' },
+      targets: [
+        {
+          placementKey: `post-image:${postId}:${imageId}`,
+          placementRevision: 1,
+          imageId,
+          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+        },
+      ],
+    })
+    const sesMessageId = `ses-thread-${crypto.randomUUID()}`
+    const { intake } = await createCopyrightEmailIntake({
+      sesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${sesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 6),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+    })
+    await linkCopyrightEmailIntakeToNotice({
+      intakeId: intake.id,
+      noticeId: notice.id,
+      linkKind: 'thread',
+    })
+
+    await expect(
+      rejectCopyrightEmailIntake({
+        currentUser: moderator,
+        intakeId: intake.id,
+        recommendationId: null,
+        manualFallbackReason: 'The extraction agent was unavailable.',
+        rationale: 'This is correspondence, not a new notice.',
+      }),
+    ).rejects.toThrow('Thread-linked copyright email cannot be rejected as an initial intake')
+    await expect(
+      promoteCopyrightEmailIntake({
+        currentUser: moderator,
+        intakeId: intake.id,
+        recommendationId: null,
+        manualFallbackReason: 'The agent recommendation is unavailable.',
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: null,
+        claimantContact: 'claimant@example.test',
+        claimantEmail: 'claimant@example.test',
+        workDescription: 'Original photograph',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Claimant',
+        targets: [
+          {
+            placementKey: `post-image:${postId}:${imageId}`,
+            placementRevision: 1,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
+        rationale: 'This must remain correspondence on the matched case.',
+      }),
+    ).rejects.toThrow('Thread-linked copyright email cannot be approved as an initial intake')
   })
 })

@@ -6,11 +6,14 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
+import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 
 describe('copyright notice routes', () => {
   beforeEach(() => {
     vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
+    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
+    vi.stubEnv('SES_COPYRIGHT_SOURCE_EMAIL', 'copyright@voucha.ai')
+    vi.stubEnv('SES_COPYRIGHT_REPLY_TO', 'copyright@voucha.ai')
   })
   afterEach(() => {
     vi.unstubAllEnvs()
@@ -119,6 +122,7 @@ async function createCopyrightFormFixture() {
       jurisdiction: 'us_dmca',
       claimant_display_name: 'Copyright claimant',
       claimant_contact: 'claimant@example.test',
+      claimant_email: 'claimant@example.test',
       work_description: 'A photograph owned by the claimant.',
       good_faith_belief: true,
       accuracy_authority_under_penalty_of_perjury: true,

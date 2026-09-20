@@ -20,6 +20,9 @@ vi.mock<typeof import('mailparser')>(
 describe('SES copyright inbound routing', () => {
   it('preserves the raw email before source cleanup and awaits agent enqueue', async () => {
     vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
+    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
+    vi.stubEnv('SES_COPYRIGHT_SOURCE_EMAIL', 'copyright@voucha.ai')
+    vi.stubEnv('SES_COPYRIGHT_REPLY_TO', 'copyright@voucha.ai')
     const data = {
       sesMessageId: 'ses-copyright-message',
       objectKey: 'copyright-incoming/ses-copyright-message',
@@ -39,7 +42,7 @@ describe('SES copyright inbound routing', () => {
       isNew: true,
     })
     const enqueue = vi.fn<(intakeId: string) => Promise<void>>().mockResolvedValue(undefined)
-    const recordParse = vi.fn<typeof recordCopyrightEmailParse>().mockResolvedValue(undefined)
+    const recordParse = vi.fn<typeof recordCopyrightEmailParse>().mockResolvedValue(null)
     const createSupport = vi.fn<() => Promise<{ is_new: false }>>()
     const parsed: ParsedSesInboundEmail = {
       fromEmail: 'claimant@example.test',
@@ -95,6 +98,33 @@ describe('SES copyright inbound routing', () => {
     )
     expect(createSupport).not.toHaveBeenCalled()
     expect(deleteObject).toHaveBeenCalledWith(data.objectKey)
+    recordParse.mockResolvedValue({
+      noticeId: 'notice-id',
+      matchedIntakeId: 'prior-intake-id',
+      matchedReference: '<prior@example.test>',
+    })
+    await processSesInboundEmail(data, {
+      isInboundSupportEmailComplete: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
+      parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>().mockResolvedValue(parsed),
+      loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
+        rawMime: Readable.from([Buffer.from('raw')]),
+        digest: Promise.resolve({ sha256: Buffer.alloc(32, 7), byteSize: 3 }),
+        receivedAt: new Date('2026-07-01T12:00:00.000Z'),
+        sourceIdentity: { eTag: '"etag-1"', versionId: 'version-1' },
+      }),
+      loadSesInboundObjectVersion: vi
+        .fn<typeof loadSesInboundObjectVersion>()
+        .mockResolvedValue(Readable.from([Buffer.from('raw')])),
+      copySesInboundObjectToCopyrightEvidence: vi
+        .fn<typeof copySesInboundObjectToCopyrightEvidence>()
+        .mockResolvedValue('evidence-key'),
+      createCopyrightEmailIntake: createIntake,
+      recordCopyrightEmailParse: recordParse,
+      enqueueCopyrightEmailIntakeAndWait: enqueue,
+      createInboundSupportEmailMessage: createSupport,
+      deleteSesInboundObject: deleteObject,
+    })
+    expect(enqueue).toHaveBeenCalledTimes(2)
     vi.unstubAllEnvs()
   })
 
@@ -113,7 +143,7 @@ describe('SES copyright inbound routing', () => {
       raw_mime_type: 'message/rfc822',
       raw_byte_size: 3,
     }
-    const recordParse = vi.fn<typeof recordCopyrightEmailParse>().mockResolvedValue(undefined)
+    const recordParse = vi.fn<typeof recordCopyrightEmailParse>().mockResolvedValue(null)
     const deleteObject = vi.fn<(key: string) => Promise<void>>().mockResolvedValue(undefined)
     const enqueue = vi.fn<(intakeId: string) => Promise<void>>()
 

@@ -18,6 +18,7 @@
     "@agents/autotagger": "workspace:^",
     "@agents/chat": "workspace:^",
     "@agents/community-moderation": "workspace:^",
+    "@agents/copyright-appeal-recommendation": "workspace:^",
     "@agents/copyright-email-intake": "workspace:^",
     "@agents/copyright-form-screening": "workspace:^",
     "@agents/customer-support": "workspace:^",

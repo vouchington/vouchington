@@ -15,7 +15,7 @@ Not partitioned — growth: unbounded.
 | `imposed_by_id`              | `uuid`                     | yes      |                              |          |           |           | Staff actor that imposed the restriction, or NULL for an authorized automatic provisional action. |
 | `lifted_by_id`               | `uuid`                     | yes      |                              |          |           |           | Staff actor that lifted the restriction; NULL denotes an authorized system restoration.           |
 | `human_reviewed_at`          | `timestamp with time zone` | yes      |                              |          |           |           | When staff completed the mandatory review of this exact provisional restriction.                  |
-| `human_review_action`        | `text`                     | yes      |                              |          |           |           | Human outcome for this restriction: confirm, modify, or reverse.                                  |
+| `human_review_action`        | `text`                     | yes      |                              |          |           |           | Human outcome for this target restriction: confirm or reverse.                                    |
 | `human_reviewed_by_id`       | `uuid`                     | yes      |                              |          |           |           | Staff reviewer; may become NULL only when the reviewer account is erased.                         |
 | `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                   |
 | `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                   |
@@ -31,7 +31,7 @@ _none_
 - `copyright_restrictions_check`: `CHECK (((lifted_at IS NULL) OR (lifted_at >= imposed_at)))`
 - `copyright_restrictions_check1`: `CHECK (((human_reviewed_at IS NULL) OR (human_reviewed_at >= imposed_at)))`
 - `copyright_restrictions_check2`: `CHECK ((((human_reviewed_at IS NULL) AND (human_review_action IS NULL) AND (human_reviewed_by_id IS NULL)) OR ((human_reviewed_at IS NOT NULL) AND (human_review_action IS NOT NULL))))`
-- `copyright_restrictions_human_review_action_check`: `CHECK ((human_review_action = ANY (ARRAY['confirm'::text, 'modify'::text, 'reverse'::text])))`
+- `copyright_restrictions_human_review_action_check`: `CHECK ((human_review_action = ANY (ARRAY['confirm'::text, 'reverse'::text])))`
 
 **Foreign keys:**
 

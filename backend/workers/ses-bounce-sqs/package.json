@@ -17,6 +17,7 @@
   "dependencies": {
     "@backend/worker-runtime": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",
     "http-assert": "^1.5.0"
   },

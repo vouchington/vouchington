@@ -3,8 +3,10 @@ import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
 import type { CopyrightNoticeSubmissionRecord } from './types.mts'
+import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 
 export type CopyrightAppealInput = {
   reason: string
@@ -125,13 +127,14 @@ async function createAuthenticatedCopyrightSubmission(
     403,
     'You may only submit for your affected hosted material',
   )
-  const purpose = `copyright-submission:${noticeId}:${idempotencyKey}`
+  const submissionId = uuidv7()
+  const purpose = copyrightSubmissionPurpose(submissionId)
   const now = new Date()
   const { rows } =
     await transaction<CopyrightNoticeSubmissionRecord>(sql`/* createCopyrightSubmission */
     INSERT INTO copyright_notice_submissions (
-      copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
-    ) VALUES (${noticeId}, ${kind}, ${now}, 'signed_in_form', ${currentUser.id},
+      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
+    ) VALUES (${submissionId}, ${noticeId}, ${kind}, ${now}, 'signed_in_form', ${currentUser.id},
       ${encryptSecret(JSON.stringify(input), purpose)})
     RETURNING id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
   `)
@@ -153,6 +156,23 @@ async function createAuthenticatedCopyrightSubmission(
       copyright_notice_id, event_type, actor_user_id, metadata
     ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, '{}'::jsonb)
   `)
+  await createCopyrightDeliveryIntent(
+    {
+      noticeId,
+      submissionId: submission.id,
+      correspondenceId: null,
+      recipientUserId: currentUser.id,
+      recipientRole: 'poster',
+      deliveryKind: 'status_update',
+      channel: 'in_app',
+      idempotencyKey: `copyright-submission:${submission.id}:poster-receipt`,
+    },
+    transaction,
+  )
   await transaction.commit()
   return { submission, isDuplicate: false }
+}
+
+export function copyrightSubmissionPurpose(submissionId: string): string {
+  return `copyright-submission:${submissionId}`
 }

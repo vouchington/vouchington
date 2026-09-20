@@ -19,6 +19,10 @@ export interface SendEmailOptions {
   html?: string
   headers?: Record<string, string>
   configurationSetName?: string
+  source?: string
+  replyToAddress?: string
+  /** Set false for messages containing legal or other sensitive personal data. */
+  allowGlobalBcc?: boolean
 }
 
 export function assertValidSendEmailOptions(options: SendEmailOptions): void {

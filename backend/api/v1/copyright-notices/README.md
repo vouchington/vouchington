@@ -2,12 +2,14 @@
 
 Structured copyright notices use CAPTCHA or App Attest, rate limiting, UUID idempotency, and
 server-resolved hosted image placements. Signed-in and guest claimants may submit a notice, but only
-a signed-in notice with a durable `clear` anti-spam recommendation is eligible for provisional
+a signed-in notice with a durable `not_obviously_invalid` anti-spam recommendation is eligible for provisional
 restriction. A moderator must subsequently review every provisional restriction.
 
 Signed-in affected posters may submit an informal appeal or a separate statutory counter-notice.
 Both flows require CAPTCHA, exact case targets, and server-verified ownership. Email intake approval
-is staff-only and cannot create a case until a moderator supplies and approves the structured fields.
+is staff-only and cannot create a case until a moderator supplies and approves the structured fields. Matched
+replies use `POST /api/v1/copyright-email-intakes/:id/correspondence` for staff classification; the original MIME
+remains attached and no agent, restriction, or outbound message runs automatically.
 
 ## Performance
 

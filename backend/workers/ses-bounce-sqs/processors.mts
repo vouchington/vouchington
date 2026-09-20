@@ -1,6 +1,7 @@
 import assert from 'http-assert'
 import type { SqsMessage } from '@backend/worker-runtime'
 import { createSesBounceEvent, type CreateSesBounceEventInput } from '@services/ses-bounce-events'
+import { markCopyrightDeliveryIntentBouncedBySesMessageId } from '@services/copyright-notices'
 
 interface SesRecipient {
   emailAddress: string
@@ -54,6 +55,19 @@ export async function processSesBounceSqsMessage(message: SqsMessage): Promise<v
   const notification = JSON.parse(message.body) as SesNotification
   const input = buildCreateSesBounceEventInput(notification)
   await createSesBounceEvent(input)
+  if (isTerminalCopyrightDeliveryFailure(input) && input.ses_message_id) {
+    await markCopyrightDeliveryIntentBouncedBySesMessageId({
+      sesMessageId: input.ses_message_id,
+      recipientEmails: input.recipients,
+    })
+  }
+}
+
+function isTerminalCopyrightDeliveryFailure(input: CreateSesBounceEventInput): boolean {
+  return (
+    input.notification_type === 'complaint' ||
+    (input.notification_type === 'bounce' && input.bounce_type === 'permanent')
+  )
 }
 
 function buildCreateSesBounceEventInput(notification: SesNotification): CreateSesBounceEventInput {

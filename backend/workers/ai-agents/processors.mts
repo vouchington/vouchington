@@ -21,6 +21,7 @@ import { processDisputeResolution } from './processors/process-dispute-resolutio
 import { processAppealResolution } from './processors/process-appeal-resolution.mts'
 import { processCopyrightEmailIntake } from './processors/process-copyright-email-intake.mts'
 import { processCopyrightFormScreening } from './processors/process-copyright-form-screening.mts'
+import { processCopyrightAppealRecommendation } from './processors/process-copyright-appeal-recommendation.mts'
 import { processBackfillReportJudgements } from './processors/process-backfill-report-judgements.mts'
 import { processAutoDispatchJudgement } from './processors/process-auto-dispatch-judgement.mts'
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
@@ -100,6 +101,10 @@ export function processAIAgent(
     case 'copyright-form-screening':
       return processCopyrightFormScreening(
         job as Job<import('@queues/ai-agents/types').CopyrightFormScreeningJobData>,
+      )
+    case 'copyright-appeal-recommendation':
+      return processCopyrightAppealRecommendation(
+        job as Job<import('@queues/ai-agents/types').CopyrightAppealRecommendationJobData>,
       )
     case 'backfill_report_judgements':
       return processBackfillReportJudgements()

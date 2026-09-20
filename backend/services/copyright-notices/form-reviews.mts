@@ -7,7 +7,7 @@ import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 
-export async function reviewCopyrightGuestFormIntake(input: {
+export async function reviewCopyrightFormIntake(input: {
   intakeId: string
   currentUser: PrivateUser
   accepted: boolean
@@ -16,16 +16,21 @@ export async function reviewCopyrightGuestFormIntake(input: {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   await using transaction = await beginTransaction()
-  await transaction(sql`/* reviewCopyrightGuestFormIntake:lock */
+  await transaction(sql`/* reviewCopyrightFormIntake:lock */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${input.intakeId}`}, 0))
   `)
   const { rows } = await transaction<{
     notice_id: string
     submission_id: string
     source_kind: string
-  }>(sql`/* reviewCopyrightGuestFormIntake:intake */
+    screening_recommendation: string | null
+  }>(sql`/* reviewCopyrightFormIntake:intake */
     SELECT intake.copyright_notice_id AS notice_id,
-      intake.copyright_notice_submission_id AS submission_id, submission.source_kind
+      intake.copyright_notice_submission_id AS submission_id, submission.source_kind,
+      (SELECT screening.recommendation
+       FROM copyright_notice_form_screenings screening
+       WHERE screening.copyright_notice_form_intake_id = intake.id
+       ORDER BY screening.id DESC LIMIT 1) AS screening_recommendation
     FROM copyright_notice_form_intakes intake
     JOIN copyright_notice_submissions submission
       ON submission.id = intake.copyright_notice_submission_id
@@ -33,16 +38,23 @@ export async function reviewCopyrightGuestFormIntake(input: {
   `)
   const intake = rows[0]
   assert(intake, 404, 'Copyright form intake not found')
-  assert(intake.source_kind === 'guest_form', 422, 'Only guest forms require moderator approval')
+  assert(
+    intake.source_kind === 'guest_form' ||
+      (intake.source_kind === 'signed_in_form' &&
+        (intake.screening_recommendation === null ||
+          intake.screening_recommendation === 'invalid_or_spam')),
+    422,
+    'Only guest forms and signed-in forms without a clear anti-spam result require moderator review',
+  )
   const { rows: reviewRows } = await transaction<{ accepted: boolean }>(
-    sql`/* reviewCopyrightGuestFormIntake:existing */
+    sql`/* reviewCopyrightFormIntake:existing */
       SELECT accepted FROM copyright_notice_form_intake_reviews
       WHERE copyright_notice_form_intake_id = ${input.intakeId}`,
   )
   const existing = reviewRows[0]
-  assert(!existing || existing.accepted === input.accepted, 409, 'Guest form was already reviewed')
+  assert(!existing || existing.accepted === input.accepted, 409, 'Form intake was already reviewed')
   if (!existing) {
-    await transaction(sql`/* reviewCopyrightGuestFormIntake:review */
+    await transaction(sql`/* reviewCopyrightFormIntake:review */
       INSERT INTO copyright_notice_form_intake_reviews (
         copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
       ) VALUES (
@@ -98,7 +110,7 @@ async function getCurrentAssessment(
   submissionId: string,
 ): Promise<{ id: string; substantially_compliant: boolean } | null> {
   const { rows } = await write<{ id: string; substantially_compliant: boolean }>(
-    sql`/* reviewCopyrightGuestFormIntake:assessment */
+    sql`/* reviewCopyrightFormIntake:assessment */
       SELECT assessment.id, assessment.substantially_compliant
       FROM copyright_notice_submission_assessments assessment
       WHERE assessment.copyright_notice_submission_id = ${submissionId}
@@ -115,7 +127,7 @@ async function applyMissingRestrictions(
   assessmentId: string,
   moderatorId: string,
 ): Promise<void> {
-  const { rows } = await write<{ id: string }>(sql`/* reviewCopyrightGuestFormIntake:targets */
+  const { rows } = await write<{ id: string }>(sql`/* reviewCopyrightFormIntake:targets */
     SELECT target.id FROM copyright_notice_targets target
     WHERE target.copyright_notice_id = ${noticeId}
       AND NOT EXISTS (

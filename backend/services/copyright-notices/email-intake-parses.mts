@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import {
@@ -8,7 +8,15 @@ import {
   type CopyrightEmailIntake,
   type CopyrightEmailIntakeForAgent,
 } from './email-intakes.mts'
-
+import {
+  recordCopyrightEmailThreadReferences,
+  type CopyrightEmailThreadMatch,
+} from './email-threading.mts'
+import {
+  decryptAgentIntake,
+  type AttachmentCiphertexts,
+  type ParseCiphertexts,
+} from './email-intake-agent.mts'
 export type CopyrightEmailParseInput =
   | {
       status: 'succeeded'
@@ -25,7 +33,7 @@ export type CopyrightEmailParseInput =
 export async function recordCopyrightEmailParse(
   intake: CopyrightEmailIntake,
   input: CopyrightEmailParseInput,
-): Promise<void> {
+): Promise<CopyrightEmailThreadMatch | null> {
   validateParseInput(input)
   const purpose = copyrightEmailIntakePurpose(intake.ses_message_id)
   await using transaction = await beginTransaction()
@@ -53,8 +61,13 @@ export async function recordCopyrightEmailParse(
     await insertAttachments(transaction, intake.id, input.attachments, purpose)
   }
   await transaction.commit()
+  if (input.status !== 'succeeded') return null
+  return recordCopyrightEmailThreadReferences({
+    intakeId: intake.id,
+    messageId: input.messageId,
+    replyReferences: input.replyReferences,
+  })
 }
-
 export async function getCopyrightEmailIntakeForAgent(
   intakeId: string,
 ): Promise<CopyrightEmailIntakeForAgent | null> {
@@ -83,20 +96,6 @@ export async function getCopyrightEmailIntakeForAgent(
   )
   await transaction.commit()
   return decryptAgentIntake(intake, attachments)
-}
-
-type ParseCiphertexts = {
-  sender_email_ciphertext: string
-  sender_name_ciphertext: string | null
-  subject_ciphertext: string
-  body_ciphertext: string
-}
-type AttachmentCiphertexts = {
-  filename_ciphertext: string | null
-  content_id_ciphertext: string | null
-  mime_type: string
-  byte_size: number
-  sha256: Buffer
 }
 
 function validateParseInput(input: CopyrightEmailParseInput): void {
@@ -131,7 +130,6 @@ function validateParseInput(input: CopyrightEmailParseInput): void {
     'Invalid attachment metadata',
   )
 }
-
 async function insertAttachments(
   transaction: Awaited<ReturnType<typeof beginTransaction>>,
   intakeId: string,
@@ -162,37 +160,4 @@ async function insertAttachments(
       byte_size integer, sha256 text
     )
   `)
-}
-
-function decryptAgentIntake(
-  intake: CopyrightEmailIntake & ParseCiphertexts,
-  attachments: AttachmentCiphertexts[],
-): CopyrightEmailIntakeForAgent {
-  const purpose = copyrightEmailIntakePurpose(intake.ses_message_id)
-  return {
-    id: intake.id,
-    ses_message_id: intake.ses_message_id,
-    received_at: intake.received_at,
-    raw_storage_key: intake.raw_storage_key,
-    raw_sha256: intake.raw_sha256,
-    raw_mime_type: intake.raw_mime_type,
-    raw_byte_size: intake.raw_byte_size,
-    senderEmail: decryptSecret(intake.sender_email_ciphertext, purpose),
-    senderName: intake.sender_name_ciphertext
-      ? decryptSecret(intake.sender_name_ciphertext, purpose)
-      : null,
-    subject: decryptSecret(intake.subject_ciphertext, purpose),
-    bodyText: decryptSecret(intake.body_ciphertext, purpose),
-    attachments: attachments.map(attachment => ({
-      filename: attachment.filename_ciphertext
-        ? decryptSecret(attachment.filename_ciphertext, purpose)
-        : null,
-      contentId: attachment.content_id_ciphertext
-        ? decryptSecret(attachment.content_id_ciphertext, purpose)
-        : null,
-      mimeType: attachment.mime_type,
-      byteSize: attachment.byte_size,
-      sha256: attachment.sha256,
-    })),
-  }
 }
