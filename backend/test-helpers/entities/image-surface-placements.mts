@@ -88,6 +88,31 @@ export async function allowTestTopicSurfaceImageDelivery(input: {
   await completeTestMediaDeliveryRecord(deliveryKey)
 }
 
+/** Makes one current user profile-image surface visible through the fail-closed delivery registry. */
+export async function allowTestUserProfileImageDelivery(input: {
+  userId: string
+  imageId: string
+}): Promise<void> {
+  const placements = await getTestImageSurfacePlacements({
+    userId: input.userId,
+    imageId: input.imageId,
+    surfaceKind: 'user-profile-image',
+  })
+  const placement = placements.find(candidate => candidate.retired_at === null)
+  if (!placement) {
+    throw new Error(
+      `Expected an active user-profile-image placement for ${input.userId}/${input.imageId}`,
+    )
+  }
+  const { deliveryKey } = await stageImagePlacementDeliveryRecord({
+    placementId: placement.placement_id,
+    revision: placement.placement_revision,
+    imageId: placement.image_id,
+    state: 'allow',
+  })
+  await completeTestMediaDeliveryRecord(deliveryKey)
+}
+
 export async function markTestMediaDeliveryRecordFailed(deliveryKey: string): Promise<void> {
   await write(sql`/* markTestMediaDeliveryRecordFailed */
     UPDATE media_delivery_registry_records
@@ -147,7 +172,10 @@ export async function setTestImageCreator(imageId: string, userId: string): Prom
   `)
 }
 
-export async function setTestUserProfileImage(userId: string, imageId: string): Promise<void> {
+export async function setTestUserProfileImage(
+  userId: string,
+  imageId: string | null,
+): Promise<void> {
   await write(sql`/* setTestUserProfileImage */
     UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}
   `)

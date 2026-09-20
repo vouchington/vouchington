@@ -3,7 +3,10 @@ import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { TEST_PNG } from '../../helpers/test-fixtures.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { insertTestImage } from '../../../backend/test-helpers/entities/images.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import {
+  allowTestUserProfileImageDelivery,
+  setTestUserProfileImage,
+} from '../../../backend/test-helpers/entities/image-surface-placements.mts'
 import { invalidate } from '../../../backend/services/entity-cache/index.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
@@ -16,10 +19,7 @@ test.describe('Identity Profile Image', () => {
     // Reset profile_image_id so reruns start from a clean state.
     // These tests must update TEST_USER_ID directly — a generic per-spec login
     // user would require a new test-login endpoint (larger refactor).
-    await write(
-      `/* identity-image-spec resetProfileImage */ UPDATE users SET profile_image_id = NULL WHERE id = $1`,
-      [TEST_USER_ID],
-    )
+    await setTestUserProfileImage(TEST_USER_ID, null)
     // Invalidate entity cache so the reset is visible on the next page load.
     await invalidate.users(TEST_USER_ID)
   })
@@ -37,10 +37,8 @@ test.describe('Identity Profile Image', () => {
 
   test('shows avatar preview when profile image is already set', async ({ page }) => {
     const imageId = await insertTestImage(TEST_USER_ID)
-    await write(
-      `/* identity-image-spec setProfileImage */ UPDATE users SET profile_image_id = $1 WHERE id = $2`,
-      [imageId, TEST_USER_ID],
-    )
+    await setTestUserProfileImage(TEST_USER_ID, imageId)
+    await allowTestUserProfileImageDelivery({ userId: TEST_USER_ID, imageId })
     await invalidate.users(TEST_USER_ID)
 
     await page.route(
@@ -59,10 +57,8 @@ test.describe('Identity Profile Image', () => {
 
   test('removes profile image when clicking remove', async ({ page }) => {
     const imageId = await insertTestImage(TEST_USER_ID)
-    await write(
-      `/* identity-image-spec setProfileImageForRemoval */ UPDATE users SET profile_image_id = $1 WHERE id = $2`,
-      [imageId, TEST_USER_ID],
-    )
+    await setTestUserProfileImage(TEST_USER_ID, imageId)
+    await allowTestUserProfileImageDelivery({ userId: TEST_USER_ID, imageId })
     await invalidate.users(TEST_USER_ID)
 
     await page.route(

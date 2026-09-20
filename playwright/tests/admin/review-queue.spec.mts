@@ -5,6 +5,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '../../../backend/test-helpers/index.mts'
+import { allowTestPostImageDelivery } from '../../../backend/test-helpers/entities/post-images.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
@@ -31,6 +32,7 @@ test.beforeAll(async () => {
   })
   const rejectedImageId = await insertTestImage(author.id)
   await insertTestPostImage({ postId: rejectedPostId, imageId: rejectedImageId })
+  await allowTestPostImageDelivery({ postId: rejectedPostId, imageId: rejectedImageId })
   await insertTestPost({
     title: inReviewTitle,
     slug: `playwright-in-review-${suffix}`,
