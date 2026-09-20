@@ -69,8 +69,6 @@ color, background, or inset ring/shadow treatments instead.
 | **Engineering / Dynamic Config** | Dynamic Config                                           | `/admin/dynamic-config`       | —      | —‡   | yes   | yes      |
 |                                  | Vote Integrity                                           | `/vote-integrity/flags`       | —      | —    | yes   | —        |
 
-† Chats section only visible on `/chat` routes (authenticated users only).
-
 ‡ Dynamic Config is role-gated, not available to every authenticated user. Administrators,
 moderators, developers, customer support, and investors can view it. Each namespace's authoritative
 `can_update` value controls writes; `feature-flags` specifically grants writes and local overrides

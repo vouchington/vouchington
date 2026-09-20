@@ -233,15 +233,6 @@ Before moving, renaming, or removing an app route or admin surface:
 
 Internal links to topic detail pages and topic subpages must prefer slug over id. Use `topicHref` and `topicManagementHref` from `web/lib/links/entity-href.ts` when a full `Topic` object is available — these helpers resolve `slug ?? id` automatically. In components that receive only `topicId` and `topicSlug` as separate props (not a full Topic object), use `${topicSlug ?? topicId}` in template literals to build the `/:topic-type/:idOrSlug/…` segment.
 
-## Chat
-
-Only for logged-in users
-
-- `/chat` - start a new chat
-- `/chat/:id` - go to a specific chat
-
-Chat content is centered at `max-w-3xl` within the content column. The layout uses full viewport height minus the navbar (`100svh - 3rem`).
-
 ## CRM (Contact Relationship Management)
 
 Admin-only routes for managing influencer/contact outreach. All CRM routes are `noindex, nofollow` and require the `administrator` role.

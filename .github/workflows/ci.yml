@@ -447,7 +447,6 @@ jobs:
       trusted_secret_context: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' }}
     secrets:
       AWS_TEST_ROLE_ARN: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.AWS_TEST_ROLE_ARN || '' }}
-      OPENAI_API_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}
       S3_BUCKET_IMAGES: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.S3_BUCKET_IMAGES || '' }}
       S3_BUCKET_IMAGE_UPLOADS: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.S3_BUCKET_IMAGE_UPLOADS || '' }}
     permissions:

@@ -113,7 +113,7 @@ Tests are organized by feature area:
 - [`auth/`](auth/) - Authentication, login, passkeys, session persistence
 - [`branding/`](branding/) - Multi-vertical branding
 - [`caching/`](caching/) - Signed-out browser caching behavior
-- [`chat/`](chat/) - Chat interface
+- [`chat/`](chat/) - Member support threads
 - [`communities/`](communities/) - Community browse, create, join, settings
 - [`cookie-consent/`](cookie-consent/) - Cookie consent banner
 - [`feed/`](feed/) - Feed pages, media, share/send
