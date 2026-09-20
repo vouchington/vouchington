@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  agentConversationHref,
-  agentHref,
   chatSupportThreadHref,
   compareHref,
-  createAgentPathname,
   createCommunityPathname,
   createDomainPathname,
   createPostPathname,
@@ -31,40 +28,6 @@ import {
   topicRecommendationHref,
   urlHref,
 } from '../entity-href'
-
-describe('agentHref', () => {
-  it('uses slug when available', () => {
-    expect(agentHref({ id: 'uuid-1', slug: 'my-agent' })).toBe('/agent/my-agent')
-  })
-
-  it('falls back to id when slug is null', () => {
-    expect(agentHref({ id: 'uuid-1', slug: null })).toBe('/agent/uuid-1')
-  })
-
-  it('falls back to id when slug is blank', () => {
-    expect(agentHref({ id: 'uuid-1', slug: '' })).toBe('/agent/uuid-1')
-  })
-
-  it('falls back to id when slug is undefined', () => {
-    expect(agentHref({ id: 'uuid-1' })).toBe('/agent/uuid-1')
-  })
-})
-
-describe('createAgentPathname', () => {
-  it('appends agent subpaths', () => {
-    expect(createAgentPathname({ id: 'uuid-1', slug: 'my-agent' }, '/settings')).toBe(
-      '/agent/my-agent/settings',
-    )
-  })
-})
-
-describe('agentConversationHref', () => {
-  it('builds agent conversation paths', () => {
-    expect(agentConversationHref({ id: 'agent-1', slug: 'writer' }, { id: 'conv-1' })).toBe(
-      '/agent/writer/conversation/conv-1',
-    )
-  })
-})
 
 describe('chatSupportThreadHref', () => {
   it('builds the user-facing support thread path', () => {

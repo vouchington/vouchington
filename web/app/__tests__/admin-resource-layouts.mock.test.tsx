@@ -10,7 +10,6 @@ vi.mock(import('@/lib/seo/metadata'), () => ({
   createNoIndexMetadata: vi.fn<VitestLooseMock>(() => ({})),
 }))
 
-import AgentsLayout from '../(agents)/layout'
 import CrmLayout from '../(crm)/layout'
 import CuratedAsidesLayout from '../(curated-asides)/curated-asides/layout'
 import MembershipsLayout from '../(memberships)/memberships/grants/layout'
@@ -20,7 +19,6 @@ import SupportLayout from '../(support-admin)/layout'
 import VoteIntegrityLayout from '../(vote-integrity)/layout'
 
 const layouts = [
-  ['agents', AgentsLayout],
   ['crm', CrmLayout],
   ['curated-asides', CuratedAsidesLayout],
   ['memberships', MembershipsLayout],
@@ -46,6 +44,6 @@ describe('admin resource layouts', () => {
   it('propagates requireAdmin redirects', async () => {
     mockRequireAdmin.mockRejectedValue(new Error('NEXT_REDIRECT'))
 
-    await expect(AgentsLayout({ children: <span /> })).rejects.toThrow('NEXT_REDIRECT')
+    await expect(CrmLayout({ children: <span /> })).rejects.toThrow('NEXT_REDIRECT')
   })
 })

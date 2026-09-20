@@ -54,7 +54,7 @@ describe('AppSidebar Admin section visibility', () => {
   })
 
   it('Engineering intent shows Engineering group for administrators', () => {
-    setMockPathname('/agents')
+    setMockPathname('/admin/queues')
     const { container } = renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
     const labels = getSectionLabels(container)
     expect(labels).toContain('Operations')

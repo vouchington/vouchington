@@ -39,7 +39,7 @@ describe('AppSidebar Admin section visibility', () => {
   })
 
   it('shows Engineering intent for administrators on engineering routes', () => {
-    setMockPathname('/agents')
+    setMockPathname('/admin/queues')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
     expect(screen.getByText('Operations')).toBeDefined()
     expect(screen.getByRole('link', { name: /Dynamic Config/i })).toBeDefined()
@@ -57,7 +57,6 @@ describe('AppSidebar Admin section visibility', () => {
         '/admin/dynamic-config',
       )
       expect(screen.queryByText('Operations')).toBeNull()
-      expect(screen.queryByRole('link', { name: /^Agents$/i })).toBeNull()
       expect(screen.queryByRole('link', { name: /^Queues$/i })).toBeNull()
       expect(screen.queryByRole('link', { name: /^PostgreSQL$/i })).toBeNull()
       expect(screen.queryByRole('link', { name: /^Valkey$/i })).toBeNull()
@@ -93,15 +92,13 @@ describe('AppSidebar Admin section visibility', () => {
   })
 
   it('shows Engineering admin links for administrators', () => {
-    setMockPathname('/agents')
+    setMockPathname('/admin/queues')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
-    expect(screen.getByText('Agents')).toBeDefined()
     expect(screen.getByText('Queues')).toBeDefined()
     expect(screen.getByText('PostgreSQL')).toBeDefined()
     expect(screen.getByText('Valkey')).toBeDefined()
     expect(screen.getByRole('link', { name: /Dynamic Config/i })).toBeDefined()
     expect(screen.getByText('Operations')).toBeDefined()
-    expect(screen.getByRole('link', { name: /^Agents$/i }).getAttribute('href')).toBe('/agents')
     expect(screen.getByRole('link', { name: /Queues/i }).getAttribute('href')).toBe('/admin/queues')
     expect(screen.getByRole('link', { name: /PostgreSQL/i }).getAttribute('href')).toBe(
       '/admin/postgresql',
@@ -157,13 +154,6 @@ describe('AppSidebar Admin section visibility', () => {
     setMockPathname('/url/123')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
     const link = screen.getByRole('link', { name: /^URLs$/i })
-    expect(link.closest('[data-active]')?.getAttribute('data-active')).toBe('true')
-  })
-
-  it('Agents is active on agent detail route', () => {
-    setMockPathname('/agent/my-agent')
-    renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
-    const link = screen.getByRole('link', { name: /^Agents$/i })
     expect(link.closest('[data-active]')?.getAttribute('data-active')).toBe('true')
   })
 

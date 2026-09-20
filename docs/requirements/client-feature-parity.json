@@ -2147,9 +2147,9 @@
       ],
       "clients": {
         "web": {
-          "status": "full",
-          "uiEvidence": ["web/components/agents/agent-list-page.tsx"],
-          "behaviorTests": []
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": ["playwright/tests/routes/page-coverage-baseline.spec.mts"]
         },
         "swift": {
           "status": "full",

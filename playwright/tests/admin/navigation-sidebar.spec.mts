@@ -44,7 +44,7 @@ test.describe('Admin sidebar navigation', () => {
   })
 
   test('renders admin operations and dynamic config section triggers', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/agents')
+    const sidebar = await openSidebarAt(page, '/admin/queues')
     await expect(sidebar.getByTestId('sidebar-group-admin-operations')).toBeVisible()
     await expect(sidebar.getByTestId('sidebar-group-dynamic-config')).toBeVisible()
   })
@@ -63,13 +63,6 @@ test.describe('Admin sidebar navigation', () => {
     await sidebar.getByTestId('sidebar-nav-urls').click()
     await expect(page).toHaveURL(/\/urls/)
     await expect(page.getByTestId('page-header-title').filter({ hasText: 'URLs' })).toBeVisible()
-  })
-
-  test('Engineering: Agents → /agents', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/admin/queues')
-    await sidebar.getByTestId('sidebar-link-agents').click()
-    await expect(page).toHaveURL(/\/agents/)
-    await expect(page.getByTestId('agents-page-heading')).toBeVisible()
   })
 
   test('Moderation: Review Queue → /posts/review-queue', async ({ page }) => {
@@ -155,28 +148,28 @@ test.describe('Admin sidebar navigation', () => {
   // ── Engineering ───────────────────────────────────────────────────────────
 
   test('Engineering: Queues → /admin/queues', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/agents')
+    const sidebar = await openSidebarAt(page, '/admin/queues')
     await sidebar.getByTestId('sidebar-link-queues').click()
     await expect(page).toHaveURL(/\/admin\/queues$/)
     await expect(page.getByTestId('queues-heading')).toBeVisible()
   })
 
   test('Engineering: PostgreSQL → /admin/postgresql', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/agents')
+    const sidebar = await openSidebarAt(page, '/admin/queues')
     await sidebar.getByTestId('sidebar-link-postgresql').click()
     await expect(page).toHaveURL(/\/admin\/postgresql/)
     await expect(page.getByTestId('postgresql-heading')).toBeVisible()
   })
 
   test('Engineering: Valkey → /admin/valkey', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/agents')
+    const sidebar = await openSidebarAt(page, '/admin/queues')
     await sidebar.getByTestId('sidebar-link-valkey').click()
     await expect(page).toHaveURL(/\/admin\/valkey/)
     await expect(page.getByTestId('valkey-heading')).toBeVisible()
   })
 
   test('Engineering: Dynamic Config → /admin/dynamic-config', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/agents')
+    const sidebar = await openSidebarAt(page, '/admin/queues')
     await sidebar.getByTestId('sidebar-link-admin-dynamic-config').click()
     await expect(page).toHaveURL(/\/admin\/dynamic-config/)
     await expect(page.getByTestId('dynamic-config-heading')).toBeVisible()

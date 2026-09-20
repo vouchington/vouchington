@@ -13,9 +13,6 @@ import { OfficialReferralLinkForm as AdminOfficialReferralLinksOfficialReferralL
 import { ValidationForm as AdminReferralLinkValidationsValidationFormValidationForm } from '@/components/admin/referral-link-validations/validation-form'
 import { ValidationsListTable as AdminReferralLinkValidationsValidationsListTableValidationsListTable } from '@/components/admin/referral-link-validations/validations-list-table'
 import { CreateTopicIdentityFields as AdminTopicsCreateTopicIdentityFieldsCreateTopicIdentityFields } from '@/components/admin/topics/create-topic-identity-fields'
-import { AgentDetail as AgentsAgentDetailAgentDetail } from '@/components/agents/agent-detail'
-import { AgentListPage as AgentsAgentListPageAgentListPage } from '@/components/agents/agent-list-page'
-import { ConversationList as AgentsConversationListConversationList } from '@/components/agents/conversation-list'
 import { AppSidebar as AppSidebarAppSidebar } from '@/components/app-sidebar'
 import { AppSidebarNavGroup as AppSidebarNavSectionAppSidebarNavGroup } from '@/components/app-sidebar/nav-section'
 import { SimpleSidebarSection as AppSidebarSimpleSectionSimpleSidebarSection } from '@/components/app-sidebar/simple-section'
@@ -59,18 +56,6 @@ const ratchetedComponentsPart1 = [
   {
     key: 'web/components/admin/topics/create-topic-identity-fields.tsx#CreateTopicIdentityFields',
     component: AdminTopicsCreateTopicIdentityFieldsCreateTopicIdentityFields,
-  },
-  {
-    key: 'web/components/agents/agent-detail.tsx#AgentDetail',
-    component: AgentsAgentDetailAgentDetail,
-  },
-  {
-    key: 'web/components/agents/agent-list-page.tsx#AgentListPage',
-    component: AgentsAgentListPageAgentListPage,
-  },
-  {
-    key: 'web/components/agents/conversation-list.tsx#ConversationList',
-    component: AgentsConversationListConversationList,
   },
   { key: 'web/components/app-sidebar.tsx#AppSidebar', component: AppSidebarAppSidebar },
   {

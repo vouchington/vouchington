@@ -130,10 +130,17 @@ test.describe('Route coverage baseline', () => {
     expect(response?.status()).toBe(404)
   })
 
-  test('covers /agent/[idOrSlug]/conversation/[id]', async ({ page }) => {
-    const response = await page.goto(`/agent/${NON_EXISTENT_ID}/conversation/${NON_EXISTENT_ID}`)
+  test('retires hosted agent-viewer routes', async ({ page }) => {
+    const collection = await page.goto('/agents')
+    expect(collection?.status()).toBe(404)
 
-    expect(response?.status()).toBe(404)
+    const detail = await page.goto(`/agent/${NON_EXISTENT_ID}`)
+    expect(detail?.status()).toBe(404)
+
+    const conversation = await page.goto(
+      `/agent/${NON_EXISTENT_ID}/conversation/${NON_EXISTENT_ID}`,
+    )
+    expect(conversation?.status()).toBe(404)
   })
 
   test('covers /auth/callback/github', async ({ page }) => {

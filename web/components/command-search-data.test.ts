@@ -67,7 +67,6 @@ describe('getMatchingShortcuts', () => {
     const derivedHrefs = DERIVED_PAGE_SHORTCUTS.map(s => s.href)
     expect(derivedHrefs).toContain('/urls')
     expect(derivedHrefs).toContain('/users')
-    expect(derivedHrefs).toContain('/agents')
     expect(derivedHrefs).toContain('/admin/moderation-analytics')
     expect(derivedHrefs).toContain('/curated-asides/topics')
     expect(derivedHrefs).toContain('/rss-feed-categories')

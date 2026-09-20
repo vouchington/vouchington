@@ -273,15 +273,6 @@ Admin-only routes for URLs.
 - `/url/:id` - view a URL: inline crawl history (cursor-paginated) + trigger a new crawl via the aside
 - `/url/:id/crawls/:crawlId` - view content from a specific crawl
 
-## Agents
-
-Admin-only routes for viewing agents.
-
-- `/agents` - list all agents with cursor-based infinite scroll
-- `/agent/:idOrSlug` - view an agent. List the latest conversations with cursor-based infinite scroll.
-  - Search by Post ID/slug, RSS Feed Item ID/slug, or user ID/username (for conversations)
-- `/agent/:idOrSlug/conversation/:id` - view the conversation for an agent.
-
 ## Queues
 
 Admin-only routes for the queue pages.

@@ -214,11 +214,11 @@ describe('loadServerMessages', () => {
     await expect(loadServerMessages('en')).resolves.toEqual({ nav: { home: 'Appeals' } })
     await expect(loadedServerLocalizationRevision('en')).resolves.toBe('revision-Appeals')
 
-    mockHeadersGet.mockReturnValue('/agents')
+    mockHeadersGet.mockReturnValue('/admin/queues')
     await expect(loadedServerLocalizationRevision('en')).resolves.toBeUndefined()
-    mockGetBatch.mockResolvedValueOnce(localizationBatch('Agents', 60))
-    await expect(loadServerMessages('en')).resolves.toEqual({ nav: { home: 'Agents' } })
-    await expect(loadedServerLocalizationRevision('en')).resolves.toBe('revision-Agents')
+    mockGetBatch.mockResolvedValueOnce(localizationBatch('Queues', 60))
+    await expect(loadServerMessages('en')).resolves.toEqual({ nav: { home: 'Queues' } })
+    await expect(loadedServerLocalizationRevision('en')).resolves.toBe('revision-Queues')
 
     mockHeadersGet.mockReturnValue('/appeals')
     await expect(loadedServerLocalizationRevision('en')).resolves.toBe('revision-Appeals')

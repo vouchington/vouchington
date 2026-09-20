@@ -98,30 +98,7 @@ test.describe('DomainAdminDetails crawler links', () => {
   })
 })
 
-// ── Section C: Agent detail ─────────────────────────────────────────────────
-
-test.describe('Admin agents — per-agent navigation', () => {
-  test.use({ storageState: AUTH_STATE })
-
-  test.beforeEach(async ({ page }) => {
-    await page.setViewportSize(DESKTOP_VIEWPORT)
-  })
-
-  test('first agent row link navigates to /agent/:id', async ({ page }) => {
-    await navigateTo(page, '/agents')
-    await expect(page.getByTestId('agents-page-heading')).toBeVisible()
-
-    const firstAgentLink = page.locator('[data-pw^="agent-row-link-"]').first()
-    await expect(firstAgentLink).toBeVisible()
-    const agentName = (await firstAgentLink.textContent()) ?? ''
-    await firstAgentLink.click()
-
-    await expect(page).toHaveURL(/\/agent\/[^/]+$/)
-    await expect(page.getByTestId('agent-detail-heading')).toContainText(agentName.trim())
-  })
-})
-
-// ── Section D: Support thread ───────────────────────────────────────────────
+// ── Section C: Support thread ───────────────────────────────────────────────
 
 test.describe('Admin support — per-thread navigation', () => {
   test.use({ storageState: AUTH_STATE })

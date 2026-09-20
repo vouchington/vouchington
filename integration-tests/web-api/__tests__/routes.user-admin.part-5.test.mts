@@ -9,9 +9,6 @@ import serverApp from '../../../backend/entrypoints/api/index.mts'
 import * as serverRoutes from '@/lib/api/server'
 
 import {
-  createTestAgent,
-  createTestConversation,
-  createTestConversationMessage,
   createTestPost,
   createTestTopic,
   createTestUser,
@@ -38,10 +35,6 @@ describe('routes — user and admin', () => {
   let backendBaseUrl: string
 
   let adminCookieHeader: Record<string, string>
-
-  let agentId: string
-
-  let conversationId: string
 
   let hostnameId: string
 
@@ -81,25 +74,6 @@ describe('routes — user and admin', () => {
     await createTestRssFeedItemWithUrl(rssFeedId)
 
     await createHousehold(user)
-    const agent = await createTestAgent({ activated: true })
-    agentId = agent.slug ?? agent.id
-
-    // Admin routes in this file authenticate as `admin`, so the conversation
-    // must be created by `admin` for currentUserCanViewConversation to allow
-    // the admin-authenticated `getAgentConversation` call to succeed --
-    // otherwise the route 404s (wrapped to `null`) and the test can never
-    // observe a real success response.
-    const conversation = await createTestConversation({
-      createdById: admin.id,
-      title: 'Web API Test Conversation',
-    })
-    conversationId = conversation.id
-
-    await createTestConversationMessage({
-      conversationId,
-      createdById: agent.system_user_id,
-      content: { role: 'assistant', text: 'Hello from the test agent' },
-    })
     const hostname = `web-api-ua-${randomUUID()}.example.com`
     hostnameId = await insertTestUrlHostname({
       hostname,
@@ -140,32 +114,6 @@ describe('routes — user and admin', () => {
   }, 15_000)
 
   describe('web server API admin routes', () => {
-    it('getAgents resolves', async () => {
-      await expect(
-        serverRoutes.getAgents<unknown>({ headers: adminCookieHeader }),
-      ).resolves.not.toThrow()
-    })
-
-    it('getAgent resolves the created agent', async () => {
-      const result = await serverRoutes.getAgent<unknown>(agentId, { headers: adminCookieHeader })
-      expect(result).not.toBeNull()
-    })
-
-    it('getAgentConversations resolves', async () => {
-      await expect(
-        serverRoutes.getAgentConversations<unknown>(agentId, {
-          headers: adminCookieHeader,
-        }),
-      ).resolves.not.toThrow()
-    })
-
-    it('getAgentConversation resolves the created conversation', async () => {
-      const result = await serverRoutes.getAgentConversation<unknown>(agentId, conversationId, {
-        headers: adminCookieHeader,
-      })
-      expect(result).not.toBeNull()
-    })
-
     it('getTopicAliasesSearch resolves', async () => {
       await expect(
         serverRoutes.getTopicAliasesSearch<unknown>(
