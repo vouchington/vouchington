@@ -102,19 +102,18 @@ export function TargetScopeSelector({
       {targetIds.map((targetId, index) => {
         const id = `copyright-target-${targetId}`
         return (
-          <label
+          <Label
             className='flex items-center gap-2 text-sm'
             htmlFor={id}
             key={targetId}
           >
             <Checkbox
               id={id}
-              aria-label={`Affected material ${index + 1}`}
               checked={selectedTargetIds.includes(targetId)}
               onCheckedChange={checked => toggle(targetId, checked === true)}
             />
             Affected material {index + 1}
-          </label>
+          </Label>
         )
       })}
     </fieldset>

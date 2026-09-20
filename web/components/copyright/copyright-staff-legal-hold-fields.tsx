@@ -1,5 +1,15 @@
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
+import { DeclarationCheckbox } from './copyright-form-fields'
 
 export type LegalHoldProceedingKind = 'none' | 'federal_court' | 'ccb'
 
@@ -32,51 +42,63 @@ export function CopyrightStaffProceedingFields({
 }) {
   return (
     <>
-      <label className='block text-sm'>
-        Proceeding
-        <select
-          className='ml-2 rounded border bg-background p-1'
+      <div className='space-y-1'>
+        <Label htmlFor='copyright-hold-proceeding-kind'>Proceeding</Label>
+        <Select
+          onValueChange={value => setProceedingKind(value as LegalHoldProceedingKind)}
           value={proceedingKind}
-          onChange={event => setProceedingKind(event.target.value as LegalHoldProceedingKind)}
         >
-          <option value='none'>No qualifying proceeding</option>
-          <option value='federal_court'>Federal court</option>
-          <option value='ccb'>Copyright Claims Board</option>
-        </select>
-      </label>
+          <SelectTrigger id='copyright-hold-proceeding-kind'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='none'>No qualifying proceeding</SelectItem>
+            <SelectItem value='federal_court'>Federal court</SelectItem>
+            <SelectItem value='ccb'>Copyright Claims Board</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       {proceedingKind === 'ccb' && (
-        <label className='block text-sm'>
-          CCB filing kind
-          <select
-            className='ml-2 rounded border bg-background p-1'
+        <div className='space-y-1'>
+          <Label htmlFor='copyright-hold-ccb-claim-kind'>CCB filing kind</Label>
+          <Select
+            onValueChange={value => setCcbClaimKind(value as typeof ccbClaimKind)}
             value={ccbClaimKind}
-            onChange={event => setCcbClaimKind(event.target.value as typeof ccbClaimKind)}
           >
-            <option value='claim'>Claim</option>
-            <option value='counterclaim'>Counterclaim</option>
-          </select>
-        </label>
+            <SelectTrigger id='copyright-hold-ccb-claim-kind'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='claim'>Claim</SelectItem>
+              <SelectItem value='counterclaim'>Counterclaim</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       )}
-      <LegalHoldCheckbox
+      <DeclarationCheckbox
         checked={fromOriginalClaimant}
-        onChange={setFromOriginalClaimant}
+        id='copyright-hold-original-claimant'
+        onCheckedChange={checked => setFromOriginalClaimant(checked === true)}
       >
         Filing came from the original claimant
-      </LegalHoldCheckbox>
-      <LegalHoldCheckbox
+      </DeclarationCheckbox>
+      <DeclarationCheckbox
         checked={sameMaterial}
-        onChange={setSameMaterial}
+        id='copyright-hold-same-material'
+        onCheckedChange={checked => setSameMaterial(checked === true)}
       >
         Filing covers the same material
-      </LegalHoldCheckbox>
+      </DeclarationCheckbox>
       {proceedingKind !== 'none' && (
         <>
           <LegalHoldDateInput
+            id='copyright-hold-commenced-at'
             label='Proceeding commenced'
             onChange={setCommencedAt}
             value={commencedAt}
           />
           <LegalHoldDateInput
+            id='copyright-hold-received-at'
             label='Designated agent received proof'
             onChange={setReceivedAt}
             value={receivedAt}
@@ -104,14 +126,12 @@ export function CopyrightStaffLegalHoldTargetSelector({
       {targets.map((target, index) => {
         const id = `copyright-hold-${holdId}-${target.id}`
         return (
-          <label
+          <div
             className='flex items-center gap-2 text-sm'
-            htmlFor={id}
             key={target.id}
           >
             <Checkbox
               id={id}
-              aria-label={`Legal hold target ${index + 1}`}
               checked={selectedTargetIds.includes(target.id)}
               onCheckedChange={checked =>
                 setSelectedTargetIds(current =>
@@ -121,53 +141,39 @@ export function CopyrightStaffLegalHoldTargetSelector({
                 )
               }
             />
-            Target {index + 1}: {target.hosted_use_url}
-          </label>
+            <Label
+              htmlFor={id}
+              id={`${id}-label`}
+            >
+              Target {index + 1}: {target.hosted_use_url}
+            </Label>
+          </div>
         )
       })}
     </fieldset>
   )
 }
 
-function LegalHoldCheckbox({
-  checked,
-  children,
-  onChange,
-}: {
-  checked: boolean
-  children: React.ReactNode
-  onChange: (value: boolean) => void
-}) {
-  return (
-    <label className='block text-sm'>
-      <input
-        type='checkbox'
-        checked={checked}
-        onChange={event => onChange(event.target.checked)}
-      />{' '}
-      {children}
-    </label>
-  )
-}
-
 function LegalHoldDateInput({
+  id,
   label,
   onChange,
   value,
 }: {
+  id: string
   label: string
   onChange: (value: string) => void
   value: string
 }) {
   return (
-    <label className='block text-sm'>
-      {label}
-      <input
-        className='ml-2 rounded border bg-background p-1'
+    <div className='space-y-1'>
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
         type='datetime-local'
         value={value}
         onChange={event => onChange(event.target.value)}
       />
-    </label>
+    </div>
   )
 }

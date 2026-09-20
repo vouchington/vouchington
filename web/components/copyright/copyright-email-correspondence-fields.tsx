@@ -3,6 +3,13 @@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import type {
   CopyrightEmailCorrespondenceKind,
@@ -28,21 +35,24 @@ export function CopyrightEmailCorrespondenceFields({
   return (
     <fieldset className='space-y-3 rounded border p-3'>
       <legend className='px-1 font-medium'>Matched-email classification</legend>
-      <Label>
-        Classification
-        <select
-          aria-label='Correspondence classification'
-          className='ml-2 rounded border bg-background p-1'
+      <div className='space-y-1'>
+        <Label htmlFor='copyright-email-correspondence-classification'>Classification</Label>
+        <Select
           value={draft.kind}
-          onChange={event => set('kind', event.target.value as CopyrightEmailCorrespondenceKind)}
+          onValueChange={value => set('kind', value as CopyrightEmailCorrespondenceKind)}
         >
-          <option value='supplement'>Supplement</option>
-          <option value='appeal'>Appeal</option>
-          <option value='counter_notice'>Counter-notice</option>
-          <option value='withdrawal'>Withdrawal</option>
-          <option value='court_or_ccb_hold'>Court or CCB filing</option>
-        </select>
-      </Label>
+          <SelectTrigger id='copyright-email-correspondence-classification'>
+            <SelectValue placeholder='Select a classification' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='supplement'>Supplement</SelectItem>
+            <SelectItem value='appeal'>Appeal</SelectItem>
+            <SelectItem value='counter_notice'>Counter-notice</SelectItem>
+            <SelectItem value='withdrawal'>Withdrawal</SelectItem>
+            <SelectItem value='court_or_ccb_hold'>Court or CCB filing</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       {draft.kind === 'appeal' ? (
         <Textarea
           aria-label='Appeal reason'

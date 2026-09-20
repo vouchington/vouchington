@@ -190,9 +190,8 @@ describe('CopyrightEmailReview', () => {
     render(<CopyrightEmailReview initialItems={[makeMatchedQueueItem()]} />)
 
     await selectEmailIntake()
-    fireEvent.change(screen.getByLabelText('Correspondence classification'), {
-      target: { value: 'appeal' },
-    })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Classification' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Appeal' }))
     fireEvent.change(screen.getByLabelText('Appeal reason'), {
       target: { value: 'The poster owns the material.' },
     })

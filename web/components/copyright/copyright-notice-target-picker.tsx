@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { LabeledInput } from './copyright-form-fields'
 import {
   resolveCopyrightNoticeTargets,
@@ -96,14 +97,14 @@ export function CopyrightNoticeTargetPicker({
             const id = `copyright-notice-target-${target.image_id}`
             const label = target.caption.trim() || `Image ${target.order_index + 1}`
             return (
-              <label
+              <Label
+                aria-label={`Hosted image ${index + 1}: ${label}`}
                 className='flex items-center gap-2 text-sm'
                 htmlFor={id}
                 key={target.image_id}
               >
                 <Checkbox
                   id={id}
-                  aria-label={`Hosted image ${index + 1}: ${label}`}
                   checked={targets.some(selected => selected.image_id === target.image_id)}
                   disabled={
                     !targets.some(selected => selected.image_id === target.image_id) &&
@@ -112,7 +113,7 @@ export function CopyrightNoticeTargetPicker({
                   onCheckedChange={checked => toggle(target, checked === true)}
                 />
                 {label}
-              </label>
+              </Label>
             )
           })}
         </div>

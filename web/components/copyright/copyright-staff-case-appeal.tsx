@@ -2,6 +2,14 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { reviewCopyrightAppeal } from '@/lib/api/client/copyright-notices'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import type { SubmitReview } from './copyright-staff-review-buttons'
@@ -47,27 +55,31 @@ export function CopyrightStaffAppealReview({
           : ''}
       </p>
       {activeRestrictions.map((restriction, index) => (
-        <label
-          className='block text-sm'
-          htmlFor={`copyright-appeal-${appeal.submission_id}-${restriction.id}`}
+        <div
+          className='space-y-1'
           key={restriction.id}
         >
-          Target {index + 1} outcome
-          <select
-            className='ml-2 rounded border bg-background p-1'
-            id={`copyright-appeal-${appeal.submission_id}-${restriction.id}`}
+          <Label htmlFor={`copyright-appeal-${appeal.submission_id}-${restriction.id}`}>
+            Target {index + 1} outcome
+          </Label>
+          <Select
             value={decisions[restriction.id] ?? 'confirm'}
-            onChange={event =>
+            onValueChange={value =>
               setDecisions(current => ({
                 ...current,
-                [restriction.id]: event.target.value as 'confirm' | 'reverse',
+                [restriction.id]: value as 'confirm' | 'reverse',
               }))
             }
           >
-            <option value='confirm'>Keep restriction</option>
-            <option value='reverse'>Reverse restriction</option>
-          </select>
-        </label>
+            <SelectTrigger id={`copyright-appeal-${appeal.submission_id}-${restriction.id}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='confirm'>Keep restriction</SelectItem>
+              <SelectItem value='reverse'>Reverse restriction</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       ))}
       <Button
         disabled={pending || !canSubmit || activeRestrictions.length === 0}

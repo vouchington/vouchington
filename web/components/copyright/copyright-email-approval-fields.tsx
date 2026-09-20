@@ -79,12 +79,14 @@ export function CopyrightEmailApprovalFields({
           <Input
             aria-label={`Post ID ${index + 1}`}
             onChange={event => setTarget(target.id, 'post_id', event.target.value)}
+            // ast-grep-ignore: web-no-id-text-input -- moderators verify the agent-extracted immutable post identifier against the attached original email before approval.
             placeholder='Resolved post ID'
             value={target.post_id}
           />
           <Input
             aria-label={`Image ID ${index + 1}`}
             onChange={event => setTarget(target.id, 'image_id', event.target.value)}
+            // ast-grep-ignore: web-no-id-text-input -- moderators verify the agent-extracted immutable image identifier against the attached original email before approval.
             placeholder='Resolved image ID'
             value={target.image_id}
           />
