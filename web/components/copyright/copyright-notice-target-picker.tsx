@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { LabeledInput } from './copyright-form-fields'
@@ -22,15 +22,20 @@ export function CopyrightNoticeTargetPicker({
   const [targetUrl, setTargetUrl] = useState('')
   const [resolvedTargets, setResolvedTargets] = useState<CopyrightNoticeResolvedTarget[]>([])
   const [resolving, setResolving] = useState(false)
+  const resolutionRequest = useRef(0)
 
   async function resolve() {
     if (!targetUrl.trim() || resolving) return
+    const request = ++resolutionRequest.current
+    const requestedUrl = targetUrl.trim()
     setResolving(true)
     try {
-      const resolved = await resolveCopyrightNoticeTargets(targetUrl.trim())
+      const resolved = await resolveCopyrightNoticeTargets(requestedUrl)
+      if (request !== resolutionRequest.current) return
       setResolvedTargets(resolved)
-      onChange(resolved.slice(0, MAX_NOTICE_TARGETS))
+      onChange([])
     } catch (error) {
+      if (request !== resolutionRequest.current) return
       onError(error, {
         fallback: 'We could not find hosted material at that URL. Check the link and try again.',
         tags: { form: 'copyright-notice-target' },
@@ -38,13 +43,15 @@ export function CopyrightNoticeTargetPicker({
       setResolvedTargets([])
       onChange([])
     } finally {
-      setResolving(false)
+      if (request === resolutionRequest.current) setResolving(false)
     }
   }
 
   function updateUrl(value: string) {
+    resolutionRequest.current++
     setTargetUrl(value)
     setResolvedTargets([])
+    setResolving(false)
     onChange([])
   }
 

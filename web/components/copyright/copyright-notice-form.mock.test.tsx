@@ -99,7 +99,7 @@ describe('CopyrightNoticeForm', () => {
         targets: [
           {
             post_id: '019f0000-0000-7000-8000-000000000001',
-            image_id: '019f0000-0000-7000-8000-000000000002',
+            image_id: '019f0000-0000-7000-8000-000000000003',
             target_url: 'https://voucha.ai/discussion/hosted-material',
           },
         ],

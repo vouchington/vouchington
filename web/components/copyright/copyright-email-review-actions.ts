@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import {
   approveCopyrightEmailIntake,
   admitCopyrightEmailCorrespondence,
@@ -55,20 +56,33 @@ export function useCopyrightEmailReviewActions({
   setRationale: (value: string) => void
   setSuccess: (value: string | null) => void
 }) {
+  const selectedIntakeRequest = useRef(0)
+
   async function loadQueue() {
     setItems((await listCopyrightEmailIntakes()).copyright_email_intakes)
   }
   async function selectIntake(intakeId: string) {
+    const request = ++selectedIntakeRequest.current
     clearIntakeReviewState()
-    await run(async () => {
+    setError(null)
+    setSuccess(null)
+    setLoading(true)
+    try {
       const response = await getCopyrightEmailIntake(intakeId)
+      if (request !== selectedIntakeRequest.current) return
       setDetail(response.copyright_email_intake)
       setDraft(
         createCopyrightEmailApprovalDraft(
           response.copyright_email_intake.recommendation?.structured_output,
         ),
       )
-    }, 'We could not load that copyright email intake.')
+    } catch (error) {
+      if (request === selectedIntakeRequest.current) {
+        setError(displayError(error, 'We could not load that copyright email intake.'))
+      }
+    } finally {
+      if (request === selectedIntakeRequest.current) setLoading(false)
+    }
   }
   async function approve() {
     if (!detail || !draft) return
