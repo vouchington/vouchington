@@ -27,6 +27,7 @@ describe('write-github-multiline-output', () => {
       'cp',
       'dirname',
       'grep',
+      'gzip',
       'head',
       'mktemp',
       'mv',
@@ -111,10 +112,15 @@ packages:
           stdio: ['pipe', 'pipe', 'pipe'],
         },
       )
+      let stderr = ''
+      child.stderr.setEncoding('utf8')
+      child.stderr.on('data', chunk => {
+        stderr += chunk
+      })
       child.stdin.end('first line\nsecond line\n')
       const [code] = await once(child, 'close')
 
-      expect(code).toBe(0)
+      if (code !== 0) throw new Error(`output helper exited with ${String(code)}: ${stderr}`)
       expect(await readFile(output, 'utf8')).toBe(
         'plan_request<<EOF\nfirst line\nsecond line\nEOF\n',
       )
