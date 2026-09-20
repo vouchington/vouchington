@@ -4,11 +4,11 @@ import {
   type PersistClassifierDecisionCall,
   type PersistClassifierDecisionResult,
 } from '@services/classifiers'
+import { toClassifierQuestions } from './bindings.mts'
 import {
   assertBindingsMatchConfiguration,
   assertClassifierDecisionIds,
-  toClassifierQuestions,
-} from './bindings.mts'
+} from './validate-bindings.mts'
 import { assertClassifierContextPolicy } from './context-policy.mts'
 import { packClassifierDecisionQuestions } from './pack.mts'
 import { assertCompleteCandidateCoverage, resultsForShard } from './results.mts'
