@@ -22,7 +22,6 @@
     "@agents/dispute-resolution": "workspace:^",
     "@agents/moderation": "workspace:^",
     "@agents/report-judgement": "workspace:^",
-    "@agents/research-agent": "workspace:^",
     "@agents/story-post": "workspace:^",
     "@agents/wikipedia-recommender": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",

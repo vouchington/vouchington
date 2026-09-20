@@ -664,15 +664,9 @@ importers:
       '@agents/_shared':
         specifier: workspace:^
         version: link:../_shared
-      '@jongleberry/vurst-markdown':
-        specifier: ^0.4.3
-        version: 0.4.3
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -1494,9 +1488,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../test-helpers
-      '@workers/ai-agents':
-        specifier: workspace:^
-        version: link:../workers/ai-agents
       '@workers/elections':
         specifier: workspace:^
         version: link:../workers/elections
@@ -1655,10 +1646,6 @@ importers:
       valkyries:
         specifier: ^0.8.0
         version: 0.8.0
-    devDependencies:
-      uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
 
   backend/data-stores/valkey-rate-limiter:
     dependencies:
@@ -10699,9 +10686,6 @@ importers:
       '@agents/report-judgement':
         specifier: workspace:^
         version: link:../../agents/report-judgement
-      '@agents/research-agent':
-        specifier: workspace:^
-        version: link:../../agents/research-agent
       '@agents/story-post':
         specifier: workspace:^
         version: link:../../agents/story-post
