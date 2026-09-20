@@ -30,4 +30,14 @@ describe('external server-to-server ingress routing', () => {
       isExternalServerToServerIngress('GET', '/ap/users/01234567-89ab-cdef-0123-456789abcdef'),
     ).toBe(true)
   })
+
+  it('classifies only the machine-facing OAuth POST endpoints as external ingress', () => {
+    for (const path of ['/register', '/revoke', '/token']) {
+      expect(isExternalServerToServerIngress('POST', path)).toBe(true)
+      expect(isExternalServerToServerIngress('POST', `${path}/`)).toBe(true)
+      expect(isExternalServerToServerIngress('GET', path)).toBe(false)
+    }
+    expect(isExternalServerToServerIngress('GET', '/authorize')).toBe(false)
+    expect(isExternalServerToServerIngress('POST', '/authorize')).toBe(false)
+  })
 })

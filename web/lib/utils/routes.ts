@@ -19,7 +19,13 @@ const STATIC_ASSET_PATH_PATTERN =
 // sitemap S3, or other non-web origins; in dev they may still hit Next.js when
 // accessed directly (bypassing the worker).
 const BACKEND_PREFIX_PATHS = ['/api/', '/infra/', '/sitemaps/'] as const
-const BACKEND_EXACT_PATHS = ['/sitemap.xml'] as const
+const BACKEND_EXACT_PATHS = [
+  '/authorize',
+  '/register',
+  '/revoke',
+  '/sitemap.xml',
+  '/token',
+] as const
 
 export function isBackendPath(pathname: string): boolean {
   return (

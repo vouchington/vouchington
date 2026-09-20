@@ -33,6 +33,7 @@ export const buildOriginRequest = (
   requestId?: string,
   forceIdentityEncoding = false,
   preserveNonBasicAuthorization = false,
+  preserveBasicAuthorization = false,
 ): Request => {
   // Capture the original host/protocol before mutating url for the origin.
   const { host: originalHost, protocol: originalProtocol } = new URL(request.url)
@@ -63,26 +64,25 @@ export const buildOriginRequest = (
     }
   }
 
-  // Strip spoofable forwarding and edge metadata; origins trust only worker-stamped values.
   for (const header of CLIENT_SUPPLIED_PROXY_HEADERS_TO_STRIP) {
     headers.delete(header)
   }
-  // Strip client-supplied worker secret to prevent origin-bypass attempts.
   headers.delete('x-cf-worker-secret')
-  // Strip client-supplied auth-looking headers. Browser session auth is cookie-based;
-  // origins must not receive a client-controlled header that looks authoritative.
   headers.delete('x-user-id')
   headers.delete('x-device-token')
   headers.delete('x-session-token')
   stripStagingControlHeaders(headers)
-  // Basic credentials never reach origins. Backend Bearer credentials are preserved only
-  // when the target-aware caller opts in; every non-backend target uses the safe default.
-  if (!preserveNonBasicAuthorization || /^basic\s/i.test(headers.get('authorization') ?? '')) {
+  // Authorization reaches origins only when the target-aware caller opts in. Basic is narrower:
+  // only OAuth token/revocation routes preserve it.
+  const authorization = headers.get('authorization') ?? ''
+  const isBasicAuthorization = /^basic\s/i.test(authorization)
+  if (
+    (isBasicAuthorization && !preserveBasicAuthorization) ||
+    (!isBasicAuthorization && !preserveNonBasicAuthorization)
+  ) {
     headers.delete('authorization')
   }
-  // Strip client-supplied request ID — the worker always generates its own.
-  // Without this, callers that omit requestId (e.g. WebSocket) would forward
-  // a client-controlled value that could poison traces and logs on the origin.
+  // The worker always owns request IDs so external values cannot poison traces or logs.
   headers.delete('x-request-id')
   // Normalize Global Privacy Control for origins while preventing clients from
   // spoofing the internal header directly.

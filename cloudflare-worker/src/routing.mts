@@ -1,6 +1,7 @@
 import { edgeErrorResponse } from './error-response.mts'
 import { getMarkdownAliasOriginPath } from './markdown-aliases.mts'
 import { getOAuthBrokerCallbackOriginPath } from './oauth-broker-callback-routing.mts'
+import { isOAuthAuthorizationServerRoute } from './oauth-authorization-server-routing.mts'
 import { SITEMAP_FAMILY_TYPES, SITEMAP_POST_TYPES } from '@voucha/config/sitemap-types'
 import type { Env } from './types.mts'
 
@@ -50,6 +51,7 @@ export const NODEINFO_ROUTE_RE = /^\/nodeinfo(?:\/|$)/i
 // Bluesky AT-Protocol OAuth client metadata document (Phase D1), served at a bare root path (not
 // under /.well-known/) per the AT-Protocol OAuth spec — backend/api/bluesky/client-metadata.mts.
 export const CLIENT_METADATA_ROUTE_RE = /^\/client-metadata\.json$/i
+export { isOAuthAuthorizationServerRoute } from './oauth-authorization-server-routing.mts'
 
 export const resolveOrigin = (target: RouteTarget, env: Env): ResolveOriginResult => {
   const origin = env[ORIGIN_ENV_KEYS[target]]
@@ -98,6 +100,10 @@ export const getRouteTarget = (pathname: string): RouteTarget => {
   }
 
   if (CLIENT_METADATA_ROUTE_RE.test(pathname)) {
+    return 'backend'
+  }
+
+  if (isOAuthAuthorizationServerRoute(pathname)) {
     return 'backend'
   }
 

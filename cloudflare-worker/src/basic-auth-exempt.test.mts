@@ -49,6 +49,14 @@ describe('isBasicAuthExemptRequest', () => {
     expect(isBasicAuthExemptRequest('POST', '/api/v1/admin/mcp')).toBe(true)
   })
 
+  it('exempts only POST requests to machine-facing OAuth endpoints', () => {
+    for (const path of ['/register', '/revoke', '/token']) {
+      expect(isBasicAuthExemptRequest('POST', path)).toBe(true)
+      expect(isBasicAuthExemptRequest('GET', path)).toBe(false)
+    }
+    expect(isBasicAuthExemptRequest('GET', '/authorize')).toBe(false)
+  })
+
   it('does not exempt wrong-method machine routes', () => {
     expect(isBasicAuthExemptRequest('GET', '/api/v1/mcp')).toBe(false)
     expect(isBasicAuthExemptRequest('GET', '/api/v1/admin/mcp')).toBe(false)
