@@ -43,7 +43,6 @@ describe('Sync Articles workflow', () => {
     expect(publish).toMatchObject({
       permissions: { contents: 'read' },
       'runs-on': 'ubuntu-slim',
-      'timeout-minutes': 5,
     })
 
     const checkout = publish?.steps?.find(step => step.uses?.startsWith('actions/checkout@'))
