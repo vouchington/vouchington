@@ -42,4 +42,16 @@ describe('ConsentActions', () => {
     expect(screen.getByRole('button', { name: 'Allow access' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Deny' })).toBeEnabled()
   })
+
+  it('redirects to the authorization result after approval', async () => {
+    mockDecide.mockResolvedValue({ redirect_uri: 'https://client.voucha.ai/callback?code=code-1' })
+    render(<ConsentActions requestId='request-1' />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Allow access' }))
+
+    await waitFor(() => expect(mockDecide).toHaveBeenCalledWith('request-1', 'approve'))
+    expect(mockOnError).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Allow access' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled()
+  })
 })
