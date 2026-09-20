@@ -3,7 +3,10 @@ import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { createCopyrightFormFixture, createNotice } from './test-fixtures.mts'
+import {
+  createCopyrightFormFixture,
+  createNotice,
+} from '@services/copyright-notices/route-test-fixtures'
 
 describe('accepted copyright notice pagination', () => {
   beforeEach(() => {
