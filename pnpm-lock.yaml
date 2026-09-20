@@ -2488,6 +2488,18 @@ importers:
         specifier: ^26.4.0
         version: 26.5.0
 
+  backend/modules/structured-decisions:
+    dependencies:
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../utils
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      undici:
+        specifier: ^8.10.2
+        version: 8.10.2
+
   backend/modules/token-secrets:
     dependencies:
       '@vouchington/utils':

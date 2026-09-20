@@ -87,6 +87,18 @@ export default defineConfig({
         test: {
           pool: 'forks',
           isolate: false,
+          name: 'backend-openrouter',
+          include: ['backend/**/*.openrouter.test.mts'],
+          exclude: ['**/node_modules/**', '**/.git/**'],
+          testTimeout: 60_000,
+          hookTimeout: 60_000,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          pool: 'forks',
+          isolate: false,
           name: 'backend-aws',
           include: [
             'backend/**/*.s3.test.mts',

@@ -22,7 +22,7 @@ function stepSection(job: string, stepName: string): string {
 }
 
 describe('backend credentialed test workflow', () => {
-  it('combines aws, bedrock, openai, and stripe projects in one job', () => {
+  it('combines aws, bedrock, openai, openrouter, and stripe projects in one job', () => {
     const credentialedJob = jobSection('backend-credentialed-tests')
     expect(credentialedJob).toContain('if: ${{ inputs.trusted_secret_context }}')
     expect(credentialedJob).toContain('AWS_REGION: us-west-2')
@@ -30,10 +30,11 @@ describe('backend credentialed test workflow', () => {
     expect(credentialedJob).toContain("REQUIRE_BEDROCK_INTEGRATION: ''")
 
     expect(credentialedJob).toContain('OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}')
+    expect(credentialedJob).toContain('OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}')
     expect(credentialedJob).toContain('STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}')
     expect(credentialedJob).toContain('.github/actions/setup-aws')
     expect(credentialedJob).toContain(
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-stripe "${FILES[@]}"',
+      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe "${FILES[@]}"',
     )
     expect(credentialedJob).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
@@ -57,6 +58,7 @@ describe('backend credentialed test workflow', () => {
     expect(credentialedJob).toContain('fallback attempt 2')
     expect(workflow).not.toContain('backend-aws-tests:')
     expect(workflow).not.toContain('backend-openai-tests:')
+    expect(workflow).not.toContain('backend-openrouter-tests:')
     expect(workflow).not.toContain('backend-stripe-tests:')
   })
 
@@ -70,6 +72,7 @@ describe('backend credentialed test workflow', () => {
   it('gates the job on trusted_secret_context', () => {
     expect(workflow).toContain('inputs.trusted_secret_context')
     expect(workflow).toContain('OPENAI_API_KEY:\n        required: false')
+    expect(workflow).toContain('OPENROUTER_API_KEY:\n        required: false')
     expect(workflow).toContain('STRIPE_SECRET_KEY:\n        required: false')
   })
 })

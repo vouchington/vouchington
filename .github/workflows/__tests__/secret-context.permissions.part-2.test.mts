@@ -49,6 +49,9 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(backendIntegration).toContain(
       "OPENAI_API_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}",
     )
+    expect(backendIntegration).toContain(
+      "OPENROUTER_API_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.OPENROUTER_API_KEY || '' }}",
+    )
     expect(backendIntegration).not.toContain('secrets: inherit')
     expect(workflow).not.toContain('test-backend-trusted')
     expect(workflow).not.toContain('test-backend-untrusted')

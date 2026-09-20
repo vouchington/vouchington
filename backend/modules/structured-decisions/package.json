@@ -1,0 +1,23 @@
+{
+  "name": "@modules/structured-decisions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Strict provider-neutral Jev structured-decision client",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@modules/utils": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "undici": "^8.10.2"
+  }
+}

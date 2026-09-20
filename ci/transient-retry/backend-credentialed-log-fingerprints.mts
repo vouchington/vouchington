@@ -3,7 +3,7 @@ import picomatch from 'picomatch'
 const vitestFailureLinePattern = /\bFAIL\s+\S+\s+\S+\.(?:c|m)?tsx?\b/
 
 /**
- * The four vitest projects that probe a real external provider (credentialed smoke tests), paired
+ * The credentialed Vitest projects that probe a real external provider, paired
  * with the same `include` glob(s) each project declares in `vitest.config.mts`. Kept as literals
  * here rather than imported from `vitest.config.mts` — that config pulls DB/Valkey alias
  * resolution `decide.mts` must stay dependency-free of — and cross-checked against that config by
@@ -23,6 +23,7 @@ export const backendCredentialedProjects: ReadonlyArray<{
   },
   { project: 'backend-bedrock', include: ['backend/**/*.bedrock.test.mts'] },
   { project: 'backend-openai', include: ['backend/**/*.openai*.test.mts'] },
+  { project: 'backend-openrouter', include: ['backend/**/*.openrouter.test.mts'] },
   { project: 'backend-stripe', include: ['backend/**/*.stripe.test.mts'] },
 ]
 
@@ -56,6 +57,7 @@ export const backendCredentialedVitestCommandMarkers = [
   '--project backend-aws',
   '--project backend-bedrock',
   '--project backend-openai',
+  '--project backend-openrouter',
   '--project backend-stripe',
 ]
 const vitestNonTestTerminalErrorPattern =
@@ -159,12 +161,20 @@ const backendCredentialedOpenAIServerErrorMarkers = [
   'Error: 500 The server had an error processing your request',
   'OpenAI.makeStatusError',
 ]
+const backendCredentialedOpenRouterServerErrorMarkers = [
+  'Structured-decision provider returned HTTP 5',
+]
+const backendCredentialedOpenRouterRateLimitMarkers = [
+  'Structured-decision provider returned HTTP 429',
+]
 
 const backendCredentialedSingleFailureMarkerGroups = [
   backendCredentialedTimeoutMarkers,
   backendCredentialedAwsSdkAbortTimeoutMarkers,
   backendCredentialedBedrockServerErrorMarkers,
   backendCredentialedOpenAIRateLimitMarkers,
+  backendCredentialedOpenRouterRateLimitMarkers,
+  backendCredentialedOpenRouterServerErrorMarkers,
 ]
 
 /**

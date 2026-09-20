@@ -239,6 +239,7 @@ jobs:
     secrets:
       AWS_TEST_ROLE_ARN: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.AWS_TEST_ROLE_ARN || '' }}
       OPENAI_API_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}
+      OPENROUTER_API_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.OPENROUTER_API_KEY || '' }}
       STRIPE_SECRET_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.STRIPE_SECRET_KEY || '' }}
 
   test-postgres-schema:

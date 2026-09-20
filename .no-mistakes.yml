@@ -190,6 +190,10 @@ tests:
         integration_suites:
           openai:
             - openai
+      backend-openrouter:
+        integration_suites:
+          openrouter:
+            - openrouter
 
 test_plan:
   playwright:
@@ -311,6 +315,7 @@ test_plan:
             - backend-mocks
             - backend-aws
             - backend-openai
+            - backend-openrouter
             - web-api
             - web-integration
         - name: agent-tools-docs
@@ -1544,6 +1549,7 @@ rules:
         backend-aws: [backend-credentialed]
         backend-bedrock: [backend-credentialed]
         backend-openai: [backend-credentialed]
+        backend-openrouter: [backend-credentialed]
         backend-stripe: [backend-credentialed]
         web: [web]
         web-storybook: [storybook]

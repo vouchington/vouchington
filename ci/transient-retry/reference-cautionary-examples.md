@@ -17,8 +17,8 @@ config.** If a job is a mix of external-provider connectivity smoke tests and br
 tests (DB, cache, business logic), a job-level timeout match is **unsafe** — it would rerun real
 code-bug deadlocks. `backend-credentialed-provider-smoke-test-transient` looks like it might be
 this shape (it matches a bare `Test timed out in ` with no per-test title pinned), but it isn't:
-each of the four credentialed vitest projects (`backend-aws`, `backend-bedrock`, `backend-openai`,
-`backend-stripe`) is homogeneous by construction — every file matched by its own `include` glob is,
+each credentialed Vitest project (`backend-aws`, `backend-bedrock`, `backend-openai`,
+`backend-openrouter`, `backend-stripe`) is homogeneous by construction — every file matched by its own `include` glob is,
 by design, a real-provider probe with no setup file that mocks _the provider that project probes_, so
 a bare timeout inside that project's own probe boundary is never a broader integration-test deadlock.
 (`backend-openai` does load `./backend/test-helpers/vitest.setup.aws-mocks.mts` — `vitest.config.mts`

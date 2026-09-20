@@ -90,6 +90,11 @@ export const SECRET_INVENTORY = {
     provisioned: true,
     notes: 'OpenAI key for credentialed backend/Playwright tests (repo secret).',
   },
+  OPENROUTER_API_KEY: {
+    provisioned: true,
+    notes:
+      'OpenRouter key for the isolated credentialed Jev decisions contract test (repo secret).',
+  },
   S3_BUCKET_IMAGES: {
     provisioned: true,
     notes: 'S3 bucket used by credentialed image tests (repo secret).',

@@ -1,8 +1,7 @@
 import { backendCredentialedVitestCommandMarkers } from './backend-credentialed-log-fingerprints.mts'
 
 /**
- * Shared synthetic-log builders for the four credentialed-provider vitest projects
- * (`backend-aws`, `backend-bedrock`, `backend-openai`, `backend-stripe`). Callers pass the
+ * Shared synthetic-log builders for credentialed-provider Vitest projects. Callers pass the
  * project/path in — this module holds no repo-path literal of its own — so a fixture can no
  * longer agree with a broken matcher by construction (see #10806/#10825), and this file carries
  * zero literals for `repo-owned-literal-freshness.test.mts`'s completeness scanner to police.

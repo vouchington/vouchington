@@ -54,6 +54,7 @@ Reporter policy:
 | `backend-aws`                      | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | AWS tests role           |
 | `backend-bedrock`                  | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | AWS tests role + Bedrock |
 | `backend-openai`                   | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENAI_API_KEY`         |
+| `backend-openrouter`               | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `OPENROUTER_API_KEY`     |
 | `backend-stripe`                   | `tests-backend-credentialed.yml` | `backend-credentialed-tests`      | `STRIPE_SECRET_KEY`      |
 | `web`                              | `tests-web.yml`                  | `web-tests` (sharded)             | None                     |
 | `web-storybook`                    | `storybook.yml`                  | `storybook`                       | None                     |

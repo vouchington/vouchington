@@ -39,7 +39,7 @@ const matchingBedrockInternalFailureLog = buildBackendCredentialedFailureLog([
 // could not see because `backend/tools/search-posts-semantic.bedrock.test.mts` had never been
 // hand-fingerprinted (see #10806/#10825).
 const realPr10800AbortTimeoutLog = [
-  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-stripe --coverage "${FILES[@]}"',
+  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe --coverage "${FILES[@]}"',
   ' ❯  backend-bedrock  backend/tools/search-posts-semantic.bedrock.test.mts (1 test | 1 failed) 6185ms',
   ' FAIL   backend-bedrock  backend/tools/search-posts-semantic.bedrock.test.mts > search-posts-semantic tool Bedrock integration > returns results from real semantic search and clamps limits',
   'AbortError: Request aborted',
