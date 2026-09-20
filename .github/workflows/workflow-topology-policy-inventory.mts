@@ -51,7 +51,7 @@ export const jobInventory = {
     'cloudflare-worker-tests publish-cloudflare-worker static-checks',
   ),
   '.github/workflows/main-lambdas.yml': jobs('lambdas-tests publish-image-resize static-checks'),
-  '.github/workflows/main-storybook.yml': jobs('storybook-build'),
+  '.github/workflows/main-storybook.yml': jobs('publish-storybook storybook-build'),
   '.github/workflows/main-web.yml': jobs(
     'cleanup-artifacts detect-web-deploy playwright-credentialed-tests playwright-tests publish-web-images static-checks store-playwright-otel test-web test-web-api test-web-integration web-deploy-intent',
   ),

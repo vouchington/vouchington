@@ -5,6 +5,7 @@ import { classifyArtifact, isExplicitlyClassified } from './cleanup-artifacts-pa
 const KEEP_NAMES = [
   'image-resize-lambda-123456789-2',
   'cloudflare-worker-123456789-2',
+  'storybook-123456789-2',
   'next-static-abc123',
   'browser-port-diagnostics-web',
   // Same category as browser-port-diagnostics-*: best-effort diagnostic evidence for an
@@ -29,7 +30,7 @@ const DELETE_NAMES = [
   'coverage-web',
   'playwright-otel-output-shard-2',
   'playwright-test-plan',
-  'storybook-browser-debug-log',
+  'browser-debug-log-storybook',
   'web-integration-artifacts',
   'web-integration-shard-2-artifacts',
   'web-test-report-shard-1',

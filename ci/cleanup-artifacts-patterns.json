@@ -2,6 +2,7 @@
   "keep": [
     "image-resize-lambda-*",
     "cloudflare-worker-*",
+    "storybook-*",
     "next-static-*",
     "browser-port-diagnostics-*",
     "web-build-timings-*",
@@ -21,7 +22,7 @@
     "playwright-test-plan",
     "vitest-test-plan",
     "ci-topology-impact",
-    "storybook-browser-debug-log",
+    "browser-debug-log-storybook",
     "web-integration-artifacts",
     "web-integration-shard-*",
     "web-test-report-*",
