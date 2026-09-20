@@ -294,6 +294,11 @@ CREATE OR REPLACE TRIGGER trigger_classifier_candidate_thresholds_effective
   ON classifier_candidate_thresholds
   FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_effective_thresholds();
 
+CREATE OR REPLACE FUNCTION fn_classifier_audit_actor_was_deleted(actor_id UUID)
+RETURNS BOOLEAN LANGUAGE sql VOLATILE AS $$
+  SELECT actor_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_id)
+$$;
+
 CREATE OR REPLACE FUNCTION fn_require_classifier_candidate_threshold_lifecycle()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -306,7 +311,10 @@ BEGIN
     OR NEW.activated_at IS DISTINCT FROM OLD.activated_at
     OR (
       NEW.created_by_id IS DISTINCT FROM OLD.created_by_id
-      AND NOT (OLD.created_by_id IS NOT NULL AND NEW.created_by_id IS NULL)
+      AND NOT (
+        NEW.created_by_id IS NULL
+        AND fn_classifier_audit_actor_was_deleted(OLD.created_by_id)
+      )
     )
     OR NOT (
       NEW.deactivated_at IS NOT DISTINCT FROM OLD.deactivated_at
@@ -316,7 +324,10 @@ BEGIN
       NEW.deactivated_by_id IS DISTINCT FROM OLD.deactivated_by_id
       AND NOT (
         OLD.deactivated_at IS NULL AND NEW.deactivated_at IS NOT NULL
-        OR (OLD.deactivated_by_id IS NOT NULL AND NEW.deactivated_by_id IS NULL)
+        OR (
+          NEW.deactivated_by_id IS NULL
+          AND fn_classifier_audit_actor_was_deleted(OLD.deactivated_by_id)
+        )
       )
     ) THEN
     RAISE EXCEPTION 'classifier candidate threshold revision is immutable except for deactivation' USING ERRCODE = '23514';
@@ -384,7 +395,10 @@ BEGIN
     OR NEW.enabled_at IS DISTINCT FROM OLD.enabled_at
     OR (
       NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id
-      AND NOT (OLD.enabled_by_id IS NOT NULL AND NEW.enabled_by_id IS NULL)
+      AND NOT (
+        NEW.enabled_by_id IS NULL
+        AND fn_classifier_audit_actor_was_deleted(OLD.enabled_by_id)
+      )
     )
     OR NOT (
       NEW.disabled_at IS NOT DISTINCT FROM OLD.disabled_at
@@ -394,7 +408,10 @@ BEGIN
       NEW.disabled_by_id IS DISTINCT FROM OLD.disabled_by_id
       AND NOT (
         OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL
-        OR (OLD.disabled_by_id IS NOT NULL AND NEW.disabled_by_id IS NULL)
+        OR (
+          NEW.disabled_by_id IS NULL
+          AND fn_classifier_audit_actor_was_deleted(OLD.disabled_by_id)
+        )
       )
     ) THEN
     RAISE EXCEPTION 'classifier candidate community override is immutable except for deactivation' USING ERRCODE = '23514';
@@ -586,7 +603,7 @@ CREATE TABLE IF NOT EXISTS topic_classifier_results (
   candidate_id UUID,
   threshold_id UUID,
   prompt_version_id UUID NOT NULL,
-  probability NUMERIC(5,4) NOT NULL CHECK (probability >= 0 AND probability <= 1),
+  probability NUMERIC NOT NULL CHECK (probability >= 0 AND probability <= 1),
   effective_lower_threshold NUMERIC(5,4) NOT NULL,
   effective_upper_threshold NUMERIC(5,4) NOT NULL,
   raw_response JSONB NOT NULL,
@@ -664,7 +681,7 @@ CREATE TABLE IF NOT EXISTS story_classifier_results (
   candidate_id UUID,
   threshold_id UUID,
   prompt_version_id UUID NOT NULL,
-  probability NUMERIC(5,4) NOT NULL CHECK (probability >= 0 AND probability <= 1),
+  probability NUMERIC NOT NULL CHECK (probability >= 0 AND probability <= 1),
   effective_lower_threshold NUMERIC(5,4) NOT NULL,
   effective_upper_threshold NUMERIC(5,4) NOT NULL,
   raw_response JSONB NOT NULL,

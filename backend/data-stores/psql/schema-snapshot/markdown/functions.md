@@ -66,6 +66,14 @@ CREATE OR REPLACE FUNCTION public.fn_capture_notification_push_intent()
  LANGUAGE plpgsql
 ```
 
+## `fn_classifier_audit_actor_was_deleted(actor_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+```
+
 ## `fn_create_topic_metrics_on_insert`
 
 ```sql

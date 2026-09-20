@@ -8,6 +8,10 @@ export type ClassifierThresholds = {
   upper: number
 }
 
+type ClassifierScope =
+  | { scope_category: 'global'; scope_community_id: null }
+  | { scope_category: 'community_ai'; scope_community_id: string }
+
 export type Classifier = {
   id: string
   slug: string
@@ -70,16 +74,16 @@ export type ClassifierCandidateCommunityOverride = {
   created_at: Date
 }
 
-export type ClassifierDecisionBatch = {
+type ClassifierDecisionBatchBase = {
   id: string
   classifier_id: string
   prompt_version_id: string
-  post_id: string | null
-  rss_feed_item_id: string | null
-  scope_category: ClassifierScopeCategory
-  scope_community_id: string | null
   created_at: Date
 }
+
+export type ClassifierDecisionBatch = ClassifierDecisionBatchBase &
+  ClassifierScope &
+  ({ post_id: string; rss_feed_item_id: null } | { post_id: null; rss_feed_item_id: string })
 
 export type ClassifierDecisionBatchCandidate = {
   batch_id: string
@@ -100,22 +104,22 @@ export type ClassifierDecisionCall = {
   created_at: Date
 }
 
-type ClassifierResult = {
+type ClassifierResultBase = {
   id: string
   batch_id: string
   decision_call_id: string
   classifier_id: string
-  candidate_id: string | null
-  threshold_id: string | null
   prompt_version_id: string
   probability: number
   effective_lower_threshold: number
   effective_upper_threshold: number
   raw_response: unknown
-  scope_category: ClassifierScopeCategory
-  scope_community_id: string | null
   created_at: Date
 }
+
+type ClassifierResult = ClassifierResultBase &
+  ClassifierScope &
+  ({ candidate_id: string; threshold_id: string } | { candidate_id: null; threshold_id: null })
 
 export type TopicClassifierResult = ClassifierResult & {
   candidate_kind: 'topic'

@@ -28,6 +28,9 @@ describe('classifier schema constraints', () => {
     await expect(fixture.rejectActiveThresholdWithDeactivatedActor()).rejects.toMatchObject({
       code: '23514',
     })
+    await expect(fixture.rejectThresholdAuditActorRemoval()).rejects.toMatchObject({
+      code: '23514',
+    })
     await expect(fixture.rejectPromptIdentityMutation()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.rejectClassifierIdentityMutation()).rejects.toMatchObject({
       code: '23514',
@@ -50,6 +53,9 @@ describe('classifier schema constraints', () => {
       code: '23514',
     })
     const firstLifecycle = await fixture.enableGlobalCandidateForCommunity()
+    await expect(fixture.rejectCommunityOverrideAuditActorRemoval()).rejects.toMatchObject({
+      code: '23514',
+    })
     await expect(fixture.enableGlobalCandidateForCommunity()).rejects.toMatchObject({
       code: '23505',
     })
@@ -90,6 +96,12 @@ describe('classifier schema constraints', () => {
     await historical.deactivateCommunityThreshold()
     await historical.enableGlobalCandidateForCommunity()
     await historical.disableGlobalCandidateForCommunity()
+    await expect(historical.rejectThresholdDeactivationActorRemoval()).rejects.toMatchObject({
+      code: '23514',
+    })
+    await expect(historical.rejectCommunityOverrideDisableActorRemoval()).rejects.toMatchObject({
+      code: '23514',
+    })
     await expect(historical.deleteAuditUser()).resolves.toMatchObject({ rowCount: 1 })
     await expect(historical.getCommunityThresholdAuditUsers()).resolves.toEqual({
       created_by_id: null,

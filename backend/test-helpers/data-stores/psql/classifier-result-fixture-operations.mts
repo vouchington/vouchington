@@ -10,6 +10,7 @@ type ResultOptions = {
   effectiveLower?: number
   topicId?: string
   communityId?: string
+  probability?: number
 }
 
 export function buildClassifierResultFixtureOperations(data: ClassifierFixtureData) {
@@ -120,11 +121,13 @@ export function buildClassifierResultFixtureOperations(data: ClassifierFixtureDa
           ${options.topicId ?? data.topicId}, ${options.batchId}, ${options.callId},
           ${data.classifierId},
           ${options.candidateId === undefined ? data.topicCandidateId : options.candidateId},
-          ${thresholdId}, ${data.promptVersionId}, 0.5000, ${effectiveLower}, 0.7500,
-          '{"type":"noul","noul":0.5}'::jsonb, ${scopeCategory}, ${options.communityId ?? null}
-        )`)
+          ${thresholdId}, ${data.promptVersionId}, ${options.probability ?? 0.5},
+          ${effectiveLower}, 0.7500,
+          jsonb_build_object('type', 'noul', 'noul', ${options.probability ?? 0.5}::numeric),
+          ${scopeCategory}, ${options.communityId ?? null}
+        ) RETURNING probability::text`)
     },
-    insertStoryResult: (batchId: string, callId: string) =>
+    insertStoryResult: (batchId: string, callId: string, probability = 0.8) =>
       write(sql`/* insertClassifierFixtureStoryResult */
         INSERT INTO story_classifier_results (
           story_id, batch_id, decision_call_id, classifier_id, candidate_id, threshold_id,
@@ -133,8 +136,10 @@ export function buildClassifierResultFixtureOperations(data: ClassifierFixtureDa
         ) VALUES (
           ${data.storyId}, ${batchId}, ${callId}, ${data.storyClassifierId},
           ${data.storyCandidateId}, ${data.storyThresholdId}, ${data.storyPromptVersionId},
-          0.8000, 0.2500, 0.7500, '{"type":"choice","choice":"story"}'::jsonb, 'global'
-        )`),
+          ${probability}, 0.2500, 0.7500,
+          jsonb_build_object('type', 'choice', 'choice', 'story', 'probability', ${probability}::numeric),
+          'global'
+        ) RETURNING probability::text`),
     rejectResultScopeMismatch: (batchId: string, callId: string) =>
       write(sql`/* rejectClassifierFixtureResultScopeMismatch */
         INSERT INTO topic_classifier_results (

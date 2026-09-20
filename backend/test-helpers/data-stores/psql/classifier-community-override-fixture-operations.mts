@@ -52,6 +52,20 @@ export function buildClassifierCommunityOverrideFixtureOperations(data: Classifi
         INSERT INTO classifier_candidate_community_overrides (
           community_id, candidate_id, disabled_by_id
         ) VALUES (${data.communityId}, ${data.topicCandidateId}, ${data.auditUserId})`),
+    rejectCommunityOverrideAuditActorRemoval: () =>
+      write(sql`/* rejectClassifierFixtureCommunityOverrideAuditActorRemoval */
+        UPDATE classifier_candidate_community_overrides
+        SET enabled_by_id = NULL
+        WHERE community_id = ${data.communityId}
+          AND candidate_id = ${data.topicCandidateId}
+          AND disabled_at IS NULL`),
+    rejectCommunityOverrideDisableActorRemoval: () =>
+      write(sql`/* rejectClassifierFixtureCommunityOverrideDisableActorRemoval */
+        UPDATE classifier_candidate_community_overrides
+        SET disabled_by_id = NULL
+        WHERE community_id = ${data.communityId}
+          AND candidate_id = ${data.topicCandidateId}
+          AND disabled_at IS NOT NULL`),
     getGlobalCandidateCommunityOverrideAuditUsers: async () => {
       const { rows } = await write<{
         enabled_by_id: string | null

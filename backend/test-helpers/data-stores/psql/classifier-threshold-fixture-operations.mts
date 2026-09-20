@@ -29,10 +29,20 @@ export function buildClassifierThresholdFixtureOperations(data: ClassifierFixtur
         UPDATE classifier_candidate_thresholds
         SET deactivated_by_id = ${data.auditUserId}
         WHERE id = ${data.topicThresholdId}`),
+    rejectThresholdAuditActorRemoval: () =>
+      write(sql`/* rejectClassifierFixtureThresholdAuditActorRemoval */
+        UPDATE classifier_candidate_thresholds
+        SET created_by_id = NULL
+        WHERE id = ${data.communityThresholdId}`),
     deactivateCommunityThreshold: () =>
       write(sql`/* deactivateClassifierFixtureCommunityThreshold */
         UPDATE classifier_candidate_thresholds
         SET deactivated_at = CURRENT_TIMESTAMP, deactivated_by_id = ${data.auditUserId}
+        WHERE id = ${data.communityThresholdId}`),
+    rejectThresholdDeactivationActorRemoval: () =>
+      write(sql`/* rejectClassifierFixtureThresholdDeactivationActorRemoval */
+        UPDATE classifier_candidate_thresholds
+        SET deactivated_by_id = NULL
         WHERE id = ${data.communityThresholdId}`),
     deleteCommunityThreshold: () =>
       write(sql`/* deleteClassifierFixtureCommunityThreshold */

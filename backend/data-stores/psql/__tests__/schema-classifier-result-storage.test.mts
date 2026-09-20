@@ -31,6 +31,19 @@ describe('classifier result storage', () => {
     ).rejects.toMatchObject({ code: '23503' })
   })
 
+  it('preserves provider probability precision', async () => {
+    const fixture = await createClassifierFixture()
+    const topicLineage = await fixture.createTopicBatch()
+    const storyLineage = await fixture.createStoryBatch()
+
+    await expect(
+      fixture.insertTopicResult({ ...topicLineage, probability: 0.75004 }),
+    ).resolves.toMatchObject({ rows: [{ probability: '0.75004' }] })
+    await expect(
+      fixture.insertStoryResult(storyLineage.batchId, storyLineage.callId, 0.75004),
+    ).resolves.toMatchObject({ rows: [{ probability: '0.75004' }] })
+  })
+
   it('persists valid story-classifier lineage in the concrete story result family', async () => {
     const fixture = await createClassifierFixture()
     const lineage = await fixture.createStoryBatch()
