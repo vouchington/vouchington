@@ -22,7 +22,7 @@ describe('component story ratchet a11y contract', () => {
   ]
 
   it('uses enforced accessibility parameters for every CoveragePart story', () => {
-    expect(ratchetStoryFiles).toHaveLength(15)
+    expect(ratchetStoryFiles).toHaveLength(16)
 
     for (const { file, source } of ratchetStoryFiles) {
       expect({
