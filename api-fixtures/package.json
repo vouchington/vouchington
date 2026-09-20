@@ -5,6 +5,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "exports": {
+    "./v1/request-contracts.json": "./v1/request-contracts.json",
     "./v1/lifecycle-scenarios.json": "./v1/lifecycle-scenarios.json"
   }
 }

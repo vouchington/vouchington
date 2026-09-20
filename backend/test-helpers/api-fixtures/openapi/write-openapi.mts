@@ -1,12 +1,14 @@
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { format } from 'oxfmt'
-import { writeOpenApi as writeFromTooling } from 'vouchington-tooling/openapi-document'
+import { writeGeneratedFiles } from 'vouchington-tooling/api-fixtures'
 import { stableStringify } from '../write.mts'
 import { buildOpenApiDocument } from './build-openapi-document.mts'
+import { buildRequestContractsBundle } from './request-contract-bundle.mts'
 
 const repoRoot = fileURLToPath(new URL('../../../..', import.meta.url))
 const openApiPath = join(repoRoot, 'api-fixtures/v1/openapi.json')
+const requestContractsPath = join(repoRoot, 'api-fixtures/v1/request-contracts.json')
 
 async function formatWithOxfmt(path: string, rawJson: string): Promise<string> {
   const result = await format(path, rawJson)
@@ -25,26 +27,26 @@ export async function writeOpenApi({
   check?: boolean
   path?: string
 } = {}): Promise<void> {
-  try {
-    await writeFromTooling({
-      path,
-      document: buildOpenApiDocument(),
-      check,
-      format: formatWithOxfmt,
-      stringify: stableStringify,
-    })
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.endsWith('Regenerate the OpenAPI document and commit it.')
-    ) {
-      throw new Error(
-        `${path} is stale. Run \`pnpm run openapi:generate\` and commit the changes.`,
-        { cause: error },
-      )
-    }
-    throw error
-  }
+  const document = buildOpenApiDocument()
+  const runtimePath =
+    path === openApiPath ? requestContractsPath : join(path, '..', 'request-contracts.json')
+  const files = new Map<string, string>()
+  files.set(path, await formatWithOxfmt(path, stableStringify(document)))
+  files.set(
+    runtimePath,
+    await formatWithOxfmt(runtimePath, stableStringify(buildRequestContractsBundle(document))),
+  )
+  await writeGeneratedFiles({
+    files,
+    check,
+    staleError: stalePaths =>
+      new Error(
+        [
+          'OpenAPI runtime contracts are stale. Run `pnpm run openapi:generate` and commit both generated files.',
+          ...stalePaths.map(stalePath => `- ${stalePath}`),
+        ].join('\n'),
+      ),
+  })
 }
 
-export const openApiPaths = { openApiPath }
+export const openApiPaths = { openApiPath, requestContractsPath }

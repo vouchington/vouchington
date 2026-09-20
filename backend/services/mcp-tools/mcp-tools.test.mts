@@ -1,5 +1,7 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
+import { ALL_TOOLS } from '@voucha/tools/registry/index'
 import type { PrivateUser } from '@services/users/types'
 import { listMcpToolsForUser } from './list-tools.mts'
 import {
@@ -10,6 +12,7 @@ import {
 } from './call-tool.mts'
 import { handleMcpHttpRequest } from './handle-request.mts'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
+import { validateToolArguments } from './validate-tool-arguments.mts'
 
 type McpUser = PrivateUser & { membership_plan: 'plus' | 'pro' | null }
 
@@ -176,6 +179,38 @@ describe('callMcpTool', () => {
     })
   })
 
+  it('rejects invalid registered tool arguments before invoking the tool', async () => {
+    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'search_topics_text')
+    if (!tool) throw new Error('Expected search_topics_text tool')
+    const invoke = vi.spyOn(tool, 'function')
+
+    try {
+      await expect(
+        callMcpTool('search_topics_text', {}, user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
+      ).rejects.toMatchObject({
+        code: ErrorCode.InvalidParams,
+        message: expect.stringContaining('Invalid tool arguments'),
+      })
+      expect(invoke).not.toHaveBeenCalled()
+    } finally {
+      invoke.mockRestore()
+    }
+  })
+
+  it('rejects strict-schema extra tool arguments', () => {
+    expect(
+      validateToolArguments(
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['query'],
+          properties: { query: { type: 'string' } },
+        },
+        { query: 'Voucha', unexpected: true },
+      ),
+    ).toContain('must NOT have additional properties')
+  })
+
   it('returns CallToolResult on successful tool call', async () => {
     // search_topics_text is a read-only MCP tool
     const result = await callMcpTool(
@@ -219,6 +254,33 @@ describe('handleMcpHttpRequest', () => {
     expect(response.status).toBe(200)
     const json = (await response.json()) as { result?: { tools?: unknown[] } }
     expect(Array.isArray(json.result?.tools)).toBe(true)
+  })
+
+  it('returns a protocol error for an authorized malformed JSON-RPC envelope', async () => {
+    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'search_topics_text')
+    if (!tool) throw new Error('Expected search_topics_text tool')
+    const invoke = vi.spyOn(tool, 'function')
+    const body = { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { arguments: {} } }
+    try {
+      const response = await handleMcpHttpRequest({
+        user,
+        permissions: ['mcp.user:read'],
+        request: new Request('http://localhost/api/v1/mcp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(body),
+        }),
+        parsedBody: body,
+        config: USER_MCP_SERVER_CONFIG,
+      })
+
+      expect(response.status).toBe(200)
+      const result = (await response.json()) as { error?: { code?: number } }
+      expect(result.error?.code).toBe(ErrorCode.InvalidRequest)
+      expect(invoke).not.toHaveBeenCalled()
+    } finally {
+      invoke.mockRestore()
+    }
   })
 
   it('returns a Response for tools/call request', async () => {

@@ -41,6 +41,18 @@ describe('POST /api/v1/mcp', () => {
       .expect(401)
   })
 
+  it('does not disclose malformed MCP schemas before API-key authentication', async () => {
+    const req = createRequest()
+    const response = await req
+      .post('/api/v1/mcp')
+      .set('Content-Type', 'application/json')
+      .send({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { arguments: {} } })
+      .expect(401)
+
+    expect(response.text).not.toContain('Invalid request')
+    expect(response.text).not.toContain('tools/call')
+  })
+
   it('returns 401 when Authorization is not Bearer format', async () => {
     const req = createRequest()
     await req

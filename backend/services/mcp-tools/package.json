@@ -17,7 +17,9 @@
     "@modules/on-error": "workspace:^",
     "@modules/scopes": "workspace:^",
     "@services/users": "workspace:^",
-    "@voucha/tools": "workspace:^"
+    "@voucha/tools": "workspace:^",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

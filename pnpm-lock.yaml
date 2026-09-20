@@ -1457,12 +1457,21 @@ importers:
       '@ts-shared/utm':
         specifier: workspace:^
         version: link:../../ts-shared/utm
+      '@voucha/api-fixtures':
+        specifier: workspace:^
+        version: link:../../api-fixtures
       '@voucha/config':
         specifier: workspace:^
         version: link:../config
       '@voucha/types':
         specifier: workspace:^
         version: link:../types
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
@@ -6639,6 +6648,12 @@ importers:
       '@voucha/tools':
         specifier: workspace:^
         version: link:../../tools
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
