@@ -1742,6 +1742,16 @@ rules:
       sqlInclude:
         - backend/data-stores/psql/migrations/**/*.sql
       allowedMigrations:
+        - path: backend/data-stores/psql/migrations/0637-00-00-copyright-structured-submissions.sql
+          table: copyright_restrictions
+          column: authorizing_assessment_id
+          type: UUID
+          nullable: false
+        - path: backend/data-stores/psql/migrations/0637-00-00-copyright-structured-submissions.sql
+          table: copyright_notice_submission_assessments
+          column: copyright_notice_form_screening_id
+          type: UUID
+          nullable: true
         - path: backend/data-stores/psql/migrations/0630-00-00-membership-ineligible-purchase-reversal-refund-scan-cycles.sql
           table: membership_ineligible_purchase_reversal_refund_scans
           column: registered_cycle_generation

@@ -54,7 +54,7 @@ export async function completeCopyrightMandatoryHumanReview(input: {
           AND accepted_at IS NOT NULL
           AND provisional_withholding_at IS NOT NULL
       )
-    RETURNING id, copyright_notice_target_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
+    RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
       human_reviewed_at, human_review_action, human_reviewed_by_id
   `)
   const restriction = rows[0]

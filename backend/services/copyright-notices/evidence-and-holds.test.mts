@@ -43,7 +43,7 @@ async function createTwoTargetFixture() {
   const noticeAssessment = await appendCopyrightSubmissionAssessment({
     submissionId: aggregate.submissions[0].id,
     assessedAt: new Date('2026-07-01T11:00:00.000Z'),
-    currentUser: null,
+    currentUser: moderator,
     substantiallyCompliant: true,
   })
   return { aggregate, moderator, notice, noticeAssessment }

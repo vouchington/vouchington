@@ -19,12 +19,15 @@ import { processStoryPost } from './processors/process-story-post.mts'
 import { processReportJudgement } from './processors/process-report-judgement.mts'
 import { processDisputeResolution } from './processors/process-dispute-resolution.mts'
 import { processAppealResolution } from './processors/process-appeal-resolution.mts'
+import { processCopyrightEmailIntake } from './processors/process-copyright-email-intake.mts'
+import { processCopyrightFormScreening } from './processors/process-copyright-form-screening.mts'
 import { processBackfillReportJudgements } from './processors/process-backfill-report-judgements.mts'
 import { processAutoDispatchJudgement } from './processors/process-auto-dispatch-judgement.mts'
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
 import { processReconcileBackgroundResponses } from './processors/process-reconcile-background-responses.mts'
 import { processReconcileChatRuntimeGenerations } from './processors/process-reconcile-chat-runtime-generations.mts'
 import { processReconcileMemberSupportAgentIntents } from './processors/process-reconcile-member-support-agent-intents.mts'
+import { processReconcileCopyrightAgentDispatches } from './processors/process-reconcile-copyright-agent-dispatches.mts'
 
 export type ProcessAIAgentDependencies = {
   processReconcileChatRuntimeGenerations: typeof processReconcileChatRuntimeGenerations
@@ -90,6 +93,14 @@ export function processAIAgent(
       return processAppealResolution(
         job as Job<import('@queues/ai-agents/types').AppealResolutionJobData>,
       )
+    case 'copyright-email-intake':
+      return processCopyrightEmailIntake(
+        job as Job<import('@queues/ai-agents/types').CopyrightEmailIntakeJobData>,
+      )
+    case 'copyright-form-screening':
+      return processCopyrightFormScreening(
+        job as Job<import('@queues/ai-agents/types').CopyrightFormScreeningJobData>,
+      )
     case 'backfill_report_judgements':
       return processBackfillReportJudgements()
     case 'auto-dispatch-judgement':
@@ -104,6 +115,8 @@ export function processAIAgent(
       return dependencies.processReconcileChatRuntimeGenerations()
     case 'reconcile-member-support-agent-intents':
       return processReconcileMemberSupportAgentIntents()
+    case 'reconcile-copyright-agent-dispatches':
+      return processReconcileCopyrightAgentDispatches()
     default:
       name satisfies never
       throw new Error(`Unknown AI agent job: ${name}`)

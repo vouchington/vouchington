@@ -23,6 +23,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'ai_agents/reconcileBackgroundResponses',
   'ai_agents/reconcileChatRuntimeGenerations',
   'ai_agents/reconcileMemberSupportAgentIntents',
+  'ai_agents/reconcileCopyrightAgentDispatches',
   'bedrock-embeddings-batch/backlog_dispatcher',
   'bedrock-embeddings-batch/creation_dispatcher',
   'bedrock-embeddings-batch/poll_dispatcher',

@@ -121,6 +121,14 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
     'Deployment bucket name; keep environment-scoped with infrastructure wiring.',
   ],
   [
+    'S3_BUCKET_COPYRIGHT_EVIDENCE',
+    'Immutable legal-evidence bucket; keep environment-scoped with infrastructure wiring.',
+  ],
+  [
+    'COPYRIGHT_INTAKE_ENABLED',
+    'Legal-operations activation gate; false unless all copyright launch prerequisites are ready.',
+  ],
+  [
     'STATIC_CACHE_TTL_SECONDS',
     'Runtime cache tuning; keep environment-scoped for operator override.',
   ],

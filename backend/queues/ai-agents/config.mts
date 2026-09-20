@@ -20,6 +20,8 @@ export type AIAgentJobName =
   | 'report-judgement'
   | 'dispute-resolution'
   | 'appeal-resolution'
+  | 'copyright-email-intake'
+  | 'copyright-form-screening'
   | 'story-clustering'
   | 'story-post'
   | 'backfill_report_judgements'
@@ -28,6 +30,7 @@ export type AIAgentJobName =
   | 'reconcile-background-responses'
   | 'reconcile-chat-runtime-generations'
   | 'reconcile-member-support-agent-intents'
+  | 'reconcile-copyright-agent-dispatches'
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   chat: 1,
@@ -39,6 +42,8 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'report-judgement': 9,
   'dispute-resolution': 9,
   'appeal-resolution': 9,
+  'copyright-email-intake': 9,
+  'copyright-form-screening': 9,
   'story-post': 10,
   'story-clustering': 15,
   'autotagger-post': 20,
@@ -49,6 +54,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'reconcile-background-responses': 100,
   'reconcile-chat-runtime-generations': 100,
   'reconcile-member-support-agent-intents': 100,
+  'reconcile-copyright-agent-dispatches': 100,
 }
 
 // Which job types can incur billed OpenAI generation spend, and are therefore subject to the
@@ -92,6 +98,8 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'report-judgement': true,
   'dispute-resolution': true,
   'appeal-resolution': true,
+  'copyright-email-intake': true,
+  'copyright-form-screening': true,
   'story-post': true,
   'story-clustering': true,
   'autotagger-post': true,
@@ -102,4 +110,5 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'reconcile-background-responses': false,
   'reconcile-chat-runtime-generations': false,
   'reconcile-member-support-agent-intents': false,
+  'reconcile-copyright-agent-dispatches': false,
 }

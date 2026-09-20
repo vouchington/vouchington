@@ -4,11 +4,27 @@ Copyright notices are a distinct legal workflow. This package owns pure lifecycl
 allowlisted member projection; PostgreSQL owns the durable legal aggregate introduced by migration
 `0634-00-00-copyright-notices.sql`.
 
-Layer 1 is deliberately inert at the API boundary. It provides transactional aggregate creation,
-immutable submission and assessment records, deadline derivation, restriction/review transitions,
-hold resolution, correspondence approval, and revision-fenced restore intents. It does not expose
-intake routes, invoke agents, restrict media, or send correspondence. Later layers must use these
-boundaries instead of treating a generic content report or ordinary appeal as a statutory notice.
+The package provides transactional aggregate creation, immutable submission and assessment records,
+deadline derivation, restriction/review transitions, hold resolution, correspondence approval, and
+revision-fenced restore intents. The intake layer adds structured form and preserved-email records,
+but remains disabled by default with `COPYRIGHT_INTAKE_ENABLED`. Later enforcement and delivery
+layers must use these boundaries instead of treating a generic content report or ordinary appeal as
+a statutory notice.
+
+The form-intake layer adds a deliberately small authoritative resolver for the currently supported
+post-image placement: it accepts a hosted post URL plus image ID, verifies the association in the
+primary database, and derives the placement key server-side. It does not accept caller-supplied
+placement keys or revisions. The full authoritative revision and delivery transition remain in the
+media-placement layer.
+
+Signed-in forms may create a provisional restriction only after the exact current structured
+intake receives a `clear` anti-spam screen; PostgreSQL binds the assessment and restriction to that
+screening record. Guest forms and every email intake remain moderator-gated. Email admission uses
+the trusted SES `intakeKind`/S3-prefix contract, preserves the exact raw object version before
+parsing, retains encrypted threading headers, and retains malformed messages for manual review.
+The extraction records all statutory fields plus bounded source excerpts without inventing missing
+declarations. Ordinary approval identifies the recommendation reviewed; an agent failure requires
+an explicit manual-fallback reason.
 
 ## Invariants
 

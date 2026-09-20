@@ -451,6 +451,45 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/agents/copyright-email-intake:
+    dependencies:
+      '@agents/_shared':
+        specifier: workspace:^
+        version: link:../_shared
+      '@jongleberry/vurst-prompt':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@modules/openai-utils':
+        specifier: workspace:^
+        version: link:../../modules/openai-utils
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
+      openai:
+        specifier: ^7.15.0
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+
+  backend/agents/copyright-form-screening:
+    dependencies:
+      '@agents/_shared':
+        specifier: workspace:^
+        version: link:../_shared
+      '@jongleberry/vurst-prompt':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@modules/openai-utils':
+        specifier: workspace:^
+        version: link:../../modules/openai-utils
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
+      openai:
+        specifier: ^7.15.0
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+
   backend/agents/crm-outreach:
     dependencies:
       '@agents/_shared':
@@ -1090,6 +1129,9 @@ importers:
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../services/conversations-messages
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../services/copyright-notices
       '@services/countries':
         specifier: workspace:^
         version: link:../services/countries
@@ -4760,9 +4802,18 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@modules/token-secrets':
+        specifier: workspace:^
+        version: link:../../modules/token-secrets
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@voucha/config':
+        specifier: workspace:^
+        version: link:../../config
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -10748,6 +10799,12 @@ importers:
       '@agents/community-moderation':
         specifier: workspace:^
         version: link:../../agents/community-moderation
+      '@agents/copyright-email-intake':
+        specifier: workspace:^
+        version: link:../../agents/copyright-email-intake
+      '@agents/copyright-form-screening':
+        specifier: workspace:^
+        version: link:../../agents/copyright-form-screening
       '@agents/customer-support':
         specifier: workspace:^
         version: link:../../agents/customer-support
@@ -10808,6 +10865,9 @@ importers:
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../../services/conversations-messages
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
       '@services/customer-support':
         specifier: workspace:^
         version: link:../../services/customer-support
@@ -12110,6 +12170,9 @@ importers:
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
       '@services/customer-support':
         specifier: workspace:^
         version: link:../../services/customer-support
@@ -29491,6 +29554,14 @@ snapshots:
       define-lazy-prop: 3.0.0
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
+
+  openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2):
+    optionalDependencies:
+      '@aws-sdk/credential-provider-node': 3.972.83
+      '@smithy/signature-v4': 5.7.3
+      undici: 8.10.2
+      ws: 8.21.3
+      zod: 4.6.2
 
   openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2):
     optionalDependencies:

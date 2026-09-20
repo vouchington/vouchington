@@ -1,8 +1,5 @@
-import type {
-  CopyrightHumanReviewAction,
-  CopyrightNoticeRecord,
-  MemberCopyrightNotice,
-} from './types.mts'
+import type { CopyrightHumanReviewAction, CopyrightNoticeRecord } from './types.mts'
+import type { MemberCopyrightNotice } from './member-types.mts'
 
 /** The member contract is deliberately allowlisted: no legal contact, raw evidence, or free text. */
 export function redactCopyrightNoticeForMember(

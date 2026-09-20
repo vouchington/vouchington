@@ -7,6 +7,8 @@
 | Name                                  | Required | Where      | Notes                                                                                                               |
 | ------------------------------------- | -------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
 | `S3_BUCKET_SES_INBOUND`               | Yes      | ECS        | Private raw-mail bucket read by the dedicated backend worker and its durable reconciler                             |
+| `S3_BUCKET_COPYRIGHT_EVIDENCE`        | Yes      | ECS worker | Versioned, encrypted, access-logged private bucket for immutable original copyright email evidence                  |
+| `COPYRIGHT_INTAKE_ENABLED`            | Yes      | ECS        | Must be exactly `true` only after the full legal, moderation, notification, and evidence controls are operational   |
 | `INSTANCE_EMAIL`                      | No       | ECS        | Instance email address                                                                                              |
 | `SES_CONFIGURATION_SET_TRANSACTIONAL` | No       | ECS        | SES configuration set for transactional email. Unset locally (no config set applied in dev)                         |
 | `SES_CONFIGURATION_SET_MARKETING`     | No       | ECS        | SES configuration set for marketing email, isolated from transactional for deliverability reputation. Unset locally |

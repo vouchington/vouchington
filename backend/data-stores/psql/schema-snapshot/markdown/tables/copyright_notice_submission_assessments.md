@@ -6,16 +6,17 @@ Append-only compliance assessment. A compliant counter-notice uses its reference
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                   |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                           |
-| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Immutable submission evaluated by this assessment.                                        |
-| `supersedes_assessment_id`       | `uuid`                     | yes      |                              |          |           |           | Prior assessment corrected by this append-only assessment; NULL for the first assessment. |
-| `assessed_at`                    | `timestamp with time zone` | no       |                              |          |           |           | When deterministic validation or a moderator recorded this assessment.                    |
-| `assessed_by_id`                 | `uuid`                     | yes      |                              |          |           |           | Staff assessor; NULL denotes deterministic validation.                                    |
-| `substantially_compliant`        | `boolean`                  | no       |                              |          |           |           | Whether this exact submission contains the required elements for its legal procedure.     |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                           |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                           |
+| Column                               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                       |
+| ------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
+| `id`                                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                               |
+| `copyright_notice_submission_id`     | `uuid`                     | no       |                              |          |           |           | Immutable submission evaluated by this assessment.                                                            |
+| `supersedes_assessment_id`           | `uuid`                     | yes      |                              |          |           |           | Prior assessment corrected by this append-only assessment; NULL for the first assessment.                     |
+| `assessed_at`                        | `timestamp with time zone` | no       |                              |          |           |           | When deterministic validation or a moderator recorded this assessment.                                        |
+| `assessed_by_id`                     | `uuid`                     | yes      |                              |          |           |           | Staff assessor; NULL denotes deterministic validation.                                                        |
+| `substantially_compliant`            | `boolean`                  | no       |                              |          |           |           | Whether this exact submission contains the required elements for its legal procedure.                         |
+| `created_at`                         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                               |
+| `updated_at`                         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                               |
+| `copyright_notice_form_screening_id` | `uuid`                     | yes      |                              |          |           |           | Exact clear anti-spam screening authorizing an automated initial-notice assessment; null for human decisions. |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -31,16 +32,19 @@ _none_
 - `copyright_notice_submission_a_copyright_notice_submission__fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 - `copyright_notice_submission_asses_supersedes_assessment_id_fkey`: `FOREIGN KEY (supersedes_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
 - `copyright_notice_submission_assessments_assessed_by_id_fkey`: `FOREIGN KEY (assessed_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_assessments__form_screening`: `FOREIGN KEY (copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_submission_assess_supersedes_assessment_id_key`: `CREATE UNIQUE INDEX copyright_notice_submission_assess_supersedes_assessment_id_key ON public.copyright_notice_submission_assessments USING btree (supersedes_assessment_id)`
 - `copyright_notice_submission_assessments_pkey`: `CREATE UNIQUE INDEX copyright_notice_submission_assessments_pkey ON public.copyright_notice_submission_assessments USING btree (id)`
+- `idx_copyright_assessments__form_screening`: `CREATE INDEX idx_copyright_assessments__form_screening ON public.copyright_notice_submission_assessments USING btree (copyright_notice_form_screening_id) WHERE (copyright_notice_form_screening_id IS NOT NULL)`
 - `idx_copyright_notice_assessments__assessed_by`: `CREATE INDEX idx_copyright_notice_assessments__assessed_by ON public.copyright_notice_submission_assessments USING btree (assessed_by_id) WHERE (assessed_by_id IS NOT NULL)`
 - `idx_copyright_notice_assessments__submission`: `CREATE INDEX idx_copyright_notice_assessments__submission ON public.copyright_notice_submission_assessments USING btree (copyright_notice_submission_id, id DESC)`
 
 **Triggers:**
 
+- `trigger_copyright_automated_assessment_screening`: `CREATE TRIGGER trigger_copyright_automated_assessment_screening BEFORE INSERT OR UPDATE OF assessed_by_id, copyright_notice_form_screening_id ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_automated_assessment_screening()`
 - `trigger_copyright_notice_assessments_immutable`: `CREATE TRIGGER trigger_copyright_notice_assessments_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('assessed_by_id')`
 - `trigger_copyright_notice_assessments_scope`: `CREATE TRIGGER trigger_copyright_notice_assessments_scope BEFORE INSERT ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_assessment_supersession()`
 - `trigger_copyright_notice_assessments_source`: `CREATE TRIGGER trigger_copyright_notice_assessments_source BEFORE INSERT ON public.copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_assessment_source()`

@@ -41,6 +41,7 @@ export async function appendCopyrightSubmissionAssessment(input: {
   substantiallyCompliant: boolean
   supersedesAssessmentId?: string | null
   targetIds?: string[]
+  copyrightFormScreeningId?: string
 }): Promise<CopyrightNoticeSubmissionAssessmentRecord> {
   assert(
     input.currentUser === null || currentUserCanReviewCopyrightNotices(input.currentUser),
@@ -64,6 +65,16 @@ export async function appendCopyrightSubmissionAssessment(input: {
     submissionRows[0].source_kind === 'signed_in_form' || input.currentUser !== null,
     403,
     'Email and guest-form assessments require a copyright reviewer',
+  )
+  assert(
+    input.currentUser !== null || submissionRows[0].kind === 'notice',
+    403,
+    'Only an initial signed-in notice may be assessed automatically',
+  )
+  assert(
+    input.currentUser === null || input.copyrightFormScreeningId === undefined,
+    422,
+    'Human assessments cannot claim an automated screening',
   )
   assert(
     submissionRows[0].kind !== 'counter_notice' ||
@@ -103,13 +114,13 @@ export async function appendCopyrightSubmissionAssessment(input: {
   const { rows } = await transaction(sql`/* appendCopyrightSubmissionAssessment */
     INSERT INTO copyright_notice_submission_assessments (
       copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant,
-      supersedes_assessment_id
+      supersedes_assessment_id, copyright_notice_form_screening_id
     ) VALUES (
       ${input.submissionId}, ${input.assessedAt}, ${input.currentUser?.id ?? null}, ${input.substantiallyCompliant},
-      ${input.supersedesAssessmentId ?? null}
+      ${input.supersedesAssessmentId ?? null}, ${input.copyrightFormScreeningId ?? null}
     )
     RETURNING id, copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant,
-      supersedes_assessment_id
+      supersedes_assessment_id, copyright_notice_form_screening_id
   `)
   const assessment = rows[0] as CopyrightNoticeSubmissionAssessmentRecord | undefined
   assert(assessment, 500, 'Failed to append copyright submission assessment')

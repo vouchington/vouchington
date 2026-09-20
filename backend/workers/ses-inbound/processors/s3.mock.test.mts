@@ -19,6 +19,7 @@ vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOrigi
 }))
 
 import {
+  copySesInboundObjectToCopyrightEvidence,
   deleteSesInboundObject,
   listSesInboundObjects,
   loadSesInboundObject,
@@ -39,7 +40,9 @@ describe('SES inbound S3 storage', () => {
   it('accepts the 40 MiB SES size boundary', async () => {
     mocks.send.mockResolvedValueOnce({
       ContentLength: MAX_SES_INBOUND_BYTES,
+      ETag: '"etag-1"',
       Body: Readable.from([Buffer.from('raw MIME')]),
+      LastModified: new Date('2026-07-01T12:00:00.000Z'),
     } as never)
 
     await expect(readStream(await loadSesInboundObject('incoming/message-123'))).resolves.toEqual(
@@ -55,7 +58,9 @@ describe('SES inbound S3 storage', () => {
   it('rejects an object above the 40 MiB SES size boundary', async () => {
     mocks.send.mockResolvedValueOnce({
       ContentLength: MAX_SES_INBOUND_BYTES + 1,
+      ETag: '"etag-1"',
       Body: Readable.from([Buffer.from('raw MIME')]),
+      LastModified: new Date('2026-07-01T12:00:00.000Z'),
     } as never)
 
     await expect(loadSesInboundObject('incoming/message-123')).rejects.toThrow(
@@ -65,7 +70,9 @@ describe('SES inbound S3 storage', () => {
 
   it('accepts a streamed object exactly at the limit when S3 omits ContentLength', async () => {
     mocks.send.mockResolvedValueOnce({
+      ETag: '"etag-1"',
       Body: generateChunkedBody(MAX_SES_INBOUND_BYTES),
+      LastModified: new Date('2026-07-01T12:00:00.000Z'),
     } as never)
 
     const body = await inspectStream(await loadSesInboundObject('incoming/message-123'))
@@ -75,7 +82,9 @@ describe('SES inbound S3 storage', () => {
 
   it('rejects a streamed object one byte above the limit when S3 omits ContentLength', async () => {
     mocks.send.mockResolvedValueOnce({
+      ETag: '"etag-1"',
       Body: generateChunkedBody(MAX_SES_INBOUND_BYTES + 1),
+      LastModified: new Date('2026-07-01T12:00:00.000Z'),
     } as never)
 
     await expect(inspectStream(await loadSesInboundObject('incoming/message-123'))).rejects.toThrow(
@@ -92,6 +101,27 @@ describe('SES inbound S3 storage', () => {
     expect(command.input).toEqual({
       Bucket: 'voucha-ses-inbound-test',
       Key: 'incoming/message-123',
+    })
+  })
+
+  it('copies the exact hashed version into copyright evidence', async () => {
+    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'voucha-copyright-evidence-test')
+    mocks.send.mockResolvedValueOnce({} as never)
+
+    await copySesInboundObjectToCopyrightEvidence(
+      'copyright-incoming/message 123',
+      'message-123',
+      Buffer.alloc(32, 7),
+      { eTag: '"etag-1"', versionId: 'version/1' },
+    )
+
+    const command = mocks.send.mock.calls[0]![0] as CopyObjectCommand
+    expect(command.input).toEqual({
+      Bucket: 'voucha-copyright-evidence-test',
+      Key: `email/message-123/${Buffer.alloc(32, 7).toString('hex')}.eml`,
+      CopySource: 'voucha-ses-inbound-test/copyright-incoming/message%20123?versionId=version%2F1',
+      CopySourceIfMatch: '"etag-1"',
+      MetadataDirective: 'COPY',
     })
   })
 
@@ -137,12 +167,20 @@ describe('SES inbound S3 storage', () => {
       'Raw SES object has no body',
     )
 
-    mocks.send.mockResolvedValueOnce({ Body: {} } as never)
+    mocks.send.mockResolvedValueOnce({
+      ETag: '"etag-1"',
+      Body: {},
+      LastModified: new Date('2026-07-01T12:00:00.000Z'),
+    } as never)
     await expect(loadSesInboundObject('incoming/non-streaming')).rejects.toThrow(
       'Raw SES object body is not readable',
     )
 
-    mocks.send.mockResolvedValueOnce({ Body: generateUnreadableBody() } as never)
+    mocks.send.mockResolvedValueOnce({
+      ETag: '"etag-1"',
+      Body: generateUnreadableBody(),
+      LastModified: new Date('2026-07-01T12:00:00.000Z'),
+    } as never)
     await expect(inspectStream(await loadSesInboundObject('incoming/unreadable'))).rejects.toThrow(
       'Raw SES object contained an unreadable chunk',
     )

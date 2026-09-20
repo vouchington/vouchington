@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightNoticeRecord, CreateCopyrightNoticeAggregateInput } from './types.mts'
@@ -6,8 +7,18 @@ import type { CopyrightNoticeRecord, CreateCopyrightNoticeAggregateInput } from 
 export async function createCopyrightNoticeAggregate(
   input: CreateCopyrightNoticeAggregateInput,
 ): Promise<CopyrightNoticeRecord> {
-  assert(input.targets.length > 0, 422, 'A copyright notice requires at least one hosted target')
   await using transaction = await beginTransaction()
+  const notice = await createCopyrightNoticeAggregateInTransaction(input, transaction)
+  await transaction.commit()
+  return notice
+}
+
+/** Internal transaction-aware variant for admission records which must commit with a legal case. */
+export async function createCopyrightNoticeAggregateInTransaction(
+  input: CreateCopyrightNoticeAggregateInput,
+  transaction: TransactionQuery,
+): Promise<CopyrightNoticeRecord> {
+  assert(input.targets.length > 0, 422, 'A copyright notice requires at least one hosted target')
   const { rows } = await transaction<CopyrightNoticeRecord>(sql`/* createCopyrightNoticeAggregate */
     INSERT INTO copyright_notices (
       jurisdiction, legal_basis, received_at, claimant_user_id, claimant_display_name,
@@ -67,6 +78,5 @@ export async function createCopyrightNoticeAggregate(
     VALUES (${notice.id}, 'notice_received', '{}'::jsonb)
   `),
   ])
-  await transaction.commit()
   return notice
 }

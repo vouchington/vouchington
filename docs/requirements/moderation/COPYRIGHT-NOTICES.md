@@ -5,9 +5,9 @@ is otherwise allowed by platform policy, and an ordinary moderation appeal does 
 statutory counter-notice. The copyright domain therefore owns its records and deadlines while
 reusing staff authorization, notifications, modlog, and approved-correspondence patterns.
 
-Layer 1 is deliberately inert: it stores legal facts and decisions but exposes no intake route and
-changes no media delivery. Intake is enabled only after the later CAPTCHA, agent-screening,
-notification, reversible-media, and staff UI layers are complete.
+The implementation remains disabled by default through `COPYRIGHT_INTAKE_ENABLED`. It must not be
+enabled until CAPTCHA, agent recovery, notification, reversible-media, staff UI, and production
+evidence-storage dependencies are deployed and the activation checklist below is complete.
 
 ## Ownership boundaries
 
@@ -64,6 +64,34 @@ The evidence bytes remain in private storage and are never read through a public
 An inbound correspondence body freezes on receipt; an outbound body freezes once delivered (and an
 agent-composed outbound message also freezes when a staff reviewer approves it).
 
+Designated-inbox email first becomes a private immutable **email intake**, not an immediately
+actionable case: the worker preserves the complete original MIME object, hashes it, records parsed
+attachment metadata, sanitizes and wraps untrusted text for the advisory extraction agent, and
+persists the encrypted structured result. The agent may flag obvious spam or missing information
+but cannot create a restriction, correspondence, or legal case. A moderator must review the source
+and agent output, then explicitly accept or reject it before a valid email submission can enter the
+case lifecycle, even when the recommendation is `potentially_valid`.
+
+Email extraction includes the claimant, contact, work, hosted URLs, signature, and both statutory
+declarations, with short source excerpts for moderator verification. Missing declarations remain
+null; the agent cannot infer them. RFC `Message-ID`, `In-Reply-To`, and `References` values are
+encrypted and retained for later case-scoped correspondence threading. An approval normally names
+the recommendation reviewed. If the agent is unavailable or fails, staff must instead record an
+explicit manual-fallback reason while reviewing the preserved original.
+
+The signed-in form is already structured. Its agent is only an anti-spam and obvious-invalidity
+screen, not a legal merits decision. A complete signed-in submission with a `clear` screen may be
+provisionally withheld automatically, but it enters urgent mandatory human review. Guest forms
+always require moderator approval. Form routes require Turnstile, enforce CSRF through the normal
+authenticated route boundary, apply route-scoped rate limits, and store only a purpose-separated
+HMAC-derived guest network digest rather than the source address.
+
+Email admission trusts the SES receipt-rule classification and the configured
+`copyright-incoming/` object prefix, never recipient headers inside untrusted MIME. The original S3
+version and ETag are pinned and copied into the private evidence bucket before parsing. Parse
+failures remain immutable staff-visible intakes with the original evidence; they are not dropped or
+promoted automatically.
+
 Private contact details, signatures, raw text, attachments, staff rationale, agent output, and
 storage keys are never member fields. Accepted cases use an explicit authenticated-member allowlist.
 The claimant link comes from the account's current public profile, not a legal-name or signature
@@ -111,9 +139,11 @@ never an edit or deletion of the original filing.
 
 ## Jurisdiction and public meaning
 
-US timing does not govern EU or UK cases. EU and UK notices receive their own reasons, automation
-disclosure, free human complaint path, and jurisdiction-specific review. Conflicting grounds go to
-qualified staff or counsel, and removing one ground cannot remove another.
+US timing does not govern EU or UK cases. The initial intake contract therefore accepts only
+`us_dmca`. EU and UK intake must stay disabled until their distinct schemas, reasons, automation
+disclosures, free human complaint paths, representatives, and jurisdiction-specific review rules
+are implemented and legally reviewed. Conflicting grounds go to qualified staff or counsel, and
+removing one ground cannot remove another.
 
 A member-visible case records an allegation and, where applicable, a provisional restriction or reviewed
 outcome. It never describes the claimant as the proven owner or the poster as an infringer.
@@ -122,5 +152,7 @@ outcome. It never describes the claimant as the proven owner or the poster as an
 
 Before accepting live notices, the operator must register and publish the actual US designated
 agent, appoint any required EU/UK representatives, approve retention and repeat-infringer policies,
-staff the response targets, and obtain US/EU/UK legal review. Placeholder addresses, credentials, or
-registration claims are forbidden. See the [copyright operations runbook](../../runbooks/copyright-notices.md).
+staff the response targets, provision a versioned encrypted evidence bucket and least-privilege
+SES/worker IAM, and obtain US legal review. EU/UK intake additionally requires the representatives
+and legal review described above. Placeholder addresses, credentials, or registration claims are
+forbidden. See the [copyright operations runbook](../../runbooks/copyright-notices.md).

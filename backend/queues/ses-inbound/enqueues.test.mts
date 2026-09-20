@@ -16,6 +16,7 @@ describe('SES inbound enqueues', () => {
     const data: SesInboundProcessJobData = {
       sesMessageId,
       objectKey: `incoming/${sesMessageId}`,
+      intakeKind: 'support',
     }
 
     const job = await enqueueSesInboundProcess(data)
@@ -44,7 +45,11 @@ describe('SES inbound enqueues', () => {
   })
 
   it('retries only failed process jobs that still have incoming objects', async () => {
-    const current = { sesMessageId: 'ses-current', objectKey: 'incoming/ses-current' }
+    const current = {
+      sesMessageId: 'ses-current',
+      objectKey: 'incoming/ses-current',
+      intakeKind: 'support' as const,
+    }
     const currentId = getSesInboundProcessJobOptions(current).jobId
     const retryCurrent = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const retryOther = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
@@ -70,6 +75,7 @@ describe('SES inbound enqueues', () => {
     const data: SesInboundProcessJobData = {
       sesMessageId,
       objectKey: `incoming/${sesMessageId}`,
+      intakeKind: 'support',
     }
 
     await expect(enqueueOrRetryBulkSesInboundProcess([data])).resolves.toBe(0)

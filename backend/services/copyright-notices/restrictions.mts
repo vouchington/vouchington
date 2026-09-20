@@ -81,10 +81,10 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const { rows } =
     await transaction<CopyrightRestrictionRecord>(sql`/* acceptCopyrightNoticeAndImposeRestriction */
     INSERT INTO copyright_restrictions (
-      copyright_notice_target_id, imposed_at, imposed_by_id
-    ) VALUES (${input.targetId}, ${input.imposedAt}, ${input.imposedById})
+      copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id
+    ) VALUES (${input.targetId}, ${input.assessmentId}, ${input.imposedAt}, ${input.imposedById})
     ON CONFLICT (copyright_notice_target_id) WHERE lifted_at IS NULL DO NOTHING
-    RETURNING id, copyright_notice_target_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
+    RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
       human_reviewed_at, human_review_action, human_reviewed_by_id
   `)
   const restriction = rows[0]

@@ -1,0 +1,215 @@
+import { describe, expect, it } from 'vitest'
+import {
+  createTestUser,
+  insertTestImage,
+  insertTestPost,
+  insertTestPostImage,
+} from '@voucha/test-helpers'
+import {
+  countCopyrightActiveRestrictionsForNotice,
+  readCopyrightNoticeTargetId,
+  readCopyrightNoticeTargetIds,
+} from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
+import {
+  acceptCopyrightNoticeAndImposeRestriction,
+  appendCopyrightSubmissionAssessment,
+  createCopyrightCounterNotice,
+  createCopyrightFormIntake,
+  reviewCopyrightGuestFormIntake,
+} from './index.mts'
+import {
+  appendCopyrightFormScreening,
+  applyClearSignedInCopyrightFormScreening,
+} from './form-screenings.mts'
+
+describe('copyright form intakes', () => {
+  it('atomically replays an unchanged idempotency key without another legal case', async () => {
+    const user = await createTestUser()
+    const postId = await insertTestPost({
+      title: `copyright ${crypto.randomUUID()}`,
+      slug: `copyright-${crypto.randomUUID()}`,
+      createdById: user.id,
+      markdown: 'image',
+    })
+    const imageId = await insertTestImage(user.id)
+    await insertTestPostImage({ postId, imageId })
+    const input = {
+      requesterUserId: user.id,
+      requesterIdentity: `user:${user.id}`,
+      idempotencyKey: crypto.randomUUID(),
+      request: {
+        jurisdiction: 'us_dmca' as const,
+        claimantDisplayName: 'Claimant',
+        claimantContact: 'claimant@example.test',
+        workDescription: 'My photograph',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Claimant',
+        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+      },
+    }
+    const first = await createCopyrightFormIntake(input)
+    const replay = await createCopyrightFormIntake(input)
+    expect(first.isDuplicate).toBe(false)
+    expect(replay).toMatchObject({
+      isDuplicate: true,
+      intake: { id: first.intake.id, copyright_notice_id: first.intake.copyright_notice_id },
+    })
+  })
+
+  it('records a CAPTCHA-gated caller’s statutory counter-notice scope idempotently', async () => {
+    const poster = await createTestUser()
+    const claimant = await createTestUser()
+    const postId = await insertTestPost({
+      title: `copyright counter ${crypto.randomUUID()}`,
+      slug: `copyright-counter-${crypto.randomUUID()}`,
+      createdById: poster.id,
+      markdown: 'image',
+    })
+    const imageId = await insertTestImage(poster.id)
+    await insertTestPostImage({ postId, imageId })
+    const notice = await createCopyrightFormIntake({
+      requesterUserId: claimant.id,
+      requesterIdentity: `user:${claimant.id}`,
+      idempotencyKey: crypto.randomUUID(),
+      request: {
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: 'Claimant',
+        claimantContact: 'claimant@example.test',
+        workDescription: 'My photograph',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Claimant',
+        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+      },
+    })
+    // Resolve the durable target ID rather than trusting a form-provided location.
+    const targetId = await readCopyrightNoticeTargetId(notice.intake.copyright_notice_id)
+    const input = {
+      name: 'Poster',
+      address: '1 Main Street',
+      telephone: '555-0100',
+      consentToFederalJurisdiction: true,
+      consentToServiceOfProcess: true,
+      goodFaithMisidentificationUnderPenaltyOfPerjury: true,
+      electronicSignature: 'Poster',
+      targetIds: [targetId],
+    }
+    const key = crypto.randomUUID()
+    const first = await createCopyrightCounterNotice(
+      poster,
+      notice.intake.copyright_notice_id,
+      key,
+      input,
+    )
+    const replay = await createCopyrightCounterNotice(
+      poster,
+      notice.intake.copyright_notice_id,
+      key,
+      input,
+    )
+    expect(first.isDuplicate).toBe(false)
+    expect(replay).toMatchObject({ isDuplicate: true, submission: { id: first.submission.id } })
+  })
+
+  it('resumes any missing target restrictions after a partial automated run', async () => {
+    const claimant = await createTestUser()
+    const postId = await insertTestPost({
+      title: `copyright recovery ${crypto.randomUUID()}`,
+      slug: `copyright-recovery-${crypto.randomUUID()}`,
+      createdById: claimant.id,
+      markdown: 'images',
+    })
+    const imageIds = await Promise.all([insertTestImage(claimant.id), insertTestImage(claimant.id)])
+    await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
+    const notice = await createCopyrightFormIntake({
+      requesterUserId: claimant.id,
+      requesterIdentity: `user:${claimant.id}`,
+      idempotencyKey: crypto.randomUUID(),
+      request: {
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: 'Claimant',
+        claimantContact: 'claimant@example.test',
+        workDescription: 'Two photographs',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Claimant',
+        claimantTargets: imageIds.map(imageId => ({
+          postId,
+          imageId,
+          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+        })),
+      },
+    })
+    const screeningId = await appendCopyrightFormScreening({
+      intakeId: notice.intake.id,
+      inputSha256: Buffer.alloc(32, 9),
+      recommendation: 'clear',
+      rationale: 'No obvious spam markers.',
+      promptVersion: 'copyright-form-screening-v1',
+      model: 'test-model',
+    })
+    const assessment = await appendCopyrightSubmissionAssessment({
+      submissionId: notice.intake.copyright_notice_submission_id,
+      assessedAt: new Date(),
+      currentUser: null,
+      substantiallyCompliant: true,
+      copyrightFormScreeningId: screeningId,
+    })
+    const targetIds = await readCopyrightNoticeTargetIds(notice.intake.copyright_notice_id)
+    await acceptCopyrightNoticeAndImposeRestriction({
+      noticeId: notice.intake.copyright_notice_id,
+      targetId: targetIds[0]!,
+      assessmentId: assessment.id,
+      imposedAt: new Date(),
+      imposedById: null,
+    })
+
+    await applyClearSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
+
+    await expect(
+      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+    ).resolves.toBe(2)
+  })
+
+  it('requires and records moderator approval before a guest form restricts a target', async () => {
+    const [poster, moderatorRecord] = await Promise.all([createTestUser(), createTestUser()])
+    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+    const postId = await insertTestPost({
+      title: `guest copyright ${crypto.randomUUID()}`,
+      slug: `guest-copyright-${crypto.randomUUID()}`,
+      createdById: poster.id,
+      markdown: 'image',
+    })
+    const imageId = await insertTestImage(poster.id)
+    await insertTestPostImage({ postId, imageId })
+    const notice = await createCopyrightFormIntake({
+      requesterUserId: null,
+      requesterIdentity: `guest:${crypto.randomUUID()}`,
+      idempotencyKey: crypto.randomUUID(),
+      request: {
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: 'Guest claimant',
+        claimantContact: 'guest@example.test',
+        workDescription: 'Guest-owned photograph',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Guest claimant',
+        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
+      },
+    })
+
+    await expect(
+      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+    ).resolves.toBe(0)
+    await reviewCopyrightGuestFormIntake({
+      intakeId: notice.intake.id,
+      currentUser: moderator,
+      accepted: true,
+      rationale: 'Structured fields and hosted target were verified.',
+    })
+    await expect(
+      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+    ).resolves.toBe(1)
+  })
+})

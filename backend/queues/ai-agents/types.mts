@@ -82,6 +82,12 @@ export type AppealResolutionJobData = {
   rerun_by_id?: string | null
 }
 
+export type CopyrightEmailIntakeJobData = {
+  intake_id: string
+}
+export type CopyrightFormScreeningJobData = { submission_id: string }
+
+
 export type BackfillReportJudgementsJobData = Record<string, never>
 
 export type AutoDispatchJudgementJobData = {
@@ -113,6 +119,8 @@ export type AIAgentJobData = (
   | ReportJudgementJobData
   | DisputeResolutionJobData
   | AppealResolutionJobData
+  | CopyrightEmailIntakeJobData
+  | CopyrightFormScreeningJobData
   | StoryClusteringJobData
   | StoryPostJobData
   | BackfillReportJudgementsJobData

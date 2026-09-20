@@ -13,6 +13,7 @@ vi.mock<typeof import('mailparser')>(
 const data: SesInboundProcessJobData = {
   sesMessageId: 'ses-test-message',
   objectKey: 'incoming/ses-test-message',
+  intakeKind: 'support',
 }
 
 function parsedEmail(): ParsedSesInboundEmail {
@@ -31,7 +32,7 @@ describe('SES inbound processors', () => {
 
     await expect(
       processSesInboundEmail(
-        { sesMessageId: 'different-id', objectKey: data.objectKey },
+        { sesMessageId: 'different-id', objectKey: data.objectKey, intakeKind: 'support' },
         { deleteSesInboundObject: deleteObject },
       ),
     ).rejects.toThrow('must match its S3 object key')
@@ -159,6 +160,7 @@ describe('SES inbound processors', () => {
     await expect(
       reconcileSesInboundEmails({
         listSesInboundObjects: listObjects,
+        listCopyrightSesInboundObjects: async () => ({ objectKeys: [] }),
         enqueueOrRetryBulkSesInboundProcess: enqueueOrRetry,
         listInboundCustomerSupportRecoveryCandidates: async () => ({
           results: [],
@@ -169,10 +171,10 @@ describe('SES inbound processors', () => {
     expect(listObjects).toHaveBeenNthCalledWith(1, undefined)
     expect(listObjects).toHaveBeenNthCalledWith(2, 'next')
     expect(enqueueOrRetry).toHaveBeenNthCalledWith(1, [
-      { sesMessageId: 'ses-a', objectKey: 'incoming/ses-a' },
+      { sesMessageId: 'ses-a', objectKey: 'incoming/ses-a', intakeKind: 'support' },
     ])
     expect(enqueueOrRetry).toHaveBeenNthCalledWith(2, [
-      { sesMessageId: 'ses-b', objectKey: 'incoming/ses-b' },
+      { sesMessageId: 'ses-b', objectKey: 'incoming/ses-b', intakeKind: 'support' },
     ])
   })
 
@@ -187,6 +189,7 @@ describe('SES inbound processors', () => {
     await expect(
       reconcileSesInboundEmails({
         listSesInboundObjects: async () => ({ objectKeys: [] }),
+        listCopyrightSesInboundObjects: async () => ({ objectKeys: [] }),
         listInboundCustomerSupportRecoveryCandidates: async () => ({
           results: [candidate],
           page_info: { has_next_page: false, start_cursor: 'start', end_cursor: null },
@@ -251,6 +254,7 @@ describe('SES inbound processors', () => {
 
     const reconciliation = reconcileSesInboundEmails({
       listSesInboundObjects: async () => ({ objectKeys: [] }),
+      listCopyrightSesInboundObjects: async () => ({ objectKeys: [] }),
       enqueueOrRetryBulkSesInboundProcess: async () => 0,
       listInboundCustomerSupportRecoveryCandidates: listCandidates,
       enqueueOrRetryBulkCustomerSupport: enqueueCustomerSupport,

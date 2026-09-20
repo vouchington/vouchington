@@ -5,6 +5,7 @@ import {
   createSesInboundProcessJobId,
   decodeS3EventObjectKey,
   getSesMessageIdFromObjectKey,
+  getSesInboundKindFromObjectKey,
   type SesInboundProcessJobData,
 } from '@ts-shared/ses-inbound-contract'
 
@@ -86,7 +87,11 @@ function parseS3Event(event: S3Event): SesInboundProcessJobData[] {
     const objectKey = decodeS3EventObjectKey(encodedKey)
     const sesMessageId = getSesMessageIdFromObjectKey(objectKey)
     const logicalId = createSesInboundProcessJobId(objectKey)
-    payloads.set(logicalId, { sesMessageId, objectKey })
+    payloads.set(logicalId, {
+      sesMessageId,
+      objectKey,
+      intakeKind: getSesInboundKindFromObjectKey(objectKey),
+    })
   }
   return [...payloads.values()]
 }

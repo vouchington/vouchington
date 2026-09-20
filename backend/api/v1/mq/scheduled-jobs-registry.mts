@@ -43,6 +43,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'reconcileAutoDispatchJudgements',
   'reconcileChatRuntimeGenerations',
   'reconcileMemberSupportAgentIntents',
+  'reconcileCopyrightAgentDispatches',
   'reconcileBackgroundResponses',
   'poll_dispatcher',
   'creation_dispatcher',

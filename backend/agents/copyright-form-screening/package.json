@@ -1,0 +1,22 @@
+{
+  "name": "@agents/copyright-form-screening",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    }
+  },
+  "dependencies": {
+    "@agents/_shared": "workspace:^",
+    "@jongleberry/vurst-prompt": "^0.4.3",
+    "@modules/openai-utils": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
+    "openai": "^7.15.0"
+  }
+}

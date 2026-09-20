@@ -19,7 +19,10 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
+    "@modules/utils": "workspace:^",
     "@services/users": "workspace:^",
+    "@voucha/config": "workspace:^",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2"
   },

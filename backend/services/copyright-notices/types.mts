@@ -66,6 +66,7 @@ export type CopyrightNoticeTargetRecord = {
 export type CopyrightRestrictionRecord = {
   id: string
   copyright_notice_target_id: string
+  authorizing_assessment_id: string
   imposed_at: Date
   lifted_at: Date | null
   imposed_by_id: string | null
@@ -91,6 +92,7 @@ export type CopyrightNoticeSubmissionAssessmentRecord = {
   assessed_at: Date
   assessed_by_id: string | null
   substantially_compliant: boolean
+  copyright_notice_form_screening_id: string | null
   supersedes_assessment_id: string | null
 }
 
@@ -182,19 +184,4 @@ export type CopyrightNoticePrivateAggregate = {
   correspondence: CopyrightCorrespondenceRecord[]
   lifecycleEvents: CopyrightLifecycleEventRecord[]
   actionIntents: CopyrightActionIntentRecord[]
-}
-
-export type MemberCopyrightNotice = {
-  id: string
-  jurisdiction: CopyrightJurisdiction
-  received_at: Date
-  accepted_at: Date
-  target_reference: string | null
-  claimant: { user_id: string; display_name: string | null } | null
-  allegation_label: 'copyright allegation'
-  review_outcome: CopyrightHumanReviewAction | null
-  restriction_label:
-    | 'no restriction recorded'
-    | 'provisionally withheld pending human review'
-    | 'restriction active'
 }
