@@ -1,8 +1,6 @@
 import type {
   ResponseCreateParamsStreaming,
   ResponseInput,
-  ResponseInputItem,
-  ResponseStreamEvent,
 } from 'openai/resources/responses/responses'
 import {
   streamOpenAIResponseEvents,
@@ -18,7 +16,6 @@ type RawCreateParams = Parameters<typeof client.responses.create>[0]
 type RawCreateOptions = Parameters<typeof client.responses.create>[1]
 
 export type OpenRouterResponseInput = string | ResponseInput
-export type OpenRouterResponseInputItem = ResponseInputItem
 export type CreateOpenRouterResponseParams = Omit<RawCreateParams, 'input' | 'background'> & {
   input: OpenRouterResponseInput
 }
@@ -82,4 +79,4 @@ export function toOpenRouterModel(model: string): string {
   return model.includes('/') ? model : `openai/${model}`
 }
 
-export type { OpenAIResponse, ResponseStreamEvent }
+export type { OpenAIResponse }
