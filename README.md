@@ -65,3 +65,8 @@ non-commercial education, and non-commercial research are explicitly permitted.
 
 Each version additionally becomes available under the MIT license two years
 after it is published. See [LICENSE](LICENSE) for the controlling terms.
+
+Workspace `package.json` files carry `"license": "UNLICENSED"` because they
+are private and never published to a registry — that's npm-registry metadata,
+not a separate rights statement. See
+[CONTRIBUTING.md](CONTRIBUTING.md#why-workspace-packagejson-files-say-license-unlicensed).

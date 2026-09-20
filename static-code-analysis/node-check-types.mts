@@ -1,5 +1,6 @@
 export type CheckName =
   | 'config-inventory-policy'
+  | 'dependency-license-policy'
   | 'repo-file-policy'
   | 'scc-complexity'
   | 'targeted-guardrails'

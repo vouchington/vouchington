@@ -6,6 +6,7 @@ import type { CheckName, CheckResult } from './node-check-types.mts'
 
 const VALID_CHECKS = new Set<CheckName>([
   'config-inventory-policy',
+  'dependency-license-policy',
   'repo-file-policy',
   'scc-complexity',
   'targeted-guardrails',

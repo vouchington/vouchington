@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { buildSharedContext, type SharedContext } from 'vouchington-tooling/shared-context'
 
 import { checkConfigInventoryPolicy } from './config-inventory/index.mts'
+import { checkDependencyLicensePolicy } from './dependency-license-policy/index.mts'
 import type { CheckName, CheckResult } from './node-check-types.mts'
 import { checkRepoFilePolicy } from './repo-file-policy/index.mts'
 import { checkSccComplexity } from './scc-complexity/index.mts'
@@ -19,6 +20,10 @@ async function runOne(check: CheckName, ctx: SharedContext): Promise<CheckResult
   switch (check) {
     case 'config-inventory-policy': {
       const report = await checkConfigInventoryPolicy(ctx)
+      return { name: check, errors: report.errors }
+    }
+    case 'dependency-license-policy': {
+      const report = await checkDependencyLicensePolicy(ctx)
       return { name: check, errors: report.errors }
     }
     case 'repo-file-policy': {

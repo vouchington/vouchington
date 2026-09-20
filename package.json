@@ -94,6 +94,7 @@
     "syncpack:fix": "syncpack fix && syncpack format",
     "repo-file-policy": "node static-code-analysis/run-node-checks.mts --checks repo-file-policy",
     "config-inventory-policy": "node static-code-analysis/run-node-checks.mts --checks config-inventory-policy",
+    "dependency-license-policy": "node static-code-analysis/run-node-checks.mts --checks dependency-license-policy",
     "no-mistakes": "no-mistakes --timeout 60 --lock-timeout 55 check --tsconfig tsconfig.json",
     "dep-cruise": "pnpm run dep-cruise:backend && pnpm run dep-cruise:web && pnpm run dep-cruise:lambdas && pnpm run dep-cruise:scripts",
     "dep-cruise:backend": "depcruise --config backend/.dependency-cruiser.cjs --output-type err backend ts-shared",
@@ -169,7 +170,7 @@
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "unified": "^11.0.5",
     "vitest": "^5.0.0",
-    "vouchington-tooling": "^0.17.0",
+    "vouchington-tooling": "^0.18.0",
     "yaml": "^2.9.0"
   },
   "engines": {
