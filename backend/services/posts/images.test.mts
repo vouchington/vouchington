@@ -14,6 +14,7 @@ import {
   getLatestPostClearanceMetadata,
   getPostClearanceChanges,
   getTestPostPublicationDirtyWorkForScope,
+  readAllQueueJobs,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
@@ -59,8 +60,8 @@ describe('setPostImages', () => {
 
     await expect
       .poll(async () => {
-        const waiting = await spam_detection.getJobs('waiting')
-        return waiting.find(
+        const jobs = await readAllQueueJobs(spam_detection)
+        return jobs.find(
           item => item.name === 'post' && (item.data as { id?: string }).id === postId,
         )?.data
       })
@@ -70,8 +71,8 @@ describe('setPostImages', () => {
       })
     await expect
       .poll(async () => {
-        const waiting = await openai_moderation_omni_single.getJobs('waiting')
-        return waiting.find(
+        const jobs = await readAllQueueJobs(openai_moderation_omni_single)
+        return jobs.find(
           item =>
             item.name === 'post' &&
             (item.data as { id?: string }).id === postId &&

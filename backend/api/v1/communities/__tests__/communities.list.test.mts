@@ -3,6 +3,8 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
+  completeTestMediaDeliveryRecord,
+  getTestImageSurfacePlacements,
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityListItem,
@@ -14,6 +16,7 @@ import {
 } from '@voucha/test-helpers'
 
 import type { PrivateUser } from '@services/users/types'
+import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 
 describe('communities', () => {
   let user: PrivateUser
@@ -40,6 +43,18 @@ describe('communities', () => {
         const profileImageId = await insertTestImage(user.id)
         const bannerImageId = await insertTestImage(user.id)
         await setTestCommunitySurfaceImages(community.id, { profileImageId, bannerImageId })
+        const placements = await getTestImageSurfacePlacements({ communityId: community.id })
+        await Promise.all(
+          placements.map(async placement => {
+            const { deliveryKey } = await stageImagePlacementDeliveryRecord({
+              placementId: placement.placement_id,
+              revision: placement.placement_revision,
+              imageId: placement.image_id,
+              state: 'allow',
+            })
+            await completeTestMediaDeliveryRecord(deliveryKey)
+          }),
+        )
 
         const request = createRequest()
         const response = await request.get(`/api/v1/communities?q=${community.slug}`).expect(200)

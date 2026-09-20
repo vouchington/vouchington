@@ -26,6 +26,7 @@ import {
   setPostLLMModerationContentSha256,
 } from '@voucha/test-helpers'
 import { createPostModerationContent } from './content.mts'
+import { getPostModerationInput } from './moderation-input.mts'
 import { getPostImages, setPostImages } from './images.mts'
 import { rollbackPostImages } from './images-rollback.mts'
 import { createPostImageRollbackFixture } from './images.test-helpers.mts'
@@ -129,9 +130,10 @@ describe('setPostImages clearance rollback', () => {
     await expect(getPostImages(postId)).resolves.toMatchObject([
       { image_id: replacementImageId, order_index: 0, caption: '' },
     ])
-    const currentPost = (await getPostByAny(postId, { readOnly: false })) as Post
+    const currentPost = await getPostModerationInput(postId, { readOnly: false })
+    expect(currentPost).toBeTruthy()
     await expect(getPostLLMModerationContentSha256(postId)).resolves.toEqual(
-      createPostModerationContent(currentPost).content_sha256,
+      createPostModerationContent(currentPost!).content_sha256,
     )
     await expect(countPostImageRevisions(postId)).resolves.toBe(1)
     await expect(
