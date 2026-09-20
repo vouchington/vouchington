@@ -60,7 +60,8 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     set -eu; \
     if [ "$SENTRY_SOURCE_MAP_UPLOAD" = "1" ]; then \
       test -s /run/secrets/SENTRY_AUTH_TOKEN; \
-      export SENTRY_AUTH_TOKEN="$(cat /run/secrets/SENTRY_AUTH_TOKEN)"; \
+      SENTRY_AUTH_TOKEN="$(cat /run/secrets/SENTRY_AUTH_TOKEN)"; \
+      export SENTRY_AUTH_TOKEN; \
     fi; \
     NODE_ENV=production pnpm --dir web exec next build
 
