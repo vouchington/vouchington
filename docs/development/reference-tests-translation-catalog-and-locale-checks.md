@@ -65,22 +65,28 @@ checks guard that request-selection contract instead of catalog content:
   never rewrites catalog source. It runs as "Check localization catalog format" in static-analysis
   CI; use `pnpm run localization:catalog -- format` when an agent must rewrite rows through the
   authoring CLI.
-- `static-code-analysis/i18n-extract/route-selector-map.test.mts` — unit-tests `assembleRouteAliasMap` and route discovery on tiny fake-git fixtures in the `i18n-extract-codemod` Vitest project. Graph closures live in `route-selector-map.mock.test.mts`, which mocks a single `analyzeProject` call (the real graph resolves dynamic imports itself, so there is no separate `resolveCheck` worklist to mock) so tooling Vitest never waits on the user-global no-mistakes lock (formerly filed as jonathanong/filaments#11696). The 25s analysis budget remains on `analysis-budget.mts` for genuine lock diagnostics and is not applied to production `--check`.
+- `static-code-analysis/i18n-extract/route-selector-map.test.mts` — unit-tests `assembleRouteAliasMap` and route discovery on tiny fake-git fixtures in the `i18n-extract-codemod` Vitest project. Graph closures live in `route-selector-map.mock.test.mts`, which mocks `analyzeProject` dependency reports plus a batched `resolveCheck` over the closure-file union so tooling Vitest never waits on the user-global no-mistakes lock (formerly filed as jonathanong/filaments#11696). Negative fixtures in that file prove generate fails on an unknown quoted registry alias, a mocked unresolved import, an unbounded `t()` key, and a computed `import()`. The 25s analysis budget remains on `analysis-budget.mts` for genuine lock diagnostics and is not applied to production `--check`.
 - `static-code-analysis/i18n-extract/route-selector-map.mts --check` — regenerates
   `web/lib/i18n/route-selectors.generated.mts` and `localization/catalog/routes.json` (stable
   selectors and pattern-keyed alias membership for every real `web/app` route) and fails if either committed
-  artifact is stale. It makes one no-mistakes `analyzeProject` call per route/global-chrome file,
-  requesting `import-static`, `import-dynamic`, `import-type`, and `workspace` relationships;
-  no-mistakes follows dynamic import targets (including `next/dynamic`) recursively within that
-  same closure. It then lexically matches known alias literals. It does not parse source with an
-  AST. Add `--diagnostics` for stderr-only phase timings and a computed-closure count. The local
-  `--check` is optional; CI owns this costly freshness check in
-  `.github/workflows/static-code-analysis.yml` as "Check web route localization selector map".
-  Run without `--check` and commit both artifacts when a route, its imports, shared chrome, or a
-  web alias change alters route membership. Translation-text edits that leave web aliases and
+  artifact is stale. It makes one no-mistakes `analyzeProject` call with a dependency report per
+  route/global-chrome file, requesting `import-static`, `import-dynamic`, `import-type`, and
+  `workspace` relationships; no-mistakes follows dynamic import targets (including `next/dynamic`)
+  recursively within that same closure. A second `analyzeProject` call then batches `resolveCheck`
+  over the union of those closure files and fails on unresolved **local** specifiers (relative,
+  root, or `@/` aliases) and on computed `import()`/`require()` rows, except an explicit reviewed
+  exclusion list (empty until an entry is justified). Package specifiers stay external. The
+  generator also fails computed `import()` lexically, along with unbounded `t()` assembly and
+  production `as MessageKey` casts. It then matches quoted alias-shaped literals and fails when a quoted
+  token is not a web catalog alias. It does not parse `t()` with an AST, and
+  `dynamic-import-closure.mts` does not exist. Finite registries of quoted aliases must live in a
+  module the route/layout/chrome graph can reach. Add `--diagnostics` for stderr-only phase timings
+  and a computed-closure count. The local `--check` is optional; CI owns this costly freshness
+  check in `.github/workflows/static-code-analysis.yml` as "Check web route localization selector
+  map". Run without `--check` and commit both artifacts when a route, its imports, shared chrome,
+  or a web alias change alters route membership. Translation-text edits that leave web aliases and
   route membership unchanged need no local graph command. This closure check does not prove every
-  possible value of `t(variable)`; that separate guardrail gap is tracked as a follow-up (formerly
-  filed as jonathanong/filaments#11647).
+  possible value of `t(variable)` for missing map entries.
 
 The catalog and native-resource tests run as the `ts-shared` Vitest project:
 

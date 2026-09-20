@@ -1,8 +1,15 @@
 import { readFile } from 'node:fs/promises'
 import type { DependencyResult } from 'no-mistakes'
-
-/** Alias-shaped source literals; catalog membership filters incidental matches. */
-const ALIAS_RE = /\b(?:extracted|common|nav|settings|shared)\.(?:[A-Za-z0-9_]+\.)*[A-Za-z0-9_]+\b/g
+import {
+  type ClosureScanIssue,
+  closureIssuesForFile,
+  quotedAliasesFromText,
+} from './route-source-scan.mts'
+import {
+  type UnresolvedImportExclusion,
+  UNRESOLVED_IMPORT_EXCLUSIONS,
+  isComputedImportExcluded,
+} from './unresolved-imports.mts'
 
 export function dependencyResult(report: unknown, label: string): DependencyResult {
   const result =
@@ -24,17 +31,18 @@ export function dependencyPaths(result: DependencyResult): string[] {
     .filter((file): file is string => typeof file === 'string')
 }
 
-/** Finds exact alias literals in a no-mistakes closure without parsing source syntax. */
-export async function aliasesFromDependencyResult(
+export async function scanDependencyResult(
   repoRoot: string,
   rootFiles: string[],
   result: DependencyResult,
   textCache: Map<string, Promise<string>> = new Map(),
-): Promise<Set<string>> {
+  exclusions: readonly UnresolvedImportExclusion[] = UNRESOLVED_IMPORT_EXCLUSIONS,
+): Promise<{ aliases: Set<string>; issues: ClosureScanIssue[] }> {
   const paths = result.files
     .map(entry => entry.path)
     .filter((value): value is string => typeof value === 'string')
   const aliases = new Set<string>()
+  const issues: ClosureScanIssue[] = []
   for (const relativePath of new Set([...rootFiles, ...paths])) {
     if (!/\.[cm]?[jt]sx?$/.test(relativePath)) continue
     let textPromise = textCache.get(relativePath)
@@ -42,7 +50,17 @@ export async function aliasesFromDependencyResult(
       textPromise = readFile(`${repoRoot}/${relativePath}`, 'utf8')
       textCache.set(relativePath, textPromise)
     }
-    for (const match of (await textPromise).matchAll(ALIAS_RE)) aliases.add(match[0])
+    const text = await textPromise
+    for (const alias of quotedAliasesFromText(text)) aliases.add(alias)
+    for (const issue of closureIssuesForFile(relativePath, text)) {
+      if (
+        issue.reason === 'computed dynamic import' &&
+        isComputedImportExcluded(relativePath, exclusions)
+      ) {
+        continue
+      }
+      issues.push(issue)
+    }
   }
-  return aliases
+  return { aliases, issues }
 }

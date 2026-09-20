@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { DependencyResult } from 'no-mistakes'
 import { afterEach, describe, expect, it } from 'vitest'
-import { aliasesFromDependencyResult, dependencyPaths, dependencyResult } from './route-usage.mts'
+import { dependencyPaths, dependencyResult, scanDependencyResult } from './route-usage.mts'
 
 function result(files: DependencyResult['files']): DependencyResult {
   return { roots: [], files, diagnostics: [], tsconfig_provenance: [] }
@@ -53,7 +53,7 @@ describe('dependencyPaths', () => {
   })
 })
 
-describe('aliasesFromDependencyResult', () => {
+describe('scanDependencyResult aliases', () => {
   const dirs: string[] = []
 
   afterEach(async () => {
@@ -76,11 +76,9 @@ describe('aliasesFromDependencyResult', () => {
       'lib.ts': "export const label = 'shared.label.format'\nconst other = 'extracted.page.title'",
     })
 
-    const aliases = await aliasesFromDependencyResult(
-      root,
-      ['page.tsx'],
-      result([{ path: 'lib.ts', depth: 1 }]),
-    )
+    const aliases = (
+      await scanDependencyResult(root, ['page.tsx'], result([{ path: 'lib.ts', depth: 1 }]))
+    ).aliases
 
     expect(aliases).toEqual(new Set(['extracted.page.title', 'shared.label.format']))
   })
@@ -91,11 +89,9 @@ describe('aliasesFromDependencyResult', () => {
       'data.json': '{"nav.home": "extracted.should.not.match"}',
     })
 
-    const aliases = await aliasesFromDependencyResult(
-      root,
-      ['page.tsx'],
-      result([{ path: 'data.json', depth: 1 }]),
-    )
+    const aliases = (
+      await scanDependencyResult(root, ['page.tsx'], result([{ path: 'data.json', depth: 1 }]))
+    ).aliases
 
     expect(aliases).toEqual(new Set(['extracted.page.title']))
   })
@@ -103,11 +99,9 @@ describe('aliasesFromDependencyResult', () => {
   it('ignores dependency-result entries with no path', async () => {
     const root = await withFiles({ 'page.tsx': "t('extracted.page.title')" })
 
-    const aliases = await aliasesFromDependencyResult(
-      root,
-      ['page.tsx'],
-      result([{ symbol: 'Page', depth: 1 }]),
-    )
+    const aliases = (
+      await scanDependencyResult(root, ['page.tsx'], result([{ symbol: 'Page', depth: 1 }]))
+    ).aliases
 
     expect(aliases).toEqual(new Set(['extracted.page.title']))
   })
@@ -116,8 +110,58 @@ describe('aliasesFromDependencyResult', () => {
     const root = await withFiles({ 'page.tsx': "t('extracted.on.disk')" })
     const textCache = new Map([['page.tsx', Promise.resolve("t('extracted.from.cache')")]])
 
-    const aliases = await aliasesFromDependencyResult(root, ['page.tsx'], result([]), textCache)
+    const aliases = (await scanDependencyResult(root, ['page.tsx'], result([]), textCache)).aliases
 
     expect(aliases).toEqual(new Set(['extracted.from.cache']))
+  })
+
+  it('ignores unquoted alias-shaped tokens', async () => {
+    const root = await withFiles({
+      'page.tsx': "// extracted.page.title\nexport const label = t('nav.home')",
+    })
+
+    const aliases = (await scanDependencyResult(root, ['page.tsx'], result([]))).aliases
+
+    expect(aliases).toEqual(new Set(['nav.home']))
+  })
+})
+
+describe('scanDependencyResult', () => {
+  const dirs: string[] = []
+
+  afterEach(async () => {
+    await Promise.all(dirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
+  })
+
+  async function withFiles(files: Record<string, string>): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), 'route-scan-'))
+    dirs.push(root)
+    for (const [file, content] of Object.entries(files)) {
+      await mkdir(join(root, file, '..'), { recursive: true })
+      await writeFile(join(root, file), content)
+    }
+    return root
+  }
+
+  it('reports unbounded translation keys in reachable source', async () => {
+    const root = await withFiles({
+      'web/app/page.tsx': 'export default function Page() { return t(`extracted.foo.${id}`) }',
+    })
+
+    const scan = await scanDependencyResult(root, ['web/app/page.tsx'], result([]))
+
+    expect(scan.issues).toEqual([{ file: 'web/app/page.tsx', reason: 'unbounded translation key' }])
+  })
+
+  it('skips a reviewed computed-import exclusion', async () => {
+    const root = await withFiles({
+      'web/lib/dynamic.ts': 'void import(`./${name}`)\n',
+    })
+
+    const scan = await scanDependencyResult(root, ['web/lib/dynamic.ts'], result([]), new Map(), [
+      { file: 'web/lib/dynamic.ts', specifier: 'computed', reason: 'reviewed fixture' },
+    ])
+
+    expect(scan.issues).toEqual([])
   })
 })

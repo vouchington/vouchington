@@ -114,13 +114,20 @@ then format and compile.
   `localization/catalog/routes.json` maps each pattern to the exact aliases it renders. A selector
   ID changes only when that selector's aliases change. `static-code-analysis/i18n-extract/route-selector-map.mts` regenerates both
   artifacts from no-mistakes dependency closures, which already follow dynamic imports (including
-  `next/dynamic`) recursively, then a lexical scan of known alias literals; it does not parse source
-  with an AST.
+  `next/dynamic`) recursively, then a quoted-only lexical scan of alias-shaped literals. Quoted
+  tokens that are not web catalog aliases fail generate/`--check`. Reachable `t()` template
+  interpolation or concatenation, production `as MessageKey` casts, unresolved reachable
+  local imports, and computed `import()`/`require()` rows also fail. Package specifiers stay
+  external. The generator also fails computed `import()` lexically. It does not parse `t()` arguments with an
+  AST, and `dynamic-import-closure.mts` does not exist. Dynamic keys must be quoted aliases in a
+  module the route/layout/chrome graph can reach, typically a finite `Record<Enum, MessageKey>`
+  (or equivalent object of quoted aliases). Open `Record<string, MessageKey>` maps need a finite
+  fallback key. `MessageKey` itself is not a catalog-membership proof.
   CI runs `--check` and fails if either artifact drifts; the local check is optional. Regenerate
   and commit both artifacts after changing routes, their imports, shared chrome, or web aliases in
   a way that changes route membership. Translation-text-only edits do not need the graph command.
-  Module reachability does not prove every runtime value of `t(variable)` (formerly filed as
-  jonathanong/filaments#11647). Each web load requests the exact
+  Module reachability still does not prove every runtime value of `t(variable)` for missing map
+  entries. Each web load requests the exact
   chrome and current-route selector IDs in one batch. Vitest
   can assemble the committed JSON directly; live Next servers, including local development and
   Playwright, use the backend. The standalone production web smoke test

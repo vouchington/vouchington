@@ -86,8 +86,8 @@ importers:
         specifier: ^18.2.0
         version: 18.2.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.62.1
-        version: 0.62.1(eslint@10.5.0(jiti@2.7.0))
+        specifier: ^0.63.0
+        version: 0.63.0(eslint@10.5.0(jiti@2.7.0))
       eslint-plugin-playwright:
         specifier: ^2.11.0
         version: 2.11.0(eslint@10.5.0(jiti@2.7.0))
@@ -116,8 +116,8 @@ importers:
         specifier: ^6
         version: 6.34.0
       no-mistakes:
-        specifier: ^0.62.1
-        version: 0.62.1
+        specifier: ^0.63.0
+        version: 0.63.0
       oxfmt:
         specifier: ^0.67.0
         version: 0.67.0
@@ -12440,8 +12440,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.62.1
-        version: 0.62.1
+        specifier: ^0.63.0
+        version: 0.63.0
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -12697,8 +12697,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.62.1
-        version: 0.62.1
+        specifier: ^0.63.0
+        version: 0.63.0
       oxfmt:
         specifier: ^0.67.0
         version: 0.67.0
@@ -19055,8 +19055,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.62.1:
-    resolution: {integrity: sha512-3wwkBZzpkEkKfqUAvgMhxyYqDdFYrgWPu3W4+pg1igpOV7tfikyA2S8F0ENfGQ9RtesX3soCOZ+WGujodUojeg==}
+  eslint-plugin-no-mistakes@0.63.0:
+    resolution: {integrity: sha512-12VpfHR9JVjJMdpFsVhDOEGAEIuKJ2+uSNXfUjzhuX99ctXT+h73nNLrAt52k1I+OFcvkUetR65JWHYNTYQJAw==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -20351,30 +20351,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.62.1:
-    resolution: {integrity: sha512-6HE3lMkHq8dPQV1tXSJPhMAocr+/GVD0aLpX42jW8WYio985RDh+d5Tc+C9YMjXJ6UB3Y7epApxL1BgHhUt+Iw==}
+  no-mistakes-darwin-arm64@0.63.0:
+    resolution: {integrity: sha512-+bK9LA5nPZcV+8uFvgfm5iLTcDHPzJNYaSutdbm2t2VOzdK3OiVp50CeEndrxBXgGk4ko8/F7trkHXEf/2EDXw==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.62.1:
-    resolution: {integrity: sha512-927oma1M0TADv95AoHMs8fiGKPy5Ym9N7TcXmKW9p8Zoqw5KMuwKrT/470GsDChoYIQUCkMP1N3NHJRoYB7v6Q==}
+  no-mistakes-linux-arm64-gnu@0.63.0:
+    resolution: {integrity: sha512-Mogfc2f2AOPDlBrh5MbhzHrd+MpKWPw/QX9kEW+oMv3p0rz4CX6ujwcByZ7wTO60CJ21/muENfkUP7a2vYU6Hg==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.62.1:
-    resolution: {integrity: sha512-uwsHbGtrOPOhHH4AZidHSJV+Hl/mavIrw/E12kk5e9jlzUHbEpw4c5LxTS0K1bTkvMhk2z9JbpEdcRs6Mgsq7g==}
+  no-mistakes-linux-x64-gnu@0.63.0:
+    resolution: {integrity: sha512-617GuSubcbPuzrK8VqqkX7neN3VsZ1MqCNGkrmfQuOs3W7/qUUm9MeL+nsSZSgwENKEtWs3d0h6bsZuCvocBSw==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.62.1:
-    resolution: {integrity: sha512-H69/QoHOC8X60pICWYjGdrnFqz7Q+gg3Yh1zSbCEevXI2BYN+w6j6MElhGn5Ex9xfzYxBMI5HEdvrSAxUa7B3w==}
+  no-mistakes-win32-x64-msvc@0.63.0:
+    resolution: {integrity: sha512-MRd91KuTNc82qQynvShfpTaFPTSJaV+Ai6j+g4E7VGrGuki5H1f/I7VssLnIhve+XvC8SeSr2M52f53bW8zwhw==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.62.1:
-    resolution: {integrity: sha512-vCk7CovT1OSmXGAVoSCglsbdLxKtCuyhP6xw3Q0FIJBT4HiKEBrEjWEezfwpM3+GIIya3F1x3MgoUzxNnci0Pw==}
+  no-mistakes@0.63.0:
+    resolution: {integrity: sha512-2BZYjT84H2q+Fajwrg4Epvu7iDbVitHf4uGPoSBuJ8Gko2ie73joN/6FmMXsaFBN6LmVLe2onMVLrxMIDSpazw==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -28046,7 +28046,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.62.1(eslint@10.5.0(jiti@2.7.0)):
+  eslint-plugin-no-mistakes@0.63.0(eslint@10.5.0(jiti@2.7.0)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)
 
@@ -29519,24 +29519,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.62.1:
+  no-mistakes-darwin-arm64@0.63.0:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.62.1:
+  no-mistakes-linux-arm64-gnu@0.63.0:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.62.1:
+  no-mistakes-linux-x64-gnu@0.63.0:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.62.1:
+  no-mistakes-win32-x64-msvc@0.63.0:
     optional: true
 
-  no-mistakes@0.62.1:
+  no-mistakes@0.63.0:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.62.1
-      no-mistakes-linux-arm64-gnu: 0.62.1
-      no-mistakes-linux-x64-gnu: 0.62.1
-      no-mistakes-win32-x64-msvc: 0.62.1
+      no-mistakes-darwin-arm64: 0.63.0
+      no-mistakes-linux-arm64-gnu: 0.63.0
+      no-mistakes-linux-x64-gnu: 0.63.0
+      no-mistakes-win32-x64-msvc: 0.63.0
 
   node-app-attest@1.0.1:
     dependencies:

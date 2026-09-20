@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { chromeSelectorId, routeSelectorId } from '@vouchington/localization'
 import { clearFakeGitEnv, installFakeGit } from 'vouchington-tooling/shared-context'
 import { globalChromeFiles } from './global-chrome-files.mts'
+import { assertCatalogAliases } from './route-alias-map-assembly.mts'
 import { assembleRouteAliasMap } from './route-selector-map.mts'
 import { renderSource } from './route-selector-output.mts'
 import { discoverRoutes } from './route-tree.mts'
@@ -151,7 +152,7 @@ describe('exact web route aliases', () => {
     ).toContain('hasMembership: true')
   })
 
-  it('adds configured dynamically rendered chrome copy without graph analysis', () => {
+  it('keeps catalog aliases out of chrome unless a route or global source quotes them', () => {
     const result = assembleRouteAliasMap(
       new Set(['nav.home', 'extracted.chat.chatsSidebarGroup.item.title']),
       [
@@ -161,7 +162,13 @@ describe('exact web route aliases', () => {
       [],
     )
 
-    expect(result.chrome).toEqual(['extracted.chat.chatsSidebarGroup.item.title', 'nav.home'])
+    expect(result.chrome).toEqual(['nav.home'])
+  })
+
+  it('fails closed when a quoted alias is not a catalog member', () => {
+    expect(() =>
+      assertCatalogAliases(['extracted.missing.alias', 'nav.home'], new Set(['nav.home'])),
+    ).toThrow('Quoted alias literals are not web catalog aliases: extracted.missing.alias')
   })
 
   it('discovers route ancestors and global chrome boundaries without graph analysis', async () => {

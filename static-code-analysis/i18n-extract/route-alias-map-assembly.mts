@@ -4,17 +4,6 @@ import {
   routeSelectorId,
 } from '@vouchington/localization'
 
-const DYNAMIC_CHROME_PREFIXES = [
-  'extracted.chat.chatsSidebarGroup.',
-  'extracted.chat.chatsSidebarGroupConversationItem.',
-  'extracted.chat.chatsSidebarGroupEditingInput.',
-  'extracted.chat.chatsSidebarGroupView.',
-  'extracted.communities.communitiesSidebarGroup.',
-  'extracted.lists.listsSidebarGroup.',
-  'extracted.messages.messagesSidebarGroup.',
-  'extracted.messages.messagesSidebarGroupView.',
-] as const
-
 export interface RouteAliasEntry {
   readonly pattern: string
   readonly selectorId: string
@@ -32,6 +21,15 @@ export interface RouteAliasSource {
   readonly aliases: Iterable<string>
 }
 
+export function assertCatalogAliases(
+  aliases: Iterable<string>,
+  knownAliases: ReadonlySet<string>,
+): void {
+  const unknown = [...new Set(aliases)].filter(alias => !knownAliases.has(alias)).sort()
+  if (unknown.length === 0) return
+  throw new Error(`Quoted alias literals are not web catalog aliases: ${unknown.join(', ')}`)
+}
+
 /** Builds selector membership after route and global aliases have been discovered. */
 export function assembleRouteAliasMap(
   knownAliases: ReadonlySet<string>,
@@ -47,9 +45,6 @@ export function assembleRouteAliasMap(
     for (const alias of chrome) if (!route.aliases.has(alias)) chrome.delete(alias)
   }
   for (const alias of globalAliases) if (knownAliases.has(alias)) chrome.add(alias)
-  for (const alias of knownAliases) {
-    if (DYNAMIC_CHROME_PREFIXES.some(prefix => alias.startsWith(prefix))) chrome.add(alias)
-  }
   const chromeAliases = [...chrome].sort()
   const chromeSelector = chromeSelectorId(chromeAliases)
   const routes = matchedRouteAliases.map(route => ({
