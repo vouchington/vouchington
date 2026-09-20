@@ -1737,9 +1737,6 @@ importers:
       '@services/localization':
         specifier: workspace:^
         version: link:../../services/localization
-      '@services/oauth-authorization-server':
-        specifier: workspace:^
-        version: link:../../services/oauth-authorization-server
       '@services/queue-monitoring':
         specifier: workspace:^
         version: link:../../services/queue-monitoring
