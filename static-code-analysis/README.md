@@ -153,7 +153,7 @@ and inline `page_info: EMPTY_PAGE_INFO` outside its allowlisted provably-empty s
 (`pagination-empty-page-info-allowlist`), alongside the existing error-level `no-sql-offset` rule.
 
 Swift/.NET presentation, localization, and native resource validation now belong to
-[`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients). Filaments
+[`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients). Vouchington
 retains the shared API-fixture producer contracts those clients consume rather than claiming local
 coverage of external native source.
 
@@ -331,7 +331,7 @@ leave terminal preparation/merge failures unsuppressed. Generic missing/over-cap
 step-exceeds-job checks live in `github-actions-job-timeouts`. Workflow tests must not restate
 `timeout-minutes` literals; that is `github-actions-test-timeout-literals`.
 
-Repo-owned checks must skip gitignored and untracked files; see [CLAUDE.md](CLAUDE.md) for authoring rules. Generic filesystem rules such as backend alias mapping, config path references, local docs, shellcheck, extension policy, git identity mutation, lockfiles, package registry-only policy, workspace package.json coverage, queue/worker layout, Rust line-count, Rust no-inline-tests, CLAUDE.md / AGENTS.md size checks, and the binding-aware Vitest and Playwright call boundaries for real timers, fixed sleeps, and integration-test mocks are rules in `no-mistakes check` (configured via [`.no-mistakes.yml`](../.no-mistakes.yml)) and enforced in CI. Tracked `.patch` and `.diff` artifacts are banned by `banned-paths` in [`.no-mistakes.yml`](../.no-mistakes.yml) (case-insensitive globs). Pnpm `patchedDependencies` and `allowUnusedPatches` remain covered by `no-mistakes`. Fix the underlying problem upstream or file and link a Filaments issue labeled `dependencies` instead of carrying a local patch. Offline Markdown local-link validation runs in static-analysis CI so deleting or renaming tracked files cannot leave stale docs links until the standalone online link workflow runs.
+Repo-owned checks must skip gitignored and untracked files; see [CLAUDE.md](CLAUDE.md) for authoring rules. Generic filesystem rules such as backend alias mapping, config path references, local docs, shellcheck, extension policy, git identity mutation, lockfiles, package registry-only policy, workspace package.json coverage, queue/worker layout, Rust line-count, Rust no-inline-tests, CLAUDE.md / AGENTS.md size checks, and the binding-aware Vitest and Playwright call boundaries for real timers, fixed sleeps, and integration-test mocks are rules in `no-mistakes check` (configured via [`.no-mistakes.yml`](../.no-mistakes.yml)) and enforced in CI. Tracked `.patch` and `.diff` artifacts are banned by `banned-paths` in [`.no-mistakes.yml`](../.no-mistakes.yml) (case-insensitive globs). Pnpm `patchedDependencies` and `allowUnusedPatches` remain covered by `no-mistakes`. Fix the underlying problem upstream or file and link a Vouchington issue labeled `dependencies` instead of carrying a local patch. Offline Markdown local-link validation runs in static-analysis CI so deleting or renaming tracked files cannot leave stale docs links until the standalone online link workflow runs.
 
 The lifecycle-scenario guard validates the Draft 2020-12 schema and code-owned family consumer
 policy for `api-fixtures/v1/lifecycle-scenarios.json`. It rejects missing, duplicate, unknown, or
@@ -354,7 +354,7 @@ a root-cwd assumption.
 The `run:`-scalar extraction and shell-argument scanning that rejects an unquoted `?` or `&` in a
 `gh api` argument was extracted to the published
 [`vouchington-tooling/gh-api-shell-quoting`](https://github.com/vouchington/vouchington-tooling/tree/main/packages/vouchington-tooling/src/gh-api-shell-quoting)
-module (issue #10956 follow-up, `vouchington-tooling#182`), since it carries no Filaments-specific
+module (issue #10956 follow-up, `vouchington-tooling#182`), since it carries no Vouchington-specific
 identifiers. It scans across `.github/workflows/*.ya?ml`, `.github/actions/**/*.ya?ml`, and `ci/**/*.sh`, including
 inside a `$(...)` command substitution — double quotes around the substitution do not quote what
 happens inside it, so it tracks quote state for that nested context independently. An unquoted `&`
@@ -379,7 +379,7 @@ sits inside a heredoc or after either redirect spelling, that and any other shel
 in-tree instance is deliberately left unhandled rather than chased on review (#10956, #11027 review).
 
 [`gh-api-shell-quoting.mts`](repo-file-policy/gh-api-shell-quoting.mts) re-exports that detection and
-keeps only the Filaments-specific file-classification policy local — which tracked paths count as a
+keeps only the Vouchington-specific file-classification policy local — which tracked paths count as a
 shell script or a workflow/composite-action YAML file worth scanning — since `vouchington-tooling`
 already ships its own unrelated file-classification module (`gha-workspace-policy`) and has no reason
 to own this repo's layout. The shell-script file predicate matches `ci/**/*.sh` plus one named
@@ -658,7 +658,7 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
   now covers those jobs generically.
   Reproduce with `pnpm run no-mistakes`.
 - **Test Git revisions and sparse checkouts → `no-mistakes` 0.53.0**: the package-owned
-  `no-test-git-sha` rule scans Filaments test and fixture surfaces, retaining only narrow null-ref
+  `no-test-git-sha` rule scans Vouchington test and fixture surfaces, retaining only narrow null-ref
   and historical GitHub-link contexts in `.no-mistakes.yml`; `no-sparse-checkout` parses both
   GitHub Actions directories and `ci/no-mistakes-workflows/`. The local repository-policy guards
   and their generic fixture suites are deleted. Reproduce with `pnpm run no-mistakes`.
@@ -679,7 +679,7 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
   boundary evidence. See [Public Post Eligibility](../docs/overview/architecture/reference-post-lifecycle-public-eligibility.md).
 
 - **`config-inventory/` observed env-var discovery**: typed metadata now lives in
-  [`@ts-shared/env-contract`](../ts-shared/env-contract/) and feeds Filaments config-inventory.
+  [`@ts-shared/env-contract`](../ts-shared/env-contract/) and feeds Vouchington config-inventory.
   The separate private infrastructure repository receives deployment changes through a manual
   handoff; it is not an automated consumer of this package. Config-inventory intentionally keeps regex/text scanning as the observed-usage
   audit layer so it can still find readers, docs, workflow env declarations, Docker build args,

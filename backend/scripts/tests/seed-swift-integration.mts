@@ -14,7 +14,7 @@
  *   export VOUCHA_RUN_INTEGRATION=1
  * From vouchington-clients, run `swift test --package-path swift-clients/core --filter VouchaIntegrationTests`
  * from a vouchington/vouchington-clients checkout after sourcing the output and
- * completing its Filaments contract preflight.
+ * completing its Vouchington contract preflight.
  */
 import { upsertSystemUser } from '@services/users/system-users'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'

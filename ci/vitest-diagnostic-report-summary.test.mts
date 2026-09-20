@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { formatDiagnosticReportSummaries } from './vitest-diagnostic-report-summary.mts'
 
 describe('formatDiagnosticReportSummaries', () => {
-  it('keeps the worker-exit diagnostic reference aligned with the Filaments marker', () => {
+  it('keeps the worker-exit diagnostic reference aligned with the Vouchington marker', () => {
     const reference = readFileSync(
       'docs/development/reference-vitest-worker-exit-diagnostics.md',
       'utf8',

@@ -2,7 +2,7 @@
 
 HTTP HTML crawler with structured error handling and analytics metrics tracking.
 
-Applies Filaments' request headers, SSRF-pinned transport, response-size limits, error
+Applies Vouchington's request headers, SSRF-pinned transport, response-size limits, error
 classification, and analytics around `@vouchington/crawler-html` decoding and extraction. HTML is
 spooled to an owned OS-tempdir file with a 4 MiB ceiling; only the parser's bounded Uint8Array API
 receives an in-memory copy. Hashing and S3 snapshot upload read that file as streams.

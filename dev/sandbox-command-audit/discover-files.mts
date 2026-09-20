@@ -43,7 +43,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 // caller *after* repo scoping (see selectInRepo), never before: applying it here would
 // dilute a small --limit with other repos' files (crux of the #9406 fix — with 6401
 // real Codex transcripts and a default --limit 50, an unscoped cap could return almost
-// entirely other-repo files on a filaments-quiet week).
+// entirely other-repo files on a Vouchington-quiet week).
 function statAndSort(paths: string[], cutoffMs: number | undefined): StatEntry[] {
   const entries: StatEntry[] = []
   for (const path of paths) {

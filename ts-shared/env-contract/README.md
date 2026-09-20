@@ -4,7 +4,7 @@ Typed metadata for environment variables that need shared static-analysis, local
 deployment policy checks.
 
 The Voucha contract table remains local. Its generic normalization and lookup mechanics are supplied
-by `@vouchington/utils/env-contract`, which remains runtime-safe for Filaments tooling. Changes
+by `@vouchington/utils/env-contract`, which remains runtime-safe for Vouchington tooling. Changes
 that affect private deployment configuration require a manual handoff to `vouchington-infra`; that
 repository does not import or automatically validate this package.
 

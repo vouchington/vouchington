@@ -5,7 +5,7 @@ boundary, and the complete live queue-name inventory shared by worker entrypoint
 administration.
 
 - `worker-queue-policy.json` owns policy-managed CPU, I/O, and SQS queue classifications.
-- `worker-queue-policy.mts` validates policy and projects queue classifications for Filaments.
+- `worker-queue-policy.mts` validates policy and projects queue classifications for Vouchington.
 - `worker-queue-policy-cli.mts` exposes those helpers to clean-checkout local tools
   without requiring workspace dependencies to be installed first.
 - `UNIVERSAL_WORKER_QUEUE_NAMES` owns queues loaded outside placement selection.

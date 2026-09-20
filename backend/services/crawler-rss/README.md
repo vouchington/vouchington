@@ -1,6 +1,6 @@
 # @services/crawler-rss
 
-Filaments policy adapter around `@vouchington/rss-crawler` and `@vouchington/rss-parser`, with
+Vouchington policy adapter around `@vouchington/rss-crawler` and `@vouchington/rss-parser`, with
 conditional GET, content hashing, and metrics tracking.
 
 ## Key exports

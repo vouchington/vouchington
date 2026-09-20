@@ -6,7 +6,7 @@ const DEFINITIONS: WorkerDefinition[] = [
   { queueName: 'emails', load: vi.fn<VitestLooseMock>(() => Promise.resolve({ name: 'emails' })) },
 ]
 
-describe('Filaments worker-runtime adapter', () => {
+describe('Vouchington worker-runtime adapter', () => {
   it('uses the topology-skew reporter by default', () => {
     vi.stubEnv('NODE_ENV', 'development')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})

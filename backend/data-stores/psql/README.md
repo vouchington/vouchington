@@ -3,7 +3,7 @@
 Shared PostgreSQL runtime and schema reference for Voucha backend services, APIs, workers,
 migrations, and query profiling.
 
-This package is the Filaments adapter over [`@vouchington/postgres`](https://github.com/vouchington/vouchington-platform/tree/main/packages/postgres).
+This package is the Vouchington adapter over [`@vouchington/postgres`](https://github.com/vouchington/vouchington-platform/tree/main/packages/postgres).
 It constructs the process singleton (`voucha` database name, `@modules/on-error`, analytics
 sampling) after local worktree connection guards, and keeps product migrations, views, snapshots,
 and EXPLAIN ANALYZE capture here. Agent-only migration and query-change rules live in

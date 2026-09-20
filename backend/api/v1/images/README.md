@@ -147,7 +147,7 @@ if (!response.ok) {
 
 1. Server validates user owns the upload
 2. Uses `@vouchington/media` to stream and hash the staging S3 body once into a private temporary file
-3. Applies Filaments' deleted/failed/active duplicate policy and transaction ordering locally
+3. Applies Vouchington's deleted/failed/active duplicate policy and transaction ordering locally
 4. Returns only the client-facing image ID and upload status; the presigned PUT contract and product-owned signing policy remain unchanged
 5. If duplicate exists:
    - Deletes the new staging object

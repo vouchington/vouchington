@@ -263,7 +263,7 @@ describe('no-mistakes config', () => {
     expect(noMistakes).toContain('name: webpack.config')
   })
 
-  it('keeps extracted native sources and native-only helpers out of Filaments', () => {
+  it('keeps extracted native sources and native-only helpers out of Vouchington', () => {
     const noMistakes = readRepoFile('.no-mistakes.yml')
 
     for (const path of [

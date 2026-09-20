@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 // The ownership partition in .agents/skills/stacked-prs/SKILL.md §A3 ("shepherd only PRs this agent
-// owns") is a documented `grep -E` one-liner, not a Filaments function — there is nothing to
+// owns") is a documented `grep -E` one-liner, not a Vouchington function — there is nothing to
 // deep-import, and no upstream package to drift under it (see dev/pr-shepherd-cli-contract.test.mts
 // for that kind of guard). But the pattern is easy to get subtly wrong in a doc edit — an unescaped
 // session id, a dropped anchor, a nonexistent capture group — so it is pinned here against realistic

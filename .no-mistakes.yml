@@ -850,11 +850,11 @@ rules:
         - glob: '**/*.[pP][aA][tT][cC][hH]'
           message: >-
             patch and diff files are not allowed; fix the underlying problem upstream
-            or file and link a Filaments issue labeled dependencies
+            or file and link a Vouchington issue labeled dependencies
         - glob: '**/*.[dD][iI][fF][fF]'
           message: >-
             patch and diff files are not allowed; fix the underlying problem upstream
-            or file and link a Filaments issue labeled dependencies
+            or file and link a Vouchington issue labeled dependencies
 
   - name: package dependencies resolve from registries
     rule: package-json-registry-only

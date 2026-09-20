@@ -18,7 +18,7 @@ function scrubObservabilityUrl(value: string): string {
 
 // Sentry SDK 10.68.0 attribute/breadcrumb/request keys that carry a URL or a
 // URL's query/fragment component. @vouchington/utils owns the generic
-// mechanics; Filaments owns this Sentry-specific key boundary and its
+// mechanics; Vouchington owns this Sentry-specific key boundary and its
 // copy-on-write identity contract.
 //
 // Two of the string keys below — http.request.header.referer and

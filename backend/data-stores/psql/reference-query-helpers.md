@@ -3,7 +3,7 @@
 [Back to PostgreSQL Data Store](README.md#query-helpers)
 
 [setup.mts](setup.mts) delegates query, transaction, and cursor execution to
-`@vouchington/postgres`. Filaments wires local capture and telemetry hooks into that runtime and
+`@vouchington/postgres`. Vouchington wires local capture and telemetry hooks into that runtime and
 re-exports the adapted helpers through [index.mts](index.mts). The helpers accept either raw SQL
 strings or `sql-template-strings` statements.
 

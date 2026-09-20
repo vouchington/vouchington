@@ -11,7 +11,7 @@ Removes the UTF-8 BOM prefix (`\uFEFF`) often prepended by Excel or Google Sheet
 ### `parseCsvRows(csvText: string): Record<string, string>[]`
 
 Parses a CSV string (after BOM stripping) into an array of row objects where keys are column headers.
-Parsing delegates to `@vouchington/csv`; this module retains Filaments' object-row API.
+Parsing delegates to `@vouchington/csv`; this module retains Vouchington's object-row API.
 
 ### `parseCsvToUrls(csvText: string): { urls: string[]; recognized: boolean }`
 

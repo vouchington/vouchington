@@ -120,7 +120,7 @@ describe('coverage provenance manifest CLI adapter', () => {
     ).rejects.toThrowError(`Missing coverage producer LCOV for suite 'tooling' at ${missingLcov}`)
   })
 
-  it('rejects unknown Filaments suite names', async () => {
+  it('rejects unknown Vouchington suite names', async () => {
     const fixture = makeFixture()
     await expect(
       runCoverageManifestCli(

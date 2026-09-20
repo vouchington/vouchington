@@ -19,7 +19,7 @@ export function createEntriesClient(connection: BlackboardConnection): Blackboar
 }
 
 // The portable helpers accept a lazy client loader so their optional peer remains optional.
-// Filaments keeps these thin adapters solely for existing callers and their focused test seams.
+// Vouchington keeps these thin adapters solely for existing callers and their focused test seams.
 export function clientDependencies(clients: {
   sessions?: BlackboardSessionsClient
   entries?: BlackboardEntriesClient

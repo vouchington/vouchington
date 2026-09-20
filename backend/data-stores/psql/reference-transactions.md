@@ -2,7 +2,7 @@
 
 [Back to PostgreSQL Data Store](README.md#transactions)
 
-`@vouchington/postgres` provides explicit transactions, which Filaments re-exports through
+`@vouchington/postgres` provides explicit transactions, which Vouchington re-exports through
 [transactions.mts](transactions.mts). Prefer an explicit resource for newly owned transaction
 scopes:
 
@@ -44,7 +44,7 @@ Detection is a live backend probe, not `client.getTransactionStatus()`, but only
 given a `pg.Pool`, `beginBoundedTransaction`) acquires an idle connection from the pool itself, so
 it issues no probe.
 
-The Filaments post-commit wrapper does not probe. `withTransactionOptions` opens post-commit-action
+The Vouchington post-commit wrapper does not probe. `withTransactionOptions` opens post-commit-action
 scope only from WeakMaps populated by `beginTransaction` / `beginBoundedTransaction`. The client map
 is cleared before `commit` / `rollback` / `dispose` await upstream settlement, which can
 `release()` a pool-acquired `PoolClient`; the query-owner map stays until after post-commit actions

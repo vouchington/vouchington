@@ -195,7 +195,7 @@ Query parameters are optional and sorted by name after route-ordered path parame
   `dotnet-clients/tooling/with-build-lock.sh dotnet test dotnet-clients/Voucha.DotNet.sln --configuration Release --filter FullyQualifiedName~ApiFixtureCoverageTests`.
 
 Run those commands from a [vouchington/vouchington-clients](https://github.com/vouchington/vouchington-clients)
-checkout after its Filaments contract preflight has completed.
+checkout after its Vouchington contract preflight has completed.
 
 Do not edit `api-fixtures/v1/responses/*.json` directly. Those files are generated output. CI
 regenerates them and rejects snapshot drift.

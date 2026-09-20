@@ -43,7 +43,7 @@ flowchart TD
 
 ## Usage
 
-`parseCreateModerationReportInput` adapts Filaments' `entityType`/`entityId` request shape to the
+`parseCreateModerationReportInput` adapts Vouchington's `entityType`/`entityId` request shape to the
 generic `@vouchington/utils/moderation` parser. The local adapter keeps the canonical catalogs, UUID
 validation, `vote_manipulation` post-only rule, 1000-character raw-note limit, and existing HTTP
 validation messages stable for callers.
