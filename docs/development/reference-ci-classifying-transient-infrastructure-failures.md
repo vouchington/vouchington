@@ -49,10 +49,10 @@ guard that documents this instead of forcing an unsafe rule.
 Cancelled idempotent workflows, including standalone `Static Code Analysis` runs, with no failed-job
 signal are ignored instead of dispatching Codex. Unclassified timeouts are never blind-rerun.
 Each path-scoped `main-*` workflow tests and publishes its artifact unit independently, then
-dispatches the matching private-infrastructure receiver. Filaments does not migrate databases,
+dispatches the matching private-infrastructure receiver. Vouchington does not migrate databases,
 mutate providers, or deploy runtime artifacts. The receiver remains disabled during the cutover.
 After explicit Harness activation, `fix-main` auto-reruns catalogued transient failures on
-individual Filaments workflows; until then this path remains disabled. Deployment recovery belongs
+individual Vouchington workflows; until then this path remains disabled. Deployment recovery belongs
 to the private infrastructure repository.
 
 The standalone Gitleaks workflow handles GitHub Release transport errors and retryable HTTP
