@@ -46,12 +46,21 @@ describe('SES copyright inbound routing', () => {
     const createSupport = vi.fn<() => Promise<{ is_new: false }>>()
     const parsed: ParsedSesInboundEmail = {
       fromEmail: 'claimant@example.test',
+      fromName: 'Copyright claimant',
       subject: 'Copyright notice',
       bodyText: 'Notice body',
       emailMessageId: '<copyright@example.test>',
       replyRefs: ['<prior@example.test>'],
       recipientEmails: ['dmca@inbound.voucha.ai'],
-      attachments: [],
+      attachments: [
+        {
+          filename: 'evidence.pdf',
+          contentId: null,
+          mimeType: 'application/pdf',
+          byteSize: 12,
+          sha256: Buffer.alloc(32, 9),
+        },
+      ],
     }
 
     await processSesInboundEmail(data, {
@@ -92,8 +101,10 @@ describe('SES copyright inbound routing', () => {
       expect.objectContaining({
         status: 'succeeded',
         fromEmail: 'claimant@example.test',
+        fromName: 'Copyright claimant',
         messageId: '<copyright@example.test>',
         replyReferences: ['<prior@example.test>'],
+        attachments: [expect.objectContaining({ filename: 'evidence.pdf' })],
       }),
     )
     expect(createSupport).not.toHaveBeenCalled()
