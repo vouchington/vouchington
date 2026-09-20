@@ -159,7 +159,7 @@ describe('processSesInboundSqsMessage', () => {
     ).rejects.toMatchObject({ status: 422 })
   })
 
-  it('throws when the object key is outside the incoming/ prefix, and does not delete the message', async () => {
+  it('throws when the object key is outside the recognized inbound prefixes, and does not delete the message', async () => {
     // Routed through the full consumer (not a direct processSesInboundSqsMessage call) so this also
     // proves assertSesInboundProcessJobData's own throw -- not just this processor's S3-shape
     // asserts above it -- leaves the message undeleted and DLQ-routable, matching the malformed-
@@ -181,7 +181,7 @@ describe('processSesInboundSqsMessage', () => {
     await consumer.close()
 
     expect(failedMessage).toEqual(message)
-    expect(error).toMatchObject({ message: expect.stringContaining('incoming/') })
+    expect(error).toMatchObject({ message: expect.stringContaining('unknown prefix') })
     expect(deleteCalls).toEqual([])
   })
 
