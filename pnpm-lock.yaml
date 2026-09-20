@@ -465,6 +465,10 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/agents/copyright-email-intake:
     dependencies:
@@ -498,6 +502,10 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/agents/crm-outreach:
     dependencies:

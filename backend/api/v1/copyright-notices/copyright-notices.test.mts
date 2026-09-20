@@ -7,6 +7,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { addUserRole } from '@services/users/roles-permissions'
 
 describe('copyright notice routes', () => {
   beforeEach(() => {
@@ -102,6 +103,69 @@ describe('copyright notice routes', () => {
       copyright_submission: { id: appeal.body.copyright_submission.id },
       is_duplicate: true,
     })
+  })
+
+  it('authorizes a moderator and validates each copyright-review request before loading its record', async () => {
+    const moderator = await createTestUser()
+    await addUserRole(moderator.id, 'moderator')
+    const request = createRequest()
+    await request.authenticateAs(moderator)
+    const missingId = crypto.randomUUID()
+    const restrictionId = crypto.randomUUID()
+    const fixture = await createCopyrightFormFixture()
+
+    await request
+      .post(`/api/v1/copyright-notices/${missingId}/restrictions/${restrictionId}/reviews`)
+      .send({ action: 'confirm' })
+      .expect(409)
+    await request
+      .post(`/api/v1/copyright-form-intakes/${missingId}/reviews`)
+      .send({ accepted: true, rationale: 'The structured notice is complete.' })
+      .expect(404)
+    await request
+      .post(`/api/v1/copyright-email-intakes/${missingId}/rejections`)
+      .send({
+        rationale: 'The message is unrelated to copyright.',
+        response_kind: 'rejected',
+        response_message: 'This mailbox only accepts copyright notices.',
+      })
+      .expect(422)
+    await request
+      .post(`/api/v1/copyright-email-intakes/${missingId}/approvals`)
+      .send({
+        rationale: 'The message supplies a complete notice.',
+        ...fixture.form,
+      })
+      .expect(422)
+    await request
+      .post(`/api/v1/copyright-submissions/${missingId}/appeal-reviews`)
+      .send({
+        rationale: 'The appeal does not warrant reversal.',
+        manual_fallback_reason: 'No recommendation is available.',
+        decisions: [{ restriction_id: restrictionId, action: 'confirm' }],
+      })
+      .expect(404)
+    await request
+      .post(`/api/v1/copyright-submissions/${missingId}/counter-notice-reviews`)
+      .send({ accepted: false, rationale: 'The counter-notice is incomplete.' })
+      .expect(404)
+    await request
+      .post(`/api/v1/copyright-email-intakes/${missingId}/correspondence`)
+      .send({
+        kind: 'supplement',
+        rationale: 'The email supplements an existing record.',
+        manual_fallback_reason: 'No recommendation is available.',
+        submission_summary: 'Additional hosted-use information.',
+      })
+      .expect(404)
+    await request
+      .post(`/api/v1/copyright-email-intakes/${missingId}/correspondence-rejections`)
+      .send({
+        kind: 'withdrawal',
+        rationale: 'The email cannot be associated with a notice.',
+        manual_fallback_reason: 'No recommendation is available.',
+      })
+      .expect(404)
   })
 })
 

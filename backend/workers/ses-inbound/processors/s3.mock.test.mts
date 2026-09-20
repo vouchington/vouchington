@@ -21,7 +21,10 @@ vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOrigi
 import {
   copySesInboundObjectToCopyrightEvidence,
   deleteSesInboundObject,
+  listCopyrightSesInboundObjects,
   listSesInboundObjects,
+  loadSesInboundObjectAndHash,
+  loadSesInboundObjectVersion,
   loadSesInboundObject,
   MAX_SES_INBOUND_BYTES,
   moveSesInboundObjectToFailed,
@@ -159,6 +162,55 @@ describe('SES inbound S3 storage', () => {
       Prefix: 'incoming/',
       ContinuationToken: 'current-page',
     })
+  })
+
+  it('loads the exact S3 version and preserves its received timestamp for hashing', async () => {
+    const receivedAt = new Date('2026-07-01T12:00:00.000Z')
+    mocks.send.mockResolvedValueOnce({
+      ContentLength: 3,
+      ETag: '"etag-1"',
+      VersionId: 'version-1',
+      Body: Readable.from([Buffer.from('raw')]),
+      LastModified: receivedAt,
+    } as never)
+
+    const loaded = await loadSesInboundObjectAndHash('copyright-incoming/message-123')
+    await expect(readStream(loaded.rawMime)).resolves.toEqual(Buffer.from('raw'))
+    await expect(loaded.digest).resolves.toEqual({
+      sha256: Buffer.from(
+        'd7439bee24773bcbfa2d0a97947ee36227b10d1022b1a55847e928965bb6bfde',
+        'hex',
+      ),
+      byteSize: 3,
+    })
+    expect(loaded.receivedAt).toEqual(receivedAt)
+    expect(loaded.sourceIdentity).toEqual({ eTag: '"etag-1"', versionId: 'version-1' })
+
+    mocks.send.mockResolvedValueOnce({
+      ContentLength: 3,
+      ETag: '"etag-2"',
+      Body: Readable.from([Buffer.from('raw')]),
+      LastModified: receivedAt,
+    } as never)
+    await expect(
+      readStream(
+        await loadSesInboundObjectVersion('copyright-incoming/message-123', { eTag: '"etag-2"' }),
+      ),
+    ).resolves.toEqual(Buffer.from('raw'))
+    const command = mocks.send.mock.calls[1]![0] as GetObjectCommand
+    expect(command.input).toMatchObject({ IfMatch: '"etag-2"' })
+  })
+
+  it('lists copyright intake objects separately from ordinary inbound mail', async () => {
+    mocks.send.mockResolvedValueOnce({
+      Contents: [{ Key: 'copyright-incoming/message-123' }],
+    } as never)
+
+    await expect(listCopyrightSesInboundObjects()).resolves.toEqual({
+      objectKeys: ['copyright-incoming/message-123'],
+    })
+    const command = mocks.send.mock.calls[0]![0] as ListObjectsV2Command
+    expect(command.input).toMatchObject({ Prefix: 'copyright-incoming/' })
   })
 
   it('rejects missing, non-streaming, and unreadable object bodies', async () => {

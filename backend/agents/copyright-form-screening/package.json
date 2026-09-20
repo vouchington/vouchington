@@ -17,5 +17,8 @@
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/openai-utils": "workspace:^",
     "@services/copyright-notices": "workspace:^"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
   }
 }
