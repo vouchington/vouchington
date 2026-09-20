@@ -14,9 +14,8 @@ import {
 } from '@services/user-import-export/config'
 import { webRiskConfig } from '@services/web-risk/config'
 import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
-import { quotaField, scoreField } from './registry-entry-utils.mts'
+import { scoreField } from './registry-entry-utils.mts'
 import { membershipBillingRegistryEntry } from './registry-membership-billing-entry.mts'
-import { validateMembershipPlanLimits } from './registry-membership-limit-validators.mts'
 import { postRelatedUrlDisplayRegistryEntries } from './registry-post-related-url-entries.mts'
 import {
   validateRssFeedCrawlConfig,
