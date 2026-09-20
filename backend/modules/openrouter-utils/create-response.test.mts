@@ -4,6 +4,7 @@ import {
   makeSdkResponse,
   makeStreamEvent,
 } from '../../test-helpers/modules/openai-utils/responses.mts'
+import { runWithOpenAIResponseAttemptHooks } from '@modules/openai-utils/response-attempt-context'
 import { createOpenRouterResponse, toOpenRouterModel } from './create-response.mts'
 
 type CreateResponse = NonNullable<
@@ -73,6 +74,30 @@ describe('OpenRouter Responses transport', () => {
         prompt_cache_key: 'openrouter-fixture-v1',
       }),
       expect.objectContaining({ maxRetries: 0 }),
+    )
+  })
+
+  it('latches an unknown billed attempt when the response stream fails before completion', async () => {
+    const cause = new Error('socket closed')
+    const failingStream: AsyncIterable<ResponseStreamEvent> = {
+      [Symbol.asyncIterator]: () => ({ next: () => Promise.reject(cause) }),
+    }
+    const createResponse = vi.fn<CreateResponse>().mockResolvedValueOnce(failingStream as never)
+    const onUnknownBilledAttempt = vi.fn<
+      (attempt: { requestStartedAt: Date; error: unknown }) => Promise<void>
+    >(() => Promise.resolve())
+
+    const error = await runWithOpenAIResponseAttemptHooks(
+      { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
+      () =>
+        createOpenRouterResponse({ model: 'openai/gpt-5.4-nano', input: 'hello' }, undefined, {
+          createResponse,
+        }),
+    ).catch((caught: unknown) => caught)
+
+    expect(error).toMatchObject({ cause })
+    expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ error }),
     )
   })
 })
