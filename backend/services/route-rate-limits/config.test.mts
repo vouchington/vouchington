@@ -15,7 +15,8 @@ type VoteRoute = {
 }
 
 const REPO_ROOT = join(import.meta.dirname, '../../..')
-const API_ROUTE_DIR = 'backend/api/v1'
+const API_V1_ROUTE_DIR = 'backend/api/v1'
+const API_ROUTE_DIRS = [API_V1_ROUTE_DIR, 'backend/api/oauth']
 const AUTH_ROUTE_DIRS = ['backend/api/v1/auth', 'backend/api/v1/sessions-authentication']
 const AUTH_RATE_LIMIT_EXEMPTIONS = new Set(['POST:/api/v1/auth/logout'])
 const AUTH_OR_SESSION_ROUTE_ID = /^[A-Z]+:\/api\/v1\/(?:auth|session)(?:\/|$)/
@@ -35,11 +36,13 @@ function getAuthRoutes(): DiscoveredRoute[] {
 }
 
 function getApiRoutes(): DiscoveredRoute[] {
-  return getSourceFiles(join(REPO_ROOT, API_ROUTE_DIR)).flatMap(file => extractApiRoutes(file))
+  return API_ROUTE_DIRS.flatMap(dir =>
+    getSourceFiles(join(REPO_ROOT, dir)).flatMap(file => extractApiRoutes(file)),
+  )
 }
 
 function getVoteRoutes(): VoteRoute[] {
-  return getSourceFiles(join(REPO_ROOT, API_ROUTE_DIR)).flatMap(file => extractVoteRoutes(file))
+  return getSourceFiles(join(REPO_ROOT, API_V1_ROUTE_DIR)).flatMap(file => extractVoteRoutes(file))
 }
 
 function extractApiRoutes(file: string): DiscoveredRoute[] {
@@ -56,7 +59,9 @@ function extractApiRoutes(file: string): DiscoveredRoute[] {
       method => method[1]!.toUpperCase(),
     )
     const referencedRouteIds = new Set(
-      [...block.matchAll(/[A-Z]+:\/api\/v1\/[\w/:.-]+/g)].map(routeIdMatch => routeIdMatch[0]!),
+      [...block.matchAll(/[A-Z]+:\/(?:api\/v1\/)?[\w/:.-]+/g)].map(
+        routeIdMatch => routeIdMatch[0]!,
+      ),
     )
 
     return methods.map(method => {
@@ -81,6 +86,21 @@ function extractVoteRoutes(file: string): VoteRoute[] {
 }
 
 describe('route rate-limit registry', () => {
+  it('classifies authorization-server routes as sensitive', () => {
+    const routes = [
+      'GET:/authorize',
+      'POST:/register',
+      'POST:/token',
+      'POST:/revoke',
+      'GET:/api/v1/oauth/authorization-requests/:id',
+      'POST:/api/v1/oauth/authorization-requests/:id/decisions',
+    ]
+
+    for (const route of routes) {
+      expect(getRouteConfig(route).category).toBe('sensitive')
+    }
+  })
+
   it('classifies OAuth completion polling as read traffic', () => {
     expect(getRouteConfig('POST:/api/v1/auth/oauth/authorizations/:flowId/complete')).toEqual({
       category: 'read',

@@ -156,7 +156,10 @@ app.route('/revoke').post(
 
 app.route('/api/v1/oauth/authorization-requests/:id').get(async (ctx: Context) => {
   setOAuthResponseHeaders(ctx)
-  const authorizationContext = await getOAuthAuthorizationReadContext(ctx)
+  const authorizationContext = await getOAuthAuthorizationReadContext(
+    ctx,
+    'GET:/api/v1/oauth/authorization-requests/:id',
+  )
   const request = await getOAuthAuthorizationRequestForUser(
     authorizationContext.userId,
     validateUUIDParam(ctx, 'id'),
@@ -184,11 +187,11 @@ app.route('/api/v1/oauth/authorization-requests/:id/decisions').post(async (ctx:
   )
   ctx.json(result)
 })
-
 async function getOAuthAuthorizationReadContext(
   ctx: Context,
+  routeKey: 'GET:/api/v1/oauth/authorization-requests/:id',
 ): Promise<{ browserBindingHash: string; userId: string }> {
-  const currentUser = await requireAuth(ctx, 'GET:/api/v1/oauth/authorization-requests/:id')
+  const currentUser = await requireAuth(ctx, routeKey)
   const session = await ctx.getSessionTokenData()
   return {
     browserBindingHash: createOAuthBrowserBindingHash(session.did, session.sid),
