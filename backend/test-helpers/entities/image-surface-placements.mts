@@ -1,6 +1,7 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import { restoreImagePlacementsAfterImageDeletion } from '../../services/images/placements.mts'
 import { retireImageSurfacePlacementsForDeletedImage } from '../../services/images/surface-placements.mts'
+import { stageImagePlacementDeliveryRecord } from '../../services/media-delivery-safety/delivery-registry-staging.mts'
 import sql from 'sql-template-strings'
 
 export type TestImageSurfacePlacement = {
@@ -59,6 +60,32 @@ export async function completeTestMediaDeliveryRecord(deliveryKey: string): Prom
     SET state = 'completed', completed_at = CURRENT_TIMESTAMP
     WHERE delivery_key = ${deliveryKey} AND desired_state = 'allow'
   `)
+}
+
+/** Makes one current topic-image surface visible through the fail-closed delivery registry. */
+export async function allowTestTopicSurfaceImageDelivery(input: {
+  topicId: string
+  imageId: string
+  surfaceKind: 'topic-logo-image' | 'topic-hero-image'
+}): Promise<void> {
+  const placements = await getTestImageSurfacePlacements({
+    topicId: input.topicId,
+    imageId: input.imageId,
+    surfaceKind: input.surfaceKind,
+  })
+  const placement = placements.find(candidate => candidate.retired_at === null)
+  if (!placement) {
+    throw new Error(
+      `Expected an active ${input.surfaceKind} placement for ${input.topicId}/${input.imageId}`,
+    )
+  }
+  const { deliveryKey } = await stageImagePlacementDeliveryRecord({
+    placementId: placement.placement_id,
+    revision: placement.placement_revision,
+    imageId: placement.image_id,
+    state: 'allow',
+  })
+  await completeTestMediaDeliveryRecord(deliveryKey)
 }
 
 export async function markTestMediaDeliveryRecordFailed(deliveryKey: string): Promise<void> {
