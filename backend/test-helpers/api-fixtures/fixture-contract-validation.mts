@@ -16,7 +16,13 @@ export function validateFixtureContracts(
 ): void {
   // Raw binary operations have no JSON fixture case. The local schema adds `format: binary`, while
   // the shared fixture validator only receives and validates JSON-backed operations.
-  const toolingContracts = contracts as unknown as Parameters<
+  const jsonFixtureContracts = Object.fromEntries(
+    Object.entries(contracts).filter(([, contract]) => {
+      const root = contract.schema.root
+      return root.type !== 'string' || root.format !== 'binary'
+    }),
+  )
+  const toolingContracts = jsonFixtureContracts as unknown as Parameters<
     typeof validateFixtureContractsFromTooling
   >[1]
   validateFixtureContractsFromTooling(fixtureCases, toolingContracts, {

@@ -258,6 +258,10 @@
       "fixtureIds": ["native.community.pending-reports.paginated"],
       "hash": "7ffd9104ac4cb195630ebe8f01d89caa883f4f52f2b4b7020f17ea82a55b25f6"
     },
+    "GET:/api/v1/copyright-email-intakes/:id/raw": {
+      "fixtureIds": [],
+      "hash": "11115901eecde79a3b5f6be7e3b6ccb54ea38fc4ca9098c4c58e75a7740944eb"
+    },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
       "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940"

@@ -11180,6 +11180,23 @@
       "source": "backend/api/v1/communities/reports.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-email-intakes/:id/raw": {
+      "bodyKind": "content",
+      "hash": "11115901eecde79a3b5f6be7e3b6ccb54ea38fc4ca9098c4c58e75a7740944eb",
+      "mediaType": "message/rfc822",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-email-intakes/:id/raw",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "format": "binary",
+          "type": "string"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "bodyKind": "content",
       "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940",
