@@ -1,0 +1,131 @@
+export type ClassifierPrimitive = 'noul' | 'choice' | 'score'
+export type ClassifierCandidateKind = 'topic' | 'story'
+export type ClassifierScopeCategory = 'global' | 'community_ai'
+export type ClassifierModelProvider = 'typesafe' | 'openrouter'
+
+export type ClassifierThresholds = {
+  lower: number
+  upper: number
+}
+
+type ClassifierScope =
+  | { scope_category: 'global'; scope_community_id: null }
+  | { scope_category: 'community_ai'; scope_community_id: string }
+
+export type Classifier = {
+  id: string
+  slug: string
+  primitive: ClassifierPrimitive
+  candidate_kind: ClassifierCandidateKind
+  activated_at: Date | null
+  deactivated_at: Date | null
+  created_at: Date
+  deleted_at: Date | null
+}
+
+export type ClassifierPromptVersion = {
+  id: string
+  classifier_id: string
+  prompt: string
+  model_name: string
+  model_provider: ClassifierModelProvider
+  default_lower_threshold: number
+  default_upper_threshold: number
+  activated_at: Date | null
+  deactivated_at: Date | null
+  created_at: Date
+  deleted_at: Date | null
+}
+
+type ClassifierCandidateBase = {
+  id: string
+  classifier_id: string
+  community_id: string | null
+  created_at: Date
+  deleted_at: Date | null
+}
+
+export type ClassifierCandidate = ClassifierCandidateBase &
+  (
+    | { candidate_kind: 'topic'; topic_id: string; story_id: null }
+    | { candidate_kind: 'story'; topic_id: null; story_id: string }
+  )
+
+export type ClassifierCandidateThreshold = {
+  id: string
+  classifier_id: string
+  candidate_id: string
+  prompt_version_id: string
+  lower_threshold_override: number | null
+  upper_threshold_override: number | null
+  activated_at: Date
+  deactivated_at: Date | null
+  created_at: Date
+}
+
+export type ClassifierCandidateCommunityOverride = {
+  id: string
+  community_id: string
+  candidate_id: string
+  enabled_at: Date
+  enabled_by_id: string | null
+  disabled_at: Date | null
+  disabled_by_id: string | null
+  created_at: Date
+}
+
+type ClassifierDecisionBatchBase = {
+  id: string
+  classifier_id: string
+  prompt_version_id: string
+  created_at: Date
+}
+
+export type ClassifierDecisionBatch = ClassifierDecisionBatchBase &
+  ClassifierScope &
+  ({ post_id: string; rss_feed_item_id: null } | { post_id: null; rss_feed_item_id: string })
+
+export type ClassifierDecisionBatchCandidate = {
+  batch_id: string
+  classifier_id: string
+  candidate_id: string
+  prompt_version_id: string
+  threshold_id: string
+  effective_lower_threshold: number
+  effective_upper_threshold: number
+  created_at: Date
+  updated_at: Date
+}
+
+export type ClassifierDecisionCall = {
+  id: string
+  batch_id: string
+  shard_ordinal: number
+  created_at: Date
+}
+
+type ClassifierResultBase = {
+  id: string
+  batch_id: string
+  decision_call_id: string
+  classifier_id: string
+  prompt_version_id: string
+  probability: number
+  effective_lower_threshold: number
+  effective_upper_threshold: number
+  raw_response: unknown
+  created_at: Date
+}
+
+type ClassifierResult = ClassifierResultBase &
+  ClassifierScope &
+  ({ candidate_id: string; threshold_id: string } | { candidate_id: null; threshold_id: null })
+
+export type TopicClassifierResult = ClassifierResult & {
+  candidate_kind: 'topic'
+  topic_id: string
+}
+export type StoryClassifierResult = ClassifierResult & {
+  candidate_kind: 'story'
+  story_id: string
+}

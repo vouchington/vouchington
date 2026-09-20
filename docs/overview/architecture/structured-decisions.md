@@ -26,6 +26,39 @@ failure, probability drift, latency, usage, and deterministic cost comparisons i
 artifact. A completed operator cap is not a claimed provider ceiling. This public repository keeps
 only the method and contract, not operational latency, usage, cost, or capacity values.
 
+## Classifier persistence
+
+Classifier configuration is deliberately independent of `agents`: a classifier fixes its primitive
+and candidate kind, while immutable prompt versions record the provider/model and instruction
+revision used for a decision. A stored candidate has one concrete `topic_id` or `story_id`; generic
+call code chooses the entity type rather than storing a polymorphic identifier.
+
+Thresholds are two explicit probability bounds versioned with the prompt. Prompt-revision defaults
+apply where a candidate omits either override independently, and PostgreSQL rejects every effective
+lower/upper pair outside `0..1` or not strictly ordered. Candidate-specific bounds are immutable
+revisions: replacing one deactivates the current row and inserts a new row. Each stored-candidate
+result references the exact threshold revision, whose nullable sides inherit prompt defaults, and
+snapshots the effective pair, so later threshold
+management cannot rewrite or obscure historical decisions. Community enablement is an immutable
+lifecycle revision with at most one active row per `(community, candidate)`, so repeated
+enable/disable cycles retain their history while communities reuse a global classifier definition
+rather than creating one.
+
+A decision batch records one classified post or RSS item, prompt version, and global/community
+scope. Every stored candidate included in a batch has an explicit threshold revision for the batch's
+prompt version; null override fields inherit that prompt's defaults. In the same transaction, stored
+candidates capture the exact threshold revision and effective bounds selected for that batch; results
+must reference that immutable snapshot, so a concurrent threshold replacement cannot rewrite or
+invalidate in-flight lineage. Its ordered call
+rows represent one unsharded call or multiple context-window shards. Results remain one row per
+candidate and preserve both the scalar probability used by C4 and the raw native answer. Fixed
+moderation candidates reference their stored candidate row; dynamically prefiltered tagging and
+story candidates leave that reference null and use the concrete result owner directly. Topic and
+story results are sibling UUIDv7 RANGE parents, partitioned directly by `topic_id` and `story_id`;
+that keeps pruning and foreign keys concrete without a polymorphic result owner. Result scope must
+match the batch. C3 owns validating the complete remote answer set and inserting every batch,
+candidate snapshot, and result transactionally before any threshold-driven action can run.
+
 ## Related
 
 - [AI agents](ai-agents.md)

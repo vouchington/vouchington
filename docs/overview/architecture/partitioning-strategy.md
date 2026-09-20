@@ -38,6 +38,7 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `agent_moderations`                                     | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `agent_responses`                                       | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `ai_usage_records`                                      | RANGE         | `id`                                   | default            | none              | target-scoped      |
+| `classifier_decision_batch_candidates`                  | RANGE         | `batch_id`                             | default            | none              | target-scoped      |
 | `community_post_review_changes`                         | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `conversation_message_agentic_runs`                     | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `conversation_message_agentic_runs_events`              | RANGE         | `conversation_message_agentic_run_id`  | monthly            | cleanupPartitions | retention-window   |
@@ -90,6 +91,8 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `rss_feed_item_votes`                                   | RANGE         | `rss_feed_item_id`                     | default            | none              | target-scoped      |
 | `rss_feed_items`                                        | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `session_referral_attributions`                         | RANGE         | `id`                                   | default            | none              | target-scoped      |
+| `story_classifier_results`                              | RANGE         | `story_id`                             | default            | none              | target-scoped      |
+| `topic_classifier_results`                              | RANGE         | `topic_id`                             | default            | none              | target-scoped      |
 | `topic_votes`                                           | RANGE         | `topic_id`                             | default            | none              | target-scoped      |
 | `user_sessions`                                         | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `user_vouch_votes`                                      | RANGE         | `target_user_id`                       | default            | none              | target-scoped      |
@@ -177,8 +180,9 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `bedrock_embeddings_batch_entities`, `bedrock_embeddings_batches`,
   `bedrock_nova_multimodal_v1_embeddings`, `bedrock_nova_multimodal_v1_image_embeddings`,
   `bluesky_link_authorizations`, `bluesky_link_completions`, `bluesky_linked_accounts`,
-  `boilerplate_removal_urls`, `boilerplate_removals`,
-  `community_agent_prompts`,
+  `boilerplate_removal_urls`, `boilerplate_removals`, `classifier_candidate_community_overrides`,
+  `classifier_candidate_thresholds`, `classifier_candidates`, `classifier_decision_batches`, `classifier_decision_calls`,
+  `classifier_prompt_versions`, `classifiers`, `community_agent_prompts`,
   `community_application_questions`, `community_applications`, `community_auto_tagger_agents`,
   `community_bans`, `community_invites`, `community_member_vacations`,
   `community_post_reviews`, `community_restrictions`, `community_saved_replies`, `crawlers`,

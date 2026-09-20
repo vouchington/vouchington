@@ -44,6 +44,15 @@
     "broadcast_types": {
       "values": ["everyone", "users", "followers", "mutual_followers"]
     },
+    "classifier_candidate_kind": {
+      "values": ["topic", "story"]
+    },
+    "classifier_model_provider": {
+      "values": ["typesafe", "openrouter"]
+    },
+    "classifier_primitive": {
+      "values": ["noul", "choice", "score"]
+    },
     "community_agent_prompt_change_action": {
       "values": ["created", "updated", "deleted", "allocated", "deallocated", "deactivated"]
     },
@@ -579,6 +588,9 @@
     "fn_capture_notification_push_intent": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_capture_notification_push_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' THEN\n    DELETE FROM notification_push_intent_subscription_receipts\n    WHERE user_id = NEW.user_id AND notification_id IN (OLD.id, NEW.id);\n  END IF;\n\n  INSERT INTO notification_push_intents (user_id, notification_id)\n  VALUES (NEW.user_id, NEW.id)\n  ON CONFLICT (user_id, notification_id) DO UPDATE\n  SET status = 'pending',\n      lease_token = NULL,\n      leased_at = NULL,\n      lease_expires_at = NULL,\n      suppressed_at = NULL,\n      delivered_at = NULL,\n      updated_at = CURRENT_TIMESTAMP;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_classifier_audit_actor_was_deleted(actor_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_id uuid)\n RETURNS boolean\n LANGUAGE sql\nAS $function$\n  SELECT actor_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_id)\n$function$\n"
+    },
     "fn_create_topic_metrics_on_insert": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_topic_metrics_on_insert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO topic_metrics (topic_id)\n  VALUES (NEW.id)\n  ON CONFLICT (topic_id) DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -726,6 +738,18 @@
     "fn_refresh_rss_feed_item_unmapped_category_count": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_refresh_rss_feed_item_unmapped_category_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  current_item_count BIGINT;\nBEGIN\n  IF TG_OP != 'INSERT' AND OLD.topic_id IS NULL THEN\n    SELECT item_count INTO current_item_count\n    FROM rss_feed_item_unmapped_category_counts\n    WHERE category_text = LOWER(OLD.category_text)\n    FOR UPDATE;\n\n    IF current_item_count = 1 THEN\n      DELETE FROM rss_feed_item_unmapped_category_counts\n      WHERE category_text = LOWER(OLD.category_text);\n    ELSIF current_item_count > 1 THEN\n      UPDATE rss_feed_item_unmapped_category_counts\n      SET item_count = item_count - 1,\n          updated_at = CURRENT_TIMESTAMP\n      WHERE category_text = LOWER(OLD.category_text);\n    END IF;\n  END IF;\n\n  IF TG_OP != 'DELETE' AND NEW.topic_id IS NULL THEN\n    INSERT INTO rss_feed_item_unmapped_category_counts (category_text, item_count)\n    VALUES (LOWER(NEW.category_text), 1)\n    ON CONFLICT (category_text) DO UPDATE\n    SET item_count = rss_feed_item_unmapped_category_counts.item_count + 1,\n        updated_at = CURRENT_TIMESTAMP;\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
     },
+    "fn_reject_classifier_append_only_update": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_append_only_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION '% is append-only', TG_TABLE_NAME USING ERRCODE = '23514';\nEND $function$\n"
+    },
+    "fn_reject_classifier_candidate_identity_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.candidate_kind IS DISTINCT FROM OLD.candidate_kind\n    OR NEW.topic_id IS DISTINCT FROM OLD.topic_id\n    OR NEW.story_id IS DISTINCT FROM OLD.story_id\n    OR NEW.community_id IS DISTINCT FROM OLD.community_id THEN\n    RAISE EXCEPTION 'classifier candidate identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_reject_classifier_identity_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.slug IS DISTINCT FROM OLD.slug\n    OR NEW.primitive IS DISTINCT FROM OLD.primitive\n    OR NEW.candidate_kind IS DISTINCT FROM OLD.candidate_kind THEN\n    RAISE EXCEPTION 'classifier identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_reject_classifier_prompt_version_identity_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_prompt_version_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.prompt IS DISTINCT FROM OLD.prompt\n    OR NEW.model_name IS DISTINCT FROM OLD.model_name\n    OR NEW.model_provider IS DISTINCT FROM OLD.model_provider\n    OR NEW.default_lower_threshold IS DISTINCT FROM OLD.default_lower_threshold\n    OR NEW.default_upper_threshold IS DISTINCT FROM OLD.default_upper_threshold THEN\n    RAISE EXCEPTION 'classifier prompt version identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_reject_membership_administrator_refund_request_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN RAISE EXCEPTION 'membership administrator refund requests are immutable'; END $function$\n"
     },
@@ -758,6 +782,30 @@
     },
     "fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE candidate record;\nBEGIN\n  IF p_community_id IS NULL THEN\n    SELECT day, community_id, metric, category INTO candidate\n    FROM moderation_transparency_daily_rollups\n    WHERE community_id IS NULL AND day < p_before\n      AND count >= 20 AND latest_occurred_at <= p_cutoff\n    ORDER BY day DESC\n    LIMIT 1;\n  ELSE\n    SELECT day, community_id, metric, category INTO candidate\n    FROM moderation_transparency_daily_rollups\n    WHERE community_id = p_community_id AND day < p_before\n      AND count >= 20 AND latest_occurred_at <= p_cutoff\n    ORDER BY day DESC\n    LIMIT 1;\n  END IF;\n  IF FOUND THEN\n    PERFORM fn_release_moderation_transparency_daily_rollup(\n      candidate.day, candidate.community_id, candidate.metric, candidate.category, p_cutoff\n    );\n  END IF;\nEND $function$\n"
+    },
+    "fn_require_classifier_activation_lifecycle": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_activation_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at\n    AND NEW.deactivated_at IS NOT DISTINCT FROM OLD.deactivated_at THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.activated_at IS NULL\n    AND OLD.deactivated_at IS NULL\n    AND NEW.activated_at IS NOT NULL\n    AND NEW.deactivated_at IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.activated_at IS NOT NULL\n    AND OLD.deactivated_at IS NULL\n    AND NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at\n    AND NEW.deactivated_at IS NOT NULL THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION '% activation lifecycle is immutable after each transition', TG_TABLE_NAME USING ERRCODE = '23514';\nEND $function$\n"
+    },
+    "fn_require_classifier_batch_candidate_configuration": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_batch_candidate_configuration()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  threshold classifier_candidate_thresholds%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches\n  WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates\n  WHERE id = NEW.candidate_id FOR SHARE;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  SELECT * INTO threshold FROM classifier_candidate_thresholds\n  WHERE id = NEW.threshold_id FOR SHARE;\n  IF threshold.id IS NULL\n    OR threshold.classifier_id IS DISTINCT FROM NEW.classifier_id\n    OR threshold.candidate_id IS DISTINCT FROM NEW.candidate_id\n    OR threshold.prompt_version_id IS DISTINCT FROM NEW.prompt_version_id\n    OR threshold.deactivated_at IS NOT NULL THEN\n    RAISE EXCEPTION 'classifier batch candidate threshold must be its active configuration revision' USING ERRCODE = '23514';\n  END IF;\n  effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);\n  effective_upper := COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold);\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier batch candidate thresholds must match captured configuration' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_require_classifier_batch_candidate_owner_delete": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_batch_candidate_owner_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)\n    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id) THEN\n    RAISE EXCEPTION 'classifier batch candidate snapshots can only be deleted with their batch or candidate' USING ERRCODE = '23503';\n  END IF;\n  RETURN OLD;\nEND $function$\n"
+    },
+    "fn_require_classifier_candidate_community_override_lifecycle": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_community_override_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.community_id IS DISTINCT FROM OLD.community_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.enabled_at IS DISTINCT FROM OLD.enabled_at\n    OR (\n      NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id\n      AND NOT (\n        NEW.enabled_by_id IS NULL\n        AND fn_classifier_audit_actor_was_deleted(OLD.enabled_by_id)\n      )\n    )\n    OR NOT (\n      NEW.disabled_at IS NOT DISTINCT FROM OLD.disabled_at\n      OR (OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL)\n    )\n    OR (\n      NEW.disabled_by_id IS DISTINCT FROM OLD.disabled_by_id\n      AND NOT (\n        OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL\n        OR (\n          NEW.disabled_by_id IS NULL\n          AND fn_classifier_audit_actor_was_deleted(OLD.disabled_by_id)\n        )\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier candidate community override is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_require_classifier_candidate_effective_thresholds": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_effective_thresholds()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  defaults classifier_prompt_versions%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO defaults FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  effective_lower := COALESCE(NEW.lower_threshold_override, defaults.default_lower_threshold);\n  effective_upper := COALESCE(NEW.upper_threshold_override, defaults.default_upper_threshold);\n  IF effective_lower < 0 OR effective_upper > 1 OR effective_lower >= effective_upper THEN\n    RAISE EXCEPTION 'classifier candidate effective thresholds must be ordered probabilities' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_require_classifier_candidate_threshold_lifecycle": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_threshold_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.prompt_version_id IS DISTINCT FROM OLD.prompt_version_id\n    OR NEW.lower_threshold_override IS DISTINCT FROM OLD.lower_threshold_override\n    OR NEW.upper_threshold_override IS DISTINCT FROM OLD.upper_threshold_override\n    OR NEW.activated_at IS DISTINCT FROM OLD.activated_at\n    OR (\n      NEW.created_by_id IS DISTINCT FROM OLD.created_by_id\n      AND NOT (\n        NEW.created_by_id IS NULL\n        AND fn_classifier_audit_actor_was_deleted(OLD.created_by_id)\n      )\n    )\n    OR NOT (\n      NEW.deactivated_at IS NOT DISTINCT FROM OLD.deactivated_at\n      OR (OLD.deactivated_at IS NULL AND NEW.deactivated_at IS NOT NULL)\n    )\n    OR (\n      NEW.deactivated_by_id IS DISTINCT FROM OLD.deactivated_by_id\n      AND NOT (\n        OLD.deactivated_at IS NULL AND NEW.deactivated_at IS NOT NULL\n        OR (\n          NEW.deactivated_by_id IS NULL\n          AND fn_classifier_audit_actor_was_deleted(OLD.deactivated_by_id)\n        )\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier candidate threshold revision is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_require_classifier_result_batch_scope": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  batch_candidate classifier_decision_batch_candidates%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates WHERE id = NEW.candidate_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF NEW.candidate_id IS NOT NULL THEN\n    SELECT * INTO batch_candidate FROM classifier_decision_batch_candidates\n    WHERE batch_id = NEW.batch_id AND candidate_id = NEW.candidate_id\n    FOR SHARE;\n  END IF;\n  IF NEW.scope_category IS DISTINCT FROM batch.scope_category\n    OR NEW.scope_community_id IS DISTINCT FROM batch.scope_community_id THEN\n    RAISE EXCEPTION 'classifier result scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its owning community' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.candidate_id IS NOT NULL AND batch_candidate.batch_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  effective_lower := COALESCE(\n    batch_candidate.effective_lower_threshold,\n    prompt.default_lower_threshold\n  );\n  effective_upper := COALESCE(\n    batch_candidate.effective_upper_threshold,\n    prompt.default_upper_threshold\n  );\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier result thresholds must match prompt and candidate configuration' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.threshold_id IS DISTINCT FROM batch_candidate.threshold_id THEN\n    RAISE EXCEPTION 'classifier result threshold revision must match its batch candidate snapshot' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_require_global_classifier_candidate_override": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_global_classifier_candidate_override()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM classifier_candidates candidate\n    WHERE candidate.id = NEW.candidate_id AND candidate.community_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'community overrides may target only global classifier candidates' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_require_membership_administrator_refund_request_context": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_membership_administrator_refund_request_context()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE valid_context BOOLEAN;\nBEGIN\n  SELECT operation.operation_kind = 'administrator_refund' AND operation.remaining_refundable_minor_units = NEW.amount_minor_units AND operation.currency_code = NEW.currency_code INTO valid_context FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;\n  IF valid_context IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'administrator refund request does not match its operation context' USING ERRCODE = '23514'; END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -7565,6 +7613,2894 @@
         "trigger_boilerplate_removals_updated_at": "CREATE TRIGGER trigger_boilerplate_removals_updated_at BEFORE UPDATE ON public.boilerplate_removals FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
+    },
+    "classifier_candidate_community_overrides": {
+      "checkConstraints": {
+        "chk_classifier_candidate_community_overrides__lifecycle": "CHECK ((((disabled_at IS NULL) AND (disabled_by_id IS NULL)) OR ((disabled_at IS NOT NULL) AND (disabled_at >= enabled_at))))"
+      },
+      "columns": {
+        "candidate_id": {
+          "collation": null,
+          "comment": "Global candidate whose availability is overridden.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "community_id": {
+          "collation": null,
+          "comment": "Community changing availability of a global candidate.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "disabled_at": {
+          "collation": null,
+          "comment": "Time the override was disabled, or NULL while enabled.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "disabled_by_id": {
+          "collation": null,
+          "comment": "User who disabled the override, retained only while the user exists.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "enabled_at": {
+          "collation": null,
+          "comment": "Time the community enabled the candidate.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "enabled_by_id": {
+          "collation": null,
+          "comment": "User who enabled the candidate, retained only while the user exists.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Per-community enablement lifecycle for global classifier candidates.",
+      "foreignKeys": {
+        "classifier_candidate_community_overrides_candidate_id_fkey": {
+          "columns": ["candidate_id"],
+          "definition": "FOREIGN KEY (candidate_id) REFERENCES classifier_candidates(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_candidates",
+          "validated": true
+        },
+        "classifier_candidate_community_overrides_community_id_fkey": {
+          "columns": ["community_id"],
+          "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "communities",
+          "validated": true
+        },
+        "classifier_candidate_community_overrides_disabled_by_id_fkey": {
+          "columns": ["disabled_by_id"],
+          "definition": "FOREIGN KEY (disabled_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "classifier_candidate_community_overrides_enabled_by_id_fkey": {
+          "columns": ["enabled_by_id"],
+          "definition": "FOREIGN KEY (enabled_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "classifier_candidate_community_overrides_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifier_candidate_community_overrides_pkey ON public.classifier_candidate_community_overrides USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_candidate_community_overrides__candidate": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidate_community_overrides__candidate ON public.classifier_candidate_community_overrides USING btree (candidate_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidate_community_overrides__community": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidate_community_overrides__community ON public.classifier_candidate_community_overrides USING btree (community_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidate_community_overrides__disabled_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidate_community_overrides__disabled_by ON public.classifier_candidate_community_overrides USING btree (disabled_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "disabled_by_id",
+              "descending": false,
+              "expression": "disabled_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidate_community_overrides__enabled": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_classifier_candidate_community_overrides__enabled ON public.classifier_candidate_community_overrides USING btree (community_id, candidate_id) WHERE (disabled_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(disabled_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_candidate_community_overrides__enabled_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidate_community_overrides__enabled_by ON public.classifier_candidate_community_overrides USING btree (enabled_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "enabled_by_id",
+              "descending": false,
+              "expression": "enabled_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_classifier_candidate_community_overrides_global": "CREATE TRIGGER trigger_classifier_candidate_community_overrides_global BEFORE INSERT OR UPDATE OF candidate_id ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_require_global_classifier_candidate_override()",
+        "trigger_classifier_candidate_community_overrides_lifecycle": "CREATE TRIGGER trigger_classifier_candidate_community_overrides_lifecycle BEFORE UPDATE ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_community_override_lifecycle()",
+        "trigger_classifier_candidate_community_overrides_updated_at": "CREATE TRIGGER trigger_classifier_candidate_community_overrides_updated_at BEFORE UPDATE ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "classifier_candidate_thresholds": {
+      "checkConstraints": {
+        "chk_classifier_candidate_thresholds__lifecycle": "CHECK ((((deactivated_at IS NULL) AND (deactivated_by_id IS NULL)) OR ((deactivated_at IS NOT NULL) AND (deactivated_at >= activated_at))))",
+        "chk_classifier_candidate_thresholds__override_bounds": "CHECK ((((lower_threshold_override IS NULL) OR (lower_threshold_override >= (0)::numeric)) AND ((upper_threshold_override IS NULL) OR (upper_threshold_override <= (1)::numeric))))"
+      },
+      "columns": {
+        "activated_at": {
+          "collation": null,
+          "comment": "Time this immutable threshold revision became active.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "candidate_id": {
+          "collation": null,
+          "comment": "Stored candidate receiving prompt-revision-specific bounds.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier copied from candidate and prompt for relational alignment.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "created_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        },
+        "deactivated_at": {
+          "collation": null,
+          "comment": "Time this threshold revision was superseded, or NULL while active.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "deactivated_by_id": {
+          "collation": null,
+          "comment": "User who superseded this threshold revision, retained only while the user exists.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "lower_threshold_override": {
+          "collation": null,
+          "comment": "Candidate-specific lower boundary, or NULL to inherit the prompt revision default.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "numeric(5,4)"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Prompt revision whose defaults the overrides inherit.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "upper_threshold_override": {
+          "collation": null,
+          "comment": "Candidate-specific upper boundary, or NULL to inherit the prompt revision default.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "numeric(5,4)"
+        }
+      },
+      "comment": "Immutable per-candidate threshold revisions with an explicit deactivation lifecycle.",
+      "foreignKeys": {
+        "classifier_candidate_thresholds_created_by_id_fkey": {
+          "columns": ["created_by_id"],
+          "definition": "FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "classifier_candidate_thresholds_deactivated_by_id_fkey": {
+          "columns": ["deactivated_by_id"],
+          "definition": "FOREIGN KEY (deactivated_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "fk_classifier_candidate_thresholds__candidate_classifier": {
+          "columns": ["candidate_id", "classifier_id"],
+          "definition": "FOREIGN KEY (candidate_id, classifier_id) REFERENCES classifier_candidates(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_candidates",
+          "validated": true
+        },
+        "fk_classifier_candidate_thresholds__prompt_classifier": {
+          "columns": ["prompt_version_id", "classifier_id"],
+          "definition": "FOREIGN KEY (prompt_version_id, classifier_id) REFERENCES classifier_prompt_versions(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_prompt_versions",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "classifier_candidate_thresholds_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifier_candidate_thresholds_pkey ON public.classifier_candidate_thresholds USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_candidate_thresholds__active_candidate_prompt": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_classifier_candidate_thresholds__active_candidate_prompt ON public.classifier_candidate_thresholds USING btree (candidate_id, prompt_version_id) WHERE (deactivated_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deactivated_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_candidate_thresholds__candidate": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidate_thresholds__candidate ON public.classifier_candidate_thresholds USING btree (candidate_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidate_thresholds__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidate_thresholds__classifier ON public.classifier_candidate_thresholds USING btree (classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidate_thresholds__created_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidate_thresholds__created_by ON public.classifier_candidate_thresholds USING btree (created_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidate_thresholds__deactivated_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidate_thresholds__deactivated_by ON public.classifier_candidate_thresholds USING btree (deactivated_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deactivated_by_id",
+              "descending": false,
+              "expression": "deactivated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidate_thresholds__prompt_classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidate_thresholds__prompt_classifier ON public.classifier_candidate_thresholds USING btree (prompt_version_id, classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_classifier_candidate_thresholds_effective": "CREATE TRIGGER trigger_classifier_candidate_thresholds_effective BEFORE INSERT OR UPDATE OF prompt_version_id, lower_threshold_override, upper_threshold_override ON public.classifier_candidate_thresholds FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_effective_thresholds()",
+        "trigger_classifier_candidate_thresholds_lifecycle": "CREATE TRIGGER trigger_classifier_candidate_thresholds_lifecycle BEFORE UPDATE ON public.classifier_candidate_thresholds FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_threshold_lifecycle()",
+        "trigger_classifier_candidate_thresholds_updated_at": "CREATE TRIGGER trigger_classifier_candidate_thresholds_updated_at BEFORE UPDATE ON public.classifier_candidate_thresholds FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "classifier_candidates": {
+      "checkConstraints": {
+        "chk_classifier_candidates__entity_kind": "CHECK ((((candidate_kind = 'topic'::classifier_candidate_kind) AND (topic_id IS NOT NULL)) OR ((candidate_kind = 'story'::classifier_candidate_kind) AND (story_id IS NOT NULL))))",
+        "chk_classifier_candidates__one_entity": "CHECK ((num_nonnulls(topic_id, story_id) = 1))"
+      },
+      "columns": {
+        "candidate_kind": {
+          "collation": null,
+          "comment": "Concrete candidate kind, constrained to the classifier kind.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "classifier_candidate_kind"
+        },
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier that owns this stored candidate.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "community_id": {
+          "collation": null,
+          "comment": "Owning community for a custom candidate, or NULL for a global candidate.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "created_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "deleted_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "deleted_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "story_id": {
+          "collation": null,
+          "comment": "Story candidate; mutually exclusive with topic_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": "Topic candidate; mutually exclusive with story_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "updated_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        }
+      },
+      "comment": "Stored topic or story candidate identities, independent of prompt revisions.",
+      "foreignKeys": {
+        "classifier_candidates_community_id_fkey": {
+          "columns": ["community_id"],
+          "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "communities",
+          "validated": true
+        },
+        "classifier_candidates_created_by_id_fkey": {
+          "columns": ["created_by_id"],
+          "definition": "FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "classifier_candidates_deleted_by_id_fkey": {
+          "columns": ["deleted_by_id"],
+          "definition": "FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "classifier_candidates_story_id_fkey": {
+          "columns": ["story_id"],
+          "definition": "FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "stories",
+          "validated": true
+        },
+        "classifier_candidates_topic_id_fkey": {
+          "columns": ["topic_id"],
+          "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "topics",
+          "validated": true
+        },
+        "classifier_candidates_updated_by_id_fkey": {
+          "columns": ["updated_by_id"],
+          "definition": "FOREIGN KEY (updated_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "fk_classifier_candidates__classifier_kind": {
+          "columns": ["classifier_id", "candidate_kind"],
+          "definition": "FOREIGN KEY (classifier_id, candidate_kind) REFERENCES classifiers(id, candidate_kind) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "candidate_kind"],
+          "referencedTable": "classifiers",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "classifier_candidates_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifier_candidates_pkey ON public.classifier_candidates USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_candidates__active_story": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_classifier_candidates__active_story ON public.classifier_candidates USING btree (classifier_id, story_id, community_id) NULLS NOT DISTINCT WHERE ((story_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((story_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_candidates__active_topic": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_classifier_candidates__active_topic ON public.classifier_candidates USING btree (classifier_id, topic_id, community_id) NULLS NOT DISTINCT WHERE ((topic_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((topic_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_candidates__classifier_kind": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidates__classifier_kind ON public.classifier_candidates USING btree (classifier_id, candidate_kind)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_kind",
+              "descending": false,
+              "expression": "candidate_kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidates__community": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidates__community ON public.classifier_candidates USING btree (community_id, classifier_id) WHERE ((community_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((community_id IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidates__community_bare": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidates__community_bare ON public.classifier_candidates USING btree (community_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidates__created_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidates__created_by ON public.classifier_candidates USING btree (created_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidates__deleted_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidates__deleted_by ON public.classifier_candidates USING btree (deleted_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidates__story": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidates__story ON public.classifier_candidates USING btree (story_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidates__topic": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidates__topic ON public.classifier_candidates USING btree (topic_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidates__updated_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidates__updated_by ON public.classifier_candidates USING btree (updated_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_by_id",
+              "descending": false,
+              "expression": "updated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_classifier_candidates__id__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_candidates__id__classifier ON public.classifier_candidates USING btree (id, classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_candidates__id__classifier_story": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_candidates__id__classifier_story ON public.classifier_candidates USING btree (id, classifier_id, story_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_candidates__id__classifier_topic": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_candidates__id__classifier_topic ON public.classifier_candidates USING btree (id, classifier_id, topic_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_classifier_candidates_identity_immutable": "CREATE TRIGGER trigger_classifier_candidates_identity_immutable BEFORE UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_candidate_identity_mutation()",
+        "trigger_classifier_candidates_updated_at": "CREATE TRIGGER trigger_classifier_candidates_updated_at BEFORE UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "uq_classifier_candidates__id__classifier": {
+          "columns": ["id", "classifier_id"],
+          "definition": "UNIQUE (id, classifier_id)"
+        },
+        "uq_classifier_candidates__id__classifier_story": {
+          "columns": ["id", "classifier_id", "story_id"],
+          "definition": "UNIQUE (id, classifier_id, story_id)"
+        },
+        "uq_classifier_candidates__id__classifier_topic": {
+          "columns": ["id", "classifier_id", "topic_id"],
+          "definition": "UNIQUE (id, classifier_id, topic_id)"
+        }
+      }
+    },
+    "classifier_decision_batch_candidates": {
+      "checkConstraints": {
+        "chk_classifier_decision_batch_candidates__effective_thresholds": "CHECK (((effective_lower_threshold >= (0)::numeric) AND (effective_upper_threshold <= (1)::numeric) AND (effective_lower_threshold < effective_upper_threshold)))"
+      },
+      "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "Decision batch that captured this candidate configuration.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "candidate_id": {
+          "collation": null,
+          "comment": "Stored candidate included in the decision batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier constrained to the owning batch and candidate.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(batch_id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "effective_lower_threshold": {
+          "collation": null,
+          "comment": "Captured lower decision bound after prompt-default inheritance.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "numeric(5,4)"
+        },
+        "effective_upper_threshold": {
+          "collation": null,
+          "comment": "Captured upper decision bound after prompt-default inheritance.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "numeric(5,4)"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Prompt revision constrained to the owning decision batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "threshold_id": {
+          "collation": null,
+          "comment": "Exact active threshold revision captured for this candidate.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable per-batch snapshots of stored candidate threshold configuration.",
+      "foreignKeys": {
+        "fk_classifier_decision_batch_candidates__batch_classifier": {
+          "columns": ["batch_id", "classifier_id"],
+          "definition": "FOREIGN KEY (batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_classifier_decision_batch_candidates__batch_prompt": {
+          "columns": ["batch_id", "prompt_version_id"],
+          "definition": "FOREIGN KEY (batch_id, prompt_version_id) REFERENCES classifier_decision_batches(id, prompt_version_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "prompt_version_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_classifier_decision_batch_candidates__candidate_classifier": {
+          "columns": ["candidate_id", "classifier_id"],
+          "definition": "FOREIGN KEY (candidate_id, classifier_id) REFERENCES classifier_candidates(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_candidates",
+          "validated": true
+        },
+        "fk_classifier_decision_batch_candidates__threshold": {
+          "columns": ["threshold_id"],
+          "definition": "FOREIGN KEY (threshold_id) REFERENCES classifier_candidate_thresholds(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_candidate_thresholds",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "classifier_decision_batch_candidates_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifier_decision_batch_candidates_pkey ON ONLY public.classifier_decision_batch_candidates USING btree (batch_id, candidate_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_decision_batch_candidates__candidate": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__candidate ON ONLY public.classifier_decision_batch_candidates USING btree (candidate_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batch_candidates__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__classifier ON ONLY public.classifier_decision_batch_candidates USING btree (classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batch_candidates__prompt": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__prompt ON ONLY public.classifier_decision_batch_candidates USING btree (prompt_version_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batch_candidates__threshold": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__threshold ON ONLY public.classifier_decision_batch_candidates USING btree (threshold_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "threshold_id",
+              "descending": false,
+              "expression": "threshold_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_classifier_decision_batch_candidates__result_lineage": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_batch_candidates__result_lineage ON ONLY public.classifier_decision_batch_candidates USING btree (batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "threshold_id",
+              "descending": false,
+              "expression": "threshold_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "effective_lower_threshold",
+              "descending": false,
+              "expression": "effective_lower_threshold",
+              "nullsFirst": false,
+              "opclass": "numeric_ops"
+            },
+            {
+              "column": "effective_upper_threshold",
+              "descending": false,
+              "expression": "effective_upper_threshold",
+              "nullsFirst": false,
+              "opclass": "numeric_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "batch_id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (batch_id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["batch_id", "candidate_id"],
+        "definition": "PRIMARY KEY (batch_id, candidate_id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_classifier_decision_batch_candidates_append_only": "CREATE TRIGGER trigger_classifier_decision_batch_candidates_append_only BEFORE UPDATE ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()",
+        "trigger_classifier_decision_batch_candidates_configuration": "CREATE TRIGGER trigger_classifier_decision_batch_candidates_configuration BEFORE INSERT ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_batch_candidate_configuration()",
+        "trigger_classifier_decision_batch_candidates_owner_delete": "CREATE TRIGGER trigger_classifier_decision_batch_candidates_owner_delete BEFORE DELETE ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_batch_candidate_owner_delete()"
+      },
+      "uniqueConstraints": {
+        "uq_classifier_decision_batch_candidates__result_lineage": {
+          "columns": [
+            "batch_id",
+            "candidate_id",
+            "classifier_id",
+            "prompt_version_id",
+            "threshold_id",
+            "effective_lower_threshold",
+            "effective_upper_threshold"
+          ],
+          "definition": "UNIQUE (batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold)"
+        }
+      }
+    },
+    "classifier_decision_batches": {
+      "checkConstraints": {
+        "chk_classifier_decision_batches__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
+        "chk_classifier_decision_batches__scope": "CHECK ((((scope_category = 'global'::text) AND (scope_community_id IS NULL)) OR ((scope_category = 'community_ai'::text) AND (scope_community_id IS NOT NULL))))"
+      },
+      "columns": {
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier used for this logical decision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Classified post subject; mutually exclusive with rss_feed_item_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Exact prompt revision used for this logical decision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "Classified RSS item subject; mutually exclusive with post_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "scope_category": {
+          "collation": null,
+          "comment": "Decision scope: global or community_ai.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "scope_community_id": {
+          "collation": null,
+          "comment": "Immutable community provenance for community_ai scope; no FK so history survives community deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One classified post or RSS item decision, including scope provenance and prompt revision.",
+      "foreignKeys": {
+        "classifier_decision_batches_classifier_id_fkey": {
+          "columns": ["classifier_id"],
+          "definition": "FOREIGN KEY (classifier_id) REFERENCES classifiers(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifiers",
+          "validated": true
+        },
+        "classifier_decision_batches_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "classifier_decision_batches_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        },
+        "fk_classifier_decision_batches__prompt_classifier": {
+          "columns": ["prompt_version_id", "classifier_id"],
+          "definition": "FOREIGN KEY (prompt_version_id, classifier_id) REFERENCES classifier_prompt_versions(id, classifier_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_prompt_versions",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "classifier_decision_batches_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifier_decision_batches_pkey ON public.classifier_decision_batches USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_decision_batches__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batches__classifier ON public.classifier_decision_batches USING btree (classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batches__post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batches__post ON public.classifier_decision_batches USING btree (post_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batches__prompt_classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batches__prompt_classifier ON public.classifier_decision_batches USING btree (prompt_version_id, classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batches__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batches__rss_feed_item ON public.classifier_decision_batches USING btree (rss_feed_item_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batches__scope": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batches__scope ON public.classifier_decision_batches USING btree (scope_community_id, id) WHERE (scope_category = 'community_ai'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "scope_community_id",
+              "descending": false,
+              "expression": "scope_community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(scope_category = 'community_ai'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_classifier_decision_batches__id__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_batches__id__classifier ON public.classifier_decision_batches USING btree (id, classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_decision_batches__id__prompt": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_batches__id__prompt ON public.classifier_decision_batches USING btree (id, prompt_version_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_decision_batches__id__scope": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_batches__id__scope ON public.classifier_decision_batches USING btree (id, scope_category, scope_community_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "scope_category",
+              "descending": false,
+              "expression": "scope_category",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "scope_community_id",
+              "descending": false,
+              "expression": "scope_community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_classifier_decision_batches_append_only": "CREATE TRIGGER trigger_classifier_decision_batches_append_only BEFORE UPDATE ON public.classifier_decision_batches FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()"
+      },
+      "uniqueConstraints": {
+        "uq_classifier_decision_batches__id__classifier": {
+          "columns": ["id", "classifier_id"],
+          "definition": "UNIQUE (id, classifier_id)"
+        },
+        "uq_classifier_decision_batches__id__prompt": {
+          "columns": ["id", "prompt_version_id"],
+          "definition": "UNIQUE (id, prompt_version_id)"
+        },
+        "uq_classifier_decision_batches__id__scope": {
+          "columns": ["id", "scope_category", "scope_community_id"],
+          "definition": "UNIQUE (id, scope_category, scope_community_id)"
+        }
+      }
+    },
+    "classifier_decision_calls": {
+      "checkConstraints": {
+        "classifier_decision_calls_shard_ordinal_check": "CHECK ((shard_ordinal >= 0))"
+      },
+      "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "Logical decision batch containing this provider call.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "shard_ordinal": {
+          "collation": null,
+          "comment": "Zero-based order of this context-window shard within its batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Ordered shards for one classifier decision batch.",
+      "foreignKeys": {
+        "classifier_decision_calls_batch_id_fkey": {
+          "columns": ["batch_id"],
+          "definition": "FOREIGN KEY (batch_id) REFERENCES classifier_decision_batches(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "classifier_decision_calls_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifier_decision_calls_pkey ON public.classifier_decision_calls USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_decision_calls__batch_ordinal": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_calls__batch_ordinal ON public.classifier_decision_calls USING btree (batch_id, shard_ordinal)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "shard_ordinal",
+              "descending": false,
+              "expression": "shard_ordinal",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_decision_calls__id__batch": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_calls__id__batch ON public.classifier_decision_calls USING btree (id, batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_classifier_decision_calls_append_only": "CREATE TRIGGER trigger_classifier_decision_calls_append_only BEFORE UPDATE ON public.classifier_decision_calls FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()"
+      },
+      "uniqueConstraints": {
+        "uq_classifier_decision_calls__batch_ordinal": {
+          "columns": ["batch_id", "shard_ordinal"],
+          "definition": "UNIQUE (batch_id, shard_ordinal)"
+        },
+        "uq_classifier_decision_calls__id__batch": {
+          "columns": ["id", "batch_id"],
+          "definition": "UNIQUE (id, batch_id)"
+        }
+      }
+    },
+    "classifier_prompt_versions": {
+      "checkConstraints": {
+        "chk_classifier_prompt_versions__default_thresholds": "CHECK (((default_lower_threshold >= (0)::numeric) AND (default_upper_threshold <= (1)::numeric) AND (default_lower_threshold < default_upper_threshold)))",
+        "chk_classifier_prompt_versions__lifecycle": "CHECK (((deactivated_at IS NULL) OR ((activated_at IS NOT NULL) AND (deactivated_at >= activated_at))))"
+      },
+      "columns": {
+        "activated_at": {
+          "collation": null,
+          "comment": "Time this prompt revision became active, or NULL when inactive.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier whose immutable prompt revision this row records.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "created_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "uuid"
+        },
+        "deactivated_at": {
+          "collation": null,
+          "comment": "Time this prompt revision became inactive, or NULL when not deactivated.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "default_lower_threshold": {
+          "collation": null,
+          "comment": "Prompt-revision boundary below which a probability maps to downvote.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "numeric(5,4)"
+        },
+        "default_upper_threshold": {
+          "collation": null,
+          "comment": "Prompt-revision boundary above which a probability maps to upvote.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "numeric(5,4)"
+        },
+        "deleted_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "deleted_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "model_name": {
+          "collation": null,
+          "comment": "Provider model identifier used by this revision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "model_provider": {
+          "collation": null,
+          "comment": "Transport/provider identifier used by this revision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "classifier_model_provider"
+        },
+        "prompt": {
+          "collation": null,
+          "comment": "Exact instruction text sent for this revision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "timestamp with time zone"
+        },
+        "updated_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "uuid"
+        }
+      },
+      "comment": "Immutable classifier prompt/model revisions; activation lifecycle remains mutable.",
+      "foreignKeys": {
+        "classifier_prompt_versions_classifier_id_fkey": {
+          "columns": ["classifier_id"],
+          "definition": "FOREIGN KEY (classifier_id) REFERENCES classifiers(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifiers",
+          "validated": true
+        },
+        "classifier_prompt_versions_created_by_id_fkey": {
+          "columns": ["created_by_id"],
+          "definition": "FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "classifier_prompt_versions_deleted_by_id_fkey": {
+          "columns": ["deleted_by_id"],
+          "definition": "FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "classifier_prompt_versions_updated_by_id_fkey": {
+          "columns": ["updated_by_id"],
+          "definition": "FOREIGN KEY (updated_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "classifier_prompt_versions_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifier_prompt_versions_pkey ON public.classifier_prompt_versions USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_prompt_versions__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_prompt_versions__classifier ON public.classifier_prompt_versions USING btree (classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_prompt_versions__classifier_active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_classifier_prompt_versions__classifier_active ON public.classifier_prompt_versions USING btree (classifier_id) WHERE ((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifier_prompt_versions__created_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_prompt_versions__created_by ON public.classifier_prompt_versions USING btree (created_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_prompt_versions__deleted_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_prompt_versions__deleted_by ON public.classifier_prompt_versions USING btree (deleted_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_prompt_versions__updated_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_prompt_versions__updated_by ON public.classifier_prompt_versions USING btree (updated_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_by_id",
+              "descending": false,
+              "expression": "updated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_classifier_prompt_versions__id__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_prompt_versions__id__classifier ON public.classifier_prompt_versions USING btree (id, classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_classifier_prompt_versions_activation_lifecycle": "CREATE TRIGGER trigger_classifier_prompt_versions_activation_lifecycle BEFORE UPDATE ON public.classifier_prompt_versions FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_activation_lifecycle()",
+        "trigger_classifier_prompt_versions_identity_immutable": "CREATE TRIGGER trigger_classifier_prompt_versions_identity_immutable BEFORE UPDATE ON public.classifier_prompt_versions FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_prompt_version_identity_mutation()",
+        "trigger_classifier_prompt_versions_updated_at": "CREATE TRIGGER trigger_classifier_prompt_versions_updated_at BEFORE UPDATE ON public.classifier_prompt_versions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "uq_classifier_prompt_versions__id__classifier": {
+          "columns": ["id", "classifier_id"],
+          "definition": "UNIQUE (id, classifier_id)"
+        }
+      }
+    },
+    "classifiers": {
+      "checkConstraints": {
+        "chk_classifiers__lifecycle": "CHECK (((deactivated_at IS NULL) OR ((activated_at IS NOT NULL) AND (deactivated_at >= activated_at))))"
+      },
+      "columns": {
+        "activated_at": {
+          "collation": null,
+          "comment": "Time this classifier became active, or NULL when inactive.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "candidate_kind": {
+          "collation": null,
+          "comment": "Concrete entity kind accepted as a candidate.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "classifier_candidate_kind"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "created_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "deactivated_at": {
+          "collation": null,
+          "comment": "Time this classifier became inactive, or NULL when not deactivated.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "deleted_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "deleted_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "primitive": {
+          "collation": null,
+          "comment": "Structured-decision primitive used for every prompt version.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "classifier_primitive"
+        },
+        "slug": {
+          "collation": null,
+          "comment": "Stable machine-readable classifier identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "updated_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        }
+      },
+      "comment": "Agent-independent classifier definitions with fixed primitive and candidate kind.",
+      "foreignKeys": {
+        "classifiers_created_by_id_fkey": {
+          "columns": ["created_by_id"],
+          "definition": "FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "classifiers_deleted_by_id_fkey": {
+          "columns": ["deleted_by_id"],
+          "definition": "FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "classifiers_updated_by_id_fkey": {
+          "columns": ["updated_by_id"],
+          "definition": "FOREIGN KEY (updated_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "classifiers_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifiers_pkey ON public.classifiers USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "classifiers_slug_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifiers_slug_key ON public.classifiers USING btree (slug)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "slug",
+              "descending": false,
+              "expression": "slug",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_classifiers__active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifiers__active ON public.classifiers USING btree (candidate_kind, slug) WHERE ((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "candidate_kind",
+              "descending": false,
+              "expression": "candidate_kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "slug",
+              "descending": false,
+              "expression": "slug",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifiers__created_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifiers__created_by ON public.classifiers USING btree (created_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_by_id",
+              "descending": false,
+              "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifiers__deleted_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifiers__deleted_by ON public.classifiers USING btree (deleted_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_by_id",
+              "descending": false,
+              "expression": "deleted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifiers__updated_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifiers__updated_by ON public.classifiers USING btree (updated_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_by_id",
+              "descending": false,
+              "expression": "updated_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_classifiers__id__candidate_kind": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifiers__id__candidate_kind ON public.classifiers USING btree (id, candidate_kind)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_kind",
+              "descending": false,
+              "expression": "candidate_kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_classifiers_activation_lifecycle": "CREATE TRIGGER trigger_classifiers_activation_lifecycle BEFORE UPDATE ON public.classifiers FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_activation_lifecycle()",
+        "trigger_classifiers_identity_immutable": "CREATE TRIGGER trigger_classifiers_identity_immutable BEFORE UPDATE ON public.classifiers FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_identity_mutation()",
+        "trigger_classifiers_updated_at": "CREATE TRIGGER trigger_classifiers_updated_at BEFORE UPDATE ON public.classifiers FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "classifiers_slug_key": {
+          "columns": ["slug"],
+          "definition": "UNIQUE (slug)"
+        },
+        "uq_classifiers__id__candidate_kind": {
+          "columns": ["id", "candidate_kind"],
+          "definition": "UNIQUE (id, candidate_kind)"
+        }
+      }
     },
     "communities": {
       "checkConstraints": {
@@ -73404,6 +76340,524 @@
       },
       "uniqueConstraints": {}
     },
+    "story_classifier_results": {
+      "checkConstraints": {
+        "chk_story_classifier_results__effective_thresholds": "CHECK (((effective_lower_threshold >= (0)::numeric) AND (effective_upper_threshold <= (1)::numeric) AND (effective_lower_threshold < effective_upper_threshold)))",
+        "chk_story_classifier_results__scope": "CHECK ((((scope_category = 'global'::text) AND (scope_community_id IS NULL)) OR ((scope_category = 'community_ai'::text) AND (scope_community_id IS NOT NULL))))",
+        "chk_story_classifier_results__stored_configuration": "CHECK ((((candidate_id IS NULL) AND (threshold_id IS NULL)) OR ((candidate_id IS NOT NULL) AND (threshold_id IS NOT NULL))))",
+        "story_classifier_results_candidate_kind_check": "CHECK ((candidate_kind = 'story'::classifier_candidate_kind))",
+        "story_classifier_results_probability_check": "CHECK (((probability >= (0)::numeric) AND (probability <= (1)::numeric)))"
+      },
+      "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "Logical decision batch that produced this result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "candidate_id": {
+          "collation": null,
+          "comment": "Stored story candidate scored by this result, or NULL for a runtime-prefiltered candidate.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "candidate_kind": {
+          "collation": null,
+          "comment": "Fixed story discriminator used only for the classifier-kind foreign key.",
+          "defaultExpression": "'story'::classifier_candidate_kind",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "classifier_candidate_kind"
+        },
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier copied from the owning batch for relational enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "timestamp with time zone"
+        },
+        "decision_call_id": {
+          "collation": null,
+          "comment": "Specific provider call or shard that produced this result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "effective_lower_threshold": {
+          "collation": null,
+          "comment": "Resolved lower boundary used for this immutable decision result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "numeric(5,4)"
+        },
+        "effective_upper_threshold": {
+          "collation": null,
+          "comment": "Resolved upper boundary used for this immutable decision result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "numeric(5,4)"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "probability": {
+          "collation": null,
+          "comment": "Native per-candidate probability preserved without threshold mapping.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "numeric"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Prompt revision copied from the owning batch for relational enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "raw_response": {
+          "collation": null,
+          "comment": "Full native structured-decision answer for audit and diagnostics.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13,
+          "type": "jsonb"
+        },
+        "scope_category": {
+          "collation": null,
+          "comment": "Decision scope copied from the owning batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14,
+          "type": "text"
+        },
+        "scope_community_id": {
+          "collation": null,
+          "comment": "Immutable community provenance copied from the owning batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "uuid"
+        },
+        "story_id": {
+          "collation": null,
+          "comment": "Story candidate scored by this result and the partition key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "threshold_id": {
+          "collation": null,
+          "comment": "Exact stored-candidate threshold revision used, or NULL for a runtime-prefiltered candidate without stored configuration.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 17,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Per-candidate classifier results for story candidates, RANGE-partitioned by story_id.",
+      "foreignKeys": {
+        "fk_story_classifier_results__batch_candidate": {
+          "columns": [
+            "batch_id",
+            "candidate_id",
+            "classifier_id",
+            "prompt_version_id",
+            "threshold_id",
+            "effective_lower_threshold",
+            "effective_upper_threshold"
+          ],
+          "definition": "FOREIGN KEY (batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold) REFERENCES classifier_decision_batch_candidates(batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "batch_id",
+            "candidate_id",
+            "classifier_id",
+            "prompt_version_id",
+            "threshold_id",
+            "effective_lower_threshold",
+            "effective_upper_threshold"
+          ],
+          "referencedTable": "classifier_decision_batch_candidates",
+          "validated": true
+        },
+        "fk_story_classifier_results__batch_classifier": {
+          "columns": ["batch_id", "classifier_id"],
+          "definition": "FOREIGN KEY (batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_story_classifier_results__batch_prompt": {
+          "columns": ["batch_id", "prompt_version_id"],
+          "definition": "FOREIGN KEY (batch_id, prompt_version_id) REFERENCES classifier_decision_batches(id, prompt_version_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "prompt_version_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_story_classifier_results__batch_scope": {
+          "columns": ["batch_id", "scope_category", "scope_community_id"],
+          "definition": "FOREIGN KEY (batch_id, scope_category, scope_community_id) REFERENCES classifier_decision_batches(id, scope_category, scope_community_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "scope_category", "scope_community_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_story_classifier_results__call_batch": {
+          "columns": ["decision_call_id", "batch_id"],
+          "definition": "FOREIGN KEY (decision_call_id, batch_id) REFERENCES classifier_decision_calls(id, batch_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "batch_id"],
+          "referencedTable": "classifier_decision_calls",
+          "validated": true
+        },
+        "fk_story_classifier_results__candidate": {
+          "columns": ["candidate_id", "classifier_id", "story_id"],
+          "definition": "FOREIGN KEY (candidate_id, classifier_id, story_id) REFERENCES classifier_candidates(id, classifier_id, story_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id", "story_id"],
+          "referencedTable": "classifier_candidates",
+          "validated": true
+        },
+        "fk_story_classifier_results__classifier_kind": {
+          "columns": ["classifier_id", "candidate_kind"],
+          "definition": "FOREIGN KEY (classifier_id, candidate_kind) REFERENCES classifiers(id, candidate_kind) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "candidate_kind"],
+          "referencedTable": "classifiers",
+          "validated": true
+        },
+        "fk_story_classifier_results__threshold": {
+          "columns": ["threshold_id"],
+          "definition": "FOREIGN KEY (threshold_id) REFERENCES classifier_candidate_thresholds(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_candidate_thresholds",
+          "validated": true
+        },
+        "story_classifier_results_story_id_fkey": {
+          "columns": ["story_id"],
+          "definition": "FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "stories",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_story_classifier_results__batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_story_classifier_results__batch ON ONLY public.story_classifier_results USING btree (batch_id, story_id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "story_id",
+              "descending": true,
+              "expression": "story_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_story_classifier_results__call_batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_story_classifier_results__call_batch ON ONLY public.story_classifier_results USING btree (decision_call_id, batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "decision_call_id",
+              "descending": false,
+              "expression": "decision_call_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_story_classifier_results__candidate_probability": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_story_classifier_results__candidate_probability ON ONLY public.story_classifier_results USING btree (candidate_id, probability, story_id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "probability",
+              "descending": false,
+              "expression": "probability",
+              "nullsFirst": false,
+              "opclass": "numeric_ops"
+            },
+            {
+              "column": "story_id",
+              "descending": true,
+              "expression": "story_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_story_classifier_results__classifier_kind": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_story_classifier_results__classifier_kind ON ONLY public.story_classifier_results USING btree (classifier_id, candidate_kind)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_kind",
+              "descending": false,
+              "expression": "candidate_kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_story_classifier_results__story_batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_story_classifier_results__story_batch ON ONLY public.story_classifier_results USING btree (story_id, batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_story_classifier_results__threshold": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_story_classifier_results__threshold ON ONLY public.story_classifier_results USING btree (threshold_id, story_id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "threshold_id",
+              "descending": false,
+              "expression": "threshold_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "story_id",
+              "descending": true,
+              "expression": "story_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "story_classifier_results_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX story_classifier_results_pkey ON ONLY public.story_classifier_results USING btree (story_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "story_id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (story_id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["story_id", "id"],
+        "definition": "PRIMARY KEY (story_id, id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_story_classifier_results_append_only": "CREATE TRIGGER trigger_story_classifier_results_append_only BEFORE UPDATE ON public.story_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()",
+        "trigger_story_classifier_results_batch_scope": "CREATE TRIGGER trigger_story_classifier_results_batch_scope BEFORE INSERT OR UPDATE OF batch_id, scope_category, scope_community_id ON public.story_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_result_batch_scope()"
+      },
+      "uniqueConstraints": {}
+    },
     "story_post_related_url_projection_jobs": {
       "checkConstraints": {
         "story_post_related_url_projection_jobs_check": "CHECK (((lease_token IS NULL) = (leased_at IS NULL)))",
@@ -77763,6 +81217,524 @@
       "relationKind": "table",
       "triggers": {
         "trigger_topic_claims_updated_at": "CREATE TRIGGER trigger_topic_claims_updated_at BEFORE UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "topic_classifier_results": {
+      "checkConstraints": {
+        "chk_topic_classifier_results__effective_thresholds": "CHECK (((effective_lower_threshold >= (0)::numeric) AND (effective_upper_threshold <= (1)::numeric) AND (effective_lower_threshold < effective_upper_threshold)))",
+        "chk_topic_classifier_results__scope": "CHECK ((((scope_category = 'global'::text) AND (scope_community_id IS NULL)) OR ((scope_category = 'community_ai'::text) AND (scope_community_id IS NOT NULL))))",
+        "chk_topic_classifier_results__stored_configuration": "CHECK ((((candidate_id IS NULL) AND (threshold_id IS NULL)) OR ((candidate_id IS NOT NULL) AND (threshold_id IS NOT NULL))))",
+        "topic_classifier_results_candidate_kind_check": "CHECK ((candidate_kind = 'topic'::classifier_candidate_kind))",
+        "topic_classifier_results_probability_check": "CHECK (((probability >= (0)::numeric) AND (probability <= (1)::numeric)))"
+      },
+      "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "Logical decision batch that produced this result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "candidate_id": {
+          "collation": null,
+          "comment": "Stored topic candidate scored by this result, or NULL for a runtime-prefiltered candidate.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "candidate_kind": {
+          "collation": null,
+          "comment": "Fixed topic discriminator used only for the classifier-kind foreign key.",
+          "defaultExpression": "'topic'::classifier_candidate_kind",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "classifier_candidate_kind"
+        },
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier copied from the owning batch for relational enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "timestamp with time zone"
+        },
+        "decision_call_id": {
+          "collation": null,
+          "comment": "Specific provider call or shard that produced this result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "effective_lower_threshold": {
+          "collation": null,
+          "comment": "Resolved lower boundary used for this immutable decision result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "numeric(5,4)"
+        },
+        "effective_upper_threshold": {
+          "collation": null,
+          "comment": "Resolved upper boundary used for this immutable decision result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "numeric(5,4)"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "probability": {
+          "collation": null,
+          "comment": "Native per-candidate probability preserved without threshold mapping.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "numeric"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Prompt revision copied from the owning batch for relational enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "raw_response": {
+          "collation": null,
+          "comment": "Full native structured-decision answer for audit and diagnostics.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13,
+          "type": "jsonb"
+        },
+        "scope_category": {
+          "collation": null,
+          "comment": "Decision scope copied from the owning batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14,
+          "type": "text"
+        },
+        "scope_community_id": {
+          "collation": null,
+          "comment": "Immutable community provenance copied from the owning batch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "uuid"
+        },
+        "threshold_id": {
+          "collation": null,
+          "comment": "Exact stored-candidate threshold revision used, or NULL for a runtime-prefiltered candidate without stored configuration.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": "Topic candidate scored by this result and the partition key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 17,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Per-candidate classifier results for topic candidates, RANGE-partitioned by topic_id.",
+      "foreignKeys": {
+        "fk_topic_classifier_results__batch_candidate": {
+          "columns": [
+            "batch_id",
+            "candidate_id",
+            "classifier_id",
+            "prompt_version_id",
+            "threshold_id",
+            "effective_lower_threshold",
+            "effective_upper_threshold"
+          ],
+          "definition": "FOREIGN KEY (batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold) REFERENCES classifier_decision_batch_candidates(batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "batch_id",
+            "candidate_id",
+            "classifier_id",
+            "prompt_version_id",
+            "threshold_id",
+            "effective_lower_threshold",
+            "effective_upper_threshold"
+          ],
+          "referencedTable": "classifier_decision_batch_candidates",
+          "validated": true
+        },
+        "fk_topic_classifier_results__batch_classifier": {
+          "columns": ["batch_id", "classifier_id"],
+          "definition": "FOREIGN KEY (batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_topic_classifier_results__batch_prompt": {
+          "columns": ["batch_id", "prompt_version_id"],
+          "definition": "FOREIGN KEY (batch_id, prompt_version_id) REFERENCES classifier_decision_batches(id, prompt_version_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "prompt_version_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_topic_classifier_results__batch_scope": {
+          "columns": ["batch_id", "scope_category", "scope_community_id"],
+          "definition": "FOREIGN KEY (batch_id, scope_category, scope_community_id) REFERENCES classifier_decision_batches(id, scope_category, scope_community_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "scope_category", "scope_community_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_topic_classifier_results__call_batch": {
+          "columns": ["decision_call_id", "batch_id"],
+          "definition": "FOREIGN KEY (decision_call_id, batch_id) REFERENCES classifier_decision_calls(id, batch_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "batch_id"],
+          "referencedTable": "classifier_decision_calls",
+          "validated": true
+        },
+        "fk_topic_classifier_results__candidate": {
+          "columns": ["candidate_id", "classifier_id", "topic_id"],
+          "definition": "FOREIGN KEY (candidate_id, classifier_id, topic_id) REFERENCES classifier_candidates(id, classifier_id, topic_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id", "topic_id"],
+          "referencedTable": "classifier_candidates",
+          "validated": true
+        },
+        "fk_topic_classifier_results__classifier_kind": {
+          "columns": ["classifier_id", "candidate_kind"],
+          "definition": "FOREIGN KEY (classifier_id, candidate_kind) REFERENCES classifiers(id, candidate_kind) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "candidate_kind"],
+          "referencedTable": "classifiers",
+          "validated": true
+        },
+        "fk_topic_classifier_results__threshold": {
+          "columns": ["threshold_id"],
+          "definition": "FOREIGN KEY (threshold_id) REFERENCES classifier_candidate_thresholds(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_candidate_thresholds",
+          "validated": true
+        },
+        "topic_classifier_results_topic_id_fkey": {
+          "columns": ["topic_id"],
+          "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "topics",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_topic_classifier_results__batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_classifier_results__batch ON ONLY public.topic_classifier_results USING btree (batch_id, topic_id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_id",
+              "descending": true,
+              "expression": "topic_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topic_classifier_results__call_batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_classifier_results__call_batch ON ONLY public.topic_classifier_results USING btree (decision_call_id, batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "decision_call_id",
+              "descending": false,
+              "expression": "decision_call_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topic_classifier_results__candidate_probability": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_classifier_results__candidate_probability ON ONLY public.topic_classifier_results USING btree (candidate_id, probability, topic_id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "probability",
+              "descending": false,
+              "expression": "probability",
+              "nullsFirst": false,
+              "opclass": "numeric_ops"
+            },
+            {
+              "column": "topic_id",
+              "descending": true,
+              "expression": "topic_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topic_classifier_results__classifier_kind": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_classifier_results__classifier_kind ON ONLY public.topic_classifier_results USING btree (classifier_id, candidate_kind)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_kind",
+              "descending": false,
+              "expression": "candidate_kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topic_classifier_results__threshold": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_classifier_results__threshold ON ONLY public.topic_classifier_results USING btree (threshold_id, topic_id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "threshold_id",
+              "descending": false,
+              "expression": "threshold_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_id",
+              "descending": true,
+              "expression": "topic_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topic_classifier_results__topic_batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_topic_classifier_results__topic_batch ON ONLY public.topic_classifier_results USING btree (topic_id, batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "topic_classifier_results_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX topic_classifier_results_pkey ON ONLY public.topic_classifier_results USING btree (topic_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "topic_id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (topic_id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["topic_id", "id"],
+        "definition": "PRIMARY KEY (topic_id, id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_topic_classifier_results_append_only": "CREATE TRIGGER trigger_topic_classifier_results_append_only BEFORE UPDATE ON public.topic_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()",
+        "trigger_topic_classifier_results_batch_scope": "CREATE TRIGGER trigger_topic_classifier_results_batch_scope BEFORE INSERT OR UPDATE OF batch_id, scope_category, scope_community_id ON public.topic_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_result_batch_scope()"
       },
       "uniqueConstraints": {}
     },

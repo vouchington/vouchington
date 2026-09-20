@@ -69,6 +69,22 @@
 - `followers`
 - `mutual_followers`
 
+## `classifier_candidate_kind`
+
+- `topic`
+- `story`
+
+## `classifier_model_provider`
+
+- `typesafe`
+- `openrouter`
+
+## `classifier_primitive`
+
+- `noul`
+- `choice`
+- `score`
+
 ## `community_agent_prompt_change_action`
 
 - `created`
