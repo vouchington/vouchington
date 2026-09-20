@@ -777,6 +777,9 @@
     "fn_reject_mipr_succeeded_refund_observation_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mipr_succeeded_refund_observation_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'membership ineligible purchase reversal succeeded refund observations are immutable';\nEND $function$\n"
     },
+    "fn_reject_oauth_authorization_server_event_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_oauth_authorization_server_event_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'oauth authorization server events are append-only' USING ERRCODE = '23514';\nEND $function$\n"
+    },
     "fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric text, p_category text, p_cutoff timestamp with time zone)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric text, p_category text, p_cutoff timestamp with time zone)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- Share the same per-cohort lock as source-triggered increments and decrements.\n  -- A release must snapshot and remove a candidate atomically with respect to a\n  -- source lifecycle mutation, otherwise an old write could recreate it.\n  PERFORM pg_advisory_xact_lock(hashtextextended(\n    'moderation-transparency-rollup:' || p_day::text || ':'\n      || COALESCE(p_community_id::text, 'global') || ':' || p_metric || ':' || p_category,\n    0\n  ));\n  INSERT INTO moderation_transparency_released_daily_rollups(\n    day, community_id, metric, category, count, latest_occurred_at\n  )\n  SELECT day, community_id, metric, category, count, latest_occurred_at\n  FROM moderation_transparency_daily_rollups\n  WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n    AND metric = p_metric AND category = p_category\n    AND count >= 20 AND latest_occurred_at <= p_cutoff\n  ON CONFLICT ON CONSTRAINT moderation_transparency_released_daily_rollups_key DO NOTHING\n  ;\n  DELETE FROM moderation_transparency_daily_rollups\n  WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n    AND metric = p_metric AND category = p_category\n    AND EXISTS (\n      SELECT 1 FROM moderation_transparency_released_daily_rollups\n      WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n        AND metric = p_metric AND category = p_category\n    );\nEND $function$\n"
     },
@@ -43707,6 +43710,1208 @@
       },
       "uniqueConstraints": {}
     },
+    "oauth_access_tokens": {
+      "checkConstraints": {
+        "oauth_access_tokens_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
+        "oauth_access_tokens_scopes_check": "CHECK ((cardinality(scopes) > 0))",
+        "oauth_access_tokens_token_hash_check": "CHECK ((char_length(token_hash) = 64))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "expires_at": {
+          "collation": null,
+          "comment": "Time after which the access token is invalid.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "grant_id": {
+          "collation": null,
+          "comment": "Delegated grant represented by the access token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "last_used_at": {
+          "collation": null,
+          "comment": "Time at which bearer validation last succeeded.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "refresh_family_id": {
+          "collation": null,
+          "comment": "Refresh family that issued the access token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "resource": {
+          "collation": null,
+          "comment": "Protected resource audience bound to the access token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "revoked_at": {
+          "collation": null,
+          "comment": "Time at which the access token was revoked.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "scopes": {
+          "collation": null,
+          "comment": "Canonical scopes carried by the access token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text[]"
+        },
+        "token_hash": {
+          "collation": null,
+          "comment": "Purpose-bound hash of the opaque bearer token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Opaque access tokens stored only as purpose-bound hashes.",
+      "foreignKeys": {
+        "fk_oauth_access_tokens__family_grant": {
+          "columns": ["refresh_family_id", "grant_id"],
+          "definition": "FOREIGN KEY (refresh_family_id, grant_id) REFERENCES oauth_refresh_token_families(id, grant_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "grant_id"],
+          "referencedTable": "oauth_refresh_token_families",
+          "validated": true
+        },
+        "oauth_access_tokens_grant_id_fkey": {
+          "columns": ["grant_id"],
+          "definition": "FOREIGN KEY (grant_id) REFERENCES oauth_grants(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_grants",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_oauth_access_tokens__expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_access_tokens__expiry ON public.oauth_access_tokens USING btree (expires_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_access_tokens__family_grant": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_access_tokens__family_grant ON public.oauth_access_tokens USING btree (refresh_family_id, grant_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "refresh_family_id",
+              "descending": false,
+              "expression": "refresh_family_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "grant_id",
+              "descending": false,
+              "expression": "grant_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_access_tokens__grant": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_access_tokens__grant ON public.oauth_access_tokens USING btree (grant_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "grant_id",
+              "descending": false,
+              "expression": "grant_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_access_tokens__refresh_family": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_access_tokens__refresh_family ON public.oauth_access_tokens USING btree (refresh_family_id, id) WHERE (refresh_family_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "refresh_family_id",
+              "descending": false,
+              "expression": "refresh_family_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(refresh_family_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "oauth_access_tokens_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_access_tokens_pkey ON public.oauth_access_tokens USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "oauth_access_tokens_token_hash_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_access_tokens_token_hash_key ON public.oauth_access_tokens USING btree (token_hash)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "token_hash",
+              "descending": false,
+              "expression": "token_hash",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_oauth_access_tokens_updated_at": "CREATE TRIGGER trigger_oauth_access_tokens_updated_at BEFORE UPDATE ON public.oauth_access_tokens FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "oauth_access_tokens_token_hash_key": {
+          "columns": ["token_hash"],
+          "definition": "UNIQUE (token_hash)"
+        }
+      }
+    },
+    "oauth_authorization_codes": {
+      "checkConstraints": {
+        "oauth_authorization_codes_code_challenge_check": "CHECK ((code_challenge ~ '^[A-Za-z0-9_-]{43}$'::text))",
+        "oauth_authorization_codes_code_hash_check": "CHECK ((char_length(code_hash) = 64))",
+        "oauth_authorization_codes_redirect_uri_check": "CHECK (((char_length(redirect_uri) >= 1) AND (char_length(redirect_uri) <= 2048)))",
+        "oauth_authorization_codes_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
+        "oauth_authorization_codes_scopes_check": "CHECK ((cardinality(scopes) > 0))"
+      },
+      "columns": {
+        "code_challenge": {
+          "collation": null,
+          "comment": "Base64url SHA-256 PKCE challenge bound to the code.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "code_hash": {
+          "collation": null,
+          "comment": "Purpose-bound hash of the one-time authorization code.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "consumed_at": {
+          "collation": null,
+          "comment": "Time at which the code was exchanged successfully.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "expires_at": {
+          "collation": null,
+          "comment": "Time after which the code cannot be exchanged.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "grant_id": {
+          "collation": null,
+          "comment": "Delegated grant represented by the code.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "redirect_uri": {
+          "collation": null,
+          "comment": "Callback URI bound to the code exchange.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "resource": {
+          "collation": null,
+          "comment": "Protected resource audience bound to the code.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "scopes": {
+          "collation": null,
+          "comment": "Canonical scope set bound to the code.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text[]"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Single-use S256 authorization codes stored only as purpose-bound hashes.",
+      "foreignKeys": {
+        "oauth_authorization_codes_grant_id_fkey": {
+          "columns": ["grant_id"],
+          "definition": "FOREIGN KEY (grant_id) REFERENCES oauth_grants(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_grants",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_oauth_authorization_codes__expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorization_codes__expiry ON public.oauth_authorization_codes USING btree (expires_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_authorization_codes__grant": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorization_codes__grant ON public.oauth_authorization_codes USING btree (grant_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "grant_id",
+              "descending": false,
+              "expression": "grant_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "oauth_authorization_codes_code_hash_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_authorization_codes_code_hash_key ON public.oauth_authorization_codes USING btree (code_hash)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "code_hash",
+              "descending": false,
+              "expression": "code_hash",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "oauth_authorization_codes_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_authorization_codes_pkey ON public.oauth_authorization_codes USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_oauth_authorization_codes_updated_at": "CREATE TRIGGER trigger_oauth_authorization_codes_updated_at BEFORE UPDATE ON public.oauth_authorization_codes FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "oauth_authorization_codes_code_hash_key": {
+          "columns": ["code_hash"],
+          "definition": "UNIQUE (code_hash)"
+        }
+      }
+    },
+    "oauth_authorization_requests": {
+      "checkConstraints": {
+        "oauth_authorization_requests_browser_binding_hash_check": "CHECK ((char_length(browser_binding_hash) = 64))",
+        "oauth_authorization_requests_check": "CHECK ((num_nonnulls(approved_at, denied_at) <= 1))",
+        "oauth_authorization_requests_code_challenge_check": "CHECK ((code_challenge ~ '^[A-Za-z0-9_-]{43}$'::text))",
+        "oauth_authorization_requests_redirect_uri_check": "CHECK (((char_length(redirect_uri) >= 1) AND (char_length(redirect_uri) <= 2048)))",
+        "oauth_authorization_requests_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
+        "oauth_authorization_requests_scopes_check": "CHECK ((cardinality(scopes) > 0))",
+        "oauth_authorization_requests_state_check": "CHECK (((char_length(state) >= 1) AND (char_length(state) <= 1024)))"
+      },
+      "columns": {
+        "approved_at": {
+          "collation": null,
+          "comment": "Time at which the owning user approved the request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "browser_binding_hash": {
+          "collation": null,
+          "comment": "Purpose-bound hash binding the request to one browser device and session.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "client_id": {
+          "collation": null,
+          "comment": "Client requesting delegated authorization.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "code_challenge": {
+          "collation": null,
+          "comment": "Base64url SHA-256 PKCE challenge for the authorization code.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "denied_at": {
+          "collation": null,
+          "comment": "Time at which the request was denied or superseded.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "timestamp with time zone"
+        },
+        "expires_at": {
+          "collation": null,
+          "comment": "Time after which the pending request cannot be decided.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "redirect_uri": {
+          "collation": null,
+          "comment": "Validated callback URI for this authorization request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "resource": {
+          "collation": null,
+          "comment": "Protected resource audience requested by the client.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "scopes": {
+          "collation": null,
+          "comment": "Canonical scopes presented for user consent.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text[]"
+        },
+        "state": {
+          "collation": null,
+          "comment": "Opaque client state returned unchanged to the callback.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Authenticated user who owns the consent decision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        }
+      },
+      "comment": "Short-lived browser consent requests bound to one Voucha user session.",
+      "foreignKeys": {
+        "oauth_authorization_requests_client_id_fkey": {
+          "columns": ["client_id"],
+          "definition": "FOREIGN KEY (client_id) REFERENCES oauth_clients(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
+        "oauth_authorization_requests_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_oauth_authorization_requests__browser": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorization_requests__browser ON public.oauth_authorization_requests USING btree (browser_binding_hash, client_id, id) WHERE ((approved_at IS NULL) AND (denied_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "browser_binding_hash",
+              "descending": false,
+              "expression": "browser_binding_hash",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "client_id",
+              "descending": false,
+              "expression": "client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((approved_at IS NULL) AND (denied_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_authorization_requests__client": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorization_requests__client ON public.oauth_authorization_requests USING btree (client_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "client_id",
+              "descending": false,
+              "expression": "client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_authorization_requests__expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorization_requests__expiry ON public.oauth_authorization_requests USING btree (expires_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_authorization_requests__user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorization_requests__user ON public.oauth_authorization_requests USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "oauth_authorization_requests_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_authorization_requests_pkey ON public.oauth_authorization_requests USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_oauth_authorization_requests_updated_at": "CREATE TRIGGER trigger_oauth_authorization_requests_updated_at BEFORE UPDATE ON public.oauth_authorization_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "oauth_authorization_server_events": {
+      "checkConstraints": {
+        "oauth_authorization_server_events_check": "CHECK ((num_nonnulls(authorization_request_id, access_token_id, refresh_token_family_id) = 1))",
+        "oauth_authorization_server_events_check1": "CHECK ((((event_type = ANY (ARRAY['consent_approved'::text, 'consent_denied'::text])) AND (authorization_request_id IS NOT NULL)) OR ((event_type = 'access_token_revoked'::text) AND (access_token_id IS NOT NULL)) OR ((event_type = ANY (ARRAY['refresh_family_revoked'::text, 'refresh_reuse_detected'::text])) AND (refresh_token_family_id IS NOT NULL))))",
+        "oauth_authorization_server_events_check2": "CHECK ((((event_type = 'consent_denied'::text) AND (grant_id IS NULL)) OR ((event_type <> 'consent_denied'::text) AND (grant_id IS NOT NULL))))",
+        "oauth_authorization_server_events_event_type_check": "CHECK ((event_type = ANY (ARRAY['consent_approved'::text, 'consent_denied'::text, 'access_token_revoked'::text, 'refresh_family_revoked'::text, 'refresh_reuse_detected'::text])))",
+        "oauth_authorization_server_events_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
+        "oauth_authorization_server_events_scopes_check": "CHECK ((cardinality(scopes) > 0))"
+      },
+      "columns": {
+        "access_token_id": {
+          "collation": null,
+          "comment": "Short-lived access token affected by a revocation event; intentionally not a foreign key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "authorization_request_id": {
+          "collation": null,
+          "comment": "Short-lived authorization request that produced a consent event; intentionally not a foreign key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "client_id": {
+          "collation": null,
+          "comment": "Client internal identifier at event time; intentionally not a foreign key so client deletion preserves the audit record.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "event_type": {
+          "collation": null,
+          "comment": "Immutable consent, explicit revocation, or refresh-reuse lifecycle outcome.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "grant_id": {
+          "collation": null,
+          "comment": "Grant internal identifier at event time; intentionally not a foreign key so grant deletion preserves the audit record.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "occurred_at": {
+          "collation": null,
+          "comment": "UUIDv7-derived time at which the event was recorded.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "refresh_token_family_id": {
+          "collation": null,
+          "comment": "Short-lived refresh family affected by revocation or reuse; intentionally not a foreign key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "resource": {
+          "collation": null,
+          "comment": "Protected resource audience affected by the event.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "scopes": {
+          "collation": null,
+          "comment": "Canonical scope set affected by the event.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "text[]"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Grant owner at event time; intentionally not a foreign key so hard deletion preserves the audit record.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        }
+      },
+      "comment": "Append-only durable evidence of OAuth consent and token revocation lifecycle events; identity columns intentionally have no foreign keys so retention and identity deletion cannot erase the audit record.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "idx_oauth_authorization_server_events__access_revocation": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_oauth_authorization_server_events__access_revocation ON public.oauth_authorization_server_events USING btree (access_token_id) WHERE (access_token_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "access_token_id",
+              "descending": false,
+              "expression": "access_token_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(access_token_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_oauth_authorization_server_events__client": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorization_server_events__client ON public.oauth_authorization_server_events USING btree (client_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "client_id",
+              "descending": false,
+              "expression": "client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_authorization_server_events__consent": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_oauth_authorization_server_events__consent ON public.oauth_authorization_server_events USING btree (authorization_request_id) WHERE (authorization_request_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "authorization_request_id",
+              "descending": false,
+              "expression": "authorization_request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(authorization_request_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_oauth_authorization_server_events__family_lifecycle": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_oauth_authorization_server_events__family_lifecycle ON public.oauth_authorization_server_events USING btree (refresh_token_family_id, event_type) WHERE (refresh_token_family_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "refresh_token_family_id",
+              "descending": false,
+              "expression": "refresh_token_family_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "event_type",
+              "descending": false,
+              "expression": "event_type",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(refresh_token_family_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_oauth_authorization_server_events__user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorization_server_events__user ON public.oauth_authorization_server_events USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "oauth_authorization_server_events_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_authorization_server_events_pkey ON public.oauth_authorization_server_events USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_oauth_authorization_server_events_append_only": "CREATE TRIGGER trigger_oauth_authorization_server_events_append_only BEFORE DELETE OR UPDATE ON public.oauth_authorization_server_events FOR EACH ROW EXECUTE FUNCTION fn_reject_oauth_authorization_server_event_mutation()"
+      },
+      "uniqueConstraints": {}
+    },
     "oauth_authorizations": {
       "checkConstraints": {
         "oauth_authorizations_callback_mode_check": "CHECK ((callback_mode = ANY (ARRAY['web'::text, 'native'::text])))",
@@ -44387,6 +45592,1091 @@
         "trigger_oauth_authorizations_updated_at": "CREATE TRIGGER trigger_oauth_authorizations_updated_at BEFORE UPDATE ON public.oauth_authorizations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
+    },
+    "oauth_clients": {
+      "checkConstraints": {
+        "oauth_clients_check": "CHECK ((((client_type = 'public'::text) AND (token_endpoint_auth_method = 'none'::text) AND (client_secret_hash IS NULL)) OR ((client_type = 'confidential'::text) AND (token_endpoint_auth_method = 'client_secret_basic'::text) AND (client_secret_hash IS NOT NULL))))",
+        "oauth_clients_client_id_check": "CHECK ((client_id ~ '^voucha_[A-Za-z0-9_-]{32,}$'::text))",
+        "oauth_clients_client_name_check": "CHECK (((char_length(client_name) >= 1) AND (char_length(client_name) <= 120)))",
+        "oauth_clients_client_secret_hash_check": "CHECK (((client_secret_hash IS NULL) OR (char_length(client_secret_hash) = 64)))",
+        "oauth_clients_client_type_check": "CHECK ((client_type = ANY (ARRAY['public'::text, 'confidential'::text])))",
+        "oauth_clients_grant_types_check": "CHECK (((grant_types <@ ARRAY['authorization_code'::text, 'refresh_token'::text]) AND (grant_types @> ARRAY['authorization_code'::text, 'refresh_token'::text])))",
+        "oauth_clients_redirect_uris_check": "CHECK (((cardinality(redirect_uris) >= 1) AND (cardinality(redirect_uris) <= 10)))",
+        "oauth_clients_response_types_check": "CHECK ((response_types = ARRAY['code'::text]))",
+        "oauth_clients_scopes_check": "CHECK ((cardinality(scopes) > 0))",
+        "oauth_clients_token_endpoint_auth_method_check": "CHECK ((token_endpoint_auth_method = ANY (ARRAY['none'::text, 'client_secret_basic'::text])))"
+      },
+      "columns": {
+        "client_id": {
+          "collation": null,
+          "comment": "Public OAuth client identifier issued at registration.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "client_name": {
+          "collation": null,
+          "comment": "Display-safe client name shown during consent.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "client_secret_hash": {
+          "collation": null,
+          "comment": "Purpose-bound hash of a one-time confidential client secret.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "text"
+        },
+        "client_type": {
+          "collation": null,
+          "comment": "Public or confidential OAuth client classification.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "grant_types": {
+          "collation": null,
+          "comment": "OAuth grant types registered for the client.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text[]"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "owner_user_id": {
+          "collation": null,
+          "comment": "Voucha user that owns the client when registration is authenticated.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "redirect_uris": {
+          "collation": null,
+          "comment": "Exact validated redirect URIs registered for the client.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text[]"
+        },
+        "response_types": {
+          "collation": null,
+          "comment": "OAuth authorization response types registered for the client.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text[]"
+        },
+        "revoked_at": {
+          "collation": null,
+          "comment": "Time at which the client was revoked.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "timestamp with time zone"
+        },
+        "scopes": {
+          "collation": null,
+          "comment": "Maximum canonical scope set the client may request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "text[]"
+        },
+        "token_endpoint_auth_method": {
+          "collation": null,
+          "comment": "Client authentication method accepted by token and revocation endpoints.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Dynamically registered clients for the Voucha OAuth authorization server.",
+      "foreignKeys": {
+        "oauth_clients_owner_user_id_fkey": {
+          "columns": ["owner_user_id"],
+          "definition": "FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_oauth_clients__owner": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_clients__owner ON public.oauth_clients USING btree (owner_user_id, id) WHERE (owner_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "owner_user_id",
+              "descending": false,
+              "expression": "owner_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(owner_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "oauth_clients_client_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_clients_client_id_key ON public.oauth_clients USING btree (client_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "client_id",
+              "descending": false,
+              "expression": "client_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "oauth_clients_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_clients_pkey ON public.oauth_clients USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_oauth_clients_updated_at": "CREATE TRIGGER trigger_oauth_clients_updated_at BEFORE UPDATE ON public.oauth_clients FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "oauth_clients_client_id_key": {
+          "columns": ["client_id"],
+          "definition": "UNIQUE (client_id)"
+        }
+      }
+    },
+    "oauth_grants": {
+      "checkConstraints": {
+        "oauth_grants_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
+        "oauth_grants_scopes_check": "CHECK ((cardinality(scopes) > 0))"
+      },
+      "columns": {
+        "client_id": {
+          "collation": null,
+          "comment": "Client receiving the delegated grant.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "consented_at": {
+          "collation": null,
+          "comment": "Time of the latest affirmative consent decision.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "last_used_at": {
+          "collation": null,
+          "comment": "Time at which the grant most recently issued or refreshed tokens.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "resource": {
+          "collation": null,
+          "comment": "Protected resource audience covered by the grant.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "revoked_at": {
+          "collation": null,
+          "comment": "Time at which the complete grant was revoked.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "scopes": {
+          "collation": null,
+          "comment": "Latest canonical scope set consented for this client and resource.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text[]"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "User who consented to the delegated grant.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        }
+      },
+      "comment": "Durable user consent for one client, resource, and canonical scope set.",
+      "foreignKeys": {
+        "oauth_grants_client_id_fkey": {
+          "columns": ["client_id"],
+          "definition": "FOREIGN KEY (client_id) REFERENCES oauth_clients(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
+        "oauth_grants_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_oauth_grants__active_subject": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_oauth_grants__active_subject ON public.oauth_grants USING btree (user_id, client_id, resource) WHERE (revoked_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "client_id",
+              "descending": false,
+              "expression": "client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "resource",
+              "descending": false,
+              "expression": "resource",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(revoked_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_oauth_grants__client": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_grants__client ON public.oauth_grants USING btree (client_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "client_id",
+              "descending": false,
+              "expression": "client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_grants__user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_grants__user ON public.oauth_grants USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "oauth_grants_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_grants_pkey ON public.oauth_grants USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_oauth_grants_updated_at": "CREATE TRIGGER trigger_oauth_grants_updated_at BEFORE UPDATE ON public.oauth_grants FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "oauth_refresh_token_families": {
+      "checkConstraints": {
+        "oauth_refresh_token_families_check": "CHECK (((reuse_detected_at IS NULL) OR (revoked_at IS NOT NULL)))",
+        "oauth_refresh_token_families_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
+        "oauth_refresh_token_families_scopes_check": "CHECK ((cardinality(scopes) > 0))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "expires_at": {
+          "collation": null,
+          "comment": "Absolute expiry shared by every family member.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "grant_id": {
+          "collation": null,
+          "comment": "Delegated grant represented by the rotating family.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "resource": {
+          "collation": null,
+          "comment": "Protected resource audience bound to the family.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "reuse_detected_at": {
+          "collation": null,
+          "comment": "Time at which replay of a consumed family member was detected.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "revoked_at": {
+          "collation": null,
+          "comment": "Time at which the complete token family was revoked.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "scopes": {
+          "collation": null,
+          "comment": "Maximum canonical scope set available to family members.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text[]"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Rotating refresh-token family lifecycle and reuse detection.",
+      "foreignKeys": {
+        "oauth_refresh_token_families_grant_id_fkey": {
+          "columns": ["grant_id"],
+          "definition": "FOREIGN KEY (grant_id) REFERENCES oauth_grants(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_grants",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_oauth_refresh_token_families__expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_refresh_token_families__expiry ON public.oauth_refresh_token_families USING btree (expires_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_refresh_token_families__grant": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_refresh_token_families__grant ON public.oauth_refresh_token_families USING btree (grant_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "grant_id",
+              "descending": false,
+              "expression": "grant_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "oauth_refresh_token_families_id_grant_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_refresh_token_families_id_grant_id_key ON public.oauth_refresh_token_families USING btree (id, grant_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "grant_id",
+              "descending": false,
+              "expression": "grant_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "oauth_refresh_token_families_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_refresh_token_families_pkey ON public.oauth_refresh_token_families USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_oauth_refresh_token_families_updated_at": "CREATE TRIGGER trigger_oauth_refresh_token_families_updated_at BEFORE UPDATE ON public.oauth_refresh_token_families FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "oauth_refresh_token_families_id_grant_id_key": {
+          "columns": ["id", "grant_id"],
+          "definition": "UNIQUE (id, grant_id)"
+        }
+      }
+    },
+    "oauth_refresh_tokens": {
+      "checkConstraints": {
+        "oauth_refresh_tokens_check": "CHECK (((replaced_by_id IS NULL) OR (consumed_at IS NOT NULL)))",
+        "oauth_refresh_tokens_generation_check": "CHECK ((generation >= 0))",
+        "oauth_refresh_tokens_scopes_check": "CHECK ((cardinality(scopes) > 0))",
+        "oauth_refresh_tokens_token_hash_check": "CHECK ((char_length(token_hash) = 64))"
+      },
+      "columns": {
+        "consumed_at": {
+          "collation": null,
+          "comment": "Time at which this refresh token was rotated.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "expires_at": {
+          "collation": null,
+          "comment": "Time after which this refresh token cannot be exchanged.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "family_id": {
+          "collation": null,
+          "comment": "Rotating refresh-token family containing this member.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "generation": {
+          "collation": null,
+          "comment": "Monotonic position of this member within its family.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "integer"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "replaced_by_id": {
+          "collation": null,
+          "comment": "Successor issued when this refresh token was rotated.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "revoked_at": {
+          "collation": null,
+          "comment": "Time at which this refresh token was revoked directly.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "scopes": {
+          "collation": null,
+          "comment": "Canonical scope set carried by this family member.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text[]"
+        },
+        "token_hash": {
+          "collation": null,
+          "comment": "Purpose-bound hash of the opaque refresh token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Single-use refresh tokens stored only as purpose-bound hashes.",
+      "foreignKeys": {
+        "oauth_refresh_tokens_family_id_fkey": {
+          "columns": ["family_id"],
+          "definition": "FOREIGN KEY (family_id) REFERENCES oauth_refresh_token_families(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_refresh_token_families",
+          "validated": true
+        },
+        "oauth_refresh_tokens_replaced_by_id_fkey": {
+          "columns": ["replaced_by_id"],
+          "definition": "FOREIGN KEY (replaced_by_id) REFERENCES oauth_refresh_tokens(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_refresh_tokens",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_oauth_refresh_tokens__expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_refresh_tokens__expiry ON public.oauth_refresh_tokens USING btree (expires_at, id) WHERE ((consumed_at IS NULL) AND (revoked_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((consumed_at IS NULL) AND (revoked_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_refresh_tokens__family": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_refresh_tokens__family ON public.oauth_refresh_tokens USING btree (family_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "family_id",
+              "descending": false,
+              "expression": "family_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_refresh_tokens__replacement": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_refresh_tokens__replacement ON public.oauth_refresh_tokens USING btree (replaced_by_id) WHERE (replaced_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "replaced_by_id",
+              "descending": false,
+              "expression": "replaced_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(replaced_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "oauth_refresh_tokens_family_id_generation_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_refresh_tokens_family_id_generation_key ON public.oauth_refresh_tokens USING btree (family_id, generation)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "family_id",
+              "descending": false,
+              "expression": "family_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "generation",
+              "descending": false,
+              "expression": "generation",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "oauth_refresh_tokens_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_refresh_tokens_pkey ON public.oauth_refresh_tokens USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "oauth_refresh_tokens_token_hash_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_refresh_tokens_token_hash_key ON public.oauth_refresh_tokens USING btree (token_hash)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "token_hash",
+              "descending": false,
+              "expression": "token_hash",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_oauth_refresh_tokens_updated_at": "CREATE TRIGGER trigger_oauth_refresh_tokens_updated_at BEFORE UPDATE ON public.oauth_refresh_tokens FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "oauth_refresh_tokens_family_id_generation_key": {
+          "columns": ["family_id", "generation"],
+          "definition": "UNIQUE (family_id, generation)"
+        },
+        "oauth_refresh_tokens_token_hash_key": {
+          "columns": ["token_hash"],
+          "definition": "UNIQUE (token_hash)"
+        }
+      }
     },
     "openai_background_responses": {
       "checkConstraints": {
