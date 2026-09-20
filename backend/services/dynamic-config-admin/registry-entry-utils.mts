@@ -6,22 +6,11 @@ export const RATE_LIMIT_MAX_EXEMPTION =
   'Rate-limit ceilings intentionally remain operator-tunable; validators enforce positive finite numbers.'
 export const VOTE_WEIGHT_MAX_EXEMPTION =
   'Vote-weight multipliers are operator policy values; ordering and positive-number validators constrain invalid edits.'
-export const AGENT_QUOTA_MAX_EXEMPTION =
-  'Daily quotas are intentionally unbounded to allow operators to set generous limits per plan without a fixed ceiling.'
 export const TAG_LIMIT_MAX_EXEMPTION =
   'Tag-add and autotagger topic caps are operator policy values with no natural ceiling; validators enforce non-negative integers.'
 
 export function scoreField(description: string) {
   return { description, max_value_exemption: SCORE_MAX_EXEMPTION }
-}
-
-export function quotaField(description: string) {
-  return {
-    description,
-    min_value: 0,
-    max_value_exemption: AGENT_QUOTA_MAX_EXEMPTION,
-    integer: true,
-  }
 }
 
 export function withMaxValueExemption<T extends DynamicConfigFieldMetadataByName>(
