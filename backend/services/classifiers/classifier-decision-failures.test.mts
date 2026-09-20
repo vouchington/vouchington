@@ -1,14 +1,9 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
-import { onGracefulShutdown } from '@data-stores/psql'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
 import { persistClassifierDecision } from './persist-classifier-decision.mts'
 
 describe('persistClassifierDecision failures', () => {
-  afterAll(async () => {
-    await onGracefulShutdown()
-  })
-
   it('rolls back batch and call rows when result insertion fails', async () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()

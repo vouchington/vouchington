@@ -41,9 +41,11 @@ export async function readCompleteClassifierDecision(
   batchId: string,
   candidateKind: 'topic' | 'story',
 ): Promise<PersistedClassifierDecision> {
-  const batch = await readBatch(query, batchId)
-  const calls = await readCalls(query, batchId)
-  const results = await readResults(query, batchId, candidateKind)
+  const [batch, calls, results] = await Promise.all([
+    readBatch(query, batchId),
+    readCalls(query, batchId),
+    readResults(query, batchId, candidateKind),
+  ])
   return {
     batchId: batch.id,
     classifierId: batch.classifier_id,

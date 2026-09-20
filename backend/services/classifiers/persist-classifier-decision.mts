@@ -49,11 +49,10 @@ export async function persistClassifierDecision(
   ) {
     throw new Error('Classifier candidate kind does not match its decision subject')
   }
-  const snapshots = await captureClassifierDecisionStoredCandidateSnapshots(
-    transaction,
-    normalizedInput,
-  )
-  const calls = await insertClassifierDecisionCalls(transaction, normalizedInput)
+  const [snapshots, calls] = await Promise.all([
+    captureClassifierDecisionStoredCandidateSnapshots(transaction, normalizedInput),
+    insertClassifierDecisionCalls(transaction, normalizedInput),
+  ])
   const resultCount = await insertClassifierDecisionResults(
     transaction,
     normalizedInput,
