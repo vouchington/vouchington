@@ -1,10 +1,6 @@
 /* eslint-disable no-mistakes/vitest-mock-test-file-naming -- This deterministic generated-registry test has no external dependency to mock; the .no-data.mock suffix is load-bearing because it routes the test to the DB/Valkey-free project. */
 import { describe, expect, it } from 'vitest'
-import {
-  runtimeRequestValidatorRegistry,
-  RuntimeRequestValidatorRegistry,
-  validateAuthenticatedRequest,
-} from './index.mts'
+import { RuntimeRequestValidatorRegistry } from './index.mts'
 
 describe('RuntimeRequestValidatorRegistry', () => {
   const registry = new RuntimeRequestValidatorRegistry({
@@ -61,15 +57,18 @@ describe('RuntimeRequestValidatorRegistry', () => {
 
   it('normalizes Node-style lowercase headers against generated header contracts', () => {
     expect(
-      runtimeRequestValidatorRegistry.validate('POST:/api/v1/my/import/topics', 'header', {
+      RuntimeRequestValidatorRegistry.shared.validate('POST:/api/v1/my/import/topics', 'header', {
         'idempotency-key': 'not-a-uuid',
       }),
     ).toMatchObject({ message: expect.stringContaining('Invalid request header') })
   })
 
   it('makes route-family adoption fail closed for unknown operation contracts', () => {
-    expect(() => validateAuthenticatedRequest('POST:/api/v1/not-yet-migrated', {})).toThrow(
-      'No generated runtime request contract',
-    )
+    expect(() =>
+      RuntimeRequestValidatorRegistry.shared.validateAuthenticated(
+        'POST:/api/v1/not-yet-migrated',
+        {},
+      ),
+    ).toThrow('No generated runtime request contract')
   })
 })

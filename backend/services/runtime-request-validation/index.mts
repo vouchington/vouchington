@@ -28,6 +28,11 @@ const requestCarriers: readonly RequestCarrier[] = ['body', 'header', 'path', 'q
  * anonymous caller.
  */
 export class RuntimeRequestValidatorRegistry {
+  /** Shared generated registry for route-family adoption after authentication and authorization. */
+  static readonly shared = new RuntimeRequestValidatorRegistry(
+    runtimeContracts as RuntimeRequestContractsBundle,
+  )
+
   private readonly validators = new Map<string, Partial<Record<RequestCarrier, ValidateFunction>>>()
 
   constructor(bundle: RuntimeRequestContractsBundle) {
@@ -64,30 +69,25 @@ export class RuntimeRequestValidatorRegistry {
   hasOperation(operation: string): boolean {
     return this.validators.has(operation)
   }
-}
 
-/** Shared generated registry for B7b–e route-family adoption after auth and authorization. */
-export const runtimeRequestValidatorRegistry = new RuntimeRequestValidatorRegistry(
-  runtimeContracts as RuntimeRequestContractsBundle,
-)
-
-/**
- * Deferred route hook: route families call it after their existing auth/ownership guard and before
- * handing untrusted values to a service. The foundation intentionally does no pre-auth validation.
- */
-export function validateAuthenticatedRequest(
-  operation: string,
-  input: Partial<Record<RequestCarrier, unknown>>,
-): RuntimeRequestValidationError | null {
-  if (!runtimeRequestValidatorRegistry.hasOperation(operation)) {
-    throw new Error(`No generated runtime request contract for ${operation}`)
+  /**
+   * Route families call this after their existing auth/ownership guard and before handing
+   * untrusted values to a service. Unknown generated operations fail closed.
+   */
+  validateAuthenticated(
+    operation: string,
+    input: Partial<Record<RequestCarrier, unknown>>,
+  ): RuntimeRequestValidationError | null {
+    if (!this.hasOperation(operation)) {
+      throw new Error(`No generated runtime request contract for ${operation}`)
+    }
+    for (const carrier of requestCarriers) {
+      if (!(carrier in input)) continue
+      const error = this.validate(operation, carrier, input[carrier])
+      if (error) return error
+    }
+    return null
   }
-  for (const carrier of requestCarriers) {
-    if (!(carrier in input)) continue
-    const error = runtimeRequestValidatorRegistry.validate(operation, carrier, input[carrier])
-    if (error) return error
-  }
-  return null
 }
 
 function normalizeCarrierValue(carrier: RequestCarrier, value: unknown): unknown {
