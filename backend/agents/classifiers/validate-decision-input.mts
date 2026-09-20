@@ -31,6 +31,8 @@ export function assertConfigurationIdentity(
     throw new Error('Active classifier prompt version changed before decision execution')
   if (configuration.primitive === 'score')
     throw new Error('Classifier Score persistence is unsupported without a scalar projection')
+  if (input.bindings.length === 0)
+    throw new Error('Classifier decision requires at least one binding')
   if (configuration.primitive !== input.bindings[0]?.type)
     throw new Error('Classifier bindings do not match the active classifier primitive')
   if (configuration.modelProvider !== input.contextPolicy.transport)
@@ -38,8 +40,6 @@ export function assertConfigurationIdentity(
   if (configuration.modelName !== input.contextPolicy.model)
     throw new Error('Classifier context policy model does not match the active model')
   if (input.state.trim().length === 0) throw new Error('Classifier decision state is required')
-  if (input.bindings.length === 0)
-    throw new Error('Classifier decision requires at least one binding')
 }
 
 export function assertSubjectAndScope(
