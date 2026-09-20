@@ -46,6 +46,7 @@ export function unresolvedImportFailures(
     for (const imported of fileResult.imports) {
       if (!shouldReportUnresolved(imported)) continue
       if (
+        (isComputedImport(imported) && isComputedImportExcluded(fileResult.file, exclusions)) ||
         exclusions.some(
           entry => entry.file === fileResult.file && entry.specifier === imported.specifier,
         )

@@ -30,7 +30,7 @@ export function computedDynamicImportHit(text: string): boolean {
 }
 
 export function messageKeyCastHit(text: string): boolean {
-  return /\bas MessageKey\b/.test(withoutFullLineComments(text))
+  return /\bas\s+MessageKey\b/.test(withoutFullLineComments(text))
 }
 
 export function isProductionWebSource(relativePath: string): boolean {

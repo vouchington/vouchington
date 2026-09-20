@@ -131,6 +131,33 @@ describe('unresolvedImportFailures', () => {
     ).toEqual(['web/lib/a.ts: moduleName (unresolved, computed)'])
   })
 
+  it('skips computed unresolved imports excluded by the computed sentinel', () => {
+    expect(
+      unresolvedImportFailures(
+        {
+          allResolve: false,
+          unresolvedFiles: ['web/lib/a.ts'],
+          results: [
+            {
+              file: 'web/lib/a.ts',
+              allResolve: false,
+              imports: [
+                {
+                  specifier: 'moduleName',
+                  kind: 'dynamic',
+                  status: 'unresolved',
+                  computed: true,
+                },
+              ],
+              unresolved: ['moduleName'],
+            },
+          ],
+        },
+        [{ file: 'web/lib/a.ts', specifier: 'computed', reason: 'reviewed fixture' }],
+      ),
+    ).toEqual([])
+  })
+
   it('skips a reviewed exclusion', () => {
     expect(
       unresolvedImportFailures(unresolvedBatch, [

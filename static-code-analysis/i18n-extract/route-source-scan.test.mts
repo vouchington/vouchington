@@ -64,6 +64,8 @@ describe('production MessageKey casts', () => {
     expect(isProductionWebSource('web/lib/__tests__/labels.ts')).toBe(false)
     expect(isProductionWebSource('web/test-helpers/labels.ts')).toBe(false)
     expect(messageKeyCastHit("const key = 'extracted.page.title' as MessageKey")).toBe(true)
+    expect(messageKeyCastHit("const key = 'extracted.page.title' as\nMessageKey")).toBe(true)
+    expect(messageKeyCastHit("const key = 'extracted.page.title' as Key")).toBe(false)
     expect(closureIssuesForFile('web/lib/labels.ts', 'export const k = x as MessageKey')).toEqual([
       { file: 'web/lib/labels.ts', reason: 'production MessageKey cast' },
     ])
