@@ -15,7 +15,7 @@ import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import {
   searchTopicRecommendations,
   type TopicRecommendationStatus,
-} from '@services/wikipedia-topic-recommendations'
+} from '@services/topic-recommendations'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
 

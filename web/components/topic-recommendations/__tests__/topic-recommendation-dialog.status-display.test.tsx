@@ -18,7 +18,6 @@ function makePost(
       hostname_id: null,
       hostname: null,
       hostnames: [],
-      topic_wikipedia_pageid: null,
       approval_error_message: null,
       status,
       reviewed_at: null,

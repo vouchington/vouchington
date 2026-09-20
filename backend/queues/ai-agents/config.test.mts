@@ -15,12 +15,6 @@ describe('config', () => {
     )
   })
 
-  it('background agents have lower priority than user-facing agents', () => {
-    const userFacing = AGENT_PRIORITY['customer-support']
-    const background = AGENT_PRIORITY['wikipedia-recommender']
-    expect(userFacing).toBeLessThan(background)
-  })
-
   it('queue name is ai_agents', () => {
     expect(AI_AGENTS_QUEUE_NAME).toBe('ai_agents')
   })

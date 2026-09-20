@@ -13,4 +13,3 @@ Generates personalized topic recommendations for users based on configurable sea
 
 - Parent: [../CLAUDE.md](../CLAUDE.md)
 - Topics service: [../topics/README.md](../topics/README.md)
-- Wikipedia recommender system: [../../queues/wikipedia-recommender/README.md](../../queues/wikipedia-recommender/README.md)

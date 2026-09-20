@@ -40,7 +40,6 @@
     "@services/trending-topics": "workspace:^",
     "@services/user-financial-profiles": "workspace:^",
     "@services/users": "workspace:^",
-    "@services/wikipedia-topic-recommendations": "workspace:^",
     "@ts-shared/data-points": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/money": "workspace:^",

@@ -175,7 +175,6 @@ CREATE OR REPLACE VIEW view_posts AS
           JOIN view_url_hostnames vuh ON vuh.id = ptrh.hostname_id
           WHERE ptrh.post_id = ptr.post_id
         ), '[]'::json),
-        'topic_wikipedia_pageid', ptr.topic_wikipedia_pageid,
         'topic_type', ptr.topic_type,
         'example_referral_link', ptr.example_referral_link,
         'landing_page_urls', ptr.landing_page_urls,

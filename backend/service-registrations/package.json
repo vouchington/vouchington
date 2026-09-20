@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@services/entity-relations": "workspace:^",
-    "@services/topics": "workspace:^",
-    "@services/wikipedia-topic-recommendations": "workspace:^"
+    "@services/topic-recommendations": "workspace:^",
+    "@services/topics": "workspace:^"
   }
 }

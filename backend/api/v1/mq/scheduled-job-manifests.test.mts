@@ -88,14 +88,13 @@ const EXPECTED_SCHEDULED_JOBS = [
   'urls-domains-blacklist/blacklistDispatcher',
   'user-deletions/userDeletionRecovery',
   'vote-weight/dailyVoteWeightRecalculation',
-  'wikipedia-recommender/wikipedia-recommender-dispatch',
 ].sort()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 31 manifests and 75 runtime schedulers', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(31)
+  it('imports the exact 30 manifests and 74 runtime schedulers', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(30)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),
@@ -141,7 +140,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(58)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(57)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

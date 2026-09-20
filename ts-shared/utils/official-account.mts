@@ -6,7 +6,6 @@ export const SYSTEM_USERNAMES = new Set([
   'customer-support',
   'rss-feed-auto-updater',
   'story-teller',
-  'wikipedia-recommender',
   'voucha',
 ])
 

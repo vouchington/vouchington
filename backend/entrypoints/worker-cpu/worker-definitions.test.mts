@@ -57,11 +57,6 @@ describe('worker-cpu CPU_ONLY_WORKER_DEFINITIONS load functions', () => {
         'openAiSpendCapRechecks',
       ],
       [
-        'wikipedia-recommender',
-        '/backend/workers/wikipedia-recommender/workers.mts',
-        'wikipediaRecommender',
-      ],
-      [
         'bedrock_embeddings_nova_multimodal_v1_single',
         '/backend/workers/bedrock-embeddings/workers.mts',
         'bedrock_embeddings_nova_multimodal_v1_single',

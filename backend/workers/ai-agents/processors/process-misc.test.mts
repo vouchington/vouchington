@@ -1,15 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import type {
-  CustomerSupportJobData,
-  StoryClusteringJobData,
-  WikipediaRecommenderJobData,
-} from '@queues/ai-agents/types'
-import {
-  processCustomerSupport,
-  processStoryClustering,
-  processWikipediaRecommender,
-} from './process-misc.mts'
+import type { CustomerSupportJobData, StoryClusteringJobData } from '@queues/ai-agents/types'
+import { processCustomerSupport, processStoryClustering } from './process-misc.mts'
 
 function makeJob(data: StoryClusteringJobData): Job<StoryClusteringJobData> {
   return { data } as Job<StoryClusteringJobData>
@@ -23,8 +15,6 @@ describe('process-misc', () => {
     vi.fn<typeof import('@queues/ai-agents/enqueues/story-clustering').enqueueStoryClustering>()
   const mockGenerateSupportResponse =
     vi.fn<typeof import('@agents/customer-support').generateSupportResponse>()
-  const mockRecommendTopicsForContent =
-    vi.fn<typeof import('@agents/wikipedia-recommender').recommendTopicsForContent>()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -40,7 +30,6 @@ describe('process-misc', () => {
       hasRssFeedItemEmbedding: mockHasEmbedding,
       enqueueStoryClustering: mockEnqueue,
       generateSupportResponse: mockGenerateSupportResponse,
-      recommendTopicsForContent: mockRecommendTopicsForContent,
     })
 
     expect(result).toEqual(storyResult)
@@ -57,7 +46,6 @@ describe('process-misc', () => {
       hasRssFeedItemEmbedding: mockHasEmbedding,
       enqueueStoryClustering: mockEnqueue,
       generateSupportResponse: mockGenerateSupportResponse,
-      recommendTopicsForContent: mockRecommendTopicsForContent,
     })
 
     expect(mockEnqueue).toHaveBeenCalledWith('item-2', undefined, 1)
@@ -73,7 +61,6 @@ describe('process-misc', () => {
         hasRssFeedItemEmbedding: mockHasEmbedding,
         enqueueStoryClustering: mockEnqueue,
         generateSupportResponse: mockGenerateSupportResponse,
-        recommendTopicsForContent: mockRecommendTopicsForContent,
       },
     )
 
@@ -91,7 +78,6 @@ describe('process-misc', () => {
       hasRssFeedItemEmbedding: mockHasEmbedding,
       enqueueStoryClustering: mockEnqueue,
       generateSupportResponse: mockGenerateSupportResponse,
-      recommendTopicsForContent: mockRecommendTopicsForContent,
     })
 
     expect(mockEnqueue).not.toHaveBeenCalled()
@@ -106,7 +92,6 @@ describe('process-misc', () => {
       hasRssFeedItemEmbedding: mockHasEmbedding,
       enqueueStoryClustering: mockEnqueue,
       generateSupportResponse: mockGenerateSupportResponse,
-      recommendTopicsForContent: mockRecommendTopicsForContent,
     })
 
     expect(mockEnqueue).toHaveBeenCalledWith('item-5', undefined, 6)
@@ -121,7 +106,6 @@ describe('process-misc', () => {
       hasRssFeedItemEmbedding: mockHasEmbedding,
       enqueueStoryClustering: mockEnqueue,
       generateSupportResponse: mockGenerateSupportResponse,
-      recommendTopicsForContent: mockRecommendTopicsForContent,
     })
 
     expect(mockEnqueue).toHaveBeenCalledWith('item-6', undefined, 1)
@@ -136,7 +120,6 @@ describe('process-misc', () => {
       hasRssFeedItemEmbedding: mockHasEmbedding,
       enqueueStoryClustering: mockEnqueue,
       generateSupportResponse: mockGenerateSupportResponse,
-      recommendTopicsForContent: mockRecommendTopicsForContent,
     })
 
     expect(result).toBeNull()
@@ -151,7 +134,6 @@ describe('process-misc', () => {
         hasRssFeedItemEmbedding: mockHasEmbedding,
         enqueueStoryClustering: mockEnqueue,
         generateSupportResponse: mockGenerateSupportResponse,
-        recommendTopicsForContent: mockRecommendTopicsForContent,
       },
     )
 
@@ -173,7 +155,6 @@ describe('process-misc', () => {
         hasRssFeedItemEmbedding: mockHasEmbedding,
         enqueueStoryClustering: mockEnqueue,
         generateSupportResponse: mockGenerateSupportResponse,
-        recommendTopicsForContent: mockRecommendTopicsForContent,
       },
     )
 
@@ -199,7 +180,6 @@ describe('process-misc', () => {
         hasRssFeedItemEmbedding: mockHasEmbedding,
         enqueueStoryClustering: mockEnqueue,
         generateSupportResponse: mockGenerateSupportResponse,
-        recommendTopicsForContent: mockRecommendTopicsForContent,
       },
     )
 
@@ -208,22 +188,5 @@ describe('process-misc', () => {
       supportMessageId: 'message-1',
       reclaimLiveLease: true,
     })
-  })
-
-  it('runs wikipedia recommendations', async () => {
-    await processWikipediaRecommender(
-      {
-        data: { entity_type: 'topics', entity_ids: ['topic-1'] },
-      } as unknown as Job<WikipediaRecommenderJobData>,
-      {
-        clusterRssFeedItem: mockCluster,
-        hasRssFeedItemEmbedding: mockHasEmbedding,
-        enqueueStoryClustering: mockEnqueue,
-        generateSupportResponse: mockGenerateSupportResponse,
-        recommendTopicsForContent: mockRecommendTopicsForContent,
-      },
-    )
-
-    expect(mockRecommendTopicsForContent).toHaveBeenCalledWith('topics', ['topic-1'])
   })
 })

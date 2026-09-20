@@ -11,8 +11,7 @@
     "openai-spend-cap-rechecks",
     "bedrock_embeddings_nova_multimodal_v1_single",
     "bedrock-embeddings-batch",
-    "language_detection",
-    "wikipedia-recommender"
+    "language_detection"
   ],
   "ioCapableQueues": [
     "post-publication",

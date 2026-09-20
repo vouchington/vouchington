@@ -58,11 +58,6 @@ export type StoryClusteringJobData = {
   embedding_retries?: number
 }
 
-export type WikipediaRecommenderJobData = {
-  entity_type: import('@voucha/types/entities/wikipedia-topic-recommendation').SourceEntityType
-  entity_ids: string[]
-}
-
 export type StoryPostJobData = {
   post_id: string
   /** When true, re-summarize even if ai_summary_markdown is already set (used by story refresh). */
@@ -119,7 +114,6 @@ export type AIAgentJobData = (
   | DisputeResolutionJobData
   | AppealResolutionJobData
   | StoryClusteringJobData
-  | WikipediaRecommenderJobData
   | StoryPostJobData
   | BackfillReportJudgementsJobData
   | AutoDispatchJudgementJobData

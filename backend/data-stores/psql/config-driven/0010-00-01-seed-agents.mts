@@ -14,7 +14,6 @@ const AGENT_SYSTEM_USERS = [
   'customer-support',
   'rss-feed-auto-updater',
   'story-teller',
-  'wikipedia-recommender',
   // Official Voucha account — owns platform-level referral links.
   'voucha',
   ...MODERATOR_CONFIGS.map(c => c.slug),
@@ -85,21 +84,6 @@ SELECT
   (SELECT id FROM users WHERE username = 'system')
 FROM users u
 WHERE u.username = 'story-teller'
-ON CONFLICT (system_user_id) DO UPDATE SET
-  activated_at = COALESCE(agents.activated_at, CURRENT_TIMESTAMP),
-  deactivated_at = NULL,
-  deleted_at = NULL;`)
-
-  // 5c. Upsert the wikipedia-recommender agent row (agent_type: 'recommender').
-  parts.push(`
-INSERT INTO agents (system_user_id, agent_type, activated_at, created_by_id)
-SELECT
-  u.id,
-  'recommender',
-  CURRENT_TIMESTAMP,
-  (SELECT id FROM users WHERE username = 'system')
-FROM users u
-WHERE u.username = 'wikipedia-recommender'
 ON CONFLICT (system_user_id) DO UPDATE SET
   activated_at = COALESCE(agents.activated_at, CURRENT_TIMESTAMP),
   deactivated_at = NULL,

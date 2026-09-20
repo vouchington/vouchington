@@ -1,6 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
 import { getPostByAnyCached } from '@services/entity-fetch'
-import { deletePendingRecommendation } from '@services/wikipedia-topic-recommendations'
+import { deletePendingRecommendation } from '@services/topic-recommendations'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
 

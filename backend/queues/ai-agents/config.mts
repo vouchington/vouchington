@@ -21,7 +21,6 @@ export type AIAgentJobName =
   | 'dispute-resolution'
   | 'appeal-resolution'
   | 'story-clustering'
-  | 'wikipedia-recommender'
   | 'story-post'
   | 'backfill_report_judgements'
   | 'auto-dispatch-judgement'
@@ -44,7 +43,6 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'story-clustering': 15,
   'autotagger-post': 20,
   'autotagger-rss-feed-item': 20,
-  'wikipedia-recommender': 25,
   backfill_report_judgements: 100,
   'auto-dispatch-judgement': 10,
   'reconcile-auto-dispatch-judgements': 100,
@@ -98,7 +96,6 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'story-clustering': true,
   'autotagger-post': true,
   'autotagger-rss-feed-item': true,
-  'wikipedia-recommender': true,
   backfill_report_judgements: true,
   'auto-dispatch-judgement': false,
   'reconcile-auto-dispatch-judgements': false,

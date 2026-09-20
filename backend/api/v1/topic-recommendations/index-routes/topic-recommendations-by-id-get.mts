@@ -9,7 +9,7 @@ import {
 } from '@services/entity-fetch'
 import renderMarkdown from '@services/markdown'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
-import { currentUserCanViewTopicRecommendation } from '@services/wikipedia-topic-recommendations'
+import { currentUserCanViewTopicRecommendation } from '@services/topic-recommendations'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
 

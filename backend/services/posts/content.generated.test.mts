@@ -16,7 +16,6 @@ describe('createPostTextEmbeddingContent', () => {
         hostname_id: 'hostname-id',
         hostname: { __entity_type: 'hostname', id: 'hostname-id', hostname: 'example.com' },
         hostnames: [{ __entity_type: 'hostname', id: 'hostname-id', hostname: 'example.com' }],
-        topic_wikipedia_pageid: '12345',
       },
     } as Post
 
@@ -26,7 +25,6 @@ describe('createPostTextEmbeddingContent', () => {
     expect(result.content).toContain('This topic should exist.')
     expect(result.content).toContain('Recommended topic title: Nested Topic')
     expect(result.content).toContain('Recommended topic slug: nested-topic')
-    expect(result.content).toContain('Recommended topic Wikipedia page ID: 12345')
     expect(result.content).toContain('Recommended topic markdown:\nNested topic markdown')
     expect(result.content).toContain('Recommended topic aliases: nested alias')
     expect(result.content).toContain('Recommended primary hostname: example.com')
@@ -45,14 +43,12 @@ describe('createPostTextEmbeddingContent', () => {
       topic_hostname: 'example.com',
       topic_hostnames: ['example.com'],
       topic_aliases: ['flat alias'],
-      topic_wikipedia_pageid: '67890',
     })
 
     expect(result.content).toContain('Flat recommendation rationale')
     expect(result.content).toContain('This is a flat update payload.')
     expect(result.content).toContain('Recommended topic title: Flat Topic')
     expect(result.content).toContain('Recommended topic slug: flat-topic')
-    expect(result.content).toContain('Recommended topic Wikipedia page ID: 67890')
     expect(result.content).toContain('Recommended topic markdown:\nFlat topic markdown')
     expect(result.content).toContain('Recommended topic aliases: flat alias')
     expect(result.content).toContain('Recommended primary hostname: example.com')

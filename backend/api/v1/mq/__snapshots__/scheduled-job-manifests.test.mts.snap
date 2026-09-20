@@ -2634,45 +2634,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
       },
     },
   },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Dispatch Wikipedia topic recommendations",
-        "id": "wikipedia-recommender-dispatch",
-        "kind": "scheduled-jobs",
-        "schedule": "0 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "wikipedia-recommender",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 * * * *",
-    },
-    "schedulerId": "wikipedia-recommender-dispatch",
-    "template": {
-      "data": {
-        "scheduled_at": "[runtime ISO timestamp]",
-      },
-      "name": "dispatch",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
 ]
 `;
 
@@ -2765,14 +2726,6 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "entity-listeners",
     "schedule": "every 5m",
     "triggerName": "enqueueReconcilePostCategoryFinalizations",
-  },
-  {
-    "description": "Dispatch Wikipedia topic recommendations",
-    "id": "wikipedia-recommender-dispatch",
-    "job_name": "dispatch",
-    "queue_name": "wikipedia-recommender",
-    "schedule": "0 * * * *",
-    "triggerName": "enqueueWikipediaRecommenderDispatch",
   },
   {
     "description": "Clean up expired data export files",

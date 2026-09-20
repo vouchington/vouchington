@@ -30,11 +30,6 @@ recommendations can be edited by their creator or an admin; creators can withdra
 recommendations after confirming the action. Admins review pending recommendations from the queue and
 approve or reject them there.
 
-Wikipedia-derived suggestions use the same `topic_recommendation` queue. The Wikipedia recommender
-creates a normal recommendation post with Wikipedia title, URL, page ID, extraction method, keyword,
-confidence, and summary metadata in the rationale, plus `topic_wikipedia_pageid` for duplicate
-detection.
-
 ### Type Selector
 
 The create form (`/topic-recommendations/create`) includes a **Topic Type** selector at the top.

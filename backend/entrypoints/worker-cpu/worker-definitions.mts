@@ -52,11 +52,6 @@ export const CPU_ONLY_WORKER_DEFINITIONS: WorkerDefinition[] = [
       ),
   },
   {
-    queueName: 'wikipedia-recommender',
-    load: () =>
-      import('@workers/wikipedia-recommender/workers').then(module => module.wikipediaRecommender),
-  },
-  {
     queueName: 'bedrock_embeddings_nova_multimodal_v1_single',
     load: () =>
       import('@workers/bedrock-embeddings/workers').then(

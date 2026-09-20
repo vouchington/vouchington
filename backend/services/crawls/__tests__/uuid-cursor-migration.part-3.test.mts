@@ -17,7 +17,7 @@ import '../../urls/search.mts'
 import '../../user-referral-program-links/get.mts'
 import '../../vote-integrity/get-flags.mts'
 import '../../vote-integrity/get-penalties.mts'
-import '../../wikipedia-topic-recommendations/search-topic-recommendations.mts'
+import '../../topic-recommendations/search-topic-recommendations.mts'
 
 const ID = '00000000-0000-4000-8000-000000000001'
 const simple = encodeCursor({ id: ID })
@@ -164,7 +164,7 @@ const cases: CursorCase[] = [
   ),
   cursorCase('searchTopicRecommendations', async () =>
     (
-      await import('../../wikipedia-topic-recommendations/search-topic-recommendations.mts')
+      await import('../../topic-recommendations/search-topic-recommendations.mts')
     ).searchTopicRecommendations({ after: score, limit: 1 }),
   ),
 ]

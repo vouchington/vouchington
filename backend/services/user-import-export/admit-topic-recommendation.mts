@@ -7,7 +7,7 @@ import {
   runContributionAdmission,
   type ContributionLimitMembershipPlan,
 } from '@services/contribution-gating'
-import { prepareTopicRecommendation } from '@services/wikipedia-topic-recommendations'
+import { prepareTopicRecommendation } from '@services/topic-recommendations'
 import type { BasicUser } from '@services/users/types'
 
 export async function admitImportedTopicRecommendation(

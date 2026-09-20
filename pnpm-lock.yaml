@@ -779,40 +779,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/agents/wikipedia-recommender:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../../services/ai-usage
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@services/wikipedia-topic-recommendations':
-        specifier: workspace:^
-        version: link:../../services/wikipedia-topic-recommendations
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-      openai:
-        specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
-    devDependencies:
-      '@services/openai-agents':
-        specifier: workspace:^
-        version: link:../../services/openai-agents
-
   backend/api:
     dependencies:
       '@agents/_shared':
@@ -1058,9 +1024,6 @@ importers:
       '@queues/vote-weight':
         specifier: workspace:^
         version: link:../queues/vote-weight
-      '@queues/wikipedia-recommender':
-        specifier: workspace:^
-        version: link:../queues/wikipedia-recommender
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../services/account-data-requests
@@ -1370,6 +1333,9 @@ importers:
       '@services/topic-claims':
         specifier: workspace:^
         version: link:../services/topic-claims
+      '@services/topic-recommendations':
+        specifier: workspace:^
+        version: link:../services/topic-recommendations
       '@services/topic-revisions':
         specifier: workspace:^
         version: link:../services/topic-revisions
@@ -1439,9 +1405,6 @@ importers:
       '@services/web-search':
         specifier: workspace:^
         version: link:../services/web-search
-      '@services/wikipedia-topic-recommendations':
-        specifier: workspace:^
-        version: link:../services/wikipedia-topic-recommendations
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
@@ -1851,9 +1814,6 @@ importers:
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
-      '@queues/wikipedia-recommender':
-        specifier: workspace:^
-        version: link:../../queues/wikipedia-recommender
       '@workers/ai-agents':
         specifier: workspace:^
         version: link:../../workers/ai-agents
@@ -1887,9 +1847,6 @@ importers:
       '@workers/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../workers/unfurl-referral-links
-      '@workers/wikipedia-recommender':
-        specifier: workspace:^
-        version: link:../../workers/wikipedia-recommender
 
   backend/entrypoints/worker-io:
     dependencies:
@@ -3359,21 +3316,6 @@ importers:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
 
-  backend/queues/wikipedia-recommender:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      glide-mq:
-        specifier: ^0.15.5
-        version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
-
   backend/rss:
     dependencies:
       '@jongleberry/api-server':
@@ -3404,12 +3346,18 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../data-stores/psql
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../data-stores/valkey-glide-mq
       '@modules/csv':
         specifier: workspace:^
         version: link:../modules/csv
       '@modules/on-error':
         specifier: workspace:^
         version: link:../modules/on-error
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../modules/scheduled-job-manifest
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../modules/token-secrets
@@ -3591,12 +3539,12 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../services/entity-relations
+      '@services/topic-recommendations':
+        specifier: workspace:^
+        version: link:../services/topic-recommendations
       '@services/topics':
         specifier: workspace:^
         version: link:../services/topics
-      '@services/wikipedia-topic-recommendations':
-        specifier: workspace:^
-        version: link:../services/wikipedia-topic-recommendations
 
   backend/services/account-data-requests:
     dependencies:
@@ -9212,6 +9160,76 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/services/topic-recommendations:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@queues/entity-listeners':
+        specifier: workspace:^
+        version: link:../../queues/entity-listeners
+      '@queues/topic-aliases':
+        specifier: workspace:^
+        version: link:../../queues/topic-aliases
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../entity-relations
+      '@services/post-clearance':
+        specifier: workspace:^
+        version: link:../post-clearance
+      '@services/post-publication':
+        specifier: workspace:^
+        version: link:../post-publication
+      '@services/post-revisions':
+        specifier: workspace:^
+        version: link:../post-revisions
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../posts
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../topics
+      '@services/urls':
+        specifier: workspace:^
+        version: link:../urls
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../urls-hostnames
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
+    devDependencies:
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
+      '@services/entity-fetch':
+        specifier: workspace:^
+        version: link:../entity-fetch
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/services/topic-revisions:
     dependencies:
       '@data-stores/psql':
@@ -9790,12 +9808,12 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
+      '@services/topic-recommendations':
+        specifier: workspace:^
+        version: link:../topic-recommendations
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      '@services/wikipedia-topic-recommendations':
-        specifier: workspace:^
-        version: link:../wikipedia-topic-recommendations
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -10260,76 +10278,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/services/wikipedia-topic-recommendations:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@queues/entity-listeners':
-        specifier: workspace:^
-        version: link:../../queues/entity-listeners
-      '@queues/topic-aliases':
-        specifier: workspace:^
-        version: link:../../queues/topic-aliases
-      '@services/entity-cache':
-        specifier: workspace:^
-        version: link:../entity-cache
-      '@services/entity-relations':
-        specifier: workspace:^
-        version: link:../entity-relations
-      '@services/post-clearance':
-        specifier: workspace:^
-        version: link:../post-clearance
-      '@services/post-publication':
-        specifier: workspace:^
-        version: link:../post-publication
-      '@services/post-revisions':
-        specifier: workspace:^
-        version: link:../post-revisions
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../posts
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../topics
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../urls
-      '@services/urls-hostnames':
-        specifier: workspace:^
-        version: link:../urls-hostnames
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-    devDependencies:
-      '@services/elections-votes':
-        specifier: workspace:^
-        version: link:../elections-votes
-      '@services/entity-fetch':
-        specifier: workspace:^
-        version: link:../entity-fetch
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/test-helpers:
     dependencies:
       '@aws-sdk/s3-request-presigner':
@@ -10495,9 +10443,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../services/users
-      '@services/wikipedia-topic-recommendations':
-        specifier: workspace:^
-        version: link:../services/wikipedia-topic-recommendations
       '@ts-shared/data-points':
         specifier: workspace:^
         version: link:../../ts-shared/data-points
@@ -10790,9 +10735,6 @@ importers:
       '@agents/story-post':
         specifier: workspace:^
         version: link:../../agents/story-post
-      '@agents/wikipedia-recommender':
-        specifier: workspace:^
-        version: link:../../agents/wikipedia-recommender
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -12457,27 +12399,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-
-  backend/workers/wikipedia-recommender:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/ai-agents':
-        specifier: workspace:^
-        version: link:../../queues/ai-agents
-      '@queues/wikipedia-recommender':
-        specifier: workspace:^
-        version: link:../../queues/wikipedia-recommender
-      '@services/wikipedia-topic-recommendations':
-        specifier: workspace:^
-        version: link:../../services/wikipedia-topic-recommendations
-      glide-mq:
-        specifier: ^0.15.5
-        version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
 
   ci:
     dependencies:

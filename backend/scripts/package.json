@@ -22,8 +22,10 @@
   "dependencies": {
     "@backend/service-registrations": "workspace:^",
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/csv": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/scheduled-job-manifest": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/vote-weight": "workspace:^",

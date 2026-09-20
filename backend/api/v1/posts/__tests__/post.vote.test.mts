@@ -8,7 +8,7 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { createTopicRecommendation } from '@services/wikipedia-topic-recommendations'
+import { createTopicRecommendation } from '@services/topic-recommendations'
 import { getPostElectionVote } from '@services/elections-votes/post'
 
 describe('post.vote', () => {

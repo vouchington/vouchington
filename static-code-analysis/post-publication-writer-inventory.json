@@ -173,15 +173,15 @@
       "reason": "new story has no story-post projection until the separately captured story-post writer runs"
     },
     {
-      "path": "backend/services/wikipedia-topic-recommendations/create-topic-recommendation.mts",
+      "path": "backend/services/topic-recommendations/create-topic-recommendation.mts",
       "reason": "private topic-recommendation is explicitly excluded from public publication"
     },
     {
-      "path": "backend/services/wikipedia-topic-recommendations/delete-pending-recommendation.mts",
+      "path": "backend/services/topic-recommendations/delete-pending-recommendation.mts",
       "reason": "private topic-recommendation is explicitly excluded from public publication"
     },
     {
-      "path": "backend/services/wikipedia-topic-recommendations/update-topic-recommendation.mts",
+      "path": "backend/services/topic-recommendations/update-topic-recommendation.mts",
       "reason": "private topic-recommendation is explicitly excluded from public publication"
     },
     {

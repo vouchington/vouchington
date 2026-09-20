@@ -51,7 +51,6 @@ CREATE OR REPLACE VIEW view_embedded_users AS
         'customer-support',
         'rss-feed-auto-updater',
         'story-teller',
-        'wikipedia-recommender',
         'voucha'
       )
       OR EXISTS (

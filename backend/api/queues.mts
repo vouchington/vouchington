@@ -15,7 +15,6 @@ import * as crawlBoilerplateRemovalQueues from '@queues/crawl-boilerplate-remova
 import { rss_feeds } from '@queues/rss-feeds/queues'
 import { rssFeedItemCategories } from '@queues/rss-feed-item-categories/queues'
 import { topicAliases } from '@queues/topic-aliases/queues'
-import { wikipediaRecommender } from '@queues/wikipedia-recommender/queues'
 import { accountDataRequests } from '@queues/account-data-requests/queues'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import { adminImports } from '@queues/admin-imports/queues'
@@ -70,7 +69,6 @@ export default [
   ...Object.values(bedrockEmbeddingsQueues),
   bedrock_embeddings_batch,
   ...Object.values(openaiModerationQueues),
-  wikipediaRecommender,
   accountDataRequests,
   bloomFilters,
   adminImports,

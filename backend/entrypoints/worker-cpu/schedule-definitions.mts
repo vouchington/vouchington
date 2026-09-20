@@ -54,13 +54,6 @@ export const CPU_ONLY_SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       ),
   },
   {
-    queueName: 'wikipedia-recommender',
-    load: () =>
-      import('@queues/wikipedia-recommender/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
-  },
-  {
     queueName: 'ai_agents',
     load: () =>
       import('@queues/ai-agents/enqueues/schedules').then(module => module.upsertSchedules),

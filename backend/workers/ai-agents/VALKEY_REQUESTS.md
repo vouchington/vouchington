@@ -18,7 +18,6 @@ connections). See `predecessor-issue#4717`.
 
 - The `chat` job streams tokens via `publishChatToken` → `chatPubSub.publish`, which uses a dedicated `GlideClient` created by `createChannelPubSub` in `backend/data-stores/valkey-pubsub/channel-pubsub.mts`. This is **not** the `cacheValkeyClient` or `rateLimiterValkeyClient` singleton, so it is excluded from the shared-singleton count.
 - `autotagger-post`, `autotagger-rss-feed-item`, `moderation-*`, `community-moderation-*`, `story-clustering` use only PSQL and external AI APIs — zero shared-singleton Valkey calls.
-- **Conditional:** `wikipedia-recommender`-type jobs dispatched to the `ai_agents` queue call `processWikipediaRecommender` → `recommendTopicsForContent` → `createRecommendation` → `entityCacheBloomFilters.posts.add(...)` = 1 BF.MADD op on `cacheValkeyClient` for successful recommendations.
 - **Conditional:** `story-post` jobs that successfully generate a summary call `updateStoryPostAgentResult` → `invalidate.posts(postId)` = 1 `invokeScript` op on `cacheValkeyClient`.
 - **Conditional:** `customer-support` jobs where the model invokes search tools call `getPostByAnyCachedBatch` / `getRssFeedItemByIdCachedBatch` = 1–2 MGET-style reads on `cacheValkeyClient` per tool call.
 - **Conditional:** `customer-support` jobs where the model invokes semantic search tools or passes semantic inputs call `getCachedSearchEmbedding` = 1 cache lookup on `cacheValkeyClient`, plus 1 cache write when the normalized embedding query misses.

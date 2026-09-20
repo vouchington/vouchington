@@ -1,14 +1,9 @@
 import type { Job } from 'glide-mq'
-import type {
-  CustomerSupportJobData,
-  StoryClusteringJobData,
-  WikipediaRecommenderJobData,
-} from '@queues/ai-agents/types'
+import type { CustomerSupportJobData, StoryClusteringJobData } from '@queues/ai-agents/types'
 import { generateSupportResponse } from '@agents/customer-support'
 import { clusterRssFeedItem } from '@services/stories/cluster'
 import { hasRssFeedItemEmbedding } from '@services/bedrock-embeddings'
 import { enqueueStoryClustering } from '@queues/ai-agents/enqueues/story-clustering'
-import { recommendTopicsForContent } from '@agents/wikipedia-recommender'
 
 const MAX_EMBEDDING_RETRIES = 10
 
@@ -17,10 +12,6 @@ type ProcessMiscDeps = {
   clusterRssFeedItem: typeof clusterRssFeedItem
   hasRssFeedItemEmbedding: typeof hasRssFeedItemEmbedding
   enqueueStoryClustering: typeof enqueueStoryClustering
-  recommendTopicsForContent: (
-    entityType: WikipediaRecommenderJobData['entity_type'],
-    entityIds: WikipediaRecommenderJobData['entity_ids'],
-  ) => Promise<unknown>
 }
 
 const defaultDeps: ProcessMiscDeps = {
@@ -28,7 +19,6 @@ const defaultDeps: ProcessMiscDeps = {
   clusterRssFeedItem,
   hasRssFeedItemEmbedding,
   enqueueStoryClustering,
-  recommendTopicsForContent,
 }
 
 export async function processCustomerSupport(
@@ -61,11 +51,4 @@ export async function processStoryClustering(
 
   await deps.enqueueStoryClustering(job.data.rss_feed_item_id, undefined, retries + 1)
   return null
-}
-
-export async function processWikipediaRecommender(
-  job: Job<WikipediaRecommenderJobData>,
-  deps: ProcessMiscDeps = defaultDeps,
-): Promise<void> {
-  await deps.recommendTopicsForContent(job.data.entity_type, job.data.entity_ids)
 }

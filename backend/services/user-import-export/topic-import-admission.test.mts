@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { contributionLimitConfig } from '@services/contribution-gating/limits-config'
-import { deletePendingRecommendation } from '@services/wikipedia-topic-recommendations'
+import { deletePendingRecommendation } from '@services/topic-recommendations'
 import { IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
 import {
   admitImportedTopicRecommendation,
