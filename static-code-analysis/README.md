@@ -12,13 +12,12 @@ in [CLAUDE.md](CLAUDE.md).
 `pnpm licenses list --json`'s SPDX expressions for every third-party dependency resolved into the
 repo. It scans the full graph (no `-r`/`--recursive`, no `--prod`): `pnpm licenses list --prod`
 misclassifies at least one dev-only package, `lightningcss`, as production, even though every one
-of its dependency paths bottoms out in `devDependencies`. The maintained
-`spdx-expression-parse` package validates expressions against the official SPDX license and
-exception registries; the local `spdx-expression.mts` adapter evaluates compound `OR`/`AND`
-expressions against a deny list — GPL, AGPL, LGPL, EPL, CDDL, SSPL, BUSL, MPL prefixes, plus
-exact-match `UNLICENSED`/`Unknown`/empty-string. Unknown identifiers, custom `LicenseRef` /
-`DocumentRef` atoms, and expressions the parser cannot parse fail closed (denied), never silently
-pass.
+of its dependency paths bottoms out in `devDependencies`. The published
+[`vouchington-tooling/dependency-license-policy`](https://github.com/vouchington/vouchington-tooling)
+module validates SPDX expressions and collects the all-platform report; this repository's local
+`policy.mts` supplies the GPL, AGPL, LGPL, EPL, CDDL, SSPL, BUSL, MPL, and unlicensed/unknown
+denials. Unknown identifiers, custom `LicenseRef` / `DocumentRef` atoms, and expressions the parser
+cannot parse fail closed (denied), never silently pass.
 
 Pnpm filters the lockfile walk through its platform-installability check. The collector therefore
 derives a temporary, command-scoped workspace whose `supportedArchitectures` cover every `os`,
@@ -34,11 +33,11 @@ locked platform packages, so clean-runner validation must retain peak-disk evide
 sizing changes.
 
 LGPL and MPL are denied by default (any future dependency introducing an unreviewed variant fails
-closed) but the two copyleft entries the graph is already known to contain are allowlisted back in
+closed) but the two copyleft entries the graph is already known to contain are allowlisted in local
 `policy.mts`, each narrowly scoped and justified: `MPL-2.0` (file-level copyleft covering
 `@ghostery/*`, `@remusao/*`, `satori`, `web-push`, and other entries) is allowlisted repo-wide, and
-`LGPL-3.0-or-later` is allowlisted only for the audited `@img/sharp-*` binary package families:
-the 10 `sharp-libvips-*` variants plus `sharp-wasm32` and the three `sharp-win32-*` variants.
+`LGPL-3.0-or-later` is allowlisted only for exactly fourteen audited `@img/sharp-*` packages: the
+10 `sharp-libvips-*` variants plus `sharp-wasm32` and the three `sharp-win32-*` variants.
 Neither creates an obligation today: nothing from either family is vendored, modified, or shipped
 in a committed build artifact.
 Widening either allowlist entry (a new package name, a new license family) needs the same

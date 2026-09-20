@@ -54,7 +54,7 @@
     "sql-template-strings": "^2.2.2",
     "supertest": "^7.2.2",
     "uuid": "^14.0.2",
-    "vouchington-tooling": "^0.17.0"
+    "vouchington-tooling": "^0.18.0"
   },
   "devDependencies": {
     "@ts-shared/utils": "workspace:^",
