@@ -55,21 +55,16 @@ function fullSuiteTriggerPaths(): string[] {
 }
 
 const fixtureDocumentationPaths = [
+  '.github/workflows/JOBS.md',
   '.github/workflows/README.md',
   '.github/workflows/VITEST.md',
   '.github/workflows/CLAUDE.md',
-  '.github/workflows/RUNNERS.md',
   '.github/workflows/WORKFLOWS.md',
   '.github/workflows/AUTHORING.md',
   '.github/workflows/reference-step-timeouts.md',
-  '.github/workflows/reference-runner-types.md',
   '.github/workflows/reference-artifact-rerun-safety.md',
-  '.github/workflows/reference-runner-fleet-capacity.md',
   '.github/workflows/reference-github-actions-concurrency-locks.md',
   '.github/workflows/reference-harness-automation-accepted-risk.md',
-  '.github/workflows/reference-self-hosted-runner-caching.md',
-  '.github/workflows/reference-self-hosted-runner-secret-isolation.md',
-  '.github/workflows/reference-self-hosted-runner-secret-isolation-accepted-residuals-7572.md',
   '.github/workflows/reference-fixed-branch-automation-prs.md',
   '.github/workflows/reference-fix-main-dependency-policy.md',
   '.github/workflows/reference-workflow-automation-map.md',

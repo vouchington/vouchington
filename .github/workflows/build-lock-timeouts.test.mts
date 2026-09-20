@@ -275,7 +275,7 @@ describe('serialized build job timeout budgets', () => {
     expect(stepTimeouts).toMatch(/\|\s*Strict Next build steps\s*\|\s*13m\s*\|/)
     expect(stepTimeouts).toContain('reference-ci-ci-job-timeout-budgets.md')
     expect(jobTimeoutBudgets).toContain('reference-step-timeouts.md')
-    expect(jobTimeoutBudgets).toContain('reference-runner-types.md')
+    expect(jobTimeoutBudgets).toContain('JOBS.md')
     expect(jobTimeoutBudgets).toContain('Linux ARM64 platform package')
   })
 })

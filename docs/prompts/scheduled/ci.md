@@ -55,32 +55,6 @@ Review the latest CI runs. Pick exactly one concrete, bounded improvement that i
   cross-workflow calls, `needs`, or concurrency; keep intent in the typed policy, not a duplicate
   workflow inventory.
 - Improve fail-fast behavior, reliability, or diagnostics without hiding real failures.
-- Before recommending any demand-increasing self-hosted change — including adding a job or widening
-  an existing matrix, selector, or concurrency — complete the timestamped live-capacity procedure
-  in [Runner Fleet Capacity](../../../.github/workflows/reference-runner-fleet-capacity.md):
-  Count only runners whose labels are compatible with the proposed `runs-on` set and whose
-  runner-group/workflow access for that repository workflow is verified; do not infer membership or
-  access from labels. Missing group membership or repository/workflow access, including for the
-  permanently fenced `dependabot` pool, fails closed. Capture a snapshot no
-  more than 15 minutes old at decision time, re-collect it immediately before the final
-  recommendation and again before approval or merge if demand remains. Query `requested`,
-  `waiting`, `pending`, `queued`, and `in_progress`
-  runs separately with `per_page=100`; require
-  `requested.total_count + waiting.total_count + pending.total_count + queued.total_count + in_progress.total_count <= 100`
-  and inspect every returned run’s jobs. Classify capacity from each returned job’s own status, never
-  its parent run: completed or terminal jobs do not compete. An `in_progress` or `running` job counts
-  only when its assigned runner belongs to the proposed eligible set. A `requested`, `waiting`,
-  `pending`, or `queued` job counts when its requested-label-derived eligible set overlaps proposed
-  eligible hosts; unknown status or missing or ambiguous assignment, labels, or eligibility fails
-  closed. Each eligible `status=online, busy=true` runner must map to exactly one counted
-  `in_progress` or `running` job assigned to it. Zero matches, duplicate matches, or state drift fails
-  closed; an unreconciled busy runner is never free capacity. Obtain a current per-host
-  runner-work-filesystem metric proving the applicable `VOUCHA_RUNNER_DISK_PROFILE`
-  admission/reservation floor and proposed concurrent disk demand. Project peak demand from topology,
-  fixed matrices, bounded dynamic selectors, and overlap evidence. Preserve the 80% threshold and
-  the permanently fenced `dependabot` pool. Missing, stale, truncated, or
-  unbounded evidence fails closed: recommend only demand-neutral or demand-reducing work, never a
-  self-hosted capacity increase.
 - Distinguish checks that gate merge (the `Main` ruleset's required `tests`, `build`, and
   `gitleaks`) from report-only checks such as supply-chain and dependency scans that do
   not appear in that list; do not treat a report-only finding as a merge blocker, and call out

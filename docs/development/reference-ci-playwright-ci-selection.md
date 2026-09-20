@@ -10,8 +10,8 @@ that calls `no-mistakes`' `planTests` with the `.no-mistakes.yml`
 `test_plan.playwright.environments.pullRequest` environment. The planner disables its execution
 and machine-wide lock-wait deadlines, so concurrent CI invocations serialize. It resolves the
 owning tsconfig for each traversed file, so workspace-specific aliases participate without
-forcing every import through one workspace's configuration. The selector job runs on bare `[self-hosted]` so planning does not occupy the Playwright
-pool; the five-minute timeout remains the global safety backstop.
+forcing every import through one workspace's configuration. The selector job runs on
+`ubuntu-latest`; the five-minute timeout remains the global safety backstop.
 
 The coarse `ci.yml` path-filter gate decides whether the `select` job runs at all; once it runs,
 dependency-only changes in tracked workspace `package.json` files and `pnpm-lock.yaml` are traced
@@ -119,8 +119,8 @@ byte-for-byte instead of being silently word-split or glob-expanded by an unquot
 shell consumer (`tests-web.yml`, `tests-backend-unit.yml`, `tests-playwright.yml`, and the
 remaining Vitest reusable workflows) decodes with a quoted read loop —
 `while IFS= read -r file; do FILES+=("$file"); done <<< "$VAR"` — rather than unquoted `$VAR`
-word-splitting. This intentionally avoids bash 4.0+'s `mapfile` builtin: self-hosted runner shells
-are not guaranteed to be bash 4+, and local `bash` on macOS is still 3.2, so a `mapfile`-based
+word-splitting. This intentionally avoids bash 4.0+'s `mapfile` builtin: local `bash` on macOS is
+still 3.2, so a `mapfile`-based
 decode would silently no-op (leaving an empty selection) anywhere it isn't bash 4+. In-process
 (non-shell) consumers such as `ci/storybook-browser-runner-env.mts`'s `vitestArgs` decode with
 `decodeSelectedFiles` instead, reading the `with:`-forwarded job output straight out of

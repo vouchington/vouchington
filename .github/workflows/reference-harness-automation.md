@@ -49,7 +49,7 @@ checked-in secret inventory's `requiredBranchPolicy: 'auto-harness'` field (see
 no longer being required to live inside that Environment. Branch policy on the callee restricts job
 _execution_, not the repository secret's _value_ — a same-repo PR-controlled workflow can still
 read `HARNESS_API_KEY` before review, an accepted residual risk documented in
-[Self-Hosted Runner Secret-Isolation — Accepted Residuals](reference-self-hosted-runner-secret-isolation-accepted-residuals-7572.md#harness_api_key-repository-secret-scope-accepted-2026-08-26).
+[Auto Harness automation accepted boundary](reference-harness-automation-accepted-risk.md#harness_api_key-repository-secret-scope-accepted-2026-08-26).
 They read:
 
 - the repository secret `HARNESS_API_KEY`;

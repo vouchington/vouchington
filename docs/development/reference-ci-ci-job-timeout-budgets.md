@@ -4,7 +4,7 @@
 
 Runner-pool topology and per-step timeout tables live in the canonical references below — do not duplicate them here:
 
-- **Runner pools**: [Workflow Runner Types](../../.github/workflows/reference-runner-types.md)
+- **Runner pools**: [Job & runner inventory](../../.github/workflows/JOBS.md)
 - **Step timeout guidelines and authoring patterns**: [Workflow Step Timeouts](../../.github/workflows/reference-step-timeouts.md)
 
 ### Fail-fast budget relationship

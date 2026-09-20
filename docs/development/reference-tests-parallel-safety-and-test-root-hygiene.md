@@ -153,7 +153,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterAll } from 'vitest'
 
-// Use RUNNER_TEMP on self-hosted runners to avoid /tmp/.git walk pollution.
+// Prefer the runner-owned temp root in CI and the OS temp root locally.
 const testRoot = mkdtempSync(join(process.env.RUNNER_TEMP || tmpdir(), 'voucha-mytest-'))
 afterAll(() => rmSync(testRoot, { recursive: true, force: true }))
 ```

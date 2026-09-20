@@ -1,11 +1,9 @@
 name: Static Checks
 
 # Area-gated, non-Vitest gates (typecheck, dependency-cruiser, `next build`, smoke,
-# `wrangler --dry-run`) lifted out of the per-area Vitest workflows so they run on
-# the bare self-hosted fleet instead of the Ubicloud pool those workflows used for
-# sharded Vitest runs (Ubicloud was cancelled 2026-09-19). This is a resource/cost
-# reorganization for the lifted checks; API fixture snapshot regeneration belongs to
-# the static backend gate. See docs/development/ci.md and .github/workflows/RUNNERS.md.
+# `wrangler --dry-run`) lifted out of the per-area Vitest workflows so they run
+# independently of the sharded Vitest jobs. API fixture snapshot regeneration belongs
+# to the static backend gate. See docs/development/ci.md.
 
 on:
   workflow_call:
@@ -76,7 +74,7 @@ jobs:
   static-web:
     if: inputs.web
     # Pinned to Linux: it now shares the build-web-targets composite with the Playwright/web-
-    # integration consumers (all Linux self-hosted), so its output must match their platform key
+    # integration consumers, so its output must match their Linux platform key
     # (#10990) rather than floating onto macOS overflow capacity.
     runs-on: ubuntu-latest
     timeout-minutes: 35

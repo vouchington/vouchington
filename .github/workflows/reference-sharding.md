@@ -53,9 +53,10 @@ uses.
 Each sharded workflow includes a lightweight job that generates its matrix before the test job
 runs. Web shards run symmetrically — no shard owns a singleton duty; the pages-router check,
 dependency check, typecheck, production build, and smoke test moved to
-[checks-static.yml](checks-static.yml)'s `static-web` job, and the former shard-1 Vite cache save
-was dropped since self-hosted runners already persist `.cache/` across runs (see
-[RUNNERS.md](RUNNERS.md#self-hosted-runner-caching)). Backend-unit migrations run on every shard,
+[checks-static.yml](checks-static.yml)'s `static-web` job. The former shard-1 Vite cache save was
+dropped when the fleet still ran on persistent self-hosted runners that already kept `.cache/`
+across runs; GitHub-hosted runners are single-job VMs with nothing to persist, so there is no
+cache-save step to restore now either. Backend-unit migrations run on every shard,
 but no shard owns a singleton duty; backend port allocation and API/worker smoke run independently
 in [checks-backend-smoke.yml](checks-backend-smoke.yml). Playwright keeps its existing per-shard build, runner labels,
 worker limit, and Sentry/OTel behavior. The runtime audit's eight-minute median threshold and

@@ -31,9 +31,9 @@ upstream metadata. Fix bad metadata through an upstream release or upgrade the p
 `packageExtensions` remains allowed for correcting dependency metadata without forcing versions.
 `pnpm run no-mistakes` enforces the override ban (`pnpm-overrides-ban`).
 
-Persistent pnpm state on self-hosted runners is operational reuse, not authoritative resolution
-state. CI does not use a package-manager cache action. Any future dependency cache key must include
-`pnpm-lock.yaml`, all relevant workspace manifests, and the pinned Node/pnpm toolchain.
+The pnpm store cache on ephemeral GitHub-hosted runners is download reuse, not authoritative
+resolution state. Its key includes the runner OS and architecture plus a content hash of
+`pnpm-lock.yaml`; the frozen lockfile remains the resolution contract.
 
 ### Audit evidence
 

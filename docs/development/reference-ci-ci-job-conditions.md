@@ -16,7 +16,7 @@ Path-scoped `main-*` workflows own main tests. A trusted completed-run receiver 
 source metadata to private infrastructure, which owns artifact builds and publication. Static Code Analysis runs
 directly on every main push. Keep PR gating at job level instead of
 top-level `paths-ignore`: the fan-in jobs need to report skipped checks consistently, and
-workflow-owned docs such as `.github/workflows/README.md`, `.github/workflows/RUNNERS.md`, `.github/workflows/WORKFLOWS.md`, and `.github/workflows/AUTHORING.md` are test fixtures
+workflow-owned docs such as `.github/workflows/README.md`, `.github/workflows/WORKFLOWS.md`, and `.github/workflows/AUTHORING.md` are test fixtures
 that must still run the tooling suite. `detect-changes` `shell-scripts` is initialize-smoke input
 (`dev/initialize*`, `dev/lib/**`, `dev/host-storage-preflight.mts`, `dev/worktree-port-policy.json`,
 and `**/*.sh`), not every file under `ci/` or `dev/`. PR `test-portability` uses a dedicated
