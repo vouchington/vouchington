@@ -72,12 +72,11 @@ function validateRegisteredMcpRequest(parsedBody: unknown): Response | null {
         : null
   if (!schema || schema.safeParse(parsedBody).success) return null
 
-  const id =
-    typeof request.id === 'string' || typeof request.id === 'number' ? request.id : undefined
+  const id = typeof request.id === 'string' || typeof request.id === 'number' ? request.id : null
   return Response.json(
     {
       jsonrpc: '2.0',
-      ...(id === undefined ? {} : { id }),
+      id,
       error: { code: ErrorCode.InvalidRequest, message: 'Invalid request' },
     },
     { status: 200 },
