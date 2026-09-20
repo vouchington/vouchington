@@ -94,6 +94,9 @@ jobs:
     permissions:
       actions: read
       contents: read
+    env:
+      # Pure web Vitest shards use all four vCPUs on public GitHub-hosted runners.
+      VITEST_MAX_WORKERS: '4'
     strategy:
       fail-fast: false
       matrix:
@@ -105,9 +108,6 @@ jobs:
           fetch-depth: 1
       - uses: ./.github/actions/fetch-base-ref
         if: ${{ inputs.publish_coverage }}
-      - uses: ./.github/actions/load-runner-env
-        with:
-          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Run web tests
@@ -143,19 +143,9 @@ jobs:
             fi
           fi
           pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"
-        # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
-        # test-execution time higher than the old <5m-per-shard target tolerated. On GitHub-hosted
-        # ubuntu-latest (2 vCPUs) with coverage instrumentation enabled, real failing shards were
-        # observed being killed at this step's prior 10m ceiling without ever completing (no
-        # observed-completion basis for a tighter number yet), so this is a generous watchdog value
-        # rather than a measured one; tune it down once a passing run reports a real per-shard
-        # duration. 20m keeps 12m of headroom under the job's 32m ceiling for setup-node-pnpm plus
-        # the coverage/blob upload and report-persistence steps that follow. Phase 6 preview: this
-        # step previously hardcoded a fixed 7-worker CLI flag on a 2-vCPU runner, oversubscribing
-        # the CPU and plausibly contributing to those slow/killed shards independent of the ceiling
-        # itself; worker count now comes from VITEST_MAX_WORKERS via load-runner-env below, so
-        # re-derive this number from real run data rather than assuming the old observations still
-        # apply.
+        # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) need a watchdog
+        # distinct from the sub-ten-minute job KPI. This job owns a four-worker candidate on public
+        # 4-vCPU runners; retain or retune it only after candidate-run KPI evidence.
         timeout-minutes: 20
       - if: failure()
         timeout-minutes: 1

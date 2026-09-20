@@ -52,7 +52,7 @@ const otelEnabled = process.env.OTEL_ENABLED === '1'
 const otelGracefulShutdown = otelEnabled
   ? { signal: 'SIGTERM' as const, timeout: 10_000 }
   : undefined
-const defaultWorkers = CI ? 2 : '30%'
+const defaultWorkers = CI ? 3 : '30%'
 const workers = parseMaxWorkers(process.env.PLAYWRIGHT_MAX_WORKERS, defaultWorkers)
 interface CreatePlaywrightConfigOptions {
   testDir: string

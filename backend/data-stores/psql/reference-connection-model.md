@@ -43,8 +43,9 @@ eager reservations: connections open lazily. The per-process worst-case connecti
 CI GitHub Actions postgres services set `max_connections=300` through `POSTGRES_INITDB_ARGS`. The
 default image value is 100, which cannot hold the Vitest fork budget: `(VITEST_MAX_WORKERS + 1
 globalSetup process) * (readMax + writeMax + advisoryLockMax)` plus PostgreSQL's reserved
-superuser slots. The default CI budget is `(4 + 1) * (20 + 20 + 4) + 3 = 223`, while
-CI caps `VITEST_MAX_WORKERS` at 5, making the supported maximum
+superuser slots. Backend CI workflows explicitly use three workers, so their normal budget is
+`(3 + 1) * (20 + 20 + 4) + 3 = 179`; the repository fallback is two workers. CI caps
+`VITEST_MAX_WORKERS` at 5, making the supported maximum
 `(5 + 1) * (20 + 20 + 4) + 3 = 267`. Exceeding the server cap fails tests with
 `FATAL 53300 sorry, too many clients already`. The
 [`postgres-image-policy` test](../../../.github/workflows/postgres-image-policy.test.mts) keeps the

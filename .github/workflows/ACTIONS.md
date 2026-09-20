@@ -16,7 +16,6 @@ Use shared composite actions in [`.github/actions/`](../actions/) instead of rep
 | `setup-backend`        | Node/pnpm setup for backend jobs using the shared `ci/activate-pnpm.sh` activation, a cached pnpm store, and `ci/setup-backend-install.sh`'s unconditional full install, with the same step ordering as `setup-node-pnpm`. Builds `email-templates` explicitly after installation because `email-templates/package.json` has no `prepare`/`postinstall` script.                                                                                                                                                                                                                                                       | none                                                    |
 | `build-web-targets`    | Build Cloudflare Worker + Next.js standalone server for integration and Playwright tests (sources `.env` if present). Playwright shards run this directly in each shard job instead of downloading a shared web-target artifact, because the standalone output can be too large for the artifact restore timeout.                                                                                                                                                                                                                                                                                                     | none                                                    |
 | `setup-playwright`     | Install Playwright browsers. Every runner is fresh and ephemeral, so `~/.cache/ms-playwright` is restored from a SHA-pinned `actions/cache` step keyed on the pnpm lockfile hash with no `restore-keys`; a stale or mismatched browser cache cannot silently restore.                                                                                                                                                                                                                                                                                                                                                 | none                                                    |
-| `load-runner-env`      | Load runner-local `~/.github-actions.env` and GitHub Actions variables into `GITHUB_ENV`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | optional `VITEST_MAX_WORKERS`, `PLAYWRIGHT_MAX_WORKERS` |
 
 A composite that wraps a network-bound third-party action (e.g. `setup-aws` wrapping `aws-actions/configure-aws-credentials`) must bound that action two ways: a hardcoded native timeout inside the composite, passed as a literal rather than an overridable input, so a stall fails fast with a diagnostic attributable to that action; and a caller-side `timeout-minutes` on every calling step, since a composite step cannot declare `timeout-minutes` for itself (enforced by no-mistakes [`github-actions-composite-step-schema`](../../.no-mistakes.yml)). See [Step Timeouts](reference-step-timeouts.md#step-timeouts) and no-mistakes `github-actions-action-timeout-pair` in [`.no-mistakes.yml`](../../.no-mistakes.yml).
 
@@ -26,19 +25,10 @@ lifecycle hooks, including native-addon downloads, outside the automation contro
 caller allowlist is enforced by `pnpm-install-policy.test.mts`; do not broaden it for application
 build or test jobs that require install-time artifacts.
 
-**`load-runner-env`** must be called after `actions/checkout` (it uses the composite action from the repo) and before any step that runs tests. Pass only the variable relevant to the workflow:
-
-```yaml
-# Vitest workflows
-- uses: ./.github/actions/load-runner-env
-  with:
-    VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
-
-# Playwright workflow
-- uses: ./.github/actions/load-runner-env
-  with:
-    PLAYWRIGHT_MAX_WORKERS: ${{ vars.PLAYWRIGHT_MAX_WORKERS }}
-```
+CI worker policy is versioned with the repository: Vitest falls back to two workers, backend
+Vitest workflows explicitly use three, the pure web unit-test job explicitly uses four, Storybook
+browser mode remains serial, and Playwright uses three. Workflows must not load mutable
+runner-local worker configuration.
 
 ## Secret and Permission Scoping
 

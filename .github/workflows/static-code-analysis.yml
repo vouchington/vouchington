@@ -26,7 +26,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/load-runner-env
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Typecheck scripts
@@ -140,7 +139,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/load-runner-env
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Install CI tools via mise

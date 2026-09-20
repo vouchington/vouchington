@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
 
 // PW_FILES selection-decode behavior (runPlaywrightPnpmArgs et al.) lives in the
@@ -18,6 +18,8 @@ function workflowJobSection(body: string, jobName: string): string {
 }
 
 describe('tests-playwright.yml', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
   it('runs the selector and Playwright shards on ubuntu-latest', () => {
     expect(workflowJobSection(workflow, 'select')).toContain('runs-on: ubuntu-latest\n')
     expect(workflowJobSection(workflow, 'playwright-tests')).toContain('runs-on: ubuntu-latest')
@@ -55,7 +57,7 @@ describe('tests-playwright.yml', () => {
     expect(prCall).toContain('uses: ./.github/workflows/tests-playwright.yml')
     expect(prCall).not.toContain('shard_total_override:')
     expect(shardJob).toContain('uses: ./.github/actions/build-web-targets')
-    expect(shardJob).toContain('PLAYWRIGHT_MAX_WORKERS: ${{ vars.PLAYWRIGHT_MAX_WORKERS }}')
+    expect(shardJob).toContain("PLAYWRIGHT_MAX_WORKERS: '3'")
     expect(shardJob).toContain('OTEL_ENABLED:')
     expect(shardJob).toContain('PW_FILES: ${{ needs.select.outputs.files }}')
     expect(shardJob).toContain('playwright test "${FILES[@]}" "$SHARD_ARG"')
@@ -83,7 +85,7 @@ describe('tests-playwright.yml', () => {
   })
 
   it('exports IMAGE_ORIGIN from the allocated image lambda port', () => {
-    const loadRunnerEnv = workflow.indexOf('uses: ./.github/actions/load-runner-env')
+    const jobEnvironment = workflow.indexOf("PLAYWRIGHT_MAX_WORKERS: '3'")
     const imageOrigin = workflow.indexOf(
       'echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"',
     )
@@ -91,7 +93,7 @@ describe('tests-playwright.yml', () => {
     expect(workflow).toContain(
       'echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"',
     )
-    expect(imageOrigin).toBeGreaterThan(loadRunnerEnv)
+    expect(imageOrigin).toBeGreaterThan(jobEnvironment)
   })
 
   it('lets Wrangler allocate the inspector port in CI', () => {
@@ -142,7 +144,7 @@ describe('tests-playwright.yml', () => {
     )
     const confirmStep = workflow.slice(
       workflow.indexOf('- name: Confirm port holder'),
-      workflow.indexOf('- uses: ./.github/actions/load-runner-env'),
+      workflow.indexOf('- name: Set image origin'),
     )
 
     expect(
@@ -204,5 +206,24 @@ describe('tests-playwright.yml', () => {
 
   it('fails fast-ish in CI after a few Playwright failures', () => {
     expect(playwrightSharedConfig).toContain('maxFailures: CI ? 3 : undefined')
+  })
+
+  it('defaults Playwright to three workers in CI', async () => {
+    vi.stubEnv('CI', 'true')
+    vi.stubEnv('PLAYWRIGHT_MAX_WORKERS', '')
+    vi.resetModules()
+    const { CHROMIUM_USE, createPlaywrightConfig } =
+      await import('../../playwright/config/shared-config.mts')
+
+    const config = createPlaywrightConfig({
+      backendCommand: 'node backend/entrypoints/api/serve.mts',
+      junitOutputFile: 'test-report.junit.xml',
+      projects: [{ name: 'chromium', use: CHROMIUM_USE }],
+      reuseExistingServer: false,
+      testDir: './playwright/tests',
+      timeout: 60_000,
+    })
+
+    expect(config.workers).toBe(3)
   })
 })

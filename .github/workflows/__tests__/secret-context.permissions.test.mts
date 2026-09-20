@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -8,6 +8,7 @@ const packageJson = JSON.parse(read('package.json')) as {
   scripts: Record<string, string>
 }
 const toolingTestRunner = read('ci/tooling-test-runner.mts')
+const nodeTestOptions = read('ci/with-node-test-options')
 
 const vitestConfig = [
   'vitest.config.mts',
@@ -170,11 +171,7 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(storybookWorkflow).toContain(
       'VITEST_COVERAGE_SCOPE=web-storybook pnpm exec ./ci/with-node-test-options vitest run --bail=3',
     )
-    expect(storybookWorkflow).toContain('uses: ./.github/actions/load-runner-env')
-    expect(storybookWorkflow).toContain('VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}')
-    expect(storybookWorkflow).toContain(
-      "VITEST_STORYBOOK_BROWSER_MAX_WORKERS: ${{ vars.VITEST_STORYBOOK_BROWSER_MAX_WORKERS || '1' }}",
-    )
+    expect(storybookWorkflow).toContain("VITEST_STORYBOOK_BROWSER_MAX_WORKERS: '1'")
     expect(vitestConfig).toContain('VITEST_STORYBOOK_BROWSER_MAX_WORKERS')
     expect(vitestConfig).toContain('maxWorkers: parseStorybookBrowserMaxWorkers()')
     expect(mappingSection(storybookWorkflow, 'workflow_call')).toContain('default: false')
@@ -203,6 +200,53 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(storybookWorkflow).not.toMatch(/uses: actions\/github-script@/)
     expect(storybookWorkflow).not.toContain('\n  pull_request:')
     expect(storybookWorkflow).not.toContain('branches:\n      - main')
+  })
+
+  it('keeps CI Node warning suppression out of workflow startup hooks', () => {
+    for (const workflowPath of readdirSync('.github/workflows').filter(path =>
+      path.endsWith('.yml'),
+    )) {
+      const workflow = read(`.github/workflows/${workflowPath}`)
+      expect(workflow).not.toMatch(
+        /^\s+BASH_ENV:(?!(?:\s*(?:\/dev\/null|["']\/dev\/null["'])\s*(?:#.*)?$))/m,
+      )
+      expect(workflow).not.toContain('NODE_OPTIONS: --disable-warning=DEP0205')
+    }
+    expect(nodeTestOptions).toContain('${NODE_OPTIONS:+$NODE_OPTIONS }--disable-warning=DEP0205')
+    expect(nodeTestOptions).toContain('*" --disable-warning=DEP0205 "*)')
+  })
+
+  it('keeps worker policy repository-owned and specific to each test surface', () => {
+    expect(read('.github/workflows/tests-backend-modules.yml')).toContain("VITEST_MAX_WORKERS: '3'")
+    expect(read('.github/workflows/tests-backend-unit.yml')).toContain("VITEST_MAX_WORKERS: '3'")
+    expect(read('.github/workflows/tests-backend-credentialed.yml')).toContain(
+      "VITEST_MAX_WORKERS: '3'",
+    )
+    expect(read('.github/workflows/tests-web.yml')).toContain("VITEST_MAX_WORKERS: '4'")
+    // These workflows inherit the two-worker CI fallback pending candidate-run evidence.
+    for (const path of [
+      '.github/workflows/tests-cloudflare-worker.yml',
+      '.github/workflows/tests-lambdas.yml',
+      '.github/workflows/tests-portability.yml',
+      '.github/workflows/tests-tooling.yml',
+      '.github/workflows/tests-ts-shared.yml',
+      '.github/workflows/tests-web-api.yml',
+      '.github/workflows/tests-web-integration.yml',
+    ]) {
+      expect(read(path)).not.toContain('VITEST_MAX_WORKERS')
+    }
+    for (const path of [
+      '.github/workflows/tests-playwright.yml',
+      '.github/workflows/tests-playwright-credentialed.yml',
+    ]) {
+      expect(read(path)).toContain("PLAYWRIGHT_MAX_WORKERS: '3'")
+    }
+    for (const path of readdirSync('.github/workflows').filter(path => path.endsWith('.yml'))) {
+      const workflow = read(`.github/workflows/${path}`)
+      expect(workflow).not.toContain('load-runner-env')
+      expect(workflow).not.toContain('vars.VITEST_MAX_WORKERS')
+      expect(workflow).not.toContain('vars.PLAYWRIGHT_MAX_WORKERS')
+    }
   })
 
   it('keeps Storybook changes in their own path filter', () => {

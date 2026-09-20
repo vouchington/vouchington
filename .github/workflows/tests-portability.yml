@@ -71,9 +71,6 @@ jobs:
           fetch-depth: 1
       - uses: ./.github/actions/fetch-base-ref
         if: ${{ inputs.publish_coverage }}
-      - uses: ./.github/actions/load-runner-env
-        with:
-          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Run portability tests
@@ -216,9 +213,6 @@ jobs:
           fetch-depth: 1
       - uses: ./.github/actions/fetch-base-ref
         if: ${{ inputs.publish_coverage }}
-      - uses: ./.github/actions/load-runner-env
-        with:
-          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Run portability tests

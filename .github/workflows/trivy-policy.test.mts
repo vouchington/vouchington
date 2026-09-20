@@ -28,7 +28,6 @@ describe('Trivy policy', () => {
     const commands = trivyPackageScanCommands()
     const sboms = commands.filter(isComponentSbomGeneration)
     const gates = commands.filter(command => !isComponentSbomGeneration(command))
-
     expect(gates.length).toBeGreaterThanOrEqual(2)
     expect(sboms.length).toBeGreaterThanOrEqual(2)
     for (const command of gates) expect(() => assertVulnerabilityGate(command)).not.toThrow()
@@ -46,6 +45,9 @@ describe('Trivy policy', () => {
     expect(tooling).toContain("- '.trivyignore.yaml'")
     expect(trivyPackageScanCommands([])).toEqual([])
   })
+
+  it('ignores deleted shell sources still present in index metadata', () =>
+    expect(trivyPackageScanCommands(['deleted-but-still-indexed.sh'])).toEqual([]))
 
   it('recognizes extensionless executable shell entrypoints', () => {
     expect(isShellPolicySource('dev/initialize')).toBe(true)

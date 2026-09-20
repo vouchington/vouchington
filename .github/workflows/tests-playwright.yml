@@ -95,6 +95,7 @@ jobs:
       contents: read
     env:
       NODE_ENV: test
+      PLAYWRIGHT_MAX_WORKERS: '3'
       API_KEY_CHECKSUM_SECRET: this is a fake Playwright CI API key checksum secret
       VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake Playwright CI OTP HMAC secret
       VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-playwright-ci-key:raw32:this fake test key is not secret
@@ -272,9 +273,6 @@ jobs:
       - name: Confirm port holder
         timeout-minutes: 1
         run: python3 ci/allocate-browser-safe-ports.py --check --hold-dir "$PORT_HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
-      - uses: ./.github/actions/load-runner-env
-        with:
-          PLAYWRIGHT_MAX_WORKERS: ${{ vars.PLAYWRIGHT_MAX_WORKERS }}
       - name: Set image origin
         run: echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-backend

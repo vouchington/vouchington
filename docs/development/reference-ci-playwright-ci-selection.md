@@ -59,19 +59,17 @@ flowchart TD
 3. **Empty result** → `skip=true`, job short-circuits.
 
 For targeted PRs, shard count is
-`max(1, ceil(selected runnable spec count × 2 seconds / 240 seconds))`. Full-suite selections,
+`max(1, ceil(selected runnable spec count × 8.6 seconds / 313 seconds))`. Full-suite selections,
 planner fail-open fallbacks, and manual runs use the same formula with the complete runnable
-Playwright spec count. Two seconds per spec is an allocation heuristic, not a measured duration;
-the 240-second Playwright execution budget leaves room for fixed per-shard build/startup overhead
-inside the eight-minute job target, plus a ~30-second Playwright-specific buffer reflected in that
-job's step `timeout-minutes`. There is no repository policy cap, although the selector rejects
-totals outside GitHub's 1–256 matrix range.
+Playwright spec count. The 8.6 seconds per spec and 313-second execution budget are allocation
+heuristics, not a per-spec SLA. Three public full-suite baselines retained this formula: the
+roughly 318-spec suite resolves to nine shards and meets the job KPI with three Playwright workers.
+The execution budget leaves room for fixed per-shard build/startup overhead
+inside the sub-ten-minute job target. There is no repository policy cap, although the selector
+rejects totals outside GitHub's 1–256 matrix range.
 
-Matching main runs remain complete-suite backstops but do not use the heuristic:
-`main-web.yml` passes a fixed four-shard override, sized independently against push-path's own
-measured runtimes rather than this formula — the two policies are decoupled by design, so a
-change to one does not imply a matching change to the other. Per-shard builds, runner labels,
-worker limits, Sentry, and OTel remain unchanged.
+Matching main runs remain complete-suite backstops and use the same formula. Per-shard builds,
+runner labels, Sentry, and OTel remain unchanged; Playwright uses three workers on public runners.
 
 The Playwright selection job uploads `playwright-test-plan.json` and
 `playwright-test-plan.md` artifacts with one-day retention on successful targeted/full plans and
@@ -84,10 +82,10 @@ On matching `main` pushes (non-PR), the selector always emits the full suite. Th
 orchestrator skips `test-playwright` on `main` when the refined Playwright path filter does not
 match.
 
-Four main shards plus Storybook can saturate all five Playwright runners. Trusted PRs may add the
-credentialed suite, and uncapped dynamic matrices may increase queueing further. The runtime audit
-excludes queue delay, so inspect it separately; every Playwright shard's median execution should
-stay below 480 seconds, matching the runtime audit's eight-minute median threshold.
+The current roughly 318-spec full suite resolves to nine shards. Trusted PRs may add the credentialed
+suite, and uncapped dynamic matrices may increase queueing further. The runtime audit excludes queue
+delay, so inspect it separately; every Playwright shard's median execution should stay below 480
+seconds, matching the runtime audit's eight-minute median threshold.
 
 The credentialed suite (`playwright/credentialed/`) uses a separate `playwright.credentialed.config.mts`
 config and runs as the `test-playwright-credentialed` job. It is **not** part of the selection/sharding

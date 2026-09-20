@@ -52,7 +52,8 @@ Review Vitest tests. Pick exactly one concrete, bounded improvement that is safe
   Per-project `pool` / `isolate` values are recorded in
   [Pools, Isolation, and Vitest 5](../../development/reference-tests-vitest-projects.md#pools-isolation-and-vitest-5).
   Forks-pool projects have no per-project `poolOptions` / `maxForks` / `singleFork`; concurrency is
-  bounded only by the repo's `VITEST_MAX_WORKERS` env var via `parseVitestMaxWorkers()`, and
+  bounded only by the repository-owned `VITEST_MAX_WORKERS` environment policy via
+  `parseVitestMaxWorkers()`, and
   `dev/vitest-config.test.mts` bans a hardcoded `maxWorkers` literal.
 - Record any deferred follow-up in the owning reference doc or a `CLAUDE.md`, not only in a PR body
   or issue comment — a PR body is exactly what a later scheduled run cannot read.

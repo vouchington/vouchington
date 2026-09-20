@@ -30,7 +30,8 @@ export default defineConfig({
     pool: 'threads',
     // DB-backed projects run in parallel with randomized ownership-scoped fixtures. Exact global
     // aggregate assertions must reserve and clean an owned window; random IDs alone do not isolate
-    // shared totals. Throttle concurrency via the VITEST_MAX_WORKERS repo variable, not here —
+    // shared totals. Throttle concurrency through the workflow-owned VITEST_MAX_WORKERS policy,
+    // not here —
     // and never via a project-level `maxWorkers` literal: VITEST_MAX_WORKERS unconditionally
     // overwrites any per-project value during vitest's config resolution, so a literal is both
     // banned (see dev/vitest-config.test.mts) and non-functional whenever the env var is set.

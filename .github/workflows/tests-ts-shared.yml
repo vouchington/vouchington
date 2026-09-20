@@ -46,9 +46,6 @@ jobs:
           fetch-depth: 1
       - uses: ./.github/actions/fetch-base-ref
         if: ${{ inputs.publish_coverage }}
-      - uses: ./.github/actions/load-runner-env
-        with:
-          VITEST_MAX_WORKERS: ${{ vars.VITEST_MAX_WORKERS }}
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 5

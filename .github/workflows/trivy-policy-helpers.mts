@@ -110,7 +110,9 @@ export function trivyPackageScanCommands(repositoryFiles = trackedRepositoryFile
   const actionPaths = repositoryFiles.filter(
     path => /^\.github\/actions\/.+\.ya?ml$/.test(path) && existsSync(path),
   )
-  for (const path of repositoryFiles.filter(isShellPolicySource)) {
+  for (const path of repositoryFiles.filter(
+    path => existsSync(path) && isShellPolicySource(path),
+  )) {
     assertNoUnsupportedTrivyShellSource(readFileSync(path, 'utf8'), path)
   }
   return assertSupportedWorkflowSteps([...workflowPaths, ...actionPaths])
