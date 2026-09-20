@@ -669,6 +669,15 @@
     "fn_guard_copyright_submission_target_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_submission_target_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submissions submission\n    JOIN copyright_notice_targets target ON target.id = NEW.copyright_notice_target_id\n    WHERE submission.id = NEW.copyright_notice_submission_id\n      AND submission.copyright_notice_id = target.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'copyright submission target must belong to the same notice' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_guard_image_placement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'image placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+    },
+    "fn_guard_image_surface_placement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_image_surface_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-link-image'\n    AND OLD.user_profile_link_id IS NOT NULL\n    AND NEW.user_profile_link_id IS NULL\n    AND NEW.retired_user_profile_link_id = OLD.user_profile_link_id\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.user_id IS NOT DISTINCT FROM OLD.user_id\n    AND NEW.retired_user_id IS NOT DISTINCT FROM OLD.retired_user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-image'\n    AND OLD.user_id IS NOT NULL\n    AND NEW.user_id IS NULL\n    AND NEW.retired_user_id = OLD.user_id\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.retired_user_id = OLD.user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n    AND NEW.user_profile_link_id IS NOT DISTINCT FROM OLD.user_profile_link_id\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' AND EXISTS (\n    SELECT 1\n    FROM image_surface_placements existing\n    JOIN media_placements placement ON placement.id = existing.placement_id\n    WHERE placement.retired_at IS NULL\n      AND existing.surface_kind = NEW.surface_kind\n    AND existing.user_id IS NOT DISTINCT FROM NEW.user_id\n      AND existing.topic_id IS NOT DISTINCT FROM NEW.topic_id\n      AND existing.community_id IS NOT DISTINCT FROM NEW.community_id\n      AND existing.user_profile_link_id IS NOT DISTINCT FROM NEW.user_profile_link_id\n  ) THEN\n    RAISE EXCEPTION 'a public image surface has at most one current binding' USING ERRCODE = 'unique_violation';\n  END IF;\n  IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'image surface placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+    },
+    "fn_guard_media_placement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.placement_kind IS DISTINCT FROM OLD.placement_kind THEN\n    RAISE EXCEPTION 'media placement kind is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_guard_membership_grant_activation_period_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_membership_grant_activation_period_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership grant activation periods cannot be deleted';\n  END IF;\n\n  IF OLD.ended_at IS NULL\n    AND NEW.ended_at IS NOT NULL\n    AND ROW(\n      NEW.id, NEW.membership_grant_id, NEW.user_id, NEW.started_at\n    ) IS NOT DISTINCT FROM ROW(\n      OLD.id, OLD.membership_grant_id, OLD.user_id, OLD.started_at\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'membership grant activation periods only allow an open-to-ended lifecycle transition';\nEND $function$\n"
     },
@@ -698,6 +707,9 @@
     },
     "fn_guard_terminal_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_terminal_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  terminal_column TEXT;\n  old_row JSONB := to_jsonb(OLD);\n  new_row JSONB := to_jsonb(NEW);\n  was_terminal BOOLEAN := FALSE;\nBEGIN\n  FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n    IF old_row -> terminal_column <> 'null'::jsonb THEN\n      was_terminal := TRUE;\n    END IF;\n  END LOOP;\n\n  IF was_terminal THEN\n    FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n      IF old_row -> terminal_column IS DISTINCT FROM new_row -> terminal_column THEN\n        RAISE EXCEPTION '% terminal lifecycle cannot transition after completion', TG_TABLE_NAME\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END LOOP;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.openai_omni_moderation_flagged = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND NOT EXISTS (\n        SELECT 1\n        FROM media_delivery_registry_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'withheld'\n      )\n  );\n$function$\n"
     },
     "fn_immutable_array_to_string(p_array text[], p_delimiter text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p_delimiter text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT array_to_string(p_array, p_delimiter)\n$function$\n"
@@ -909,8 +921,14 @@
     "fn_sync_ap_post_likes": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_ap_post_likes()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_delta INT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    v_delta := 1;\n  ELSIF OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at THEN\n    RETURN NEW;\n  ELSIF OLD.deleted_at IS NULL THEN\n    v_delta := -1;\n  ELSE\n    v_delta := 1;\n  END IF;\n\n  INSERT INTO ap_posts (post_id, ap_likes_score, ap_likes_count)\n  VALUES (NEW.post_id, GREATEST(v_delta, 0), GREATEST(v_delta, 0))\n  ON CONFLICT (post_id) DO UPDATE SET\n    ap_likes_score = GREATEST(ap_posts.ap_likes_score + v_delta, 0),\n    ap_likes_count = GREATEST(ap_posts.ap_likes_count + v_delta, 0);\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_sync_community_image_placements": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_community_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NULL, NULL, NULL, NEW.id, NULL);\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NULL, NULL, NULL, NEW.id, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NEW.profile_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.banner_image_id IS DISTINCT FROM OLD.banner_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NEW.banner_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_sync_fediverse_instance_integration_status": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_fediverse_instance_integration_status()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_status fediverse_integration_statuses;\nBEGIN\n  -- Serialize concurrent triggers for the same topic: acquire a row-level lock on\n  -- topics__fediverse_instances before re-reading the latest change, so whichever\n  -- trigger holds the lock last wins and writes the correct (most-recently-committed) value.\n  PERFORM topic_id FROM topics__fediverse_instances WHERE topic_id = NEW.topic_id FOR UPDATE;\n  SELECT integration_status INTO v_status\n  FROM fediverse_instance_integration_changes\n  WHERE topic_id = NEW.topic_id\n  ORDER BY id DESC LIMIT 1;\n  UPDATE topics__fediverse_instances SET integration_status = v_status\n  WHERE topic_id = NEW.topic_id AND integration_status IS DISTINCT FROM v_status;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n    'image', 'placement', placement.id, placement.revision, surface.image_id, 'withheld'\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    INSERT INTO media_placements (placement_kind) VALUES ('image') RETURNING id, revision INTO v_placement_id, v_revision;\n    INSERT INTO image_surface_placements (\n      placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id\n    ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id, p_community_id, p_user_profile_link_id);\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n    'image', 'placement', v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.openai_omni_moderation_flagged IS NOT TRUE\n      THEN 'allow' ELSE 'withheld' END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, media_kind, route_kind, asset_id, desired_state\n  ) VALUES (concat('legacy-image:', p_image_id), 'image', 'legacy-image', p_image_id, 'withheld')\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\nEND;\n$function$\n"
     },
     "fn_sync_posts_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_posts_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.title, '')), 'A') ||\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.markdown, '')), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
@@ -924,8 +942,17 @@
     "fn_sync_rss_feed_items_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_items_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.data->>'title', '')), 'A') ||\n    setweight(to_tsvector('voucha_english',\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content:encodedSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content:encoded', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'contentSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'summary', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'media:description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '')\n    ), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_sync_topic_image_placements": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_topic_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND (\n    (NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL)\n    OR (NEW.merged_into_topic_id IS NOT NULL AND OLD.merged_into_topic_id IS NULL)\n  ) THEN\n    PERFORM fn_sync_image_surface_placement('topic-logo-image', NULL, NULL, NEW.id, NULL, NULL);\n    PERFORM fn_sync_image_surface_placement('topic-hero-image', NULL, NULL, NEW.id, NULL, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.logo_image_id IS DISTINCT FROM OLD.logo_image_id THEN\n    PERFORM fn_sync_image_surface_placement('topic-logo-image', NEW.logo_image_id, NULL, NEW.id, NULL, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.hero_image_id IS DISTINCT FROM OLD.hero_image_id THEN\n    PERFORM fn_sync_image_surface_placement('topic-hero-image', NEW.hero_image_id, NULL, NEW.id, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_sync_url_hostname_blocked": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_url_hostname_blocked()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE url_hostnames\n  SET blocked = EXISTS (\n    SELECT 1 FROM url_hostname_blocks\n    WHERE url_hostname_id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id)\n      AND lifted_at IS NULL\n  )\n  WHERE id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id);\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    "fn_sync_user_profile_image_placement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_user_profile_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-image', NEW.profile_image_id, NEW.id, NULL, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_sync_user_profile_link_image_placement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_user_profile_link_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.image_id IS DISTINCT FROM OLD.image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-link-image', NEW.image_id, NULL, NULL, NULL, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_text_to_timestamptz(text_value text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)\n RETURNS timestamp with time zone\n LANGUAGE plpgsql\n IMMUTABLE\nAS $function$\nDECLARE\n  normalized TEXT;\nBEGIN\n  normalized := TRIM(BOTH E'\\t\\n\\r\\f ' FROM text_value);\n  IF normalized IS NULL OR normalized = '' OR LOWER(normalized) = 'null' THEN\n    RETURN NULL;\n  END IF;\n\n  -- Strip a known RFC 822 weekday prefix (\"Mon, \" … \"Sun, \").\n  -- Anchored to standard abbreviations; non-standard tokens fall through to the exception handler.\n  normalized := regexp_replace(normalized, '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\\s*', '', 'i');\n  -- Collapse a named-zone prefix glued to a numeric offset: \"GMT-0700\" -> \"-0700\",\n  -- \"UTC+05:30\" -> \"+05:30\". PostgreSQL rejects the glued form but accepts the bare offset.\n  normalized := regexp_replace(normalized, '(?:GMT|UTC)\\s*([+-]\\d{1,2}:?\\d{2})', '\\1', 'i');\n\n  IF normalized ~ '[Zz]$' OR\n     normalized ~ '[\\+\\-]\\d{1,2}:?\\d{2}$' OR\n     normalized ~ ' [A-Z]{3,}$' THEN\n    RETURN normalized::timestamptz;\n  END IF;\n  RETURN timezone('UTC', normalized::timestamp);\nEXCEPTION\n  -- Best-effort parser over untrusted feed input: any value PostgreSQL still can't parse\n  -- degrades to NULL so the generated column falls back to uuid_extract_timestamp(id),\n  -- rather than aborting the INSERT and the whole fetchRssFeed job. Three distinct SQLSTATE\n  -- codes (22023, 22007, 22009) have already appeared from real feeds; a narrow catch would leak.\n  WHEN OTHERS THEN\n    RAISE WARNING 'fn_text_to_timestamptz: unparseable date \"%\" (SQLSTATE: %)', text_value, SQLSTATE;\n    RETURN NULL;\nEND;\n$function$\n"
@@ -34058,6 +34085,663 @@
         }
       }
     },
+    "image_placements": {
+      "checkConstraints": {},
+      "columns": {
+        "image_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "placement_id": {
+          "collation": null,
+          "comment": "Stable media placement identifier used by trusted delivery routes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        }
+      },
+      "comment": "Immutable image binding for a media placement. A post/image pair retains one stable placement identity across detach and reattach.",
+      "foreignKeys": {
+        "image_placements_image_id_fkey": {
+          "columns": [
+            "image_id"
+          ],
+          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "image_placements_placement_id_fkey": {
+          "columns": [
+            "placement_id"
+          ],
+          "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "media_placements",
+          "validated": true
+        },
+        "image_placements_post_id_fkey": {
+          "columns": [
+            "post_id"
+          ],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "posts",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_image_placements__image": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_placements__image ON public.image_placements USING btree (image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "image_placements_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX image_placements_pkey ON public.image_placements USING btree (placement_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "image_placements_post_id_image_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX image_placements_post_id_image_id_key ON public.image_placements USING btree (post_id, image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": [
+          "placement_id"
+        ],
+        "definition": "PRIMARY KEY (placement_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_image_placement_guard": "CREATE TRIGGER trigger_image_placement_guard BEFORE DELETE OR UPDATE ON public.image_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_placement()"
+      },
+      "uniqueConstraints": {
+        "image_placements_post_id_image_id_key": {
+          "columns": [
+            "post_id",
+            "image_id"
+          ],
+          "definition": "UNIQUE (post_id, image_id)"
+        }
+      }
+    },
+    "image_surface_placements": {
+      "checkConstraints": {
+        "image_surface_placements_check": "CHECK ((((surface_kind = 'user-profile-image'::text) AND (num_nonnulls(user_id, retired_user_id) = 1) AND (topic_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['topic-logo-image'::text, 'topic-hero-image'::text])) AND (topic_id IS NOT NULL) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['community-profile-image'::text, 'community-banner-image'::text])) AND (community_id IS NOT NULL) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (topic_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = 'user-profile-link-image'::text) AND (num_nonnulls(user_profile_link_id, retired_user_profile_link_id) = 1) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (topic_id IS NULL) AND (community_id IS NULL))))",
+        "image_surface_placements_surface_kind_check": "CHECK ((surface_kind = ANY (ARRAY['user-profile-image'::text, 'topic-logo-image'::text, 'topic-hero-image'::text, 'community-profile-image'::text, 'community-banner-image'::text, 'user-profile-link-image'::text])))"
+      },
+      "columns": {
+        "community_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "image_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "placement_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "retired_user_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "retired_user_profile_link_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "surface_kind": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "user_profile_link_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        }
+      },
+      "comment": "Immutable bindings for non-post persisted public image surfaces. Each surface has typed foreign-key columns; no polymorphic owner reference is permitted.",
+      "foreignKeys": {
+        "image_surface_placements_community_id_fkey": {
+          "columns": [
+            "community_id"
+          ],
+          "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "communities",
+          "validated": true
+        },
+        "image_surface_placements_image_id_fkey": {
+          "columns": [
+            "image_id"
+          ],
+          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "image_surface_placements_placement_id_fkey": {
+          "columns": [
+            "placement_id"
+          ],
+          "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "media_placements",
+          "validated": true
+        },
+        "image_surface_placements_topic_id_fkey": {
+          "columns": [
+            "topic_id"
+          ],
+          "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "topics",
+          "validated": true
+        },
+        "image_surface_placements_user_id_fkey": {
+          "columns": [
+            "user_id"
+          ],
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "image_surface_placements_user_profile_link_id_fkey": {
+          "columns": [
+            "user_profile_link_id"
+          ],
+          "definition": "FOREIGN KEY (user_profile_link_id) REFERENCES user_profile_links(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "user_profile_links",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_image_surface_placements__community_banner": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__community_banner ON public.image_surface_placements USING btree (community_id, image_id) WHERE (surface_kind = 'community-banner-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'community-banner-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_image_surface_placements__community_fk": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placements__community_fk ON public.image_surface_placements USING btree (community_id) WHERE (community_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placements__community_profile": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__community_profile ON public.image_surface_placements USING btree (community_id, image_id) WHERE (surface_kind = 'community-profile-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'community-profile-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_image_surface_placements__image": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placements__image ON public.image_surface_placements USING btree (image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placements__profile_link": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__profile_link ON public.image_surface_placements USING btree (user_profile_link_id, image_id) WHERE (surface_kind = 'user-profile-link-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_profile_link_id",
+              "descending": false,
+              "expression": "user_profile_link_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'user-profile-link-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_image_surface_placements__profile_link_fk": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placements__profile_link_fk ON public.image_surface_placements USING btree (user_profile_link_id) WHERE (user_profile_link_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_profile_link_id",
+              "descending": false,
+              "expression": "user_profile_link_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_profile_link_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placements__topic_fk": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placements__topic_fk ON public.image_surface_placements USING btree (topic_id) WHERE (topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placements__topic_hero": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__topic_hero ON public.image_surface_placements USING btree (topic_id, image_id) WHERE (surface_kind = 'topic-hero-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'topic-hero-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_image_surface_placements__topic_logo": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__topic_logo ON public.image_surface_placements USING btree (topic_id, image_id) WHERE (surface_kind = 'topic-logo-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'topic-logo-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_image_surface_placements__user_fk": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placements__user_fk ON public.image_surface_placements USING btree (user_id) WHERE (user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placements__user_profile": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__user_profile ON public.image_surface_placements USING btree (user_id, image_id) WHERE (surface_kind = 'user-profile-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'user-profile-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "image_surface_placements_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX image_surface_placements_pkey ON public.image_surface_placements USING btree (placement_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": [
+          "placement_id"
+        ],
+        "definition": "PRIMARY KEY (placement_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_image_surface_placement_guard": "CREATE TRIGGER trigger_image_surface_placement_guard BEFORE DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement()"
+      },
+      "uniqueConstraints": {}
+    },
     "images": {
       "checkConstraints": {
         "chk_images__completed_requires_sha_256": "CHECK (((upload_completed_at IS NULL) OR (sha_256 IS NOT NULL)))",
@@ -36469,6 +37153,465 @@
       "relationKind": "table",
       "triggers": {
         "trigger_lists_updated_at": "CREATE TRIGGER trigger_lists_updated_at BEFORE UPDATE ON public.lists FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "media_delivery_registry_records": {
+      "checkConstraints": {
+        "media_delivery_registry_records_check": "CHECK ((((route_kind = 'placement'::text) AND (placement_id IS NOT NULL) AND (placement_revision IS NOT NULL)) OR ((route_kind = 'legacy-image'::text) AND (placement_id IS NULL) AND (placement_revision IS NULL) AND (media_kind = 'image'::text))))",
+        "media_delivery_registry_records_check1": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (completed_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (completed_at IS NULL)) OR ((state = ANY (ARRAY['completed'::text, 'failed'::text])) AND (completed_at IS NOT NULL))))",
+        "media_delivery_registry_records_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
+        "media_delivery_registry_records_delivery_key_check": "CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))",
+        "media_delivery_registry_records_desired_state_check": "CHECK ((desired_state = ANY (ARRAY['allow'::text, 'withheld'::text])))",
+        "media_delivery_registry_records_failure_message_check": "CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 4096))))",
+        "media_delivery_registry_records_generation_check": "CHECK ((generation >= 0))",
+        "media_delivery_registry_records_media_kind_check": "CHECK ((media_kind = 'image'::text))",
+        "media_delivery_registry_records_placement_revision_check": "CHECK (((placement_revision IS NULL) OR (placement_revision >= 0)))",
+        "media_delivery_registry_records_route_kind_check": "CHECK ((route_kind = ANY (ARRAY['placement'::text, 'legacy-image'::text])))",
+        "media_delivery_registry_records_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text, 'failed'::text])))"
+      },
+      "columns": {
+        "asset_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "claimed_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 17,
+          "type": "timestamp with time zone"
+        },
+        "delivery_attempt_count": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "integer"
+        },
+        "delivery_key": {
+          "collation": null,
+          "comment": "Exact edge identity: image-placement:<placement UUID>:<revision>:<image UUID>, video-placement equivalent, or legacy-image:<image UUID>.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "text"
+        },
+        "desired_state": {
+          "collation": null,
+          "comment": "Desired legal delivery state; DynamoDB is updated before this row becomes completed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "failure_message": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "text"
+        },
+        "generation": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "integer"
+        },
+        "invalidated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "media_kind": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "next_attempt_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "timestamp with time zone"
+        },
+        "placement_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "placement_revision": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "integer"
+        },
+        "projected_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "timestamp with time zone"
+        },
+        "route_kind": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "state": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "'pending'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        }
+      },
+      "comment": "Durable exact delivery-tuple projection to the edge DynamoDB authority. Absence is denied by the edge. New media kinds add their own foreign-key column and check branch in a later migration.",
+      "foreignKeys": {
+        "media_delivery_registry_records_asset_id_fkey": {
+          "columns": [
+            "asset_id"
+          ],
+          "definition": "FOREIGN KEY (asset_id) REFERENCES images(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "media_delivery_registry_records_placement_id_fkey": {
+          "columns": [
+            "placement_id"
+          ],
+          "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id"
+          ],
+          "referencedTable": "media_placements",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_media_delivery_registry_records__asset": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__asset ON public.media_delivery_registry_records USING btree (asset_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "asset_id",
+              "descending": false,
+              "expression": "asset_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_media_delivery_registry_records__placement": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__placement ON public.media_delivery_registry_records USING btree (placement_id) WHERE (placement_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(placement_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_media_delivery_registry_records__recoverable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__recoverable ON public.media_delivery_registry_records USING btree (next_attempt_at, delivery_key) WHERE (state = 'pending'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "next_attempt_at",
+              "descending": false,
+              "expression": "next_attempt_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "delivery_key",
+              "descending": false,
+              "expression": "delivery_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(state = 'pending'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "media_delivery_registry_records_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX media_delivery_registry_records_pkey ON public.media_delivery_registry_records USING btree (delivery_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "delivery_key",
+              "descending": false,
+              "expression": "delivery_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": [
+          "delivery_key"
+        ],
+        "definition": "PRIMARY KEY (delivery_key)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "media_placements": {
+      "checkConstraints": {
+        "media_placements_check": "CHECK ((((retired_at IS NULL) AND (retirement_reason IS NULL)) OR ((retired_at IS NOT NULL) AND (retirement_reason IS NOT NULL))))",
+        "media_placements_placement_kind_check": "CHECK ((placement_kind = 'image'::text))",
+        "media_placements_retirement_reason_check": "CHECK ((retirement_reason = ANY (ARRAY['asset_deleted'::text, 'owner_removed'::text])))",
+        "media_placements_revision_check": "CHECK ((revision >= 0))"
+      },
+      "columns": {
+        "copyright_withheld_at": {
+          "collation": null,
+          "comment": "Placement-specific copyright withholding state; shared source assets remain recoverable.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "placement_kind": {
+          "collation": null,
+          "comment": "Typed binding kind. Additional media kinds receive their own immutable binding tables.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "retired_at": {
+          "collation": null,
+          "comment": "Placement is no longer attached to its host surface; retained so stale routes fail closed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "retirement_reason": {
+          "collation": null,
+          "comment": "Why the placement retired. Owner removal supersedes an asset retirement, fencing image-delete rollback from restoring a detached use.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "revision": {
+          "collation": null,
+          "comment": "Monotonic delivery revision; every availability change advances it exactly once.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        }
+      },
+      "comment": "Media-neutral, durable hosted-use placements. Delivery availability is revision-fenced and never inferred from an asset alone.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "media_placements_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX media_placements_pkey ON public.media_placements USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": [
+          "id"
+        ],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_media_placement_guard": "CREATE TRIGGER trigger_media_placement_guard BEFORE DELETE OR UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_media_placement()"
       },
       "uniqueConstraints": {}
     },

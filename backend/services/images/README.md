@@ -15,6 +15,9 @@ policy.
 
 ## Architecture
 
+Placement-level edge publication and fail-closed owner mutation are documented in the
+[media delivery safety service](../media-delivery-safety/README.md).
+
 ### Storage Strategy
 
 **S3 buckets and keys:**

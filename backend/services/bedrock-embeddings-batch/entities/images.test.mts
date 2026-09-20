@@ -1,6 +1,7 @@
+import { readFile } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BatchFileBuilder } from '../orchestrator/file-builder.mts'
-import { addImageToBatch } from './images.mts'
+import { addImageToBatch, MAX_IMAGE_EMBEDDING_SOURCE_BYTES } from './images.mts'
 
 const mocks = vi.hoisted(() => ({
   getImageFromS3: vi.fn<VitestLooseMock>(),
@@ -12,29 +13,48 @@ describe('entities/images', () => {
     vi.unstubAllEnvs()
   })
 
-  it('accepts a real ReadableStream whose size exactly matches the byte limit', async () => {
-    const bytes = new Uint8Array(4 * 1024 * 1024)
+  it('converts a supported private upload to a bounded Bedrock JPEG representation', async () => {
     mocks.getImageFromS3.mockResolvedValueOnce({
-      Body: { transformToByteArray: async () => bytes },
-      ContentType: 'image/png',
+      Body: streamBytes(Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64')),
+      ContentType: 'image/gif',
     })
     const fileBuilder = new BatchFileBuilder()
 
-    await expect(
-      addImageToBatch(
-        fileBuilder,
-        { id: 'exact', s3_key: 'exact', sha_256: Buffer.alloc(32) },
-        10,
-        mocks,
-      ),
-    ).resolves.toBe(true)
-    await fileBuilder.cleanup()
+    try {
+      await expect(
+        addImageToBatch(
+          fileBuilder,
+          { id: 'gif', s3_key: 'gif', sha_256: Buffer.alloc(32) },
+          10,
+          mocks,
+        ),
+      ).resolves.toBe(true)
+      const { filePath } = await fileBuilder.close()
+      const [record] = (await readFile(filePath, 'utf8'))
+        .trim()
+        .split('\n')
+        .map(line => JSON.parse(line))
+      const image = record.modelInput.singleEmbeddingParams.image
+      expect(image.format).toBe('jpeg')
+      expect(Buffer.from(image.source.bytes, 'base64')).toSatisfy(bytes => {
+        return (
+          bytes.byteLength <= 4 * 1024 * 1024 &&
+          bytes.subarray(0, 2).equals(Buffer.from([0xff, 0xd8]))
+        )
+      })
+    } finally {
+      await fileBuilder.cleanup()
+    }
   })
 
-  it('cancels a real ReadableStream that exceeds the byte limit', async () => {
+  it('rejects a private source that exceeds the uploaded-image byte limit before transformation', async () => {
+    const megabyte = Buffer.alloc(1024 * 1024)
     mocks.getImageFromS3.mockResolvedValueOnce({
-      Body: { transformToByteArray: async () => new Uint8Array(4 * 1024 * 1024 + 1) },
-      ContentType: 'image/png',
+      Body: streamRepeatedBytes(
+        megabyte,
+        Math.ceil(MAX_IMAGE_EMBEDDING_SOURCE_BYTES / megabyte.length) + 1,
+      ),
+      ContentType: 'image/gif',
     })
     const fileBuilder = new BatchFileBuilder()
 
@@ -45,13 +65,13 @@ describe('entities/images', () => {
         10,
         mocks,
       ),
-    ).rejects.toThrow('Image oversize exceeds Bedrock embedding input limit')
+    ).rejects.toThrow(`${MAX_IMAGE_EMBEDDING_SOURCE_BYTES}-byte limit`)
     await fileBuilder.cleanup()
   })
 
   it('reads private S3 directly without any public image origin', async () => {
     mocks.getImageFromS3.mockResolvedValueOnce({
-      Body: { transformToByteArray: async () => new Uint8Array() },
+      Body: streamBytes(Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64')),
       ContentType: 'image/png',
     })
     const fileBuilder = new BatchFileBuilder()
@@ -68,7 +88,7 @@ describe('entities/images', () => {
       'base64',
     )
     mocks.getImageFromS3.mockResolvedValueOnce({
-      Body: { transformToByteArray: async () => pngBytes },
+      Body: streamBytes(pngBytes),
       ContentType: 'image/png',
     })
 
@@ -82,3 +102,11 @@ describe('entities/images', () => {
     await fileBuilder.cleanup()
   })
 })
+
+async function* streamBytes(...chunks: Uint8Array[]): AsyncGenerator<Uint8Array> {
+  yield* chunks
+}
+
+async function* streamRepeatedBytes(chunk: Uint8Array, count: number): AsyncGenerator<Uint8Array> {
+  for (let index = 0; index < count; index++) yield chunk
+}

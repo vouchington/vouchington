@@ -1,10 +1,16 @@
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
+import { transformImage } from '@vouchington/image-resize'
+import { freezeImageUpload, MAX_IMAGE_UPLOAD_BYTES } from '@services/images/freeze-upload'
 import { getImageFromS3 } from '@services/images/s3'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import { lockExistsClause } from '@services/bedrock-embeddings/batch/lock-targets'
 import { BatchFileBuilder } from '../orchestrator/file-builder.mts'
 
 const MAX_IMAGE_EMBEDDING_BYTES = 4 * 1024 * 1024
+const MAX_IMAGE_EMBEDDING_PIXELS = 24_000_000
+const MAX_IMAGE_EMBEDDING_DIMENSION = 1024
+
+export const MAX_IMAGE_EMBEDDING_SOURCE_BYTES = MAX_IMAGE_UPLOAD_BYTES
 
 type PendingImage = {
   id: string
@@ -46,47 +52,37 @@ export async function addImageToBatch(
 ): Promise<boolean> {
   const dependencies = { ...defaultImageReadDependencies, ...dependencyOverrides }
   const response = await dependencies.getImageFromS3(getDeployEnvironment(), image.s3_key)
-  const bytes = await readImageBytes(response.Body, image.id)
+  const bytes = await createBedrockImageBytes(response.Body, image.id)
 
   return await fileBuilder.addImageIfFits(
     {
       entity_id: image.id,
       image_sha_256: image.sha_256,
-      format: getImageFormat(response.ContentType ?? null),
+      format: 'jpeg',
       bytes: bytes.toString('base64'),
     },
     maxInputSizeMB,
   )
 }
 
-async function readImageBytes(body: unknown, imageId: string): Promise<Buffer> {
-  const transformable = body as { transformToByteArray?: () => Promise<Uint8Array> } | undefined
-  if (transformable?.transformToByteArray) {
-    const bytes = Buffer.from(await transformable.transformToByteArray())
+async function createBedrockImageBytes(body: unknown, imageId: string): Promise<Buffer> {
+  const source = await freezeImageUpload(body as AsyncIterable<Uint8Array>, {
+    maxBytes: MAX_IMAGE_EMBEDDING_SOURCE_BYTES,
+  })
+  try {
+    const bytes = await transformImage(source.filename, {
+      width: MAX_IMAGE_EMBEDDING_DIMENSION,
+      height: MAX_IMAGE_EMBEDDING_DIMENSION,
+      format: 'jpeg',
+      quality: 80,
+      progressive: true,
+      maxInputPixels: MAX_IMAGE_EMBEDDING_PIXELS,
+    })
     if (bytes.byteLength > MAX_IMAGE_EMBEDDING_BYTES) {
-      throw new Error(`Image ${imageId} exceeds Bedrock embedding input limit`)
+      throw new Error(`Image ${imageId} exceeds Bedrock embedding input limit after conversion`)
     }
     return bytes
+  } finally {
+    await source.cleanup()
   }
-  const iterable = body as AsyncIterable<Uint8Array> | undefined
-  if (!iterable) return Buffer.alloc(0)
-
-  const chunks: Uint8Array[] = []
-  let totalBytes = 0
-  for await (const value of iterable) {
-    totalBytes += value.byteLength
-    if (totalBytes > MAX_IMAGE_EMBEDDING_BYTES) {
-      throw new Error(`Image ${imageId} exceeds Bedrock embedding input limit`)
-    }
-    chunks.push(value)
-  }
-
-  return Buffer.concat(chunks)
-}
-
-function getImageFormat(contentType: string | null): 'jpeg' | 'png' | 'webp' {
-  if (contentType?.includes('png')) return 'png'
-  if (contentType?.includes('jpeg') || contentType?.includes('jpg')) return 'jpeg'
-  if (contentType?.includes('webp')) return 'webp'
-  throw new Error(`Unsupported Bedrock image embedding content type: ${contentType ?? 'unknown'}`)
 }

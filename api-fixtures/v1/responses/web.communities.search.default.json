@@ -13,6 +13,11 @@
       "archived_at": null,
       "archived_by_id": null,
       "banner_image_id": null,
+      "banner_image_placement": {
+        "image_id": "community-banner-image-1",
+        "placement_id": "placement-community-banner-image-1",
+        "placement_revision": 5
+      },
       "created_at": "2026-01-01T00:00:00Z",
       "created_by_id": "user-1",
       "default_language": null,
@@ -27,6 +32,11 @@
       "name": "Test Community",
       "post_approval_required_at": null,
       "profile_image_id": null,
+      "profile_image_placement": {
+        "image_id": "community-profile-image-1",
+        "placement_id": "placement-community-profile-image-1",
+        "placement_revision": 2
+      },
       "rules_markdown": null,
       "slug": "test-community",
       "trusted_at": null,

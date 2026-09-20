@@ -8,10 +8,10 @@ import { retireImageSurfacePlacementsForDeletedImage } from '@services/images/su
 import {
   getImagePlacementDeliveryKey,
   getLegacyImageDeliveryKey,
+  stageImagePlacementDeliveryRecord,
   stageAllCurrentImagePlacementDeliveryRecords,
 } from '@services/images/delivery-registry'
 import {
-  completeTestMediaDeliveryRecord,
   createTestUserDirect,
   getTestImageSurfacePlacements,
   getTestMediaDeliveryRecord,
@@ -155,7 +155,7 @@ describe('image surface placement lifecycle', () => {
     ])
   })
 
-  it('reconciles surface tuples fail-closed and never generic-allows an active binding', async () => {
+  it('projects safe surface tuples during registry rollout and hides withheld tuples immediately', async () => {
     const user = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
     await updateProfileImageId(user.id, imageId)
@@ -166,6 +166,14 @@ describe('image surface placement lifecycle', () => {
       revision: placement!.placement_revision,
       imageId,
     })
+
+    expect(
+      await isTestImagePlacementPubliclyProjected({
+        placementId: placement!.placement_id,
+        revision: placement!.placement_revision,
+        imageId,
+      }),
+    ).toBe(true)
 
     await stageAllCurrentImagePlacementDeliveryRecords()
     expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({ desired_state: 'allow' })
@@ -178,15 +186,20 @@ describe('image surface placement lifecycle', () => {
         revision: placement!.placement_revision,
         imageId,
       }),
-    ).toBe(false)
+    ).toBe(true)
 
-    await completeTestMediaDeliveryRecord(deliveryKey)
+    await stageImagePlacementDeliveryRecord({
+      placementId: placement!.placement_id,
+      revision: placement!.placement_revision,
+      imageId,
+      state: 'withheld',
+    })
     expect(
       await isTestImagePlacementPubliclyProjected({
         placementId: placement!.placement_id,
         revision: placement!.placement_revision,
         imageId,
       }),
-    ).toBe(true)
+    ).toBe(false)
   })
 })

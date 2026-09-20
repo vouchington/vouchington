@@ -6,9 +6,11 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityListItem,
+  insertTestImage,
   insertTestProxyFollowCommunity,
   insertTestTopic,
   createRandomString,
+  setTestCommunitySurfaceImages,
 } from '@voucha/test-helpers'
 
 import type { PrivateUser } from '@services/users/types'
@@ -31,6 +33,23 @@ describe('communities', () => {
         expect(Array.isArray(response.body.results)).toBe(true)
         expect(response.body).toHaveProperty('page_info')
         expect(response.body).toHaveProperty('communities')
+      })
+
+      it('includes safe profile and banner placement tuples in community search results', async () => {
+        const community = await insertTestCommunity({ createdById: user.id })
+        const profileImageId = await insertTestImage(user.id)
+        const bannerImageId = await insertTestImage(user.id)
+        await setTestCommunitySurfaceImages(community.id, { profileImageId, bannerImageId })
+
+        const request = createRequest()
+        const response = await request.get(`/api/v1/communities?q=${community.slug}`).expect(200)
+
+        expect(response.body.communities[community.id]).toEqual(
+          expect.objectContaining({
+            profile_image_placement: expect.objectContaining({ image_id: profileImageId }),
+            banner_image_placement: expect.objectContaining({ image_id: bannerImageId }),
+          }),
+        )
       })
 
       it('filters to current user communities when member_id=me', async () => {

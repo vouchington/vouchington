@@ -200,6 +200,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/lists/README.md`](../services/lists/README.md)
 - [`../services/localization/README.md`](../services/localization/README.md)
 - [`../services/mcp-tools/README.md`](../services/mcp-tools/README.md)
+- [`../services/media-delivery-safety/README.md`](../services/media-delivery-safety/README.md)
 - [`../services/memberships/README.md`](../services/memberships/README.md)
 - [`../services/messaging/README.md`](../services/messaging/README.md)
 - [`../services/mfa/README.md`](../services/mfa/README.md)

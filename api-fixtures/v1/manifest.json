@@ -73020,7 +73020,7 @@
         "q": "test"
       },
       "responseSchema": {
-        "hash": "7b5d83a026087364bf8e0a903b52c91da0de27021a5514b81c48c46029441b8b",
+        "hash": "aac668e9bf50b99d049a2a6dd25e953ee5e873b308ed3a2c17a53d7297403972",
         "key": "web.communities.search.default"
       },
       "route": {

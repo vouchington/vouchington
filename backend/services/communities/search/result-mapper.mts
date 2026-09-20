@@ -44,6 +44,8 @@ export function mapCommunitySearchResult(
       trusted_at: row.trusted_at,
       profile_image_id: row.profile_image_id,
       banner_image_id: row.banner_image_id,
+      profile_image_placement: row.profile_image_placement,
+      banner_image_placement: row.banner_image_placement,
       created_by_id: row.created_by_id,
       created_at: row.created_at,
       updated_at: row.updated_at,

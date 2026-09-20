@@ -4265,6 +4265,12 @@ importers:
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
+      '@vouchington/image-resize':
+        specifier: 0.2.0
+        version: 0.2.0(@types/node@26.5.0)
+      '@vouchington/media':
+        specifier: 0.2.0
+        version: 0.2.0
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
