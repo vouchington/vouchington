@@ -113,18 +113,18 @@ describe('groupCount', () => {
 })
 
 describe('playwrightShardTotal', () => {
-  it('uses one shard for zero through 25 runnable spec files', () => {
+  it('uses one shard for zero through 36 runnable spec files', () => {
     expect(playwrightShardTotal(0)).toBe(1)
     expect(playwrightShardTotal(1)).toBe(1)
-    expect(playwrightShardTotal(25)).toBe(1)
+    expect(playwrightShardTotal(36)).toBe(1)
   })
 
   it('adds a shard as the spec count crosses each execution-budget boundary', () => {
-    expect(playwrightShardTotal(26)).toBe(2)
-    expect(playwrightShardTotal(50)).toBe(2)
-    expect(playwrightShardTotal(51)).toBe(3)
-    expect(playwrightShardTotal(75)).toBe(3)
-    expect(playwrightShardTotal(76)).toBe(4)
+    expect(playwrightShardTotal(37)).toBe(2)
+    expect(playwrightShardTotal(72)).toBe(2)
+    expect(playwrightShardTotal(73)).toBe(3)
+    expect(playwrightShardTotal(109)).toBe(3)
+    expect(playwrightShardTotal(110)).toBe(4)
   })
 
   it('uses a valid explicit override instead of the runtime heuristic', () => {
@@ -177,7 +177,7 @@ describe('full-suite shard selection', () => {
       skip: 'false',
       fullSuite: 'true',
       files: [],
-      shardTotal: '13',
+      shardTotal: '9',
       reason,
     })
   })
@@ -199,7 +199,7 @@ describe('full-suite shard selection', () => {
       skip: 'false',
       fullSuite: 'false',
       files: selectedFiles,
-      shardTotal: '5',
+      shardTotal: '4',
       reason,
     })
   })

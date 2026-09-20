@@ -59,11 +59,12 @@ flowchart TD
 3. **Empty result** → `skip=true`, job short-circuits.
 
 For targeted PRs, shard count is
-`max(1, ceil(selected runnable spec count × 12 seconds / 300 seconds))`. Full-suite selections,
+`max(1, ceil(selected runnable spec count × 8.6 seconds / 313 seconds))`. Full-suite selections,
 planner fail-open fallbacks, and manual runs use the same formula with the complete runnable
-Playwright spec count. Twelve seconds per spec is an initial public-runner candidate projected from
-the private-runner baseline, not a per-spec SLA; public-runner measurements must validate or retune it.
-The 300-second Playwright execution budget leaves room for fixed per-shard build/startup overhead
+Playwright spec count. The 8.6 seconds per spec and 313-second execution budget are allocation
+heuristics, not a per-spec SLA. The first public full-suite baseline retained this formula: the
+roughly 318-spec suite resolves to nine shards and meets the job KPI with three Playwright workers.
+The execution budget leaves room for fixed per-shard build/startup overhead
 inside the sub-ten-minute job target. There is no repository policy cap, although the selector
 rejects totals outside GitHub's 1–256 matrix range.
 
@@ -81,7 +82,7 @@ On matching `main` pushes (non-PR), the selector always emits the full suite. Th
 orchestrator skips `test-playwright` on `main` when the refined Playwright path filter does not
 match.
 
-The current roughly 318-spec full suite resolves to 13 shards. Trusted PRs may add the credentialed
+The current roughly 318-spec full suite resolves to nine shards. Trusted PRs may add the credentialed
 suite, and uncapped dynamic matrices may increase queueing further. The runtime audit excludes queue
 delay, so inspect it separately; every Playwright shard's median execution should stay below 480
 seconds, matching the runtime audit's eight-minute median threshold.

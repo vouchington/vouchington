@@ -316,7 +316,7 @@ jobs:
       - name: Run Playwright tests
         id: run-playwright
         # Sized to PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-selection.mts): a
-        # 300s/shard execution budget plus a per-shard warm-up/variance buffer, rounded up to a
+        # 313s/shard execution budget plus a per-shard warm-up/variance buffer, rounded up to a
         # whole minute since GitHub Actions timeout-minutes literals in this repo stay integral.
         timeout-minutes: 9
         env:

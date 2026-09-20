@@ -37,11 +37,11 @@ capacity and queues excess work. Every shard-capable workflow puts a ten-minute 
 Vitest command itself; this is a step deadline, not a replacement for the job's broader timeout.
 
 Playwright has no repository-variable shard cap on any path. PR, labelled-full, fail-open, manual,
-and push runs all use `max(1, ceil(runnable spec count × 12 seconds / 300 seconds))`; GitHub's
-matrix range limits the result to 1–256. The 12 seconds per spec and 300-second execution budget
-are an allocation heuristic, not a per-spec SLA: an initial public GitHub-hosted `ubuntu-latest`
-(4-vCPU, three-worker) candidate projected from the private-runner baseline and pending public-runner
-measurements. See the derivation in
+and push runs all use `max(1, ceil(runnable spec count × 8.6 seconds / 313 seconds))`; GitHub's
+matrix range limits the result to 1–256. The 8.6 seconds per spec and 313-second execution budget
+are an allocation heuristic, not a per-spec SLA. The first public full-suite baseline retained the
+formula: its roughly 318 runnable specs resolve to nine shards and meet the sub-ten-minute job KPI
+with three Playwright workers. See the derivation in
 [`ci/playwright/shard-selection.mts`](../../ci/playwright/shard-selection.mts). The execution budget
 leaves room for fixed per-shard build/startup overhead inside the whole job's ~10-minute ceiling
 (build + migrate + compile + test, not just the test step), plus a per-shard warm-up/variance
