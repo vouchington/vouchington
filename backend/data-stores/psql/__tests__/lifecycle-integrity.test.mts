@@ -14,7 +14,6 @@ import {
   insertContradictoryImageLifecycle,
   insertContradictoryRssImportRowLifecycle,
   insertTerminalBlueskyAuthorizationHandle,
-  rewriteTerminalAgentResponse,
   rewriteTerminalBedrockBatch,
   rewriteTerminalDataRequest,
   rewriteTerminalImage,
@@ -35,7 +34,6 @@ const lifecycleConstraints = [
 ] as const
 
 const guardedLifecycleColumns = {
-  agent_responses: ['completed_at', 'failed_at'],
   admin_import_batches: ['completed_at'],
   admin_import_rows: ['completed_at', 'failed_at'],
   bedrock_embeddings_batches: ['completed_at', 'failed_at', 'cancelled_at'],
@@ -97,7 +95,6 @@ describe('PostgreSQL lifecycle integrity', () => {
 
   it('rejects rewrites after asynchronous work reaches a terminal state', async () => {
     const user = await createLocalTestUser()
-    await expect(rewriteTerminalAgentResponse(user.id)).rejects.toMatchObject({ code: '23514' })
     await expect(rewriteTerminalImage(user.id)).rejects.toMatchObject({ code: '23514' })
     await expect(rewriteTerminalDataRequest()).rejects.toMatchObject({ code: '23514' })
     await expect(rewriteTerminalBedrockBatch()).rejects.toMatchObject({ code: '23514' })

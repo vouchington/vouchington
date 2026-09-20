@@ -1,4 +1,3 @@
-import { agentResponseQuotaConfig } from '@services/agent-responses/quota-config'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities/config'
 import { kagiSmallWebImportConfig } from '@services/kagi-smallweb/import-config'
 import { moderationAiConfig, moderationAiDispatchConfig } from '@services/moderation/ai-config'
@@ -151,26 +150,6 @@ export const operationalDynamicConfigRegistryEntries = [
         description:
           'When auto_dispatch_enabled, automatically dismiss reports where AI recommends no action.',
       },
-    },
-  }),
-  defineDynamicConfigNamespace({
-    namespace: 'agent-response-quotas',
-    label: 'Agent Response Quotas',
-    description: 'Daily quota limits and concurrency controls for standalone agent responses.',
-    config: agentResponseQuotaConfig,
-    access: { update_roles: ['developer'] },
-    validate: next => validateMembershipPlanLimits(next, ['free_daily', 'plus_daily', 'pro_daily']),
-    fields: {
-      free_daily: quotaField('Daily agent response quota for free-tier users.'),
-      plus_daily: quotaField('Daily agent response quota for Plus members.'),
-      pro_daily: quotaField('Daily agent response quota for Pro members.'),
-      max_concurrent: {
-        description: 'Maximum concurrent agent responses per user.',
-        min_value: 1,
-        max_value: 20,
-        integer: true,
-      },
-      enabled: { description: 'Enable or disable the agent responses API.' },
     },
   }),
   defineDynamicConfigNamespace({

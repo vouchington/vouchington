@@ -167,39 +167,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Fail stale AI runtime generations after an interrupted worker",
-        "id": "reconcileRuntimeGenerations",
-        "kind": "scheduled-jobs",
-        "schedule": "*/5 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "ai_agents",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "*/5 * * * *",
-    },
-    "schedulerId": "reconcileRuntimeGenerations",
-    "template": {
-      "data": {},
-      "name": "reconcile-runtime-generations",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Re-enqueue member-created support drafts after post-commit enqueue failures",
         "id": "reconcileMemberSupportAgentIntents",
         "kind": "scheduled-jobs",
@@ -2676,7 +2643,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
 ]
 `;
 
-exports[`scheduled job manifest catalog > projects every scheduled API surface, including runtime generation recovery 1`] = `
+exports[`scheduled job manifest catalog > projects every scheduled API surface 1`] = `
 [
   {
     "description": "Recover abandoned durable ActivityPub inbox envelopes",
@@ -2989,14 +2956,6 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface, 
     "queue_name": "ai_agents",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileAutoDispatchJudgements",
-  },
-  {
-    "description": "Fail stale AI runtime generations after an interrupted worker",
-    "id": "reconcileRuntimeGenerations",
-    "job_name": "reconcile-runtime-generations",
-    "queue_name": "ai_agents",
-    "schedule": "*/5 * * * *",
-    "triggerName": "enqueueReconcileRuntimeGenerations",
   },
   {
     "description": "Re-enqueue member-created support drafts after post-commit enqueue failures",

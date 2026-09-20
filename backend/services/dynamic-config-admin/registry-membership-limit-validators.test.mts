@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { agentResponseQuotaConfig } from '@services/agent-responses/quota-config'
 import { autotaggerPaidLimitsConfig } from '@services/autotagger/limits-config'
 import { manualTagLimitConfig } from '@services/tag-limits/config'
 import { rateLimitConfig } from '@services/user-rate-limits/config'
@@ -66,27 +65,5 @@ describe('membership limit registry validation', () => {
         post_free_max_topics: 1,
       }),
     ).toThrow('Free-tier post autotagging must remain disabled')
-  })
-
-  it('rejects agent response quotas that decrease for a paid plan', () => {
-    const entry = getDynamicConfigRegistryEntry('agent-response-quotas')
-
-    expect(() =>
-      entry?.validate?.({
-        ...(agentResponseQuotaConfig.defaultFields as Record<string, boolean | number>),
-        pro_daily: 99,
-      }),
-    ).toThrow('Membership limits must satisfy free_daily < plus_daily < pro_daily')
-  })
-
-  it('rejects equal paid limits when the public catalog promises increasing capacity', () => {
-    const entry = getDynamicConfigRegistryEntry('agent-response-quotas')
-
-    expect(() =>
-      entry?.validate?.({
-        ...(agentResponseQuotaConfig.defaultFields as Record<string, boolean | number>),
-        plus_daily: 10,
-      }),
-    ).toThrow('Membership limits must satisfy free_daily < plus_daily < pro_daily')
   })
 })

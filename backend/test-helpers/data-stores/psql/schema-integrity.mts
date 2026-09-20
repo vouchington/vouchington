@@ -125,19 +125,3 @@ export async function getModerationResolverForeignKeys(
   )
   return rows
 }
-
-export async function hasAgentResponseExclusiveTerminalStates(): Promise<boolean> {
-  const { rows } = await read<{ constraint_definition: string }>(
-    `/* getAgentResponseTerminalConstraint */
-      SELECT pg_get_constraintdef(oid) AS constraint_definition
-      FROM pg_constraint
-      WHERE conrelid = 'agent_responses'::regclass
-        AND conname = 'chk_agent_responses__one_terminal_state'`,
-  )
-  const definition = rows[0]?.constraint_definition
-  return (
-    rows.length === 1 &&
-    definition?.includes('completed_at IS NULL') === true &&
-    definition.includes('failed_at IS NULL')
-  )
-}

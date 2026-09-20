@@ -160,8 +160,6 @@ describe('worker fetch handler — routing and caching', () => {
     '/api/v1/auth/sessions',
     '/api/v1/session',
     '/api/v1/recommended-topics',
-    '/api/v1/agent-responses/response-123',
-    '/api/v1/agent-responses/response-123/stream',
     '/api/v1/posts/comment-abc/ancestors',
   ])('bypasses CachedOrigin for private backend route %s', async pathname => {
     const fetchSpy = vi.fn<VitestLooseMock>(() =>

@@ -9,7 +9,6 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 | Processor                                   | Job Name                                 | Description                                                                                                                                                    |
 | ------------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `processChat`                               | `chat`                                   | Runs hosted chat responses and publishes token chunks through Valkey pub/sub                                                                                   |
-| `processAgentResponse`                      | `agent-response`                         | Claims a durable agent response, runs the research agent, and publishes progress through Valkey pub/sub                                                        |
 | `processAutotaggerPost`                     | `autotagger-post`                        | Runs the autotagger agent on a post                                                                                                                            |
 | `processAutotaggerRssFeedItem`              | `autotagger-rss-feed-item`               | Runs the autotagger agent on an RSS feed item                                                                                                                  |
 | `processModerationDispatcher`               | `moderation-dispatcher`                  | Dispatches enabled built-in community AI agent jobs for a post                                                                                                 |
@@ -21,7 +20,6 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 | `processStoryClustering`                    | `story-clustering`                       | Clusters an RSS feed item into stories; re-enqueues with 5 s delay (up to 10 times) when embedding is not yet visible — mirrors the autotagger retry pattern   |
 | `processWikipediaRecommender`               | `wikipedia-recommender`                  | Recommends topics for content entities                                                                                                                         |
 | `processReconcileBackgroundResponses`       | `reconcile-background-responses`         | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
-| `processReconcileRuntimeGenerations`        | `reconcile-runtime-generations`          | Fails stale durable runtime generations and releases their concurrency after an interrupted worker                                                             |
 | `processReconcileMemberSupportAgentIntents` | `reconcile-member-support-agent-intents` | Re-enqueues member-created support drafts that committed before keyed queue delivery                                                                           |
 
 ## Architecture
@@ -48,7 +46,6 @@ registration, the source job still reaches its midnight delay fallback.
 ## Enqueue Files
 
 - [`enqueues/autotagger.mts`](enqueues/autotagger.mts) — autotagger jobs
-- [`enqueues/agent-response.mts`](enqueues/agent-response.mts) — standalone agent response jobs
 - [`enqueues/chat.mts`](enqueues/chat.mts) — chat jobs
 - [`enqueues/community-moderation.mts`](enqueues/community-moderation.mts) — fire-and-forget community moderation jobs plus an awaited recovery variant
 - [`enqueues/customer-support.mts`](enqueues/customer-support.mts) — customer support jobs
@@ -57,7 +54,6 @@ registration, the source job still reaches its midnight delay fallback.
 - [`enqueues/story-post.mts`](enqueues/story-post.mts) — fire-and-forget creation enqueue plus an awaited recovery variant that propagates delivery failure
 - [`enqueues/wikipedia-recommender.mts`](enqueues/wikipedia-recommender.mts) — wikipedia recommender jobs
 - [`enqueues/reconcile-background-responses.mts`](enqueues/reconcile-background-responses.mts) — background-response sweeper job
-- [`enqueues/reconcile-runtime-generations.mts`](enqueues/reconcile-runtime-generations.mts) - runtime-generation recovery job
 - [`enqueues/reconcile-member-support-agent-intents.mts`](enqueues/reconcile-member-support-agent-intents.mts) - member support draft-intent recovery job
 
 ## Chat Streaming
@@ -85,23 +81,6 @@ bridge:
 6. On an ordinary HTTP abort, API sends `abort`; on lifecycle expiry it sends
    `sse-cycle-expired`. The worker preserves ordinary disconnect behavior, while expiry aborts the
    generator and persists partial output with a retryable assistant error
-
-## Agent Response Streaming
-
-Standalone agent-response rows are durable before enqueue. `processAgentResponse` atomically
-transitions a non-terminal, non-deleted row to started before any provider work. Even a delivery
-with the same logical job ID cannot reclaim active work. The scheduled runtime-generation
-reconciler marks work older than ten minutes failed with retryable copy, releasing durable
-concurrency without permitting overlapping providers. A failure or
-explicit cancellation that wins first makes the claim return no row, so the worker exits. DELETE
-returns the job ID from the same cancellation update and signals that exact claimed job when one
-exists. SSE disconnect after subscription acquisition only detaches the client; it does not cancel
-the durable job.
-
-Each runtime reconciliation cycle selects at most 100 candidates from PostgreSQL primary, ordered
-by start time and ID. It signals exactly that selected set, then terminalizes only those immutable
-identities with the original cutoff and nonterminal predicates. Work becoming stale after
-selection waits for the next five-minute schedule cycle.
 
 Inbound SES support messages supply a per-message logical ID and triggering support-message ID to
 `enqueueCustomerSupportAwaited`. The logical ID is used for both the GlideMQ job and simple

@@ -8,7 +8,6 @@ const PRIVATE_BACKEND_CACHE_BYPASS_PREFIXES = [
   '/api/v1/auth',
   '/api/v1/session',
   '/api/v1/recommended-topics',
-  '/api/v1/agent-responses',
 ]
 const POST_ANCESTORS_ROUTE_RE = /^\/api\/v1\/posts\/[^/]+\/ancestors\/?$/
 

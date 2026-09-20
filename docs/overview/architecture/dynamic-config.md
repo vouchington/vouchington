@@ -11,7 +11,7 @@ repository root to review env readers, deployment contracts, package gates, and 
 The registry lives in `@services/dynamic-config-admin` and currently includes feature flags, App
 Attestation, vote weight, reCAPTCHA, Turnstile always-approve, post content limits, user rate limits, route rate limits, bloom
 filters, RSS feed discoverability, RSS feed crawl scheduling, moderation, Bedrock batch tuning,
-user import/export limits, Web Risk enablement, moderation AI controls, and agent response quotas.
+user import/export limits, Web Risk enablement, and moderation AI controls.
 
 Each namespace is registered with `defineDynamicConfigNamespace()` and defines:
 

@@ -13,9 +13,8 @@ shutdown.
   `close()` is shutdown-only and safely tears down active subscriptions and the publisher.
 - Domain facades: `imageStatePubSub`, `dataRequestPubSub`, `articleSyncPubSub`,
   `publishChatToken` / `subscribeChatTokens` / `closeChatTokenSubscriber`,
-  `publishImportProgress` / `subscribeImportProgress`, and
-  `publishAgentResponseEvent` / `subscribeAgentResponseEvents` /
-  `closeAgentResponseSubscriber` — one per `channel-pubsub.mts` consumer.
+  and `publishImportProgress` / `subscribeImportProgress` — one per
+  `channel-pubsub.mts` consumer.
 
 ## Related
 

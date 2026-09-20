@@ -34,7 +34,6 @@
     "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
     "@queues/ai-agents": "workspace:^",
-    "@services/agent-responses": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/autotagger": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",

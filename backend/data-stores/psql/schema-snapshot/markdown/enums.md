@@ -26,17 +26,6 @@
 - `windows-system-language-model`
 - `android-aicore-system`
 
-## `agent_name`
-
-- `research`
-
-## `agent_response_termination_reason`
-
-- `no_tool_calls`
-- `max_iterations`
-- `stalled`
-- `error`
-
 ## `agent_types`
 
 - `moderator`

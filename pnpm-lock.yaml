@@ -673,9 +673,6 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@services/agent-responses':
-        specifier: workspace:^
-        version: link:../../services/agent-responses
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -1055,9 +1052,6 @@ importers:
       '@services/admin-imports':
         specifier: workspace:^
         version: link:../services/admin-imports
-      '@services/agent-responses':
-        specifier: workspace:^
-        version: link:../services/agent-responses
       '@services/agents':
         specifier: workspace:^
         version: link:../services/agents
@@ -3725,40 +3719,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/services/agent-responses:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
-      '@data-stores/valkey-pubsub':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-pubsub
-      '@data-stores/valkey-rate-limiter':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-rate-limiter
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@services/memberships':
-        specifier: workspace:^
-        version: link:../memberships
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-      uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
-    devDependencies:
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/services/agents:
     dependencies:
       '@data-stores/psql':
@@ -5468,9 +5428,6 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@services/agent-responses':
-        specifier: workspace:^
-        version: link:../agent-responses
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../ai-usage
@@ -10778,9 +10735,6 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
-      '@services/agent-responses':
-        specifier: workspace:^
-        version: link:../../services/agent-responses
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../../services/ai-usage

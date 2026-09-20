@@ -65,7 +65,7 @@ despite the per-request CSP nonce. What's still excluded from the edge cache:
 - **Write operations**: POST, PATCH, PUT, DELETE requests
 - **Private/personalized endpoints**: `/api/v1/my/*`, `/api/v1/feeds/*`, `/api/v1/bookmarks/*`,
   `/api/v1/me/*`, `/api/v1/auth/*`, `/api/v1/session`, `/api/v1/recommended-topics`,
-  `/api/v1/agent-responses/*`, and any endpoint requiring authentication. The Worker policy
+  and any endpoint requiring authentication. The Worker policy
   bypasses `CachedOrigin` for those documented backend route families and forces no-store
   headers on the client response as a defense in depth if an origin route accidentally emits a
   public header. When a bot-classified request hits one of these private bypasses, the Worker

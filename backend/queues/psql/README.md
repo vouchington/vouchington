@@ -34,7 +34,7 @@ refresh while the hourly schedule remains a recovery path.
 
 ## Partition Jobs
 
-- `createPartitions` and `cleanupPartitions` operate on the monthly RANGE tables registered in the canonical [partitioning strategy](../../../docs/overview/architecture/partitioning-strategy.md): conversation agentic runs/events, agent responses, crawls, crawl chunks, and RSS feed crawls.
+- `createPartitions` and `cleanupPartitions` operate on the monthly RANGE tables registered in the canonical [partitioning strategy](../../../docs/overview/architecture/partitioning-strategy.md): conversation agentic runs/events, crawls, crawl chunks, and RSS feed crawls.
 - `createPartitions` creates explicit future monthly partitions for those tables.
 - `cleanupPartitions` drops expired monthly partitions for those tables.
 - Partition cleanup is for whole-partition retention only; do not replace it with row-delete cleanup for debug tables unless the access pattern changes materially.

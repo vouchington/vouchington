@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
-    "@services/agent-responses": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",
     "@services/api-egress-proxy": "workspace:^",

@@ -176,7 +176,6 @@ describe('openapi document generation', () => {
 
   it('spot-checks non-200 status codes for known routes', () => {
     expect(doc.paths['/api/v1/communities']!.post!.responses).toHaveProperty('201')
-    expect(doc.paths['/api/v1/agent-responses/{id}']!.delete!.responses).toHaveProperty('204')
   })
 
   it('documents the complete top-hashtags query contract', () => {

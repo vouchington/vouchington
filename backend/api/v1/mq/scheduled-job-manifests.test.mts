@@ -21,7 +21,6 @@ const EXPECTED_SCHEDULED_JOBS = [
   'activitypub-inbox/activitypub-inbox-cleanup',
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileBackgroundResponses',
-  'ai_agents/reconcileRuntimeGenerations',
   'ai_agents/reconcileMemberSupportAgentIntents',
   'bedrock-embeddings-batch/backlog_dispatcher',
   'bedrock-embeddings-batch/creation_dispatcher',
@@ -140,20 +139,11 @@ describe('scheduled job manifest catalog', () => {
     ).toEqual([...PSQL_SCHEDULED_ADMIN_JOB_TYPES].sort())
   })
 
-  it('projects every scheduled API surface, including runtime generation recovery', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(58)
+  it('projects every scheduled API surface', () => {
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(57)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,
-    )
-    expect(SCHEDULED_JOBS_REGISTRY).toContainEqual(
-      expect.objectContaining({
-        id: 'reconcileRuntimeGenerations',
-        queue_name: 'ai_agents',
-        job_name: 'reconcile-runtime-generations',
-        schedule: '*/5 * * * *',
-        trigger: expect.any(Function),
-      }),
     )
     for (const job of SCHEDULED_JOBS_REGISTRY) expect(typeof job.trigger).toBe('function')
     expect(SCHEDULED_JOBS_REGISTRY).toContainEqual({

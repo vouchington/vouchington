@@ -65,14 +65,6 @@ export const CONVERSATION_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
 ]
 
 /**
- * Agent response tables - partitioned by UUIDv7 timestamp
- * Monthly partitions for 30-day retention via partition drop
- */
-export const AGENT_RESPONSE_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
-  monthlyPartitionTable('agent_responses', { retentionDays: 30, dropPriority: 0 }),
-]
-
-/**
  * RSS feed crawl history - partitioned by UUIDv7 timestamp
  * Monthly partitions for 30-day retention via partition drop
  */
@@ -150,7 +142,6 @@ export const CRAWL_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
 export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   ...CONVERSATION_PARTITION_TABLES,
   ...CRAWL_PARTITION_TABLES,
-  ...AGENT_RESPONSE_PARTITION_TABLES,
   ...RSS_PARTITION_TABLES,
 ]
 

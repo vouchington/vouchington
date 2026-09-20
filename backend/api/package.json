@@ -125,7 +125,6 @@
     "@queues/wikipedia-recommender": "workspace:^",
     "@services/account-data-requests": "workspace:^",
     "@services/admin-imports": "workspace:^",
-    "@services/agent-responses": "workspace:^",
     "@services/agents": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/ap-actor-keys": "workspace:^",

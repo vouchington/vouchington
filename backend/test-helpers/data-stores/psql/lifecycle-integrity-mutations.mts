@@ -61,18 +61,6 @@ export async function insertActiveBlueskyAuthorizationWithoutHandle(userId: stri
     ) VALUES (${userId}, NULL, 'web', 'pending', CURRENT_TIMESTAMP)`)
 }
 
-export async function rewriteTerminalAgentResponse(userId: string): Promise<void> {
-  const { rows } = await write<{ id: string }>(sql`
-    INSERT INTO agent_responses (created_by_id, agent, completed_at)
-    VALUES (${userId}, 'research', CURRENT_TIMESTAMP)
-    RETURNING id
-  `)
-  await write(sql`/* rejectTerminalAgentResponseRewrite */
-    UPDATE agent_responses
-    SET completed_at = NULL, failed_at = CURRENT_TIMESTAMP
-    WHERE id = ${rows[0]!.id}`)
-}
-
 export async function rewriteTerminalImage(userId: string): Promise<void> {
   const { rows } = await write<{ id: string }>(sql`
     INSERT INTO images (

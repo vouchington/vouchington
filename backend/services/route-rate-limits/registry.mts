@@ -116,12 +116,6 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/mcp': { category: 'write', multiplier: 4 },
   'POST:/api/v1/admin/mcp': { category: 'write', multiplier: 4 },
 
-  // Agent responses — write (SSE, higher cost per request)
-  'POST:/api/v1/agent-responses': { category: 'write', multiplier: 2 },
-  'GET:/api/v1/agent-responses/:id': { category: 'read' },
-  'GET:/api/v1/agent-responses/:id/stream': { category: 'read' },
-  'DELETE:/api/v1/agent-responses/:id': { category: 'write' },
-
   // Content creation — write (default)
   'POST:/api/v1/posts': { category: 'write' },
   'POST:/api/v1/topics': { category: 'write' },
