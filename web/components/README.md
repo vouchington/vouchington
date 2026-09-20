@@ -7,7 +7,6 @@ Top-level component taxonomy for [`web/components/`](./). See [../CLAUDE.md](../
 | Subdirectory                                       | Purpose                                                                                                                                           |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`admin/`](admin/)                                 | Admin-only management views (users, queues, migrations, Valkey)                                                                                   |
-| [`agents/`](agents/)                               | Chat agent UI (message bubbles, tool calls, streaming, conversation list)                                                                         |
 | [`asides/`](asides/)                               | Per-page right-sidebar content registered via `PageWithAside`                                                                                     |
 | [`auth/`](auth/)                                   | Authentication UI (login, signup, OAuth buttons, TOTP)                                                                                            |
 | [`brand/`](brand/)                                 | Voucha brand assets (logo, wordmark, avatar)                                                                                                      |
