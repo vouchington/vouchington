@@ -27,6 +27,7 @@ export type AIAgentJobName =
   | 'auto-dispatch-judgement'
   | 'reconcile-auto-dispatch-judgements'
   | 'reconcile-background-responses'
+  | 'reconcile-chat-runtime-generations'
   | 'reconcile-member-support-agent-intents'
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
@@ -48,6 +49,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'auto-dispatch-judgement': 10,
   'reconcile-auto-dispatch-judgements': 100,
   'reconcile-background-responses': 100,
+  'reconcile-chat-runtime-generations': 100,
   'reconcile-member-support-agent-intents': 100,
 }
 
@@ -101,5 +103,6 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'auto-dispatch-judgement': false,
   'reconcile-auto-dispatch-judgements': false,
   'reconcile-background-responses': false,
+  'reconcile-chat-runtime-generations': false,
   'reconcile-member-support-agent-intents': false,
 }

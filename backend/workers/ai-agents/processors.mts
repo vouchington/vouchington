@@ -27,6 +27,7 @@ import { processBackfillReportJudgements } from './processors/process-backfill-r
 import { processAutoDispatchJudgement } from './processors/process-auto-dispatch-judgement.mts'
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
 import { processReconcileBackgroundResponses } from './processors/process-reconcile-background-responses.mts'
+import { processReconcileChatRuntimeGenerations } from './processors/process-reconcile-chat-runtime-generations.mts'
 import { processReconcileMemberSupportAgentIntents } from './processors/process-reconcile-member-support-agent-intents.mts'
 
 export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
@@ -95,6 +96,8 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
       return processReconcileAutoDispatchJudgements()
     case 'reconcile-background-responses':
       return processReconcileBackgroundResponses()
+    case 'reconcile-chat-runtime-generations':
+      return processReconcileChatRuntimeGenerations()
     case 'reconcile-member-support-agent-intents':
       return processReconcileMemberSupportAgentIntents()
     default:

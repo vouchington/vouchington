@@ -16,6 +16,11 @@ matrix live in that service package — see
 [`@services/openai-background-responses`](../../services/openai-background-responses/README.md)
 and [Background Response Sweeper](../../queues/ai-agents/README.md#background-response-sweeper).
 
+`processReconcileChatRuntimeGenerations`
+(`processors/process-reconcile-chat-runtime-generations.mts`) signals stale hosted-chat jobs before
+terminalizing their matching conversation runs. It contains no standalone agent-response or pub/sub
+path; A6 owns removal once hosted chat is retired.
+
 Keyed inbound-email `customer-support` jobs carry their triggering message ID and claim the unique
 `support_agent_runs.idempotency_key` before model execution. The run's `started_at` is a four-minute
 lease, shorter than the worker lock. A stable retry atomically reclaims failed or expired work with

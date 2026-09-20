@@ -20,6 +20,7 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 | `processStoryClustering`                    | `story-clustering`                       | Clusters an RSS feed item into stories; re-enqueues with 5 s delay (up to 10 times) when embedding is not yet visible — mirrors the autotagger retry pattern   |
 | `processWikipediaRecommender`               | `wikipedia-recommender`                  | Recommends topics for content entities                                                                                                                         |
 | `processReconcileBackgroundResponses`       | `reconcile-background-responses`         | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
+| `processReconcileChatRuntimeGenerations`    | `reconcile-chat-runtime-generations`     | Fails stale hosted-chat generations and releases their conversation turn after an interrupted worker                                                           |
 | `processReconcileMemberSupportAgentIntents` | `reconcile-member-support-agent-intents` | Re-enqueues member-created support drafts that committed before keyed queue delivery                                                                           |
 
 ## Architecture
@@ -54,9 +55,15 @@ registration, the source job still reaches its midnight delay fallback.
 - [`enqueues/story-post.mts`](enqueues/story-post.mts) — fire-and-forget creation enqueue plus an awaited recovery variant that propagates delivery failure
 - [`enqueues/wikipedia-recommender.mts`](enqueues/wikipedia-recommender.mts) — wikipedia recommender jobs
 - [`enqueues/reconcile-background-responses.mts`](enqueues/reconcile-background-responses.mts) — background-response sweeper job
+- [`enqueues/reconcile-chat-runtime-generations.mts`](enqueues/reconcile-chat-runtime-generations.mts) — hosted-chat runtime recovery job
 - [`enqueues/reconcile-member-support-agent-intents.mts`](enqueues/reconcile-member-support-agent-intents.mts) - member support draft-intent recovery job
 
 ## Chat Streaming
+
+`reconcile-chat-runtime-generations` runs every five minutes while hosted chat remains available.
+It selects at most 100 stale top-level conversation runs, signals only that immutable batch to stop
+the matching worker, and atomically terminalizes each selected run and assistant message. This
+prevents a worker crash from leaving a conversation permanently unable to accept another turn.
 
 ## Built-In Community AI Agents
 

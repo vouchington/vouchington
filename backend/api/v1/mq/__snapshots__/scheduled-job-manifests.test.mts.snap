@@ -167,6 +167,39 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Fail stale hosted-chat generations after an interrupted worker",
+        "id": "reconcileChatRuntimeGenerations",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileChatRuntimeGenerations",
+    "template": {
+      "data": {},
+      "name": "reconcile-chat-runtime-generations",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Re-enqueue member-created support drafts after post-commit enqueue failures",
         "id": "reconcileMemberSupportAgentIntents",
         "kind": "scheduled-jobs",
@@ -2956,6 +2989,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "ai_agents",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileAutoDispatchJudgements",
+  },
+  {
+    "description": "Fail stale hosted-chat generations after an interrupted worker",
+    "id": "reconcileChatRuntimeGenerations",
+    "job_name": "reconcile-chat-runtime-generations",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileChatRuntimeGenerations",
   },
   {
     "description": "Re-enqueue member-created support drafts after post-commit enqueue failures",
