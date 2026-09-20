@@ -780,6 +780,12 @@
     "fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE candidate record;\nBEGIN\n  IF p_community_id IS NULL THEN\n    SELECT day, community_id, metric, category INTO candidate\n    FROM moderation_transparency_daily_rollups\n    WHERE community_id IS NULL AND day < p_before\n      AND count >= 20 AND latest_occurred_at <= p_cutoff\n    ORDER BY day DESC\n    LIMIT 1;\n  ELSE\n    SELECT day, community_id, metric, category INTO candidate\n    FROM moderation_transparency_daily_rollups\n    WHERE community_id = p_community_id AND day < p_before\n      AND count >= 20 AND latest_occurred_at <= p_cutoff\n    ORDER BY day DESC\n    LIMIT 1;\n  END IF;\n  IF FOUND THEN\n    PERFORM fn_release_moderation_transparency_daily_rollup(\n      candidate.day, candidate.community_id, candidate.metric, candidate.category, p_cutoff\n    );\n  END IF;\nEND $function$\n"
     },
+    "fn_require_classifier_activation_lifecycle": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_activation_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at\n    AND NEW.deactivated_at IS NOT DISTINCT FROM OLD.deactivated_at THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.activated_at IS NULL\n    AND OLD.deactivated_at IS NULL\n    AND NEW.activated_at IS NOT NULL\n    AND NEW.deactivated_at IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.activated_at IS NOT NULL\n    AND OLD.deactivated_at IS NULL\n    AND NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at\n    AND NEW.deactivated_at IS NOT NULL THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION '% activation lifecycle is immutable after each transition', TG_TABLE_NAME USING ERRCODE = '23514';\nEND $function$\n"
+    },
+    "fn_require_classifier_candidate_community_override_lifecycle": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_community_override_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.community_id IS DISTINCT FROM OLD.community_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.enabled_at IS DISTINCT FROM OLD.enabled_at\n    OR NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id\n    OR OLD.disabled_at IS NOT NULL\n    OR NEW.disabled_at IS NULL THEN\n    RAISE EXCEPTION 'classifier candidate community override is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_require_classifier_candidate_effective_thresholds": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_effective_thresholds()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  defaults classifier_prompt_versions%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO defaults FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  effective_lower := COALESCE(NEW.lower_threshold_override, defaults.default_lower_threshold);\n  effective_upper := COALESCE(NEW.upper_threshold_override, defaults.default_upper_threshold);\n  IF effective_lower < 0 OR effective_upper > 1 OR effective_lower >= effective_upper THEN\n    RAISE EXCEPTION 'classifier candidate effective thresholds must be ordered probabilities' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
@@ -787,7 +793,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_threshold_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.prompt_version_id IS DISTINCT FROM OLD.prompt_version_id\n    OR NEW.lower_threshold_override IS DISTINCT FROM OLD.lower_threshold_override\n    OR NEW.upper_threshold_override IS DISTINCT FROM OLD.upper_threshold_override\n    OR NEW.activated_at IS DISTINCT FROM OLD.activated_at\n    OR OLD.deactivated_at IS NOT NULL\n    OR NEW.deactivated_at IS NULL THEN\n    RAISE EXCEPTION 'classifier candidate threshold revision is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_require_classifier_result_batch_scope": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  threshold classifier_candidate_thresholds%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates WHERE id = NEW.candidate_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF NEW.candidate_id IS NOT NULL THEN\n    SELECT * INTO threshold FROM classifier_candidate_thresholds\n    WHERE candidate_id = NEW.candidate_id\n      AND prompt_version_id = NEW.prompt_version_id\n      AND deactivated_at IS NULL\n    FOR SHARE;\n  END IF;\n  effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);\n  effective_upper := COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold);\n  IF NEW.scope_category IS DISTINCT FROM batch.scope_category\n    OR NEW.scope_community_id IS DISTINCT FROM batch.scope_community_id THEN\n    RAISE EXCEPTION 'classifier result scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its owning community' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier result thresholds must match prompt and candidate configuration' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.threshold_id IS DISTINCT FROM threshold.id THEN\n    RAISE EXCEPTION 'classifier result threshold revision must match candidate configuration' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  threshold classifier_candidate_thresholds%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates WHERE id = NEW.candidate_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF NEW.candidate_id IS NOT NULL THEN\n    SELECT * INTO threshold FROM classifier_candidate_thresholds\n    WHERE candidate_id = NEW.candidate_id\n      AND prompt_version_id = NEW.prompt_version_id\n      AND activated_at <= batch.created_at\n      AND (deactivated_at IS NULL OR deactivated_at > batch.created_at)\n    ORDER BY activated_at DESC, id DESC\n    LIMIT 1\n    FOR SHARE;\n  END IF;\n  effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);\n  effective_upper := COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold);\n  IF NEW.scope_category IS DISTINCT FROM batch.scope_category\n    OR NEW.scope_community_id IS DISTINCT FROM batch.scope_community_id THEN\n    RAISE EXCEPTION 'classifier result scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its owning community' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier result thresholds must match prompt and candidate configuration' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.threshold_id IS DISTINCT FROM threshold.id THEN\n    RAISE EXCEPTION 'classifier result threshold revision must match the configuration active when its batch began' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_require_global_classifier_candidate_override": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_global_classifier_candidate_override()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM classifier_candidates candidate\n    WHERE candidate.id = NEW.candidate_id AND candidate.community_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'community overrides may target only global classifier candidates' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -7601,7 +7607,7 @@
     },
     "classifier_candidate_community_overrides": {
       "checkConstraints": {
-        "chk_classifier_candidate_community_overrides__lifecycle": "CHECK (((disabled_at IS NULL) OR (disabled_at >= enabled_at)))"
+        "chk_classifier_candidate_community_overrides__lifecycle": "CHECK ((((disabled_at IS NULL) AND (disabled_by_id IS NULL)) OR (disabled_at >= enabled_at)))"
       },
       "columns": {
         "candidate_id": {
@@ -7612,7 +7618,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "community_id": {
@@ -7623,8 +7629,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
         },
         "disabled_at": {
           "collation": null,
@@ -7634,7 +7651,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "disabled_by_id": {
@@ -7645,7 +7662,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "enabled_at": {
@@ -7656,7 +7673,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "enabled_by_id": {
@@ -7667,7 +7684,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
           "type": "uuid"
         },
         "updated_at": {
@@ -7678,7 +7706,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         }
       },
@@ -7726,20 +7754,13 @@
         "classifier_candidate_community_overrides_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX classifier_candidate_community_overrides_pkey ON public.classifier_candidate_community_overrides USING btree (community_id, candidate_id)",
+          "definition": "CREATE UNIQUE INDEX classifier_candidate_community_overrides_pkey ON public.classifier_candidate_community_overrides USING btree (id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "community_id",
+              "column": "id",
               "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "candidate_id",
-              "descending": false,
-              "expression": "candidate_id",
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -7760,6 +7781,26 @@
               "column": "candidate_id",
               "descending": false,
               "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_candidate_community_overrides__community": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_candidate_community_overrides__community ON public.classifier_candidate_community_overrides USING btree (community_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -7793,7 +7834,7 @@
         "idx_classifier_candidate_community_overrides__enabled": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_candidate_community_overrides__enabled ON public.classifier_candidate_community_overrides USING btree (community_id, candidate_id) WHERE (disabled_at IS NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_classifier_candidate_community_overrides__enabled ON public.classifier_candidate_community_overrides USING btree (community_id, candidate_id) WHERE (disabled_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -7814,7 +7855,7 @@
           "predicate": "(disabled_at IS NULL)",
           "primary": false,
           "ready": true,
-          "unique": false,
+          "unique": true,
           "valid": true
         },
         "idx_classifier_candidate_community_overrides__enabled_by": {
@@ -7841,12 +7882,13 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["community_id", "candidate_id"],
-        "definition": "PRIMARY KEY (community_id, candidate_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_classifier_candidate_community_overrides_global": "CREATE TRIGGER trigger_classifier_candidate_community_overrides_global BEFORE INSERT OR UPDATE OF candidate_id ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_require_global_classifier_candidate_override()",
+        "trigger_classifier_candidate_community_overrides_lifecycle": "CREATE TRIGGER trigger_classifier_candidate_community_overrides_lifecycle BEFORE UPDATE ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_community_override_lifecycle()",
         "trigger_classifier_candidate_community_overrides_updated_at": "CREATE TRIGGER trigger_classifier_candidate_community_overrides_updated_at BEFORE UPDATE ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -9375,7 +9417,7 @@
     "classifier_prompt_versions": {
       "checkConstraints": {
         "chk_classifier_prompt_versions__default_thresholds": "CHECK (((default_lower_threshold >= (0)::numeric) AND (default_upper_threshold <= (1)::numeric) AND (default_lower_threshold < default_upper_threshold)))",
-        "chk_classifier_prompt_versions__lifecycle": "CHECK ((NOT ((activated_at IS NOT NULL) AND (deactivated_at IS NOT NULL))))"
+        "chk_classifier_prompt_versions__lifecycle": "CHECK (((deactivated_at IS NULL) OR ((activated_at IS NOT NULL) AND (deactivated_at >= activated_at))))"
       },
       "columns": {
         "activated_at": {
@@ -9741,6 +9783,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_classifier_prompt_versions_activation_lifecycle": "CREATE TRIGGER trigger_classifier_prompt_versions_activation_lifecycle BEFORE UPDATE ON public.classifier_prompt_versions FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_activation_lifecycle()",
         "trigger_classifier_prompt_versions_identity_immutable": "CREATE TRIGGER trigger_classifier_prompt_versions_identity_immutable BEFORE UPDATE ON public.classifier_prompt_versions FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_prompt_version_identity_mutation()",
         "trigger_classifier_prompt_versions_updated_at": "CREATE TRIGGER trigger_classifier_prompt_versions_updated_at BEFORE UPDATE ON public.classifier_prompt_versions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -9753,7 +9796,7 @@
     },
     "classifiers": {
       "checkConstraints": {
-        "chk_classifiers__lifecycle": "CHECK ((NOT ((activated_at IS NOT NULL) AND (deactivated_at IS NOT NULL))))"
+        "chk_classifiers__lifecycle": "CHECK (((deactivated_at IS NULL) OR ((activated_at IS NOT NULL) AND (deactivated_at >= activated_at))))"
       },
       "columns": {
         "activated_at": {
@@ -10084,6 +10127,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_classifiers_activation_lifecycle": "CREATE TRIGGER trigger_classifiers_activation_lifecycle BEFORE UPDATE ON public.classifiers FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_activation_lifecycle()",
         "trigger_classifiers_identity_immutable": "CREATE TRIGGER trigger_classifiers_identity_immutable BEFORE UPDATE ON public.classifiers FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_identity_mutation()",
         "trigger_classifiers_updated_at": "CREATE TRIGGER trigger_classifiers_updated_at BEFORE UPDATE ON public.classifiers FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },

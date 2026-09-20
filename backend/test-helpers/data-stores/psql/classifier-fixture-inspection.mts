@@ -4,6 +4,30 @@ import type { ClassifierFixtureData } from './classifier-fixture-data.mts'
 
 export function buildClassifierFixtureInspection(data: ClassifierFixtureData) {
   return {
+    async getActivationLifecycleFacts() {
+      const { rows } = await read<{
+        classifier_retained_activation: boolean
+        prompt_retained_activation: boolean
+      }>(sql`/* getClassifierFixtureActivationLifecycleFacts */
+        SELECT
+          (SELECT activated_at IS NOT NULL AND deactivated_at >= activated_at
+            FROM classifiers WHERE id = ${data.classifierId}) AS classifier_retained_activation,
+          (SELECT activated_at IS NOT NULL AND deactivated_at >= activated_at
+            FROM classifier_prompt_versions WHERE id = ${data.promptVersionId}) AS prompt_retained_activation
+      `)
+      return rows[0]!
+    },
+    async getTopicResultThreshold(batchId: string) {
+      const { rows } = await read<{
+        threshold_id: string | null
+        effective_lower_threshold: string
+        effective_upper_threshold: string
+      }>(sql`/* getClassifierFixtureTopicResultThreshold */
+        SELECT threshold_id, effective_lower_threshold::text, effective_upper_threshold::text
+        FROM topic_classifier_results
+        WHERE batch_id = ${batchId}`)
+      return rows[0]!
+    },
     async getLineageCounts(options: {
       batchId: string
       callId: string

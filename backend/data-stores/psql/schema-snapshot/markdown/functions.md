@@ -579,6 +579,22 @@ CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_
  LANGUAGE plpgsql
 ```
 
+## `fn_require_classifier_activation_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_classifier_activation_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_require_classifier_candidate_community_override_lifecycle`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_community_override_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_require_classifier_candidate_effective_thresholds`
 
 ```sql

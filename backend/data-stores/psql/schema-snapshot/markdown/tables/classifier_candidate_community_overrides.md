@@ -6,24 +6,26 @@ Per-community enablement lifecycle for global classifier candidates.
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                              |
-| ---------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------- |
-| `community_id`   | `uuid`                     | no       |                     |          |           |           | Community changing availability of a global candidate.               |
-| `candidate_id`   | `uuid`                     | no       |                     |          |           |           | Global candidate whose availability is overridden.                   |
-| `enabled_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Time the community enabled the candidate.                            |
-| `enabled_by_id`  | `uuid`                     | yes      |                     |          |           |           | User who enabled the candidate, retained only while the user exists. |
-| `disabled_at`    | `timestamp with time zone` | yes      |                     |          |           |           | Time the override was disabled, or NULL while enabled.               |
-| `disabled_by_id` | `uuid`                     | yes      |                     |          |           |           | User who disabled the override, retained only while the user exists. |
-| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                      |
+| Column           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                              |
+| ---------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------- |
+| `id`             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                      |
+| `community_id`   | `uuid`                     | no       |                              |          |           |           | Community changing availability of a global candidate.               |
+| `candidate_id`   | `uuid`                     | no       |                              |          |           |           | Global candidate whose availability is overridden.                   |
+| `enabled_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Time the community enabled the candidate.                            |
+| `enabled_by_id`  | `uuid`                     | yes      |                              |          |           |           | User who enabled the candidate, retained only while the user exists. |
+| `disabled_at`    | `timestamp with time zone` | yes      |                              |          |           |           | Time the override was disabled, or NULL while enabled.               |
+| `disabled_by_id` | `uuid`                     | yes      |                              |          |           |           | User who disabled the override, retained only while the user exists. |
+| `created_at`     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                      |
+| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                      |
 
-**Primary key:** `PRIMARY KEY (community_id, candidate_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 _none_
 
 **Check constraints:**
 
-- `chk_classifier_candidate_community_overrides__lifecycle`: `CHECK (((disabled_at IS NULL) OR (disabled_at >= enabled_at)))`
+- `chk_classifier_candidate_community_overrides__lifecycle`: `CHECK ((((disabled_at IS NULL) AND (disabled_by_id IS NULL)) OR (disabled_at >= enabled_at)))`
 
 **Foreign keys:**
 
@@ -34,13 +36,15 @@ _none_
 
 **Indexes:**
 
-- `classifier_candidate_community_overrides_pkey`: `CREATE UNIQUE INDEX classifier_candidate_community_overrides_pkey ON public.classifier_candidate_community_overrides USING btree (community_id, candidate_id)`
+- `classifier_candidate_community_overrides_pkey`: `CREATE UNIQUE INDEX classifier_candidate_community_overrides_pkey ON public.classifier_candidate_community_overrides USING btree (id)`
 - `idx_classifier_candidate_community_overrides__candidate`: `CREATE INDEX idx_classifier_candidate_community_overrides__candidate ON public.classifier_candidate_community_overrides USING btree (candidate_id)`
+- `idx_classifier_candidate_community_overrides__community`: `CREATE INDEX idx_classifier_candidate_community_overrides__community ON public.classifier_candidate_community_overrides USING btree (community_id)`
 - `idx_classifier_candidate_community_overrides__disabled_by`: `CREATE INDEX idx_classifier_candidate_community_overrides__disabled_by ON public.classifier_candidate_community_overrides USING btree (disabled_by_id)`
-- `idx_classifier_candidate_community_overrides__enabled`: `CREATE INDEX idx_classifier_candidate_community_overrides__enabled ON public.classifier_candidate_community_overrides USING btree (community_id, candidate_id) WHERE (disabled_at IS NULL)`
+- `idx_classifier_candidate_community_overrides__enabled`: `CREATE UNIQUE INDEX idx_classifier_candidate_community_overrides__enabled ON public.classifier_candidate_community_overrides USING btree (community_id, candidate_id) WHERE (disabled_at IS NULL)`
 - `idx_classifier_candidate_community_overrides__enabled_by`: `CREATE INDEX idx_classifier_candidate_community_overrides__enabled_by ON public.classifier_candidate_community_overrides USING btree (enabled_by_id)`
 
 **Triggers:**
 
 - `trigger_classifier_candidate_community_overrides_global`: `CREATE TRIGGER trigger_classifier_candidate_community_overrides_global BEFORE INSERT OR UPDATE OF candidate_id ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_require_global_classifier_candidate_override()`
+- `trigger_classifier_candidate_community_overrides_lifecycle`: `CREATE TRIGGER trigger_classifier_candidate_community_overrides_lifecycle BEFORE UPDATE ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_community_override_lifecycle()`
 - `trigger_classifier_candidate_community_overrides_updated_at`: `CREATE TRIGGER trigger_classifier_candidate_community_overrides_updated_at BEFORE UPDATE ON public.classifier_candidate_community_overrides FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

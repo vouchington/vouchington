@@ -38,9 +38,10 @@ apply where a candidate omits either override independently, and PostgreSQL reje
 lower/upper pair outside `0..1` or not strictly ordered. Candidate-specific bounds are immutable
 revisions: replacing one deactivates the current row and inserts a new row. Each result references
 the exact override revision when present and snapshots the effective pair, so later threshold
-management cannot rewrite or obscure historical decisions. Community enablement is an explicit
-`(community, candidate)`
-lifecycle record, so communities reuse a global classifier definition rather than creating one.
+management cannot rewrite or obscure historical decisions. Community enablement is an immutable
+lifecycle revision with at most one active row per `(community, candidate)`, so repeated
+enable/disable cycles retain their history while communities reuse a global classifier definition
+rather than creating one.
 
 A decision batch records one classified post or RSS item, prompt version, and global/community
 scope. Its ordered call rows represent one unsharded call or multiple context-window shards.

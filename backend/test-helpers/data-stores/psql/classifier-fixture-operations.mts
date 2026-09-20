@@ -116,18 +116,22 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
       write(sql`/* rejectClassifierFixturePromptIdentityMutation */
         UPDATE classifier_prompt_versions SET prompt = 'changed'
         WHERE id = ${data.promptVersionId}`),
+    activateClassifier: () =>
+      write(sql`/* activateClassifierFixtureClassifier */
+        UPDATE classifiers SET activated_at = CURRENT_TIMESTAMP
+        WHERE id = ${data.classifierId}`),
+    deactivateClassifier: () =>
+      write(sql`/* deactivateClassifierFixtureClassifier */
+        UPDATE classifiers SET deactivated_at = CURRENT_TIMESTAMP
+        WHERE id = ${data.classifierId}`),
     activatePrompt: () =>
       write(sql`/* activateClassifierFixturePrompt */
         UPDATE classifier_prompt_versions SET activated_at = CURRENT_TIMESTAMP
         WHERE id = ${data.promptVersionId}`),
-    enableGlobalCandidateForCommunity: () =>
-      write(sql`/* enableClassifierFixtureGlobalCandidate */
-        INSERT INTO classifier_candidate_community_overrides (community_id, candidate_id)
-        VALUES (${data.communityId}, ${data.topicCandidateId})`),
-    rejectCommunityOverrideForLocalCandidate: () =>
-      write(sql`/* rejectClassifierFixtureLocalCandidateOverride */
-        INSERT INTO classifier_candidate_community_overrides (community_id, candidate_id)
-        VALUES (${data.communityId}, ${data.communityCandidateId})`),
+    deactivatePrompt: () =>
+      write(sql`/* deactivateClassifierFixturePrompt */
+        UPDATE classifier_prompt_versions SET deactivated_at = CURRENT_TIMESTAMP
+        WHERE id = ${data.promptVersionId}`),
     createTopicBatch,
     createStoryBatch,
     createAdditionalCall,

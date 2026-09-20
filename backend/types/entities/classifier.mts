@@ -56,6 +56,17 @@ export type ClassifierCandidateThreshold = {
   created_at: Date
 }
 
+export type ClassifierCandidateCommunityOverride = {
+  id: string
+  community_id: string
+  candidate_id: string
+  enabled_at: Date
+  enabled_by_id: string | null
+  disabled_at: Date | null
+  disabled_by_id: string | null
+  created_at: Date
+}
+
 export type ClassifierDecisionBatch = {
   id: string
   classifier_id: string

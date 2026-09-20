@@ -29,7 +29,10 @@ CREATE TABLE IF NOT EXISTS classifiers (
   updated_by_id UUID REFERENCES users ON DELETE SET NULL,
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
-  CONSTRAINT chk_classifiers__lifecycle CHECK (NOT (activated_at IS NOT NULL AND deactivated_at IS NOT NULL)),
+  CONSTRAINT chk_classifiers__lifecycle CHECK (
+    deactivated_at IS NULL
+    OR (activated_at IS NOT NULL AND deactivated_at >= activated_at)
+  ),
   CONSTRAINT uq_classifiers__id__candidate_kind UNIQUE (id, candidate_kind)
 );
 
@@ -62,6 +65,32 @@ CREATE OR REPLACE TRIGGER trigger_classifiers_identity_immutable
   BEFORE UPDATE ON classifiers
   FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_identity_mutation();
 
+CREATE OR REPLACE FUNCTION fn_require_classifier_activation_lifecycle()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at
+    AND NEW.deactivated_at IS NOT DISTINCT FROM OLD.deactivated_at THEN
+    RETURN NEW;
+  END IF;
+  IF OLD.activated_at IS NULL
+    AND OLD.deactivated_at IS NULL
+    AND NEW.activated_at IS NOT NULL
+    AND NEW.deactivated_at IS NULL THEN
+    RETURN NEW;
+  END IF;
+  IF OLD.activated_at IS NOT NULL
+    AND OLD.deactivated_at IS NULL
+    AND NEW.activated_at IS NOT DISTINCT FROM OLD.activated_at
+    AND NEW.deactivated_at IS NOT NULL THEN
+    RETURN NEW;
+  END IF;
+  RAISE EXCEPTION '% activation lifecycle is immutable after each transition', TG_TABLE_NAME USING ERRCODE = '23514';
+END $$;
+
+CREATE OR REPLACE TRIGGER trigger_classifiers_activation_lifecycle
+  BEFORE UPDATE ON classifiers
+  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_activation_lifecycle();
+
 CREATE TABLE IF NOT EXISTS classifier_prompt_versions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   classifier_id UUID NOT NULL REFERENCES classifiers ON DELETE RESTRICT,
@@ -78,7 +107,10 @@ CREATE TABLE IF NOT EXISTS classifier_prompt_versions (
   updated_by_id UUID REFERENCES users ON DELETE SET NULL,
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
-  CONSTRAINT chk_classifier_prompt_versions__lifecycle CHECK (NOT (activated_at IS NOT NULL AND deactivated_at IS NOT NULL)),
+  CONSTRAINT chk_classifier_prompt_versions__lifecycle CHECK (
+    deactivated_at IS NULL
+    OR (activated_at IS NOT NULL AND deactivated_at >= activated_at)
+  ),
   CONSTRAINT chk_classifier_prompt_versions__default_thresholds CHECK (
     default_lower_threshold >= 0 AND default_upper_threshold <= 1
     AND default_lower_threshold < default_upper_threshold
@@ -115,6 +147,10 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_classifier_prompt_versions_identity_immutable
   BEFORE UPDATE ON classifier_prompt_versions
   FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_prompt_version_identity_mutation();
+
+CREATE OR REPLACE TRIGGER trigger_classifier_prompt_versions_activation_lifecycle
+  BEFORE UPDATE ON classifier_prompt_versions
+  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_activation_lifecycle();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_prompt_versions_updated_at
   BEFORE UPDATE ON classifier_prompt_versions
@@ -282,20 +318,26 @@ CREATE OR REPLACE TRIGGER trigger_classifier_candidate_thresholds_updated_at
   FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE TABLE IF NOT EXISTS classifier_candidate_community_overrides (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   candidate_id UUID NOT NULL REFERENCES classifier_candidates ON DELETE CASCADE,
   enabled_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   enabled_by_id UUID REFERENCES users ON DELETE SET NULL,
   disabled_at TIMESTAMPTZ,
   disabled_by_id UUID REFERENCES users ON DELETE SET NULL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (community_id, candidate_id),
-  CONSTRAINT chk_classifier_candidate_community_overrides__lifecycle CHECK (disabled_at IS NULL OR disabled_at >= enabled_at)
+  CONSTRAINT chk_classifier_candidate_community_overrides__lifecycle CHECK (
+    (disabled_at IS NULL AND disabled_by_id IS NULL)
+    OR (disabled_at >= enabled_at)
+  )
 );
 
 CREATE INDEX IF NOT EXISTS idx_classifier_candidate_community_overrides__candidate
   ON classifier_candidate_community_overrides (candidate_id);
-CREATE INDEX IF NOT EXISTS idx_classifier_candidate_community_overrides__enabled
+CREATE INDEX IF NOT EXISTS idx_classifier_candidate_community_overrides__community
+  ON classifier_candidate_community_overrides (community_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_classifier_candidate_community_overrides__enabled
   ON classifier_candidate_community_overrides (community_id, candidate_id) WHERE disabled_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_candidate_community_overrides__enabled_by
   ON classifier_candidate_community_overrides (enabled_by_id);
@@ -317,6 +359,25 @@ END $$;
 CREATE OR REPLACE TRIGGER trigger_classifier_candidate_community_overrides_global
   BEFORE INSERT OR UPDATE OF candidate_id ON classifier_candidate_community_overrides
   FOR EACH ROW EXECUTE FUNCTION fn_require_global_classifier_candidate_override();
+
+CREATE OR REPLACE FUNCTION fn_require_classifier_candidate_community_override_lifecycle()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.id IS DISTINCT FROM OLD.id
+    OR NEW.community_id IS DISTINCT FROM OLD.community_id
+    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id
+    OR NEW.enabled_at IS DISTINCT FROM OLD.enabled_at
+    OR NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id
+    OR OLD.disabled_at IS NOT NULL
+    OR NEW.disabled_at IS NULL THEN
+    RAISE EXCEPTION 'classifier candidate community override is immutable except for deactivation' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE TRIGGER trigger_classifier_candidate_community_overrides_lifecycle
+  BEFORE UPDATE ON classifier_candidate_community_overrides
+  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_candidate_community_override_lifecycle();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidate_community_overrides_updated_at
   BEFORE UPDATE ON classifier_candidate_community_overrides
@@ -526,7 +587,10 @@ BEGIN
     SELECT * INTO threshold FROM classifier_candidate_thresholds
     WHERE candidate_id = NEW.candidate_id
       AND prompt_version_id = NEW.prompt_version_id
-      AND deactivated_at IS NULL
+      AND activated_at <= batch.created_at
+      AND (deactivated_at IS NULL OR deactivated_at > batch.created_at)
+    ORDER BY activated_at DESC, id DESC
+    LIMIT 1
     FOR SHARE;
   END IF;
   effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);
@@ -547,7 +611,7 @@ BEGIN
     RAISE EXCEPTION 'classifier result thresholds must match prompt and candidate configuration' USING ERRCODE = '23514';
   END IF;
   IF NEW.threshold_id IS DISTINCT FROM threshold.id THEN
-    RAISE EXCEPTION 'classifier result threshold revision must match candidate configuration' USING ERRCODE = '23514';
+    RAISE EXCEPTION 'classifier result threshold revision must match the configuration active when its batch began' USING ERRCODE = '23514';
   END IF;
   RETURN NEW;
 END $$;

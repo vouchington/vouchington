@@ -26,15 +26,39 @@ describe('classifier schema constraints', () => {
     await expect(fixture.rejectClassifierIdentityMutation()).rejects.toMatchObject({
       code: '23514',
     })
+    await expect(fixture.activateClassifier()).resolves.toMatchObject({ rowCount: 1 })
     await expect(fixture.activatePrompt()).resolves.toMatchObject({ rowCount: 1 })
+    await expect(fixture.deactivateClassifier()).resolves.toMatchObject({ rowCount: 1 })
+    await expect(fixture.deactivatePrompt()).resolves.toMatchObject({ rowCount: 1 })
+    await expect(fixture.getActivationLifecycleFacts()).resolves.toEqual({
+      classifier_retained_activation: true,
+      prompt_retained_activation: true,
+    })
   })
 
   it('allows community overrides only for global candidates', async () => {
     const fixture = await createClassifierFixture()
 
-    await expect(fixture.enableGlobalCandidateForCommunity()).resolves.toMatchObject({
+    const firstLifecycle = await fixture.enableGlobalCandidateForCommunity()
+    await expect(fixture.enableGlobalCandidateForCommunity()).rejects.toMatchObject({
+      code: '23505',
+    })
+    await expect(fixture.disableGlobalCandidateForCommunity()).resolves.toMatchObject({
       rowCount: 1,
     })
+    await expect(
+      fixture.rejectGlobalCandidateCommunityOverrideIdentityMutation(firstLifecycle.id),
+    ).rejects.toMatchObject({ code: '23514' })
+    await expect(
+      fixture.rejectGlobalCandidateCommunityOverrideReactivation(firstLifecycle.id),
+    ).rejects.toMatchObject({ code: '23514' })
+    const secondLifecycle = await fixture.enableGlobalCandidateForCommunity()
+    const lifecycles = await fixture.getGlobalCandidateCommunityOverrideLifecycles()
+    expect(lifecycles).toEqual([
+      { ...firstLifecycle, active: false },
+      { ...secondLifecycle, active: true },
+    ])
+    expect(secondLifecycle.id).not.toBe(firstLifecycle.id)
     await expect(fixture.rejectCommunityOverrideForLocalCandidate()).rejects.toMatchObject({
       code: '23514',
     })
@@ -58,6 +82,7 @@ describe('classifier schema constraints', () => {
     ).rejects.toMatchObject({ code: '23514' })
 
     const community = await fixture.createTopicBatch({ communityId: fixture.communityId })
+    const inFlight = await fixture.createTopicBatch({ communityId: fixture.communityId })
     await expect(
       fixture.insertTopicResult({
         batchId: community.batchId,
@@ -72,6 +97,19 @@ describe('classifier schema constraints', () => {
     })
     await expect(fixture.deactivateCommunityThreshold()).resolves.toMatchObject({ rowCount: 1 })
     const replacementThresholdId = await fixture.createReplacementCommunityThreshold()
+    await expect(
+      fixture.insertTopicResult({
+        ...inFlight,
+        candidateId: fixture.communityCandidateId,
+        topicId: fixture.communityTopicId,
+        communityId: fixture.communityId,
+      }),
+    ).resolves.toMatchObject({ rowCount: 1 })
+    await expect(fixture.getTopicResultThreshold(inFlight.batchId)).resolves.toEqual({
+      threshold_id: fixture.communityThresholdId,
+      effective_lower_threshold: '0.3000',
+      effective_upper_threshold: '0.7500',
+    })
     const replacement = await fixture.createTopicBatch({ communityId: fixture.communityId })
     await expect(
       fixture.insertTopicResult({
@@ -83,7 +121,36 @@ describe('classifier schema constraints', () => {
         communityId: fixture.communityId,
       }),
     ).resolves.toMatchObject({ rowCount: 1 })
+    const staleThreshold = await fixture.createTopicBatch({ communityId: fixture.communityId })
+    await expect(
+      fixture.insertTopicResult({
+        ...staleThreshold,
+        candidateId: fixture.communityCandidateId,
+        thresholdId: fixture.communityThresholdId,
+        effectiveLower: 0.3,
+        topicId: fixture.communityTopicId,
+        communityId: fixture.communityId,
+      }),
+    ).rejects.toMatchObject({ code: '23514' })
+    const omittedThreshold = await fixture.createTopicBatch({ communityId: fixture.communityId })
+    await expect(
+      fixture.insertTopicResult({
+        ...omittedThreshold,
+        candidateId: fixture.communityCandidateId,
+        thresholdId: null,
+        effectiveLower: 0.25,
+        topicId: fixture.communityTopicId,
+        communityId: fixture.communityId,
+      }),
+    ).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.deleteCommunityThreshold()).rejects.toMatchObject({ code: '23001' })
+    const mismatchedThreshold = await fixture.createTopicBatch()
+    await expect(
+      fixture.insertTopicResult({
+        ...mismatchedThreshold,
+        thresholdId: replacementThresholdId,
+      }),
+    ).rejects.toMatchObject({ code: '23514' })
     await expect(
       fixture.insertTopicResult({
         batchId: global.batchId,
