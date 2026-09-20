@@ -18,14 +18,10 @@ import {
 } from './runner-shutdown-consumer-registry.mts'
 import type { WorkflowRunContext } from './types.mts'
 
-// Idempotent workflows where a clean self-hosted-runner-shutdown of a leaf job was safe to rerun.
-// Retained as a shared predicate (rather than a standalone TransientRetryRule) for
-// coverage-artifact-rules.mts's hasOnlyAggregatesOrCleanRunnerShutdowns: on GitHub-hosted, ephemeral,
-// single-job-per-VM runners this can never match (isCleanRunnerShutdown requires
-// hasRunnerShutdownMarkers, a marker tied to a persistent self-hosted runner agent being told to
-// drain mid-job), so it only ever narrows what a coverage rule treats as safe to auto-rerun -- never
-// widens it. Kept rather than deleted outright so a real occurrence (if the marker ever does appear)
-// still gets tolerated instead of silently blocking a coverage rerun.
+// Idempotent workflows where a clean runner shutdown of a leaf job is safe to rerun. This shared
+// matcher is the production runner-shutdown-leaf-rerun rule's predicate and also narrows the
+// coverage-artifact rules' sibling handling, keeping both paths on the same conservative evidence
+// contract.
 const idempotentWorkflows = new Set([
   'CI',
   'Main CI (backend)',

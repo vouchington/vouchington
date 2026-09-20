@@ -70,12 +70,10 @@ Fix Main runs for the same source workflow, SHA, and source event type also use 
 concurrency, so a later push-origin completion supersedes older push-origin automation without a
 no-op manual completion cancelling it.
 
-`runnerShutdownLeafRerunMatch` (`ci/transient-retry/runner-shutdown-consumers.mts`) is not a
-standalone top-level rule; it survives only as a narrowing predicate consulted by the
-coverage-artifact rules above, so a clean runner shutdown on a sibling leaf job does not by itself
-suppress or misclassify their own rerun/dispatch decision. It treats each exact sibling job as a
-consumer with its own durable-failure guard — `static-checks / static-web`, for example, only counts
-as a clean shutdown after the `next build` command started and only when no compiler, bundler,
-smoke-test, non-SIGTERM exit, or other web-stack failure signal is present. Every new consumer must
-carry a trimmed real-log fixture and counterfixtures; unknown consumers are treated as a real failure
-by the predicate.
+`runnerShutdownLeafRerunMatch` (`ci/transient-retry/runner-shutdown-consumers.mts`) is the matcher
+for the standalone `runner-shutdown-leaf-rerun` rule and also narrows the coverage-artifact rules
+above. It treats each exact sibling job as a consumer with its own durable-failure guard —
+`static-checks / static-web`, for example, only counts as a clean shutdown after the `next build`
+command started and only when no compiler, bundler, smoke-test, non-SIGTERM exit, or other web-stack
+failure signal is present. Every new consumer must carry a trimmed real-log fixture and
+counterfixtures; unknown consumers are treated as a real failure by the matcher.

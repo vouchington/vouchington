@@ -26,6 +26,7 @@ import {
   mainWebPlaywrightSetupAptLockRule,
   mainWebPlaywrightWorkerNavigationTimeoutRule,
 } from './playwright-rules.mts'
+import { runnerShutdownLeafRerunRule } from './runner-shutdown-rules.mts'
 import {
   cloudflareWorkerTscRuntimeCrashRule,
   staticAnalysisOxlintTsgolintRuntimeFaultRule,
@@ -63,6 +64,7 @@ export const RULES: TransientRetryRule[] = [
   coverageTransportExhaustedRule,
   coverageArtifactDownloadTimeoutRule,
   coverageArtifactStaleRerunMissingRule,
+  runnerShutdownLeafRerunRule,
   mainWebStaticBuildSilentExitRule,
   mainWebVitestWorkerStartTimeoutAfterPassRule,
   storybookBrowserStartupTransientRule,
