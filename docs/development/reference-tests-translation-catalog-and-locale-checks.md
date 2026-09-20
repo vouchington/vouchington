@@ -106,7 +106,7 @@ After any rebase that touches a file under `localization/catalog/`, **run
 drift a rebase introduced that surfaced only after many pushes. After changing catalog JSON,
 run the command above rather than relying on CI to discover it.
 
-After changing the manifest or one of its catalog leaves, validate the Filaments producer with
+After changing the manifest or one of its catalog leaves, validate the Vouchington producer with
 `pnpm run native-localization:check`. Generate or check native output only from the native-client
 checkout boundary, passing both absolute roots. The exporter scans the external Swift app/UI
 sources, C# product sources, and MAUI XAML: every reference must have the matching platform claim,

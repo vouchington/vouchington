@@ -28,7 +28,7 @@ Review the agent instruction layer for contradictions, stale carve-outs, and unc
   consumer setup: `node dev/native-localization.mts` with `--output-root` and `--consumer-root`
   pointing at the isolated `vouchington-clients` checkout, plus `--check`; also name locked .NET
   solution validation: `dotnet-clients/tooling/with-build-lock.sh dotnet test
-dotnet-clients/Voucha.DotNet.sln --configuration Release`. Make explicit that Filaments is the
+dotnet-clients/Voucha.DotNet.sln --configuration Release`. Make explicit that Vouchington is the
   producer while the external vouchington-clients checkout is the consumer.
 - Find conditional flags whose callers all pass the same value; replace one such flag with a
   structural invariant and remove the unreachable branch.

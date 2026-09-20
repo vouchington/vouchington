@@ -2,7 +2,7 @@
 
 [Back to Deployment](deployment.md)
 
-Filaments dispatches the exact source revision for web static assets, article Markdown, internal
+Vouchington dispatches the exact source revision for web static assets, article Markdown, internal
 documentation, and Storybook. It does not store destination identifiers or publish those assets
 directly.
 

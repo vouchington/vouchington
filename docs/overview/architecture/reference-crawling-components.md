@@ -4,22 +4,22 @@
 
 ## Components
 
-| Component             | Location                                   | Purpose                                                   |
-| --------------------- | ------------------------------------------ | --------------------------------------------------------- |
-| Crawl service         | `backend/services/crawls/`                 | Core crawl logic, rate limiting, dispatch                 |
-| Crawler rules         | `backend/services/crawlers/`               | Per-hostname CSS selector/link removal rules              |
-| robots.txt            | `backend/services/urls-domains-robots/`    | robots.txt fetching, compliance, rate limit computation   |
-| Domain blacklist      | `backend/services/urls-domains-blacklist/` | External blacklist sync, bloom filter cache               |
-| HTML crawler          | `backend/services/crawler-html/`           | Secure fetch, HTML extraction, crawl-local embed planning |
-| Crawl embeds          | `backend/services/crawl-embeds/`           | Filaments provider/SSRF policy and exact-crawl enrichment |
-| Crawl chunks          | `backend/services/crawl-chunks/`           | Content chunking for embeddings                           |
-| RSS feeds             | `backend/services/rss-feeds/`              | RSS feed fetching and item extraction                     |
-| Referral link crawler | `backend/services/crawler-referral-links/` | Referral link health crawling (no embeddings)             |
-| Crawler system        | `backend/queues/crawler/`                  | glide-mq queue for individual URL crawls                  |
-| Crawl embeds queue    | `backend/queues/crawl-embeds/`             | Destination-host-limited remote oEmbed enrichment         |
-| Crawl referral links  | `backend/queues/crawl-referral-links/`     | glide-mq queue for referral link crawl jobs               |
-| Crawl hostnames       | `backend/queues/crawl-hostnames/`          | glide-mq dispatch jobs and scheduling                     |
-| Blacklist system      | `backend/queues/urls-domains-blacklist/`   | Weekly blacklist sync from external sources               |
+| Component             | Location                                   | Purpose                                                     |
+| --------------------- | ------------------------------------------ | ----------------------------------------------------------- |
+| Crawl service         | `backend/services/crawls/`                 | Core crawl logic, rate limiting, dispatch                   |
+| Crawler rules         | `backend/services/crawlers/`               | Per-hostname CSS selector/link removal rules                |
+| robots.txt            | `backend/services/urls-domains-robots/`    | robots.txt fetching, compliance, rate limit computation     |
+| Domain blacklist      | `backend/services/urls-domains-blacklist/` | External blacklist sync, bloom filter cache                 |
+| HTML crawler          | `backend/services/crawler-html/`           | Secure fetch, HTML extraction, crawl-local embed planning   |
+| Crawl embeds          | `backend/services/crawl-embeds/`           | Vouchington provider/SSRF policy and exact-crawl enrichment |
+| Crawl chunks          | `backend/services/crawl-chunks/`           | Content chunking for embeddings                             |
+| RSS feeds             | `backend/services/rss-feeds/`              | RSS feed fetching and item extraction                       |
+| Referral link crawler | `backend/services/crawler-referral-links/` | Referral link health crawling (no embeddings)               |
+| Crawler system        | `backend/queues/crawler/`                  | glide-mq queue for individual URL crawls                    |
+| Crawl embeds queue    | `backend/queues/crawl-embeds/`             | Destination-host-limited remote oEmbed enrichment           |
+| Crawl referral links  | `backend/queues/crawl-referral-links/`     | glide-mq queue for referral link crawl jobs                 |
+| Crawl hostnames       | `backend/queues/crawl-hostnames/`          | glide-mq dispatch jobs and scheduling                       |
+| Blacklist system      | `backend/queues/urls-domains-blacklist/`   | Weekly blacklist sync from external sources                 |
 
 ## Crawl Pipeline
 

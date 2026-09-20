@@ -2,6 +2,6 @@
 
 [Back to Private Docs Site](private-docs-site.md)
 
-Filaments owns the documentation, Storybook source, and source-dispatch workflows. The private
+Vouchington owns the documentation, Storybook source, and source-dispatch workflows. The private
 `vouchington-infra` repository owns provider configuration, destination identifiers, credentials,
 publication, lifecycle changes, and deployment evidence.

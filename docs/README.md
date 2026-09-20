@@ -222,7 +222,7 @@ How the system works — architecture, pipelines, and infrastructure.
 - [Deployment](overview/infrastructure/deployment.md) — Platform, Docker images, CI/CD flow, traffic routing, provisioning checklist
 - [SOCI Lazy Loading](overview/infrastructure/soci-lazy-loading.md) — Infra-side SOCI v2 index generation for Fargate lazy loading, decision rationale, architecture, and operations
 - [Networking](overview/infrastructure/networking.md) — VPC topology, public IPv4 cost model, and egress design decisions
-- [Env Var Contract](overview/infrastructure/env-var-contract.md) — Filaments-owned typed env-var metadata for config-inventory and deployment handoffs
+- [Env Var Contract](overview/infrastructure/env-var-contract.md) — Vouchington-owned typed env-var metadata for config-inventory and deployment handoffs
 - [Environment Variables](overview/infrastructure/environment-variables.md) — Complete inventory of all env vars by category
 
 ### Focused architecture references

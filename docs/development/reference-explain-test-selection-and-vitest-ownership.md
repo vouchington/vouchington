@@ -37,7 +37,7 @@ For this example, `targets` resolves the test to `vitest.config.mts` project
   connects `article-syncs.mts` directly to `article-syncs.test.mts`.
 - Longer reasons containing `dependency` steps are broader graph dependents. Inspect them with
   `tests why` before treating a distant test as the source's primary contract.
-- "Same-package contract" is a Filaments review heuristic, not a planner group: find the changed
+- "Same-package contract" is a Vouchington review heuristic, not a planner group: find the changed
   source's nearest owning `package.json`, then prefer relevant returned tests under that package
   boundary. Do not discard cross-package results when their reported dependency path describes a
   real public contract.

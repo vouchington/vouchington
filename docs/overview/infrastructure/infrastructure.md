@@ -1,7 +1,7 @@
 # Infrastructure
 
 AWS infrastructure for staging and production environments is managed by OpenTofu in the private
-[`vouchington-infra`](https://github.com/vouchington/vouchington-infra) repository. Filaments owns
+[`vouchington-infra`](https://github.com/vouchington/vouchington-infra) repository. Vouchington owns
 the application and publishes immutable deployment artifacts; it does not apply infrastructure or
 mutate AWS or Cloudflare providers.
 Cost and unit-economics documentation — including the canonical staging and production

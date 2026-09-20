@@ -40,7 +40,7 @@ repository owns builds, publication, deployment orchestration, and OpenTofu. The
 coupling is api↔workers: they share DB schema and application code, so they deploy as one unit.
 
 `SITEMAPS_ORIGIN`, `BACKEND_ORIGIN`, `WEB_ORIGIN`, and `SITE_ORIGIN` are private-infrastructure-owned
-Worker deployment values. Filaments contains only identifier-free local defaults.
+Worker deployment values. Vouchington contains only identifier-free local defaults.
 
 The burden this places on every change: a deploy must be forward/backward-compatible with whatever
 is currently live, in either deploy order. Concretely, this repo follows **expand/contract**: expand

@@ -9,9 +9,9 @@ Web, Swift, and .NET expose the same product intent structure with platform-nati
 The machine-readable contract is [`client-intent-parity.json`](client-intent-parity.json). Its
 source of truth is the web `NAV_INTENTS` registry at
 [`web/lib/navigation/intents/nav-intents.ts`](../../../web/lib/navigation/intents/nav-intents.ts).
-When a feature surface moves, coordinate linked Filaments and
+When a feature surface moves, coordinate linked Vouchington and
 [`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients) PRs:
-Filaments stages the web and `api-fixtures/v1` contract, then the client PR consumes and validates
+Vouchington stages the web and `api-fixtures/v1` contract, then the client PR consumes and validates
 that staged contract. Record the linked PRs and handoff rather than requiring impossible
 cross-repository edits in one PR.
 
@@ -32,7 +32,7 @@ the [client feature parity contract](../client-feature-parity.json).
   without exposing the signed-in Friends shell or any `/my/*` route to signed-out users.
 - Feature-flagged intents include a `featureFlag` property. Clients keep the intent in their
   catalog for parity but hide it unless the flag is enabled.
-- User-facing and staff-facing API response changes must stage shared fixtures in Filaments, then
+- User-facing and staff-facing API response changes must stage shared fixtures in Vouchington, then
   update both native API clients in the linked client-repository PR. Shared endpoint fixtures should
   include an `api-fixtures/v1` `route` contract when a client is expected to cover the
   method/path/query/body builder.

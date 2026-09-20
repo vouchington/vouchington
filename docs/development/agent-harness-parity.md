@@ -29,17 +29,17 @@ Claude Code and Codex load each canonical source from the `vouchington-workflow`
 names match their canonical skill. Grok, Cursor, and OpenCode load the same sources from
 `node_modules/vouchington-tooling/skills/<name>/SKILL.md` and resolve its supporting resources
 relative to that directory. Every adapter stops if its harness-specific canonical source cannot be
-read; it must never apply its Filaments overlay alone.
+read; it must never apply its Vouchington overlay alone.
 `blackboard` additionally reads the provider-owned skill from
 `node_modules/agent-blackboard/dist/plugin/skills/agent-blackboard/SKILL.md` in every harness.
-Filaments keeps its existing project MCP registration and does not enable that provider plugin,
+Vouchington keeps its existing project MCP registration and does not enable that provider plugin,
 which would register a duplicate server.
 The package also exposes upstream-only `dotnet-test-authoring`, `swift-test-authoring`,
 `github-actions-authoring`, `npm-publishing`, and `test-authoring` skills. Native-client owners use
-the first two in `vouchington/vouchington-clients`; Filaments deliberately does not install local
-adapters for them. Do not restate the package's or Filaments' skill counts here — both drift with
+the first two in `vouchington/vouchington-clients`; Vouchington deliberately does not install local
+adapters for them. Do not restate the package's or Vouchington's skill counts here — both drift with
 every new skill; the reusable-domain-skills list above and `.agents/catalog/README.md` are the
-sources of truth for what Filaments has adapted.
+sources of truth for what Vouchington has adapted.
 
 ```mermaid
 flowchart LR

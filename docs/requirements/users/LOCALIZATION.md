@@ -176,7 +176,7 @@ then format and compile.
   Unknown, wrong-platform, and unused claims fail the generator/check. Generated descriptor
   variants (`.__plural.*` and `.__select.*`) belong to their canonical manifest leaf and must not
   be listed separately. Run
-  `pnpm run native-localization:check` validates the Filaments producer after manifest/catalog
+  `pnpm run native-localization:check` validates the Vouchington producer after manifest/catalog
   changes. Generate and check Swift/.NET outputs from the external native-client checkout boundary
   with `node dev/native-localization.mts --output-root <absolute-client-root> --consumer-root
 <absolute-client-root> [--check]`; the exporter rejects stale, missing, extra, or

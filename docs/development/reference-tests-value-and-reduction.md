@@ -13,7 +13,7 @@ Every test must protect an app-owned branch, invariant, side effect, mapping, or
 - Prefer Storybook for static JSX when it can own the visual/component contract. Add `data-pw` only when a behavioral browser consumer needs it.
 - Do not remove credentialed or provider-backed tests merely because they are skipped without secrets or constrained to a particular environment.
 - Test helpers only when they contain nontrivial reliability behavior, such as state, retry, cleanup, parsing, synchronization, or error handling.
-- Vitest tests must not spawn `no-mistakes` or call its analysis APIs, including `loadRepoTopology()`. Package-owned rule and planner behavior belongs in that package; Filaments tests pin configuration and mock adapter mapping. Live workflow topology audits run from [`ci/check-live-workflow-topology.mts`](../../ci/check-live-workflow-topology.mts) in static-code-analysis, after `no-mistakes check`.
+- Vitest tests must not spawn `no-mistakes` or call its analysis APIs, including `loadRepoTopology()`. Package-owned rule and planner behavior belongs in that package; Vouchington tests pin configuration and mock adapter mapping. Live workflow topology audits run from [`ci/check-live-workflow-topology.mts`](../../ci/check-live-workflow-topology.mts) in static-code-analysis, after `no-mistakes check`.
 
 Coverage sameness is necessary but not sufficient. Before deleting a weak test that is the sole project coverage owner for production code, consolidate, strengthen, or move that coverage to a valuable test. Never use a coverage percentage alone as proof that a deletion preserves a contract.
 
@@ -35,7 +35,7 @@ toolchain, environment, and their respective exact checkout roots; otherwise the
 evidence of coverage preservation. `coverage-check` owns the comparator's argument validation,
 source normalization, regression semantics, and output contract. See [CI Tooling: Historical
 coverage baseline comparison](../../ci/README.md#historical-coverage-baseline-comparison) for
-Filaments' reproducible artifact-generation conditions; run `pnpm --dir ci exec coverage-check
+Vouchington's reproducible artifact-generation conditions; run `pnpm --dir ci exec coverage-check
 compare-summary --help` for the package CLI.
 
 This is a historical baseline guard, not patch coverage. It does not determine whether the edited lines execute or whether a test is valuable. Use [Local Patch Coverage Preview](reference-tests-local-patch-coverage-preview.md) for the changed-line gate.

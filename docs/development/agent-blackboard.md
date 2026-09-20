@@ -2,8 +2,8 @@
 
 Durable storage for
 [`agent-blackboard`](https://github.com/jonathanong/agent-blackboard), the published client, CLI,
-and MCP server that backs agent session journaling in Filaments. The root `package.json` installs
-`agent-blackboard` as a development dependency. Filaments connects to a **hosted deployment**;
+and MCP server that backs agent session journaling in Vouchington. The root `package.json` installs
+`agent-blackboard` as a development dependency. Vouchington connects to a **hosted deployment**;
 there is no local server or database to run.
 
 The package supplies the file-backed `snapshot_export`, `snapshot partition`, and `snapshot cleanup`
@@ -15,10 +15,10 @@ capability-bound cleanup and publication hardening in
 [agent-blackboard PR #28](https://github.com/jonathanong/agent-blackboard/pull/28).
 
 This document covers installing the package, connecting it to the hosted deployment, and the
-Filaments integrations around its JS client, CLI, and MCP server. What gets written into sessions
+Vouchington integrations around its JS client, CLI, and MCP server. What gets written into sessions
 belongs to the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md). That adapter composes
 the portable Vouchington journaling workflow with the provider-owned skill shipped inside the
-installed `agent-blackboard` package. Filaments does not enable the provider plugin because the
+installed `agent-blackboard` package. Vouchington does not enable the provider plugin because the
 project registration below already supplies the hosted MCP connection.
 
 ## Architecture
@@ -27,7 +27,7 @@ project registration below already supplies the hosted MCP connection.
 flowchart LR
   parent[Parent agent] -->|assignment + parent session id| child[Child agent]
   child -->|session_ensure with own id + parent id| journalMcp
-  scripts[Filaments journal, retro, and probe scripts] --> js[agent-blackboard JS client]
+  scripts[Vouchington journal, retro, and probe scripts] --> js[agent-blackboard JS client]
   journalMcp[Blackboard skill MCP option] --> mcp[dev/blackboard-mcp]
   manual[pnpm exec manual commands] --> cli[root-installed agent-blackboard CLI]
   mcp --> cli
@@ -38,14 +38,14 @@ flowchart LR
 
 Every process supplied with the hosted connection uses the same durable store. There is no
 local/CI split and no local infrastructure to start, stop, or wipe. The Lambda function and
-DynamoDB infrastructure live in the separate `agent-blackboard` repository, not Filaments or the
+DynamoDB infrastructure live in the separate `agent-blackboard` repository, not Vouchington or the
 private `vouchington-infra` repository.
 
 ## Setup (local)
 
 ### 1. Install root dependencies
 
-From the Filaments worktree root:
+From the Vouchington worktree root:
 
 ```bash
 pnpm install
@@ -53,7 +53,7 @@ pnpm install
 
 This installs the published JS client and the `agent-blackboard` binary under the root
 `node_modules/.bin/`. No separate repository clone, source build, or `tsx` entrypoint is required.
-Filaments' TypeScript integration imports the client directly; manual commands and the MCP server
+Vouchington's TypeScript integration imports the client directly; manual commands and the MCP server
 use the installed binary.
 
 ### 2. Export the hosted connection
@@ -77,12 +77,12 @@ AGENT_BLACKBOARD_URL=<hosted-blackboard-url> \
 ```
 
 `credentials create` prints the raw token exactly once. The server persists only its hash, so a
-lost token cannot be recovered. Store it in a shell profile or secrets manager; Filaments never
+lost token cannot be recovered. Store it in a shell profile or secrets manager; Vouchington never
 persists it to disk.
 
 ### 3. Use the CLI
 
-Run manual commands from the Filaments root with `pnpm exec` so they use the workspace-pinned
+Run manual commands from the Vouchington root with `pnpm exec` so they use the workspace-pinned
 version:
 
 ```bash
@@ -102,7 +102,7 @@ paths. Agents with the MCP tools and explicit session metadata may call `session
 `entry_append`, and `entry_get` directly. Agents may instead use `dev/blackboard-journal.mts`, which
 provides file input, session-id defaults, and replayable errors through the published `Sessions`
 and `Entries` JS clients via `vouchington-tooling/agent-blackboard`. The SessionStart probe
-(`dev/check-blackboard.mts`) uses the same portable helper while retaining Filaments' stop-work
+(`dev/check-blackboard.mts`) uses the same portable helper while retaining Vouchington's stop-work
 policy. These script paths avoid a CLI-to-JS subprocess round trip. Manual CLI use remains
 available through `pnpm exec agent-blackboard`; direct JS imports make the dependency visible to
 Knip.
@@ -163,7 +163,7 @@ it back. A raw MCP `entry_append` would bypass those repository-owned invariants
 A spawned delegation child (as opposed to a hook child, which receives its identity via hook argv —
 see [Automatic checkpoint journaling](#automatic-checkpoint-journaling)) resolves its own session id
 from its runtime environment — Codex's `CODEX_THREAD_ID`, Claude Code's `CLAUDE_CODE_SESSION_ID`, and
-so on — the same way any other Filaments blackboard consumer does
+so on — the same way any other Vouchington blackboard consumer does
 (`dev/agent-session-id/resolve.mts`). The resolver keeps one coherent harness, agent label, and
 session selection: explicit Claude wins; Claude-compat recognizes live Grok and Codex-child signals;
 ordinary direct sessions prefer Codex, Grok, then Cursor; persisted files are only the final fallback.
@@ -317,11 +317,11 @@ change explicitly provisions and documents a scoped CI blackboard credential.
 
 ## AWS deploy path
 
-Filaments consumes a hosted deployment; it does not own or provision it. Configure connection
+Vouchington consumes a hosted deployment; it does not own or provision it. Configure connection
 values through the private operator runbook:
 
 - `AGENT_BLACKBOARD_URL` — the hosted service URL
-- `AGENT_BLACKBOARD_TABLE_NAME` — a server-side deployment identifier; the Filaments client never
+- `AGENT_BLACKBOARD_TABLE_NAME` — a server-side deployment identifier; the Vouchington client never
   sets it
 
 The hosted service is provisioned from the separate `agent-blackboard` repository. Redeploying,

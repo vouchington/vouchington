@@ -6,7 +6,7 @@ Platform ownership table, framework rationale, and decision record for Voucha's 
 
 Swift and .NET client source, native-only tooling, and their CI now live in
 [`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients).
-Filaments remains the API-fixture producer: client changes consume the staged native contract from
+Vouchington remains the API-fixture producer: client changes consume the staged native contract from
 this repository and preserve the parity requirements documented in
 [Client Parity Matrix](../../requirements/CLIENT-PARITY-MATRIX.md). Keep implementation-specific
 commands and source links in the client repository; this page records the cross-surface product

@@ -28,7 +28,7 @@ upstream rate-limited API).
 
 Queue placement and deployment sizing are defined in
 [`backend/modules/worker-queue-inventory/worker-queue-policy.json`](../../backend/modules/worker-queue-inventory/worker-queue-policy.json).
-Filaments does not publish runtime worker images. Pull-request builds validate the `worker-cpu`
+Vouchington does not publish runtime worker images. Pull-request builds validate the `worker-cpu`
 container target locally. The checked-in `WORKER_IO_AUTOMATION_ENABLED` flag in
 [`.github/worker-io-automation.env`](../../.github/worker-io-automation.env)
 is false by default; setting it to `true` adds the `worker-io` target to pull-request validation but

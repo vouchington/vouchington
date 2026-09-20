@@ -11,8 +11,8 @@ behavioral test or an explicitly declared source-audit test. A source audit veri
 framework-owned code cannot execute directly; it is not behavioral evidence. The native evidence
 paths in `client-feature-parity.json` are relative to
 [`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients), while web
-paths remain relative to Filaments. The client repository validates those native paths and consumes
-the staged Filaments fixture contract; Filaments retains the matrix and checks navigation/table
+paths remain relative to Vouchington. The client repository validates those native paths and consumes
+the staged Vouchington fixture contract; Vouchington retains the matrix and checks navigation/table
 coverage rather than asserting that an external checkout has tracked files. Both repositories keep
 active Table C issues synchronized so a full summary row cannot hide a lower-level native mismatch.
 
@@ -44,7 +44,7 @@ See also:
 
 ## Push generation handoff
 
-Filaments owns the API fixture and generated web client contract for push subscription generations.
+Vouchington owns the API fixture and generated web client contract for push subscription generations.
 Browser clients that own a worker push binding send its exact endpoint and subscription ID on
 logout, and treat a worker binding mismatch as disabled. Native clients do not own that browser
 state and continue using the supported no-body logout request. Deploy the server migration and

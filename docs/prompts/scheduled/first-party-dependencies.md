@@ -56,7 +56,7 @@ For example:
 
 `<!-- first-party-workaround-key: jonathanong/no-mistakes | selector-wrapper-coverage-edge -->`
 
-Search open and closed issues in Filaments for the marker, affected package and symbols, equivalent
+Search open and closed issues in Vouchington for the marker, affected package and symbols, equivalent
 root-cause wording, and linked pull requests. Reopen nothing and create no duplicate. When the only
 match is closed and the current workaround still exists or has regressed, a new issue is allowed
 only when its body references the closed issue and explains the materially distinct active removal
@@ -67,16 +67,16 @@ Process the selected root cause using exactly one of these dispositions:
 
 Verified tracked or fixed state takes precedence over an untracked classification.
 
-- For an untracked upstream defect, create or materially update only one Filaments issue, labeled
+- For an untracked upstream defect, create or materially update only one Vouchington issue, labeled
   `dependencies`, whose body includes the copy-paste-ready upstream section from the
   [github-issue skill](../../../.agents/skills/github-issue/SKILL.md) Issue Body template. Place
   the marker in its body.
-- When upstream already fixed or tracked the defect, create or materially update only one Filaments
+- When upstream already fixed or tracked the defect, create or materially update only one Vouchington
   issue, labeled `dependencies`. Reference the upstream issue, pull request, release, or public API,
   state the local removal criteria, and keep the upstream section pointed at that existing tracker
   instead of a fresh filing.
 - When the problem is solely stale local duplication or registry drift, create or materially update
-  only one Filaments issue, labeled `dependencies` because it still tracks a first-party-dependency
+  only one Vouchington issue, labeled `dependencies` because it still tracks a first-party-dependency
   concern, and explain why the upstream section is omitted: this disposition is not an upstream
   defect.
 - When all confirmed candidates are already tracked and their evidence is unchanged, make the run a
@@ -85,7 +85,7 @@ Verified tracked or fixed state takes precedence over an untracked classificatio
 ## Issue contract
 
 Use only labels that currently exist in the target repository and only open milestones. Apply the
-`dependencies` label to every issue this audit creates or materially updates. Give each Filaments
+`dependencies` label to every issue this audit creates or materially updates. Give each Vouchington
 issue exactly one canonical priority; default to medium unless live impact supports high or the
 finding is documentation-only or minor CLI ergonomics that supports low. Do not create or rename
 taxonomy.
@@ -99,7 +99,7 @@ Each created or materially updated issue must contain the marker and concise sec
 - measurable completion and workaround-removal criteria as ordinary bullets, not task checkboxes;
 - the scheduled workflow run URL.
 
-The Filaments follow-up is the representative issue for automation. If this run creates or
+The Vouchington follow-up is the representative issue for automation. If this run creates or
 materially updates one, verify its final open state and report its bare numeric issue number. For a
 no-op, report a concise reason.
 
