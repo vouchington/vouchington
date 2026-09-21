@@ -146,6 +146,7 @@ flowchart TD
     test-lambdas --> test-coverage
     test-tooling --> test-coverage
     test-portability --> test-coverage
+    full-lcov["full LCOV producer artifacts"] --> upload-codecov["upload-codecov\n(OIDC; informational only)"]
     test-postgres-schema --> tests-processing
     initialize-smoke-test --> tests-processing["tests processing\n(report merge + required fan-in)"]
     test-coverage --> tests-processing

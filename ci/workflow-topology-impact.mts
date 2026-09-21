@@ -47,6 +47,7 @@ export const CI_ROOT_JOB_NAMES = [
   'build-backend',
   'build-web',
   'test-coverage',
+  'upload-codecov',
   'tests-processing',
   'tests',
   'build',
