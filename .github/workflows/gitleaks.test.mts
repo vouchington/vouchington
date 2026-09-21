@@ -18,6 +18,7 @@ import {
 type Workflow = {
   jobs?: Record<string, WorkflowJob>
   on?: {
+    merge_group?: unknown
     pull_request?: unknown
   }
 }
@@ -40,6 +41,8 @@ describe('gitleaks workflow', () => {
     expect(step.env).toMatchObject({
       EVENT_NAME: '${{ github.event_name }}',
       HEAD_SHA: '${{ github.sha }}',
+      MERGE_GROUP_BASE_SHA: '${{ github.event.merge_group.base_sha }}',
+      MERGE_GROUP_HEAD_SHA: '${{ github.event.merge_group.head_sha }}',
       PR_BASE_SHA: '${{ github.event.pull_request.base.sha }}',
       PR_HEAD_SHA: '${{ github.event.pull_request.head.sha }}',
       PUSH_BEFORE_SHA: '${{ github.event.before }}',
@@ -49,6 +52,8 @@ describe('gitleaks workflow', () => {
       '"$EVENT_NAME" == "pull_request"',
       'git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA"',
       'LOG_OPTS="${MERGE_BASE}..${PR_HEAD_SHA}"',
+      '"$EVENT_NAME" == "merge_group"',
+      'LOG_OPTS="${MERGE_GROUP_BASE_SHA}..${MERGE_GROUP_HEAD_SHA}"',
       '"$EVENT_NAME" == "workflow_dispatch"',
       'LOG_OPTS="--all"',
       `"$PUSH_BEFORE_SHA" == "${'0'.repeat(40)}"`,
@@ -82,6 +87,7 @@ describe('gitleaks workflow', () => {
 
   it('installs through GitHub Releases and continues through verification and the PR scan', async () => {
     expect(workflow).toHaveProperty('on.pull_request')
+    expect(workflow).toHaveProperty('on.merge_group')
     const job = workflow.jobs?.['gitleaks']
     const install = requiredNamedStep(job, 'Install gitleaks')
     const scan = requiredNamedStep(job, 'Scan git history')

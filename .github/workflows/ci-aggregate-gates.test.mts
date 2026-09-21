@@ -63,7 +63,7 @@ describe('CI aggregate gates', () => {
     // ready_for_review keeps disabling cancel-in-progress (a queued ready run must not cancel
     // the in-flight draft run) even though the run-reuse mechanism that used to follow it is gone.
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(
-      "${{ github.event_name == 'pull_request' && github.event.action != 'ready_for_review' }}",
+      "${{ (github.event_name == 'pull_request' && github.event.action != 'ready_for_review') || github.event_name == 'merge_group' }}",
     )
     expect(workflow.jobs?.['detect-changes']?.permissions).not.toHaveProperty('actions')
 
@@ -77,7 +77,7 @@ describe('CI aggregate gates', () => {
     expect(testPlaywrightJob?.if).not.toContain('has-playwright-full')
     expect(testPlaywrightJob?.if).not.toContain('pr-labels-json')
 
-    expect(testCoverageJob?.if).toBe('!cancelled()')
+    expect(testCoverageJob?.if).toContain('!cancelled()')
     expect(testCoverageJob?.if).not.toContain('skip-ci-producers')
     expect(testCoverageJob?.if).not.toContain('docs-only')
     expect(testCoverageJob?.if).not.toContain('has-vitest-full')
@@ -120,7 +120,7 @@ describe('CI aggregate gates', () => {
 
   it('runs select-ci and test-coverage unconditionally on docs-only PRs (vitest:full removed)', () => {
     expect(selectCiWorkflow.jobs?.['select-ci']?.if).toBe(
-      "!cancelled() && github.event_name == 'pull_request'",
+      "!cancelled() && (github.event_name == 'pull_request' || github.event_name == 'merge_group')",
     )
     expect(selectCiWorkflow.jobs?.['select-ci']?.if).not.toContain('docs-only')
     expect(selectCiWorkflow.jobs?.['select-ci']?.if).not.toContain('has-vitest-full')
@@ -149,10 +149,10 @@ describe('CI aggregate gates', () => {
     ]
 
     // The dedupe/full-suite-label gates (skip-ci-producers, skip-settled-producers, docs-only,
-    // has-vitest-full) were removed: these steps now run on every PR/main run.
+    // has-vitest-full) were removed: these steps now run on every PR/merge-group/main run.
     for (const step of gatedSteps) {
       expect(step?.if).toBe(
-        "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')",
+        "!cancelled() && (github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.ref == 'refs/heads/main')",
       )
       expect(step?.if).not.toContain('skip-ci-producers')
       expect(step?.if).not.toContain('skip-settled-producers')
@@ -164,7 +164,7 @@ describe('CI aggregate gates', () => {
       step => step.name === 'Delete inter-job blob artifacts',
     )
     expect(deleteBlobArtifactsStep?.if).toBe(
-      "steps.all-checks-passed.outcome == 'success' && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')",
+      "github.event_name == 'pull_request' && steps.all-checks-passed.outcome == 'success' && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')",
     )
 
     const checkoutStep = testsSteps.find(step => step.uses?.startsWith('actions/checkout@'))
@@ -175,12 +175,15 @@ describe('CI aggregate gates', () => {
       "!cancelled() && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')",
     )
     expect(allChecksPassedStep?.env?.HAS_FAN_IN_DEPENDENCIES).toBe(
-      "${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}",
+      "${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.ref == 'refs/heads/main' }}",
     )
     expect(allChecksPassedStep?.run).toContain('jq -e')
     expect(allChecksPassedStep?.run).toContain('.result == "success" or .result == "skipped"')
     expect(allChecksPassedStep?.run).toContain('./ci/check-needs-results.sh "required jobs"')
-    expect(workflow.jobs?.tests?.needs).toEqual(['tests-processing'])
+    expect(workflow.jobs?.tests?.needs).toEqual([
+      'tests-processing',
+      'tests-processing-merge-group',
+    ])
     expect(workflow.jobs?.tests?.steps).toHaveLength(1)
     const testsGate = workflow.jobs?.tests?.steps?.[0]?.uses
     const buildGate = workflow.jobs?.build?.steps?.[0]?.uses

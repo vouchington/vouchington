@@ -5,12 +5,15 @@
 ```mermaid
 flowchart TD
     trigger["push / pull_request / dispatch"]
+    merge-queue-trigger["merge_group checks_requested on main"]
     static-trigger["main push / dispatch"]
     trigger --> ci["CI"]
+    merge-queue-trigger --> ci
     ci --> detect["detect-changes"]
     ci --> sca["static-code-analysis\n(cross-repo lint + policy)"]
     static-trigger --> sca
-    ci --> gitleaks["gitleaks\n(secret scan)"]
+    trigger --> gitleaks["gitleaks\n(secret scan)"]
+    merge-queue-trigger --> gitleaks
     trigger --> sync-articles["sync-articles\n(immutable articles artifact)"]
     trigger --> docs-publish["docs-publish\n(immutable docs artifact)"]
     artifact-cleanup-sweep-trigger["0 */6 * * * / manual dispatch"] --> cleanup-artifacts["cleanup-artifacts\n(reusable producer cleanup + stale sweep)"]
@@ -41,7 +44,7 @@ flowchart TD
     sca --> static-lambdas
     sca --> static-worker
 
-    detect --> select-ci["select-ci\n(PR-only: centralized Vitest test selection;\nfail-open skip/shard/narrow signals)"]
+    detect --> select-ci["select-ci\n(PR: centralized test selection;\nmerge_group: fail-open full suite)"]
 
     detect --> test-cloudflare-worker["test-cloudflare-worker"]
     detect --> test-lambdas["test-lambdas"]
@@ -156,10 +159,14 @@ flowchart TD
     tests-processing --> tests["tests ✓"]
     detect --> build-backend["build-backend\n(api + worker via docker bake; backend image changes + trusted secrets)"]
     detect --> build-web["build-web\n(web image changes + trusted secrets)"]
+    detect --> build-backend-queue["build-backend-merge-group\n(read-only; inert AWS credentials)"]
+    detect --> build-web-queue["build-web-merge-group\n(read-only; inert AWS credentials)"]
     select-ci -. "full-ci / run-build-backend\n(or infra path)" .-> build-backend
     select-ci -. "full-ci / run-build-web\n(or infra path)" .-> build-web
     build-backend --> build["build ✓"]
     build-web --> build
+    build-backend-queue --> build
+    build-web-queue --> build
     tests --> build
 
     sync-articles --> articles-artifact["articles-*\n(run/attempt artifact)"]

@@ -3,11 +3,14 @@ name: CI
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+  merge_group:
+    branches: [main]
+    types: [checks_requested]
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action != 'ready_for_review' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.sha }}
+  cancel-in-progress: ${{ (github.event_name == 'pull_request' && github.event.action != 'ready_for_review') || github.event_name == 'merge_group' }}
 
 permissions: {}
 
@@ -38,6 +41,7 @@ jobs:
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
+        github.event_name == 'merge_group' ||
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-static-backend == 'true')) ||
         needs.detect-changes.outputs.backend == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
@@ -56,6 +60,7 @@ jobs:
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
+        github.event_name == 'merge_group' ||
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-static-web == 'true')) ||
         needs.detect-changes.outputs.web == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
@@ -74,6 +79,7 @@ jobs:
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
+        github.event_name == 'merge_group' ||
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-static-lambdas == 'true')) ||
         needs.detect-changes.outputs.lambdas == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
@@ -92,6 +98,7 @@ jobs:
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
+        github.event_name == 'merge_group' ||
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-static-cloudflare-worker == 'true')) ||
         needs.detect-changes.outputs.cloudflare-worker == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
@@ -107,7 +114,7 @@ jobs:
     needs: [detect-changes, static-code-analysis, select-ci]
     if: >-
       !cancelled() &&
-      (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-initialize-smoke-test == 'true') || needs.detect-changes.outputs.shell-scripts == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      (github.event_name == 'merge_group' || github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-initialize-smoke-test == 'true') || needs.detect-changes.outputs.shell-scripts == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success'
     uses: ./.github/workflows/initialize-smoke-test.yml
@@ -383,6 +390,7 @@ jobs:
       (needs.test-lambdas.result == 'success' || needs.test-lambdas.result == 'failure' || needs.test-lambdas.result == 'skipped') &&
       (needs.test-cloudflare-worker.result == 'success' || needs.test-cloudflare-worker.result == 'failure' || needs.test-cloudflare-worker.result == 'skipped') &&
       (
+        github.event_name == 'merge_group' ||
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-playwright == 'true') || github.event_name == 'workflow_dispatch') ||
         needs.detect-changes.outputs.playwright == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
@@ -496,7 +504,7 @@ jobs:
     needs: [detect-changes, static-code-analysis, static-backend, select-ci]
     if: >-
       !cancelled() &&
-      (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-explain-analyze == 'true') || needs.detect-changes.outputs.explain-analyze == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      (github.event_name == 'merge_group' || github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-explain-analyze == 'true') || needs.detect-changes.outputs.explain-analyze == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped')
@@ -533,7 +541,8 @@ jobs:
     name: Patch Coverage
     if: >-
       always() &&
-      !cancelled()
+      !cancelled() &&
+      github.event_name != 'merge_group'
     needs:
       - detect-changes
       - select-ci
@@ -582,6 +591,59 @@ jobs:
       actions: read
       pull-requests: write
 
+  # Queue commits are untrusted: resolve the same Vitest report expectations without exposing
+  # the PR-only write token or Codecov secret to merge-group-controlled code.
+  test-coverage-merge-group:
+    name: Merge Group Coverage Reports
+    if: >-
+      always() &&
+      !cancelled() &&
+      github.event_name == 'merge_group'
+    needs:
+      - detect-changes
+      - select-ci
+      - test-ts-shared
+      - test-tooling
+      - test-backend-modules
+      - test-backend-unit
+      - test-backend-credentialed
+      - test-web
+      - test-web-api
+      - storybook
+      - test-web-integration
+      - test-cloudflare-worker
+      - test-lambdas
+      - test-portability
+    uses: ./.github/workflows/ci-test-coverage.yml
+    with:
+      select-vitest-outputs-run-tests-test-web: ${{ needs.select-ci.outputs.run-tests-test-web }}
+      select-vitest-outputs-run-tests-test-web-api: ${{ needs.select-ci.outputs.run-tests-test-web-api }}
+      select-vitest-outputs-run-tests-test-backend-unit: ${{ needs.select-ci.outputs.run-tests-test-backend-unit }}
+      select-vitest-outputs-run-tests-test-backend-modules: ${{ needs.select-ci.outputs.run-tests-test-backend-modules }}
+      select-vitest-outputs-run-tests-test-cloudflare-worker: ${{ needs.select-ci.outputs.run-tests-test-cloudflare-worker }}
+      select-vitest-outputs-run-tests-test-lambdas: ${{ needs.select-ci.outputs.run-tests-test-lambdas }}
+      test-backend-unit-shard-total: ${{ needs.test-backend-unit.outputs.shard-total }}
+      test-web-shard-total: ${{ needs.test-web.outputs.shard-total }}
+      test-web-api-shard-total: ${{ needs.test-web-api.outputs.shard-total }}
+      test-web-integration-shard-total: ${{ needs.test-web-integration.outputs.shard-total }}
+      select-vitest-outputs-storybook-browser-mode: ${{ needs.select-ci.outputs.storybook-browser-mode }}
+      test-ts-shared-result: ${{ needs.test-ts-shared.result }}
+      test-tooling-result: ${{ needs.test-tooling.result }}
+      test-backend-modules-result: ${{ needs.test-backend-modules.result }}
+      test-backend-unit-result: ${{ needs.test-backend-unit.result }}
+      test-backend-credentialed-result: ${{ needs.test-backend-credentialed.result }}
+      test-web-result: ${{ needs.test-web.result }}
+      test-web-api-result: ${{ needs.test-web-api.result }}
+      storybook-result: ${{ needs.storybook.result }}
+      test-web-integration-result: ${{ needs.test-web-integration.result }}
+      test-cloudflare-worker-result: ${{ needs.test-cloudflare-worker.result }}
+      test-lambdas-result: ${{ needs.test-lambdas.result }}
+      test-portability-result: ${{ needs.test-portability.result }}
+      detect-changes-result: ${{ needs.detect-changes.result }}
+    permissions:
+      actions: read
+      contents: read
+
   tests-processing:
     needs:
       [
@@ -603,7 +665,7 @@ jobs:
         test-web-api,
         test-web-integration,
       ]
-    if: ${{ always() && !cancelled() }}
+    if: ${{ always() && !cancelled() && github.event_name != 'merge_group' }}
     uses: ./.github/workflows/ci-tests-processing.yml
     with:
       vitest-report-expectations: ${{ needs.test-coverage.outputs.vitest-report-expectations }}
@@ -616,10 +678,44 @@ jobs:
       contents: read
       actions: write
 
+  tests-processing-merge-group:
+    needs:
+      [
+        detect-changes,
+        static-code-analysis,
+        static-backend,
+        static-web,
+        static-lambdas,
+        static-cloudflare-worker,
+        initialize-smoke-test,
+        test-postgres-schema,
+        test-playwright,
+        test-playwright-credentialed,
+        test-explain-analyze,
+        test-portability,
+        test-coverage-merge-group,
+        backend-smoke,
+        storybook,
+        test-web-api,
+        test-web-integration,
+      ]
+    if: ${{ always() && !cancelled() && github.event_name == 'merge_group' }}
+    uses: ./.github/workflows/ci-tests-processing.yml
+    with:
+      vitest-report-expectations: ${{ needs.test-coverage-merge-group.outputs.vitest-report-expectations }}
+      postgres-result: ${{ needs.test-postgres-schema.result }}
+      postgres-vitest-ran: ${{ needs.test-postgres-schema.outputs.vitest-ran }}
+      postgres-vitest-attempt: ${{ needs.test-postgres-schema.outputs.vitest-report-attempt }}
+      results: |-
+        {"detect-changes":{"result":"${{ needs.detect-changes.result }}"},"static-code-analysis":{"result":"${{ needs.static-code-analysis.result }}"},"static-backend":{"result":"${{ needs.static-backend.result }}"},"static-web":{"result":"${{ needs.static-web.result }}"},"static-lambdas":{"result":"${{ needs.static-lambdas.result }}"},"static-cloudflare-worker":{"result":"${{ needs.static-cloudflare-worker.result }}"},"initialize-smoke-test":{"result":"${{ needs.initialize-smoke-test.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"test-playwright":{"result":"${{ needs.test-playwright.result }}"},"test-playwright-credentialed":{"result":"${{ needs.test-playwright-credentialed.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"test-portability":{"result":"${{ needs.test-portability.result }}"},"test-coverage-merge-group":{"result":"${{ needs.test-coverage-merge-group.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"storybook":{"result":"${{ needs.storybook.result }}"},"test-web-api":{"result":"${{ needs.test-web-api.result }}"},"test-web-integration":{"result":"${{ needs.test-web-integration.result }}"}}
+    permissions:
+      actions: read
+      contents: read
+
   tests:
     name: tests
     if: ${{ !cancelled() }}
-    needs: [tests-processing]
+    needs: [tests-processing, tests-processing-merge-group]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     env:
@@ -630,7 +726,7 @@ jobs:
       - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@0ebeb98c9363faf3fa857154ac9d5447c297214f # v0.18.1
         with:
           results: >-
-            {"tests-processing":{"result":"${{ needs.tests-processing.result }}"}}
+            {"tests-processing":{"result":"${{ needs.tests-processing.result }}"},"tests-processing-merge-group":{"result":"${{ needs.tests-processing-merge-group.result }}"}}
   # Does not wait on `tests`: the image build consumes nothing tests produce (no
   # download-artifact, shared cache, or shared service between them), so gating on `tests`
   # only serialized independent work. `build` (below) still gates the merge-required result on
@@ -643,6 +739,7 @@ jobs:
     # any source that affects the image changes.
     if: >-
       !cancelled() &&
+      github.event_name != 'merge_group' &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       (github.event_name != 'workflow_dispatch' || github.ref_name != 'main') &&
@@ -672,6 +769,7 @@ jobs:
     # any source that affects the image changes.
     if: >-
       !cancelled() &&
+      github.event_name != 'merge_group' &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       (github.event_name != 'workflow_dispatch' || github.ref_name != 'main') &&
@@ -689,10 +787,30 @@ jobs:
     secrets:
       AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
 
+  build-backend-merge-group:
+    needs: [detect-changes, select-ci]
+    if: ${{ !cancelled() && github.event_name == 'merge_group' }}
+    uses: ./.github/workflows/build-backend.yml
+    permissions:
+      actions: read
+      contents: read
+    with:
+      trusted_secret_context: false
+
+  build-web-merge-group:
+    needs: [detect-changes, select-ci]
+    if: ${{ !cancelled() && github.event_name == 'merge_group' }}
+    uses: ./.github/workflows/build-web.yml
+    permissions:
+      actions: read
+      contents: read
+    with:
+      trusted_secret_context: false
+
   build:
     name: build
     if: ${{ !cancelled() }}
-    needs: [tests, build-backend, build-web]
+    needs: [tests, build-backend, build-backend-merge-group, build-web, build-web-merge-group]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     env:
@@ -704,4 +822,4 @@ jobs:
         with:
           mode: build
           results: |-
-            {"tests":{"result":"${{ needs.tests.result }}"},"build-backend":{"result":"${{ needs.build-backend.result }}"},"build-web":{"result":"${{ needs.build-web.result }}"}}
+            {"tests":{"result":"${{ needs.tests.result }}"},"build-backend":{"result":"${{ needs.build-backend.result }}"},"build-backend-merge-group":{"result":"${{ needs.build-backend-merge-group.result }}"},"build-web":{"result":"${{ needs.build-web.result }}"},"build-web-merge-group":{"result":"${{ needs.build-web-merge-group.result }}"}}

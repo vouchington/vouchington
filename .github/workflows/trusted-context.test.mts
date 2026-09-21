@@ -71,5 +71,9 @@ describe('CI trusted context classifier', () => {
       trusted: 'true',
       'dependency-bot-test': 'false',
     })
+    expect(evaluateTrustedContext('human', 'voucha/repo', 'voucha/repo', 'merge_group')).toEqual({
+      trusted: 'false',
+      'dependency-bot-test': 'false',
+    })
   })
 })

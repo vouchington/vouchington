@@ -10,7 +10,7 @@ on:
         default: false
     secrets:
       AWS_TEST_ROLE_ARN:
-        required: true
+        required: false
 permissions:
   actions: read
   contents: read
@@ -21,7 +21,6 @@ concurrency:
 
 jobs:
   build:
-    if: ${{ inputs.trusted_secret_context }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     services:
@@ -43,8 +42,19 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup-aws
+        if: ${{ inputs.trusted_secret_context }}
         timeout-minutes: 2
         with:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
+
+      - name: Configure inert AWS credentials
+        if: ${{ !inputs.trusted_secret_context }}
+        run: |
+          {
+            echo 'AWS_ACCESS_KEY_ID=merge-group-validation'
+            echo 'AWS_SECRET_ACCESS_KEY=merge-group-validation'
+            echo 'AWS_SESSION_TOKEN=merge-group-validation'
+            echo 'AWS_REGION=us-west-2'
+          } >> "$GITHUB_ENV"
 
       - uses: ./.github/actions/build-backend-images

@@ -21,6 +21,15 @@ does not claim exhaustive history. The scheduled
 [`ci-job-runtime.md`](../prompts/scheduled/ci-job-runtime.md) prompt turns the highest-ranked breach
 into one issue or an update to an existing issue.
 
+The merge queue triggers `CI` and `Gitleaks` on `merge_group.checks_requested` for `main`. Queue
+commits deliberately fail open to the full non-credentialed suite instead of reusing PR path
+selection, and Gitleaks scans the payload's exact base-to-head range. A merge-group run is an
+untrusted context: it receives no repository secrets, OIDC permission, PR-comment permission, or
+artifact-deletion permission. Credentialed tests and Storybook therefore remain PR-only, while
+queue-specific backend and web image jobs use inert AWS credential-shaped values to exercise the
+local build, smoke-test, vulnerability-scan, and SBOM paths without AWS access. The stable required
+contexts remain `tests`, `build`, and `gitleaks`.
+
 CI log quality is audited separately with the
 [`review-ci-logs` skill](../../.agents/skills/review-ci-logs/SKILL.md). It samples the same core
 10-run horizon plus recent repository-wide failures, ranks downloaded log-archive entries by

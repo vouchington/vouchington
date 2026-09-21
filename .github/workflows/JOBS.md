@@ -36,7 +36,9 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci.yml`                            | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
 | `ci.yml`                            | `build`                         | job    | `ubuntu-latest`                       | 1             |
 | `ci.yml`                            | `build-backend`                 | job    | → `build-backend.yml`                 | 360           |
+| `ci.yml`                            | `build-backend-merge-group`     | job    | → `build-backend.yml`                 | 360           |
 | `ci.yml`                            | `build-web`                     | job    | → `build-web.yml`                     | 360           |
+| `ci.yml`                            | `build-web-merge-group`         | job    | → `build-web.yml`                     | 360           |
 | `ci.yml`                            | `detect-changes`                | job    | → `ci-detect-changes.yml`             | 360           |
 | `ci.yml`                            | `initialize-smoke-test`         | job    | → `initialize-smoke-test.yml`         | 360           |
 | `ci.yml`                            | `select-ci`                     | job    | → `ci-select-vitest.yml`              | 360           |
@@ -51,6 +53,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci.yml`                            | `test-backend-unit`             | job    | → `tests-backend-unit.yml`            | 360           |
 | `ci.yml`                            | `test-cloudflare-worker`        | job    | → `tests-cloudflare-worker.yml`       | 360           |
 | `ci.yml`                            | `test-coverage`                 | job    | → `ci-test-coverage.yml`              | 360           |
+| `ci.yml`                            | `test-coverage-merge-group`     | job    | → `ci-test-coverage.yml`              | 360           |
 | `ci.yml`                            | `test-explain-analyze`          | job    | → `explain-analyze.yml`               | 360           |
 | `ci.yml`                            | `test-lambdas`                  | job    | → `tests-lambdas.yml`                 | 360           |
 | `ci.yml`                            | `test-playwright`               | job    | → `tests-playwright.yml`              | 360           |
@@ -64,6 +67,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci.yml`                            | `test-web-integration`          | job    | → `tests-web-integration.yml`         | 360           |
 | `ci.yml`                            | `tests`                         | job    | `ubuntu-latest`                       | 2             |
 | `ci.yml`                            | `tests-processing`              | job    | → `ci-tests-processing.yml`           | 360           |
+| `ci.yml`                            | `tests-processing-merge-group`  | job    | → `ci-tests-processing.yml`           | 360           |
 | `cleanup-artifacts.yml`             | `cleanup-run`                   | job    | `ubuntu-slim`                         | 10            |
 | `cleanup-artifacts.yml`             | `cleanup-sweep`                 | job    | `ubuntu-latest`                       | 26            |
 | `dependabot-pr-automerge.yml`       | `automerge`                     | job    | `ubuntu-slim`                         | 5             |

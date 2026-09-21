@@ -93,7 +93,9 @@ jobs:
         run: |
           # Pair 2: origin/<base_ref>...HEAD after the merge checkout. Do not mix
           # the recorded PR base SHA with the merge commit (#11711).
-          if [ -n "$PR_BASE_REF" ]; then
+          if [ "$EVENT_NAME" = "merge_group" ]; then
+            CHANGED=$(git diff --name-only "${MERGE_GROUP_BASE_SHA}...${MERGE_GROUP_HEAD_SHA}")
+          elif [ -n "$PR_BASE_REF" ]; then
             CHANGED=$(git diff --name-only "origin/${PR_BASE_REF}...HEAD")
           else
             CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git ls-tree -r --name-only HEAD)
@@ -108,6 +110,9 @@ jobs:
             echo "docs-only=false" >> "$GITHUB_OUTPUT"
           fi
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MERGE_GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
           PR_BASE_REF: ${{ github.base_ref }}
       - name: Check for trusted secret context
         id: trusted-context
@@ -115,7 +120,9 @@ jobs:
           trusted=true
           dependency_bot_test=false
 
-          if [ "$EVENT_NAME" = "pull_request" ]; then
+          if [ "$EVENT_NAME" = "merge_group" ]; then
+            trusted=false
+          elif [ "$EVENT_NAME" = "pull_request" ]; then
             trusted=false
             if [ "$HEAD_REPO" = "$BASE_REPO" ]; then
               case "$ACTOR" in

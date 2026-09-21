@@ -45,9 +45,13 @@ export const CI_ROOT_JOB_NAMES = [
   'test-explain-analyze',
   'test-portability',
   'build-backend',
+  'build-backend-merge-group',
   'build-web',
+  'build-web-merge-group',
   'test-coverage',
+  'test-coverage-merge-group',
   'tests-processing',
+  'tests-processing-merge-group',
   'tests',
   'build',
 ] as const

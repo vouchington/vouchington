@@ -215,7 +215,7 @@ describe('CI cache policy', () => {
     expect(testsJob).not.toContain('if: always()')
     expect(testsJob).toContain('id: all-checks-passed')
     expect(testsJob).toContain(
-      "if: steps.all-checks-passed.outcome == 'success' && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')",
+      "if: github.event_name == 'pull_request' && steps.all-checks-passed.outcome == 'success' && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')",
     )
     expect(testsJob).toContain('test("^(vitest-blob-|vitest-report-attempt-|coverage-)")')
     // Cleanup must run after Vitest reports and required-job fan-in are consumed.

@@ -104,7 +104,12 @@ describe('PR compare revision pairs', () => {
       readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8'),
     ) as WorkflowFile
     const step = requiredNamedStep(workflow.jobs?.['detect-changes'], 'Check for docs-only changes')
-    expect(step.env).toEqual({ PR_BASE_REF: '${{ github.base_ref }}' })
+    expect(step.env).toEqual({
+      EVENT_NAME: '${{ github.event_name }}',
+      MERGE_GROUP_BASE_SHA: '${{ github.event.merge_group.base_sha }}',
+      MERGE_GROUP_HEAD_SHA: '${{ github.event.merge_group.head_sha }}',
+      PR_BASE_REF: '${{ github.base_ref }}',
+    })
     expect(step.run).toContain('"origin/${PR_BASE_REF}...HEAD"')
     expect(step.run).not.toContain('github.event.pull_request.base.sha')
     expect(step.run).not.toContain('github.sha')
