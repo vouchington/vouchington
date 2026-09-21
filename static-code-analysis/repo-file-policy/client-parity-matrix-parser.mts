@@ -1,7 +1,6 @@
 import { parseMarkdownTables } from 'vouchington-tooling/markdown'
 import {
   parseIssueLinkDefinitions,
-  parseReferencedIssueLocations,
   ISSUE_REF_RE,
   type IssueLinkDefinition,
 } from './client-parity-matrix-references.mts'
@@ -150,15 +149,10 @@ function parseRows(input: ClientParityMatrixInput): ParsedMatrixRow[] {
 
 export function parseClientParityMatrix(input: ClientParityMatrixInput): {
   issueLinkDefinitions: IssueLinkDefinition[]
-  referencedIssueIds: Set<string>
-  referencedIssueLocations: Map<string, MatrixSourceLocation>
   rows: ParsedMatrixRow[]
 } {
-  const referencedIssueLocations = parseReferencedIssueLocations(input)
   return {
     issueLinkDefinitions: parseIssueLinkDefinitions(input),
-    referencedIssueIds: new Set(referencedIssueLocations.keys()),
-    referencedIssueLocations,
     rows: parseRows(input),
   }
 }

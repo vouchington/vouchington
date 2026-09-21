@@ -29,19 +29,3 @@ export function parseIssueLinkDefinitions(input: ClientParityMatrixInput): Issue
     })
   return definitions
 }
-
-export function parseReferencedIssueLocations(
-  input: ClientParityMatrixInput,
-): Map<string, MatrixSourceLocation> {
-  const locations = new Map<string, MatrixSourceLocation>()
-  matrixContent(input)
-    .split('\n')
-    .forEach((line, index) => {
-      if (ISSUE_LINK_DEFINITION_RE.test(line)) return
-      for (const match of line.matchAll(ISSUE_REF_RE)) {
-        if (match[1] && !locations.has(match[1]))
-          locations.set(match[1], matrixSourceAtLine(input, index + 1))
-      }
-    })
-  return locations
-}
