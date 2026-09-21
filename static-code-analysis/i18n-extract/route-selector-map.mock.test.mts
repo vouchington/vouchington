@@ -31,9 +31,7 @@ vi.mock<typeof import('no-mistakes')>(
 
 import { computeRouteAliasMap } from './route-selector-map.mts'
 
-/** `no-mistakes` resolves the whole graph (re-exports, plus recursive/nested dynamic imports) in
- * one `analyzeProject` call, so each seed file's mocked closure already includes its dynamic-import
- * targets, transitively (e.g. registry's `import()`, login's nested `next/dynamic` chain). */
+/** Each dependency seed's mocked closure includes recursive dynamic imports and re-exports. */
 const CLOSURE_EXTRAS: Readonly<Record<string, readonly string[]>> = {
   'web/app/registry/page.tsx': ['web/lib/registry.ts', 'web/lib/labels.ts', 'web/lib/dynamic.ts'],
   'web/app/login/page.tsx': ['web/components/mfa.tsx', 'web/components/recovery.tsx'],
@@ -74,12 +72,11 @@ const KNOWN_ALIASES = new Set([
   'extracted.app.notFound.missing',
   'extracted.components.keyboardShortcutsDialog.viewAllShortcuts',
 ])
-
+let derivedResolveFiles: string[][] = []
 function requestedFiles(report: AnalyzeProjectReportRequest): string[] {
   if (!('files' in report) || !Array.isArray(report.files)) return []
   return report.files.filter((file): file is string => typeof file === 'string')
 }
-
 function dependencyResult(paths: readonly string[]): DependencyResult {
   return {
     roots: [],
@@ -88,7 +85,6 @@ function dependencyResult(paths: readonly string[]): DependencyResult {
     tsconfig_provenance: [],
   }
 }
-
 function emptyResolveCheck(files: readonly string[]): ResolveCheckBatchResult {
   return {
     allResolve: true,
@@ -101,8 +97,11 @@ function emptyResolveCheck(files: readonly string[]): ResolveCheckBatchResult {
     })),
   }
 }
-
+function dependencyPaths(result: DependencyResult | undefined): string[] {
+  return result?.files.flatMap(({ path }) => (typeof path === 'string' ? [path] : [])) ?? []
+}
 function installGraphMocks(resolveCheck?: ResolveCheckBatchResult): void {
+  derivedResolveFiles = []
   noMistakes.analyzeProject.mockImplementation(async options => {
     const dependencyReports = new Map(
       options.reports
@@ -113,18 +112,24 @@ function installGraphMocks(resolveCheck?: ResolveCheckBatchResult): void {
         ]),
     )
     return {
-      reports: options.reports.map(report => ({
-        id: report.id,
-        type: report.type,
-        result:
+      reports: options.reports.map(report => {
+        const files =
           report.type === 'resolveCheckDependencies'
-            ? (resolveCheck ?? emptyResolveCheck([]))
-            : dependencyReports.get(report.id)!,
-      })),
+            ? report.dependencyReportIds.flatMap(id => dependencyPaths(dependencyReports.get(id)))
+            : []
+        if (report.type === 'resolveCheckDependencies') derivedResolveFiles.push(files)
+        return {
+          id: report.id,
+          type: report.type,
+          result:
+            report.type === 'resolveCheckDependencies'
+              ? (resolveCheck ?? emptyResolveCheck(files))
+              : dependencyReports.get(report.id)!,
+        }
+      }),
     }
   })
 }
-
 async function withRoutes(
   files: Record<string, string>,
   test: (root: string) => Promise<void>,
@@ -151,10 +156,9 @@ async function withRoutes(
     await rm(binDir, { recursive: true, force: true })
   }
 }
-
 function expectGraphRequests(expectedCalls = 1): void {
   expect(noMistakes.analyzeProject).toHaveBeenCalledTimes(expectedCalls)
-  for (const [options] of noMistakes.analyzeProject.mock.calls) {
+  for (const [index, [options]] of noMistakes.analyzeProject.mock.calls.entries()) {
     const dependencyReports = options.reports.filter(report => report.type === 'dependencies')
     for (const report of dependencyReports)
       expect(report.relationships).toEqual(DEPENDENCY_RELATIONSHIPS)
@@ -165,6 +169,9 @@ function expectGraphRequests(expectedCalls = 1): void {
       'web/components/navbar.tsx',
     ])
       expect(requestedRoots.has(file)).toBe(true)
+    expect(derivedResolveFiles[index]).toEqual(
+      expect.arrayContaining(['web/lib/dynamic.ts', 'web/lib/labels.ts']),
+    )
     expect(options.reports.filter(report => report.type === 'resolveCheckDependencies')).toEqual([
       {
         id: 'resolve-check',
@@ -174,7 +181,6 @@ function expectGraphRequests(expectedCalls = 1): void {
     ])
   }
 }
-
 async function expectGraphMembership(root: string): Promise<void> {
   const result = await computeRouteAliasMap(KNOWN_ALIASES, root)
   expect(result.chrome).toEqual([
@@ -192,13 +198,11 @@ async function expectGraphMembership(root: string): Promise<void> {
     'extracted.login.recovery.title',
   ])
 }
-
 describe('mocked web route graph closures', () => {
   beforeEach(() => {
     noMistakes.analyzeProject.mockReset()
     installGraphMocks()
   })
-
   it('follows graph-only exports and nested dynamic imports, plus Navbar chrome', async () => {
     expect.hasAssertions()
     await withRoutes({ ...GRAPH_FILES }, async root => {
@@ -206,16 +210,13 @@ describe('mocked web route graph closures', () => {
       expectGraphRequests()
     })
   })
-
   it('runs two independent route maps without a shared invocation lock', async () => {
     await Promise.all([
       withRoutes({ ...GRAPH_FILES }, expectGraphMembership),
       withRoutes({ ...GRAPH_FILES }, expectGraphMembership),
     ])
-    expect(noMistakes.analyzeProject).toHaveBeenCalled()
     expectGraphRequests(2)
   })
-
   it('fails when a quoted registry alias is not a web catalog alias', async () => {
     await withRoutes(
       {
@@ -229,7 +230,6 @@ describe('mocked web route graph closures', () => {
       },
     )
   })
-
   it('fails when resolveCheck reports a reachable unresolved import', async () => {
     installGraphMocks({
       allResolve: false,
