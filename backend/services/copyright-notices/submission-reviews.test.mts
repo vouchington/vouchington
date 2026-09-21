@@ -4,6 +4,7 @@ import {
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
+  removeTestPostImage,
 } from '@voucha/test-helpers'
 import {
   readCopyrightNoticeTargetId,
@@ -15,6 +16,7 @@ import {
   createCopyrightCounterNotice,
   createCopyrightFormIntake,
   getCopyrightNoticePrivateAggregate,
+  getCopyrightParticipantNoticeDetail,
   prepareCopyrightEmailDelivery,
   reviewCopyrightAppeal,
   reviewCopyrightCounterNotice,
@@ -24,7 +26,7 @@ import {
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
 
-async function createRestrictedFixture(targetCount = 1) {
+async function createRestrictedFixture(targetCount = 1, detachBeforeScreening = false) {
   const [poster, claimant, moderatorRecord] = await Promise.all([
     createTestUser(),
     createTestUser(),
@@ -69,6 +71,11 @@ async function createRestrictedFixture(targetCount = 1) {
     promptVersion: 'copyright-form-screening-v2',
     model: 'test-model',
   })
+  if (detachBeforeScreening) {
+    for (const imageId of imageIds) {
+      await removeTestPostImage(postId, imageId)
+    }
+  }
   await applyNonSpamSignedInCopyrightFormScreening(intake.intake.copyright_notice_submission_id)
   const aggregate = await getCopyrightNoticePrivateAggregate(intake.intake.copyright_notice_id)
   if (!aggregate?.restrictions[0]) throw new Error('fixture restriction missing')
@@ -84,6 +91,26 @@ async function createRestrictedFixture(targetCount = 1) {
 }
 
 describe('copyright submission moderator reviews', () => {
+  it('keeps the immutable placement owner authorized and notified after the image is detached', async () => {
+    const fixture = await createRestrictedFixture(1, true)
+    const participant = await getCopyrightParticipantNoticeDetail(fixture.noticeId, fixture.poster)
+    const aggregate = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
+
+    expect(participant).toMatchObject({
+      viewer_role: 'poster',
+      respondable_target_ids: [fixture.targetId],
+    })
+    expect(aggregate?.deliveryIntents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          recipient_user_id: fixture.poster.id,
+          recipient_role: 'poster',
+          delivery_kind: 'poster_restriction_notice',
+        }),
+      ]),
+    )
+  })
+
   it('loads a signed-in appeal from its submission-bound encrypted payload', async () => {
     const fixture = await createRestrictedFixture()
     const appeal = await createCopyrightAppeal(
@@ -131,9 +158,17 @@ describe('copyright submission moderator reviews', () => {
     const reviewed = await getCopyrightNoticePrivateAggregate(fixture.noticeId)
     expect(reviewed?.restrictions[0]).toMatchObject({
       human_review_action: 'reverse',
-      lifted_by_id: fixture.moderator.id,
+      lifted_at: null,
     })
-    expect(reviewed?.restrictions[0]?.lifted_at).not.toBeNull()
+    expect(reviewed?.actionIntents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          copyright_restriction_id: fixture.restrictionId,
+          action: 'restore',
+          state: 'pending',
+        }),
+      ]),
+    )
     expect(reviewed?.appealReviews).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: result.reviewIds[0], action: 'reverse' }),
@@ -232,6 +267,7 @@ describe('copyright submission moderator reviews', () => {
     expect(delivery.text).toContain('Telephone: 555-0100')
     expect(delivery.text).toContain('Statement under penalty of perjury:')
     expect(delivery.text).toContain('Consent to federal jurisdiction:')
+    expect(delivery.text).toContain('if my address is outside the United States')
     expect(delivery.text).toContain('Consent to service of process:')
     expect(delivery.text).toContain('Electronic signature: Poster')
     await expect(

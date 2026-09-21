@@ -33,6 +33,7 @@ export interface PostCreatedBy {
   id: string
   username: string
   profile_image_id: string | null
+  profile_image_placement?: import('./user').ImagePlacementTuple | null
   is_official_account?: boolean
 }
 
@@ -74,7 +75,13 @@ export interface Post {
   clearance_status: 'pending' | 'approved' | 'rejected' | 'in_review'
   clearance_reason?: string | null
   ai_summary_markdown?: string | null
-  images?: Array<{ image_id: string; order_index: number; caption: string }>
+  images?: Array<{
+    image_id: string
+    placement_id: string
+    placement_revision: number
+    order_index: number
+    caption: string
+  }>
   review_topic_ratings?: Array<{
     topic_id: string
     rating: number

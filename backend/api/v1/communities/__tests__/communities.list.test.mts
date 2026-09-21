@@ -3,15 +3,20 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
+  completeTestMediaDeliveryRecord,
+  getTestImageSurfacePlacements,
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityListItem,
+  insertTestImage,
   insertTestProxyFollowCommunity,
   insertTestTopic,
   createRandomString,
+  setTestCommunitySurfaceImages,
 } from '@voucha/test-helpers'
 
 import type { PrivateUser } from '@services/users/types'
+import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 
 describe('communities', () => {
   let user: PrivateUser
@@ -31,6 +36,35 @@ describe('communities', () => {
         expect(Array.isArray(response.body.results)).toBe(true)
         expect(response.body).toHaveProperty('page_info')
         expect(response.body).toHaveProperty('communities')
+      })
+
+      it('includes safe profile and banner placement tuples in community search results', async () => {
+        const community = await insertTestCommunity({ createdById: user.id })
+        const profileImageId = await insertTestImage(user.id)
+        const bannerImageId = await insertTestImage(user.id)
+        await setTestCommunitySurfaceImages(community.id, { profileImageId, bannerImageId })
+        const placements = await getTestImageSurfacePlacements({ communityId: community.id })
+        await Promise.all(
+          placements.map(async placement => {
+            const { deliveryKey } = await stageImagePlacementDeliveryRecord({
+              placementId: placement.placement_id,
+              revision: placement.placement_revision,
+              imageId: placement.image_id,
+              state: 'allow',
+            })
+            await completeTestMediaDeliveryRecord(deliveryKey)
+          }),
+        )
+
+        const request = createRequest()
+        const response = await request.get(`/api/v1/communities?q=${community.slug}`).expect(200)
+
+        expect(response.body.communities[community.id]).toEqual(
+          expect.objectContaining({
+            profile_image_placement: expect.objectContaining({ image_id: profileImageId }),
+            banner_image_placement: expect.objectContaining({ image_id: bannerImageId }),
+          }),
+        )
       })
 
       it('filters to current user communities when member_id=me', async () => {

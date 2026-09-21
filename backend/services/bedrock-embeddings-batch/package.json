@@ -36,11 +36,12 @@
     "@services/rss-feed-items": "workspace:^",
     "@services/topics": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
-    "pg-copy-streams": "^7.0.0",
-    "undici": "^8.10.2"
+    "@vouchington/image-resize": "0.2.0",
+    "pg-copy-streams": "^7.0.0"
   },
   "devDependencies": {
     "@queues/ban-evasion": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/urls": "workspace:^",
     "@types/pg-copy-streams": "^1.2.5",
     "@voucha/test-helpers": "workspace:^"

@@ -10,6 +10,8 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 export interface ImageEntry {
   key: string
   image_id: string
+  placement_id?: string
+  placement_revision?: number
   order_index: number
   caption: string
 }
@@ -79,6 +81,11 @@ export function ImagesFieldset({
               <PostImage
                 imageId={img.image_id}
                 width={100}
+                placement={
+                  img.placement_id != null && img.placement_revision != null
+                    ? { id: img.placement_id, revision: img.placement_revision }
+                    : undefined
+                }
                 alt={
                   img.caption || t('extracted.posts.postFormImagesFieldset.uploadedImage_01b76eb9')
                 }

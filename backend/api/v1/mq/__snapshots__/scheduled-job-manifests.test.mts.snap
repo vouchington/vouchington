@@ -1786,6 +1786,72 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Converge exact media delivery tuples to the edge registry",
+        "id": "media-delivery-registry-reconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "notifications",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "media-delivery-registry-reconciliation",
+    "template": {
+      "data": {},
+      "name": "processReconcileMediaDeliveryRegistry",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Re-enqueue pending copyright media action intents",
+        "id": "copyright-action-reconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "notifications",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-action-reconciliation",
+    "template": {
+      "data": {},
+      "name": "processReconcileCopyrightActionIntents",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Re-enqueue pending copyright legal delivery intents",
         "id": "copyright-delivery-reconciliation",
         "kind": "scheduled-jobs",
@@ -2744,6 +2810,22 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "notifications",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileNotificationPushIntents",
+  },
+  {
+    "description": "Converge exact media delivery tuples to the edge registry",
+    "id": "media-delivery-registry-reconciliation",
+    "job_name": "processReconcileMediaDeliveryRegistry",
+    "queue_name": "notifications",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileMediaDeliveryRegistry",
+  },
+  {
+    "description": "Re-enqueue pending copyright media action intents",
+    "id": "copyright-action-reconciliation",
+    "job_name": "processReconcileCopyrightActionIntents",
+    "queue_name": "notifications",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileCopyrightActionIntents",
   },
   {
     "description": "Re-enqueue pending copyright legal delivery intents",

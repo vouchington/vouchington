@@ -1,20 +1,20 @@
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput } from './types.mts'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import {
+  beginTransaction,
+  registerPostRollbackAction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import type { CommunityPostReview } from '@services/communities/types'
 import { getPostByAny } from './get.mts'
 import { resolvePostScope } from './create/community-scope.mts'
 import { insertPost } from './create/insert-post.mts'
-import { applyPostCommitSideEffects } from './create/post-commit-side-effects.mts'
 import { applyPostTransactionSideEffects } from './create/transaction-side-effects.mts'
 import { validateCreatePostInput, validatePostCategories } from './create/validation.mts'
 import { addUrl } from '@services/urls/upsert'
 import { getUrlById } from '@services/urls/get'
-import { getOrCreateCrawlerForHostname } from '@services/crawlers'
-import { invalidate } from '@services/entity-cache'
-import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { recordCreatedPostPublicationChange } from './create/publication-change.mts'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
@@ -22,6 +22,11 @@ import type { PostCategoryFinalization } from './post-category-finalizations.mts
 import { persistPostSourceUrlRelation } from './create/source-url-relation.mts'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { assertActivePostAuthor } from './create/active-author.mts'
+import { preparePostImageDeliveryMutation } from './media-delivery.mts'
+import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
+import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
+import { finalizePreparedPost } from './create/finalize.mts'
+export { createPost } from './create-post.mts'
 export const preparePostWithCommunityReviews = async (
   creator: PrivateUser,
   input: CreatePostInput,
@@ -37,10 +42,24 @@ export const preparePostWithCommunityReviews = async (
   let resolvedUrlHostnameId: string | undefined
   let sourceUrlId: string | undefined
   let updates: CreatePostInput = input
+  let deliveryPrepared = false
   const createInTransaction = async (query: TransactionQuery) => {
     const options = { query }
     await lockAuthorPublicationLifecycle(query, creator.id)
     await assertActivePostAuthor(query, creator.id)
+    deliveryPrepared = true
+    if (input.images?.length) {
+      // Register before the first cross-store deny. A later image can fail after an earlier
+      // DynamoDB denial, and caller-owned transactions otherwise have no rollback compensation.
+      registerPostRollbackAction(query, () =>
+        compensateFailedImageDeliveryMutation({
+          imageIds: input.images!.map(image => image.image_id),
+        }),
+      )
+    }
+    await preparePostImageDeliveryMutation(query, {
+      imageIds: input.images?.map(image => image.image_id) ?? [],
+    })
     // Resolve url string → url_id for link posts inside the transaction so the url row
     // is visible to the INSERT. addUrl returns null for blocked/non-public hosts → 422.
     if (defaults.postType === 'link' && updates.url && !updates.url_id) {
@@ -137,7 +156,12 @@ export const preparePostWithCommunityReviews = async (
   }
   const post = await (
     options.query ? createInTransaction(options.query) : createInOwnedTransaction()
-  ).catch(error => {
+  ).catch(async error => {
+    if (deliveryPrepared && !options.query) {
+      await compensateFailedImageDeliveryMutation({
+        imageIds: input.images?.map(image => image.image_id) ?? [],
+      }).catch(onError)
+    }
     const pgError = error as { code?: string; constraint?: string }
     if (pgError.code === '23503') {
       if (
@@ -153,48 +177,21 @@ export const preparePostWithCommunityReviews = async (
 
   const response = { post: post!, communityReviews }
   const finalize = async () => {
-    // Transactional URL inserts defer cache and crawler work until after commit.
-    if (resolvedUrlStrings.length > 0) {
-      await invalidate.urls(...resolvedUrlStrings)
-      if (updates.url_id && resolvedUrlHostnameId) {
-        // Enqueue only after the crawler exists; failures cannot roll back the committed post.
-        const urlId = updates.url_id
-        await getOrCreateCrawlerForHostname(null, resolvedUrlHostnameId)
-          .then(() => {
-            void enqueueBulkCrawlUrls([{ urlId }])
-          })
-          .catch(onError)
-      }
-    }
-
-    const postRelatedTopics = await applyPostCommitSideEffects({
+    // The records were committed with the placement rows. Queue admission is best-effort only;
+    // the permanent reconciliation schedule owns recovery after a crash or Valkey outage.
+    void enqueueReconcileMediaDeliveryRegistry()
+    return await finalizePreparedPost({
       communityReviews,
       creator,
       isAdminCreator,
       post: post!,
       postCategoryFinalization: postCategoryFinalization!,
       postType: defaults.postType,
+      resolvedUrlHostnameId,
+      resolvedUrlStrings,
       updates,
     })
-
-    return {
-      post:
-        postRelatedTopics === undefined
-          ? post!
-          : { ...post!, post_related_topics: postRelatedTopics },
-      communityReviews,
-    }
   }
 
   return { response, finalize }
-}
-
-export const createPost = async (
-  creator: PrivateUser,
-  updates: CreatePostInput,
-  membershipPlan: ContributionLimitMembershipPlan = null,
-  options: { query?: TransactionQuery } = {},
-) => {
-  const prepared = await preparePostWithCommunityReviews(creator, updates, membershipPlan, options)
-  return (await prepared.finalize()).post
 }

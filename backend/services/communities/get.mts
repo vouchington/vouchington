@@ -4,8 +4,7 @@ import { isUUID } from '@modules/utils'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import type { Community, CommunityMember } from './types.mts'
-import type { CommunityOwner } from './search.mts'
+import type { CommunityMember } from './types.mts'
 import { getCommunityMember } from './members/get.mts'
 import { getPendingApplicationForUser } from './applications/pending.mts'
 import {
@@ -13,38 +12,18 @@ import {
   currentUserCanModerateCommunityPublication,
   currentUserCanViewCommunity,
 } from './authorization.mts'
+import {
+  mapCommunityWithOwner,
+  type CommunityRowWithOwner,
+  type CommunityWithOwner,
+} from './get-mapping.mts'
 
-export type CommunityWithOwner = Community & { owner: CommunityOwner | null }
+export type { CommunityWithOwner } from './get-mapping.mts'
 
 export type LoadedCommunity = {
   community: CommunityWithOwner
   membership: CommunityMember | null
   hasPendingApplication: boolean
-}
-
-type CommunityRowWithOwner = Community & {
-  owner_id: string | null
-  owner_username: string | null
-  lingua_rs_content_sha256?: unknown
-  lingua_rs_input_sha256?: unknown
-  lingua_rs_results?: unknown
-  lingua_rs_detected_at?: unknown
-}
-
-function mapCommunityWithOwner(row: CommunityRowWithOwner): CommunityWithOwner {
-  const {
-    owner_id,
-    owner_username,
-    lingua_rs_content_sha256: _contentSha256,
-    lingua_rs_input_sha256: _inputSha256,
-    lingua_rs_results: _results,
-    lingua_rs_detected_at: _detectedAt,
-    ...community
-  } = row
-  return {
-    ...community,
-    owner: owner_id ? { id: owner_id, username: owner_username } : null,
-  }
 }
 
 export async function loadCommunityForViewer(
@@ -122,7 +101,17 @@ export async function getCommunityOrThrow(
 export async function getCommunityBySlugOnly(slug: string): Promise<CommunityWithOwner | null> {
   const { rows } = await read(
     sql`/* getCommunityBySlugOnly */
-    SELECT c.*, u.id AS owner_id, u.username AS owner_username
+    SELECT c.*, u.id AS owner_id, u.username AS owner_username,
+      (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
+       FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
+       WHERE surface.surface_kind = 'community-profile-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
+         AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
+       ORDER BY placement.id DESC LIMIT 1) AS profile_image_placement,
+      (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
+       FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
+       WHERE surface.surface_kind = 'community-banner-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
+         AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
+       ORDER BY placement.id DESC LIMIT 1) AS banner_image_placement
     FROM communities c
     LEFT JOIN users u ON u.id = c.created_by_id
     WHERE c.slug = ${slug.toLowerCase()}
@@ -143,7 +132,17 @@ export async function getCommunity(
       sql`/* getCommunityById */
       SELECT c.*,
         u.id AS owner_id,
-        u.username AS owner_username
+        u.username AS owner_username,
+        (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
+         FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
+         WHERE surface.surface_kind = 'community-profile-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
+           AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
+         ORDER BY placement.id DESC LIMIT 1) AS profile_image_placement,
+        (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
+         FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
+         WHERE surface.surface_kind = 'community-banner-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
+           AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
+         ORDER BY placement.id DESC LIMIT 1) AS banner_image_placement
       FROM communities c
       LEFT JOIN users u ON u.id = c.created_by_id
       WHERE c.id = ${idOrSlug}
@@ -157,7 +156,17 @@ export async function getCommunity(
       sql`/* getCommunityBySlug */
       SELECT c.*,
         u.id AS owner_id,
-        u.username AS owner_username
+        u.username AS owner_username,
+        (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
+         FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
+         WHERE surface.surface_kind = 'community-profile-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
+           AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
+         ORDER BY placement.id DESC LIMIT 1) AS profile_image_placement,
+        (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
+         FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
+         WHERE surface.surface_kind = 'community-banner-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
+           AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
+         ORDER BY placement.id DESC LIMIT 1) AS banner_image_placement
       FROM communities c
       LEFT JOIN users u ON u.id = c.created_by_id
       WHERE c.slug = ${idOrSlug.toLowerCase()}

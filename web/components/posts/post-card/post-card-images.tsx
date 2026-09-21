@@ -31,6 +31,7 @@ export function PostCardImages({
       >
         <PostImage
           imageId={firstImage.image_id}
+          placement={{ id: firstImage.placement_id, revision: firstImage.placement_revision }}
           width={200}
           alt={firstImage.caption || post.title || `Untitled ${humanizePostType(post.post_type)}`}
           className='h-20 w-20 flex-shrink-0 rounded-md object-cover'
@@ -44,6 +45,7 @@ export function PostCardImages({
       <div>
         <PostImage
           imageId={firstImage.image_id}
+          placement={{ id: firstImage.placement_id, revision: firstImage.placement_revision }}
           width={800}
           alt={
             firstImage.caption ? '' : post.title || `Untitled ${humanizePostType(post.post_type)}`
@@ -65,6 +67,7 @@ export function PostCardImages({
           <CarouselItem key={image.image_id}>
             <PostImage
               imageId={image.image_id}
+              placement={{ id: image.placement_id, revision: image.placement_revision }}
               width={800}
               alt={
                 image.caption ? '' : post.title || `Untitled ${humanizePostType(post.post_type)}`

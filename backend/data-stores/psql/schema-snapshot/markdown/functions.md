@@ -290,6 +290,38 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_submission_target_scope()
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_image_placement`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_image_placement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_image_surface_placement`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_image_surface_placement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_images_id_immutable`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_images_id_immutable()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_media_placement`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_media_placement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_membership_grant_activation_period_mutation`
 
 ```sql
@@ -368,6 +400,23 @@ CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_mutation()
 CREATE OR REPLACE FUNCTION public.fn_guard_terminal_lifecycle()
  RETURNS trigger
  LANGUAGE plpgsql
+```
+
+## `fn_handoff_deleted_user_image_surfaces`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_handoff_deleted_user_image_surfaces()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
 ```
 
 ## `fn_immutable_array_to_string(p_array text[], p_delimiter text)`
@@ -867,6 +916,14 @@ CREATE OR REPLACE FUNCTION public.fn_require_verified_membership_provider_observ
  LANGUAGE plpgsql
 ```
 
+## `fn_retire_deleted_user_image_surfaces`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_retire_deleted_user_image_surfaces()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reverse_hostname_labels(p_hostname text)`
 
 ```sql
@@ -933,11 +990,27 @@ CREATE OR REPLACE FUNCTION public.fn_sync_ap_post_likes()
  LANGUAGE plpgsql
 ```
 
+## `fn_sync_community_image_placements`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_community_image_placements()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_sync_fediverse_instance_integration_status`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_sync_fediverse_instance_integration_status()
  RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)
+ RETURNS void
  LANGUAGE plpgsql
 ```
 
@@ -973,10 +1046,34 @@ CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_items_search_vector()
  LANGUAGE plpgsql
 ```
 
+## `fn_sync_topic_image_placements`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_topic_image_placements()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_sync_url_hostname_blocked`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_sync_url_hostname_blocked()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_sync_user_profile_image_placement`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_user_profile_image_placement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_sync_user_profile_link_image_placement`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_sync_user_profile_link_image_placement()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

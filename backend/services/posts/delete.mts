@@ -10,6 +10,11 @@ import { dismissPendingReportsForDeletedEntity } from '@services/moderation-repo
 import { dismissPendingDisputesForDeletedReview } from '@services/review-disputes/resolve'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { retirePostImagePlacements } from './image-placements.mts'
+import { preparePostImageDeliveryMutation } from './media-delivery.mts'
+import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
+import onError from '@modules/on-error'
+import { runSequentially } from '@modules/utils/run-sequentially'
 
 export const deletePost = async (
   deleter: PrivateUser,
@@ -17,37 +22,54 @@ export const deletePost = async (
   options?: { communityMemberRole?: CommunityMemberRole | null },
 ) => {
   assert(currentUserCanDeletePost(deleter, post, options), 403, 'Forbidden')
-  await using query = await beginTransaction()
-  await lockPostPublication(query, post.id)
-  const { rowCount } = await query(
-    `/* deletePost */
+  try {
+    await using query = await beginTransaction()
+    let rowCount: number | null = null
+    await runSequentially([
+      () => preparePostImageDeliveryMutation(query, { postId: post.id, imageIds: [] }),
+      () => lockPostPublication(query, post.id),
+      async () => {
+        const result = await query(
+          `/* deletePost */
       UPDATE posts
       SET deleted_at = CURRENT_TIMESTAMP, deleted_by_id = $1
       WHERE id = $2 AND deleted_at IS NULL
     `,
-    [deleter.id, post.id],
-  )
-  if ((rowCount ?? 0) > 0) {
-    await createPostRevision(
-      post.id,
-      'delete',
-      { deleted_at: { before: null, after: 'now' } },
-      deleter.id,
-      { query },
-    )
-    await recordPostPublicationChange(query, {
-      scope: { type: 'post', postId: post.id },
-      reason: 'post_deleted',
-      impactedPostIds: [post.id],
-      footprint: {
-        priorAuthorUserId: post.created_by_id ?? undefined,
-        priorCommunityId: post.community_id ?? undefined,
-        priorRootId: post.root_id ?? undefined,
-        priorPostSlug: post.slug ?? undefined,
+          [deleter.id, post.id],
+        )
+        rowCount = result.rowCount
       },
-    })
+    ])
+    if ((rowCount ?? 0) > 0) {
+      await runSequentially([
+        () => retirePostImagePlacements(post.id, query),
+        () =>
+          createPostRevision(
+            post.id,
+            'delete',
+            { deleted_at: { before: null, after: 'now' } },
+            deleter.id,
+            { query },
+          ),
+        () =>
+          recordPostPublicationChange(query, {
+            scope: { type: 'post', postId: post.id },
+            reason: 'post_deleted',
+            impactedPostIds: [post.id],
+            footprint: {
+              priorAuthorUserId: post.created_by_id ?? undefined,
+              priorCommunityId: post.community_id ?? undefined,
+              priorRootId: post.root_id ?? undefined,
+              priorPostSlug: post.slug ?? undefined,
+            },
+          }),
+      ])
+    }
+    await query.commit()
+  } catch (error) {
+    await compensateFailedImageDeliveryMutation({ postIds: [post.id] }).catch(onError)
+    throw error
   }
-  await query.commit()
 
   void enqueueOnPostDeleted(post.id)
   const isModerationDelete = deleter.id !== post.created_by_id

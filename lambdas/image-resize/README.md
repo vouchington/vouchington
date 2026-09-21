@@ -44,6 +44,11 @@ existing transform, so `CACHE_VERSION` remains `v2`.
 
 `GET /images/<key>?w=<width>&h=<height>&q=<quality>&l=<0|1>&p=<0|1>&f=<jpeg|png|webp|avif>`
 
+Post media uses the placement-bound form
+`GET /images/placements/<placement-id>/<revision>/<image-id>?w=...`. The Lambda validates the
+route binding and reads only `<image-id>` from S3. CloudFront authorization and its placement-state
+registry remain infrastructure-owned; the Lambda route alone does not provide withholding.
+
 - `key` — exact origin S3 object key (may contain slashes)
 - `w` (required) / `h` (optional) — desired max dimensions; always maintains aspect ratio, never upscales
 - `l` — lossless compression (`0`|`1`)

@@ -2,6 +2,7 @@ import { expect, test } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
+import { allowTestPostImageDelivery } from '../../../backend/test-helpers/entities/post-images.mts'
 import {
   createTestUser,
   insertTestImage,
@@ -40,6 +41,7 @@ test.describe('Sensitive-media blur gate on post page', () => {
     // Attach an image so PostDetailImages renders
     const imageId = await insertTestImage(mod.id)
     await insertTestPostImage({ postId, imageId })
+    await allowTestPostImageDelivery({ postId, imageId })
   })
 
   test('moderator sees blur overlay on a flagged post', async ({ page }) => {

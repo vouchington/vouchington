@@ -128,16 +128,22 @@ CREATE OR REPLACE VIEW view_posts AS
       SELECT JSON_AGG(
         json_build_object(
           'image_id', post_images.image_id,
+          'placement_id', placement.id,
+          'placement_revision', placement.revision,
           'order_index', post_images.order_index,
           'caption', post_images.caption
         )
         ORDER BY post_images.order_index
       )
       FROM post_images
-      JOIN images ON images.id = post_images.image_id
-        AND images.deleted_at IS NULL
-        AND images.upload_completed_at IS NOT NULL
-        AND images.quarantine_pending_at IS NULL
+      JOIN image_placements image_placement
+        ON image_placement.post_id = post_images.post_id
+        AND image_placement.image_id = post_images.image_id
+      JOIN media_placements placement ON placement.id = image_placement.placement_id
+        AND placement.retired_at IS NULL
+        AND fn_image_placement_publicly_projected(
+          placement.id, placement.revision, post_images.image_id
+        )
       WHERE post_images.post_id = posts.id
     ), '[]'::json) AS images,
 

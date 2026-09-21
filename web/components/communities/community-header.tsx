@@ -5,7 +5,7 @@ import { ProxiedImage as Image } from '@/components/shared/proxied-image'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { CommunityProxyBookmarkButton } from './community-proxy-bookmark-button'
-import { getImageUrl } from '@/lib/utils/image-url'
+import { getPlacementImageUrl } from '@/lib/utils/image-url'
 import type { Community, CommunityMember, CommunityMetrics } from '@/types/api-responses'
 import { communityHref } from '@/lib/links/entity-href'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -38,10 +38,15 @@ export function CommunityHeader({
 
   return (
     <div className='space-y-4'>
-      {community.banner_image_id && (
+      {community.banner_image_placement && (
         <div className='relative h-40 w-full overflow-hidden rounded-xl bg-muted lg:h-56'>
           <Image
-            src={getImageUrl(community.banner_image_id, { width: 1200 })}
+            src={getPlacementImageUrl(
+              community.banner_image_placement.placement_id,
+              community.banner_image_placement.placement_revision,
+              community.banner_image_placement.image_id,
+              { width: 1200 },
+            )}
             alt={t('extracted.communities.communityHeader.nameBanner_9c730ecf', {
               name: community.name,
             })}
@@ -54,10 +59,15 @@ export function CommunityHeader({
       )}
       <div className='flex flex-col gap-3'>
         <div className='flex items-start gap-3'>
-          {community.profile_image_id && (
+          {community.profile_image_placement && (
             <div className='relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted'>
               <Image
-                src={getImageUrl(community.profile_image_id, { width: 128 })}
+                src={getPlacementImageUrl(
+                  community.profile_image_placement.placement_id,
+                  community.profile_image_placement.placement_revision,
+                  community.profile_image_placement.image_id,
+                  { width: 128 },
+                )}
                 alt={t('extracted.communities.communityHeader.nameProfile_8fa6c108', {
                   name: community.name,
                 })}

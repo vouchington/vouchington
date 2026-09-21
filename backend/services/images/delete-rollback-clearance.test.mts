@@ -3,8 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { setPostClearanceStatus } from '@services/post-clearance'
 import { createPostModerationContent } from '@services/posts/content'
-import { getPostByAny } from '@services/posts/get'
-import type { Post } from '@services/posts/types'
+import { getPostModerationInput } from '@services/posts/moderation-input'
 import {
   createTestUserDirect,
   getPostModerationResetState,
@@ -42,7 +41,8 @@ describe('deleteImageById clearance rollback', () => {
       if (clearanceStatus !== 'pending') {
         await setPostClearanceStatus(postId, clearanceStatus, creator!.id)
       }
-      const post = (await getPostByAny(postId, { readOnly: false })) as Post
+      const post = await getPostModerationInput(postId)
+      if (!post) throw new Error('post was not found')
       await setPostLLMModerationContentSha256(
         postId,
         createPostModerationContent(post).content_sha256,

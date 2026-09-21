@@ -1,47 +1,37 @@
-import { read, beginTransaction } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
 import type { Post } from './types.mts'
-import { currentUserCanUpdatePost } from './authorization.mts'
 import { createPostModerationContent } from './content.mts'
-import { enqueueOnPostUpdated } from '@queues/entity-listeners/enqueues'
 import assert from 'http-assert'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
-import { assertCommunityNoLinksAllowed } from '@services/communities/restrictions/enforce'
-import { rollbackPostImages } from './images-rollback.mts'
-import { validatePostImageInputs } from './image-input-validation.mts'
 import { createPostRevision } from '@services/post-revisions'
-import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
-import {
-  getLockedPostImagePublicationState,
-  resetPostImageClearance,
-} from './image-publication-state.mts'
+import { recordPostPublicationChange } from '@services/post-publication'
+import { resetPostImageClearance } from './image-publication-state.mts'
+import { syncPostImagePlacements, type PostImagePlacement } from './image-placements.mts'
+import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
+import onError from '@modules/on-error'
+import { assertPostImagesCanBeUpdated } from './images-update-authorization.mts'
+import { completePostImageUpdate } from './complete-post-image-update.mts'
+import { runSequentially } from '@modules/utils/run-sequentially'
+import { prepareLockedPostImageUpdate } from './prepare-locked-image-update.mts'
+export { getPostImages } from './post-image-read.mts'
 
 export type PostImageInput = {
   image_id: string
   order_index: number
   caption?: string
 }
-type PostImage = {
-  image_id: string
-  order_index: number
-  caption: string
-}
+type PostImage = PostImagePlacement
+type PersistedPostImage = Pick<PostImage, 'image_id' | 'order_index' | 'caption'>
 export async function setPostImages(
   currentUser: PrivateUser,
   post: Post,
   images: PostImageInput[],
 ): Promise<PostImage[]> {
-  assert(currentUserCanUpdatePost(currentUser, post), 403, 'Forbidden')
-  await validatePostImageInputs(images, currentUser.id, currentUser.roles.includes('administrator'))
-  if (post.community_id) {
-    await assertCommunityNoLinksAllowed({
-      communityId: post.community_id,
-      currentUser,
-      updates: { images },
-    })
-  }
+  await assertPostImagesCanBeUpdated(currentUser, post, images)
+  let deliveryPrepared = false
   async function savePostImagesInTransaction() {
     await using query = await beginTransaction()
     async function saveImageRows(query: TransactionQuery) {
@@ -58,8 +48,12 @@ export async function setPostImages(
       `)
         assert(imageRows.length === imageIds.length, 400, 'Image not found or not complete')
       }
-      await lockPostPublication(query, post.id)
-      const postState = await getLockedPostImagePublicationState(query, post.id)
+      deliveryPrepared = true
+      const postState = await prepareLockedPostImageUpdate(
+        query,
+        post.id,
+        images.map(image => image.image_id),
+      )
       const {
         title,
         markdown,
@@ -75,7 +69,7 @@ export async function setPostImages(
         clearance_private_note,
         clearance_platform_override,
       } = postState
-      const { rows: previousImages } = await query<PostImage>(sql`/* setPostImages */
+      const { rows: previousImages } = await query<PersistedPostImage>(sql`/* setPostImages */
       SELECT image_id, order_index, caption
       FROM post_images
       WHERE post_id = ${post.id}
@@ -103,25 +97,41 @@ export async function setPostImages(
         ) AS t(image_id, order_index, caption)
       `)
       }
-
-      await query(sql`/* setPostImages */
+      let currentLatestClearanceChangeId: string | null = null
+      await runSequentially([
+        () =>
+          syncPostImagePlacements(
+            post.id,
+            images.map(image => image.image_id),
+            { query },
+          ),
+        () =>
+          query(sql`/* setPostImages */
       UPDATE posts
       SET llm_moderation_content_sha256 = ${moderationSha},
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${post.id}
-    `)
-
-      const currentLatestClearanceChangeId = await resetPostImageClearance(
-        query,
-        post.id,
-        currentUser.id,
-      )
+        `),
+        async () => {
+          currentLatestClearanceChangeId = await resetPostImageClearance(
+            query,
+            post.id,
+            currentUser.id,
+          )
+        },
+      ])
 
       const { rows } = await query<PostImage>(sql`/* setPostImages */
-      SELECT image_id, order_index, caption
-      FROM post_images
-      WHERE post_id = ${post.id}
-      ORDER BY order_index
+      SELECT post_image.image_id, post_image.order_index, post_image.caption,
+        placement.id AS placement_id, placement.revision AS placement_revision
+      FROM post_images post_image
+      JOIN image_placements image_placement
+        ON image_placement.post_id = post_image.post_id
+        AND image_placement.image_id = post_image.image_id
+      JOIN media_placements placement ON placement.id = image_placement.placement_id
+      WHERE post_image.post_id = ${post.id}
+        AND placement.retired_at IS NULL
+      ORDER BY post_image.order_index
     `)
       const revision = await createPostRevision(
         post.id,
@@ -163,31 +173,23 @@ export async function setPostImages(
     await query.commit()
     return result
   }
-  const { savedImages, rollback } = await savePostImagesInTransaction().catch(err => {
+  const { savedImages, rollback } = await savePostImagesInTransaction().catch(async err => {
+    if (deliveryPrepared) {
+      await compensateFailedImageDeliveryMutation({
+        postIds: [post.id],
+        imageIds: images.map(image => image.image_id),
+      }).catch(onError)
+    }
     if ((err as { code?: string }).code === '23503') {
       /* v8 ignore next -- defensive race fallback; validation covers normal incomplete/missing images */
       throw createHttpError(400, 'Image not found or not complete')
     }
     throw err
   })
-  try {
-    await enqueueOnPostUpdated(post.id, { contentChanged: true })
-  } catch (error) {
-    await rollbackPostImages(post.id, rollback)
-    throw error
-  }
+  await completePostImageUpdate({
+    postId: post.id,
+    imageIds: images.map(image => image.image_id),
+    rollback,
+  })
   return savedImages
-}
-export async function getPostImages(postId: string): Promise<PostImage[]> {
-  const { rows } = await read(sql`/* getPostImages */
-    SELECT pi.image_id, pi.order_index, pi.caption
-    FROM post_images pi
-    JOIN images ON images.id = pi.image_id
-      AND images.deleted_at IS NULL
-      AND images.upload_completed_at IS NOT NULL
-      AND images.quarantine_pending_at IS NULL
-    WHERE pi.post_id = ${postId}
-    ORDER BY pi.order_index
-  `)
-  return rows
 }

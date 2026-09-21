@@ -54,7 +54,7 @@ export async function rejectCopyrightEmailIntake(input: {
   `)
   const intake = rows[0]
   assert(intake, 404, 'Copyright email intake not found')
-  await assertNoThreadCorrespondenceDecision(transaction, input.intakeId)
+  await assertNoInitialIntakeThreadBarrier(transaction, input.intakeId)
   await assertRecommendationScope(transaction, input.recommendationId, input.intakeId)
   const { rows: decisions } = await transaction<{ accepted: boolean }>(
     sql`/* rejectCopyrightEmailIntake:existing */
@@ -95,6 +95,32 @@ export async function rejectCopyrightEmailIntake(input: {
   }
   await transaction.commit()
   return { responseId }
+}
+
+async function assertNoInitialIntakeThreadBarrier(
+  transaction: TransactionQuery,
+  intakeId: string,
+): Promise<void> {
+  await assertNotUnresolvedThreadReply(transaction, intakeId)
+  await assertNoThreadCorrespondenceDecision(transaction, intakeId)
+}
+
+async function assertNotUnresolvedThreadReply(
+  transaction: TransactionQuery,
+  intakeId: string,
+): Promise<void> {
+  const { rows } = await transaction(sql`/* rejectCopyrightEmailIntake:unresolvedReply */
+    SELECT 1 FROM copyright_notice_email_thread_references reference
+    WHERE reference.copyright_notice_email_intake_id = ${intakeId}
+      AND reference.reference_kind = 'reply_reference'
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_id = ${intakeId}
+          AND link.link_kind = 'thread'
+      )
+    LIMIT 1
+  `)
+  assert(!rows[0], 409, 'Unresolved reply email must wait for its root case')
 }
 
 async function assertNoThreadCorrespondenceDecision(

@@ -6,6 +6,7 @@ import { PostImage } from '@/components/shared/post-image'
 import { TopicLogo } from '@/components/shared/topic-logo'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { Topic } from '@/types/topics'
+import type { ImagePlacementTuple } from '@/types/user'
 
 export function ImageSection({
   heroSaving,
@@ -41,6 +42,7 @@ export function ImageSection({
         <ImageRow
           disabled={logoSaving}
           imageId={topic.logo_image_id}
+          placement={topic.logo_image_placement}
           kind='logo'
           label={
             topic.logo_image_id
@@ -57,6 +59,7 @@ export function ImageSection({
         <ImageRow
           disabled={heroSaving}
           imageId={topic.hero_image_id}
+          placement={topic.hero_image_placement}
           kind='hero'
           label={
             topic.hero_image_id
@@ -79,6 +82,7 @@ export function ImageSection({
 function ImageRow({
   disabled,
   imageId,
+  placement,
   kind,
   label,
   name,
@@ -91,6 +95,7 @@ function ImageRow({
 }: {
   disabled: boolean
   imageId: string | null
+  placement?: ImagePlacementTuple | null
   kind: 'hero' | 'logo'
   label: string
   name: string
@@ -114,6 +119,7 @@ function ImageRow({
           <div data-pw='logo-image-preview'>
             <ImagePreview
               imageId={imageId}
+              placement={placement}
               kind='logo'
               name={name}
             />
@@ -123,6 +129,7 @@ function ImageRow({
           <div data-pw='hero-image-preview'>
             <ImagePreview
               imageId={imageId}
+              placement={placement}
               kind='hero'
               name={name}
             />
@@ -159,10 +166,12 @@ function ImageRow({
 
 function ImagePreview({
   imageId,
+  placement,
   kind,
   name,
 }: {
   imageId: string
+  placement?: ImagePlacementTuple | null
   kind: 'hero' | 'logo'
   name: string
 }) {
@@ -170,15 +179,18 @@ function ImagePreview({
   if (kind === 'logo') {
     return (
       <TopicLogo
-        imageId={imageId}
+        placement={placement}
         name={name}
       />
     )
   }
 
+  if (!placement) return null
+
   return (
     <PostImage
       imageId={imageId}
+      placement={{ id: placement.placement_id, revision: placement.placement_revision }}
       width={400}
       height={96}
       alt={t('extracted.settings.imageSection.hero_72a9345f')}

@@ -56,6 +56,7 @@ describe('toProfileMenuUser', () => {
       displayLabel: 'tests+profile-whitespace-d94f@voucha.ai',
       href: '/user/user-1',
       profileImageId: null,
+      profileImagePlacement: null,
     })
   })
 
@@ -72,6 +73,7 @@ describe('toProfileMenuUser', () => {
       displayLabel: 'padded-user',
       href: '/user/padded-user',
       profileImageId: null,
+      profileImagePlacement: null,
     })
   })
 })

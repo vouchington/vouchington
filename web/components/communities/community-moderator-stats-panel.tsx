@@ -175,6 +175,7 @@ function ModeratorStatsRow({ stat, user }: RowProps) {
         <div className='flex items-center gap-2'>
           <UserAvatar
             profileImageId={user?.profile_image_id}
+            profileImagePlacement={user?.profile_image_placement}
             username={username}
             size='sm'
           />

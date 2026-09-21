@@ -16,6 +16,12 @@ Not partitioned — growth: unbounded.
 | `completed_at`                 | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp set only after the fenced delivery transition is durably confirmed.                       |
 | `created_at`                   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
 | `updated_at`                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                             |
+| `state`                        | `text`                     | no       | `'pending'::text`            |          |           |           | Durable media-delivery state: pending, worker-claimed, or terminal completed, stale, blocked, or failed.    |
+| `delivery_attempt_count`       | `integer`                  | no       | `0`                          |          |           |           | Bounded count of worker claims for this media-delivery saga.                                                |
+| `claimed_at`                   | `timestamp with time zone` | yes      |                              |          |           |           | Latest time a worker claimed the intent before rechecking and applying the placement transition.            |
+| `completed_at_reason`          | `text`                     | yes      |                              |          |           |           | Terminal action-delivery outcome, retained with its completion timestamp.                                   |
+| `failure_message`              | `text`                     | yes      |                              |          |           |           | Bounded staff-visible reason for a transient or terminal delivery failure.                                  |
+| `next_attempt_at`              | `timestamp with time zone` | yes      |                              |          |           |           | Earliest durable retry time after a retryable media-delivery failure.                                       |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -25,9 +31,15 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
+- `copyright_action_intents_delivery_state`: `CHECK ((((state = 'pending'::text) AND (completed_at IS NULL) AND (completed_at_reason IS NULL) AND (claimed_at IS NULL)) OR ((state = 'claimed'::text) AND (completed_at IS NULL) AND (completed_at_reason IS NULL) AND (claimed_at IS NOT NULL)) OR ((state = ANY (ARRAY['completed'::text, 'stale'::text, 'blocked'::text, 'failed'::text])) AND (completed_at IS NOT NULL) AND (completed_at_reason = state) AND (next_attempt_at IS NULL))))`
+- `copyright_action_intents_retry_schedule`: `CHECK (((((state = 'pending'::text) AND ((delivery_attempt_count = 0) OR (next_attempt_at IS NOT NULL))) OR (state <> 'pending'::text)) AND ((state <> 'claimed'::text) OR (next_attempt_at IS NULL))))`
 - `copyright_notice_action_inten_expected_placement_revision_check`: `CHECK ((expected_placement_revision >= 0))`
 - `copyright_notice_action_intents_action_check`: `CHECK ((action = ANY (ARRAY['withhold'::text, 'restore'::text])))`
 - `copyright_notice_action_intents_check`: `CHECK (((copyright_notice_deadline_id IS NULL) OR (action = 'restore'::text)))`
+- `copyright_notice_action_intents_completed_at_reason_check`: `CHECK (((completed_at_reason IS NULL) OR (completed_at_reason = ANY (ARRAY['completed'::text, 'stale'::text, 'blocked'::text, 'failed'::text]))))`
+- `copyright_notice_action_intents_delivery_attempt_count_check`: `CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))`
+- `copyright_notice_action_intents_failure_message_check`: `CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 4096))))`
+- `copyright_notice_action_intents_state_check`: `CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text, 'stale'::text, 'blocked'::text, 'failed'::text])))`
 
 **Foreign keys:**
 
@@ -38,6 +50,7 @@ Not partitioned — growth: unbounded.
 
 - `copyright_notice_action_inten_copyright_restriction_id_expe_key`: `CREATE UNIQUE INDEX copyright_notice_action_inten_copyright_restriction_id_expe_key ON public.copyright_notice_action_intents USING btree (copyright_restriction_id, expected_placement_revision, action)`
 - `copyright_notice_action_intents_pkey`: `CREATE UNIQUE INDEX copyright_notice_action_intents_pkey ON public.copyright_notice_action_intents USING btree (id)`
+- `idx_copyright_notice_action_intents__recoverable`: `CREATE INDEX idx_copyright_notice_action_intents__recoverable ON public.copyright_notice_action_intents USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)`
 - `idx_copyright_notice_intents__deadline`: `CREATE INDEX idx_copyright_notice_intents__deadline ON public.copyright_notice_action_intents USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)`
 - `idx_copyright_notice_intents__pending`: `CREATE INDEX idx_copyright_notice_intents__pending ON public.copyright_notice_action_intents USING btree (id) WHERE (completed_at IS NULL)`
 

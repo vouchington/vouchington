@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import { it, expect, describe } from 'vitest'
 import { createPostModerationContent } from '@services/posts/content'
-import { getPostByAny } from '@services/posts/get'
+import { getPostModerationInput } from '@services/posts/moderation-input'
 import {
   createTestUser,
   getPostLLMModerationContentSha256,
@@ -33,7 +33,7 @@ describe('local', () => {
 
     await deleteImageById(imageId)
 
-    const post = await getPostByAny(postId, { readOnly: false })
+    const post = await getPostModerationInput(postId)
     assert(post)
     const { content_sha256 } = createPostModerationContent(post)
     await expect(getPostLLMModerationContentSha256(postId)).resolves.toEqual(content_sha256)

@@ -13,3 +13,7 @@ export type NotificationJobs =
   | 'processCommunityActivityDigestBatch'
   | 'processDeliverCopyrightNotice'
   | 'processReconcileCopyrightDeliveryIntents'
+  | 'processApplyCopyrightAction'
+  | 'processReconcileCopyrightActionIntents'
+  | 'processApplyMediaDeliveryRegistryRecord'
+  | 'processReconcileMediaDeliveryRegistry'

@@ -14,6 +14,7 @@ import {
   getLatestPostClearanceMetadata,
   getPostClearanceChanges,
   getTestPostPublicationDirtyWorkForScope,
+  readAllQueueJobs,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
@@ -59,8 +60,8 @@ describe('setPostImages', () => {
 
     await expect
       .poll(async () => {
-        const waiting = await spam_detection.getJobs('waiting')
-        return waiting.find(
+        const jobs = await readAllQueueJobs(spam_detection)
+        return jobs.find(
           item => item.name === 'post' && (item.data as { id?: string }).id === postId,
         )?.data
       })
@@ -70,8 +71,8 @@ describe('setPostImages', () => {
       })
     await expect
       .poll(async () => {
-        const waiting = await openai_moderation_omni_single.getJobs('waiting')
-        return waiting.find(
+        const jobs = await readAllQueueJobs(openai_moderation_omni_single)
+        return jobs.find(
           item =>
             item.name === 'post' &&
             (item.data as { id?: string }).id === postId &&
@@ -107,7 +108,7 @@ describe('setPostImages', () => {
       setPostImages(creator!, post, [{ image_id: replacementImageId, order_index: 0 }]),
     ).rejects.toThrow(enqueueError)
 
-    await expect(getPostImages(postId)).resolves.toEqual([
+    await expect(getPostImages(postId)).resolves.toMatchObject([
       { image_id: originalImageId, order_index: 0, caption: '' },
     ])
     await expect(countPostImageRevisions(postId)).resolves.toBe(0)
@@ -177,7 +178,7 @@ describe('setPostImages', () => {
         }),
       ),
     ).resolves.toBe(false)
-    await expect(getPostImages(postId)).resolves.toEqual([
+    await expect(getPostImages(postId)).resolves.toMatchObject([
       { image_id: imageId, order_index: 0, caption: '' },
     ])
   })
@@ -214,7 +215,7 @@ describe('setPostImages', () => {
         }),
       ),
     ).resolves.toBe(false)
-    await expect(getPostImages(postId)).resolves.toEqual([
+    await expect(getPostImages(postId)).resolves.toMatchObject([
       { image_id: currentImageId, order_index: 0, caption: '' },
     ])
   })

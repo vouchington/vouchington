@@ -1,4 +1,5 @@
 import type * as Api from './shared'
+import type { ImagePlacementTuple } from '../user'
 
 type PageInfo = Api.PageInfo
 
@@ -24,7 +25,10 @@ export interface ReferralLinkUser {
   display_name: string | null
 }
 
-export type ReferralLinkFeedUser = ReferralLinkUser & { profile_image_id: string | null }
+export type ReferralLinkFeedUser = ReferralLinkUser & {
+  profile_image_id: string | null
+  profile_image_placement?: ImagePlacementTuple | null
+}
 
 export type ReferralLinkFeedItem = {
   id: string

@@ -118,8 +118,20 @@ const mockPost: Post = {
 const multiImagePost: Post = {
   ...mockPost,
   images: [
-    { image_id: 'img-1', order_index: 0, caption: '' },
-    { image_id: 'img-2', order_index: 1, caption: '' },
+    {
+      image_id: 'img-1',
+      placement_id: 'placement-1',
+      placement_revision: 0,
+      order_index: 0,
+      caption: '',
+    },
+    {
+      image_id: 'img-2',
+      placement_id: 'placement-2',
+      placement_revision: 0,
+      order_index: 1,
+      caption: '',
+    },
   ],
 }
 

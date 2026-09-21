@@ -49,3 +49,14 @@ Browser clients that own a worker push binding send its exact endpoint and subsc
 logout, and treat a worker binding mismatch as disabled. Native clients do not own that browser
 state and continue using the supported no-body logout request. Deploy the server migration and
 generated contract before releasing a client that adopts the optional logout binding.
+
+### Media placement contract handoff
+
+`api-fixtures/v1` now stages immutable image placement tuples for every persisted public image
+surface: user avatars, topic logos and heroes, community profile and banner images, and profile-link
+images. The tuple is `{ placement_id, placement_revision, image_id }`; clients must build public
+image routes only from that tuple and must not reconstruct a generic route from `image_id`.
+The tuple is absent while delivery projection is pending or withheld, so clients render no persisted
+image in that state. The linked `vouchington/vouchington-clients` change must consume the generated
+fixtures and update its DTOs and renderers before native release; it must not treat `image_id` as a
+browser-delivery capability.

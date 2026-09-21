@@ -47,6 +47,7 @@ export default async function IdentityPage() {
       <IdentityForm
         initialUsername={identity.username}
         initialProfileImageId={identity.profile_image_id}
+        initialProfileImagePlacement={identity.profile_image_placement}
         initialUseDisplayNameFrom={identity.use_display_name_from}
         initialFacebookAccount={identity.facebook_account ?? null}
         hasOAuthAccount={

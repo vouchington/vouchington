@@ -46,4 +46,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_sync_user_profile_link_image_placement`: `CREATE TRIGGER trigger_sync_user_profile_link_image_placement AFTER INSERT OR UPDATE OF image_id ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_link_image_placement()`
 - `trigger_user_profile_links_updated_at`: `CREATE TRIGGER trigger_user_profile_links_updated_at BEFORE UPDATE ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

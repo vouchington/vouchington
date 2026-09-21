@@ -153,9 +153,13 @@ function findRouteCall(expression: ts.Expression): string | undefined {
 
 export function responseMarker(
   expression: ts.Expression,
-): 'apiResponse' | 'apiNoContent' | undefined {
+): 'apiOpenApiRawResponse' | 'apiResponse' | 'apiNoContent' | undefined {
   if (!ts.isIdentifier(expression)) return undefined
-  if (expression.text === 'apiResponse' || expression.text === 'apiNoContent')
+  if (
+    expression.text === 'apiOpenApiRawResponse' ||
+    expression.text === 'apiResponse' ||
+    expression.text === 'apiNoContent'
+  )
     return expression.text
   return undefined
 }
@@ -169,11 +173,7 @@ export function isContextMethod(expression: ts.Expression, method: string): bool
   )
 }
 
-/**
- * Detects `ctx.response.empty()`: the framework's explicit "this response has no body" signal,
- * used independently of whatever status precedes it (200 for a plain no-body success, 302 for a
- * redirect, or a fully dynamic proxied status `collectRouteStatusCodes` can't capture at all).
- */
+/** Detects the framework's explicit no-body signal independently of the response status. */
 export function isContextResponseEmptyCall(expression: ts.Expression): boolean {
   if (!ts.isPropertyAccessExpression(expression) || expression.name.text !== 'empty') return false
   return isContextMethod(expression.expression, 'response')

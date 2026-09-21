@@ -21,6 +21,18 @@ export function apiOpenApiNoContent<const TKey extends string>(_key: TKey, _stat
 }
 
 /**
+ * Documents a fixed-media raw response for OpenAPI route discovery without changing the streamed
+ * runtime payload. Raw email evidence is intentionally not a JSON fixture response.
+ */
+export function apiOpenApiRawResponse<const TKey extends string, TBody>(
+  _key: TKey,
+  _mediaType: string,
+  body: TBody,
+): TBody {
+  return body
+}
+
+/**
  * Marks a request body as a shared API fixture contract, mirroring `apiResponse`. The identity
  * return type ensures this marker cannot change the parsed request payload.
  */

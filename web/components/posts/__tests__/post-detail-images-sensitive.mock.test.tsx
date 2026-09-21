@@ -67,7 +67,9 @@ describe('PostDetailImages sensitive media', () => {
       <PostDetailImages
         heading='Sensitive post'
         postId='post-1'
-        images={[{ imageId: 'img-1', caption: '' }]}
+        images={[
+          { imageId: 'img-1', placementId: 'placement-1', placementRevision: 0, caption: '' },
+        ]}
         isModerator
         isSensitive
       />,
@@ -87,8 +89,8 @@ describe('PostDetailImages sensitive media', () => {
         heading='Sensitive post'
         postId='post-1'
         images={[
-          { imageId: 'img-1', caption: 'First' },
-          { imageId: 'img-2', caption: 'Second' },
+          { imageId: 'img-1', placementId: 'placement-1', placementRevision: 0, caption: 'First' },
+          { imageId: 'img-2', placementId: 'placement-2', placementRevision: 0, caption: 'Second' },
         ]}
         isModerator
         isSensitive
@@ -116,7 +118,9 @@ describe('PostDetailImages sensitive media', () => {
       <PostDetailImages
         heading='Sensitive post'
         postId='post-1'
-        images={[{ imageId: 'img-1', caption: '' }]}
+        images={[
+          { imageId: 'img-1', placementId: 'placement-1', placementRevision: 0, caption: '' },
+        ]}
         isModerator
         isSensitive
       />,
@@ -138,7 +142,9 @@ describe('PostDetailImages sensitive media', () => {
       <PostDetailImages
         heading='Sensitive post'
         postId='post-1'
-        images={[{ imageId: 'img-1', caption: '' }]}
+        images={[
+          { imageId: 'img-1', placementId: 'placement-1', placementRevision: 0, caption: '' },
+        ]}
         isSensitive
       />,
     )
@@ -149,7 +155,9 @@ describe('PostDetailImages sensitive media', () => {
       <PostDetailImages
         heading='Safe post'
         postId='post-1'
-        images={[{ imageId: 'img-1', caption: '' }]}
+        images={[
+          { imageId: 'img-1', placementId: 'placement-1', placementRevision: 0, caption: '' },
+        ]}
         isModerator
       />,
     )

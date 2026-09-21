@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { createPostModerationContent } from '@services/posts/content'
-import { getPostByAny } from '@services/posts/get'
+import { getPostModerationInput } from '@services/posts/moderation-input'
 import {
   lockPostPublicationPostScopes,
   recordPostPublicationChange,
@@ -14,6 +14,9 @@ import {
 import sql from 'sql-template-strings'
 import type { ImageDeleteResult } from './delete-rollback-types.mts'
 import { deleteImageDeletionPostRevision } from './delete-revisions.mts'
+import { restoreImagePlacementsAfterImageDeletion } from './placements.mts'
+import { lockImageDeliveryMutation } from '@services/media-delivery-safety'
+import { runSequentially } from '@modules/utils/run-sequentially'
 
 type CompletedImageDeleteResult = Extract<ImageDeleteResult, { deletedThisImage: true }>
 
@@ -23,7 +26,14 @@ export async function rollbackImageDeletion(
 ): Promise<void> {
   const imageRollback = deleteResult.imageRollback
   await using query = await beginTransaction()
-  await query(sql`/* rollbackImageDeletion */
+  await runSequentially([
+    () =>
+      lockImageDeliveryMutation(query, {
+        imageIds: [imageId],
+        postIds: deleteResult.affectedPostIds,
+      }),
+    () =>
+      query(sql`/* rollbackImageDeletion */
       UPDATE images
       SET deleted_at = NULL,
           openai_omni_moderation_results = ${
@@ -34,7 +44,9 @@ export async function rollbackImageDeletion(
           openai_omni_moderation_flagged = ${imageRollback.openai_omni_moderation_flagged},
           openai_omni_moderation_created_at = ${imageRollback.openai_omni_moderation_created_at}
       WHERE id = ${imageId}
-    `)
+      `),
+    () => restoreImagePlacementsAfterImageDeletion(deleteResult.retiredPlacements, query),
+  ])
   await lockPostPublicationPostScopes(query, deleteResult.affectedPostIds)
   for (const rollback of deleteResult.postRollbacks) {
     if (!deleteResult.affectedPostIds.includes(rollback.post_id)) continue
@@ -57,7 +69,7 @@ export async function rollbackImageDeletion(
       )
     }
     // oxlint-disable-next-line no-await-in-loop -- the restored image and locked post must be read on this transaction before selecting the rollback path
-    const post = await getPostByAny(postId, { query })
+    const post = await getPostModerationInput(postId, { query })
     if (!post) continue
     const restoredContentSha256 = createPostModerationContent(post).content_sha256
     const deletionStateIsCurrent =

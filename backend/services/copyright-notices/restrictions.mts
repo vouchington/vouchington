@@ -4,6 +4,7 @@ import sql from 'sql-template-strings'
 import type { CopyrightRestrictionRecord } from './types.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
+import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 
 export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   noticeId: string
@@ -31,9 +32,9 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   `,
   )
   assert(noticeRows[0], 404, 'Copyright notice not found')
-  const { rows: lockedTargets } = await transaction<{ id: string }>(
+  const { rows: lockedTargets } = await transaction<{ id: string; placement_revision: number }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:lockTarget */
-    SELECT id
+    SELECT id, placement_revision
     FROM copyright_notice_targets
     WHERE id = ${input.targetId}
       AND copyright_notice_id = ${input.noticeId}
@@ -96,17 +97,30 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   `)
   const restriction = rows[0]
   assert(restriction, 409, 'An active copyright restriction already exists for this target')
+  const { rows: actionIntentRows } = await transaction<{
+    id: string
+  }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:createWithholdIntent */
+    INSERT INTO copyright_notice_action_intents (
+      copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
+    ) VALUES (
+      ${restriction.id}, NULL, ${lockedTargets[0].placement_revision}, 'withhold'
+    )
+    ON CONFLICT (copyright_restriction_id, expected_placement_revision, action)
+    DO UPDATE SET updated_at = copyright_notice_action_intents.updated_at
+    RETURNING id
+  `)
+  const actionIntent = actionIntentRows[0]
+  assert(actionIntent, 500, 'Copyright withhold action intent was not recorded')
   const { rows: posterRows } = await transaction<{
     user_id: string
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:posters */
     SELECT DISTINCT post.created_by_id AS user_id
-    FROM copyright_notice_target_images target_image
-    JOIN copyright_notice_targets target ON target.id = target_image.copyright_notice_target_id
-    JOIN post_images post_image ON post_image.image_id = target_image.image_id
-    JOIN posts post ON post.id = post_image.post_id
-    WHERE target_image.copyright_notice_target_id = ${input.targetId}
-      AND target.placement_key = concat('post-image:', post_image.post_id, ':', target_image.image_id)
-      AND post.deleted_at IS NULL
+    FROM copyright_notice_targets target
+    JOIN media_placements placement
+      ON target.placement_key = concat('image-placement:', placement.id)
+    JOIN image_placements image_placement ON image_placement.placement_id = placement.id
+    JOIN posts post ON post.id = image_placement.post_id
+    WHERE target.id = ${input.targetId}
   `)
   for (const poster of posterRows) {
     // oxlint-disable-next-line no-await-in-loop -- each unique recipient has an independent legal delivery obligation.
@@ -153,5 +167,6 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     VALUES (${input.noticeId}, 'provisional_restriction_imposed', ${input.imposedById}, '{}'::jsonb)
   `)
   await transaction.commit()
+  void enqueueApplyCopyrightAction(actionIntent.id)
   return restriction
 }

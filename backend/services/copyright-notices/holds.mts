@@ -9,6 +9,12 @@ import type {
 } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { replayCopyrightRestoreActionsForRestrictions } from './action-delivery.mts'
+import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
+import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
+import { encryptSecret } from '@modules/token-secrets'
+import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 
 export async function appendCopyrightLegalHoldAssessment(input: {
   currentUser: PrivateUser
@@ -21,6 +27,11 @@ export async function appendCopyrightLegalHoldAssessment(input: {
   receivedByDesignatedAgentAt: Date | null
   sameMaterial: boolean
   targetIds: string[]
+  rationale: string
+  dependencies?: {
+    assertLegalEnforcementEnabled?: () => void
+    publishPlacement?: typeof publishImagePlacementDeliveryRecord
+  }
 }): Promise<CopyrightLegalHoldAssessmentRecord> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.targetIds.length > 0, 422, 'A legal hold must identify at least one target')
@@ -30,6 +41,8 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     'A legal hold target may only be identified once',
   )
   await using transaction = await beginTransaction()
+  let lateHoldIntentIds: string[] = []
+  await lockLateHoldPlacements(input.targetIds, transaction)
   const { rows: submissionRows } = await transaction<{
     kind: string
     copyright_notice_id: string
@@ -49,14 +62,17 @@ export async function appendCopyrightLegalHoldAssessment(input: {
   const { rows } = await transaction(sql`/* appendCopyrightLegalHoldAssessment */
     INSERT INTO copyright_notice_legal_hold_assessments (
       copyright_notice_submission_id, assessed_at, assessed_by_id, from_original_claimant,
-      proceeding_kind, ccb_claim_kind, commenced_at, received_by_designated_agent_at, same_material
+      proceeding_kind, ccb_claim_kind, commenced_at, received_by_designated_agent_at, same_material,
+      rationale_ciphertext
     ) VALUES (
       ${input.submissionId}, ${input.assessedAt}, ${input.currentUser.id}, ${input.fromOriginalClaimant},
       ${input.proceedingKind}, ${input.ccbClaimKind}, ${input.commencedAt},
-      ${input.receivedByDesignatedAgentAt}, ${input.sameMaterial}
+      ${input.receivedByDesignatedAgentAt}, ${input.sameMaterial},
+      ${encryptSecret(input.rationale, `copyright-legal-hold-assessment:${input.submissionId}`)}
     )
     RETURNING id, copyright_notice_submission_id, assessed_at, assessed_by_id, from_original_claimant,
-      proceeding_kind, ccb_claim_kind, commenced_at, received_by_designated_agent_at, same_material
+      proceeding_kind, ccb_claim_kind, commenced_at, received_by_designated_agent_at, same_material,
+      rationale_ciphertext
   `)
   const assessment = rows[0] as Omit<CopyrightLegalHoldAssessmentRecord, 'target_ids'> | undefined
   assert(assessment, 500, 'Failed to append copyright legal-hold assessment')
@@ -83,13 +99,35 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     422,
     'A legal hold target does not belong to this copyright notice',
   )
+  if (isQualifyingCopyrightLegalHold(input)) {
+    lateHoldIntentIds = await activateLateCopyrightLegalHoldRestrictions(
+      assessment.id,
+      input.targetIds,
+      input.receivedByDesignatedAgentAt!,
+      transaction,
+      input.dependencies,
+    )
+  }
   await transaction(sql`/* appendCopyrightLegalHoldAssessment:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
     VALUES (${submissionRows[0].copyright_notice_id}, 'legal_hold_assessed', ${input.currentUser.id},
       ${JSON.stringify({ targetIds: input.targetIds })}::jsonb)
   `)
   await transaction.commit()
+  for (const intentId of lateHoldIntentIds) void enqueueApplyCopyrightAction(intentId)
   return { ...assessment, target_ids: input.targetIds }
+}
+
+async function lockLateHoldPlacements(
+  targetIds: string[],
+  transaction: Parameters<typeof activateLateCopyrightLegalHoldRestrictions>[3],
+): Promise<void> {
+  await transaction(sql`/* appendCopyrightLegalHoldAssessment:placementLocks */
+    SELECT pg_advisory_xact_lock(hashtextextended(placement_key, 0))
+    FROM copyright_notice_targets
+    WHERE id = ANY(${targetIds}::uuid[])
+    ORDER BY placement_key
+  `)
 }
 
 export async function resolveCopyrightLegalHold(input: {
@@ -97,7 +135,7 @@ export async function resolveCopyrightLegalHold(input: {
   assessmentId: string
   resolvedAt: Date
   resolutionKind: CopyrightHoldResolutionKind
-  rationaleCiphertext: string
+  rationale: string
 }): Promise<CopyrightLegalHoldResolutionRecord> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   await using transaction = await beginTransaction()
@@ -120,7 +158,7 @@ export async function resolveCopyrightLegalHold(input: {
       rationale_ciphertext
     ) VALUES (
       ${input.assessmentId}, ${input.resolvedAt}, ${input.currentUser.id}, ${input.resolutionKind},
-      ${input.rationaleCiphertext}
+      ${encryptSecret(input.rationale, `copyright-legal-hold-resolution:${input.assessmentId}`)}
     )
     ON CONFLICT (copyright_notice_legal_hold_assessment_id) DO NOTHING
     RETURNING id, copyright_notice_legal_hold_assessment_id, resolved_at, resolved_by_id,
@@ -132,6 +170,29 @@ export async function resolveCopyrightLegalHold(input: {
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
     VALUES (${assessment.copyright_notice_id}, 'legal_hold_resolved', ${input.currentUser.id}, ${JSON.stringify({ resolutionKind: input.resolutionKind })}::jsonb)
   `)
+  const { rows: restrictionRows } = await transaction<{ id: string; intent_id: string }>(sql`
+    /* resolveCopyrightLegalHold:affectedRestrictions */
+    WITH hold_restrictions AS (
+      SELECT restriction.id, target.placement_key
+      FROM copyright_legal_hold_restrictions source
+      JOIN copyright_restrictions restriction ON restriction.id = source.copyright_restriction_id
+      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+      WHERE source.copyright_notice_legal_hold_assessment_id = ${input.assessmentId}
+        AND restriction.lifted_at IS NULL
+    ), intents AS (
+      INSERT INTO copyright_notice_action_intents (
+        copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
+      ) SELECT held.id, NULL, placement.revision, 'restore'
+      FROM hold_restrictions held
+      JOIN media_placements placement ON concat('image-placement:', placement.id) = held.placement_key
+      ON CONFLICT (copyright_restriction_id, expected_placement_revision, action)
+      DO UPDATE SET updated_at = copyright_notice_action_intents.updated_at
+      RETURNING id, copyright_restriction_id
+    ) SELECT held.id, intents.id AS intent_id
+      FROM hold_restrictions held JOIN intents ON intents.copyright_restriction_id = held.id
+  `)
   await transaction.commit()
+  await replayCopyrightRestoreActionsForRestrictions(restrictionRows.map(row => row.id))
+  for (const restriction of restrictionRows) void enqueueApplyCopyrightAction(restriction.intent_id)
   return resolution
 }

@@ -18,6 +18,7 @@ Not partitioned — growth: unbounded.
 | `commenced_at`                    | `timestamp with time zone` | yes      |                              |          |           |           | When the qualifying proceeding was commenced, not when it was merely threatened.                                     |
 | `received_by_designated_agent_at` | `timestamp with time zone` | yes      |                              |          |           |           | When the designated agent received proof of the commenced proceeding; NULL when delivered elsewhere or not proven.   |
 | `same_material`                   | `boolean`                  | no       |                              |          |           |           | Whether the proceeding identifies the same hosted material governed by the proposed restoration.                     |
+| `rationale_ciphertext`            | `text`                     | no       |                              |          |           |           | Encrypted moderator rationale supporting the immutable legal-hold qualification assessment.                          |
 | `created_at`                      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                      |
 | `updated_at`                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                      |
 
@@ -28,6 +29,7 @@ _none_
 
 **Check constraints:**
 
+- `copyright_notice_legal_hold_assessme_rationale_ciphertext_check`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))`
 - `copyright_notice_legal_hold_assessments_ccb_claim_kind_check`: `CHECK ((ccb_claim_kind = ANY (ARRAY['claim'::text, 'counterclaim'::text])))`
 - `copyright_notice_legal_hold_assessments_check`: `CHECK ((((proceeding_kind IS NULL) AND (commenced_at IS NULL)) OR ((proceeding_kind IS NOT NULL) AND (commenced_at IS NOT NULL))))`
 - `copyright_notice_legal_hold_assessments_check1`: `CHECK ((((proceeding_kind = 'ccb'::text) AND (ccb_claim_kind IS NOT NULL)) OR ((proceeding_kind IS DISTINCT FROM 'ccb'::text) AND (ccb_claim_kind IS NULL))))`

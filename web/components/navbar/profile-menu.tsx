@@ -57,6 +57,7 @@ export function ProfileMenu({ onLogout, user }: ProfileMenuProps) {
               >
                 <UserAvatar
                   profileImageId={user.profileImageId}
+                  profileImagePlacement={user.profileImagePlacement}
                   username={user.avatarLabel}
                   size='sm'
                 />

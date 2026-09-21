@@ -117,6 +117,7 @@ export function ParticipantsPanel({
             <div className='flex items-center gap-2'>
               <UserAvatar
                 profileImageId={participant.profile_image_id ?? null}
+                profileImagePlacement={participant.profile_image_placement}
                 username={participant.username ?? ''}
                 size='sm'
               />

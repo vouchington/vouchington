@@ -1,4 +1,5 @@
 import type { communityListItemTypeCatalog } from './community-list-item-type.mts'
+import type { ImagePlacementTuple } from './user.mts'
 
 export type CommunityListItemType = keyof typeof communityListItemTypeCatalog
 
@@ -28,6 +29,8 @@ export type Community = {
   trusted_at: Date | null
   profile_image_id: string | null
   banner_image_id: string | null
+  profile_image_placement?: ImagePlacementTuple | null
+  banner_image_placement?: ImagePlacementTuple | null
   created_by_id: string
   created_at: Date
   updated_at: Date

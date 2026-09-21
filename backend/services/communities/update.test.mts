@@ -3,6 +3,7 @@ import {
   createTestUser,
   getTestPostPublicationDirtyWorkForScope,
   insertTestCommunity,
+  insertTestImage,
   listTestPostPublicationRetainedTextKeys,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
@@ -104,5 +105,25 @@ describe('updateCommunity top-hashtag refresh', () => {
     refreshTopHashtags.mockClear()
     await updateCommunity(user, community.id, { visibility: 'private' })
     expect(refreshTopHashtags).not.toHaveBeenCalled()
+  })
+})
+
+describe('updateCommunity image surfaces', () => {
+  it('accepts a profile and banner image change for an administrator', async () => {
+    const user = await createTestUser({ administrator: true })
+    const community = await insertTestCommunity({ createdById: user.id })
+    const [profileImageId, bannerImageId] = await Promise.all([
+      insertTestImage(user.id),
+      insertTestImage(user.id),
+    ])
+
+    const updated = await updateCommunity(user, community.id, {
+      profile_image_id: profileImageId,
+      banner_image_id: bannerImageId,
+      member_invites_allowed_at: new Date('2026-07-01T12:00:00.000Z'),
+      post_approval_required_at: new Date('2026-07-01T12:00:00.000Z'),
+    })
+    expect(updated.profile_image_id).toBe(profileImageId)
+    expect(updated.banner_image_id).toBe(bannerImageId)
   })
 })

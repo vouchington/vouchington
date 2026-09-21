@@ -55,6 +55,9 @@ credentials are absent.
 
 - `AWS_REGION` — defaults to `'us-west-2'`
 - `BEDROCK_AWS_REGION` — `'us-east-1'`
+- `MEDIA_DELIVERY_REGISTRY_REGION` — required only when media edge enforcement is enabled;
+  the DynamoDB registry region (`us-east-1` for the Lambda@Edge viewer authorization), independent
+  of the application `AWS_REGION`
 
 ## Related
 

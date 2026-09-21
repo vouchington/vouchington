@@ -5,6 +5,7 @@ import { enqueuePostAutotaggerFlow } from '@flows/core/enqueues'
 import { upsertPostElectionVotes } from '@services/elections-votes/post'
 import { getDeletedPostByAny, getPostByAny } from '@services/posts/get'
 import { createPostModerationContent } from '@services/posts/content'
+import { getPostModerationInput } from '@services/posts/moderation-input'
 import { isOfficialAccount } from '@services/users'
 import { getPrivateUserByAny } from '@services/users/get'
 import { enqueueDetectBanEvasion } from '@queues/ban-evasion/enqueues'
@@ -72,7 +73,9 @@ export const processPostUpdated = async ({
   id: string
   contentChanged?: boolean
 }) => {
-  const post = await getPostByAny(id, contentChanged ? { readOnly: false } : undefined)
+  const post = contentChanged
+    ? await getPostModerationInput(id, { readOnly: false })
+    : await getPostByAny(id)
   if (!post) return
 
   const { content_sha256 } = createPostModerationContent(post)

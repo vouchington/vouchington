@@ -2,7 +2,11 @@ import { UnrecoverableError } from '@modules/queue-errors'
 import { enqueueOrRetryBulkSesInboundProcess } from '@queues/ses-inbound/enqueues'
 import { enqueueOrRetryBulkCustomerSupport } from '@queues/ai-agents/enqueues/customer-support'
 import { enqueueCopyrightEmailIntakeAndWait } from '@queues/ai-agents/enqueues/copyright-email-intake'
-import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
+import {
+  createCopyrightEmailIntake,
+  isCopyrightIntakeEnabled,
+  recordCopyrightEmailParse,
+} from '@services/copyright-notices'
 import {
   createInboundSupportEmailMessage,
   isInboundSupportEmailComplete,
@@ -36,6 +40,7 @@ type ProcessDependencies = CopyrightEmailDependencies & {
   createInboundSupportEmailMessage: typeof createInboundSupportEmailMessage
   deleteSesInboundObject: typeof deleteSesInboundObject
   isInboundSupportEmailComplete: typeof isInboundSupportEmailComplete
+  isCopyrightIntakeEnabled: typeof isCopyrightIntakeEnabled
   loadSesInboundObject: typeof loadSesInboundObject
   moveSesInboundObjectToFailed: typeof moveSesInboundObjectToFailed
   parseSesInboundMime: typeof parseSesInboundMime
@@ -44,6 +49,7 @@ type ProcessDependencies = CopyrightEmailDependencies & {
 type ReconcileDependencies = {
   enqueueOrRetryBulkCustomerSupport: typeof enqueueOrRetryBulkCustomerSupport
   enqueueOrRetryBulkSesInboundProcess: typeof enqueueOrRetryBulkSesInboundProcess
+  isCopyrightIntakeEnabled: typeof isCopyrightIntakeEnabled
   listInboundCustomerSupportRecoveryCandidates: typeof listInboundCustomerSupportRecoveryCandidates
   listCopyrightSesInboundObjects: (continuationToken?: string) => Promise<SesInboundObjectPage>
   listSesInboundObjects: (continuationToken?: string) => Promise<SesInboundObjectPage>
@@ -61,6 +67,7 @@ export async function processSesInboundEmail(
     deleteSesInboundObject,
     enqueueCopyrightEmailIntakeAndWait,
     isInboundSupportEmailComplete,
+    isCopyrightIntakeEnabled,
     loadSesInboundObject,
     loadSesInboundObjectAndHash,
     loadSesInboundObjectVersion,
@@ -80,6 +87,7 @@ export async function processSesInboundEmail(
 
   try {
     if (data.intakeKind === 'copyright') {
+      if (!deps.isCopyrightIntakeEnabled()) return
       await processCopyrightInboundEmail(data, deps)
       await deps.deleteSesInboundObject(data.objectKey)
       return
@@ -121,9 +129,10 @@ export async function reconcileSesInboundEmails(
     listInboundCustomerSupportRecoveryCandidates
   const enqueueOrRetryCustomerSupport =
     dependencies?.enqueueOrRetryBulkCustomerSupport ?? enqueueOrRetryBulkCustomerSupport
+  const copyrightIntakeEnabled = dependencies?.isCopyrightIntakeEnabled ?? isCopyrightIntakeEnabled
   const [supportEnqueued, copyrightEnqueued] = await Promise.all([
     enqueueAllInboundPages(listObjects, enqueueOrRetry),
-    enqueueAllInboundPages(listCopyrightObjects, enqueueOrRetry),
+    copyrightIntakeEnabled() ? enqueueAllInboundPages(listCopyrightObjects, enqueueOrRetry) : 0,
   ])
   const enqueued = supportEnqueued + copyrightEnqueued
 

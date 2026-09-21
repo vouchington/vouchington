@@ -5,6 +5,9 @@ import {
   beginTransaction,
   createTestUser,
   getPostDeletedById,
+  getTestPostImagePlacement,
+  insertTestImage,
+  insertTestPostImage,
   insertTestPost,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
@@ -53,6 +56,40 @@ describe('delete', () => {
       // Check database directly since view filters deleted posts
       const deletedPost = await getPostDeletedById(postId)
       expect(deletedPost?.deleted_by_id).toBe(deleter!.id)
+    })
+
+    it('retires every attached image placement with a new revision', async () => {
+      const postId = await insertTestPost({
+        title: `Placement deletion ${crypto.randomUUID()}`,
+        slug: `placement-deletion-${crypto.randomUUID()}`,
+        createdById: user.id,
+        markdown: '',
+      })
+      const [firstImageId, secondImageId] = await Promise.all([
+        insertTestImage(user.id),
+        insertTestImage(user.id),
+      ])
+      await Promise.all([
+        insertTestPostImage({ postId, imageId: firstImageId }),
+        insertTestPostImage({ postId, imageId: secondImageId, orderIndex: 1 }),
+      ])
+      const [firstPlacement, secondPlacement] = await Promise.all([
+        getTestPostImagePlacement(postId, firstImageId),
+        getTestPostImagePlacement(postId, secondImageId),
+      ])
+      const post = await getPostByAny(postId)
+      if (!post || !firstPlacement || !secondPlacement) throw new Error('Expected post placements')
+
+      await deletePost(user, post)
+
+      await expect(getTestPostImagePlacement(postId, firstImageId)).resolves.toMatchObject({
+        retired_at: expect.any(Date),
+        placement_revision: firstPlacement.placement_revision + 1,
+      })
+      await expect(getTestPostImagePlacement(postId, secondImageId)).resolves.toMatchObject({
+        retired_at: expect.any(Date),
+        placement_revision: secondPlacement.placement_revision + 1,
+      })
     })
 
     it('takes the publication lock before waiting on the post row', async () => {

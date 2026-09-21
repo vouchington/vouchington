@@ -15,7 +15,21 @@ export { community, communityMetrics, pageInfo, rssFeed, timestamp, topic, user 
 export const communitySearchBody = {
   results: [{ __entity_type: 'community', id: community.id }],
   page_info: pageInfo,
-  communities: { [community.id]: community },
+  communities: {
+    [community.id]: {
+      ...community,
+      profile_image_placement: {
+        placement_id: 'placement-community-profile-image-1',
+        placement_revision: 2,
+        image_id: 'community-profile-image-1',
+      },
+      banner_image_placement: {
+        placement_id: 'placement-community-banner-image-1',
+        placement_revision: 5,
+        image_id: 'community-banner-image-1',
+      },
+    },
+  },
   users: { [communityOwner.id]: communityOwner },
   community_metrics: { [community.id]: communityMetrics },
   community_memberships: { [community.id]: communityMember },

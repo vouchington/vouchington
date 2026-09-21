@@ -20,6 +20,7 @@ import {
   persistPostCategoryFinalization,
   type PostCategoryFinalization,
 } from '../post-category-finalizations.mts'
+import { syncPostImagePlacements } from '../image-placements.mts'
 
 export async function applyPostTransactionSideEffects({
   creator,
@@ -168,6 +169,11 @@ async function insertImages({
         ${updates.images.map(img => img.caption ?? '')}::text[]
       ) AS t(image_id, order_index, caption)
     `,
+    options,
+  )
+  await syncPostImagePlacements(
+    postId,
+    updates.images.map(image => image.image_id),
     options,
   )
 }

@@ -19,6 +19,10 @@ Glide Queue system for reconciling notifications and delivering browser push mes
   idempotent, non-sensitive member notification.
 - `processReconcileCopyrightDeliveryIntents` runs every five minutes and routes recoverable
   copyright intents to the in-app or transactional-email worker with stable intent keys.
+- `processApplyCopyrightAction` claims one revision-fenced copyright media action, rechecks its
+  authoritative image placement and active blockers, then applies a reversible withhold or restore.
+- `processReconcileCopyrightActionIntents` runs every five minutes and re-enqueues pending or
+  expired claims from the durable action-intent ledger.
 - `delete-notification`
   - Performs asynchronous soft deletion for user-initiated deletes
 - `follow-notification`

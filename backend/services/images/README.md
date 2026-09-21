@@ -15,6 +15,9 @@ policy.
 
 ## Architecture
 
+Placement-level edge publication and fail-closed owner mutation are documented in the
+[media delivery safety service](../media-delivery-safety/README.md).
+
 ### Storage Strategy
 
 **S3 buckets and keys:**
@@ -256,7 +259,14 @@ This handles cases where:
 
 ### Serving Images
 
-- Public image reads use the image-resize Lambda route: `/images/<env>/<s3_key>?w=<width>`.
+- Public image reads use a stable placement route. A placement binds one hosted surface to one image,
+  carries a monotonic revision, and is retired rather than deleted when that attachment is removed.
+  Copyright withholding changes only that placement, so a shared image remains available through
+  unaffected placements. Trusted delivery must reject an unknown, retired, withheld, stale, or
+  image-mismatched placement route before serving bytes. The application and resize Lambda establish
+  this contract, but full denial also depends on the infrastructure-owned edge registry,
+  authorization, invalidation, direct-origin controls, and legacy-route retirement described in the
+  [copyright lifecycle](../../../docs/requirements/moderation/COPYRIGHT-NOTICES.md#placement-enforcement-boundary).
 - Backend OpenAI image moderation builds an absolute URL for that route from `IMAGE_ORIGIN`, so
   moderation does not expose private S3 URLs.
 
@@ -275,6 +285,7 @@ This handles cases where:
 - `get.mts` - Fetch images by ID or hash
 - `s3.mts` - S3 operations (upload, delete, get)
 - `constants.mts` - Supported image formats
+- `placements.mts` - Authoritative placement lookup and revision-fenced copyright availability changes
 
 ### API Routes ([`backend/api/v1/images/`](../../api/v1/images/))
 

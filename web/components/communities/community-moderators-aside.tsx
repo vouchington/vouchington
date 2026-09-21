@@ -60,6 +60,7 @@ function ModeratorGroup({ title, data }: { title: string; data: CommunityMembers
             >
               <UserAvatar
                 profileImageId={user.profile_image_id}
+                profileImagePlacement={user.profile_image_placement}
                 username={username}
                 size='sm'
               />

@@ -28,6 +28,11 @@ export interface OAuthAccountInfo {
   name: string
   email_address: string | null
 }
+export interface ImagePlacementTuple {
+  placement_id: string
+  placement_revision: number
+  image_id: string
+}
 export interface BlueskyAccountInfo {
   did: string
   handle: string | null
@@ -38,6 +43,7 @@ export interface User {
   email_address?: string
   roles: string[]
   profile_image_id?: string | null
+  profile_image_placement?: ImagePlacementTuple | null
   markdown?: string
   is_agent?: boolean
   is_official_account?: boolean
@@ -129,6 +135,7 @@ export interface PublicUser {
   username?: string
   roles?: readonly string[]
   profile_image_id?: string | null
+  profile_image_placement?: ImagePlacementTuple | null
   is_official_account?: boolean
   verification_status?: IdentityVerificationStatus | null
   verified_badge_visible?: boolean | null
@@ -215,6 +222,7 @@ export interface ProfileLink {
   handle: string | null
   name: string | null
   image_id: string | null
+  image_placement?: ImagePlacementTuple | null
   created_at: string
   updated_at: string
 }

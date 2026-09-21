@@ -275,6 +275,32 @@ export async function listRecoverableCopyrightDeliveryIntents(
   return rows
 }
 
+export async function replayFailedCopyrightDeliveryIntent(input: {
+  intentId: string
+  noticeId: string
+  actorUserId: string
+}): Promise<boolean> {
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction(sql`/* replayFailedCopyrightDeliveryIntent */
+    UPDATE copyright_notice_delivery_intents
+    SET state = 'pending', claimed_at = NULL, failed_at = NULL, next_attempt_at = NULL,
+      delivery_attempt_count = 0, failure_ciphertext = NULL
+    WHERE id = ${input.intentId} AND copyright_notice_id = ${input.noticeId} AND state = 'failed'
+    RETURNING id
+  `)
+  if (!rows[0]) return false
+  await transaction(sql`/* replayFailedCopyrightDeliveryIntent:event */
+    INSERT INTO copyright_notice_lifecycle_events (
+      copyright_notice_id, event_type, actor_user_id, metadata
+    ) VALUES (
+      ${input.noticeId}, 'delivery_intent_replayed', ${input.actorUserId},
+      ${JSON.stringify({ intentId: input.intentId })}::jsonb
+    )
+  `)
+  await transaction.commit()
+  return true
+}
+
 function normalizeEmailAddress(email: string): string {
   return email.trim().toLowerCase()
 }

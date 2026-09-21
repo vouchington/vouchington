@@ -117,17 +117,20 @@ access paths are selective. Reconsider each at roughly one million rows or when 
 write, vacuum, or retention pressure warrants it, except where a dedicated trigger below preserves
 a stronger invariant. The typed registry owns the rationale and trigger.
 
-- Durable entities and content: `communities`, `conversations`, `images`, `lists`, `podcast_shows`,
+- Durable entities and content: `communities`, `conversations`, `image_placements`,
+  `image_surface_placements`, `images`, `lists`, `media_placements`, `podcast_shows`,
   `remote_actors`, `rss_feeds`, `topics`, `url_hostnames`, `urls`, `users`.
 - Audit and workflow history: `admin_import_batches`, `admin_import_rows`,
   `activitypub_distribution_checkpoints`, `ap_inbox_activities`,
   `community_activity_digest_dispatch_windows`, `community_agent_prompt_changes`,
-  `copyright_notice_action_intents`, `copyright_notice_appeal_recommendations`,
+  `copyright_legal_hold_restrictions`, `copyright_notice_action_intents`,
+  `copyright_notice_appeal_recommendations`,
   `copyright_notice_appeal_reviews`, `copyright_notice_correspondence_messages`,
   `copyright_notice_counter_notice_assessment_targets`,
   `copyright_notice_counter_notice_reviews`, `copyright_notice_deadlines`,
   `copyright_notice_delivery_intents`, `copyright_notice_delivery_recipients`,
   `copyright_notice_email_correspondence_reviews`, `copyright_notice_email_intake_attachments`,
+  `copyright_notice_enforcement_requests`,
   `copyright_notice_email_intake_notice_links`,
   `copyright_notice_email_intake_parses`,
   `copyright_notice_email_intake_recommendations`, `copyright_notice_email_intake_responses`,
@@ -145,7 +148,8 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_restrictions`,
   `crm_contact_lifecycle_changes`,
   `dynamic_config_change_logs`, `follower_distribution_deliveries`, `follower_distributions`,
-  `identity_verification_attempts`, `membership_administrator_refund_operation_requests`,
+  `identity_verification_attempts`, `media_delivery_registry_records`,
+  `membership_administrator_refund_operation_requests`,
   `membership_changes`, `membership_entitlement_effects`,
   `membership_ineligible_purchase_reversal_refund_observations`,
   `membership_ineligible_purchase_reversal_refund_scan_cycles`,

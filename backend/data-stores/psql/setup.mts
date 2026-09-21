@@ -14,6 +14,7 @@ type AdapterTransactionOptions = Psql['withTransactionOptions']
 export type OwnedTransaction = Transaction
 
 type PostCommitAction = () => Promise<void>
+type PostRollbackAction = () => Promise<void>
 type PostCommitActionScope = {
   owner: QueryExecutor
   actions: PostCommitAction[]
@@ -21,6 +22,7 @@ type PostCommitActionScope = {
 }
 
 const postCommitActions = new WeakMap<QueryExecutor, PostCommitAction[]>()
+const postRollbackActions = new WeakMap<QueryExecutor, PostRollbackAction[]>()
 const postCommitActionOwners = new WeakMap<QueryExecutor, QueryExecutor>()
 const postCommitActionOwnersByClient = new WeakMap<PoolClient, QueryExecutor>()
 const postCommitActionScopes = new AsyncLocalStorage<PostCommitActionScope>()
@@ -56,6 +58,20 @@ export function registerPostCommitAction(query: QueryExecutor, action: PostCommi
   actions.push(action)
   postCommitActions.set(owner, actions)
 }
+
+/** Runs only after the owning transaction has durably rolled back.  Use this for compensating an
+ * external pre-commit effect; it must re-read authoritative state rather than replay a snapshot. */
+export function registerPostRollbackAction(query: QueryExecutor, action: PostRollbackAction): void {
+  const owner = postCommitActionOwners.get(query) ?? postCommitActionScopes.getStore()?.owner
+  if (!owner) {
+    throw new Error(
+      'Post-rollback actions require a transaction query owned by @data-stores/psql wrappers',
+    )
+  }
+  const actions = postRollbackActions.get(owner) ?? []
+  actions.push(action)
+  postRollbackActions.set(owner, actions)
+}
 export async function withTransactionOptions<Result>(
   options: QueryOptions,
   handler: (query: TransactionQuery) => Promise<Result>,
@@ -88,6 +104,16 @@ async function runPostCommitActions(query: QueryExecutor): Promise<void> {
       onError(result.reason instanceof Error ? result.reason : new Error(String(result.reason)))
   }
 }
+async function runPostRollbackActions(query: QueryExecutor): Promise<void> {
+  const actions = postRollbackActions.get(query)
+  postRollbackActions.delete(query)
+  if (!actions) return
+  const results = await Promise.allSettled(actions.map(action => action()))
+  for (const result of results) {
+    if (result.status === 'rejected')
+      onError(result.reason instanceof Error ? result.reason : new Error(String(result.reason)))
+  }
+}
 
 function ownTransaction(transaction: OwnedTransaction): OwnedTransaction {
   const ownedTransaction = captureQuery(transaction)
@@ -103,15 +129,18 @@ function ownTransaction(transaction: OwnedTransaction): OwnedTransaction {
   }
   const clearOwnership = () => {
     postCommitActions.delete(ownedTransaction)
+    postRollbackActions.delete(ownedTransaction)
     postCommitActionOwners.delete(ownedTransaction)
     detachClientOwnership()
   }
 
+  let committed = false
   Object.assign(ownedTransaction, {
     commit: async () => {
       detachClientOwnership()
       try {
         await commit()
+        committed = true
         await runPostCommitActions(ownedTransaction)
       } finally {
         clearOwnership()
@@ -121,6 +150,7 @@ function ownTransaction(transaction: OwnedTransaction): OwnedTransaction {
       detachClientOwnership()
       try {
         await rollback()
+        await runPostRollbackActions(ownedTransaction)
       } finally {
         clearOwnership()
       }
@@ -129,6 +159,7 @@ function ownTransaction(transaction: OwnedTransaction): OwnedTransaction {
       detachClientOwnership()
       try {
         await dispose()
+        if (!committed) await runPostRollbackActions(ownedTransaction)
       } finally {
         clearOwnership()
       }

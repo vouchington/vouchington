@@ -5,7 +5,10 @@ import { TEST_PNG } from '../../helpers/test-fixtures.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestImage } from '../../../backend/test-helpers/entities/images.mts'
-import { write } from '../../../backend/data-stores/psql/clients.mts'
+import {
+  allowTestTopicSurfaceImageDelivery,
+  setTestTopicSurfaceImages,
+} from '../../../backend/test-helpers/entities/image-surface-placements.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 
@@ -41,10 +44,12 @@ test.describe('Topic Images - Upload UI', () => {
     logoTopicId = logoTopic.id
     logoTopicType = logoTopic.urlSlug
     const logoImageId = await insertTestImage(TEST_USER_ID)
-    await write(
-      `/* topic-images-spec seedLogoImageId */ UPDATE topics SET logo_image_id = $1 WHERE id = $2`,
-      [logoImageId, logoTopicId],
-    )
+    await setTestTopicSurfaceImages(logoTopicId, { logoImageId })
+    await allowTestTopicSurfaceImageDelivery({
+      topicId: logoTopicId,
+      imageId: logoImageId,
+      surfaceKind: 'topic-logo-image',
+    })
 
     // Topic with hero pre-seeded before any cache population
     const s3 = randomSuffix()
@@ -52,10 +57,12 @@ test.describe('Topic Images - Upload UI', () => {
     heroTopicId = heroTopic.id
     heroTopicType = heroTopic.urlSlug
     const heroImageId = await insertTestImage(TEST_USER_ID)
-    await write(
-      `/* topic-images-spec seedHeroImageId */ UPDATE topics SET hero_image_id = $1 WHERE id = $2`,
-      [heroImageId, heroTopicId],
-    )
+    await setTestTopicSurfaceImages(heroTopicId, { heroImageId })
+    await allowTestTopicSurfaceImageDelivery({
+      topicId: heroTopicId,
+      imageId: heroImageId,
+      surfaceKind: 'topic-hero-image',
+    })
   })
 
   test('shows upload buttons for logo and hero in admin edit page', async ({ page }) => {
@@ -113,10 +120,12 @@ test.describe('Topic Images - Detail Page', () => {
     topicType = topic.urlSlug
 
     const imageId = await insertTestImage(TEST_USER_ID)
-    await write(
-      `/* topic-images-spec seedDetailLogo */ UPDATE topics SET logo_image_id = $1 WHERE id = $2`,
-      [imageId, topicId],
-    )
+    await setTestTopicSurfaceImages(topicId, { logoImageId: imageId })
+    await allowTestTopicSurfaceImageDelivery({
+      topicId,
+      imageId,
+      surfaceKind: 'topic-logo-image',
+    })
   })
 
   test('shows logo on topic detail page', async ({ page }) => {

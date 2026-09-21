@@ -1742,6 +1742,38 @@ rules:
       sqlInclude:
         - backend/data-stores/psql/migrations/**/*.sql
       allowedMigrations:
+        - path: backend/data-stores/psql/migrations/0648-00-00-copyright-action-intent-delivery.sql
+          table: copyright_notice_action_intents
+          column: state
+          type: TEXT
+          nullable: false
+          default: "'pending'"
+        - path: backend/data-stores/psql/migrations/0648-00-00-copyright-action-intent-delivery.sql
+          table: copyright_notice_action_intents
+          column: delivery_attempt_count
+          type: INTEGER
+          nullable: false
+          default: '0'
+        - path: backend/data-stores/psql/migrations/0648-00-00-copyright-action-intent-delivery.sql
+          table: copyright_notice_action_intents
+          column: claimed_at
+          type: TIMESTAMPTZ
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0648-00-00-copyright-action-intent-delivery.sql
+          table: copyright_notice_action_intents
+          column: completed_at_reason
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0648-00-00-copyright-action-intent-delivery.sql
+          table: copyright_notice_action_intents
+          column: failure_message
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0648-00-00-copyright-action-intent-delivery.sql
+          table: copyright_notice_action_intents
+          column: next_attempt_at
+          type: TIMESTAMPTZ
+          nullable: true
         - path: backend/data-stores/psql/migrations/0637-00-00-copyright-structured-submissions.sql
           table: copyright_restrictions
           column: authorizing_assessment_id

@@ -47,7 +47,9 @@
           {
             "caption": "Flagged attachment",
             "image_id": "019e82f2-a2c0-7000-8000-000000000001",
-            "order_index": 0
+            "order_index": 0,
+            "placement_id": "019e82f2-a2c0-7000-8000-000000000002",
+            "placement_revision": 1
           }
         ],
         "requires_reveal": true

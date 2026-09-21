@@ -1,11 +1,10 @@
 'use client'
 
-import { ProxiedImage as Image } from '@/components/shared/proxied-image'
+import { UserAvatar } from '@/components/shared/user-avatar'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { userHref } from '@/lib/links/entity-href'
-import { getImageUrl } from '@/lib/utils/image-url'
 import type { Community, CommunityMember } from '@/types/api-responses'
 import type { CommunityMembersManagerState } from './use-community-members-manager'
 import { UserModNotesControl } from '../moderation/user-mod-notes-cell'
@@ -38,22 +37,14 @@ export function CommunityMemberRow(props: CommunityMemberRowProps) {
       data-community-member-id={props.member.user_id}
     >
       <div className='flex items-center gap-3'>
-        {user?.profile_image_id && (
-          <div className='relative h-8 w-8 overflow-hidden rounded-full bg-muted'>
-            <Image
-              src={getImageUrl(user.profile_image_id, { width: 64 })}
-              alt={
-                user.username
-                  ? `@${user.username}`
-                  : t('extracted.communities.communityMemberRow.userAvatar_e75e0e7c')
-              }
-              fill
-              sizes='32px'
-              unoptimized
-              className='object-cover'
-            />
-          </div>
-        )}
+        <UserAvatar
+          profileImageId={user?.profile_image_id}
+          profileImagePlacement={user?.profile_image_placement}
+          username={
+            user?.username ?? t('extracted.communities.communityMemberRow.userAvatar_e75e0e7c')
+          }
+          size='sm'
+        />
         <div>
           {user?.username ? (
             <Link

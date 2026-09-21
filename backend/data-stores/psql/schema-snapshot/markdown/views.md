@@ -263,6 +263,18 @@ UNION ALL
     homepage_url_id,
     logo_image_id,
     hero_image_id,
+    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
+           FROM (image_surface_placements surface
+             JOIN media_placements placement ON ((placement.id = surface.placement_id)))
+          WHERE ((surface.surface_kind = 'topic-logo-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          ORDER BY placement.id DESC
+         LIMIT 1) AS logo_image_placement,
+    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
+           FROM (image_surface_placements surface
+             JOIN media_placements placement ON ((placement.id = surface.placement_id)))
+          WHERE ((surface.surface_kind = 'topic-hero-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          ORDER BY placement.id DESC
+         LIMIT 1) AS hero_image_placement,
     rewards_program_id,
     referral_program_id,
     ( SELECT t2.slug
@@ -306,6 +318,12 @@ UNION ALL
             ELSE NULL::jsonb
         END AS display_account,
     profile_image_id,
+    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
+           FROM (image_surface_placements surface
+             JOIN media_placements placement ON ((placement.id = surface.placement_id)))
+          WHERE ((surface.surface_kind = 'user-profile-image'::text) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          ORDER BY placement.id DESC
+         LIMIT 1) AS profile_image_placement,
     ARRAY[]::text[] AS roles,
     COALESCE(((username = ANY (ARRAY['system'::text, 'autotagger'::text, 'customer-support'::text, 'rss-feed-auto-updater'::text, 'story-teller'::text, 'voucha'::text])) OR (EXISTS ( SELECT 1
            FROM (user_roles
@@ -497,9 +515,10 @@ UNION ALL
                     source.authored_token AS category_label
                    FROM post_topic_alias_sources source
                   WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::text))) explicit_categories), '[]'::json) AS post_explicit_categories,
-    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg
-           FROM (post_images
-             JOIN images ON (((images.id = post_images.image_id) AND (images.deleted_at IS NULL) AND (images.upload_completed_at IS NOT NULL) AND (images.quarantine_pending_at IS NULL))))
+    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg
+           FROM ((post_images
+             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))
+             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, post_images.image_id))))
           WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,
     posts.community_id,
     posts.data_point_vertical,
@@ -797,6 +816,18 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     topics.homepage_url_id,
     topics.logo_image_id,
     topics.hero_image_id,
+    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
+           FROM (image_surface_placements surface
+             JOIN media_placements placement ON ((placement.id = surface.placement_id)))
+          WHERE ((surface.surface_kind = 'topic-logo-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          ORDER BY placement.id DESC
+         LIMIT 1) AS logo_image_placement,
+    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
+           FROM (image_surface_placements surface
+             JOIN media_placements placement ON ((placement.id = surface.placement_id)))
+          WHERE ((surface.surface_kind = 'topic-hero-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          ORDER BY placement.id DESC
+         LIMIT 1) AS hero_image_placement,
     topics.rewards_program_id,
     topics.referral_program_id,
     topics.aliases,
@@ -878,6 +909,12 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
           WHERE (user_roles.user_id = users.id)) AS roles,
     users.individual_id,
     users.profile_image_id,
+    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object
+           FROM (image_surface_placements surface
+             JOIN media_placements placement ON ((placement.id = surface.placement_id)))
+          WHERE ((surface.surface_kind = 'user-profile-image'::text) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))
+          ORDER BY placement.id DESC
+         LIMIT 1) AS profile_image_placement,
     users.markdown,
     users.cards_visibility,
     users.rewards_program_statuses_visibility,
@@ -981,6 +1018,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     e.use_display_name_from,
     e.display_account,
     e.profile_image_id,
+    e.profile_image_placement,
     e.roles,
     e.is_official_account,
     u.markdown,

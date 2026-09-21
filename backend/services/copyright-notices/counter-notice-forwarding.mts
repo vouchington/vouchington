@@ -119,7 +119,7 @@ function renderCounterNoticeForwarding(
       `  Hosted URL: ${target.hosted_use_url}`,
     ]),
     `Statement under penalty of perjury: I have a good faith belief that the material was removed or disabled as a result of mistake or misidentification. ${notice.goodFaithMisidentificationUnderPenaltyOfPerjury ? 'Accepted.' : 'Not accepted.'}`,
-    `Consent to federal jurisdiction: I consent to the jurisdiction of the Federal District Court for the judicial district in which my address is located. ${notice.consentToFederalJurisdiction ? 'Accepted.' : 'Not accepted.'}`,
+    `Consent to federal jurisdiction: I consent to the jurisdiction of the Federal District Court for the judicial district in which my address is located, or, if my address is outside the United States, any judicial district in which Voucha may be found. ${notice.consentToFederalJurisdiction ? 'Accepted.' : 'Not accepted.'}`,
     `Consent to service of process: I will accept service of process from the person who provided the notification under subsection (c)(1)(C), or an agent of that person. ${notice.consentToServiceOfProcess ? 'Accepted.' : 'Not accepted.'}`,
     `Electronic signature: ${notice.electronicSignature}`,
     '',

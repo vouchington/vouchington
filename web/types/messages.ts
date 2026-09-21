@@ -27,6 +27,7 @@ export interface DirectMessageParticipant {
   created_at: string
   username?: string | null
   profile_image_id?: string | null
+  profile_image_placement?: import('./user').ImagePlacementTuple | null
 }
 
 export interface DirectConversationsResponse {

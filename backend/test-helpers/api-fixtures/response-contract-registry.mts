@@ -10,6 +10,7 @@ import {
   type DiscoverApiResponseContractsOptions,
 } from './response-contract-lenient.mts'
 import {
+  binaryContentContract,
   contractError,
   extractBodyContract,
   noContentContract,
@@ -91,6 +92,7 @@ export function discoverApiResponseContracts(
       const location = sourceLocation(sourceFile, node)
       const responseEmission = enclosingResponseEmission(node) ?? node
       const status = resolveEmissionStatus(responseEmission)
+      const rawMediaType = rawResponseMediaType(marker, node, sourceFile)
       registerRouteContract(
         contracts,
         keyNode.text,
@@ -100,13 +102,17 @@ export function discoverApiResponseContracts(
           bodyKind: marker === 'apiNoContent' ? 'none' : 'content',
           ...(marker === 'apiResponse'
             ? { mediaType: 'application/json', mediaTypeKnowledge: 'known' as const }
-            : { mediaTypeKnowledge: 'none' as const }),
+            : rawMediaType
+              ? { mediaType: rawMediaType, mediaTypeKnowledge: 'known' as const }
+              : { mediaTypeKnowledge: 'none' as const }),
           ...status,
         },
         () =>
           marker === 'apiNoContent'
             ? noContentContract(location)
-            : extractBodyContract(node, checker, sourceFile, location),
+            : marker === 'apiOpenApiRawResponse'
+              ? binaryContentContract(location)
+              : extractBodyContract(node, checker, sourceFile, location),
         options,
       )
     })
@@ -131,6 +137,19 @@ export function discoverApiResponseContracts(
   return Object.fromEntries(
     [...contracts.entries()].toSorted(([left], [right]) => left.localeCompare(right)),
   )
+}
+
+function rawResponseMediaType(
+  marker: ReturnType<typeof responseMarker>,
+  node: ts.CallExpression,
+  sourceFile: ts.SourceFile,
+): string | undefined {
+  if (marker !== 'apiOpenApiRawResponse') return undefined
+  const mediaType = node.arguments[1]
+  if (!mediaType || !ts.isStringLiteral(mediaType)) {
+    throw contractError(sourceFile, node, 'apiOpenApiRawResponse requires a literal media type')
+  }
+  return mediaType.text
 }
 
 export function enclosingResponseEmission(call: ts.CallExpression): ts.CallExpression | undefined {

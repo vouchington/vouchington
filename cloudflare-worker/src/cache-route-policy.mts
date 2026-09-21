@@ -8,6 +8,12 @@ const PRIVATE_BACKEND_CACHE_BYPASS_PREFIXES = [
   '/api/v1/auth',
   '/api/v1/oauth',
   '/api/v1/session',
+  '/api/v1/copyright-notices',
+  '/api/v1/copyright-email-intakes',
+  '/api/v1/copyright-form-intakes',
+  '/api/v1/copyright-submissions',
+  '/api/v1/copyright-legal-hold-assessments',
+  '/api/v1/copyright-media-delivery',
   '/api/v1/recommended-topics',
 ]
 const POST_ANCESTORS_ROUTE_RE = /^\/api\/v1\/posts\/[^/]+\/ancestors\/?$/

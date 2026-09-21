@@ -12,7 +12,6 @@ import {
   claimCopyrightDeliveryIntent,
   createCopyrightDeliveryIntent,
   createCopyrightNoticeAggregate,
-  createEligibleCopyrightRestoreIntent,
   deliverCopyrightInAppNotification,
   prepareCopyrightEmailDelivery,
   createOutboundCopyrightCorrespondence,
@@ -243,22 +242,6 @@ describe('copyright delivery and correspondence persistence', () => {
         substantiallyCompliant: true,
       }),
     ).rejects.toThrow('Email and guest-form assessments require a copyright reviewer')
-  })
-
-  it('rejects an explicit non-copyright placement blocker', async () => {
-    const { aggregate, notice } = await createFixture()
-    const target = aggregate.targets[0]
-    await expect(
-      createEligibleCopyrightRestoreIntent({
-        noticeId: notice.id,
-        targetId: target.id,
-        restrictionId: crypto.randomUUID(),
-        deadlineId: crypto.randomUUID(),
-        expectedPlacementRevision: target.placement_revision,
-        now: new Date(),
-        blockers: ['deletion'],
-      }),
-    ).rejects.toThrow('A non-copyright placement blocker prevents restoration')
   })
 
   it('keeps outbound correspondence scoped to its own case and audits approval', async () => {

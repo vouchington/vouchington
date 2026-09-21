@@ -114,12 +114,12 @@ async function createAuthenticatedCopyrightSubmission(
   }>(sql`/* createCopyrightSubmission:posterTargets */
     SELECT target.id
     FROM copyright_notice_targets target
-    JOIN copyright_notice_target_images image_target ON image_target.copyright_notice_target_id = target.id
-    JOIN post_images post_image ON post_image.image_id = image_target.image_id
-    JOIN posts post ON post.id = post_image.post_id
+    JOIN media_placements placement
+      ON target.placement_key = concat('image-placement:', placement.id)
+    JOIN image_placements image_placement ON image_placement.placement_id = placement.id
+    JOIN posts post ON post.id = image_placement.post_id
     WHERE target.copyright_notice_id = ${noticeId} AND target.id = ANY(${input.targetIds})
-      AND target.placement_key = concat('post-image:', post_image.post_id, ':', image_target.image_id)
-      AND post.created_by_id = ${currentUser.id} AND post.deleted_at IS NULL
+      AND post.created_by_id = ${currentUser.id}
     FOR UPDATE OF target
   `)
   assert(

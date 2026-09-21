@@ -4,7 +4,7 @@ import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-
 import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authorization-allowlists.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
-
+import { MEDIA_PLACEMENT_UUID_COLUMNS_WITHOUT_KEYS } from './media-placement-allowlists.mts'
 export const ALLOWED_UNCOMMENTED_RELATIONS = new Map<string, string>([])
 export const ALLOWED_UNCOMMENTED_COLUMNS = new Map<string, string>([])
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
@@ -13,6 +13,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS,
   ...STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS,
+  ...MEDIA_PLACEMENT_UUID_COLUMNS_WITHOUT_KEYS,
   ['post_admission_claims.lease_id', 'Fencing token, not a durable relation.'],
   ['post_admission_reservations.committed_post_id', 'Replay snapshot; no foreign key.'],
   ['agent_moderations.moderation_transparency_community_id', 'Trigger-maintained scope snapshot.'],
@@ -172,7 +173,6 @@ export const COMMENT_EXEMPT_COLUMN_PATTERNS = [
   /^lingua_rs_/,
   /^llm_moderation_/,
   /^openai_omni_moderation_/,
-  /^search_vector$/,
-  /^votes_(?:count|score)_/,
+  /^(?:search_vector$|votes_(?:count|score)_)/,
 ]
 /* v8 ignore stop */

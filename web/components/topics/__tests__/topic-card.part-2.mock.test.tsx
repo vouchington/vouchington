@@ -238,8 +238,20 @@ describe('TopicCard', () => {
     expect(screen.queryByText('C')).toBeNull()
   })
 
-  it('renders topic logo image when logo_image_id is set', () => {
-    render(<TopicCard topic={{ ...mockTopic, logo_image_id: 'img-abc123' }} />)
+  it('renders topic logo image when its placement is publicly projected', () => {
+    render(
+      <TopicCard
+        topic={{
+          ...mockTopic,
+          logo_image_id: 'img-abc123',
+          logo_image_placement: {
+            placement_id: 'placement-abc123',
+            placement_revision: 1,
+            image_id: 'img-abc123',
+          },
+        }}
+      />,
+    )
     const logo = screen.getByRole('img', { name: 'Chase Sapphire Reserve logo' })
     expect(logo).not.toBeNull()
   })

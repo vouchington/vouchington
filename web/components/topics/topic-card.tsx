@@ -24,7 +24,6 @@ import { useAuth } from '@/lib/auth/context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { EntityBookmarkButton as EntityBookmarkButtonComponent } from '@/components/shared/entity-bookmark-button'
 import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
-
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const FollowButton = dynamic<Parameters<typeof FollowButtonComponent>[0]>(() =>
   import('@/components/shared/follow-button').then(mod => mod.FollowButton),
@@ -43,6 +42,7 @@ export interface TopicCardProps {
     | 'topic_type'
     | 'markdown'
     | 'logo_image_id'
+    | 'logo_image_placement'
     | 'allow_reviews'
     | 'hostname'
   >
@@ -185,9 +185,9 @@ export function TopicCard({
               </div>
             )}
           </div>
-          {topic.logo_image_id && (
+          {topic.logo_image_placement && (
             <TopicLogo
-              imageId={topic.logo_image_id}
+              placement={topic.logo_image_placement}
               name={topic.name}
               className='h-10 w-10 flex-shrink-0 rounded-lg object-contain'
               width={80}

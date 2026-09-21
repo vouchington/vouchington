@@ -12,7 +12,10 @@ export function PostDetailMetadata({
   separatorLabel,
 }: {
   authorName: string
-  author?: Pick<PublicUser, 'id' | 'username' | 'profile_image_id' | 'is_official_account'> | null
+  author?: Pick<
+    PublicUser,
+    'id' | 'username' | 'profile_image_id' | 'profile_image_placement' | 'is_official_account'
+  > | null
   createdAt: string
   bylineLabel: string
   separatorLabel: string
@@ -28,6 +31,7 @@ export function PostDetailMetadata({
         >
           <UserAvatar
             profileImageId={author.profile_image_id}
+            profileImagePlacement={author.profile_image_placement}
             username={author.username ?? authorName}
             size='sm'
           />

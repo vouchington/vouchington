@@ -1,15 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
-import { invalidate } from '@services/entity-cache/invalidate'
 import type { PrivateUser } from '@services/users/types'
-import { enqueueOnTopicUpdated } from '@queues/entity-listeners/enqueues'
-import { enqueueBulkTopicAliasesUpdate } from '@queues/topic-aliases/enqueues'
-import { normalizeKey } from '@ts-shared/utils/strings'
 import { planAliasMerge } from '@vouchington/typed-entities'
 import assert from 'http-assert'
 import { currentUserCanMergeTopic } from './authorization.mts'
-import { getTopicByAny } from './get.mts'
-import { invalidatePostsForTopicAliases } from './invalidate-posts-for-topic-aliases.mts'
 import {
   createTopicAliasMergeRevisions,
   getTopicAliasesForMergeRevision,
@@ -19,6 +12,8 @@ import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 import { recordTopicMergePublicationChanges } from '@services/post-publication'
 import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 import { lockTopicMergeAliasPublicationScopes } from './alias-publication-locks.mts'
+import { prepublishImageSurfaceDenial } from '@services/media-delivery-safety'
+import { finalizeTopicAliasMerge } from './merge-aliases-finalize.mts'
 type MergeRow = Pick<Topic, 'id' | 'slug'> & Record<'is_deleted' | 'is_merged', boolean>
 export async function mergeTopicAliases(
   merger: PrivateUser,
@@ -36,6 +31,14 @@ export async function mergeTopicAliases(
   )
   await lockTopicRssFeedAttachmentLifecycle(query, sourceTopic.id)
   await recordTopicMergePublicationChanges(query, sourceTopic.id, aliasScopes.lockedAliasIds)
+  await prepublishImageSurfaceDenial(
+    { surfaceKind: 'topic-logo-image', topicId: sourceTopic.id },
+    query,
+  )
+  await prepublishImageSurfaceDenial(
+    { surfaceKind: 'topic-hero-image', topicId: sourceTopic.id },
+    query,
+  )
   // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below
   const { rows: topicRows } = await query<MergeRow>(
     `/* mergeTopicAliases lockTopics */ SELECT id, slug, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
@@ -171,23 +174,13 @@ export async function mergeTopicAliases(
   const movedAliasResult = { aliases: aliasesToMove, ids: sourceAliasRows.map(row => row.id) }
   await query.commit()
   const { aliases: movedAliases, ids: movedAliasIds } = movedAliasResult
-  entityCacheBloomFilters.topics.add(movedAliases.map(normalizeKey))
-  await Promise.all([
-    invalidate.topics(
-      sourceTopic.id,
-      sourceTopic.slug,
-      destinationTopic.id,
-      destinationTopic.slug,
-      movedAliases,
-    ),
-    invalidate.topic_metrics(sourceTopic.id, destinationTopic.id),
-    invalidatePostsForTopicAliases(movedAliasIds),
-  ])
-  void enqueueBulkTopicAliasesUpdate([sourceTopic.id, destinationTopic.id])
-  void enqueueOnTopicUpdated(sourceTopic.id, merger.id)
-  void enqueueOnTopicUpdated(destinationTopic.id, merger.id)
-  const refreshedDestinationTopic = await getTopicByAny(destinationTopic.id)
-  assert(refreshedDestinationTopic, 500, 'Merged destination topic not found')
+  const refreshedDestinationTopic = await finalizeTopicAliasMerge({
+    merger,
+    sourceTopic,
+    destinationTopic,
+    movedAliases,
+    movedAliasIds,
+  })
   return {
     source_topic_id: sourceTopic.id,
     destination_topic_id: destinationTopic.id,

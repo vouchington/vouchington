@@ -136,6 +136,7 @@ export function FollowerSendPicker({
             />
             <UserAvatar
               profileImageId={follower.profile_image_id}
+              profileImagePlacement={follower.profile_image_placement}
               username={follower.username ?? follower.display_account?.name ?? fallbackUserLabel}
               size='sm'
             />

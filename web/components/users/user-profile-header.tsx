@@ -30,6 +30,7 @@ interface UserProfileHeaderProps {
     | 'id'
     | 'username'
     | 'profile_image_id'
+    | 'profile_image_placement'
     | 'is_official_account'
     | 'is_agent'
     | 'display_account'
@@ -79,6 +80,7 @@ export function UserProfileHeader({
       <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
         <UserAvatar
           profileImageId={user.profile_image_id}
+          profileImagePlacement={user.profile_image_placement}
           username={avatarLabel}
           size='lg'
         />

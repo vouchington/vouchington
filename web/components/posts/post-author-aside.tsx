@@ -44,6 +44,7 @@ export function PostAuthorAside({ t, author, aside, postType }: PostAuthorAsideP
         >
           <UserAvatar
             profileImageId={author.profile_image_id}
+            profileImagePlacement={author.profile_image_placement}
             username={author.username}
             size='sm'
           />

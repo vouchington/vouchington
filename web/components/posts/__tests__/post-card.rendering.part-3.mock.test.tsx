@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-
 import { render, screen } from '@testing-library/react'
 
 import { PostCard } from '../post-card'
@@ -252,7 +251,15 @@ describe('PostCard', () => {
       const postWithImages: Post = {
         ...mockPost,
         clearance_status: 'rejected',
-        images: [{ image_id: 'img-1', order_index: 0, caption: '' }],
+        images: [
+          {
+            image_id: 'img-1',
+            placement_id: 'placement-1',
+            placement_revision: 0,
+            order_index: 0,
+            caption: '',
+          },
+        ],
       }
       const { container } = render(<PostCard post={postWithImages} />)
       // PostCardImages renders an img element; it must be absent for rejected posts

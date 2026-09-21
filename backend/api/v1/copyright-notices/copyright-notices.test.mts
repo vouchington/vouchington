@@ -1,51 +1,56 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  createTestUser,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
+import { createTestUser, suspendTestUser } from '@voucha/test-helpers'
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { addUserRole } from '@services/users/roles-permissions'
 import { createCopyrightFormIntake } from '@services/copyright-notices'
+import {
+  counterNoticeBody,
+  createCopyrightFormFixture,
+  createNotice,
+} from '@services/copyright-notices/route-test-fixtures'
 
 describe('copyright notice routes', () => {
   beforeEach(() => {
+    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
+    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
     vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
+    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
+    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'true')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
     vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
     vi.stubEnv('SES_COPYRIGHT_SOURCE_EMAIL', 'copyright@voucha.ai')
     vi.stubEnv('SES_COPYRIGHT_REPLY_TO', 'copyright@voucha.ai')
   })
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
-
   it('rejects a form intake without CAPTCHA verification', async () => {
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
-
-    const response = await createRequest().post('/api/v1/copyright-notices').send({}).expect(422)
-
-    expect(response.body.message).toContain('CAPTCHA token is required')
+    expect(
+      (await createRequest().post('/api/v1/copyright-notices').send({}).expect(422)).body.message,
+    ).toContain('CAPTCHA token is required')
   })
-
   it('accepts an authenticated structured form exactly once for an idempotency key', async () => {
     const fixture = await createCopyrightFormFixture()
     const request = createRequest()
     await request.authenticateAs(fixture.claimant)
-    const idempotencyKey = crypto.randomUUID()
-
+    const key = crypto.randomUUID()
     const first = await request
       .post('/api/v1/copyright-notices')
-      .set('Idempotency-Key', idempotencyKey)
+      .set('Idempotency-Key', key)
       .send(fixture.form)
       .expect(202)
     const replay = await request
       .post('/api/v1/copyright-notices')
-      .set('Idempotency-Key', idempotencyKey)
+      .set('Idempotency-Key', key)
       .send(fixture.form)
       .expect(200)
-
     expect(first.body).toEqual({
       copyright_notice: { id: expect.any(String) },
       is_duplicate: false,
@@ -55,7 +60,6 @@ describe('copyright notice routes', () => {
       is_duplicate: true,
     })
   })
-
   it('requires an idempotency key before accepting an authenticated form', async () => {
     const fixture = await createCopyrightFormFixture()
     const request = createRequest()
@@ -63,57 +67,114 @@ describe('copyright notice routes', () => {
 
     await request.post('/api/v1/copyright-notices').send(fixture.form).expect(400)
   })
-
   it('rejects anonymous appeals and counter-notices', async () => {
-    const fixture = await createCopyrightFormFixture()
-    const noticeId = await createNotice(fixture)
-
+    const noticeId = await createNotice(await createCopyrightFormFixture())
     await createRequest().post(`/api/v1/copyright-notices/${noticeId}/appeals`).send({}).expect(401)
     await createRequest()
       .post(`/api/v1/copyright-notices/${noticeId}/counter-notices`)
       .send({})
       .expect(401)
   })
+  it('requires sign-in for accepted-case records and does not reveal unaccepted notices', async () => {
+    const fixture = await createCopyrightFormFixture()
+    const noticeId = await createNotice(fixture)
+    await createRequest().get('/api/v1/copyright-notices').expect(401)
+    await createRequest().get(`/api/v1/copyright-notices/${noticeId}`).expect(401)
+    const request = createRequest()
+    await request.authenticateAs(await createTestUser())
+    await request.get(`/api/v1/copyright-notices/${noticeId}`).expect(404)
+  })
+  it('only lets copyright-review staff read advisory image similarity candidates', async () => {
+    const fixture = await createCopyrightFormFixture()
+    const noticeId = await createNotice(fixture)
+    const targetId = await readCopyrightNoticeTargetId(noticeId)
+    const claimant = createRequest()
+    await claimant.authenticateAs(fixture.claimant)
+    await claimant
+      .get(`/api/v1/copyright-notices/${noticeId}/targets/${targetId}/image-similarity-candidates`)
+      .expect(403)
+    const moderator = createRequest()
+    await moderator.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
+    expect(
+      (
+        await moderator
+          .get(
+            `/api/v1/copyright-notices/${noticeId}/targets/${targetId}/image-similarity-candidates`,
+          )
+          .expect(200)
+      ).body,
+    ).toEqual({ availability: 'unavailable', copyright_image_similarity_candidates: [] })
+  })
+  it('returns a staff-only pending case aggregate instead of blind review IDs', async () => {
+    const fixture = await createCopyrightFormFixture()
+    const noticeId = await createNotice(fixture)
+    const moderator = createRequest()
+    await moderator.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
 
+    const response = await moderator.get('/api/v1/copyright-notices/review-queue').expect(200)
+    expect(response.body.copyright_notices).toContainEqual(
+      expect.objectContaining({
+        id: noticeId,
+        claimant: expect.objectContaining({ contact: fixture.form.claimant_contact }),
+        work_description: fixture.form.work_description,
+        targets: expect.arrayContaining([
+          expect.objectContaining({ hosted_use_url: expect.any(String) }),
+        ]),
+        form_review: expect.objectContaining({ source_kind: 'signed_in_form' }),
+        evidence: expect.any(Array),
+        restrictions: expect.any(Array),
+        appeals: expect.any(Array),
+        counter_notices: expect.any(Array),
+      }),
+    )
+  })
+  it('does not allow a suspended review moderator to read private copyright queues or email records', async () => {
+    const moderator = await createTestUser({ extraRoles: ['moderator'] })
+    await suspendTestUser(moderator.id)
+    const request = createRequest()
+    await request.authenticateAs(moderator)
+
+    await request.get('/api/v1/copyright-notices/review-queue').expect(403)
+    await request.get('/api/v1/copyright-email-intakes/review-queue').expect(403)
+    await request.get(`/api/v1/copyright-email-intakes/${crypto.randomUUID()}`).expect(403)
+  })
   it('only lets the affected poster submit an appeal or counter-notice', async () => {
     const fixture = await createCopyrightFormFixture()
     const noticeId = await createNotice(fixture)
     const targetId = await readCopyrightNoticeTargetId(noticeId)
-    const otherUser = await createTestUser()
-    const otherRequest = createRequest()
-    await otherRequest.authenticateAs(otherUser)
-
-    await otherRequest
+    const other = createRequest()
+    await other.authenticateAs(await createTestUser())
+    await other
       .post(`/api/v1/copyright-notices/${noticeId}/appeals`)
       .set('Idempotency-Key', crypto.randomUUID())
       .send({ reason: 'This does not belong to me.', target_ids: [targetId] })
       .expect(403)
-    await otherRequest
+    await other
       .post(`/api/v1/copyright-notices/${noticeId}/counter-notices`)
       .set('Idempotency-Key', crypto.randomUUID())
       .send(counterNoticeBody(targetId))
       .expect(403)
-
-    const posterRequest = createRequest()
-    await posterRequest.authenticateAs(fixture.poster)
-    const appealKey = crypto.randomUUID()
-    const appeal = await posterRequest
+    const poster = createRequest()
+    await poster.authenticateAs(fixture.poster)
+    const key = crypto.randomUUID()
+    const appeal = await poster
       .post(`/api/v1/copyright-notices/${noticeId}/appeals`)
-      .set('Idempotency-Key', appealKey)
+      .set('Idempotency-Key', key)
       .send({ reason: 'This is my hosted material.', target_ids: [targetId] })
       .expect(201)
-    const replay = await posterRequest
-      .post(`/api/v1/copyright-notices/${noticeId}/appeals`)
-      .set('Idempotency-Key', appealKey)
-      .send({ reason: 'This is my hosted material.', target_ids: [targetId] })
-      .expect(200)
-
-    expect(replay.body).toEqual({
+    expect(
+      (
+        await poster
+          .post(`/api/v1/copyright-notices/${noticeId}/appeals`)
+          .set('Idempotency-Key', key)
+          .send({ reason: 'This is my hosted material.', target_ids: [targetId] })
+          .expect(200)
+      ).body,
+    ).toEqual({
       copyright_submission: { id: appeal.body.copyright_submission.id },
       is_duplicate: true,
     })
   })
-
   it('authorizes a moderator and validates each copyright-review request before loading its record', async () => {
     const moderator = await createTestUser()
     await addUserRole(moderator.id, 'moderator')
@@ -125,7 +186,7 @@ describe('copyright notice routes', () => {
 
     await request
       .post(`/api/v1/copyright-notices/${missingId}/restrictions/${restrictionId}/reviews`)
-      .send({ action: 'confirm' })
+      .send({ action: 'confirm', rationale: 'The restriction remains appropriate.' })
       .expect(409)
     await request
       .post(`/api/v1/copyright-form-intakes/${missingId}/reviews`)
@@ -230,60 +291,3 @@ describe('copyright notice routes', () => {
       .expect(404)
   })
 })
-
-async function createCopyrightFormFixture() {
-  const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
-  const postId = await insertTestPost({
-    title: `Copyright route test ${crypto.randomUUID()}`,
-    slug: `copyright-route-test-${crypto.randomUUID()}`,
-    createdById: poster.id,
-    markdown: 'Hosted image for a copyright-notice route test.',
-  })
-  const imageId = await insertTestImage(poster.id)
-  await insertTestPostImage({ postId, imageId })
-  return {
-    claimant,
-    poster,
-    form: {
-      jurisdiction: 'us_dmca',
-      claimant_display_name: 'Copyright claimant',
-      claimant_contact: 'claimant@example.test',
-      claimant_email: 'claimant@example.test',
-      work_description: 'A photograph owned by the claimant.',
-      good_faith_belief: true,
-      accuracy_authority_under_penalty_of_perjury: true,
-      electronic_signature: 'Copyright claimant',
-      targets: [
-        {
-          post_id: postId,
-          image_id: imageId,
-          target_url: `https://voucha.ai/posts/${postId}`,
-        },
-      ],
-    },
-  }
-}
-
-async function createNotice(fixture: Awaited<ReturnType<typeof createCopyrightFormFixture>>) {
-  const request = createRequest()
-  await request.authenticateAs(fixture.claimant)
-  const response = await request
-    .post('/api/v1/copyright-notices')
-    .set('Idempotency-Key', crypto.randomUUID())
-    .send(fixture.form)
-    .expect(202)
-  return response.body.copyright_notice.id as string
-}
-
-function counterNoticeBody(targetId: string): Record<string, unknown> {
-  return {
-    name: 'Hosted-material poster',
-    address: '1 Main Street, Example City',
-    telephone: '555-0100',
-    consent_to_federal_jurisdiction: true,
-    consent_to_service_of_process: true,
-    good_faith_misidentification_under_penalty_of_perjury: true,
-    electronic_signature: 'Hosted-material poster',
-    target_ids: [targetId],
-  }
-}

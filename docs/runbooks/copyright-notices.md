@@ -33,6 +33,10 @@ These are product response targets, not representations of safe-harbor eligibili
 Keep `COPYRIGHT_INTAKE_ENABLED=false` until all of the following are verified in the target
 environment:
 
+This switch stops only new intake and intake-agent processing. Existing complaint pages and all
+ongoing statutory casework remain available; use the individual delivery/enforcement controls and
+incident procedures rather than the intake switch to manage a downstream outage.
+
 - the published address belongs to the registered US designated agent and production inbox routing
   assigns `copyright` only to the trusted `copyright-incoming/` S3 prefix;
 - `S3_BUCKET_COPYRIGHT_EVIDENCE` is private, encrypted, versioned, access-logged, retention-reviewed,
@@ -44,8 +48,21 @@ environment:
   workflows are live; and
 - the repeat-infringer policy, retention schedule, templates, staffing, and legal review are approved.
 
+The web footer must link to the Copyright policy, designated-agent status, repeat-infringer policy,
+Terms, Privacy, and Community Guidelines. Before launch, counsel must update the DB-backed Terms,
+Privacy, and Community Guidelines articles to describe the activated process, case-record privacy,
+evidence retention, and repeat-infringer enforcement. The placeholder-free public designated-agent
+page must state that the channel is inactive until a real registration and monitored contact exist.
+
 Do not advertise EU or UK statutory intake until their distinct schemas, review rules, notices, and
 any required representatives are deployed. The current public API accepts only `us_dmca`.
+
+The application repository creates placement-bound URLs and durable PostgreSQL action intents, but
+that is not complete CDN enforcement. Activation also requires the linked infrastructure change to
+authorize every placement request at the viewer edge, deny direct origin access, retire historical
+generic post-image routes, publish the authoritative delivery registry, and invalidate cached
+placement paths after a state transition. Record cold and warm cache evidence for withhold and
+restore before enabling intake.
 
 ## Counter-notice and hold handling
 
@@ -69,6 +86,8 @@ Continuously surface:
 - open deadlines at or past `restoration_deadline_at` as incidents;
 - incomplete action intents whose expected placement revision still matches;
 - action intents rejected because the placement changed;
+- placement rows whose PostgreSQL availability differs from the edge delivery registry;
+- completed placement transitions whose CDN invalidation or registry publication is absent;
 - undelivered correspondence, bounces, and exhausted delivery retries; and
 - agent/parser failures routed to staff rather than accepted automatically.
 
@@ -78,6 +97,11 @@ and target-specific hold. The media worker separately owns the atomic authoritat
 non-copyright blocker before delivery changes. If the placement revision changed, abandon the stale
 intent through the domain recovery path and create no replacement until staff confirms the new
 placement is within the case.
+
+For a cross-store failure, PostgreSQL remains the legal workflow record. Keep the application
+projection fail-closed, replay the idempotent edge-registry publication, invalidate the exact
+placement path, and verify both a cached and uncached request before acknowledging delivery. Never
+change the PostgreSQL revision merely to make the edge registry match it.
 
 ## Incident response
 

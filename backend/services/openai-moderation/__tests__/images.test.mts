@@ -14,8 +14,11 @@ const presignImageUploadUrl = vi.fn<VitestLooseMock>(({ s3Key }: { s3Key: string
   Promise.resolve(`https://images.example.test/${s3Key}?signature=fake`),
 )
 const createOpenAIModeration = vi.fn<VitestLooseMock>()
+const presignImageReadUrl = vi.fn<VitestLooseMock>((s3Key: string) =>
+  Promise.resolve(`https://private-images.example.test/${s3Key}?signature=fake`),
+)
 const imageUploadDependencies = { presignImageUploadUrl }
-const imageModerationDependencies = { createOpenAIModeration }
+const imageModerationDependencies = { createOpenAIModeration, presignImageReadUrl }
 
 describe('images', () => {
   let user: PrivateUser
@@ -109,9 +112,6 @@ describe('images', () => {
   }
 
   it('upsertImageOpenAIModeration - moderates image and stores results', async () => {
-    vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com')
-    vi.stubEnv('NODE_ENV', 'development')
-
     const image = await createCompletedImage()
     // Mock moderation to return not flagged
     createOpenAIModeration.mockResolvedValueOnce([createMockModeration(false)])
@@ -129,14 +129,11 @@ describe('images', () => {
     expect(updated?.deleted_at).toBeNull()
     expect(createOpenAIModeration).toHaveBeenCalledWith(
       [],
-      [`https://images.example.com/images/${image.s3_key}?w=1200`],
+      [`https://private-images.example.test/${image.s3_key}?signature=fake`],
     )
   }, 15000)
 
   it('upsertImageOpenAIModeration - uses stored S3 key for direct uploads', async () => {
-    vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com')
-    vi.stubEnv('NODE_ENV', 'test')
-
     const { image_id: imageId } = await createImageUploadUrl(user, {
       contentType: 'image/png',
       contentLength: 1024,
@@ -152,7 +149,7 @@ describe('images', () => {
     expect(result.flagged).toBe(false)
     expect(createOpenAIModeration).toHaveBeenCalledWith(
       [],
-      [`https://images.example.com/images/${image.s3_key}?w=1200`],
+      [`https://private-images.example.test/${image.s3_key}?signature=fake`],
     )
   })
 
@@ -176,17 +173,14 @@ describe('images', () => {
     }
   })
 
-  it('upsertImageOpenAIModeration - skips moderation when the image origin is non-public', async () => {
-    vi.stubEnv('IMAGE_LAMBDA_PORT', '3903')
-    vi.stubEnv('IMAGE_ORIGIN', '')
-    vi.stubEnv('NODE_ENV', 'test')
-
+  it('upsertImageOpenAIModeration - uses a private S3 read URL without an image origin', async () => {
     const image = await createCompletedImage()
+    createOpenAIModeration.mockResolvedValueOnce([createMockModeration(false)])
 
     const result = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
 
-    expect(result).toEqual({ skipped: true, reason: 'non_public_image_origin' })
-    expect(createOpenAIModeration).not.toHaveBeenCalled()
+    expect(result.flagged).toBe(false)
+    expect(presignImageReadUrl).toHaveBeenCalledWith(image.s3_key)
   })
 
   it('upsertImageOpenAIModeration - deletes flagged image', async () => {

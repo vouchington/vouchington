@@ -1,6 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { getImagePlacementForCopyright } from '@services/images/placements'
+import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import type { CopyrightActionIntentRecord, CopyrightLegalHoldAssessmentRecord } from './types.mts'
 
 export type CopyrightRestorationHold = {
@@ -45,8 +47,6 @@ export function precheckCopyrightRestoration({
   }
 }
 
-export type CopyrightRestorationBlocker = 'deletion' | 'replacement' | 'safety'
-
 export async function createEligibleCopyrightRestoreIntent(input: {
   noticeId: string
   targetId: string
@@ -54,9 +54,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   deadlineId: string
   expectedPlacementRevision: number
   now: Date
-  blockers: CopyrightRestorationBlocker[]
 }): Promise<CopyrightActionIntentRecord> {
-  assert(input.blockers.length === 0, 409, 'A non-copyright placement blocker prevents restoration')
   await using transaction = await beginTransaction()
   const { rows: targetKeys } = await transaction<{ placement_key: string }>(
     sql`/* createEligibleCopyrightRestoreIntent:findPlacement */
@@ -126,17 +124,6 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     'Restoration deadline is closed',
   )
 
-  const otherRestrictions = await transaction<{
-    id: string
-  }>(sql`/* createEligibleCopyrightRestoreIntent:lockActiveRestrictions */
-      SELECT active.id
-      FROM copyright_restrictions active
-      JOIN copyright_notice_targets active_target ON active_target.id = active.copyright_notice_target_id
-      WHERE active_target.placement_key = ${locked.placement_key}
-        AND active.lifted_at IS NULL
-        AND active.id <> ${input.restrictionId}
-      FOR UPDATE OF active
-    `)
   const qualifyingHolds =
     await transaction<CopyrightLegalHoldAssessmentRecord>(sql`/* createEligibleCopyrightRestoreIntent:lockQualifyingHolds */
       SELECT h.*
@@ -162,7 +149,9 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     now: input.now,
     earliestRestorationAt: locked.earliest_restoration_at,
     restorationDeadlineAt: locked.restoration_deadline_at,
-    otherActiveRestrictionCount: otherRestrictions.rows.length,
+    // Each case becomes independently eligible. The delivery worker lifts this case's restriction
+    // while keeping the placement withheld until every other active restriction is resolved.
+    otherActiveRestrictionCount: 0,
     hold: qualifyingHolds.rows[0]
       ? {
           receivedByDesignatedAgentAt: qualifyingHolds.rows[0].received_by_designated_agent_at,
@@ -174,11 +163,17 @@ export async function createEligibleCopyrightRestoreIntent(input: {
       : null,
   })
   assert(result.eligible, 409, 'Copyright restoration is not eligible')
+  const currentPlacement = await getImagePlacementForCopyright(locked.placement_key, {
+    query: transaction,
+  })
+  // An unavailable placement still needs a durable, revision-fenced legal disposition. The worker
+  // resolves it without allowing delivery, rather than leaving the deadline and restriction open.
+  assert(currentPlacement, 409, 'Copyright placement is unavailable')
   const { rows: intentRows } =
     await transaction<CopyrightActionIntentRecord>(sql`/* createEligibleCopyrightRestoreIntent */
     INSERT INTO copyright_notice_action_intents (
       copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
-    ) VALUES (${input.restrictionId}, ${input.deadlineId}, ${input.expectedPlacementRevision}, 'restore')
+    ) VALUES (${input.restrictionId}, ${input.deadlineId}, ${currentPlacement.revision}, 'restore')
     ON CONFLICT (copyright_restriction_id, expected_placement_revision, action) DO NOTHING
     RETURNING id, copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision,
       action, completed_at
@@ -190,5 +185,6 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     VALUES (${input.noticeId}, 'restoration_intent_created', ${JSON.stringify({ restrictionId: input.restrictionId })}::jsonb)
   `)
   await transaction.commit()
+  void enqueueApplyCopyrightAction(intent.id)
   return intent
 }

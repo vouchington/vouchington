@@ -610,7 +610,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_admin_import_batch_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.import_type IS DISTINCT FROM NEW.import_type THEN\n    RAISE EXCEPTION 'admin import batch type cannot change'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_action_intent": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_action_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright action intents are durable saga records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(OLD.copyright_restriction_id, OLD.expected_placement_revision, OLD.action)\n    IS DISTINCT FROM ROW(NEW.copyright_restriction_id, NEW.expected_placement_revision, NEW.action) THEN\n    RAISE EXCEPTION 'copyright action intent identity and revision fence are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.completed_at IS NOT NULL AND OLD.completed_at IS DISTINCT FROM NEW.completed_at THEN\n    RAISE EXCEPTION 'copyright action intent completion is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_action_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright action intents are durable saga records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(OLD.copyright_restriction_id, OLD.copyright_notice_deadline_id,\n      OLD.expected_placement_revision, OLD.action)\n    IS DISTINCT FROM ROW(NEW.copyright_restriction_id, NEW.copyright_notice_deadline_id,\n      NEW.expected_placement_revision, NEW.action) THEN\n    RAISE EXCEPTION 'copyright action intent identity and revision fence are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state IN ('completed', 'stale') AND NEW.state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright action intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state IN ('blocked', 'failed') AND NEW.state IS DISTINCT FROM OLD.state\n    AND NOT (NEW.state = 'pending' AND NEW.completed_at IS NULL\n      AND NEW.completed_at_reason IS NULL AND NEW.claimed_at IS NULL\n      AND NEW.delivery_attempt_count = 0) THEN\n    RAISE EXCEPTION 'blocked and failed copyright actions may only be explicitly replayed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (NEW.delivery_attempt_count < OLD.delivery_attempt_count\n      AND NOT (OLD.state IN ('blocked', 'failed') AND NEW.state = 'pending'\n        AND NEW.delivery_attempt_count = 0))\n    OR NEW.delivery_attempt_count > OLD.delivery_attempt_count + 1 THEN\n    RAISE EXCEPTION 'copyright action intent attempts must advance one at a time' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.completed_at IS NOT NULL AND OLD.completed_at IS DISTINCT FROM NEW.completed_at\n    AND NOT (OLD.state IN ('blocked', 'failed') AND NEW.state = 'pending' AND NEW.completed_at IS NULL) THEN\n    RAISE EXCEPTION 'copyright action intent completion is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_assessment_source": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_assessment_source()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (\n    SELECT 1\n    FROM copyright_notice_submissions submission\n    WHERE submission.id = NEW.copyright_notice_submission_id\n      AND submission.source_kind IN ('guest_form', 'email')\n  ) AND NEW.assessed_by_id IS NULL THEN\n    RAISE EXCEPTION 'guest and email copyright assessments require a human assessor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -631,7 +631,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_deadline()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright deadlines are durable statutory records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.copyright_notice_id,\n    OLD.qualifying_counter_notice_assessment_id,\n    OLD.earliest_restoration_at,\n    OLD.escalation_at,\n    OLD.restoration_deadline_at\n  ) IS DISTINCT FROM ROW(\n    NEW.copyright_notice_id,\n    NEW.qualifying_counter_notice_assessment_id,\n    NEW.earliest_restoration_at,\n    NEW.escalation_at,\n    NEW.restoration_deadline_at\n  ) THEN\n    RAISE EXCEPTION 'copyright deadline origin and schedule are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.resolved_at IS NOT NULL OR OLD.cancelled_at IS NOT NULL)\n    AND ROW(OLD.resolved_at, OLD.cancelled_at) IS DISTINCT FROM ROW(NEW.resolved_at, NEW.cancelled_at) THEN\n    RAISE EXCEPTION 'copyright deadline terminal outcome is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_delivery_intent_transition": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_delivery_intent_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id\n    OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id\n    OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id\n    OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role\n    OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind\n    OR NEW.channel IS DISTINCT FROM OLD.channel\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.recipient_user_id IS DISTINCT FROM NEW.recipient_user_id THEN\n    IF OLD.recipient_user_id IS NULL OR NEW.recipient_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright delivery recipient cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.recipient_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN\n    RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.state IN ('bounced', 'failed') AND NEW.state IS DISTINCT FROM OLD.state)\n    OR (OLD.state = 'sent' AND NEW.state NOT IN ('sent', 'bounced')) THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_delivery_intent_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id\n    OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id\n    OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id\n    OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role\n    OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind\n    OR NEW.channel IS DISTINCT FROM OLD.channel\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.recipient_user_id IS DISTINCT FROM NEW.recipient_user_id THEN\n    IF OLD.recipient_user_id IS NULL OR NEW.recipient_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright delivery recipient cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.recipient_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN\n    RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'bounced' AND NEW.state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'failed' AND NEW.state IS DISTINCT FROM OLD.state\n    AND NOT (\n      NEW.state = 'pending' AND NEW.claimed_at IS NULL AND NEW.failed_at IS NULL\n      AND NEW.next_attempt_at IS NULL AND NEW.delivery_attempt_count = 0\n    ) THEN\n    RAISE EXCEPTION 'failed copyright delivery intents may only be explicitly replayed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'sent' AND NEW.state NOT IN ('sent', 'bounced') THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_email_correspondence_recommendation_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_correspondence_recommendation_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.copyright_notice_email_intake_recommendation_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation\n    WHERE recommendation.id = NEW.copyright_notice_email_intake_recommendation_id\n      AND recommendation.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id\n  ) THEN\n    RAISE EXCEPTION 'copyright email correspondence recommendation must belong to the same intake' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -669,6 +669,18 @@
     "fn_guard_copyright_submission_target_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_submission_target_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submissions submission\n    JOIN copyright_notice_targets target ON target.id = NEW.copyright_notice_target_id\n    WHERE submission.id = NEW.copyright_notice_submission_id\n      AND submission.copyright_notice_id = target.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'copyright submission target must belong to the same notice' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_guard_image_placement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'image placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+    },
+    "fn_guard_image_surface_placement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_image_surface_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-link-image'\n    AND OLD.user_profile_link_id IS NOT NULL\n    AND NEW.user_profile_link_id IS NULL\n    AND NEW.retired_user_profile_link_id = OLD.user_profile_link_id\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.user_id IS NOT DISTINCT FROM OLD.user_id\n    AND NEW.retired_user_id IS NOT DISTINCT FROM OLD.retired_user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-image'\n    AND OLD.user_id IS NOT NULL\n    AND NEW.user_id IS NULL\n    AND NEW.retired_user_id = OLD.user_id\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.retired_user_id = OLD.user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n    AND NEW.user_profile_link_id IS NOT DISTINCT FROM OLD.user_profile_link_id\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' AND EXISTS (\n    SELECT 1\n    FROM image_surface_placements existing\n    JOIN media_placements placement ON placement.id = existing.placement_id\n    WHERE placement.retired_at IS NULL\n      AND existing.surface_kind = NEW.surface_kind\n    AND existing.user_id IS NOT DISTINCT FROM NEW.user_id\n      AND existing.topic_id IS NOT DISTINCT FROM NEW.topic_id\n      AND existing.community_id IS NOT DISTINCT FROM NEW.community_id\n      AND existing.user_profile_link_id IS NOT DISTINCT FROM NEW.user_profile_link_id\n  ) THEN\n    RAISE EXCEPTION 'a public image surface has at most one current binding' USING ERRCODE = 'unique_violation';\n  END IF;\n  IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'image surface placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+    },
+    "fn_guard_images_id_immutable": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_images_id_immutable()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id THEN\n    RAISE EXCEPTION 'image ids are immutable byte identities' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_media_placement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.placement_kind IS DISTINCT FROM OLD.placement_kind THEN\n    RAISE EXCEPTION 'media placement kind is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_guard_membership_grant_activation_period_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_membership_grant_activation_period_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership grant activation periods cannot be deleted';\n  END IF;\n\n  IF OLD.ended_at IS NULL\n    AND NEW.ended_at IS NOT NULL\n    AND ROW(\n      NEW.id, NEW.membership_grant_id, NEW.user_id, NEW.started_at\n    ) IS NOT DISTINCT FROM ROW(\n      OLD.id, OLD.membership_grant_id, OLD.user_id, OLD.started_at\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'membership grant activation periods only allow an open-to-ended lifecycle transition';\nEND $function$\n"
     },
@@ -698,6 +710,12 @@
     },
     "fn_guard_terminal_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_terminal_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  terminal_column TEXT;\n  old_row JSONB := to_jsonb(OLD);\n  new_row JSONB := to_jsonb(NEW);\n  was_terminal BOOLEAN := FALSE;\nBEGIN\n  FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n    IF old_row -> terminal_column <> 'null'::jsonb THEN\n      was_terminal := TRUE;\n    END IF;\n  END LOOP;\n\n  IF was_terminal THEN\n    FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n      IF old_row -> terminal_column IS DISTINCT FROM new_row -> terminal_column THEN\n        RAISE EXCEPTION '% terminal lifecycle cannot transition after completion', TG_TABLE_NAME\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END LOOP;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_handoff_deleted_user_image_surfaces": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_handoff_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);\n  UPDATE image_surface_placements\n  SET user_id = NULL, retired_user_id = OLD.id\n  WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
+    },
+    "fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.openai_omni_moderation_flagged = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND EXISTS (\n        SELECT 1\n        FROM media_delivery_registry_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'allow'\n          AND registry.state = 'completed'\n      )\n  );\n$function$\n"
     },
     "fn_immutable_array_to_string(p_array text[], p_delimiter text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p_delimiter text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT array_to_string(p_array, p_delimiter)\n$function$\n"
@@ -885,6 +903,9 @@
     "fn_require_verified_membership_provider_observation_evidence": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_verified_membership_provider_observation_evidence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM membership_provider_evidence_records evidence\n    WHERE evidence.id = NEW.membership_provider_evidence_id\n      AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL\n  ) THEN\n    RAISE EXCEPTION 'membership provider observations require verified evidence' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_retire_deleted_user_image_surfaces": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_retire_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, NEW.id, NULL, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_reverse_hostname_labels(p_hostname text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT array_to_string(array_reverse(string_to_array(p_hostname, '.')), '.')\n$function$\n"
     },
@@ -909,8 +930,14 @@
     "fn_sync_ap_post_likes": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_ap_post_likes()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_delta INT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    v_delta := 1;\n  ELSIF OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at THEN\n    RETURN NEW;\n  ELSIF OLD.deleted_at IS NULL THEN\n    v_delta := -1;\n  ELSE\n    v_delta := 1;\n  END IF;\n\n  INSERT INTO ap_posts (post_id, ap_likes_score, ap_likes_count)\n  VALUES (NEW.post_id, GREATEST(v_delta, 0), GREATEST(v_delta, 0))\n  ON CONFLICT (post_id) DO UPDATE SET\n    ap_likes_score = GREATEST(ap_posts.ap_likes_score + v_delta, 0),\n    ap_likes_count = GREATEST(ap_posts.ap_likes_count + v_delta, 0);\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_sync_community_image_placements": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_community_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NULL, NULL, NULL, NEW.id, NULL);\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NULL, NULL, NULL, NEW.id, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NEW.profile_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.banner_image_id IS DISTINCT FROM OLD.banner_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NEW.banner_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_sync_fediverse_instance_integration_status": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_fediverse_instance_integration_status()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_status fediverse_integration_statuses;\nBEGIN\n  -- Serialize concurrent triggers for the same topic: acquire a row-level lock on\n  -- topics__fediverse_instances before re-reading the latest change, so whichever\n  -- trigger holds the lock last wins and writes the correct (most-recently-committed) value.\n  PERFORM topic_id FROM topics__fediverse_instances WHERE topic_id = NEW.topic_id FOR UPDATE;\n  SELECT integration_status INTO v_status\n  FROM fediverse_instance_integration_changes\n  WHERE topic_id = NEW.topic_id\n  ORDER BY id DESC LIMIT 1;\n  UPDATE topics__fediverse_instances SET integration_status = v_status\n  WHERE topic_id = NEW.topic_id AND integration_status IS DISTINCT FROM v_status;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n    'image', 'placement', placement.id, placement.revision, surface.image_id, 'withheld'\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    INSERT INTO media_placements (placement_kind) VALUES ('image') RETURNING id, revision INTO v_placement_id, v_revision;\n    INSERT INTO image_surface_placements (\n      placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id\n    ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id, p_community_id, p_user_profile_link_id);\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n    'image', 'placement', v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.openai_omni_moderation_flagged IS NOT TRUE\n      THEN 'allow' ELSE 'withheld' END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, media_kind, route_kind, asset_id, desired_state\n  ) VALUES (concat('legacy-image:', p_image_id), 'image', 'legacy-image', p_image_id, 'withheld')\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\nEND;\n$function$\n"
     },
     "fn_sync_posts_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_posts_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.title, '')), 'A') ||\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.markdown, '')), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
@@ -924,8 +951,17 @@
     "fn_sync_rss_feed_items_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_rss_feed_items_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.data->>'title', '')), 'A') ||\n    setweight(to_tsvector('voucha_english',\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content:encodedSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content:encoded', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'contentSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'summary', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'media:description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '')\n    ), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_sync_topic_image_placements": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_topic_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND (\n    (NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL)\n    OR (NEW.merged_into_topic_id IS NOT NULL AND OLD.merged_into_topic_id IS NULL)\n  ) THEN\n    PERFORM fn_sync_image_surface_placement('topic-logo-image', NULL, NULL, NEW.id, NULL, NULL);\n    PERFORM fn_sync_image_surface_placement('topic-hero-image', NULL, NULL, NEW.id, NULL, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.logo_image_id IS DISTINCT FROM OLD.logo_image_id THEN\n    PERFORM fn_sync_image_surface_placement('topic-logo-image', NEW.logo_image_id, NULL, NEW.id, NULL, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.hero_image_id IS DISTINCT FROM OLD.hero_image_id THEN\n    PERFORM fn_sync_image_surface_placement('topic-hero-image', NEW.hero_image_id, NULL, NEW.id, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_sync_url_hostname_blocked": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_url_hostname_blocked()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE url_hostnames\n  SET blocked = EXISTS (\n    SELECT 1 FROM url_hostname_blocks\n    WHERE url_hostname_id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id)\n      AND lifted_at IS NULL\n  )\n  WHERE id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id);\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    "fn_sync_user_profile_image_placement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_user_profile_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-image', NEW.profile_image_id, NEW.id, NULL, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_sync_user_profile_link_image_placement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_user_profile_link_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.image_id IS DISTINCT FROM OLD.image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-link-image', NEW.image_id, NULL, NULL, NULL, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_text_to_timestamptz(text_value text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_text_to_timestamptz(text_value text)\n RETURNS timestamp with time zone\n LANGUAGE plpgsql\n IMMUTABLE\nAS $function$\nDECLARE\n  normalized TEXT;\nBEGIN\n  normalized := TRIM(BOTH E'\\t\\n\\r\\f ' FROM text_value);\n  IF normalized IS NULL OR normalized = '' OR LOWER(normalized) = 'null' THEN\n    RETURN NULL;\n  END IF;\n\n  -- Strip a known RFC 822 weekday prefix (\"Mon, \" … \"Sun, \").\n  -- Anchored to standard abbreviations; non-standard tokens fall through to the exception handler.\n  normalized := regexp_replace(normalized, '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\\s*', '', 'i');\n  -- Collapse a named-zone prefix glued to a numeric offset: \"GMT-0700\" -> \"-0700\",\n  -- \"UTC+05:30\" -> \"+05:30\". PostgreSQL rejects the glued form but accepts the bare offset.\n  normalized := regexp_replace(normalized, '(?:GMT|UTC)\\s*([+-]\\d{1,2}:?\\d{2})', '\\1', 'i');\n\n  IF normalized ~ '[Zz]$' OR\n     normalized ~ '[\\+\\-]\\d{1,2}:?\\d{2}$' OR\n     normalized ~ ' [A-Z]{3,}$' THEN\n    RETURN normalized::timestamptz;\n  END IF;\n  RETURN timezone('UTC', normalized::timestamp);\nEXCEPTION\n  -- Best-effort parser over untrusted feed input: any value PostgreSQL still can't parse\n  -- degrades to NULL so the generated column falls back to uuid_extract_timestamp(id),\n  -- rather than aborting the INSERT and the whole fetchRssFeed job. Three distinct SQLSTATE\n  -- codes (22023, 22007, 22009) have already appeared from real feeds; a narrow catch would leak.\n  WHEN OTHERS THEN\n    RAISE WARNING 'fn_text_to_timestamptz: unparseable date \"%\" (SQLSTATE: %)', text_value, SQLSTATE;\n    RETURN NULL;\nEND;\n$function$\n"
@@ -11273,7 +11309,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_communities_updated_at": "CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_communities_updated_at": "CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_sync_community_image_placements": "CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_sync_community_image_placements()"
       },
       "uniqueConstraints": {}
     },
@@ -18577,11 +18614,140 @@
       },
       "uniqueConstraints": {}
     },
+    "copyright_legal_hold_restrictions": {
+      "checkConstraints": {},
+      "columns": {
+        "copyright_notice_legal_hold_assessment_id": {
+          "collation": null,
+          "comment": "Legal-hold assessment that established this immutable restriction provenance binding.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_restriction_id": {
+          "collation": null,
+          "comment": "Restriction reactivated because a qualifying legal hold requires it to remain active.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Typed provenance binding for restrictions reactivated by qualifying legal holds.",
+      "foreignKeys": {
+        "copyright_legal_hold_restrict_copyright_notice_legal_hold__fkey": {
+          "columns": ["copyright_notice_legal_hold_assessment_id"],
+          "definition": "FOREIGN KEY (copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_legal_hold_assessments",
+          "validated": true
+        },
+        "copyright_legal_hold_restrictions_copyright_restriction_id_fkey": {
+          "columns": ["copyright_restriction_id"],
+          "definition": "FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_restrictions",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key ON public.copyright_legal_hold_restrictions USING btree (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_legal_hold_assessment_id",
+              "descending": false,
+              "expression": "copyright_notice_legal_hold_assessment_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_restriction_id",
+              "descending": false,
+              "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_legal_hold_restrictions_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_legal_hold_restrictions_pkey ON public.copyright_legal_hold_restrictions USING btree (copyright_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_restriction_id",
+              "descending": false,
+              "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["copyright_restriction_id"],
+        "definition": "PRIMARY KEY (copyright_restriction_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key": {
+          "columns": ["copyright_notice_legal_hold_assessment_id", "copyright_restriction_id"],
+          "definition": "UNIQUE (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)"
+        }
+      }
+    },
     "copyright_notice_action_intents": {
       "checkConstraints": {
+        "copyright_action_intents_delivery_state": "CHECK ((((state = 'pending'::text) AND (completed_at IS NULL) AND (completed_at_reason IS NULL) AND (claimed_at IS NULL)) OR ((state = 'claimed'::text) AND (completed_at IS NULL) AND (completed_at_reason IS NULL) AND (claimed_at IS NOT NULL)) OR ((state = ANY (ARRAY['completed'::text, 'stale'::text, 'blocked'::text, 'failed'::text])) AND (completed_at IS NOT NULL) AND (completed_at_reason = state) AND (next_attempt_at IS NULL))))",
+        "copyright_action_intents_retry_schedule": "CHECK (((((state = 'pending'::text) AND ((delivery_attempt_count = 0) OR (next_attempt_at IS NOT NULL))) OR (state <> 'pending'::text)) AND ((state <> 'claimed'::text) OR (next_attempt_at IS NULL))))",
         "copyright_notice_action_inten_expected_placement_revision_check": "CHECK ((expected_placement_revision >= 0))",
         "copyright_notice_action_intents_action_check": "CHECK ((action = ANY (ARRAY['withhold'::text, 'restore'::text])))",
-        "copyright_notice_action_intents_check": "CHECK (((copyright_notice_deadline_id IS NULL) OR (action = 'restore'::text)))"
+        "copyright_notice_action_intents_check": "CHECK (((copyright_notice_deadline_id IS NULL) OR (action = 'restore'::text)))",
+        "copyright_notice_action_intents_completed_at_reason_check": "CHECK (((completed_at_reason IS NULL) OR (completed_at_reason = ANY (ARRAY['completed'::text, 'stale'::text, 'blocked'::text, 'failed'::text]))))",
+        "copyright_notice_action_intents_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
+        "copyright_notice_action_intents_failure_message_check": "CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 4096))))",
+        "copyright_notice_action_intents_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text, 'stale'::text, 'blocked'::text, 'failed'::text])))"
       },
       "columns": {
         "action": {
@@ -18595,6 +18761,17 @@
           "ordinalPosition": 5,
           "type": "text"
         },
+        "claimed_at": {
+          "collation": null,
+          "comment": "Latest time a worker claimed the intent before rechecking and applying the placement transition.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
         "completed_at": {
           "collation": null,
           "comment": "One-way timestamp set only after the fenced delivery transition is durably confirmed.",
@@ -18605,6 +18782,17 @@
           "nullable": true,
           "ordinalPosition": 6,
           "type": "timestamp with time zone"
+        },
+        "completed_at_reason": {
+          "collation": null,
+          "comment": "Terminal action-delivery outcome, retained with its completion timestamp.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "text"
         },
         "copyright_notice_deadline_id": {
           "collation": null,
@@ -18639,6 +18827,17 @@
           "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
+        "delivery_attempt_count": {
+          "collation": null,
+          "comment": "Bounded count of worker claims for this media-delivery saga.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "integer"
+        },
         "expected_placement_revision": {
           "collation": null,
           "comment": "Revision fence that must still match before delivery state changes.",
@@ -18650,6 +18849,17 @@
           "ordinalPosition": 4,
           "type": "integer"
         },
+        "failure_message": {
+          "collation": null,
+          "comment": "Bounded staff-visible reason for a transient or terminal delivery failure.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "text"
+        },
         "id": {
           "collation": null,
           "comment": null,
@@ -18660,6 +18870,28 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
+        },
+        "next_attempt_at": {
+          "collation": null,
+          "comment": "Earliest durable retry time after a retryable media-delivery failure.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "state": {
+          "collation": null,
+          "comment": "Durable media-delivery state: pending, worker-claimed, or terminal completed, stale, blocked, or failed.",
+          "defaultExpression": "'pending'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
         },
         "updated_at": {
           "collation": null,
@@ -18748,6 +18980,33 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_copyright_notice_action_intents__recoverable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_action_intents__recoverable ON public.copyright_notice_action_intents USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "next_attempt_at",
+              "descending": false,
+              "expression": "next_attempt_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(state = 'pending'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_copyright_notice_intents__deadline": {
@@ -23434,6 +23693,257 @@
         }
       }
     },
+    "copyright_notice_enforcement_requests": {
+      "checkConstraints": {
+        "copyright_notice_enforcement_requests_attempt_count_check": "CHECK ((attempt_count >= 0))",
+        "copyright_notice_enforcement_requests_check": "CHECK (((state = 'completed'::text) = (completed_at IS NOT NULL)))",
+        "copyright_notice_enforcement_requests_check1": "CHECK (((state = 'claimed'::text) = (claimed_at IS NOT NULL)))",
+        "copyright_notice_enforcement_requests_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text])))"
+      },
+      "columns": {
+        "attempt_count": {
+          "collation": null,
+          "comment": "Count of durable worker claims made to impose the request.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "integer"
+        },
+        "claimed_at": {
+          "collation": null,
+          "comment": "Time the current worker claim began.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": "Time all required target restrictions became active.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Initial notice whose compliant assessment requires every target restriction to be active.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_notice_submission_assessment_id": {
+          "collation": null,
+          "comment": "One-to-one assessment that authorized this enforcement request and supplies its idempotency identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "imposed_by_id": {
+          "collation": null,
+          "comment": "Optional moderator whose approval imposed the associated assessment; NULL for automated form enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "last_attempt_at": {
+          "collation": null,
+          "comment": "Most recent time a worker attempted to impose the required restrictions.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "state": {
+          "collation": null,
+          "comment": "Outbox lifecycle state: pending, worker-claimed, or completed after every target restriction is active.",
+          "defaultExpression": "'pending'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable outbox created atomically with every compliant initial-notice assessment and completed only after every target has an active restriction.",
+      "foreignKeys": {
+        "copyright_notice_enforcement__copyright_notice_submission__fkey": {
+          "columns": ["copyright_notice_submission_assessment_id"],
+          "definition": "FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_submission_assessments",
+          "validated": true
+        },
+        "copyright_notice_enforcement_requests_copyright_notice_id_fkey": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "copyright_notice_enforcement_requests_imposed_by_id_fkey": {
+          "columns": ["imposed_by_id"],
+          "definition": "FOREIGN KEY (imposed_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_notice_enforcement_requests_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_enforcement_requests_pkey ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_submission_assessment_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_assessment_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_assessment_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_notice_enforcement_requests__imposed_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__imposed_by ON public.copyright_notice_enforcement_requests USING btree (imposed_by_id) WHERE (imposed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "imposed_by_id",
+              "descending": false,
+              "expression": "imposed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(imposed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_enforcement_requests__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__notice ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_enforcement_requests__pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__pending ON public.copyright_notice_enforcement_requests USING btree (updated_at, copyright_notice_submission_assessment_id) WHERE (state = 'pending'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "copyright_notice_submission_assessment_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_assessment_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(state = 'pending'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["copyright_notice_submission_assessment_id"],
+        "definition": "PRIMARY KEY (copyright_notice_submission_assessment_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_notice_enforcement_requests_updated_at": "CREATE TRIGGER trigger_copyright_notice_enforcement_requests_updated_at BEFORE UPDATE ON public.copyright_notice_enforcement_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "copyright_notice_evidence_artifacts": {
       "checkConstraints": {
         "copyright_notice_evidence_artifacts_byte_size_check": "CHECK ((byte_size >= 0))",
@@ -24479,6 +24989,7 @@
     },
     "copyright_notice_legal_hold_assessments": {
       "checkConstraints": {
+        "copyright_notice_legal_hold_assessme_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))",
         "copyright_notice_legal_hold_assessments_ccb_claim_kind_check": "CHECK ((ccb_claim_kind = ANY (ARRAY['claim'::text, 'counterclaim'::text])))",
         "copyright_notice_legal_hold_assessments_check": "CHECK ((((proceeding_kind IS NULL) AND (commenced_at IS NULL)) OR ((proceeding_kind IS NOT NULL) AND (commenced_at IS NOT NULL))))",
         "copyright_notice_legal_hold_assessments_check1": "CHECK ((((proceeding_kind = 'ccb'::text) AND (ccb_claim_kind IS NOT NULL)) OR ((proceeding_kind IS DISTINCT FROM 'ccb'::text) AND (ccb_claim_kind IS NULL))))",
@@ -24548,7 +25059,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "from_original_claimant": {
@@ -24584,6 +25095,17 @@
           "ordinalPosition": 6,
           "type": "text"
         },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted moderator rationale supporting the immutable legal-hold qualification assessment.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "text"
+        },
         "received_by_designated_agent_at": {
           "collation": null,
           "comment": "When the designated agent received proof of the commenced proceeding; NULL when delivered elsewhere or not proven.",
@@ -24614,7 +25136,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         }
       },
@@ -33248,6 +33770,632 @@
         }
       }
     },
+    "image_placements": {
+      "checkConstraints": {},
+      "columns": {
+        "image_id": {
+          "collation": null,
+          "comment": "Immutable byte asset bound to this post placement; an asset can have multiple separately authorized placements.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "placement_id": {
+          "collation": null,
+          "comment": "Stable media placement identifier used by trusted delivery routes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Hosting post for this immutable image use; retained with the placement so delivery authorization is scoped to the use.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        }
+      },
+      "comment": "Immutable image binding for a media placement. A post/image pair retains one stable placement identity across detach and reattach.",
+      "foreignKeys": {
+        "image_placements_image_id_fkey": {
+          "columns": ["image_id"],
+          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "image_placements_placement_id_fkey": {
+          "columns": ["placement_id"],
+          "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "media_placements",
+          "validated": true
+        },
+        "image_placements_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_image_placements__image": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_placements__image ON public.image_placements USING btree (image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "image_placements_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX image_placements_pkey ON public.image_placements USING btree (placement_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "image_placements_post_id_image_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX image_placements_post_id_image_id_key ON public.image_placements USING btree (post_id, image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["placement_id"],
+        "definition": "PRIMARY KEY (placement_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_image_placement_guard": "CREATE TRIGGER trigger_image_placement_guard BEFORE DELETE OR UPDATE ON public.image_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_placement()"
+      },
+      "uniqueConstraints": {
+        "image_placements_post_id_image_id_key": {
+          "columns": ["post_id", "image_id"],
+          "definition": "UNIQUE (post_id, image_id)"
+        }
+      }
+    },
+    "image_surface_placements": {
+      "checkConstraints": {
+        "image_surface_placements_check": "CHECK ((((surface_kind = 'user-profile-image'::text) AND (num_nonnulls(user_id, retired_user_id) = 1) AND (topic_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['topic-logo-image'::text, 'topic-hero-image'::text])) AND (topic_id IS NOT NULL) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['community-profile-image'::text, 'community-banner-image'::text])) AND (community_id IS NOT NULL) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (topic_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = 'user-profile-link-image'::text) AND (num_nonnulls(user_profile_link_id, retired_user_profile_link_id) = 1) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (topic_id IS NULL) AND (community_id IS NULL))))",
+        "image_surface_placements_surface_kind_check": "CHECK ((surface_kind = ANY (ARRAY['user-profile-image'::text, 'topic-logo-image'::text, 'topic-hero-image'::text, 'community-profile-image'::text, 'community-banner-image'::text, 'user-profile-link-image'::text])))"
+      },
+      "columns": {
+        "community_id": {
+          "collation": null,
+          "comment": "Community owner for a profile or banner image surface.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "image_id": {
+          "collation": null,
+          "comment": "Immutable byte asset bound to this surface placement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "placement_id": {
+          "collation": null,
+          "comment": "Stable media placement identifier that scopes public delivery to this persisted surface use.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "retired_user_id": {
+          "collation": null,
+          "comment": "Tombstone user UUID retained after hard deletion so the immutable surface provenance remains auditable without a foreign key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "retired_user_profile_link_id": {
+          "collation": null,
+          "comment": "Tombstone profile-link UUID retained after hard deletion so immutable surface provenance remains auditable without a foreign key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "surface_kind": {
+          "collation": null,
+          "comment": "Typed persisted surface owning this image use; exactly one matching owner branch is required.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": "Topic owner for a logo or hero image surface.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Current user owner for a profile-image surface; replaced by retired_user_id only during hard deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "user_profile_link_id": {
+          "collation": null,
+          "comment": "Current profile-link owner; set NULL by the foreign-key deletion action before the tombstone handoff.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        }
+      },
+      "comment": "Immutable bindings for non-post persisted public image surfaces. Each surface has typed foreign-key columns; no polymorphic owner reference is permitted.",
+      "foreignKeys": {
+        "image_surface_placements_community_id_fkey": {
+          "columns": ["community_id"],
+          "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "communities",
+          "validated": true
+        },
+        "image_surface_placements_image_id_fkey": {
+          "columns": ["image_id"],
+          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "image_surface_placements_placement_id_fkey": {
+          "columns": ["placement_id"],
+          "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "media_placements",
+          "validated": true
+        },
+        "image_surface_placements_topic_id_fkey": {
+          "columns": ["topic_id"],
+          "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "topics",
+          "validated": true
+        },
+        "image_surface_placements_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "image_surface_placements_user_profile_link_id_fkey": {
+          "columns": ["user_profile_link_id"],
+          "definition": "FOREIGN KEY (user_profile_link_id) REFERENCES user_profile_links(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_profile_links",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_image_surface_placements__community_banner": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__community_banner ON public.image_surface_placements USING btree (community_id, image_id) WHERE (surface_kind = 'community-banner-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'community-banner-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_image_surface_placements__community_fk": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placements__community_fk ON public.image_surface_placements USING btree (community_id) WHERE (community_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placements__community_profile": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__community_profile ON public.image_surface_placements USING btree (community_id, image_id) WHERE (surface_kind = 'community-profile-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'community-profile-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_image_surface_placements__image": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placements__image ON public.image_surface_placements USING btree (image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placements__profile_link": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__profile_link ON public.image_surface_placements USING btree (user_profile_link_id, image_id) WHERE (surface_kind = 'user-profile-link-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_profile_link_id",
+              "descending": false,
+              "expression": "user_profile_link_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'user-profile-link-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_image_surface_placements__profile_link_fk": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placements__profile_link_fk ON public.image_surface_placements USING btree (user_profile_link_id) WHERE (user_profile_link_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_profile_link_id",
+              "descending": false,
+              "expression": "user_profile_link_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_profile_link_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placements__topic_fk": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placements__topic_fk ON public.image_surface_placements USING btree (topic_id) WHERE (topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placements__topic_hero": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__topic_hero ON public.image_surface_placements USING btree (topic_id, image_id) WHERE (surface_kind = 'topic-hero-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'topic-hero-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_image_surface_placements__topic_logo": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__topic_logo ON public.image_surface_placements USING btree (topic_id, image_id) WHERE (surface_kind = 'topic-logo-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'topic-logo-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_image_surface_placements__user_fk": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_surface_placements__user_fk ON public.image_surface_placements USING btree (user_id) WHERE (user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_image_surface_placements__user_profile": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_image_surface_placements__user_profile ON public.image_surface_placements USING btree (user_id, image_id) WHERE (surface_kind = 'user-profile-image'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(surface_kind = 'user-profile-image'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "image_surface_placements_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX image_surface_placements_pkey ON public.image_surface_placements USING btree (placement_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["placement_id"],
+        "definition": "PRIMARY KEY (placement_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_image_surface_placement_guard": "CREATE TRIGGER trigger_image_surface_placement_guard BEFORE DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement()",
+        "trigger_image_surface_placements_updated_at": "CREATE TRIGGER trigger_image_surface_placements_updated_at BEFORE UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "images": {
       "checkConstraints": {
         "chk_images__completed_requires_sha_256": "CHECK (((upload_completed_at IS NULL) OR (sha_256 IS NOT NULL)))",
@@ -33334,7 +34482,7 @@
         },
         "id": {
           "collation": null,
-          "comment": null,
+          "comment": "Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.",
           "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
@@ -33602,9 +34750,16 @@
         "idx_images__staged_source_cleanup": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL))",
+          "definition": "CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL))",
           "includedColumns": [],
           "keys": [
+            {
+              "column": "upload_staged_at",
+              "descending": false,
+              "expression": "upload_staged_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
             {
               "column": "id",
               "descending": false,
@@ -33716,6 +34871,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_images_guard_terminal_lifecycle": "CREATE TRIGGER trigger_images_guard_terminal_lifecycle BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('upload_completed_at', 'upload_failed_at')",
+        "trigger_images_id_immutable": "CREATE TRIGGER trigger_images_id_immutable BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_guard_images_id_immutable()",
         "trigger_images_updated_at": "CREATE TRIGGER trigger_images_updated_at BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -35659,6 +36815,478 @@
       "relationKind": "table",
       "triggers": {
         "trigger_lists_updated_at": "CREATE TRIGGER trigger_lists_updated_at BEFORE UPDATE ON public.lists FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "media_delivery_registry_records": {
+      "checkConstraints": {
+        "media_delivery_registry_records_check": "CHECK ((((route_kind = 'placement'::text) AND (placement_id IS NOT NULL) AND (placement_revision IS NOT NULL)) OR ((route_kind = 'legacy-image'::text) AND (placement_id IS NULL) AND (placement_revision IS NULL) AND (media_kind = 'image'::text))))",
+        "media_delivery_registry_records_check1": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (completed_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (completed_at IS NULL)) OR ((state = ANY (ARRAY['completed'::text, 'failed'::text])) AND (completed_at IS NOT NULL))))",
+        "media_delivery_registry_records_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
+        "media_delivery_registry_records_delivery_key_check": "CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))",
+        "media_delivery_registry_records_desired_state_check": "CHECK ((desired_state = ANY (ARRAY['allow'::text, 'withheld'::text])))",
+        "media_delivery_registry_records_failure_message_check": "CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 4096))))",
+        "media_delivery_registry_records_generation_check": "CHECK ((generation >= 0))",
+        "media_delivery_registry_records_media_kind_check": "CHECK ((media_kind = 'image'::text))",
+        "media_delivery_registry_records_placement_revision_check": "CHECK (((placement_revision IS NULL) OR (placement_revision >= 0)))",
+        "media_delivery_registry_records_route_kind_check": "CHECK ((route_kind = ANY (ARRAY['placement'::text, 'legacy-image'::text])))",
+        "media_delivery_registry_records_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text, 'failed'::text])))"
+      },
+      "columns": {
+        "asset_id": {
+          "collation": null,
+          "comment": "Typed immutable image asset authorized or withheld by this exact tuple.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "claimed_at": {
+          "collation": null,
+          "comment": "Time the current worker claim began before it rechecks the authoritative tuple.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": "Time this generation reached its terminal projection outcome.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 17,
+          "type": "timestamp with time zone"
+        },
+        "delivery_attempt_count": {
+          "collation": null,
+          "comment": "Bounded count of worker claims for this edge-projection operation.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "integer"
+        },
+        "delivery_key": {
+          "collation": null,
+          "comment": "Exact edge identity: image-placement:<placement UUID>:<revision>:<image UUID>, video-placement equivalent, or legacy-image:<image UUID>.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "text"
+        },
+        "desired_state": {
+          "collation": null,
+          "comment": "Desired legal delivery state; DynamoDB is updated before this row becomes completed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "failure_message": {
+          "collation": null,
+          "comment": "Bounded diagnostic for a retryable or terminal edge-projection failure.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "text"
+        },
+        "generation": {
+          "collation": null,
+          "comment": "Monotonic delivery generation; an intent completes only for the generation it claimed.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "integer"
+        },
+        "invalidated_at": {
+          "collation": null,
+          "comment": "Time a superseded edge tuple was explicitly invalidated.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "media_kind": {
+          "collation": null,
+          "comment": "Media family served by this delivery tuple; the check grows only when a typed asset branch is added.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "next_attempt_at": {
+          "collation": null,
+          "comment": "Earliest durable retry time for a pending edge-projection operation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "timestamp with time zone"
+        },
+        "placement_id": {
+          "collation": null,
+          "comment": "Optional typed placement owner required for revision-fenced placement routes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "placement_revision": {
+          "collation": null,
+          "comment": "Exact placement revision required by a placement route; stale revisions are independently withheld.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "integer"
+        },
+        "projected_at": {
+          "collation": null,
+          "comment": "Time the worker successfully wrote the desired tuple to the edge authority.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "timestamp with time zone"
+        },
+        "route_kind": {
+          "collation": null,
+          "comment": "Trusted delivery route shape: revision-fenced placement or the retained legacy image route.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "state": {
+          "collation": null,
+          "comment": "Durable edge-projection workflow state: pending, claimed, completed, or failed.",
+          "defaultExpression": "'pending'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 18,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable exact delivery-tuple projection to the edge DynamoDB authority. Absence is denied by the edge. New media kinds add their own foreign-key column and check branch in a later migration.",
+      "foreignKeys": {
+        "media_delivery_registry_records_asset_id_fkey": {
+          "columns": ["asset_id"],
+          "definition": "FOREIGN KEY (asset_id) REFERENCES images(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "media_delivery_registry_records_placement_id_fkey": {
+          "columns": ["placement_id"],
+          "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "media_placements",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_media_delivery_registry_records__asset": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__asset ON public.media_delivery_registry_records USING btree (asset_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "asset_id",
+              "descending": false,
+              "expression": "asset_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_media_delivery_registry_records__placement": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__placement ON public.media_delivery_registry_records USING btree (placement_id) WHERE (placement_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(placement_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_media_delivery_registry_records__recoverable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__recoverable ON public.media_delivery_registry_records USING btree (next_attempt_at, delivery_key) WHERE (state = 'pending'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "next_attempt_at",
+              "descending": false,
+              "expression": "next_attempt_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "delivery_key",
+              "descending": false,
+              "expression": "delivery_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(state = 'pending'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "media_delivery_registry_records_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX media_delivery_registry_records_pkey ON public.media_delivery_registry_records USING btree (delivery_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "delivery_key",
+              "descending": false,
+              "expression": "delivery_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["delivery_key"],
+        "definition": "PRIMARY KEY (delivery_key)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_media_delivery_registry_records_updated_at": "CREATE TRIGGER trigger_media_delivery_registry_records_updated_at BEFORE UPDATE ON public.media_delivery_registry_records FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "media_placements": {
+      "checkConstraints": {
+        "media_placements_check": "CHECK ((((retired_at IS NULL) AND (retirement_reason IS NULL)) OR ((retired_at IS NOT NULL) AND (retirement_reason IS NOT NULL))))",
+        "media_placements_placement_kind_check": "CHECK ((placement_kind = 'image'::text))",
+        "media_placements_retirement_reason_check": "CHECK ((retirement_reason = ANY (ARRAY['asset_deleted'::text, 'owner_removed'::text])))",
+        "media_placements_revision_check": "CHECK ((revision >= 0))"
+      },
+      "columns": {
+        "copyright_withheld_at": {
+          "collation": null,
+          "comment": "Placement-specific copyright withholding state; shared source assets remain recoverable.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "placement_kind": {
+          "collation": null,
+          "comment": "Typed binding kind. Additional media kinds receive their own immutable binding tables.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "retired_at": {
+          "collation": null,
+          "comment": "Placement is no longer attached to its host surface; retained so stale routes fail closed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "retirement_reason": {
+          "collation": null,
+          "comment": "Why the placement retired. Owner removal supersedes an asset retirement, fencing image-delete rollback from restoring a detached use.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "revision": {
+          "collation": null,
+          "comment": "Monotonic delivery revision; every availability change advances it exactly once.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Media-neutral, durable hosted-use placements. Delivery availability is revision-fenced and never inferred from an asset alone.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "media_placements_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX media_placements_pkey ON public.media_placements USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_media_placement_guard": "CREATE TRIGGER trigger_media_placement_guard BEFORE DELETE OR UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_media_placement()",
+        "trigger_media_placements_updated_at": "CREATE TRIGGER trigger_media_placements_updated_at BEFORE UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -94408,6 +96036,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_create_topic_metrics": "CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_topic_metrics_on_insert()",
+        "trigger_sync_topic_image_placements": "CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_sync_topic_image_placements()",
         "trigger_topics_updated_at": "CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -101401,6 +103030,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_sync_user_profile_link_image_placement": "CREATE TRIGGER trigger_sync_user_profile_link_image_placement AFTER INSERT OR UPDATE OF image_id ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_link_image_placement()",
         "trigger_user_profile_links_updated_at": "CREATE TRIGGER trigger_user_profile_links_updated_at BEFORE UPDATE ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -105310,6 +106940,9 @@
       "relationKind": "table",
       "triggers": {
         "trigger_create_user_metrics": "CREATE TRIGGER trigger_create_user_metrics AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_metrics_on_insert()",
+        "trigger_handoff_deleted_user_image_surfaces": "CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces BEFORE DELETE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_handoff_deleted_user_image_surfaces()",
+        "trigger_retire_deleted_user_image_surfaces": "CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_retire_deleted_user_image_surfaces()",
+        "trigger_sync_user_profile_image_placement": "CREATE TRIGGER trigger_sync_user_profile_image_placement AFTER INSERT OR UPDATE OF profile_image_id ON public.users FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_image_placement()",
         "trigger_users_create_individual_household": "CREATE TRIGGER trigger_users_create_individual_household AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_individual_household()",
         "trigger_users_updated_at": "CREATE TRIGGER trigger_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -109001,12 +110634,12 @@
     },
     "view_embedded_topics": {
       "comment": null,
-      "definition": " SELECT 'topic'::text AS __entity_type,\n    id,\n    name,\n    slug,\n    markdown,\n    topic_type,\n    noindex,\n    allow_reviews,\n    created_at,\n    hostname_id,\n    homepage_url_id,\n    logo_image_id,\n    hero_image_id,\n    rewards_program_id,\n    referral_program_id,\n    ( SELECT t2.slug\n           FROM topics t2\n          WHERE ((t2.id = topics.referral_program_id) AND (t2.deleted_at IS NULL) AND (t2.merged_into_topic_id IS NULL))\n         LIMIT 1) AS referral_program_slug,\n    lingua_rs_detected_language\n   FROM topics\n  WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL));",
+      "definition": " SELECT 'topic'::text AS __entity_type,\n    id,\n    name,\n    slug,\n    markdown,\n    topic_type,\n    noindex,\n    allow_reviews,\n    created_at,\n    hostname_id,\n    homepage_url_id,\n    logo_image_id,\n    hero_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'topic-logo-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS logo_image_placement,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'topic-hero-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS hero_image_placement,\n    rewards_program_id,\n    referral_program_id,\n    ( SELECT t2.slug\n           FROM topics t2\n          WHERE ((t2.id = topics.referral_program_id) AND (t2.deleted_at IS NULL) AND (t2.merged_into_topic_id IS NULL))\n         LIMIT 1) AS referral_program_slug,\n    lingua_rs_detected_language\n   FROM topics\n  WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL));",
       "materialized": false
     },
     "view_embedded_users": {
       "comment": null,
-      "definition": " SELECT 'user'::text AS __entity_type,\n    id,\n    username,\n    use_display_name_from,\n        CASE\n            WHEN (use_display_name_from = 'facebook'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (fa.facebook_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM facebook_accounts fa\n              WHERE (fa.user_id = users.id))\n            WHEN (use_display_name_from = 'apple'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (aa.apple_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM apple_accounts aa\n              WHERE (aa.user_id = users.id))\n            WHEN (use_display_name_from = 'google'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (ga.google_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM google_accounts ga\n              WHERE (ga.user_id = users.id))\n            WHEN (use_display_name_from = 'x'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (xa.x_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM x_accounts xa\n              WHERE (xa.user_id = users.id))\n            WHEN (use_display_name_from = 'linkedin'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (la.linkedin_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM linkedin_accounts la\n              WHERE (la.user_id = users.id))\n            WHEN (use_display_name_from = 'microsoft'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (ma.microsoft_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM microsoft_accounts ma\n              WHERE (ma.user_id = users.id))\n            WHEN (use_display_name_from = 'github'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (gha.github_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM github_accounts gha\n              WHERE (gha.user_id = users.id))\n            ELSE NULL::jsonb\n        END AS display_account,\n    profile_image_id,\n    ARRAY[]::text[] AS roles,\n    COALESCE(((username = ANY (ARRAY['system'::text, 'autotagger'::text, 'customer-support'::text, 'rss-feed-auto-updater'::text, 'story-teller'::text, 'voucha'::text])) OR (EXISTS ( SELECT 1\n           FROM (user_roles\n             LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))\n          WHERE ((user_roles.user_id = users.id) AND (user_roles_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text, 'customer_support'::text]))))) OR (EXISTS ( SELECT 1\n           FROM agents\n          WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL))))), false) AS is_official_account\n   FROM users\n  WHERE (deleted_at IS NULL);",
+      "definition": " SELECT 'user'::text AS __entity_type,\n    id,\n    username,\n    use_display_name_from,\n        CASE\n            WHEN (use_display_name_from = 'facebook'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (fa.facebook_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM facebook_accounts fa\n              WHERE (fa.user_id = users.id))\n            WHEN (use_display_name_from = 'apple'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (aa.apple_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM apple_accounts aa\n              WHERE (aa.user_id = users.id))\n            WHEN (use_display_name_from = 'google'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (ga.google_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM google_accounts ga\n              WHERE (ga.user_id = users.id))\n            WHEN (use_display_name_from = 'x'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (xa.x_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM x_accounts xa\n              WHERE (xa.user_id = users.id))\n            WHEN (use_display_name_from = 'linkedin'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (la.linkedin_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM linkedin_accounts la\n              WHERE (la.user_id = users.id))\n            WHEN (use_display_name_from = 'microsoft'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (ma.microsoft_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM microsoft_accounts ma\n              WHERE (ma.user_id = users.id))\n            WHEN (use_display_name_from = 'github'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (gha.github_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM github_accounts gha\n              WHERE (gha.user_id = users.id))\n            ELSE NULL::jsonb\n        END AS display_account,\n    profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'user-profile-image'::text) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    ARRAY[]::text[] AS roles,\n    COALESCE(((username = ANY (ARRAY['system'::text, 'autotagger'::text, 'customer-support'::text, 'rss-feed-auto-updater'::text, 'story-teller'::text, 'voucha'::text])) OR (EXISTS ( SELECT 1\n           FROM (user_roles\n             LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))\n          WHERE ((user_roles.user_id = users.id) AND (user_roles_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text, 'customer_support'::text]))))) OR (EXISTS ( SELECT 1\n           FROM agents\n          WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL))))), false) AS is_official_account\n   FROM users\n  WHERE (deleted_at IS NULL);",
       "materialized": false
     },
     "view_list_items": {
@@ -109026,7 +110659,7 @@
     },
     "view_posts": {
       "comment": null,
-      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_id,\n    posts.parent_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::text THEN 0\n                            WHEN 'markdown'::text THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::text))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM (post_images\n             JOIN images ON (((images.id = post_images.image_id) AND (images.deleted_at IS NULL) AND (images.upload_completed_at IS NOT NULL) AND (images.quarantine_pending_at IS NULL))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS openai_omni_moderation_flagged,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendations_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ptr.example_referral_link, 'landing_page_urls', ptr.landing_page_urls, 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
+      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_id,\n    posts.parent_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::text THEN 0\n                            WHEN 'markdown'::text THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::text))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM ((post_images\n             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))\n             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, post_images.image_id))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS openai_omni_moderation_flagged,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendations_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ptr.example_referral_link, 'landing_page_urls', ptr.landing_page_urls, 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
       "materialized": false
     },
     "view_public_post_eligibility": {
@@ -109056,7 +110689,7 @@
     },
     "view_topics": {
       "comment": null,
-      "definition": " SELECT 'topic'::text AS __entity_type,\n    topics.id,\n    topics.name,\n    topics.slug,\n    topics.markdown,\n    topics.topic_type,\n    topics.noindex,\n    topics.allow_reviews,\n    topics.created_at,\n    topics.hostname_id,\n    topics.homepage_url_id,\n    topics.logo_image_id,\n    topics.hero_image_id,\n    topics.rewards_program_id,\n    topics.referral_program_id,\n    topics.aliases,\n        CASE\n            WHEN (view_url_hostnames.id IS NULL) THEN NULL::json\n            ELSE json_build_object('__entity_type', view_url_hostnames.__entity_type, 'id', view_url_hostnames.id, 'hostname', view_url_hostnames.hostname, 'topic_id', view_url_hostnames.topic_id)\n        END AS hostname,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = topics.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = topics.updated_by_id)) AS updated_by,\n    topics.lingua_rs_detected_language\n   FROM (topics\n     LEFT JOIN view_url_hostnames ON ((view_url_hostnames.id = topics.hostname_id)))\n  WHERE ((topics.deleted_at IS NULL) AND (topics.merged_into_topic_id IS NULL));",
+      "definition": " SELECT 'topic'::text AS __entity_type,\n    topics.id,\n    topics.name,\n    topics.slug,\n    topics.markdown,\n    topics.topic_type,\n    topics.noindex,\n    topics.allow_reviews,\n    topics.created_at,\n    topics.hostname_id,\n    topics.homepage_url_id,\n    topics.logo_image_id,\n    topics.hero_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'topic-logo-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS logo_image_placement,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'topic-hero-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS hero_image_placement,\n    topics.rewards_program_id,\n    topics.referral_program_id,\n    topics.aliases,\n        CASE\n            WHEN (view_url_hostnames.id IS NULL) THEN NULL::json\n            ELSE json_build_object('__entity_type', view_url_hostnames.__entity_type, 'id', view_url_hostnames.id, 'hostname', view_url_hostnames.hostname, 'topic_id', view_url_hostnames.topic_id)\n        END AS hostname,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = topics.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = topics.updated_by_id)) AS updated_by,\n    topics.lingua_rs_detected_language\n   FROM (topics\n     LEFT JOIN view_url_hostnames ON ((view_url_hostnames.id = topics.hostname_id)))\n  WHERE ((topics.deleted_at IS NULL) AND (topics.merged_into_topic_id IS NULL));",
       "materialized": false
     },
     "view_url_hostnames": {
@@ -109076,12 +110709,12 @@
     },
     "view_users_private": {
       "comment": null,
-      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', (fa.facebook_user_data ->> 'name'::text), 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE (fa.user_id = users.id)) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_roles_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM (user_roles\n             LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))\n          WHERE (user_roles.user_id = users.id)) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.third_party_marketing,\n    users.hn_discussions,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', (aa.apple_user_data ->> 'name'::text), 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE (aa.user_id = users.id)) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', (ga.google_user_data ->> 'name'::text), 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE (ga.user_id = users.id)) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', (xa.x_user_data ->> 'name'::text), 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE (xa.user_id = users.id)) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', (la.linkedin_user_data ->> 'name'::text), 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE (la.user_id = users.id)) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', (ma.microsoft_user_data ->> 'name'::text), 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE (ma.user_id = users.id)) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', (gha.github_user_data ->> 'name'::text), 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE (gha.user_id = users.id)) AS github_account,\n    (EXISTS ( SELECT 1\n           FROM agents\n          WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL)))) AS is_agent,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN ((users.verification_status = 'verified'::identity_verification_statuses) AND (users.verified_badge_visible = true)) THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((users.verified_first_name IS NOT NULL) AND (users.verified_last_name_initial IS NOT NULL)) THEN (((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text)\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE ((bla.user_id = users.id) AND (bla.disconnect_requested_at IS NULL))) AS bluesky_account\n   FROM ((((users\n     LEFT JOIN user_email_addresses ON (((user_email_addresses.user_id = users.id) AND (user_email_addresses.is_primary = true))))\n     LEFT JOIN user_phone_numbers ON (((user_phone_numbers.user_id = users.id) AND (user_phone_numbers.is_primary = true))))\n     LEFT JOIN view_current_paid_memberships paid_membership ON ((paid_membership.user_id = users.id)))\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE ((user_suspensions.user_id = users.id) AND (user_suspensions.lifted_at IS NULL))\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON (true))\n  WHERE (users.deleted_at IS NULL);",
+      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', (fa.facebook_user_data ->> 'name'::text), 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE (fa.user_id = users.id)) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_roles_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM (user_roles\n             LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))\n          WHERE (user_roles.user_id = users.id)) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'user-profile-image'::text) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.third_party_marketing,\n    users.hn_discussions,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', (aa.apple_user_data ->> 'name'::text), 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE (aa.user_id = users.id)) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', (ga.google_user_data ->> 'name'::text), 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE (ga.user_id = users.id)) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', (xa.x_user_data ->> 'name'::text), 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE (xa.user_id = users.id)) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', (la.linkedin_user_data ->> 'name'::text), 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE (la.user_id = users.id)) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', (ma.microsoft_user_data ->> 'name'::text), 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE (ma.user_id = users.id)) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', (gha.github_user_data ->> 'name'::text), 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE (gha.user_id = users.id)) AS github_account,\n    (EXISTS ( SELECT 1\n           FROM agents\n          WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL)))) AS is_agent,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN ((users.verification_status = 'verified'::identity_verification_statuses) AND (users.verified_badge_visible = true)) THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((users.verified_first_name IS NOT NULL) AND (users.verified_last_name_initial IS NOT NULL)) THEN (((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text)\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE ((bla.user_id = users.id) AND (bla.disconnect_requested_at IS NULL))) AS bluesky_account\n   FROM ((((users\n     LEFT JOIN user_email_addresses ON (((user_email_addresses.user_id = users.id) AND (user_email_addresses.is_primary = true))))\n     LEFT JOIN user_phone_numbers ON (((user_phone_numbers.user_id = users.id) AND (user_phone_numbers.is_primary = true))))\n     LEFT JOIN view_current_paid_memberships paid_membership ON ((paid_membership.user_id = users.id)))\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE ((user_suspensions.user_id = users.id) AND (user_suspensions.lifted_at IS NULL))\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON (true))\n  WHERE (users.deleted_at IS NULL);",
       "materialized": false
     },
     "view_users_public": {
       "comment": null,
-      "definition": " SELECT e.__entity_type,\n    e.id,\n    e.username,\n    e.use_display_name_from,\n    e.display_account,\n    e.profile_image_id,\n    e.roles,\n    e.is_official_account,\n    u.markdown,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verification_status\n            ELSE NULL::identity_verification_statuses\n        END AS verification_status,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verified_badge_visible\n            ELSE NULL::boolean\n        END AS verified_badge_visible,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.public_verified_name_display\n            ELSE NULL::public_verified_name_displays\n        END AS public_verified_name_display,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN\n            CASE u.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN u.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((u.verified_first_name IS NOT NULL) AND (u.verified_last_name_initial IS NOT NULL)) THEN (((u.verified_first_name || ' '::text) || u.verified_last_name_initial) || '.'::text)\n                    ELSE u.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN u.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    u.lingua_rs_detected_language\n   FROM (view_embedded_users e\n     JOIN users u ON ((u.id = e.id)));",
+      "definition": " SELECT e.__entity_type,\n    e.id,\n    e.username,\n    e.use_display_name_from,\n    e.display_account,\n    e.profile_image_id,\n    e.profile_image_placement,\n    e.roles,\n    e.is_official_account,\n    u.markdown,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verification_status\n            ELSE NULL::identity_verification_statuses\n        END AS verification_status,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verified_badge_visible\n            ELSE NULL::boolean\n        END AS verified_badge_visible,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.public_verified_name_display\n            ELSE NULL::public_verified_name_displays\n        END AS public_verified_name_display,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN\n            CASE u.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN u.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((u.verified_first_name IS NOT NULL) AND (u.verified_last_name_initial IS NOT NULL)) THEN (((u.verified_first_name || ' '::text) || u.verified_last_name_initial) || '.'::text)\n                    ELSE u.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN u.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    u.lingua_rs_detected_language\n   FROM (view_embedded_users e\n     JOIN users u ON ((u.id = e.id)));",
       "materialized": false
     }
   }

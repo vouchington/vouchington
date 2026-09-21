@@ -25,6 +25,8 @@ export interface AdminReviewQueuePost {
     requires_reveal: boolean
     images: Array<{
       image_id: string
+      placement_id: string
+      placement_revision: number
       order_index: number
       caption: string
     }>

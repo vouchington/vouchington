@@ -4,7 +4,12 @@
       "created_at": "2026-07-01T16:00:00Z",
       "handle": null,
       "id": "link-1",
-      "image_id": null,
+      "image_id": "profile-link-image-1",
+      "image_placement": {
+        "image_id": "profile-link-image-1",
+        "placement_id": "placement-profile-link-image-1",
+        "placement_revision": 1
+      },
       "link_type": "url",
       "name": "Site",
       "sort_order": 0,
@@ -36,6 +41,11 @@
     "moderation_emails_enabled": true,
     "news_digest_frequency": "weekly",
     "profile_image_id": "avatar-1",
+    "profile_image_placement": {
+      "image_id": "avatar-1",
+      "placement_id": "placement-user-avatar-1",
+      "placement_revision": 2
+    },
     "rewards_program_statuses_visibility": "everyone",
     "roles": ["user"],
     "rss_feed_follows_visibility": "everyone",

@@ -8,6 +8,8 @@ import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { calculateUsCounterNoticeRestorationWindow } from './deadlines.mts'
 import { createCounterNoticeForwardingInTransaction } from './counter-notice-forwarding.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
+import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import type { CopyrightHumanReviewAction } from './types.mts'
@@ -119,6 +121,7 @@ export async function reviewCopyrightAppeal(input: {
   )
   const reviewedAt = new Date()
   const reviewIds: string[] = []
+  const reversalRestrictionIds: string[] = []
   const restrictionsById = new Map(restrictionRows.map(row => [row.id, row]))
   const reviewerId = input.currentUser.id
   for (const decision of input.decisions) {
@@ -129,9 +132,7 @@ export async function reviewCopyrightAppeal(input: {
       UPDATE copyright_restrictions
       SET human_reviewed_at = COALESCE(human_reviewed_at, ${reviewedAt}),
         human_review_action = COALESCE(human_review_action, ${decision.action}),
-        human_reviewed_by_id = CASE WHEN human_reviewed_at IS NULL THEN ${reviewerId} ELSE human_reviewed_by_id END,
-        lifted_at = CASE WHEN ${decision.action} = 'reverse' THEN COALESCE(lifted_at, ${reviewedAt}) ELSE lifted_at END,
-        lifted_by_id = CASE WHEN ${decision.action} = 'reverse' AND lifted_at IS NULL THEN ${reviewerId} ELSE lifted_by_id END
+        human_reviewed_by_id = CASE WHEN human_reviewed_at IS NULL THEN ${reviewerId} ELSE human_reviewed_by_id END
       WHERE id = ${decision.restrictionId}
     `)
     // oxlint-disable-next-line no-await-in-loop -- the immutable review follows its restriction mutation.
@@ -149,6 +150,7 @@ export async function reviewCopyrightAppeal(input: {
     `)
     assert(rows[0], 500, 'Copyright appeal review was not recorded')
     reviewIds.push(rows[0].id)
+    if (decision.action === 'reverse') reversalRestrictionIds.push(decision.restrictionId)
   }
   await transaction(sql`/* reviewCopyrightAppeal:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
@@ -179,7 +181,19 @@ export async function reviewCopyrightAppeal(input: {
       },
       transaction,
     )
+  const reversalIntentIds: string[] = []
+  for (const restrictionId of reversalRestrictionIds) {
+    // oxlint-disable-next-line no-await-in-loop -- each placement has a separate durable restore saga.
+    const intent = await createCopyrightRestoreIntentForReversalInTransaction(
+      restrictionId,
+      transaction,
+    )
+    reversalIntentIds.push(intent.id)
+  }
   await transaction.commit()
+  for (const intentId of reversalIntentIds) {
+    void enqueueApplyCopyrightAction(intentId)
+  }
   return { noticeId: appeal.copyright_notice_id, reviewIds }
 }
 

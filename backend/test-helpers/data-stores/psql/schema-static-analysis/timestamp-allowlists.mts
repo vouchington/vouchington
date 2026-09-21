@@ -3,6 +3,7 @@ import * as postPublication from './post-publication-allowlists.mts'
 import * as postModeration from './moderation-ledger-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_MISSING_UPDATED_AT } from './membership-timestamp-allowlists.mts'
 import { AUTHORIZATION_TABLES_WITHOUT_CREATED_AT } from './oauth-authorization-allowlists.mts'
+import { MEDIA_PLACEMENT_MISSING_UPDATED_AT } from './media-placement-allowlists.mts'
 
 export const ALLOWED_NON_UUIDV7_CREATED_AT = new Map<string, string>([])
 export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
@@ -54,7 +55,6 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
   ['currencies', 'Static lookup table.'],
   ['migrations', 'Internal migration ledger.'],
   ['pending_user_import_requests', 'Pending request table keyed by provider request ID.'],
-  ['post_images', 'Pure post-image join table.'],
   ['retailer_countries', 'Pure retailer-country join table.'],
   ['rss_feed_followers_by_session', 'Session follow join table without entity lifecycle.'],
   ['rss_feed_followers_by_user', 'User follow join table without entity lifecycle.'],
@@ -72,6 +72,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ...ALLOWED_MISSING_CREATED_AT,
   ...postPublication.POST_PUBLICATION_TABLES_WITHOUT_UPDATED_AT,
   ...ALLOWED_MEMBERSHIP_MISSING_UPDATED_AT,
+  ...MEDIA_PLACEMENT_MISSING_UPDATED_AT,
   [
     'post_admission_quota_consumptions',
     'Immutable committed-admission quota ledger; rows are inserted once and only later deleted by retention pruning.',
@@ -188,13 +189,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'ap_inbox_activities',
     'Append-only replay-dedup ledger; rows are inserted once by the inbox receiver and never updated.',
   ],
-  [
-    'ap_post_likes',
-    'Mutation is limited to toggling deleted_at (Undo/resurrect) and refreshing like_ap_id on redelivery; a generic updated_at is redundant.',
-  ],
-  [
-    'bluesky_follow_records',
-    'Receipt row for "does a follow record exist on Bluesky"; the only mutation is refreshing record_uri on a redelivered createRecord, and rows are deleted outright on unfollow rather than soft-updated.',
-  ],
+  ['ap_post_likes', 'Undo/resurrect toggles deleted_at; redelivery refreshes like_ap_id.'],
+  ['bluesky_follow_records', 'Redelivery refreshes record_uri; unfollow deletes the row.'],
 ])
 /* v8 ignore stop */

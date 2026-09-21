@@ -133,6 +133,7 @@ function CommentAuthorAvatar(props: CommentNodeHeaderProps) {
     >
       <UserAvatar
         profileImageId={post.created_by.profile_image_id}
+        profileImagePlacement={post.created_by.profile_image_placement}
         username={props.username}
         size='sm'
       />

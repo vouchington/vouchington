@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getImageUrl } from '../image-url'
+import { buildPlacementImagePath, getImageUrl, getPlacementImageUrl } from '../image-url'
 
 describe('getImageUrl', () => {
   const originalImageOrigin = process.env.IMAGE_ORIGIN
@@ -45,6 +45,27 @@ describe('getImageUrl', () => {
     const imageId = '01927abc-def0-7000-1234-56789abcdef0'
     const url = getImageUrl(imageId, { width: 400 })
     expect(url).toContain(imageId)
+  })
+
+  it('uses the placement delivery route, including revision zero', () => {
+    expect(getPlacementImageUrl('placement-123', 0, 'image-456', { width: 400 })).toBe(
+      '/images/placements/placement-123/0/image-456?w=400',
+    )
+  })
+
+  it('builds a placement path from a persisted image object', () => {
+    expect(
+      buildPlacementImagePath({
+        image_id: 'image-456',
+        placement_id: 'placement-123',
+        placement_revision: 0,
+      }),
+    ).toBe('/images/placements/placement-123/0/image-456?w=1200')
+  })
+
+  it('omits a placement path when the image is absent', () => {
+    expect(buildPlacementImagePath(null)).toBeUndefined()
+    expect(buildPlacementImagePath()).toBeUndefined()
   })
 
   it('returns a relative /images/{id}?w=... URL when no host is configured (local dev)', () => {

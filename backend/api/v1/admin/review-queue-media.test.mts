@@ -105,7 +105,13 @@ describe('GET /api/v1/posts/review-queue media', () => {
       string,
       {
         requires_reveal: boolean
-        images: Array<{ image_id: string; order_index: number; caption: string }>
+        images: Array<{
+          image_id: string
+          placement_id: string
+          placement_revision: number
+          order_index: number
+          caption: string
+        }>
       }
     >(
       response.body.results.map((post: { id: string; media_reveal: unknown }) => [
@@ -116,11 +122,27 @@ describe('GET /api/v1/posts/review-queue media', () => {
     expect(byId.get(noImageId)).toEqual({ requires_reveal: false, images: [] })
     expect(byId.get(oneImageId)).toEqual({
       requires_reveal: true,
-      images: [{ image_id: imageId, order_index: 0, caption: 'Image 0' }],
+      images: [
+        {
+          image_id: imageId,
+          placement_id: expect.any(String),
+          placement_revision: 0,
+          order_index: 0,
+          caption: 'Image 0',
+        },
+      ],
     })
     expect(byId.get(passOneImageId)).toEqual({
       requires_reveal: false,
-      images: [{ image_id: passImageId, order_index: 0, caption: 'Image 0' }],
+      images: [
+        {
+          image_id: passImageId,
+          placement_id: expect.any(String),
+          placement_revision: 0,
+          order_index: 0,
+          caption: 'Image 0',
+        },
+      ],
     })
   })
 

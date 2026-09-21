@@ -8,7 +8,7 @@ Not partitioned — growth: unbounded.
 
 | Column                                            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                          |
 | ------------------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                                              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                  |
+| `id`                                              | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.                         |
 | `created_by_id`                                   | `uuid`                     | no       |                              |          |           |           |                                                                                                                                  |
 | `created_at`                                      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                  |
 | `updated_at`                                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                  |
@@ -54,7 +54,7 @@ Not partitioned — growth: unbounded.
 - `idx_images__bedrock_nova_multimodal_v1_embedding`: `CREATE INDEX idx_images__bedrock_nova_multimodal_v1_embedding ON public.images USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops) WHERE (bedrock_nova_multimodal_v1_embedding IS NOT NULL)`
 - `idx_images__created_by_id`: `CREATE INDEX idx_images__created_by_id ON public.images USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
 - `idx_images__quarantine_pending`: `CREATE INDEX idx_images__quarantine_pending ON public.images USING btree (quarantine_pending_at, id) WHERE ((quarantine_pending_at IS NOT NULL) AND (deleted_at IS NULL))`
-- `idx_images__staged_source_cleanup`: `CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL))`
+- `idx_images__staged_source_cleanup`: `CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL))`
 - `idx_images__updated_at_id_active`: `CREATE INDEX idx_images__updated_at_id_active ON public.images USING btree (updated_at, id) WHERE ((deleted_at IS NULL) AND (upload_completed_at IS NOT NULL))`
 - `idx_images__upload_in_flight`: `CREATE INDEX idx_images__upload_in_flight ON public.images USING btree (id) WHERE ((upload_completed_at IS NULL) AND (upload_failed_at IS NULL))`
 - `images_pkey`: `CREATE UNIQUE INDEX images_pkey ON public.images USING btree (id)`
@@ -63,4 +63,5 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_images_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_images_guard_terminal_lifecycle BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('upload_completed_at', 'upload_failed_at')`
+- `trigger_images_id_immutable`: `CREATE TRIGGER trigger_images_id_immutable BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_guard_images_id_immutable()`
 - `trigger_images_updated_at`: `CREATE TRIGGER trigger_images_updated_at BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

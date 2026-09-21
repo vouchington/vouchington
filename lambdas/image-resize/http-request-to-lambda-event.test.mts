@@ -21,6 +21,16 @@ describe('httpRequestToLambdaEvent', () => {
     expect(event.queryStringParameters!.env).toBeUndefined()
   })
 
+  it('extracts the image key from a placement-bound route', () => {
+    const event = httpRequestToLambdaEvent(
+      makeReq(
+        '/images/placements/00000000-0000-7000-8000-000000000001/2/00000000-0000-7000-8000-000000000002?w=400',
+      ),
+    )
+
+    expect(event.queryStringParameters!.key).toBe('00000000-0000-7000-8000-000000000002')
+  })
+
   it('extracts S3 key that contains multiple path segments', () => {
     const event = httpRequestToLambdaEvent(makeReq('/images/a/b/c/image.webp'))
     expect(event.queryStringParameters!.key).toBe('a/b/c/image.webp')

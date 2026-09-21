@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { ImageUploadButton } from '@/components/shared/image-upload-button'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import type { ImagePlacementTuple } from '@/types/user'
 
 interface IdentityProfileImageSectionProps {
   handleImageUploadEnd: () => void
@@ -12,6 +13,7 @@ interface IdentityProfileImageSectionProps {
   handleRemoveImage: () => Promise<void>
   imageLoading: boolean
   profileImageId: string | null
+  profileImagePlacement?: ImagePlacementTuple | null
   username: string
 }
 
@@ -22,6 +24,7 @@ export function IdentityProfileImageSection({
   handleRemoveImage,
   imageLoading,
   profileImageId,
+  profileImagePlacement,
   username,
 }: IdentityProfileImageSectionProps) {
   const t = useTranslations()
@@ -37,6 +40,7 @@ export function IdentityProfileImageSection({
         <div className='flex items-center gap-4'>
           <UserAvatar
             profileImageId={profileImageId}
+            profileImagePlacement={profileImagePlacement}
             username={username}
             size='lg'
           />

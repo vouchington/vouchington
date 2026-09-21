@@ -117,6 +117,19 @@ describe('API fixture backend contract validation', () => {
       ].join('\n'),
     )
   })
+
+  it('does not require raw binary response contracts to have JSON fixtures', () => {
+    expect(() =>
+      validateFixtureContracts([], {
+        'GET:/api/v1/evidence/:id/raw': {
+          ...contract('GET', '/api/v1/evidence/:id/raw', [200]),
+          mediaType: 'message/rfc822',
+          mediaTypeKnowledge: 'known',
+          schema: { root: { type: 'string', format: 'binary' }, definitions: {} },
+        },
+      }),
+    ).not.toThrow()
+  })
 })
 
 function contract(

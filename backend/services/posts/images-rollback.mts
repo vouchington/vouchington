@@ -7,41 +7,30 @@ import {
   restorePostClearanceStatus,
   type ClearanceStatus,
 } from '@services/post-clearance'
+import { syncPostImagePlacements } from './image-placements.mts'
+import {
+  compensateFailedImageDeliveryMutation,
+  lockImageDeliveryMutation,
+} from '@services/media-delivery-safety'
+import { preparePostImageDeliveryMutation } from './media-delivery.mts'
+import type { PostImageRollback } from './images-rollback-types.mts'
+import { runSequentially } from '@modules/utils/run-sequentially'
 
-export type PostImageRollback = {
-  revisionId: string
-  currentImages: Array<{
-    image_id: string
-    order_index: number
-    caption: string
-  }>
-  images: Array<{
-    image_id: string
-    order_index: number
-    caption: string
-  }>
-  currentLlmModerationContentSha256: Buffer
-  llmModerationContentSha256: Buffer
-  currentLatestClearanceChangeId: string | null
-  latestClearanceChangeId: string | null
-  approvedAt: Date | null
-  rejectedAt: Date | null
-  inReviewAt: Date | null
-  clearanceChangedById: string | null
-  clearancePublicReasonCode: string | null
-  clearancePrivateNote: string | null
-  clearancePlatformOverride: boolean
-}
+export type { PostImageRollback } from './images-rollback-types.mts'
 
 export async function rollbackPostImages(
   postId: string,
   rollback: PostImageRollback,
 ): Promise<boolean> {
+  const deliveryImageIds = [
+    ...new Set([...rollback.currentImages, ...rollback.images].map(image => image.image_id)),
+  ].toSorted()
   await using query = await beginTransaction()
   async function rollbackImagesInTransaction(query: TransactionQuery) {
     const imageIds = [
       ...new Set([...rollback.currentImages, ...rollback.images].map(image => image.image_id)),
     ].toSorted()
+    await lockImageDeliveryMutation(query, { postIds: [postId], imageIds })
     let rollbackImagesAvailable = true
     if (imageIds.length > 0) {
       const { rows: availableImages } = await query<{
@@ -96,6 +85,14 @@ export async function rollbackPostImages(
       return false
     }
 
+    // Do not publish an edge deny from a rollback whose snapshot has lost a race. The shared
+    // delivery lock above makes this applicability check and pre-denial one atomic lifecycle step.
+    await preparePostImageDeliveryMutation(query, {
+      postId,
+      imageIds: rollback.images.map(image => image.image_id),
+      retainImageIds: rollback.images.map(image => image.image_id),
+    })
+
     await query(sql`/* rollbackPostImages */ DELETE FROM post_images WHERE post_id = ${postId}`)
     if (rollback.images.length > 0) {
       await query(sql`/* rollbackPostImages */
@@ -108,17 +105,27 @@ export async function rollbackPostImages(
         ) AS t(image_id, order_index, caption)
       `)
     }
-    await query(sql`/* rollbackPostImages */
+    await runSequentially([
+      () =>
+        syncPostImagePlacements(
+          postId,
+          rollback.images.map(image => image.image_id),
+          { query },
+        ),
+      () =>
+        query(sql`/* rollbackPostImages */
       UPDATE posts
       SET llm_moderation_content_sha256 = ${rollback.llmModerationContentSha256},
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${postId}
-    `)
-    await query(sql`/* rollbackPostImages */
+      `),
+      () =>
+        query(sql`/* rollbackPostImages */
       DELETE FROM post_revisions
       WHERE id = ${rollback.revisionId}
         AND post_id = ${postId}
-    `)
+      `),
+    ])
     if (rollback.currentLatestClearanceChangeId !== rollback.latestClearanceChangeId) {
       if (rollback.currentLatestClearanceChangeId === null) {
         throw new Error(`Post image rollback is missing the compensated change for post ${postId}`)
@@ -148,6 +155,9 @@ export async function rollbackPostImages(
   }
   const result = await rollbackImagesInTransaction(query)
   await query.commit()
+  if (result) {
+    await compensateFailedImageDeliveryMutation({ postIds: [postId], imageIds: deliveryImageIds })
+  }
   return result
 }
 

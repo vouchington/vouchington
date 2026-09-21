@@ -10,8 +10,14 @@ const appealFirstPageEndCursor =
 const reviewQueueInReviewPostId = '019e8300-5e60-7000-8000-000000000000'
 const reviewQueueRejectedPostId = '019e82f2-a2c0-7000-8000-000000000000'
 const reviewQueuePageOneEndCursor = 'eyJpZCI6IjAxOWU4MmYyLWEyYzAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMCJ9'
+const copyrightNoticeId = '00000000-0000-7000-8000-000000000804'
+const copyrightNoticeTargetId = '00000000-0000-7000-8000-000000000805'
 
 const moderationCoreEndpointRegistry: Record<string, ManifestEndpoint> = {
+  'native.moderation.copyright.image-similarity-candidates.default': {
+    method: 'GET',
+    path: `/api/v1/copyright-notices/${copyrightNoticeId}/targets/${copyrightNoticeTargetId}/image-similarity-candidates`,
+  },
   'native.moderation.reports.default': {
     method: 'GET',
     path: '/api/v1/reports',
