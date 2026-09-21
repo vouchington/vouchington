@@ -54,7 +54,9 @@ describe('worker queue policy', () => {
   })
 
   it('backs every non-universal worker-cpu schedule queue with a live worker', () => {
-    for (const queueName of queueNames(CPU_SCHEDULE_DEFINITIONS.filter(({ alwaysRun }) => !alwaysRun))) {
+    for (const queueName of queueNames(
+      CPU_SCHEDULE_DEFINITIONS.filter(({ alwaysRun }) => !alwaysRun),
+    )) {
       expect(allLiveWorkerQueueNames()).toContain(queueName)
     }
   })
