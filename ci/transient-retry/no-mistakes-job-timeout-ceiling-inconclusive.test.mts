@@ -1,38 +1,24 @@
+import { readFileSync } from 'node:fs'
+
+import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 import { decide } from './decide.mts'
 import { RULES, type WorkflowRunContext } from './rules.mts'
 
-// Forward-guard fixture, not a positive test (see README.md's "Known Inconclusive
-// Fingerprints" section and docs/development/ci.md's Static Analysis section).
+// Forward guard, not a positive retry fixture: a bare GitHub job-timeout signature
+// cannot distinguish a no-mistakes stall from a real code deadlock or another silent
+// failure. Hosted runners isolate PR jobs, but a timeout within one job is still
+// inconclusive. Never auto-rerun solely on this signature.
 //
-// PR #8470 disabled no-mistakes' execution deadline and lock-wait deadline for every
-// production CI invocation (`--timeout 0 --lock-timeout 0`), so concurrent invocations
-// now serialize on a shared machine-wide lock instead of failing fast with exit 124 —
-// which is why the old `static-analysis-no-mistakes-lock-wait-timeout` rule (keyed on
-// that exit-124 fingerprint) was deleted: no current CI command can produce it anymore.
-//
-// That mitigation shifted the failure mode rather than removing it. The upstream
-// lock-acquire loop polls every 50ms with zero progress output while blocked
-// (no-mistakes crates/no-mistakes/src/invocation/lock.rs), so a job silently SIGKILLed
-// by GitHub at its own `timeout-minutes` ceiling while blocked on that lock is
-// byte-for-byte indistinguishable in the log from a job silently hung for any other
-// reason — a real code-bug deadlock in a sibling static-analysis tool (oxlint, ast-grep,
-// knip, ...) would produce the exact same trailing shape. Per README.md's "Don't
-// generalize timeouts for heterogeneous jobs" invariant, no rule may match on the bare
-// job-timeout-ceiling signature alone, so this deliberately has no rule and falls
-// through to Harness — surfacing the failure loudly instead of silently swallowing it.
-//
-// This test pins the four real production job shapes that share the disabled lock-wait
-// deadline (the static-analysis no-mistakes step, the Vitest selector step, and both
-// Playwright selector steps) and asserts `decide()` falls through to dispatch today. A future
-// rule author must prove their fingerprint does not also match one of these before this
-// test may go red.
+// These four production job shapes use no-mistakes with disabled execution and lock-wait
+// deadlines. Each ceiling comes from its live workflow so a timeout retune cannot
+// silently leave this counterfixture testing an obsolete number.
 //
 // `CI`'s `test-playwright` calling job (ci.yml) and `Main CI (web)`'s `playwright-tests`
 // calling job (main-web.yml) both `uses: ./.github/workflows/tests-playwright.yml`, whose
 // `select` job runs the identical `node ci/playwright/ci-select.mts` command under the same
-// `timeout-minutes: 5` ceiling — but they surface under different check-run names
+// workflow-owned timeout ceiling — but they surface under different check-run names
 // (`test-playwright / select` vs. `playwright-tests / select`) and different `workflowName`s
 // (`CI` vs. `Main CI (web)`). Both are pinned so a future rule keyed on `workflowName ===
 // 'CI'` can't slip past this guard by only being tested against the other calling path.
@@ -42,13 +28,23 @@ const selectVitestJobName = 'select-ci'
 const playwrightSelectJobName = 'playwright-tests / select'
 const testPlaywrightSelectJobName = 'test-playwright / select'
 
+function jobTimeout(workflowPath: string, jobName: string): number {
+  const workflow = load(readFileSync(workflowPath, 'utf8')) as {
+    jobs?: Record<string, { 'timeout-minutes'?: unknown }>
+  }
+  const timeout = workflow.jobs?.[jobName]?.['timeout-minutes']
+  if (typeof timeout !== 'number' || !Number.isInteger(timeout) || timeout <= 0)
+    throw new Error(`${workflowPath}#${jobName} needs a positive integer timeout-minutes`)
+  return timeout
+}
+
 function jobTimeoutCeilingLog(runCommand: string, minutes: number): string {
   return [
     `##[group]Run ${runCommand}`,
     runCommand,
     'shell: /usr/bin/bash -e {0}',
     '##[endgroup]',
-    `The job running on runner self-hosted-1 has exceeded the maximum execution time of ${minutes} minutes.`,
+    `The job running on runner github-hosted-1 has exceeded the maximum execution time of ${minutes} minutes.`,
     'Error: The operation was canceled.',
   ].join('\n')
 }
@@ -63,11 +59,11 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   ...overrides,
 })
 
-describe('no-mistakes-lock-wait-timeout-ceiling-inconclusive (forward guard, no rule yet)', () => {
+describe('no-mistakes-job-timeout-ceiling-inconclusive (forward guard, no rule yet)', () => {
   it('falls through to dispatch when the static-analysis no-mistakes step is killed at the job timeout ceiling', async () => {
     const log = jobTimeoutCeilingLog(
       'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json',
-      55,
+      jobTimeout('.github/workflows/static-code-analysis.yml', 'no-mistakes-owned'),
     )
     const result = await decide(
       makeCtx({
@@ -82,7 +78,10 @@ describe('no-mistakes-lock-wait-timeout-ceiling-inconclusive (forward guard, no 
   })
 
   it('falls through to dispatch when the CI select-ci step is killed at the job timeout ceiling', async () => {
-    const log = jobTimeoutCeilingLog('node ci/vitest/ci-select.mts', 5)
+    const log = jobTimeoutCeilingLog(
+      'node ci/vitest/ci-select.mts',
+      jobTimeout('.github/workflows/ci-select-vitest.yml', 'select-ci'),
+    )
     const result = await decide(
       makeCtx({
         failedJobNames: [selectVitestJobName],
@@ -96,7 +95,10 @@ describe('no-mistakes-lock-wait-timeout-ceiling-inconclusive (forward guard, no 
   })
 
   it('falls through to dispatch when the Main CI (web) Playwright select step is killed at the job timeout ceiling', async () => {
-    const log = jobTimeoutCeilingLog('node ci/playwright/ci-select.mts', 5)
+    const log = jobTimeoutCeilingLog(
+      'node ci/playwright/ci-select.mts',
+      jobTimeout('.github/workflows/tests-playwright.yml', 'select'),
+    )
     const result = await decide(
       makeCtx({
         workflowName: 'Main CI (web)',
@@ -111,7 +113,10 @@ describe('no-mistakes-lock-wait-timeout-ceiling-inconclusive (forward guard, no 
   })
 
   it('falls through to dispatch when the CI test-playwright select step is killed at the job timeout ceiling', async () => {
-    const log = jobTimeoutCeilingLog('node ci/playwright/ci-select.mts', 5)
+    const log = jobTimeoutCeilingLog(
+      'node ci/playwright/ci-select.mts',
+      jobTimeout('.github/workflows/tests-playwright.yml', 'select'),
+    )
     const result = await decide(
       makeCtx({
         failedJobNames: [testPlaywrightSelectJobName],

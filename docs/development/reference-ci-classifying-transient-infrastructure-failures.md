@@ -35,16 +35,14 @@ matcher is unavailable, reconstruction retains the proven ordered-rule prefix an
 failing rule and suffix, which use the conservative shared attempt count that discounts only
 prior zero-job attempts. If the first rule's evidence is unavailable, every rule uses that fallback.
 
-No-mistakes lock-wait job-timeout kills on `CI` `static-code-analysis / no-mistakes-owned`,
-the `select-ci` selector, and the Playwright `select` selector (via either `CI`
-`test-playwright` or `Main CI (web)` `playwright-tests`) have no auto-rerun rule: PR #8470
-disabled no-mistakes' execution and lock-wait deadlines for every
-production invocation (`--timeout 0 --lock-timeout 0`), so a job blocked on the shared machine-wide
-lock and then SIGKILLed by GitHub at its own `timeout-minutes` ceiling produces no log output that
-distinguishes it from any other silent hang, including a real code-bug deadlock in a sibling
-static-analysis tool. See `ci/transient-retry/README.md`'s "Known Inconclusive Fingerprints"
-section and `ci/transient-retry/no-mistakes-lock-wait-timeout-ceiling-inconclusive.test.mts` for the pinned forward
-guard that documents this instead of forcing an unsafe rule.
+Bare job-timeout kills on `CI` `static-code-analysis / no-mistakes-owned`, the `select-ci`
+selector, and the Playwright `select` selector (via either `CI` `test-playwright` or
+`Main CI (web)` `playwright-tests`) have no auto-rerun rule. Hosted runners isolate separate
+jobs, but a timeout within one job gives no evidence that distinguishes an infrastructure
+stall from a real code-bug deadlock. The
+[timeout forward guard](../../ci/transient-retry/no-mistakes-job-timeout-ceiling-inconclusive.test.mts)
+derives each current timeout from its owning workflow and requires these ambiguous signatures to
+dispatch for investigation instead of automatically rerunning.
 
 Cancelled idempotent workflows, including standalone `Static Code Analysis` runs, with no failed-job
 signal are ignored instead of dispatching Codex. Unclassified timeouts are never blind-rerun.
