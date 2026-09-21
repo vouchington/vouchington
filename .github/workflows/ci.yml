@@ -575,12 +575,32 @@ jobs:
       test-lambdas-result: ${{ needs.test-lambdas.result }}
       test-portability-result: ${{ needs.test-portability.result }}
       detect-changes-result: ${{ needs.detect-changes.result }}
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     permissions:
       contents: read
       actions: read
       pull-requests: write
+
+  # Independent, non-required reporter: Codecov cannot delay or fail Patch Coverage or `tests`.
+  upload-codecov:
+    needs:
+      - test-ts-shared
+      - test-tooling
+      - test-backend-modules
+      - test-backend-unit
+      - test-backend-credentialed
+      - test-web
+      - test-web-api
+      - storybook
+      - test-web-integration
+      - test-cloudflare-worker
+      - test-lambdas
+      - test-portability
+    if: "always() && !cancelled() && github.event_name == 'pull_request'"
+    uses: ./.github/workflows/ci-upload-codecov.yml
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
 
   tests-processing:
     needs:

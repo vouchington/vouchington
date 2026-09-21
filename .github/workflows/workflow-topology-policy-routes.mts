@@ -146,7 +146,7 @@ export const routePolicy = {
       innerDownstreamJobs: [],
       outerCallers: {
         '.github/workflows/ci.yml#test-backend-unit': splitIds(
-          '.github/workflows/ci.yml#build .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing',
+          '.github/workflows/ci.yml#build .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing .github/workflows/ci.yml#upload-codecov',
         ),
         '.github/workflows/main-backend.yml#test-backend-unit': [],
       },

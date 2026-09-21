@@ -7,6 +7,7 @@ export const exactCallerJobs = {
   '.github/workflows/ci-detect-changes.yml': splitIds('.github/workflows/ci.yml#detect-changes'),
   '.github/workflows/ci-select-vitest.yml': splitIds('.github/workflows/ci.yml#select-ci'),
   '.github/workflows/ci-test-coverage.yml': splitIds('.github/workflows/ci.yml#test-coverage'),
+  '.github/workflows/ci-upload-codecov.yml': splitIds('.github/workflows/ci.yml#upload-codecov'),
   '.github/workflows/ci-tests-processing.yml': splitIds(
     '.github/workflows/ci.yml#tests-processing',
   ),

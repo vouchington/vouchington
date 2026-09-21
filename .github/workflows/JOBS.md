@@ -33,6 +33,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci-select-vitest.yml`              | `select-ci`                     | job    | `ubuntu-latest`                       | 5             |
 | `ci-test-coverage.yml`              | `test-coverage`                 | job    | `ubuntu-latest`                       | 14            |
 | `ci-tests-processing.yml`           | `tests-processing`              | job    | `ubuntu-latest`                       | 14            |
+| `ci-upload-codecov.yml`             | `upload-codecov`                | job    | `ubuntu-latest`                       | 8             |
 | `ci.yml`                            | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
 | `ci.yml`                            | `build`                         | job    | `ubuntu-latest`                       | 1             |
 | `ci.yml`                            | `build-backend`                 | job    | → `build-backend.yml`                 | 360           |
@@ -64,6 +65,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci.yml`                            | `test-web-integration`          | job    | → `tests-web-integration.yml`         | 360           |
 | `ci.yml`                            | `tests`                         | job    | `ubuntu-latest`                       | 2             |
 | `ci.yml`                            | `tests-processing`              | job    | → `ci-tests-processing.yml`           | 360           |
+| `ci.yml`                            | `upload-codecov`                | job    | → `ci-upload-codecov.yml`             | 360           |
 | `cleanup-artifacts.yml`             | `cleanup-run`                   | job    | `ubuntu-slim`                         | 10            |
 | `cleanup-artifacts.yml`             | `cleanup-sweep`                 | job    | `ubuntu-latest`                       | 26            |
 | `dependabot-pr-automerge.yml`       | `automerge`                     | job    | `ubuntu-slim`                         | 5             |

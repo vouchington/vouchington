@@ -75,9 +75,6 @@ on:
       detect-changes-result:
         required: true
         type: string
-    secrets:
-      CODECOV_TOKEN:
-        required: false
     outputs:
       vitest-report-expectations:
         value: ${{ jobs.test-coverage.outputs.vitest-report-expectations }}
@@ -282,19 +279,3 @@ jobs:
         # pr.number (integer), and repository (owner/repo).
         run: ./ci/coverage-artifacts.sh pr-check
         timeout-minutes: 3
-      - name: Download full LCOV artifacts from GitHub (fallback)
-        id: lcov-full-consumer-fallback
-        if: "!cancelled() && github.event_name == 'pull_request'"
-        continue-on-error: true
-        timeout-minutes: 5
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./ci/download-optional-run-artifacts.sh --pattern 'lcov-full-*' --dir './lcov-full-fallback'
-      - name: Upload full LCOV to Codecov (informational)
-        if: "!cancelled() && github.event_name == 'pull_request' && steps.lcov-full-consumer-fallback.outcome == 'success'"
-        continue-on-error: true
-        timeout-minutes: 3
-        uses: ./.github/actions/upload-codecov
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          directory: ./lcov-full-fallback

@@ -28,16 +28,26 @@ sparse payloads are valid because a successful suite may exercise none of the ch
 [Coverage Provenance and Transport](../../docs/development/reference-ci-coverage-provenance-and-transport.md).
 
 Both the coverage pair and the Vitest blob travel over GitHub artifacts only. There is no S3
-transport, no presign/discover bootstrap job, and no `id-token: write` grant anywhere in the
-coverage or Vitest-blob pipeline. Every producer stamps provenance once, then makes up to two
-upload attempts — a first attempt, and one retry only if that attempt fails — before an outcome
-step requires that at least one attempt persisted. Each consumer makes one bounded, non-fatal
-download attempt per artifact family (coverage pairs, Vitest blobs) and treats "nothing published"
-as an explicit, diagnosable state rather than a job failure.
+transport or presign/discover bootstrap job, and their producer and consumer jobs have no
+`id-token: write` grant. Every producer stamps provenance once, then makes up to two upload
+attempts — a first attempt, and one retry only if that attempt fails — before an outcome step
+requires that at least one attempt persisted. Each consumer makes one bounded, non-fatal download
+attempt per artifact family (coverage pairs, Vitest blobs) and treats "nothing published" as an
+explicit, diagnosable state rather than a job failure.
+
+Full LCOV reports also travel through GitHub artifacts to a separate informational Codecov workflow.
+That job uses Codecov OIDC for same-repository pull requests and the pinned Codecov action's public
+fork fallback. It has `id-token: write`, but only runs SHA-pinned external checkout, artifact
+download, and Codecov actions: it never executes repository scripts, dependency lifecycle hooks, or
+local composite actions. It is not a prerequisite for `tests` or Patch Coverage, so upload failures
+and timeouts cannot gate a PR. The Patch Coverage job remains the sole coverage gate and has no OIDC
+permission.
 
 ```mermaid
 flowchart TD
   Full["Producer-local full report"] --> Project["coverage-check patch projection"]
+  Full --> FullArtifact["Full LCOV GitHub artifact"]
+  FullArtifact --> Codecov["Isolated informational Codecov uploader"]
   Project --> Pair["Sparse LCOV + manifest v2"]
   Pair --> Stamp["Stamp coverage provenance"]
   Stamp --> Attempt1["Upload to GitHub (fallback attempt 1)"]

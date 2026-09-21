@@ -101,13 +101,23 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(workflow).not.toContain('renovate/*')
   })
 
-  it('keeps PR coverage uncredentialed and removes historical storage jobs', () => {
+  it('isolates Codecov OIDC from PR-controlled coverage code', () => {
     const workflow = read('.github/workflows/ci.yml')
-    const coverageJob = jobSection(read('.github/workflows/ci-test-coverage.yml'), 'test-coverage')
+    const coverageWorkflow = read('.github/workflows/ci-test-coverage.yml')
+    const codecovWorkflow = read('.github/workflows/ci-upload-codecov.yml')
+    const coverageJob = jobSection(coverageWorkflow, 'test-coverage')
+    const codecovJob = jobSection(codecovWorkflow, 'upload-codecov')
+    const codecovCaller = jobSection(workflow, 'upload-codecov')
 
     expect(coverageJob).toContain('name: Patch Coverage')
     expect(coverageJob).not.toContain('id-token: write')
     expect(coverageJob).not.toContain('AWS_TEST_ROLE_ARN')
+    expect(codecovJob).toContain('id-token: write')
+    expect(codecovCaller).toContain('id-token: write')
+    expect(codecovJob).not.toContain('run:')
+    expect(codecovWorkflow).not.toContain('./.github/actions/')
+    expect(coverageWorkflow).not.toContain('CODECOV_TOKEN')
+    expect(codecovWorkflow).not.toContain('CODECOV_TOKEN')
     expect(workflow).not.toContain(`${['coverage', 'store'].join('-')}:`)
     expect(workflow).not.toContain(`${['store', 'coverage'].join('-')}:`)
 
