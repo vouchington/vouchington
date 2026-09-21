@@ -151,6 +151,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/community-member-vacations/README.md`](../services/community-member-vacations/README.md)
 - [`../services/contribution-gating/README.md`](../services/contribution-gating/README.md)
 - [`../services/conversations-messages/README.md`](../services/conversations-messages/README.md)
+- [`../services/copyright-notices/README.md`](../services/copyright-notices/README.md)
 - [`../services/countries/README.md`](../services/countries/README.md)
 - [`../services/crawl-chunks/README.md`](../services/crawl-chunks/README.md)
 - [`../services/crawler-html/README.md`](../services/crawler-html/README.md)

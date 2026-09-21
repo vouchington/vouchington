@@ -17,6 +17,7 @@ Content moderation pipeline, policy, reports, appeals, bans, warnings, and audit
 | [Report Integrity](./REPORT-INTEGRITY.md)                 | Mass-report detection and trust penalties                                         |
 | [Report Judgements](./REPORT-JUDGEMENTS.md)               | AI report recommendations and human review                                        |
 | [Review Disputes](./REVIEW-DISPUTES.md)                   | Verified-claimant legal dispute flow for reviews                                  |
+| [Copyright Notices](./COPYRIGHT-NOTICES.md)               | Separate legal-case lifecycle, privacy boundary, and restoration timing           |
 | [Moderator Notes](./MOD-NOTES.md)                         | Private user notes for moderators                                                 |
 | [Modmail](./MODMAIL.md)                                   | Community moderator messaging                                                     |
 | [Modlog](./MODLOG.md)                                     | Unified `moderator_actions` audit trail                                           |
