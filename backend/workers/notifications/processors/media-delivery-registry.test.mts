@@ -11,6 +11,13 @@ import {
 } from './media-delivery-registry.mts'
 
 describe('media delivery registry processors', () => {
+  it('does not claim a record when registry publication is disabled', async () => {
+    const { processMediaDeliveryRegistryRecord } = await import('@services/media-delivery-safety')
+    await expect(
+      processMediaDeliveryRegistryRecord('legacy-image:00000000-0000-7000-8000-000000000001'),
+    ).resolves.toBe('not_claimed')
+  })
+
   it('passes one staged delivery key to the durable processor', async () => {
     const process = vi
       .fn<typeof processMediaDeliveryRegistryRecord>()
