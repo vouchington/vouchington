@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import { validateUUID } from '@modules/utils/ids'
 import createError from 'http-errors'
@@ -17,6 +18,7 @@ import {
   updateElectionStatsIfChanged,
 } from './vote-aggregation.mts'
 import { upsertElectionVotesShared } from './vote-upsert.mts'
+import { publishElectionVoteSideEffects } from './vote-side-effects.mts'
 import {
   getElectionVoteByUser,
   getElectionVotesByEntityId,
@@ -64,17 +66,20 @@ export function createVotesUpsert(
       sessionId: null,
       userAgent: null,
     },
+    queryOptions: QueryOptions = {},
   ): Promise<ElectionVoteMutationResult[]> {
-    const upsertedVotes = await upsertElectionVotesShared(config, userId, votes, context)
+    const upsertedVotes = await upsertElectionVotesShared(
+      config,
+      userId,
+      votes,
+      context,
+      queryOptions,
+    )
     const entityIds = options.getEntityIds?.(votes, upsertedVotes) ?? [
       ...new Set(votes.map(vote => vote.entityId)),
     ]
 
-    // Fire-and-forget: the queue factory already reports failures via onError internally,
-    // so awaiting here would only turn a transient Valkey/queue outage into a user-facing
-    // 500 after the vote has already committed to PostgreSQL.
-    void options.enqueueElectionStats(entityIds)
-    await options.afterUpsert?.(entityIds, upsertedVotes)
+    await publishElectionVoteSideEffects(queryOptions, options, entityIds, upsertedVotes)
 
     return upsertedVotes
   }

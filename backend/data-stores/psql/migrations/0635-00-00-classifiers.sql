@@ -670,6 +670,46 @@ CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__classifier_kind
 CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__threshold
   ON topic_classifier_results (threshold_id, topic_id DESC);
 
+CREATE TABLE IF NOT EXISTS classifier_topic_vote_applications (
+  shared_actor_id UUID NOT NULL REFERENCES users ON DELETE RESTRICT,
+  topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
+  post_id UUID REFERENCES posts ON DELETE CASCADE,
+  rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
+  classifier_id UUID NOT NULL,
+  prompt_version_id UUID NOT NULL,
+  batch_id UUID NOT NULL,
+  result_id UUID NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_classifier_topic_vote_applications__actor_topic_subject
+    UNIQUE NULLS NOT DISTINCT (shared_actor_id, topic_id, post_id, rss_feed_item_id),
+  CONSTRAINT chk_classifier_topic_vote_applications__one_subject CHECK (
+    num_nonnulls(post_id, rss_feed_item_id) = 1
+  ),
+  CONSTRAINT fk_classifier_topic_vote_applications__batch_classifier
+    FOREIGN KEY (batch_id, classifier_id)
+    REFERENCES classifier_decision_batches (id, classifier_id) ON DELETE CASCADE,
+  CONSTRAINT fk_classifier_topic_vote_applications__batch_prompt
+    FOREIGN KEY (batch_id, prompt_version_id)
+    REFERENCES classifier_decision_batches (id, prompt_version_id) ON DELETE CASCADE,
+  CONSTRAINT fk_classifier_topic_vote_applications__result
+    FOREIGN KEY (topic_id, result_id)
+    REFERENCES topic_classifier_results (topic_id, id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_classifier_topic_vote_applications__batch
+  ON classifier_topic_vote_applications (batch_id);
+CREATE INDEX IF NOT EXISTS idx_classifier_topic_vote_applications__topic
+  ON classifier_topic_vote_applications (topic_id);
+CREATE INDEX IF NOT EXISTS idx_classifier_topic_vote_applications__post
+  ON classifier_topic_vote_applications (post_id) WHERE post_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_classifier_topic_vote_applications__rss_feed_item
+  ON classifier_topic_vote_applications (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
+
+CREATE OR REPLACE TRIGGER trigger_classifier_topic_vote_applications_updated_at
+  BEFORE UPDATE ON classifier_topic_vote_applications
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
 CREATE TABLE IF NOT EXISTS story_classifier_results (
   story_id UUID NOT NULL REFERENCES stories ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
@@ -894,6 +934,16 @@ COMMENT ON COLUMN topic_classifier_results.effective_upper_threshold IS 'Resolve
 COMMENT ON COLUMN topic_classifier_results.raw_response IS 'Full native structured-decision answer for audit and diagnostics.';
 COMMENT ON COLUMN topic_classifier_results.scope_category IS 'Decision scope copied from the owning batch.';
 COMMENT ON COLUMN topic_classifier_results.scope_community_id IS 'Immutable community provenance copied from the owning batch.';
+
+COMMENT ON TABLE classifier_topic_vote_applications IS 'Durable per-actor, per-topic application receipts that serialize classifier vote updates and reject stale batch replays.';
+COMMENT ON COLUMN classifier_topic_vote_applications.shared_actor_id IS 'Shared classifier system actor whose topic vote this receipt serializes.';
+COMMENT ON COLUMN classifier_topic_vote_applications.topic_id IS 'Topic whose shared-actor vote was applied.';
+COMMENT ON COLUMN classifier_topic_vote_applications.post_id IS 'Classified post subject; mutually exclusive with rss_feed_item_id.';
+COMMENT ON COLUMN classifier_topic_vote_applications.rss_feed_item_id IS 'Classified RSS item subject; mutually exclusive with post_id.';
+COMMENT ON COLUMN classifier_topic_vote_applications.classifier_id IS 'Classifier copied from the owning decision batch for relational enforcement.';
+COMMENT ON COLUMN classifier_topic_vote_applications.prompt_version_id IS 'Prompt revision copied from the owning decision batch for relational enforcement.';
+COMMENT ON COLUMN classifier_topic_vote_applications.batch_id IS 'Newest applied decision batch for this actor, topic, and subject fence.';
+COMMENT ON COLUMN classifier_topic_vote_applications.result_id IS 'Exact topic classifier result that produced the applied vote.';
 
 COMMENT ON COLUMN story_classifier_results.story_id IS 'Story candidate scored by this result and the partition key.';
 COMMENT ON COLUMN story_classifier_results.batch_id IS 'Logical decision batch that produced this result.';

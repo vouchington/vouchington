@@ -182,7 +182,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `bluesky_link_authorizations`, `bluesky_link_completions`, `bluesky_linked_accounts`,
   `boilerplate_removal_urls`, `boilerplate_removals`, `classifier_candidate_community_overrides`,
   `classifier_candidate_thresholds`, `classifier_candidates`, `classifier_decision_batches`, `classifier_decision_calls`,
-  `classifier_prompt_versions`, `classifiers`, `community_agent_prompts`,
+  `classifier_prompt_versions`, `classifier_topic_vote_applications`, `classifiers`, `community_agent_prompts`,
   `community_application_questions`, `community_applications`, `community_auto_tagger_agents`,
   `community_bans`, `community_invites`, `community_member_vacations`,
   `community_post_reviews`, `community_restrictions`, `community_saved_replies`, `crawlers`,

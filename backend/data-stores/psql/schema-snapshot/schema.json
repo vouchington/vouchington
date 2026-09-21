@@ -10157,6 +10157,326 @@
         }
       }
     },
+    "classifier_topic_vote_applications": {
+      "checkConstraints": {
+        "chk_classifier_topic_vote_applications__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))"
+      },
+      "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "Newest applied decision batch for this actor, topic, and subject fence.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier copied from the owning decision batch for relational enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Classified post subject; mutually exclusive with rss_feed_item_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Prompt revision copied from the owning decision batch for relational enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "result_id": {
+          "collation": null,
+          "comment": "Exact topic classifier result that produced the applied vote.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "Classified RSS item subject; mutually exclusive with post_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "shared_actor_id": {
+          "collation": null,
+          "comment": "Shared classifier system actor whose topic vote this receipt serializes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": "Topic whose shared-actor vote was applied.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable per-actor, per-topic application receipts that serialize classifier vote updates and reject stale batch replays.",
+      "foreignKeys": {
+        "classifier_topic_vote_applications_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "classifier_topic_vote_applications_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        },
+        "classifier_topic_vote_applications_shared_actor_id_fkey": {
+          "columns": ["shared_actor_id"],
+          "definition": "FOREIGN KEY (shared_actor_id) REFERENCES users(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "classifier_topic_vote_applications_topic_id_fkey": {
+          "columns": ["topic_id"],
+          "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "topics",
+          "validated": true
+        },
+        "fk_classifier_topic_vote_applications__batch_classifier": {
+          "columns": ["batch_id", "classifier_id"],
+          "definition": "FOREIGN KEY (batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_classifier_topic_vote_applications__batch_prompt": {
+          "columns": ["batch_id", "prompt_version_id"],
+          "definition": "FOREIGN KEY (batch_id, prompt_version_id) REFERENCES classifier_decision_batches(id, prompt_version_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "prompt_version_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_classifier_topic_vote_applications__result": {
+          "columns": ["topic_id", "result_id"],
+          "definition": "FOREIGN KEY (topic_id, result_id) REFERENCES topic_classifier_results(topic_id, id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["topic_id", "id"],
+          "referencedTable": "topic_classifier_results",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_classifier_topic_vote_applications__batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_topic_vote_applications__batch ON public.classifier_topic_vote_applications USING btree (batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_topic_vote_applications__post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_topic_vote_applications__post ON public.classifier_topic_vote_applications USING btree (post_id) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_topic_vote_applications__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_topic_vote_applications__rss_feed_item ON public.classifier_topic_vote_applications USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_topic_vote_applications__topic": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_topic_vote_applications__topic ON public.classifier_topic_vote_applications USING btree (topic_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_classifier_topic_vote_applications__actor_topic_subject": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_topic_vote_applications__actor_topic_subject ON public.classifier_topic_vote_applications USING btree (shared_actor_id, topic_id, post_id, rss_feed_item_id) NULLS NOT DISTINCT",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "shared_actor_id",
+              "descending": false,
+              "expression": "shared_actor_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": null,
+      "relationKind": "table",
+      "triggers": {
+        "trigger_classifier_topic_vote_applications_updated_at": "CREATE TRIGGER trigger_classifier_topic_vote_applications_updated_at BEFORE UPDATE ON public.classifier_topic_vote_applications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "uq_classifier_topic_vote_applications__actor_topic_subject": {
+          "columns": ["shared_actor_id", "topic_id", "post_id", "rss_feed_item_id"],
+          "definition": "UNIQUE NULLS NOT DISTINCT (shared_actor_id, topic_id, post_id, rss_feed_item_id)"
+        }
+      }
+    },
     "classifiers": {
       "checkConstraints": {
         "chk_classifiers__lifecycle": "CHECK (((deactivated_at IS NULL) OR ((activated_at IS NOT NULL) AND (deactivated_at >= activated_at))))"

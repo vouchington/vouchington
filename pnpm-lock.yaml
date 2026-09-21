@@ -4530,6 +4530,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
