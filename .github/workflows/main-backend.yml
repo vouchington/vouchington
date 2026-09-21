@@ -100,6 +100,7 @@ jobs:
     uses: ./.github/workflows/publish-backend-images.yml
     permissions:
       actions: read
+      attestations: write
       contents: read
       id-token: write
       packages: write
