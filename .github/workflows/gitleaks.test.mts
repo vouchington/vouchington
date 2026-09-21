@@ -19,6 +19,7 @@ type Workflow = {
   jobs?: Record<string, WorkflowJob>
   on?: {
     pull_request?: unknown
+    merge_group?: { types?: string[] }
   }
 }
 
@@ -35,6 +36,7 @@ describe('gitleaks workflow', () => {
   })
 
   it('passes event values through env before computing the scan range', () => {
+    expect(workflow.on?.merge_group).toEqual({ types: ['checks_requested'] })
     const step = requiredNamedStep(workflow.jobs?.['gitleaks'], 'Determine Gitleaks scan range')
 
     expect(step.env).toMatchObject({
@@ -42,6 +44,8 @@ describe('gitleaks workflow', () => {
       HEAD_SHA: '${{ github.sha }}',
       PR_BASE_SHA: '${{ github.event.pull_request.base.sha }}',
       PR_HEAD_SHA: '${{ github.event.pull_request.head.sha }}',
+      MERGE_GROUP_BASE_SHA: '${{ github.event.merge_group.base_sha }}',
+      MERGE_GROUP_HEAD_SHA: '${{ github.event.merge_group.head_sha }}',
       PUSH_BEFORE_SHA: '${{ github.event.before }}',
     })
     expect(step.run).not.toContain('${{')
@@ -49,6 +53,8 @@ describe('gitleaks workflow', () => {
       '"$EVENT_NAME" == "pull_request"',
       'git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA"',
       'LOG_OPTS="${MERGE_BASE}..${PR_HEAD_SHA}"',
+      '"$EVENT_NAME" == "merge_group"',
+      'LOG_OPTS="${MERGE_GROUP_BASE_SHA}..${MERGE_GROUP_HEAD_SHA}"',
       '"$EVENT_NAME" == "workflow_dispatch"',
       'LOG_OPTS="--all"',
       `"$PUSH_BEFORE_SHA" == "${'0'.repeat(40)}"`,

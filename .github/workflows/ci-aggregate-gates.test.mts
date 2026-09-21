@@ -34,6 +34,7 @@ async function runDependencyFreeGate(results: string) {
 
 describe('CI aggregate gates', () => {
   it('keeps required fan-in gates stable and filters Playwright on main pushes', () => {
+    expect(workflow.on?.merge_group).toEqual({ types: ['checks_requested'] })
     expect(workflow.on?.pull_request?.types).toContain('ready_for_review')
     expect(workflow.on?.pull_request?.types).not.toContain('labeled')
     expect(workflow.on?.pull_request).not.toHaveProperty('branches')
@@ -120,7 +121,7 @@ describe('CI aggregate gates', () => {
 
   it('runs select-ci and test-coverage unconditionally on docs-only PRs (vitest:full removed)', () => {
     expect(selectCiWorkflow.jobs?.['select-ci']?.if).toBe(
-      "!cancelled() && github.event_name == 'pull_request'",
+      "!cancelled() && (github.event_name == 'pull_request' || github.event_name == 'merge_group')",
     )
     expect(selectCiWorkflow.jobs?.['select-ci']?.if).not.toContain('docs-only')
     expect(selectCiWorkflow.jobs?.['select-ci']?.if).not.toContain('has-vitest-full')
@@ -152,7 +153,7 @@ describe('CI aggregate gates', () => {
     // has-vitest-full) were removed: these steps now run on every PR/main run.
     for (const step of gatedSteps) {
       expect(step?.if).toBe(
-        "!cancelled() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')",
+        "!cancelled() && (github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.ref == 'refs/heads/main')",
       )
       expect(step?.if).not.toContain('skip-ci-producers')
       expect(step?.if).not.toContain('skip-settled-producers')
@@ -175,7 +176,7 @@ describe('CI aggregate gates', () => {
       "!cancelled() && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')",
     )
     expect(allChecksPassedStep?.env?.HAS_FAN_IN_DEPENDENCIES).toBe(
-      "${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}",
+      "${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.ref == 'refs/heads/main' }}",
     )
     expect(allChecksPassedStep?.run).toContain('jq -e')
     expect(allChecksPassedStep?.run).toContain('.result == "success" or .result == "skipped"')

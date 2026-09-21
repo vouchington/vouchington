@@ -44,7 +44,10 @@ function plannedTests(overrides: Partial<PlannedTests> = {}): PlannedTests {
   }
 }
 
-async function runSelection(runPlanner: typeof import('../test-plan.mts').planTests) {
+async function runSelection(
+  runPlanner: typeof import('../test-plan.mts').planTests,
+  eventName = 'pull_request',
+) {
   const dir = await mkdtemp(join(tmpdir(), 'vitest-ci-select-'))
   const outputPath = join(dir, 'output')
   const summaryPath = join(dir, 'summary')
@@ -55,7 +58,7 @@ async function runSelection(runPlanner: typeof import('../test-plan.mts').planTe
     GITHUB_STEP_SUMMARY: process.env['GITHUB_STEP_SUMMARY'],
   }
   Object.assign(process.env, {
-    EVENT_NAME: 'pull_request',
+    EVENT_NAME: eventName,
     GITHUB_BASE_REF: 'main',
     GITHUB_OUTPUT: outputPath,
     GITHUB_STEP_SUMMARY: summaryPath,
@@ -101,6 +104,10 @@ describe('PROJECT_TO_JOB totality', () => {
 })
 
 describe('no-mistakes CI Vitest planner', () => {
+  it('runs the full suite for merge groups without invoking PR-specific selection', async () => {
+    const { output } = await runSelection(async () => plannedTests(), 'merge_group')
+    expect(output).toMatchObject({ 'full-suite': 'true', 'full-test-web': 'true' })
+  })
   it('passes the PR base and HEAD to the revision-aware planner', () => {
     const options = vitestPlanOptions(process.cwd(), 'release/2026-07')
 
