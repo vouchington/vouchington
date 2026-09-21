@@ -16,6 +16,7 @@ describe('validateScopeSet', () => {
   it('checks typed scope membership', () => {
     expect(hasScope(['mcp.user:read'], 'mcp.user:read')).toBe(true)
     expect(hasScope(['mcp.user:read'], 'mcp.user:write')).toBe(false)
+    expect(hasScope([], 'rss:read')).toBe(false)
   })
 
   it('lets legacy broad MCP grants satisfy resource-scoped requests', () => {

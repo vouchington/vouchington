@@ -3,7 +3,10 @@ import { createTestUser } from '@voucha/test-helpers'
 import { setTestApiKeyPermissions } from '@voucha/test-helpers/entities/api-keys'
 import { createApiKey } from './create.mts'
 import { revokeApiKey } from './revoke.mts'
-import { validateApiKey } from './validate.mts'
+import { rebuildApiKeyBloomFilter } from './bloom-filter.mts'
+import { validateApiKey, validateApiKeyForMcpAudience } from './validate.mts'
+import { bloomFilterConfig } from '@services/bloom-filter-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('validate', () => {
   beforeAll(() => {
@@ -89,6 +92,30 @@ describe('validate', () => {
         await expect(validateApiKey(rawKey, 'rss:read')).resolves.toEqual({ valid: false })
       } finally {
         await setTestApiKeyPermissions(apiKey.id, ['rss:read'])
+      }
+    })
+  })
+
+  describe('validateApiKeyForMcpAudience', () => {
+    it('accepts a user-scoped MCP key after a bloom-filter probe', async () => {
+      const user = await createTestUser()
+      const { rawKey } = await createApiKey(
+        user.id,
+        'mcp',
+        `MCP audience ${Math.random().toString(36).slice(2, 8)}`,
+        ['mcp.user:read'],
+      )
+      await rebuildApiKeyBloomFilter()
+      const restoreBloomFilterConfig = overrideDynamicConfigFieldsForTest(bloomFilterConfig, {
+        apiKeyBloomFilterEnabled: true,
+      })
+      try {
+        await expect(validateApiKeyForMcpAudience(rawKey, 'user')).resolves.toMatchObject({
+          valid: true,
+          apiKey: { permissions: ['mcp.user:read'] },
+        })
+      } finally {
+        restoreBloomFilterConfig()
       }
     })
   })

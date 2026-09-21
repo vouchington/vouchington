@@ -3,6 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS, getRegisteredToolByName } from './index.mts'
 import { getToolRequiredScopes, isToolMcpEligible, listToolsForSurface } from './select.mts'
+import type { Tool } from '../types.mts'
 
 const TOOLS_DIR = path.join(import.meta.dirname, '..')
 
@@ -90,6 +91,25 @@ describe('tool registry', () => {
         .map(surface => `${tool.schema.name}:${surface}`)
     })
     expect(missing).toEqual([])
+  })
+
+  it('rejects scopes declared for the opposite MCP audience', () => {
+    const tool: Tool = {
+      schema: {
+        name: 'admin_scope_on_user_surface',
+        type: 'function',
+        parameters: null,
+        strict: null,
+      },
+      function: () => () => Promise.resolve({}),
+      meta: {
+        surfaces: ['mcp'],
+        requiredScopes: { mcp: ['support-messages:read'] },
+        api: null,
+      },
+    }
+
+    expect(getToolRequiredScopes(tool, 'mcp')).toBeNull()
   })
 
   it('curried tools are internal-only', () => {

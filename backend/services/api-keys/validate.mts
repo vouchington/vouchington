@@ -84,6 +84,7 @@ export async function validateApiKeyForMcpAudience(
     UPDATE api_keys SET last_used_at = NOW()
     WHERE key_hash = ${keyHash} AND revoked_at IS NULL
   `).catch((err: unknown) => {
+    /* c8 ignore next -- fire-and-forget usage timestamp failures are reported asynchronously. */
     onError(err instanceof Error ? err : new Error(String(err)))
   })
 
