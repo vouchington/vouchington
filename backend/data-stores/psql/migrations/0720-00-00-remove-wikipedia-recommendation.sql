@@ -36,6 +36,7 @@ WHERE username = 'wikipedia-recommender'
 DROP VIEW IF EXISTS view_posts;
 
 ALTER TABLE post_topic_recommendations
+  -- squawk-ignore ban-drop-column -- Pre-launch field with no released clients; A14 removes it atomically with generated contracts.
   DROP COLUMN topic_wikipedia_pageid;
 
 COMMENT ON TABLE post_topic_recommendations IS
@@ -44,6 +45,7 @@ COMMENT ON TABLE post_topic_recommendations IS
 ALTER TYPE agent_types RENAME TO agent_types_with_retired_recommender;
 CREATE TYPE agent_types AS ENUM ('moderator', 'autotagger', 'storyteller');
 ALTER TABLE agents
+  -- squawk-ignore changing-column-type -- Pre-launch enum contraction after deleting the only retired-agent rows.
   ALTER COLUMN agent_type TYPE agent_types
   USING agent_type::text::agent_types;
 DROP TYPE agent_types_with_retired_recommender;
