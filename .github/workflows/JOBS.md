@@ -68,8 +68,6 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci.yml`                            | `upload-codecov`                | job    | → `ci-upload-codecov.yml`             | 360           |
 | `cleanup-artifacts.yml`             | `cleanup-run`                   | job    | `ubuntu-slim`                         | 10            |
 | `cleanup-artifacts.yml`             | `cleanup-sweep`                 | job    | `ubuntu-latest`                       | 26            |
-| `dependabot-pr-automerge.yml`       | `automerge`                     | job    | `ubuntu-slim`                         | 5             |
-| `dependabot-pr-automerge.yml`       | `cleanup-retargeted-automerge`  | job    | `ubuntu-slim`                         | 5             |
 | `dispatch-completed-deploy.yml`     | `dispatch`                      | job    | `ubuntu-slim`                         | 5             |
 | `docs-publish.yml`                  | `publish`                       | job    | `ubuntu-latest`                       | 10            |
 | `explain-analyze.yml`               | `explain-analyze`               | job    | `ubuntu-latest`                       | 10            |

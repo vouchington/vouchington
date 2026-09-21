@@ -5,14 +5,15 @@ Two bots keep this repo's dependencies fresh:
 - **Dependabot** — owns configured Vouchington package managers (npm, Docker, GitHub Actions). Config: [`.github/dependabot.yml`](../../.github/dependabot.yml).
 - **Renovate** (Mend-hosted GitHub App) — owns the residual gaps Dependabot has no native manager for: the pnpm toolchain pin in the root `package.json`, the Node version in `.nvmrc`, plus version literals embedded in workflow YAML and shell scripts via regex `customManagers`. Config: [`renovate.json`](../../renovate.json).
 
-## Release policy references
+## Review and merge
 
-- <a id="dependabot-auto-merge"></a>[Dependabot auto-merge](reference-dependency-updates-dependabot-automerge.md)
+Dependency-bot PRs require a human merge decision. The Dependabot auto-merge workflow was removed,
+and Renovate sets `automerge: false`; neither bot arms GitHub auto-merge. This does not change the
+CI trust boundary: a human who queues a same-repository dependency-bot PR still causes a merge-group
+run with the existing CI credential policy. Review the PR before placing it in the merge queue.
 
-Renovate mirrors the Dependabot policy via `automerge: true` + `major.automerge: false` and uses
-GitHub's platform auto-merge, except pnpm toolchain updates always require manual review. All
-configured release delays are two days: Renovate does not create a pnpm toolchain branch or PR until
-that delay elapses.
+All configured release delays are two days: Renovate does not create a pnpm toolchain branch or PR
+until that delay elapses.
 
 Dependabot checks all configured ecosystems every day at 04:00 America/Los_Angeles. Renovate runs before 6am Monday in the same timezone.
 
@@ -20,7 +21,7 @@ Dependabot groups only verified package families and release trains, across majo
 updates. Unrelated dependencies remain independent so each PR is reviewable; catch-all version and
 security groups are forbidden. Security updates are eligible immediately and remain independent
 unless a verified package family requires a narrow security group. Major updates still require
-manual review under the auto-merge policy. Each configured ecosystem is capped at five open
+manual review. Each configured ecosystem is capped at five open
 version-update PRs.
 
 First-party GitHub Actions release trains are grouped one PR per source repository — a reusable

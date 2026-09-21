@@ -43,11 +43,8 @@ merge shapes, `runtime:'claude'` interactive allows silently, and `runtime:'code
 interactive emits empty output.
 
 **Scope note:** this hook governs merges issued as **agent tool calls**. It does not touch
-workflow-initiated merges. The shared action called by `dependabot-pr-automerge.yml` uses the
-job-scoped `github.token` only for metadata and PR reads; its eligible `enablePullRequestAutoMerge` mutation uses the separate
-`DEPENDABOT_AUTOMERGE_TOKEN` so the eventual merge emits normal `main` `push` workflows.
-This is intentional, narrowly scoped automation, not an agent deciding to merge. The Dependabot workflow never synthesizes a
-review or approval. See the [canonical Dependabot auto-merge policy](reference-dependency-updates-dependabot-automerge.md).
+workflow-initiated merges. Dependency-bot auto-merge is disabled in this repository; see the
+[dependency update merge policy](dependency-updates.md#review-and-merge).
 
 **What stays unconditional:** automation (`GITHUB_ACTIONS`/`CI` set) hard-blocks every merge shape
 regardless of runtime, with no path back to `allow` — the merge branches return `disposition:

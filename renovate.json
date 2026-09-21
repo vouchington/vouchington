@@ -2,12 +2,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", ":disableDependencyDashboard"],
   "enabledManagers": ["nvm", "custom.regex"],
-  "automerge": true,
-  "platformAutomerge": true,
+  "automerge": false,
   "labels": ["dependencies", "renovate"],
-  "major": {
-    "automerge": false
-  },
   "schedule": ["before 6am on monday"],
   "timezone": "America/Los_Angeles",
   "prHourlyLimit": 4,
@@ -18,8 +14,7 @@
       "matchManagers": ["custom.regex"],
       "matchDepNames": ["pnpm"],
       "minimumReleaseAge": "2 days",
-      "internalChecksFilter": "strict",
-      "automerge": false
+      "internalChecksFilter": "strict"
     }
   ],
   "customManagers": [

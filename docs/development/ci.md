@@ -99,7 +99,7 @@ markers and look-alikes are in [Classifying Transient Infrastructure Failures](r
 
 ## CI behavior references
 
-- <a id="dependabot-auto-merge-and-main-push-ci"></a>[Dependabot auto-merge and main push CI](reference-ci-standalone-workflow-checks.md#dependabot-auto-merge-and-main-push-ci)
+- <a id="dependency-bot-review-and-main-push-ci"></a>[Dependency bot review and main push CI](reference-ci-standalone-workflow-checks.md#dependency-bot-review-and-main-push-ci)
 
 CI always runs the full job set - Playwright, credentialed Playwright, Storybook, web-integration, PR Docker image builds, and the full Vitest suite - on every pull-request run, regardless of draft state. There is no cross-run producer-result reuse and no per-PR opt-in: the `playwright:full` and `vitest:full` labels do nothing (CI never reads PR labels), and a draft PR's CI run is identical to a ready PR's.
 

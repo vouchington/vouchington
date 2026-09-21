@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { parse as parseYaml } from 'yaml'
@@ -66,6 +66,19 @@ function exactVersionIsAtLeast(value: string, minimum: string): boolean {
 }
 
 describe('dependency update configuration', () => {
+  it('requires human merge decisions for dependency-bot PRs', () => {
+    const renovate = JSON.parse(readRepoFile('renovate.json')) as {
+      automerge?: boolean
+      platformAutomerge?: boolean
+      packageRules?: RenovatePackageRule[]
+    }
+
+    expect(renovate.automerge).toBe(false)
+    expect(renovate.platformAutomerge).toBeUndefined()
+    expect(renovate.packageRules?.every(rule => rule.automerge !== true)).toBe(true)
+    expect(existsSync(`${repoRoot}/.github/workflows/dependabot-pr-automerge.yml`)).toBe(false)
+  })
+
   it('keeps Playwright consumers synchronized without a compatibility hold', () => {
     const dependabot = parseYaml(readRepoFile('.github/dependabot.yml')) as DependabotConfig
     const rootNpmUpdate = dependabot.updates?.find(
@@ -245,7 +258,6 @@ describe('dependency update configuration', () => {
       ) ?? []
     expect(pnpmRules).toHaveLength(1)
     expect(pnpmRules[0]).toMatchObject({
-      automerge: false,
       internalChecksFilter: 'strict',
       matchDepNames: ['pnpm'],
       matchManagers: ['custom.regex'],

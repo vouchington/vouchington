@@ -21,7 +21,6 @@ flowchart TD
     trigger --> actionlint["actionlint\n(workflow lint + security audit)"]
     trigger --> lint-links["lint-links\n(repository link check)"]
     trigger --> label-pr["label-pr\n(PR labeling)"]
-    trigger --> dependabot-pr-automerge["dependabot-pr-automerge\n(Dependabot PR gate)"]
     trigger --> pnpm-dedupe["pnpm-dedupe\n(weekly lockfile PR)"]
     trigger --> main-backend["main-backend\n(main backend CI)"]
     trigger --> main-web["main-web\n(main web CI)"]
