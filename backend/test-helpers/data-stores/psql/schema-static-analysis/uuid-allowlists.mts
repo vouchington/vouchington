@@ -1,6 +1,7 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
+import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authorization-allowlists.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
 
@@ -9,6 +10,7 @@ export const ALLOWED_UNCOMMENTED_COLUMNS = new Map<string, string>([])
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS,
   ...ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS,
+  ...OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS,
   ...STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS,
   ['post_admission_claims.lease_id', 'Fencing token, not a durable relation.'],
@@ -44,32 +46,8 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Audit snapshot intentionally survives user deletion.',
   ],
   [
-    'oauth_authorizations.exchange_claim_id',
-    'Ephemeral fencing token rotated for each provider exchange claim; it intentionally identifies no durable relation.',
-  ],
-  [
-    'oauth_authorizations.initiating_device_id',
-    'Device JWT claim bound to completion; no devices table exists and the authorization is rejected when the caller claim differs.',
-  ],
-  [
-    'oauth_authorizations.initiating_session_id',
-    'Session JWT claim bound at authorization begin, including anonymous sessions that have no persisted user_sessions row.',
-  ],
-  [
-    'oauth_authorizations.login_attempt_id',
-    'Opaque MFA attempt identifier returned by the authentication flow; MFA attempt state is not a PostgreSQL relation.',
-  ],
-  [
     'openai_background_responses.lease_token',
     'Opaque fencing token rotated on ownership transfer; it intentionally identifies no durable relation.',
-  ],
-  [
-    'oauth_authorizations.result_device_id',
-    'Durable authenticated device-token claim; no devices table exists, and replay requires the exact stored claim.',
-  ],
-  [
-    'oauth_authorizations.result_session_id',
-    'Session identity is persisted before token issuance so a lost response remains recoverable; it intentionally cannot reference a user_sessions row that may not exist yet or may later be revoked.',
   ],
   [
     'post_votes.outbound_ap_like_activity_id',
