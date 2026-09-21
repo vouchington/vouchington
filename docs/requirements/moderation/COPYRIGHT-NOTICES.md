@@ -219,7 +219,9 @@ staff recorded all applicable facts:
 Assess every received filing separately and bind its material scope to the exact notice targets it
 covers. Restoration remains blocked while any qualifying assessment for that target is unresolved.
 Dismissal, the end of a proceeding, or a superseding assessment is an immutable hold resolution,
-never an edit or deletion of the original filing.
+never an edit or deletion of the original filing. Each qualifying assessment is durably bound to the
+active restriction for its target, so resolving the final overlapping hold replays a previously
+blocked restoration.
 
 ## Jurisdiction and public meaning
 

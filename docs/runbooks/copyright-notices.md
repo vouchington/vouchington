@@ -98,6 +98,42 @@ non-copyright blocker before delivery changes. If the placement revision changed
 intent through the domain recovery path and create no replacement until staff confirms the new
 placement is within the case.
 
+Before enabling copyright intake, audit any historical blocked restores whose qualifying hold lacks
+restriction provenance. This read-only query identifies candidates; it cannot infer a safe binding,
+because a later restriction on the same target may be unrelated to the hold. Counsel and the
+moderation owner must review the case's lifecycle ledger and remediate it through the domain
+workflow rather than writing a binding directly.
+
+```sql
+SELECT assessment.id AS assessment_id, submission.copyright_notice_id,
+  assessment_target.copyright_notice_target_id, restriction.id AS restriction_id,
+  intent.id AS restore_intent_id, resolution.id AS resolution_id
+FROM copyright_notice_legal_hold_assessments assessment
+JOIN copyright_notice_submissions submission
+  ON submission.id = assessment.copyright_notice_submission_id
+JOIN copyright_notice_legal_hold_assessment_targets assessment_target
+  ON assessment_target.copyright_notice_legal_hold_assessment_id = assessment.id
+JOIN copyright_restrictions restriction
+  ON restriction.copyright_notice_target_id = assessment_target.copyright_notice_target_id
+JOIN copyright_notice_action_intents intent
+  ON intent.copyright_restriction_id = restriction.id
+  AND intent.action = 'restore'
+  AND intent.state = 'blocked'
+LEFT JOIN copyright_legal_hold_restrictions binding
+  ON binding.copyright_restriction_id = restriction.id
+  AND binding.copyright_notice_legal_hold_assessment_id = assessment.id
+LEFT JOIN copyright_notice_legal_hold_resolutions resolution
+  ON resolution.copyright_notice_legal_hold_assessment_id = assessment.id
+WHERE binding.copyright_restriction_id IS NULL
+  AND assessment.from_original_claimant
+  AND assessment.same_material
+  AND assessment.proceeding_kind IS NOT NULL
+  AND assessment.commenced_at IS NOT NULL
+  AND assessment.received_by_designated_agent_at IS NOT NULL
+  AND assessment.received_by_designated_agent_at <= assessment.assessed_at
+ORDER BY assessment.id, intent.id;
+```
+
 For a cross-store failure, PostgreSQL remains the legal workflow record. Keep the application
 projection fail-closed, replay the idempotent edge-registry publication, invalidate the exact
 placement path, and verify both a cached and uncached request before acknowledging delivery. Never
