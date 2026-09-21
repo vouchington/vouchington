@@ -1,9 +1,9 @@
 import { parseMarkdownTables } from 'vouchington-tooling/markdown'
 import {
-  parseIssueDefinitions,
+  parseIssueLinkDefinitions,
   parseReferencedIssueLocations,
   ISSUE_REF_RE,
-  type IssueDefinition,
+  type IssueLinkDefinition,
 } from './client-parity-matrix-references.mts'
 import {
   matrixContent,
@@ -23,7 +23,7 @@ const CURRENT_STATE_CLOSED_RE = /^(closed by|closed\b)/i
 
 export type TableKind = 'A' | 'B' | 'C'
 export type StatusKind = ClientFeatureStatus
-export type { IssueDefinition }
+export type { IssueLinkDefinition }
 
 export interface ParsedMatrixRow extends MatrixSourceLocation {
   tableKind: TableKind
@@ -149,14 +149,14 @@ function parseRows(input: ClientParityMatrixInput): ParsedMatrixRow[] {
 }
 
 export function parseClientParityMatrix(input: ClientParityMatrixInput): {
-  definitions: IssueDefinition[]
+  issueLinkDefinitions: IssueLinkDefinition[]
   referencedIssueIds: Set<string>
   referencedIssueLocations: Map<string, MatrixSourceLocation>
   rows: ParsedMatrixRow[]
 } {
   const referencedIssueLocations = parseReferencedIssueLocations(input)
   return {
-    definitions: parseIssueDefinitions(input),
+    issueLinkDefinitions: parseIssueLinkDefinitions(input),
     referencedIssueIds: new Set(referencedIssueLocations.keys()),
     referencedIssueLocations,
     rows: parseRows(input),

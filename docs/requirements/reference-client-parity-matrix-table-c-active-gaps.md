@@ -4,8 +4,8 @@
 
 ## Table C — Active Gaps
 
-Milestone: [Native client (Swift + .NET) feature parity with web][milestone]. This table contains
-active gaps only; closed implementation history belongs in issues and git history.
+This table contains active gaps only; closed implementation history belongs in issues and git
+history.
 
 Phases express delivery order: Phase 1 covers foundational member experience, Phase 2 covers
 content and personal-data workflows, and Phase 3 covers advanced platform, billing, and staff
@@ -29,10 +29,5 @@ or explicitly declared source-audit evidence against that staged contract. The c
 authoritative at capability level; Tables A and B are summaries and must not claim full parity when
 any mapped capability differs from web.
 
-[milestone]: https://github.com/jonathanong/filaments/milestone/13
-[#6582]: https://github.com/jonathanong/filaments/issues/6582
 [clients#57]: https://github.com/vouchington/vouchington-clients/issues/57
-[#8600]: https://github.com/jonathanong/filaments/issues/8600
-[#8625]: https://github.com/jonathanong/filaments/issues/8625
-[#10619]: https://github.com/jonathanong/filaments/issues/10619
 [clients#92]: https://github.com/vouchington/vouchington-clients/issues/92

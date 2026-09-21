@@ -32,51 +32,28 @@ describe('client parity matrix metadata guard', () => {
     for (const root of roots.splice(0)) rmSync(root, { force: true, recursive: true })
   })
 
-  it('rejects non-canonical, mismatched, and duplicate issue definitions', () => {
+  it('accepts plain archival issue identifiers without footer definitions', () => {
+    expect(run(['[#1111] reference'])).toEqual([])
+  })
+
+  it('rejects private and retargeted public issue link definitions', () => {
     const errors = run([
       '[#1111] reference',
-      '[#1111]: https://github.com/other/repository/issues/2222',
-      '[#1111]: https://github.com/jonathanong/filaments/issues/1111',
+      '[#1111]: https://github.com/vouchington/vouchington-infra/issues/1111',
+      '[#2222]: https://github.com/vouchington/vouchington/issues/2222',
     ])
     expect(errors).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('must target jonathanong/filaments'),
-        expect.stringContaining('URL targets issue #2222'),
-        expect.stringContaining('duplicate issue definition [#1111]'),
+        expect.stringContaining('archival issue reference [#1111] must remain plain text'),
+        expect.stringContaining('archival issue reference [#2222] must remain plain text'),
       ]),
     )
   })
 
-  it('rejects issue definitions retargeted to this repository before the issues migrate', () => {
-    expect(
-      run(['[#1111] reference', '[#1111]: https://github.com/vouchington/vouchington/issues/1111']),
-    ).toEqual(
+  it('rejects non-GitHub issue link definitions', () => {
+    expect(run(['[#1111] reference', '[#1111]: https://example.test/issue/1111'])).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('issue definition [#1111] must target jonathanong/filaments'),
-      ]),
-    )
-  })
-
-  it('rejects HTTP issue definitions', () => {
-    expect(
-      run(['[#1111] reference', '[#1111]: http://github.com/jonathanong/filaments/issues/1111']),
-    ).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('issue definition [#1111] must use canonical HTTPS'),
-      ]),
-    )
-  })
-
-  it('rejects unused issue definitions', () => {
-    expect(run(['[#4444]: https://github.com/jonathanong/filaments/issues/4444'])).toEqual(
-      expect.arrayContaining([expect.stringContaining('issue definition [#4444] is unused')]),
-    )
-  })
-
-  it('rejects references without definitions', () => {
-    expect(run(['[#1111] reference'])).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('issue reference [#1111] is used but missing a footer definition'),
+        expect.stringContaining('archival issue reference [#1111] must remain plain text'),
       ]),
     )
   })
@@ -99,7 +76,6 @@ describe('client parity matrix metadata guard', () => {
       '| # | Capability / Domain | Feature ID | Client(s) | Current state | Phase | Issue |',
       '| --- | --- | --- | --- | --- | --- | --- |',
       '| 1 | Messages | messages | Swift | Closed by native parity | 1 | [#1111] |',
-      '[#1111]: https://github.com/jonathanong/filaments/issues/1111',
     ])
     expect(errors).toEqual(
       expect.arrayContaining([
@@ -115,8 +91,6 @@ describe('client parity matrix metadata guard', () => {
       '| --- | --- | --- | --- | --- | --- | --- |',
       '| 1 | Messages | messages | Swift + .NET | | 1 | [#1111] |',
       '| 2 | Search | search | Swift + .NET | Native support remains incomplete | 1 | [#2222] |',
-      '[#1111]: https://github.com/jonathanong/filaments/issues/1111',
-      '[#2222]: https://github.com/jonathanong/filaments/issues/2222',
     ])
     expect(
       errors.filter(error => error.includes('active gap Current state must begin')),
