@@ -11,6 +11,8 @@ on:
     secrets:
       AWS_TEST_ROLE_ARN:
         required: true
+      SENTRY_AUTH_TOKEN:
+        required: true
 permissions:
   actions: read
   contents: read
@@ -33,6 +35,15 @@ jobs:
       IMAGE_REPOSITORY: voucha-validation
       SHA_TAG: sha-${{ github.sha }}
     steps:
+      - name: Verify Sentry source-map upload credentials
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
+            echo "::error::SENTRY_AUTH_TOKEN is required to publish web source maps."
+            exit 1
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -45,6 +56,9 @@ jobs:
       - uses: ./.github/actions/build-web-images
         with:
           next-public-asset-prefix: ${{ vars.NEXT_PUBLIC_ASSET_PREFIX }}
+          sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          sentry-source-map-upload: 'true'
+          sentry-release: ${{ github.sha }}
 
       # Deliberately the last step in the job. Everything published here has already passed the
       # Docker smoke test and the Trivy CRITICAL/HIGH gate, so the image that reaches the registry

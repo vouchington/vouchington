@@ -51,19 +51,38 @@ describe('build-web workflow', () => {
     expect(steps[smoke]?.run).toContain('API_BASE_URL="http://host.docker.internal:$BACKEND_PORT"')
   })
 
-  it('does not give validation builds Sentry credentials or release-management mode', () => {
+  it('keeps Sentry credentials out of validation builds and scopes them to trusted publication', () => {
     const buildWebSource = readFileSync('.github/workflows/build-web.yml', 'utf8')
     const compositeActionSource = readFileSync(
       '.github/actions/build-web-images/action.yml',
       'utf8',
     )
     const ciSource = readFileSync('.github/workflows/ci.yml', 'utf8')
+    const publishSource = readFileSync('.github/workflows/publish-web-images.yml', 'utf8')
+    const mainWebSource = readFileSync('.github/workflows/main-web.yml', 'utf8')
 
-    for (const source of [buildWebSource, compositeActionSource]) {
+    for (const source of [buildWebSource, ciSource]) {
       expect(source).not.toContain('SENTRY_AUTH_TOKEN')
       expect(source).not.toContain('SENTRY_RELEASE_REQUIRED')
     }
-    expect(ciSource).not.toContain('SENTRY_AUTH_TOKEN')
+    expect(compositeActionSource).toContain('sentry-source-map-upload:')
+    expect(compositeActionSource).toContain(
+      "SENTRY_AUTH_TOKEN=${{ inputs.sentry-source-map-upload == 'true' && inputs.sentry-auth-token || '' }}",
+    )
+    expect(compositeActionSource).toContain(
+      "SENTRY_RELEASE=${{ inputs.sentry-source-map-upload == 'true' && (inputs.sentry-release || github.sha) || '' }}",
+    )
+    expect(compositeActionSource).not.toContain('ARG SENTRY_AUTH_TOKEN')
+    expect(compositeActionSource).not.toContain('ENV SENTRY_AUTH_TOKEN')
+    expect(publishSource).toContain('SENTRY_AUTH_TOKEN:')
+    expect(publishSource).toContain('required: true')
+    expect(publishSource).toContain('[ -z "${SENTRY_AUTH_TOKEN:-}" ]')
+    expect(publishSource).toContain('exit 1')
+    expect(publishSource).toContain("sentry-source-map-upload: 'true'")
+    expect(publishSource).toContain('sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}')
+    expect(publishSource).toContain('trusted_secret_context')
+    expect(mainWebSource).toContain('trusted_secret_context: true')
+    expect(mainWebSource).toContain('secrets: inherit')
   })
 
   it('limits the Trivy gate to OS vulnerabilities and writes a complete findings report', () => {

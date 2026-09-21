@@ -41,10 +41,14 @@ COPY web/ /app/web/
 ARG NEXT_PUBLIC_GIT_COMMIT
 ARG NEXT_PUBLIC_ASSET_PREFIX
 ARG STRIP_TEST_IDS
+ARG SENTRY_RELEASE
+ARG SENTRY_SOURCE_MAP_UPLOAD=0
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PUBLIC_GIT_COMMIT=$NEXT_PUBLIC_GIT_COMMIT
 ENV NEXT_PUBLIC_ASSET_PREFIX=$NEXT_PUBLIC_ASSET_PREFIX
 ENV STRIP_TEST_IDS=$STRIP_TEST_IDS
+ENV SENTRY_RELEASE=$SENTRY_RELEASE
+ENV SENTRY_SOURCE_MAP_UPLOAD=$SENTRY_SOURCE_MAP_UPLOAD
 # Docker builds are out of scope for the CI FS-cache gate (only the four
 # build-web-targets composite-action callers default it off); this keeps the
 # web-next-cache mount above load-bearing rather than silently going unused.
@@ -52,6 +56,13 @@ ENV WEB_BUILD_FS_CACHE_ENABLED=true
 
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     --mount=type=cache,id=web-next-cache,target=/app/web/.next/cache,sharing=locked \
+    --mount=type=secret,id=SENTRY_AUTH_TOKEN,required=false \
+    set -eu; \
+    if [ "$SENTRY_SOURCE_MAP_UPLOAD" = "1" ]; then \
+      test -s /run/secrets/SENTRY_AUTH_TOKEN; \
+      SENTRY_AUTH_TOKEN="$(cat /run/secrets/SENTRY_AUTH_TOKEN)"; \
+      export SENTRY_AUTH_TOKEN; \
+    fi; \
     NODE_ENV=production pnpm --dir web exec next build
 
 # Delete build-time source maps from the standalone runtime output. Saves ~0.65 MiB.
