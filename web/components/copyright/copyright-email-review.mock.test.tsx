@@ -213,6 +213,25 @@ describe('CopyrightEmailReview', () => {
     })
   })
 
+  it('rejects matched correspondence with the selected classification', async () => {
+    mockGet.mockResolvedValue({ copyright_email_intake: makeMatchedIntake() })
+    mockRejectCorrespondence.mockResolvedValue(undefined)
+    render(<CopyrightEmailReview initialItems={[makeMatchedQueueItem()]} />)
+    await selectEmailIntake()
+    fireEvent.change(screen.getByLabelText('Review rationale'), {
+      target: { value: 'This reply is not a copyright filing.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Reject correspondence' }))
+    await waitFor(() => {
+      expect(mockRejectCorrespondence).toHaveBeenCalledWith(intakeId, {
+        kind: 'supplement',
+        rationale: 'This reply is not a copyright filing.',
+        recommendation_id: '019f0000-0000-7000-8000-000000000002',
+        manual_fallback_reason: null,
+      })
+    })
+  })
+
   it('does not offer initial-case actions for an unresolved reply', async () => {
     mockGet.mockResolvedValue({
       copyright_email_intake: { ...makeIntake(), review_path: 'unresolved_thread' },

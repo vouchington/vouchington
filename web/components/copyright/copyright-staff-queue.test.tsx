@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { CopyrightStaffQueue } from './copyright-staff-queue'
 
@@ -108,5 +108,9 @@ describe('CopyrightStaffQueue', () => {
     expect(screen.getByRole('checkbox', { name: /Target 1:/ })).toBeChecked()
     expect(screen.getByRole('checkbox', { name: /Target 2:/ })).toBeChecked()
     expect(screen.getByRole('button', { name: 'Accept counter-notice' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Approve intake' }))
+    fireEvent.change(screen.getByLabelText('Review rationale'), {
+      target: { value: 'The intake is complete.' },
+    })
   })
 })

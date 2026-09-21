@@ -54,6 +54,38 @@ describe('CopyrightNoticeTargetPicker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
     await waitFor(() => expect(onChange).toHaveBeenCalledWith([]))
   })
+
+  it('does not select more than twenty hosted images', async () => {
+    const many = Array.from({ length: 21 }, (_, index) => ({
+      post_id: '019f0000-0000-7000-8000-000000000001',
+      image_id: `019f0000-0000-7000-8000-0000000000${String(index + 10)}`,
+      target_url: 'https://voucha.ai/discussion/hosted-material',
+      order_index: index,
+      caption: `Image ${index + 1}`,
+    }))
+    mockResolveTargets.mockResolvedValue(many)
+    const onChange = vi.fn<(targets: CopyrightNoticeResolvedTarget[]) => void>()
+    const { rerender } = render(
+      <CopyrightNoticeTargetPicker
+        targets={many.slice(0, 20)}
+        onChange={onChange}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Hosted use URL'), {
+      target: { value: 'https://voucha.ai/discussion/hosted-material' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
+    expect(await screen.findByLabelText('Hosted image 21: Image 21')).toBeInTheDocument()
+    rerender(
+      <CopyrightNoticeTargetPicker
+        targets={many.slice(0, 20)}
+        onChange={onChange}
+      />,
+    )
+    onChange.mockClear()
+    fireEvent.click(screen.getByLabelText('Hosted image 21: Image 21'))
+    expect(onChange).not.toHaveBeenCalled()
+  })
 })
 
 function makeTarget(caption: string) {

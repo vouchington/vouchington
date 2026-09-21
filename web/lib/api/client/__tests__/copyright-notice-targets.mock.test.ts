@@ -49,7 +49,7 @@ describe('resolveCopyrightNoticeTargets', () => {
       resolveCopyrightNoticeTargets('https://voucha.ai/communities/slug'),
     ).rejects.toThrow('Enter the URL of a supported Voucha post.')
     await expect(
-      resolveCopyrightNoticeTargets('https://voucha.ai/discussion/%2e%2e'),
+      resolveCopyrightNoticeTargets('https://voucha.ai/discussion/foo%5Cbar'),
     ).rejects.toThrow('Enter the URL of a supported Voucha post.')
     mockGet.mockResolvedValueOnce({ post: { id: 'post-1' } }).mockResolvedValueOnce({ images: [] })
     await expect(
