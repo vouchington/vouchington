@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   enqueueApplyMediaDeliveryRegistryRecord,
   enqueueReconcileCopyrightActionIntents,
-} from '../enqueues.mts'
-import { notifications } from '../queues.mts'
+} from './enqueues.mts'
+import { notifications } from './queues.mts'
 
 describe('copyright and media-delivery notification enqueue wiring', () => {
   it('throttles action-intent reconciliation to one five-minute schedule', async () => {
