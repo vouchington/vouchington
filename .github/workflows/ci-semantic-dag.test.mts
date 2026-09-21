@@ -25,7 +25,9 @@ function expectSuccessOrSkippedTestGate(job: Job | undefined, prerequisite: stri
   for (const result of ['success', 'skipped']) {
     expect(job?.if).toContain(`needs.${prerequisite}.result == '${result}'`)
   }
-  expect(job?.if).not.toContain(`needs.${prerequisite}.result == 'failure'`)
+  expect(job?.if).toContain(
+    `(github.event_name == 'workflow_dispatch' && needs.${prerequisite}.result == 'failure')`,
+  )
 }
 
 describe('semantic CI dependency DAG', () => {
@@ -152,7 +154,9 @@ describe('semantic CI dependency DAG', () => {
     const jobs = workflow('.github/workflows/ci.yml').jobs
     for (const imageJob of ['build-backend', 'build-web']) {
       expect(jobs?.[imageJob]?.needs).toContain('tests')
-      expect(jobs?.[imageJob]?.if).toContain("needs.tests.result == 'success'")
+      expect(jobs?.[imageJob]?.if).toContain(
+        "(github.event_name == 'workflow_dispatch' || needs.tests.result == 'success')",
+      )
       expect(jobs?.[imageJob]?.if).not.toContain("needs.tests.result == 'skipped'")
       expect(jobs?.[imageJob]?.if).not.toContain("needs.tests.result == 'failure'")
     }

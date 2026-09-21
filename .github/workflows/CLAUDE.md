@@ -36,7 +36,9 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   gate. The required `tests` check must succeed before either Docker validation build starts;
   required `tests` and `build` checks still report failures. The shared `static-web` runtime build
   precedes its integration and Playwright consumers. Grouped-main workflows keep their independent
-  fan-out and `cancel-in-progress: false` policy.
+  fan-out and `cancel-in-progress: false` policy. Manual `workflow_dispatch` diagnostics continue
+  dependent tests, Playwright, and Docker validation after test failures while preserving red fan-in
+  checks.
   `.github/workflows/ci-semantic-dag.test.mts` and the topology policy enforce the DAG rules.
 - Treat runner labels, runner-demand budgets, and concurrency as shared-capacity contracts. Follow
   [the canonical checklist](../../docs/checklists/github-actions.md) and update its documented

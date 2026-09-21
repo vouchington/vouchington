@@ -18,6 +18,8 @@ before their consuming backend suites; web Vitest has the same gate before the A
 web-integration sibling suites. Both Playwright suites start only after their application Vitest
 prerequisites succeed or intentionally skip. Tooling, portability, native clients, and Storybook
 remain outside the Playwright gate; grouped main workflows fan out after static checks.
+Manual `workflow_dispatch` diagnostics retain failure-tolerant test ordering so later suites run
+after earlier test failures.
 
 Backend Uncredentialed Docker Tests (`tests-backend-unit.yml`) carries failure-only fork-exit
 sentinel and diagnostic-report steps for the recurring

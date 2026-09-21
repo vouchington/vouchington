@@ -16,8 +16,9 @@ five-minute timeout remains the global safety backstop.
 Topology selection also exposes separate `run-static-backend`, `run-static-web`,
 `run-static-lambdas`, and `run-static-cloudflare-worker` outputs. Each root caller invokes only its
 area of `checks-static.yml`, so a static failure blocks related application tests without coupling
-unrelated areas. Test-to-test `needs` edges are scheduling order, not success gates: downstream
-application tests accept upstream success, failure, or skip and stop only on workflow cancellation.
+unrelated areas. On PR and merge-group runs, test-to-test `needs` edges are success gates:
+downstream application tests accept upstream success or intentional skip. Manual
+`workflow_dispatch` diagnostics also accept upstream test failure so the full sequence can run.
 
 ```mermaid
 flowchart TD

@@ -122,7 +122,7 @@ flowchart TD
 
     static-lambdas --> test-lambdas
     static-worker --> test-cloudflare-worker
-    application-vitest["application Vitest roots passed or skipped\n(ts-shared, backend modules/unit/schema, web/API/integration, lambdas, worker)"]
+    application-vitest["PR/merge-group application Vitest roots passed or skipped\n(ts-shared, backend modules/unit/schema, web/API/integration, lambdas, worker)"]
     test-ts-shared --> application-vitest
     test-backend-modules --> application-vitest
     test-backend --> application-vitest
