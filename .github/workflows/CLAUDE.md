@@ -33,7 +33,7 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   Area-static checks gate their related tests. Test-to-test and test-to-Playwright edges use
   `always() && !cancelled()` and accept upstream `success` or intentional `skipped`, but not
   `failure`. Tooling, native, portability, and standalone Storybook stay outside the Playwright
-  gate. The required `tests` check must succeed before either Docker validation build starts;
+  gate. On PRs and merge groups, the required `tests` check must succeed before either Docker validation build starts;
   required `tests` and `build` checks still report failures. The shared `static-web` runtime build
   precedes its integration and Playwright consumers. Grouped-main workflows keep their independent
   fan-out and `cancel-in-progress: false` policy. Manual `workflow_dispatch` diagnostics continue

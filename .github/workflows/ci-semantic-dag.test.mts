@@ -18,7 +18,10 @@ function expectHardStaticGate(job: Job | undefined, staticJob: string): void {
   expect(job?.if).not.toContain(`needs.${staticJob}.result == 'failure'`)
 }
 
-function expectSuccessOrSkippedTestGate(job: Job | undefined, prerequisite: string): void {
+function expectPreMergeTestGateWithManualDiagnostics(
+  job: Job | undefined,
+  prerequisite: string,
+): void {
   expect(job?.needs).toContain(prerequisite)
   expect(job?.if).toContain('always()')
   expect(job?.if).toContain('!cancelled()')
@@ -108,10 +111,10 @@ describe('semantic CI dependency DAG', () => {
       'test-backend-unit',
       'test-backend-credentialed',
     ]) {
-      expectSuccessOrSkippedTestGate(jobs?.[consumer], 'test-ts-shared')
+      expectPreMergeTestGateWithManualDiagnostics(jobs?.[consumer], 'test-ts-shared')
     }
     for (const consumer of ['test-web-api', 'test-web-integration']) {
-      expectSuccessOrSkippedTestGate(jobs?.[consumer], 'test-web')
+      expectPreMergeTestGateWithManualDiagnostics(jobs?.[consumer], 'test-web')
     }
     expect(jobs?.['test-web-api']?.needs).not.toContain('test-web-integration')
     expect(jobs?.['test-web-integration']?.needs).not.toContain('test-web-api')
@@ -133,10 +136,10 @@ describe('semantic CI dependency DAG', () => {
 
     for (const playwright of ['test-playwright', 'test-playwright-credentialed']) {
       for (const root of applicationRoots) {
-        expectSuccessOrSkippedTestGate(jobs?.[playwright], root)
+        expectPreMergeTestGateWithManualDiagnostics(jobs?.[playwright], root)
       }
     }
-    expectSuccessOrSkippedTestGate(
+    expectPreMergeTestGateWithManualDiagnostics(
       jobs?.['test-playwright-credentialed'],
       'test-backend-credentialed',
     )
