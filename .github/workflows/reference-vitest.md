@@ -12,11 +12,14 @@ error and never runs on `main`. See [VITEST.md](VITEST.md) for the canonical pro
 ownership table and [Vitest CI Selection](../../docs/development/ci.md#vitest-ci-selection) for the
 selection design.
 
-The PR orchestrator calls `checks-static.yml` once per application area and hard-gates only that
-area's tests. Shared TypeScript tests settle before their consuming backend suites; web Vitest
-settles before the API and full-stack web-integration sibling suites. Both Playwright suites start only after the selected application
-Vitest roots settle, but ordinary test failure or skip does not suppress them. Tooling,
-portability, native clients, and Storybook are intentionally outside that ordering.
+The PR and merge-group orchestrator calls `checks-static.yml` once per application area and gates
+that area's tests on static success. Shared TypeScript tests must succeed or intentionally skip
+before their consuming backend suites; web Vitest has the same gate before the API and full-stack
+web-integration sibling suites. Both Playwright suites start only after their application Vitest
+prerequisites succeed or intentionally skip. Tooling, portability, native clients, and Storybook
+remain outside the Playwright gate; grouped main workflows fan out after static checks.
+Manual `workflow_dispatch` diagnostics retain failure-tolerant test ordering so later suites run
+after earlier test failures.
 
 Backend Uncredentialed Docker Tests (`tests-backend-unit.yml`) carries failure-only fork-exit
 sentinel and diagnostic-report steps for the recurring

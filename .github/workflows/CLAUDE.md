@@ -28,15 +28,17 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   on `main`, update `fix-main.yml`; its subscription regression test must pass.
 - Preserve the `Main` ruleset gates: exactly `tests`, `build`, and `gitleaks` are
   required before merge. Other scans remain report-only unless they feed one of those gates.
-- **Semantic CI DAG:** add `needs` only for a real prerequisite, never because a suite is flaky or
-  often fails. Related area-static jobs are hard success gates before application tests; tooling,
-  native, portability, and standalone Storybook remain independent. Test-to-test ordering (shared
-  Vitest before consumers, web Vitest before integration, application Vitest before Playwright)
-  must use `always() && !cancelled()` and explicitly accept upstream `success`, `failure`, and
-  `skipped`, so ordinary failures do not suppress downstream tests and only cancellation stops
-  them. Both Playwright suites are siblings and exclude unrelated test roots. PR and grouped-main
-  workflows keep the same semantic ordering where jobs share a workflow; cross-workflow main jobs
-  stay independent. Static, build, and deploy gates require explicit success.
+- **Semantic CI DAG:** PR and merge-group CI orders related area-static checks, application tests,
+  sibling Playwright suites, and Docker image validation to avoid downstream compute after failures.
+  Area-static checks gate their related tests. Test-to-test and test-to-Playwright edges use
+  `always() && !cancelled()` and accept upstream `success` or intentional `skipped`, but not
+  `failure`. Tooling, native, portability, and standalone Storybook stay outside the Playwright
+  gate. On PRs and merge groups, the required `tests` check must succeed before either Docker validation build starts;
+  required `tests` and `build` checks still report failures. The shared `static-web` runtime build
+  precedes its integration and Playwright consumers. Grouped-main workflows keep their independent
+  fan-out and `cancel-in-progress: false` policy. Manual `workflow_dispatch` diagnostics continue
+  dependent tests, Playwright, and Docker validation after test failures while preserving red fan-in
+  checks.
   `.github/workflows/ci-semantic-dag.test.mts` and the topology policy enforce the DAG rules.
 - Treat runner labels, runner-demand budgets, and concurrency as shared-capacity contracts. Follow
   [the canonical checklist](../../docs/checklists/github-actions.md) and update its documented

@@ -172,7 +172,7 @@ jobs:
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-backend-modules == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-backend-modules == 'true' || (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
-      (needs.test-ts-shared.result == 'success' || needs.test-ts-shared.result == 'failure' || needs.test-ts-shared.result == 'skipped') &&
+      (needs.test-ts-shared.result == 'success' || needs.test-ts-shared.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-ts-shared.result == 'failure')) &&
       needs.select-ci.outputs.skip-test-backend-modules != 'true'
     uses: ./.github/workflows/tests-backend-modules.yml
     with:
@@ -193,7 +193,7 @@ jobs:
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-backend-unit == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-backend-unit == 'true' || (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
-      (needs.test-ts-shared.result == 'success' || needs.test-ts-shared.result == 'failure' || needs.test-ts-shared.result == 'skipped') &&
+      (needs.test-ts-shared.result == 'success' || needs.test-ts-shared.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-ts-shared.result == 'failure')) &&
       needs.select-ci.outputs.skip-test-backend-unit != 'true'
     uses: ./.github/workflows/tests-backend-unit.yml
     with:
@@ -230,7 +230,7 @@ jobs:
       needs.static-code-analysis.result == 'success' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
-      (needs.test-ts-shared.result == 'success' || needs.test-ts-shared.result == 'failure' || needs.test-ts-shared.result == 'skipped') &&
+      (needs.test-ts-shared.result == 'success' || needs.test-ts-shared.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-ts-shared.result == 'failure')) &&
       (needs.select-ci.outputs.full-suite == 'true' || needs.select-ci.outputs.full-test-backend-credentialed == 'true' || needs.select-ci.outputs.files-test-backend-credentialed != '' || (github.ref == 'refs/heads/main' && needs.detect-changes.outputs.backend == 'true') || needs.detect-changes.outputs.backend-credentialed == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.select-ci.outputs.skip-test-backend-credentialed != 'true'
     uses: ./.github/workflows/tests-backend-credentialed.yml
@@ -316,7 +316,7 @@ jobs:
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-web-api == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-web-api == 'true' || (needs.detect-changes.outputs.web-integration == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
-      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped') &&
+      (needs.test-web.result == 'success' || needs.test-web.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-web.result == 'failure')) &&
       needs.select-ci.outputs.skip-test-web-api != 'true'
     uses: ./.github/workflows/tests-web-api.yml
     with:
@@ -338,7 +338,7 @@ jobs:
       ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-web-integration == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-web-integration == 'true' || (needs.detect-changes.outputs.web-integration == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
-      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped') &&
+      (needs.test-web.result == 'success' || needs.test-web.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-web.result == 'failure')) &&
       needs.select-ci.outputs.skip-test-web-integration != 'true'
     uses: ./.github/workflows/tests-web-integration.yml
     with:
@@ -382,15 +382,15 @@ jobs:
       (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
       (needs.static-lambdas.result == 'success' || needs.static-lambdas.result == 'skipped') &&
       (needs.static-cloudflare-worker.result == 'success' || needs.static-cloudflare-worker.result == 'skipped') &&
-      (needs.test-ts-shared.result == 'success' || needs.test-ts-shared.result == 'failure' || needs.test-ts-shared.result == 'skipped') &&
-      (needs.test-backend-modules.result == 'success' || needs.test-backend-modules.result == 'failure' || needs.test-backend-modules.result == 'skipped') &&
-      (needs.test-backend-unit.result == 'success' || needs.test-backend-unit.result == 'failure' || needs.test-backend-unit.result == 'skipped') &&
-      (needs.test-postgres-schema.result == 'success' || needs.test-postgres-schema.result == 'failure' || needs.test-postgres-schema.result == 'skipped') &&
-      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped') &&
-      (needs.test-web-api.result == 'success' || needs.test-web-api.result == 'failure' || needs.test-web-api.result == 'skipped') &&
-      (needs.test-web-integration.result == 'success' || needs.test-web-integration.result == 'failure' || needs.test-web-integration.result == 'skipped') &&
-      (needs.test-lambdas.result == 'success' || needs.test-lambdas.result == 'failure' || needs.test-lambdas.result == 'skipped') &&
-      (needs.test-cloudflare-worker.result == 'success' || needs.test-cloudflare-worker.result == 'failure' || needs.test-cloudflare-worker.result == 'skipped') &&
+      (needs.test-ts-shared.result == 'success' || needs.test-ts-shared.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-ts-shared.result == 'failure')) &&
+      (needs.test-backend-modules.result == 'success' || needs.test-backend-modules.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-backend-modules.result == 'failure')) &&
+      (needs.test-backend-unit.result == 'success' || needs.test-backend-unit.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-backend-unit.result == 'failure')) &&
+      (needs.test-postgres-schema.result == 'success' || needs.test-postgres-schema.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-postgres-schema.result == 'failure')) &&
+      (needs.test-web.result == 'success' || needs.test-web.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-web.result == 'failure')) &&
+      (needs.test-web-api.result == 'success' || needs.test-web-api.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-web-api.result == 'failure')) &&
+      (needs.test-web-integration.result == 'success' || needs.test-web-integration.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-web-integration.result == 'failure')) &&
+      (needs.test-lambdas.result == 'success' || needs.test-lambdas.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-lambdas.result == 'failure')) &&
+      (needs.test-cloudflare-worker.result == 'success' || needs.test-cloudflare-worker.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-cloudflare-worker.result == 'failure')) &&
       (
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-playwright == 'true') || github.event_name == 'workflow_dispatch') ||
         needs.detect-changes.outputs.playwright == 'true' ||
@@ -436,16 +436,16 @@ jobs:
       (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
       (needs.static-lambdas.result == 'success' || needs.static-lambdas.result == 'skipped') &&
       (needs.static-cloudflare-worker.result == 'success' || needs.static-cloudflare-worker.result == 'skipped') &&
-      (needs.test-ts-shared.result == 'success' || needs.test-ts-shared.result == 'failure' || needs.test-ts-shared.result == 'skipped') &&
-      (needs.test-backend-modules.result == 'success' || needs.test-backend-modules.result == 'failure' || needs.test-backend-modules.result == 'skipped') &&
-      (needs.test-backend-unit.result == 'success' || needs.test-backend-unit.result == 'failure' || needs.test-backend-unit.result == 'skipped') &&
-      (needs.test-backend-credentialed.result == 'success' || needs.test-backend-credentialed.result == 'failure' || needs.test-backend-credentialed.result == 'skipped') &&
-      (needs.test-postgres-schema.result == 'success' || needs.test-postgres-schema.result == 'failure' || needs.test-postgres-schema.result == 'skipped') &&
-      (needs.test-web.result == 'success' || needs.test-web.result == 'failure' || needs.test-web.result == 'skipped') &&
-      (needs.test-web-api.result == 'success' || needs.test-web-api.result == 'failure' || needs.test-web-api.result == 'skipped') &&
-      (needs.test-web-integration.result == 'success' || needs.test-web-integration.result == 'failure' || needs.test-web-integration.result == 'skipped') &&
-      (needs.test-lambdas.result == 'success' || needs.test-lambdas.result == 'failure' || needs.test-lambdas.result == 'skipped') &&
-      (needs.test-cloudflare-worker.result == 'success' || needs.test-cloudflare-worker.result == 'failure' || needs.test-cloudflare-worker.result == 'skipped') &&
+      (needs.test-ts-shared.result == 'success' || needs.test-ts-shared.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-ts-shared.result == 'failure')) &&
+      (needs.test-backend-modules.result == 'success' || needs.test-backend-modules.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-backend-modules.result == 'failure')) &&
+      (needs.test-backend-unit.result == 'success' || needs.test-backend-unit.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-backend-unit.result == 'failure')) &&
+      (needs.test-backend-credentialed.result == 'success' || needs.test-backend-credentialed.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-backend-credentialed.result == 'failure')) &&
+      (needs.test-postgres-schema.result == 'success' || needs.test-postgres-schema.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-postgres-schema.result == 'failure')) &&
+      (needs.test-web.result == 'success' || needs.test-web.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-web.result == 'failure')) &&
+      (needs.test-web-api.result == 'success' || needs.test-web-api.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-web-api.result == 'failure')) &&
+      (needs.test-web-integration.result == 'success' || needs.test-web-integration.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-web-integration.result == 'failure')) &&
+      (needs.test-lambdas.result == 'success' || needs.test-lambdas.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-lambdas.result == 'failure')) &&
+      (needs.test-cloudflare-worker.result == 'success' || needs.test-cloudflare-worker.result == 'skipped' || (github.event_name == 'workflow_dispatch' && needs.test-cloudflare-worker.result == 'failure')) &&
       (
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-playwright-credentialed == 'true') || github.event_name == 'workflow_dispatch') ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false') ||
@@ -661,18 +661,16 @@ jobs:
         with:
           results: >-
             {"tests-processing":{"result":"${{ needs.tests-processing.result }}"}}
-  # Does not wait on `tests`: the image build consumes nothing tests produce (no
-  # download-artifact, shared cache, or shared service between them), so gating on `tests`
-  # only serialized independent work. `build` (below) still gates the merge-required result on
-  # `tests`, `build-backend`, and `build-web` together, so a test failure still fails CI.
+  # Docker image validation waits for tests, but manual diagnostic runs continue after failure.
   build-backend:
-    needs: [detect-changes, select-ci]
+    needs: [detect-changes, select-ci, tests]
     # On PRs, build when Docker configuration, copied workspace manifests, or the root dependency
     # boundary changes. Root manifest and lockfile changes fail open to both images so transitive
     # dependency updates receive image validation before merge. On non-PR events, build whenever
     # any source that affects the image changes.
     if: >-
-      !cancelled() &&
+      always() && !cancelled() &&
+      (github.event_name == 'workflow_dispatch' || needs.tests.result == 'success') &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       (github.event_name != 'workflow_dispatch' || github.ref_name != 'main') &&
@@ -690,18 +688,16 @@ jobs:
     secrets:
       AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
 
-  # Does not wait on `tests`: the image build consumes nothing tests produce (no
-  # download-artifact, shared cache, or shared service between them), so gating on `tests`
-  # only serialized independent work. `build` (below) still gates the merge-required result on
-  # `tests`, `build-backend`, and `build-web` together, so a test failure still fails CI.
+  # Docker image validation waits for tests, but manual diagnostic runs continue after failure.
   build-web:
-    needs: [detect-changes, select-ci]
+    needs: [detect-changes, select-ci, tests]
     # On PRs, build when Docker configuration, copied workspace manifests, or the root dependency
     # boundary changes. Root manifest and lockfile changes fail open to both images so transitive
     # dependency updates receive image validation before merge. On non-PR events, build whenever
     # any source that affects the image changes.
     if: >-
-      !cancelled() &&
+      always() && !cancelled() &&
+      (github.event_name == 'workflow_dispatch' || needs.tests.result == 'success') &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       (github.event_name != 'workflow_dispatch' || github.ref_name != 'main') &&

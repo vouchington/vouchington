@@ -18,13 +18,19 @@ function expectHardStaticGate(job: Job | undefined, staticJob: string): void {
   expect(job?.if).not.toContain(`needs.${staticJob}.result == 'failure'`)
 }
 
-function expectFailureTolerantTestGate(job: Job | undefined, prerequisite: string): void {
+function expectPreMergeTestGateWithManualDiagnostics(
+  job: Job | undefined,
+  prerequisite: string,
+): void {
   expect(job?.needs).toContain(prerequisite)
   expect(job?.if).toContain('always()')
   expect(job?.if).toContain('!cancelled()')
-  for (const result of ['success', 'failure', 'skipped']) {
+  for (const result of ['success', 'skipped']) {
     expect(job?.if).toContain(`needs.${prerequisite}.result == '${result}'`)
   }
+  expect(job?.if).toContain(
+    `(github.event_name == 'workflow_dispatch' && needs.${prerequisite}.result == 'failure')`,
+  )
 }
 
 describe('semantic CI dependency DAG', () => {
@@ -42,6 +48,11 @@ describe('semantic CI dependency DAG', () => {
     ]) {
       expect(required).toContain(
         `.github/workflows/ci.yml#test-ts-shared -> .github/workflows/ci.yml#${backendConsumer}`,
+      )
+    }
+    for (const imageJob of ['build-backend', 'build-web']) {
+      expect(required).toContain(
+        `.github/workflows/ci.yml#tests -> .github/workflows/ci.yml#${imageJob}`,
       )
     }
 
@@ -92,7 +103,7 @@ describe('semantic CI dependency DAG', () => {
     }
   })
 
-  it('orders semantic PR tests without suppressing them after ordinary test failures', () => {
+  it('suppresses dependent PR tests after predecessor failures', () => {
     const jobs = workflow('.github/workflows/ci.yml').jobs
 
     for (const consumer of [
@@ -100,10 +111,10 @@ describe('semantic CI dependency DAG', () => {
       'test-backend-unit',
       'test-backend-credentialed',
     ]) {
-      expectFailureTolerantTestGate(jobs?.[consumer], 'test-ts-shared')
+      expectPreMergeTestGateWithManualDiagnostics(jobs?.[consumer], 'test-ts-shared')
     }
     for (const consumer of ['test-web-api', 'test-web-integration']) {
-      expectFailureTolerantTestGate(jobs?.[consumer], 'test-web')
+      expectPreMergeTestGateWithManualDiagnostics(jobs?.[consumer], 'test-web')
     }
     expect(jobs?.['test-web-api']?.needs).not.toContain('test-web-integration')
     expect(jobs?.['test-web-integration']?.needs).not.toContain('test-web-api')
@@ -125,10 +136,10 @@ describe('semantic CI dependency DAG', () => {
 
     for (const playwright of ['test-playwright', 'test-playwright-credentialed']) {
       for (const root of applicationRoots) {
-        expectFailureTolerantTestGate(jobs?.[playwright], root)
+        expectPreMergeTestGateWithManualDiagnostics(jobs?.[playwright], root)
       }
     }
-    expectFailureTolerantTestGate(
+    expectPreMergeTestGateWithManualDiagnostics(
       jobs?.['test-playwright-credentialed'],
       'test-backend-credentialed',
     )
@@ -142,7 +153,21 @@ describe('semantic CI dependency DAG', () => {
     expect(jobs?.['test-playwright-credentialed']?.needs).not.toContain('test-playwright')
   })
 
-  it('keeps grouped main workflows aligned with the same semantic ordering', () => {
+  it('starts Docker image validation only after required tests pass', () => {
+    const jobs = workflow('.github/workflows/ci.yml').jobs
+    for (const imageJob of ['build-backend', 'build-web']) {
+      expect(jobs?.[imageJob]?.needs).toContain('tests')
+      expect(jobs?.[imageJob]?.if).toContain(
+        "(github.event_name == 'workflow_dispatch' || needs.tests.result == 'success')",
+      )
+      expect(jobs?.[imageJob]?.if).not.toContain("needs.tests.result == 'skipped'")
+      expect(jobs?.[imageJob]?.if).not.toContain("needs.tests.result == 'failure'")
+    }
+    expect(jobs?.build?.needs).toEqual(['tests', 'build-backend', 'build-web'])
+    expect(jobs?.build?.if).toContain('!cancelled()')
+  })
+
+  it('keeps grouped main workflows independent after their static checks', () => {
     const backend = workflow('.github/workflows/main-backend.yml').jobs
     for (const testJob of [
       'test-backend-modules',
@@ -154,10 +179,8 @@ describe('semantic CI dependency DAG', () => {
       expectHardStaticGate(backend?.[testJob], 'static-checks')
     }
 
-    // test-web, test-web-api, test-web-integration, playwright-tests, and
-    // playwright-credentialed-tests all fan out directly from static-checks: none of these
-    // needs: edges are real data/resource dependencies (no download-artifact, shared cache, or
-    // shared external resource between them), so there is nothing to gate but static-checks.
+    // Main prioritizes wall-clock time: web tests and both Playwright suites fan out directly
+    // from static-checks. PR and merge-group CI instead gates Playwright to save compute on red runs.
     const web = workflow('.github/workflows/main-web.yml').jobs
     for (const testJob of [
       'test-web',
