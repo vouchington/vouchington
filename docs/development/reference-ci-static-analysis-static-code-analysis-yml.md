@@ -33,10 +33,12 @@ execution deadline remains 60 seconds and no-mistakes' separate default lock-wai
 30 seconds. CI has exactly three production CLI invocations: the static-analysis full check plus the
 centralized Vitest and Playwright selectors. All three disable both no-mistakes' execution deadline
 and its machine-wide lock-wait deadline. Route-selector `--check` is a fourth production consumer
-through the Node `analyzeProject` API. The `no-mistakes-owned` job FIFO-serializes that check with
-the CLI check across pull requests (`concurrency.group: no-mistakes-invocation`, `queue: max`) so
-overlapping runs queue off the runner instead of waiting on one user-global `invocation.lock`.
-Oxlint, knip, and typecheck stay on the per-PR `static-code-analysis` job.
+through the Node `analyzeProject` API. The CLI and route-selector checks in `no-mistakes-owned`
+share a hosted runner, where the local `invocation.lock` protects any overlapping invocations.
+Separate hosted jobs have isolated workspaces, so there is no cross-PR job queue; the
+workflow-level concurrency still cancels a superseded PR run. Both concrete jobs have 30-minute
+safety caps, while recent public runs finished each in about four minutes. Oxlint, knip, and
+typecheck stay on the per-PR `static-code-analysis` job.
 
 Oxlint enforces `no-mistakes/no-inline-noop-promise-catch` for production `backend/**` and
 `web/**`, with test and test-helper paths excluded. The 2026-09-10 inventory found 116 diagnostics
