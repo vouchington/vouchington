@@ -26,6 +26,5 @@
 | id            | Label       | Icon        |
 | ------------- | ----------- | ----------- |
 | `moderation`  | Moderation  | ShieldAlert |
-| `crm`         | CRM         | Contact     |
 | `engineering` | Engineering | Settings2   |
 | `growth`      | Growth      | TrendingUp  |

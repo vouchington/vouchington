@@ -12,7 +12,7 @@ Key disambiguation rules (most-specific first):
 
 - `/messages` → `messages`
 - `/posts/review-queue` → `moderation` (before `/posts` → `posts`)
-- `/chat/support` → `chat` (before `/support` → `crm`)
+- `/chat/support` → `chat` (before `/support` → `support`)
 - `/admin/modlog`, `/admin/moderation-analytics` → `moderation`
 - `/admin/topic-claims` → `topics`
 - `/admin/queues`, `/admin/postgresql`, `/admin/valkey`, `/admin/ai-costs`, `/admin/dynamic-config` → `engineering`

@@ -368,7 +368,6 @@ Feature specifications, rules, and policies.
 - [User Settings](requirements/users/USER_SETTINGS.md) — User preferences and settings
 - [Communities](requirements/community/COMMUNITIES.md) — Community creation, naming/slug rules, and archiving
 - [Community Lists](requirements/community/community-lists.md) — Curated lists of topics, RSS feeds, posts, domains, and URLs; proxy follow/mute
-- [CRM](requirements/admin/CRM.md) — Internal admin tool for influencer outreach and contact relationships
 - [Customer Support](requirements/admin/CUSTOMER-SUPPORT.md) — Support procedures and related agent behavior
 - [RSS Feed Category Aliases](requirements/content/RSS-FEED-CATEGORY-ALIASES.md) — Admin triage tool for unmapped RSS feed item categories
 - [RSS Feed Crawling](requirements/content/RSS-FEED-CRAWLING.md) — Prioritized, tiered crawl scheduling: score formula, tier SLAs, materialized-view tiering refreshed via the psql `refreshMaterializedView` job, DynamicConfig reference
@@ -547,7 +546,6 @@ Feature specifications, rules, and policies.
 - [Community reference](requirements/reference-community.md)
 - [Community list reference](requirements/reference-communitylist.md)
 - [Crawler reference](requirements/reference-crawler.md)
-- [CRM contact reference](requirements/reference-crmcontact.md)
 - [Curated aside item reference](requirements/reference-curatedasideitem.md)
 - [Domain reference (admin tab)](requirements/reference-domain-admin-tab.md)
 - [Domain reference](requirements/reference-domain.md)

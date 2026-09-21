@@ -17,7 +17,6 @@ describe('AppSidebar Admin section visibility', () => {
     expect(labels[0]).toBe('Browse')
     expect(labels).not.toContain('Feeds')
     expect(labels).not.toContain('CMS')
-    expect(labels).not.toContain('CRM')
     expect(labels).not.toContain('Engineering')
     expect(labels).not.toContain('Design')
     expect(labels).not.toContain('Admin')
@@ -46,11 +45,11 @@ describe('AppSidebar Admin section visibility', () => {
     expect(labels).toContain('Moderation')
   })
 
-  it('CRM intent shows CRM group for administrators', () => {
-    setMockPathname('/crm')
+  it('Settings intent shows the administrator group for membership administration', () => {
+    setMockPathname('/memberships/grants')
     const { container } = renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
     const labels = getSectionLabels(container)
-    expect(labels).toContain('CRM')
+    expect(labels).toContain('Admin')
   })
 
   it('Engineering intent shows Engineering group for administrators', () => {

@@ -7,7 +7,6 @@ import {
   createPostPathname,
   createUserPathname,
   createUrlPathname,
-  crmContactHref,
   domainHref,
   landingPageHref,
   landingPageNamedHref,
@@ -46,12 +45,6 @@ describe('modmailThreadHref', () => {
     expect(modmailThreadHref('community-a', { id: 'thread-1' })).toBe(
       '/messages/modmail/community-a/thread-1',
     )
-  })
-})
-
-describe('crmContactHref', () => {
-  it('builds the CRM contact path from the contact id', () => {
-    expect(crmContactHref({ id: 'contact-1' })).toBe('/crm/contact-1')
   })
 })
 

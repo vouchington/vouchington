@@ -35,7 +35,6 @@ Full exported helper list from `entity-href.ts`. Directory-scoped invariants: [C
 - `chatSupportThreadHref(thread)` — builds `/chat/support/{id}`
 - `messagesHref(conversation)` — builds `/messages/{id}`
 - `modmailThreadHref(community, thread)` — builds `/messages/modmail/{slug}/{id}`
-- `crmContactHref(contact)` — **admin-only** — builds `/crm/{id}`
 - `urlHref(url)` / `createUrlPathname(url, suffix?)` — build `/url/{id}` and URL sub-routes
 - `domainHref(domain)` / `createDomainPathname(domain, suffix?)` — build `/domain/{hostnameOrId}` and domain sub-routes
 - `supportThreadHref(thread)` — **admin-only** — builds `/support/threads/{id}`

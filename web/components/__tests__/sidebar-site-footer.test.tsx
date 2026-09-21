@@ -11,4 +11,13 @@ describe('SidebarSiteFooter', () => {
     expect(footer).toContainElement(screen.getByRole('link', { name: 'Copyright' }))
     expect(footer).toContainElement(screen.getByRole('link', { name: 'Stories' }))
   })
+
+  it('links support to the public support email address', () => {
+    render(<SidebarSiteFooter />)
+
+    expect(screen.getByRole('link', { name: 'Support' })).toHaveAttribute(
+      'href',
+      'mailto:support@voucha.ai',
+    )
+  })
 })

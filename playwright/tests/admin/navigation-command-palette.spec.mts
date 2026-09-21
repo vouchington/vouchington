@@ -115,13 +115,6 @@ test.describe('Admin command palette navigation', () => {
     await expectPageHeading(page, 'Topic Aliases')
   })
 
-  test('CRM → /crm', async ({ page }) => {
-    await navigateTo(page, '/')
-    await openPaletteAndNavigate(page, 'CRM')
-    await expect(page).toHaveURL(/\/crm/)
-    await expectPageHeading(page, 'CRM Contacts')
-  })
-
   test('Support → /support', async ({ page }) => {
     await navigateTo(page, '/')
     await openPaletteAndNavigate(page, 'Support')

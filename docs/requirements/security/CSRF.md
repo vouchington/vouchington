@@ -39,7 +39,7 @@ layer independently blocks the attack.
 4. **JSON-only content type** — api-server rejects a request that **carries a body** (detected via
    `Content-Length` / `Transfer-Encoding`) whose `Content-Type` is not JSON, including an
    **absent** `Content-Type` (a cross-site `fetch` with a typeless `Blob` omits it), for every
-   mutating route by default. The signed CRM and email unsubscribe routes explicitly accept
+   mutating route by default. The signed email unsubscribe route explicitly accepts
    `application/x-www-form-urlencoded` because they authenticate with signed tokens rather than
    cookies. HTML forms can only send `application/x-www-form-urlencoded`,
    `multipart/form-data`, or `text/plain` — never `application/json` — so form-based CSRF cannot
