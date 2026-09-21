@@ -3,6 +3,7 @@ import { getSiteOrigin } from '@modules/utils'
 import { OAuthProtocolError, invalidRedirectUri, invalidRequest } from './errors.mts'
 
 const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1'])
+const MAX_URI_LENGTH = 2048
 const PKCE_CHALLENGE_PATTERN = /^[A-Za-z0-9_-]{43}$/
 const PKCE_VERIFIER_PATTERN = /^[A-Za-z0-9._~-]{43,128}$/
 
@@ -11,7 +12,7 @@ export function validateRedirectUris(values: unknown): string[] {
     throw invalidRedirectUri('redirect_uris must contain between 1 and 10 entries')
   }
   const redirectUris = values.map(value => {
-    if (typeof value !== 'string' || value.length > 2048) {
+    if (typeof value !== 'string' || value.length > MAX_URI_LENGTH) {
       throw invalidRedirectUri('redirect_uris contains an invalid URI')
     }
     let uri: URL
@@ -30,7 +31,11 @@ export function validateRedirectUris(values: unknown): string[] {
     if (uri.protocol !== 'https:' && !(uri.protocol === 'http:' && loopback)) {
       throw invalidRedirectUri('redirect URIs must use HTTPS or loopback HTTP')
     }
-    return uri.toString()
+    const serialized = uri.toString()
+    if (serialized.length > MAX_URI_LENGTH) {
+      throw invalidRedirectUri('redirect_uris contains an invalid URI')
+    }
+    return serialized
   })
   if (new Set(redirectUris).size !== redirectUris.length) {
     throw invalidRedirectUri('redirect_uris contains duplicates')
@@ -39,7 +44,7 @@ export function validateRedirectUris(values: unknown): string[] {
 }
 
 export function validateResource(value: unknown): string {
-  if (typeof value !== 'string' || value.length > 2048) {
+  if (typeof value !== 'string' || value.length > MAX_URI_LENGTH) {
     throw invalidRequest('resource is required')
   }
   let resource: URL

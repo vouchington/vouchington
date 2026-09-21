@@ -57,6 +57,10 @@ describe('OAuth client and authorization validation', () => {
     ['a malformed URI', ['not a URI']],
     ['userinfo', ['https://tests+oauth-redirect@voucha.ai/callback']],
     ['a fragment', ['https://example.com/callback#fragment']],
+    [
+      'a URI exceeding storage length after serialization',
+      [`https://example.com/${'é'.repeat(340)}`],
+    ],
     ['duplicate URIs', ['https://example.com/callback', 'https://example.com/callback']],
   ])('rejects redirect metadata with %s', (_name, redirectUris) => {
     expect(() => validateRedirectUris(redirectUris)).toThrowError(
