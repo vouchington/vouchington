@@ -33,6 +33,10 @@ export async function getOrCreateEmailAssessment(
         SELECT id FROM copyright_notice_submission_assessments
         WHERE copyright_notice_submission_id = ${admitted.submissionId}
           AND substantially_compliant
+          AND NOT EXISTS (
+            SELECT 1 FROM copyright_notice_submission_assessments newer
+            WHERE newer.supersedes_assessment_id = copyright_notice_submission_assessments.id
+          )
         ORDER BY id DESC LIMIT 1`,
     )
     assert(concurrent[0], 409, 'Copyright email assessment conflicted without a current result')

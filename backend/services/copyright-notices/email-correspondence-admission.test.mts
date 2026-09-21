@@ -171,4 +171,88 @@ describe('copyright email correspondence admission', () => {
       text: 'Your counter-notice was reviewed and was not accepted.',
     })
   })
+
+  it('replays a rejected matched email without a second decision', async () => {
+    const moderatorRecord = await createTestUser()
+    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+    const poster = await createTestUser()
+    const postId = await insertTestPost({
+      title: `Copyright reject replay ${crypto.randomUUID()}`,
+      slug: `copyright-reject-replay-${crypto.randomUUID()}`,
+      createdById: poster.id,
+      markdown: 'image',
+    })
+    const imageId = await insertTestImage(poster.id)
+    await insertTestPostImage({ postId, imageId })
+    const notice = await createCopyrightNoticeAggregate({
+      jurisdiction: 'us_dmca',
+      receivedAt: new Date(),
+      claimantUserId: null,
+      claimantDisplayName: null,
+      claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+      workDescription: 'Original photograph',
+      policyVersion: 'test-v1',
+      initialSubmission: { kind: 'notice', sourceKind: 'email', bodyCiphertext: 'ciphertext' },
+      targets: [
+        {
+          placementKey: `post-image:${postId}:${imageId}`,
+          placementRevision: 1,
+          imageId,
+          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+        },
+      ],
+    })
+    const sesMessageId = `ses-reject-replay-${crypto.randomUUID()}`
+    const { intake } = await createCopyrightEmailIntake({
+      sesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${sesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 6),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+    })
+    await recordCopyrightEmailParse(intake, {
+      status: 'succeeded',
+      fromEmail: 'poster@example.test',
+      subject: 'Counter-notice',
+      bodyText: 'This is not my material.',
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      replyReferences: [],
+      attachments: [],
+    })
+    await linkCopyrightEmailIntakeToNotice({
+      intakeId: intake.id,
+      noticeId: notice.id,
+      linkKind: 'thread',
+    })
+    const rejected = await rejectCopyrightEmailCorrespondence({
+      currentUser: moderator,
+      intakeId: intake.id,
+      kind: 'counter_notice',
+      rationale: 'The message does not complete a counter-notice.',
+      recommendationId: null,
+      manualFallbackReason: 'Agent output is unavailable.',
+    })
+    expect(rejected).toEqual({ noticeId: notice.id, isDuplicate: false })
+    await expect(
+      rejectCopyrightEmailCorrespondence({
+        currentUser: moderator,
+        intakeId: intake.id,
+        kind: 'counter_notice',
+        rationale: 'The completed rejection may be safely replayed.',
+        recommendationId: null,
+        manualFallbackReason: 'Agent output is unavailable.',
+      }),
+    ).resolves.toEqual({ noticeId: notice.id, isDuplicate: true })
+    await expect(
+      rejectCopyrightEmailCorrespondence({
+        currentUser: moderator,
+        intakeId: intake.id,
+        kind: 'counter_notice',
+        rationale: 'The recommendation does not belong to this intake.',
+        recommendationId: '00000000-0000-7000-8000-000000000098',
+        manualFallbackReason: null,
+      }),
+    ).rejects.toMatchObject({ status: 422 })
+  })
 })

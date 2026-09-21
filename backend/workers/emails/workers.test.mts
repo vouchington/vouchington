@@ -32,4 +32,13 @@ describe('emails worker router', () => {
     expect(dispatchEngagementEmails).toHaveBeenCalledOnce()
     expect(dispatchCommunityModerationSummaryEmails).toHaveBeenCalledOnce()
   })
+
+  it('routes copyright notice email jobs to the copyright processor', async () => {
+    await expect(
+      processEmailJob({
+        name: 'processSendCopyrightNoticeEmail',
+        data: { intentId: '00000000-0000-7000-8000-000000000042' },
+      } as Job),
+    ).resolves.toBe(false)
+  })
 })

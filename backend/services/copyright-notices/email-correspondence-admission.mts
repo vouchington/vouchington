@@ -236,7 +236,7 @@ export async function rejectCopyrightEmailCorrespondence(input: {
   await transaction(sql`/* rejectCopyrightEmailCorrespondence:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
     VALUES (${pending.notice_id}, 'email_correspondence_rejected', ${input.currentUser.id},
-      jsonb_build_object('intake_id', ${input.intakeId}))
+      jsonb_build_object('intake_id', ${input.intakeId}::uuid))
   `)
   await transaction.commit()
   return { noticeId: pending.notice_id, isDuplicate: false }

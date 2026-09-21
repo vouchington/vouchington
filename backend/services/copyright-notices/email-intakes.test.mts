@@ -10,6 +10,7 @@ import {
   createCopyrightEmailIntake,
   createCopyrightNoticeAggregate,
   getPendingCopyrightAgentDispatches,
+  listRecoverableCopyrightEmailIntakeResponses,
   prepareCopyrightEmailIntakeResponseDelivery,
   promoteCopyrightEmailIntake,
   recordCopyrightEmailParse,
@@ -151,6 +152,12 @@ describe('copyright email intake persistence', () => {
     expect(rejected.responseId).toEqual(expect.any(String))
     expect(duplicate).toEqual({ responseId: null })
     if (!rejected.responseId) throw new Error('Email intake response was not created')
+    await expect(listRecoverableCopyrightEmailIntakeResponses(100)).resolves.toEqual(
+      expect.arrayContaining([{ id: rejected.responseId }]),
+    )
+    await expect(
+      prepareCopyrightEmailIntakeResponseDelivery('00000000-0000-7000-8000-000000000046'),
+    ).rejects.toThrow('Copyright email intake response is not available to send')
     await expect(
       prepareCopyrightEmailIntakeResponseDelivery(rejected.responseId),
     ).resolves.toMatchObject({

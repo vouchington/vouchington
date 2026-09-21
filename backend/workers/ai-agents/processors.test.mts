@@ -94,4 +94,13 @@ describe('processAIAgent routing', () => {
       } as Job<AIAgentJobData>),
     ).resolves.toEqual({ success: true })
   })
+
+  it('routes reconcile-copyright-agent-dispatches to the copyright reconcile processor', async () => {
+    await expect(
+      processAIAgent({
+        name: 'reconcile-copyright-agent-dispatches',
+        data: {},
+      } as Job<AIAgentJobData>),
+    ).resolves.toBeUndefined()
+  })
 })

@@ -284,3 +284,13 @@ describe('copyright form intakes', () => {
     ).resolves.toBe(1)
   })
 })
+
+describe('createCopyrightGuestIdentity', () => {
+  it('hashes the request IP into a stable guest identity', async () => {
+    const { createCopyrightGuestIdentity } = await import('./form-intakes.mts')
+    const first = createCopyrightGuestIdentity('203.0.113.10')
+    expect(first).toMatch(/^guest:/)
+    expect(createCopyrightGuestIdentity('203.0.113.10')).toBe(first)
+    expect(createCopyrightGuestIdentity('198.51.100.20')).not.toBe(first)
+  })
+})

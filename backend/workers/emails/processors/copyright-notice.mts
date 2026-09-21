@@ -59,9 +59,10 @@ async function markCopyrightEmailSent(
       correspondenceId: prepared.correspondenceId,
       sesMessageId,
     })
-  if (data.intakeResponseId && !prepared.correspondenceId)
-    return markCopyrightEmailIntakeResponseSent({ responseId: data.intakeResponseId, sesMessageId })
-  throw new Error('Copyright email job delivery changed while sending')
+  return markCopyrightEmailIntakeResponseSent({
+    responseId: data.intakeResponseId!,
+    sesMessageId,
+  })
 }
 
 async function markCopyrightEmailFailed(

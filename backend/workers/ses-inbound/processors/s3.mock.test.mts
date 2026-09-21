@@ -221,6 +221,14 @@ describe('SES inbound S3 storage', () => {
 
     mocks.send.mockResolvedValueOnce({
       ETag: '"etag-1"',
+      Body: Readable.from([Buffer.from('raw MIME')]),
+    } as never)
+    await expect(loadSesInboundObject('incoming/no-receipt-time')).rejects.toThrow(
+      'Raw SES object has no receipt time',
+    )
+
+    mocks.send.mockResolvedValueOnce({
+      ETag: '"etag-1"',
       Body: {},
       LastModified: new Date('2026-07-01T12:00:00.000Z'),
     } as never)

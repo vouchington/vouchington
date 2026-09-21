@@ -117,15 +117,13 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
   `)
   const assessment =
     existingAssessments[0] ??
-    (await createAutomatedAssessment({
+    (await appendCopyrightSubmissionAssessment({
       submissionId,
-      noticeId: intake.notice_id,
-      screeningId: intake.screening_id,
+      assessedAt: new Date(),
+      currentUser: null,
+      substantiallyCompliant: true,
+      copyrightFormScreeningId: intake.screening_id,
     }))
-  if (!assessment) {
-    await transaction.commit()
-    return
-  }
   const { rows: targets } = await write<{
     id: string
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:targets */
@@ -148,43 +146,4 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     ),
   )
   await transaction.commit()
-}
-
-async function createAutomatedAssessment(input: {
-  submissionId: string
-  noticeId: string
-  screeningId: string
-}): Promise<{ id: string } | null> {
-  try {
-    return await appendCopyrightSubmissionAssessment({
-      submissionId: input.submissionId,
-      assessedAt: new Date(),
-      currentUser: null,
-      substantiallyCompliant: true,
-      copyrightFormScreeningId: input.screeningId,
-    })
-  } catch (error) {
-    if (!isCurrentAssessmentConflict(error)) throw error
-    const { rows } = await write<{ id: string }>(sql`/* createAutomatedAssessment:concurrent */
-      SELECT assessment.id
-      FROM copyright_notice_submission_assessments assessment
-      JOIN copyright_notice_submissions submission
-        ON submission.id = assessment.copyright_notice_submission_id
-      WHERE submission.id = ${input.submissionId}
-        AND submission.copyright_notice_id = ${input.noticeId}
-        AND assessment.assessed_by_id IS NULL
-        AND assessment.substantially_compliant
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_submission_assessments newer
-          WHERE newer.supersedes_assessment_id = assessment.id
-        )
-    `)
-    return rows[0] ?? null
-  }
-}
-
-function isCurrentAssessmentConflict(error: unknown): boolean {
-  return (
-    typeof error === 'object' && error !== null && (error as { status?: unknown }).status === 409
-  )
 }

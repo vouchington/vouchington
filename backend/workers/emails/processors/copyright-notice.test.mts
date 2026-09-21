@@ -152,4 +152,22 @@ describe('processSendCopyrightNoticeEmail', () => {
       }),
     )
   })
+
+  it('rejects a job that names both a legal intent and an intake response', async () => {
+    await expect(
+      processSendCopyrightNoticeEmail({
+        intentId: '00000000-0000-7000-8000-000000000043',
+        intakeResponseId: '00000000-0000-7000-8000-000000000044',
+      }),
+    ).rejects.toThrow('exactly one delivery')
+  })
+
+  it('fails a claimed intake response when SES omits its MessageId', async () => {
+    vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
+    const intakeResponseId = await createEmailIntakeResponse()
+
+    await expect(processSendCopyrightNoticeEmail({ intakeResponseId })).rejects.toThrow(
+      'SES accepted copyright email without a MessageId',
+    )
+  })
 })

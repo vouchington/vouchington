@@ -201,4 +201,72 @@ describe('copyright email promotion', () => {
       }),
     ).resolves.toBe(false)
   })
+
+  it('rejects a recommendation that does not belong to the intake', async () => {
+    const [poster, moderatorRecord] = await Promise.all([createTestUser(), createTestUser()])
+    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+    const postId = await insertTestPost({
+      title: `Copyright rec scope ${crypto.randomUUID()}`,
+      slug: `copyright-rec-scope-${crypto.randomUUID()}`,
+      createdById: poster.id,
+      markdown: 'Hosted copyright target.',
+    })
+    const imageId = await insertTestImage(poster.id)
+    await insertTestPostImage({ postId, imageId })
+    const sesMessageId = `ses-rec-scope-${crypto.randomUUID()}`
+    const { intake } = await createCopyrightEmailIntake({
+      sesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${sesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 7),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+    })
+    await recordCopyrightEmailParse(intake, {
+      status: 'succeeded',
+      fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
+      subject: 'Copyright complaint',
+      bodyText: 'This is a copyright complaint.',
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      replyReferences: [],
+      attachments: [],
+    })
+    const foreignRecommendationId = '00000000-0000-7000-8000-000000000099'
+    await expect(
+      promoteCopyrightEmailIntake({
+        currentUser: moderator,
+        intakeId: intake.id,
+        recommendationId: foreignRecommendationId,
+        manualFallbackReason: null,
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: 'Claimant',
+        claimantContact: 'claimant@example.test',
+        claimantEmail: 'claimant@example.test',
+        workDescription: 'Original photograph',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Claimant',
+        targets: [
+          {
+            placementKey: `post-image:${postId}:${imageId}`,
+            placementRevision: 1,
+            imageId,
+            hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+          },
+        ],
+        rationale: 'The recommendation belongs to a different intake.',
+      }),
+    ).rejects.toMatchObject({ status: 422 })
+    await expect(
+      rejectCopyrightEmailIntake({
+        currentUser: moderator,
+        intakeId: intake.id,
+        recommendationId: foreignRecommendationId,
+        manualFallbackReason: null,
+        rationale: 'The recommendation belongs to a different intake.',
+        responseKind: 'rejected',
+        responseMessage: null,
+      }),
+    ).rejects.toMatchObject({ status: 422 })
+  })
 })

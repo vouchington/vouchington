@@ -6,7 +6,10 @@ import type {
 import type { enqueueDeliverCopyrightNotice } from '@queues/notifications/enqueues'
 import type { listRecoverableCopyrightDeliveryIntents } from '@services/copyright-notices/delivery-intents'
 import type { listRecoverableCopyrightEmailIntakeResponses } from '@services/copyright-notices/email-intake-responses'
-import { processReconcileCopyrightDeliveryIntents } from './copyright-delivery.mts'
+import {
+  processDeliverCopyrightNotice,
+  processReconcileCopyrightDeliveryIntents,
+} from './copyright-delivery.mts'
 
 describe('copyright delivery reconciliation', () => {
   it('routes each durable intent to its channel worker', async () => {
@@ -61,5 +64,17 @@ describe('copyright delivery reconciliation', () => {
     expect(enqueueInApp).toHaveBeenCalledWith('00000000-0000-7000-8000-000000000011')
     expect(enqueueEmail).toHaveBeenCalledWith('00000000-0000-7000-8000-000000000014')
     expect(enqueueResponse).toHaveBeenCalledWith('00000000-0000-7000-8000-000000000016')
+  })
+
+  it('delivers a claimed in-app copyright notice through the worker processor', async () => {
+    const deliver = vi.fn<(intentId: string) => Promise<boolean>>().mockResolvedValue(true)
+
+    await expect(
+      processDeliverCopyrightNotice(
+        { intentId: '00000000-0000-7000-8000-000000000017' },
+        { deliverCopyrightInAppNotification: deliver },
+      ),
+    ).resolves.toBe(true)
+    expect(deliver).toHaveBeenCalledWith('00000000-0000-7000-8000-000000000017')
   })
 })
