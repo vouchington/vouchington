@@ -40,6 +40,15 @@ describe('parseRequest placement routes', () => {
     expect(() => parseRequest(event)).toThrow(RequestParseError)
   })
 
+  it('rejects a placement revision outside the safe integer range', () => {
+    const event = placementEvent(
+      '/images/placements/00000000-0000-7000-8000-000000000001/9007199254740993/00000000-0000-7000-8000-000000000002',
+    )
+
+    expect(() => parseRequest(event)).toThrow(RequestParseError)
+    expect(() => parseRequest(event)).toThrow('Invalid placement revision')
+  })
+
   it('accepts an initial placement revision of zero', () => {
     const event = placementEvent(
       '/images/placements/00000000-0000-7000-8000-000000000001/0/00000000-0000-7000-8000-000000000002',
