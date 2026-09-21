@@ -21,6 +21,7 @@ import { NATIVE_CONSUMER_MANIFEST_CLAIMS_16 } from './native-consumer-manifest/c
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_17 } from './native-consumer-manifest/claims-17.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_17_MODERATION_SUMMARY } from './native-consumer-manifest/claims-17-moderation-summary.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_18 } from './native-consumer-manifest/claims-18.mts'
+import { NATIVE_CONSUMER_MANIFEST_CLAIMS_18_PRESENTATION } from './native-consumer-manifest/claims-18-presentation.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_19 } from './native-consumer-manifest/claims-19.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_20 } from './native-consumer-manifest/claims-20.mts'
 import { NATIVE_CONSUMER_MANIFEST_CLAIMS_21 } from './native-consumer-manifest/claims-21.mts'
@@ -60,6 +61,7 @@ const NATIVE_CONSUMER_MANIFEST_CLAIM_SLICES: readonly (readonly NativeConsumerMa
   NATIVE_CONSUMER_MANIFEST_CLAIMS_17_MODERATION_SUMMARY,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_17,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_18,
+  NATIVE_CONSUMER_MANIFEST_CLAIMS_18_PRESENTATION,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_19,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_20,
   NATIVE_CONSUMER_MANIFEST_CLAIMS_21,
