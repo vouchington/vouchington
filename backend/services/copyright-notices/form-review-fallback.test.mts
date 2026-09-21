@@ -6,7 +6,21 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import { createCopyrightFormIntake, reviewCopyrightFormIntake } from './index.mts'
+import {
+  createCopyrightFormIntake,
+  getCopyrightNoticePrivateAggregate,
+  processCopyrightActionIntent,
+  reviewCopyrightFormIntake,
+} from './index.mts'
+
+async function applyQueuedRestoreIntents(noticeId: string) {
+  const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
+  for (const intent of aggregate?.actionIntents ?? []) {
+    if (intent.action === 'restore' && intent.state === 'pending') {
+      await processCopyrightActionIntent(intent.id, new Date())
+    }
+  }
+}
 import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,
@@ -143,7 +157,7 @@ describe('copyright form moderator fallback', () => {
       }),
       applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id),
     ])
-
+    await applyQueuedRestoreIntents(notice.intake.copyright_notice_id)
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
     ).resolves.toBe(0)
@@ -199,6 +213,7 @@ describe('copyright form moderator fallback', () => {
       accepted: false,
       rationale: 'The automated restriction was not substantiated.',
     })
+    await applyQueuedRestoreIntents(notice.intake.copyright_notice_id)
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
     ).resolves.toBe(0)
