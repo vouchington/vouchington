@@ -13,4 +13,3 @@ CRM email management backed by `conversation_messages` rows in CRM conversations
 
 - Parent: [../CLAUDE.md](../CLAUDE.md)
 - CRM notes: [../crm-notes/README.md](../crm-notes/README.md)
-- CRM requirements: [../../../docs/requirements/admin/CRM.md](../../../docs/requirements/admin/CRM.md)

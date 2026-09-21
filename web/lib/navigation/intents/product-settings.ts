@@ -151,5 +151,17 @@ export const SETTINGS_INTENT: NavIntent = {
         },
       ],
     },
+    {
+      label: 'extracted.intents.productOther.admin_c1c224b0',
+      dataPw: 'settings-sidebar-admin-group',
+      roles: ['administrator'] as const,
+      items: [
+        {
+          href: '/memberships/grants',
+          label: 'extracted.intents.admin.memberships_b50f1a42',
+          dataPw: 'sidebar-link-memberships',
+        },
+      ],
+    },
   ],
 }

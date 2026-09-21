@@ -74,10 +74,6 @@ export function modmailThreadHref(community: string | SlugInput, thread: string 
   return `/messages/modmail/${slugOrValue(community)}/${idOrValue(thread)}`
 }
 
-export function crmContactHref(contact: string | IdInput): string {
-  return `/crm/${idOrValue(contact)}`
-}
-
 export function createUrlPathname(url: string | IdInput, suffix = ''): string {
   return `/url/${idOrValue(url)}${suffix}`
 }

@@ -48,7 +48,6 @@ const authenticatedRoutes = [
 
 const adminRoutes = [
   { name: 'urls page', path: '/urls' },
-  { name: 'crm page', path: '/crm' },
   { name: 'support contacts page', path: '/support/contacts' },
   { name: 'admin queues page', path: '/admin/queues' },
   { name: 'report integrity flags page', path: '/report-integrity/flags' },

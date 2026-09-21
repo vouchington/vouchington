@@ -2,29 +2,8 @@ import { expect, test, type Locator } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { assertNoHorizontalScroll } from '../../helpers/mobile-assertions.mts'
-import { createTestCrmContact, createTestUser } from '../../../backend/test-helpers/index.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
 
 const mobileViewport = { width: 375, height: 812 } as const
-let crmSearch = ''
-
-test.beforeAll(async () => {
-  const admin = requireTestValue(
-    await createTestUser({ administrator: true }),
-    'Failed to create CRM admin',
-  )
-  crmSearch = `crm-pagination-${randomSuffix()}`
-  await Promise.all(
-    Array.from({ length: 26 }, (_, index) =>
-      createTestCrmContact(admin, {
-        name: `${crmSearch} contact ${index}`,
-        email: `tests+${crmSearch}-${index}@voucha.ai`,
-      }),
-    ),
-  )
-})
-
 async function assertLocatorTouchTarget(locator: Locator) {
   const box = await locator.boundingBox()
   expect(box).not.toBeNull()
@@ -71,16 +50,6 @@ test.describe('frontend design audit coverage', () => {
 
       await assertNoHorizontalScroll(page)
       await assertLocatorTouchTarget(page.getByTestId('client-search-submit'))
-
-      await navigateTo(page, `/crm?q=${crmSearch}`)
-
-      await assertNoHorizontalScroll(page)
-      await expect(page.getByTestId('admin-page-header')).toBeVisible()
-      await expect(page.getByTestId('admin-table-shell')).toBeVisible()
-
-      const adminPagination = page.getByTestId('admin-pagination')
-      await expect(adminPagination).toBeVisible()
-      await expect(adminPagination.getByRole('link').last()).toHaveAttribute('href', /after=/)
     })
   })
 })

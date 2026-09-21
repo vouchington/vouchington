@@ -148,15 +148,6 @@
       "roles": []
     },
     {
-      "id": "crm",
-      "label": "CRM",
-      "nativePlacement": "staff-directory",
-      "swiftSection": "crm",
-      "dotnetSection": "crm",
-      "requiresAuth": false,
-      "roles": ["administrator"]
-    },
-    {
       "id": "engineering",
       "label": "Engineering",
       "nativePlacement": "staff-directory",

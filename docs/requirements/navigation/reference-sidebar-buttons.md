@@ -58,9 +58,8 @@ color, background, or inset ring/shadow treatments instead.
 |                                  | Topic Aliases                                            | `/topics/aliases`             | —      | —    | yes   | —        |
 |                                  | RSS Feed Categories                                      | `/rss-feed-categories`        | —      | —    | yes   | —        |
 |                                  | Curated Asides                                           | `/curated-asides/topics`      | —      | —    | yes   | —        |
-| **CRM**                          | CRM                                                      | `/crm`                        | —      | —    | yes   | —        |
-|                                  | Memberships                                              | `/memberships/grants`         | —      | —    | yes   | —        |
-|                                  | Support                                                  | `/support`                    | —      | —    | yes   | —        |
+| **Settings / Admin**             | Memberships                                              | `/memberships/grants`         | —      | —    | yes   | —        |
+| **Support**                      | Support                                                  | `/support`                    | —      | —    | yes   | —        |
 |                                  | Support Contacts                                         | `/support/contacts`           | —      | —    | yes   | —        |
 | **Engineering / Operations**     | Queues                                                   | `/admin/queues`               | —      | —    | yes   | —        |
 |                                  | PostgreSQL                                               | `/admin/postgresql`           | —      | —    | yes   | —        |

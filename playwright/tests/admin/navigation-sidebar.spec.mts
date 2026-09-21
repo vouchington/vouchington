@@ -38,9 +38,9 @@ test.describe('Admin sidebar navigation', () => {
     await expect(sidebar.getByTestId('sidebar-group-admin-moderation')).toBeVisible()
   })
 
-  test('renders admin crm intent section trigger', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/crm')
-    await expect(sidebar.getByTestId('sidebar-group-admin-crm')).toBeVisible()
+  test('renders administrator settings section trigger', async ({ page }) => {
+    const sidebar = await openSidebarAt(page, '/memberships/grants')
+    await expect(sidebar.getByTestId('settings-sidebar-admin-group')).toBeVisible()
   })
 
   test('renders admin operations and dynamic config section triggers', async ({ page }) => {
@@ -109,35 +109,29 @@ test.describe('Admin sidebar navigation', () => {
     await expect(page.getByTestId('appeals-heading')).toBeVisible()
   })
 
-  // ── CRM ───────────────────────────────────────────────────────────────────
+  // ── Settings administration ──────────────────────────────────────────────
 
-  test('CRM: CRM → /crm', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/crm')
-    await sidebar.getByTestId('sidebar-link-crm').click()
-    await expect(page).toHaveURL(/\/crm/)
-    await expect(
-      page.getByTestId('admin-page-header-title').filter({ hasText: 'CRM Contacts' }),
-    ).toBeVisible()
-  })
-
-  test('CRM: Memberships → /memberships/grants', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/crm')
+  test('Settings: Memberships → /memberships/grants', async ({ page }) => {
+    const sidebar = await openSidebarAt(page, '/memberships/grants')
     await sidebar.getByTestId('sidebar-link-memberships').click()
     await expect(page).toHaveURL(/\/memberships\/grants/)
     await expect(page.getByTestId('memberships-admin-heading')).toBeVisible()
   })
 
-  test('CRM: Support → /support', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/crm')
+  test('Support: Support → /support', async ({ page }) => {
+    const sidebar = await openSidebarAt(page, '/support')
     await sidebar.getByTestId('sidebar-link-support').click()
     await expect(page).toHaveURL(/\/support/)
     await expect(
       page.getByTestId('admin-page-header-title').filter({ hasText: 'Support Threads' }),
     ).toBeVisible()
+    await expect(page.getByTestId('admin-page-header')).toBeVisible()
+    await expect(page.getByTestId('admin-table-shell')).toBeVisible()
+    await expect(page.getByTestId('admin-pagination')).toBeVisible()
   })
 
-  test('CRM: Support Contacts → /support/contacts', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/crm')
+  test('Support: Support Contacts → /support/contacts', async ({ page }) => {
+    const sidebar = await openSidebarAt(page, '/support')
     await sidebar.getByTestId('sidebar-link-support-contacts').click()
     await expect(page).toHaveURL(/\/support\/contacts/)
     await expect(

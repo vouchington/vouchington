@@ -9,7 +9,6 @@ See also:
 - [Sidebar](./navigation/SIDEBAR.md) — sidebar visibility matrix and section ordering
 - [Routes](./navigation/ROUTES.md) — complete route inventory
 - [Actions](./navigation/ACTIONS.md) — placement principles, tooltip rules, and per-entity action tables
-- [CRM](./admin/CRM.md) — CRM contact management
 - [CUSTOMER-SUPPORT](./admin/CUSTOMER-SUPPORT.md) — support thread and contact management
 - [memberships](./users/memberships.md) — membership grant/management
 - [HOSTNAME-BLOCKING](./content/HOSTNAME-BLOCKING.md) — domain blocking and crawler management

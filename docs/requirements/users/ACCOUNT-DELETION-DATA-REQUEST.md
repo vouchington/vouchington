@@ -63,7 +63,7 @@ purge it after the lease expires.
 
 The daily `data-retention-cleanup-daily` cron permanently deletes a soft-deleted row after 90 days
 only when its deletion request is complete. It reassigns FK references that lack `ON DELETE
-CASCADE`/`SET NULL` (for example CRM contact/note authorship and verified identities) before the
+CASCADE`/`SET NULL` (for example verified identities) before the
 hard delete. Before removing the account, the same transaction revokes every retained administrator
 grant with reason `account_hard_deleted`, terminalizes its source state, and closes any open
 activation period without allowing its end to precede its start. Identity-verification attempt rows

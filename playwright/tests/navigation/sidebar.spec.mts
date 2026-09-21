@@ -220,9 +220,7 @@ test.describe('Sidebar section order', () => {
     expect(labels).not.toContain('Create')
   })
 
-  test('admin: intent switcher includes Growth, Moderation, CRM, and Engineering', async ({
-    page,
-  }) => {
+  test('admin: intent switcher includes Growth, Moderation, and Engineering', async ({ page }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT)
     await navigateTo(page, '/')
 
@@ -232,7 +230,6 @@ test.describe('Sidebar section order', () => {
 
     await expect(page.getByTestId('intent-switcher-item-growth')).toBeVisible()
     await expect(page.getByTestId('intent-switcher-item-moderation')).toBeVisible()
-    await expect(page.getByTestId('intent-switcher-item-crm')).toBeVisible()
     await expect(page.getByTestId('intent-switcher-item-engineering')).toBeVisible()
   })
 })

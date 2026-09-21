@@ -12,4 +12,3 @@ CRUD operations for internal CRM notes backed by `conversation_messages` rows in
 
 - Parent: [../CLAUDE.md](../CLAUDE.md)
 - CRM messages: [../crm-messages/README.md](../crm-messages/README.md)
-- CRM requirements: [../../../docs/requirements/admin/CRM.md](../../../docs/requirements/admin/CRM.md)

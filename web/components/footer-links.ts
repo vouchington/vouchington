@@ -6,6 +6,7 @@ export interface FooterLink {
 
 export const footerSiteLinks: FooterLink[] = [
   { label: 'Plans', href: '/plans', dataPw: 'footer-site-link-plans' },
+  { label: 'Support', href: 'mailto:support@voucha.ai', dataPw: 'footer-site-link-support' },
   { label: 'Shortcuts', href: '/article/keyboard-shortcuts', dataPw: 'footer-site-link-shortcuts' },
   { label: 'About', href: '/article/about', dataPw: 'footer-site-link-about' },
   { label: 'Terms', href: '/article/terms-of-service', dataPw: 'footer-site-link-terms' },

@@ -81,25 +81,15 @@ export const ADMIN_INTENTS: readonly NavIntent[] = [
     ],
   },
   {
-    id: 'crm',
-    label: 'extracted.intents.admin.crm_130f70ae',
+    id: 'support',
+    label: 'extracted.intents.admin.support_be91940b',
     icon: Contact,
     roles: ['administrator'] as const,
     groups: [
       {
-        label: 'extracted.intents.admin.crm_130f70ae',
-        dataPw: 'sidebar-group-admin-crm',
+        label: 'extracted.intents.admin.support_be91940b',
+        dataPw: 'sidebar-group-admin-support',
         items: [
-          {
-            label: 'extracted.intents.admin.crm_130f70ae',
-            href: '/crm',
-            dataPw: 'sidebar-link-crm',
-          },
-          {
-            label: 'extracted.intents.admin.memberships_b50f1a42',
-            href: '/memberships/grants',
-            dataPw: 'sidebar-link-memberships',
-          },
           {
             label: 'extracted.intents.admin.support_be91940b',
             href: '/support',

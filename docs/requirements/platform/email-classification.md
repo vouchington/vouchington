@@ -7,9 +7,8 @@ implementation: [`backend/services/email-classification/README.md`](../../../bac
 ## Why
 
 Before this system, classification was implicit and scattered per-processor: nothing forced a
-new email type to declare transactional vs. marketing, SES `ConfigurationSetName` was defined in
-Terraform but never passed to the send call (no reputation isolation), and CRM cold outreach had
-no unsubscribe link despite sending to raw addresses with no `userId`. Mixing transactional and
+new email type to declare transactional vs. marketing, and SES `ConfigurationSetName` was defined in
+Terraform but never passed to the send call (no reputation isolation). Mixing transactional and
 marketing traffic on one SES identity means a marketing bounce/complaint spike can degrade
 deliverability for auth emails (login tokens, email verification).
 
@@ -56,7 +55,6 @@ classification at all.
 | `processSendPostReferralLinkEmail`             | marketing      | `user-category` (`outcome_emails`)   |                                                                                                                                                                 |
 | `processSendFollowNewsSourcesEmail`            | marketing      | `user-category` (`outcome_emails`)   |                                                                                                                                                                 |
 | `processSendCommunityModerationSummaryEmail`   | marketing      | `user-category` (`community_digest`) | Judgment call: recurring + preference-gated + already attaches `community_digest` headers → behaves like a subscription — see [Judgment Calls](#judgment-calls) |
-| `processSendCrmEmail`                          | marketing      | `crm-contact`                        | Email-keyed, not user-keyed — see [CRM opt-out](../admin/CRM.md#self-service-unsubscribe)                                                                       |
 | `newsDigest`                                   | marketing      | `user-category` (`news_digest`)      | Registry-only — no sender exists yet, `hasActiveSender: false` — see [Planned: news_digest](#planned-news_digest)                                               |
 
 Source of truth: `EMAIL_CLASSIFICATIONS` in
@@ -92,9 +90,7 @@ suppression the way bulk marketing does).
 `sendClassifiedEmail` returns `null` without sending, in order:
 
 1. User has opted out of the entry's `user-category` (`getEmailPreferences`).
-2. CRM contact has `opted_out_at` set (`getCrmContactByEmail`) — see
-   [CRM self-service unsubscribe](../admin/CRM.md#self-service-unsubscribe).
-3. Recipient address has a permanent SES bounce or complaint on file (`isEmailSuppressed`).
+2. Recipient address has a permanent SES bounce or complaint on file (`isEmailSuppressed`).
 
 This is a backstop on top of, not a replacement for, each processor's existing claim /
 `mark*Sent` dedup state machine — those are unrelated idempotency concerns (see
@@ -114,7 +110,7 @@ env vars are unset, so no configuration set is passed (correct for local/dev sen
 
 ## CAN-SPAM Footer
 
-Marketing templates (and CRM outreach) require a `physicalAddress` prop — the CAN-SPAM postal
+Marketing templates require a `physicalAddress` prop — the CAN-SPAM postal
 address requirement for commercial email. The backend supplies
 `process.env.MARKETING_POSTAL_ADDRESS ?? MARKETING_POSTAL_ADDRESS_PLACEHOLDER`
 (`@modules/utils`); no real address is configured yet, so the placeholder renders until one is
@@ -132,7 +128,6 @@ out of scope here — tracked by #1167 / #1351.
 ## Related
 
 - Service implementation: [`backend/services/email-classification/README.md`](../../../backend/services/email-classification/README.md)
-- CRM self-service unsubscribe: [../admin/CRM.md#self-service-unsubscribe](../admin/CRM.md#self-service-unsubscribe)
 - Membership renewal notifications: [Membership refunds, renewal notifications, and grants](../users/memberships.md#refunds-renewal-notifications-admin-grants-feature-flag-and-agent-prompt-slots)
 - Job replayability (non-replayable email queue): [JOB-REPLAYABILITY.md](JOB-REPLAYABILITY.md)
 - Email templates catalog: [`email-templates/README.md`](../../../email-templates/README.md)
