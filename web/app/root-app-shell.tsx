@@ -8,7 +8,6 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/lib/auth/auth-provider'
 import { AsideProvider } from '@/lib/aside-provider'
-import { SignedInChatSidebarProvider } from '@/lib/chat-sidebar-context'
 import { SignedInMessagesSidebarProvider } from '@/lib/messages-sidebar-provider'
 import { NavIntentProvider } from '@/lib/navigation/intents/nav-intent-provider'
 import { PodcastPlayerProvider } from '@/lib/podcast-player/context'
@@ -86,29 +85,27 @@ export function RootAppShell({
                             ) : (
                               <NavIntentProvider>
                                 <AsideProvider>
-                                  <SignedInChatSidebarProvider>
-                                    <SignedInMessagesSidebarProvider>
-                                      <SidebarProvider defaultOpen>
-                                        <div className='flex min-h-svh w-full'>
-                                          <AppSidebar siteFooter={<SidebarSiteFooter />} />
-                                          <SidebarInset className='min-w-0 flex-1 flex-col'>
-                                            <PodcastPlayerProvider>
-                                              <Navbar profileMenuUser={profileMenuUser} />
-                                              <SuspensionBanner notice={suspensionNotice} />
-                                              <LocalizedRouteBoundary
-                                                initialCatalog={uiMessages}
-                                                initialLocale={uiLocale}
-                                                initialPathname={initialPathname}
-                                              >
-                                                {mainContent}
-                                              </LocalizedRouteBoundary>
-                                              <PodcastPlayerSpacer />
-                                            </PodcastPlayerProvider>
-                                          </SidebarInset>
-                                        </div>
-                                      </SidebarProvider>
-                                    </SignedInMessagesSidebarProvider>
-                                  </SignedInChatSidebarProvider>
+                                  <SignedInMessagesSidebarProvider>
+                                    <SidebarProvider defaultOpen>
+                                      <div className='flex min-h-svh w-full'>
+                                        <AppSidebar siteFooter={<SidebarSiteFooter />} />
+                                        <SidebarInset className='min-w-0 flex-1 flex-col'>
+                                          <PodcastPlayerProvider>
+                                            <Navbar profileMenuUser={profileMenuUser} />
+                                            <SuspensionBanner notice={suspensionNotice} />
+                                            <LocalizedRouteBoundary
+                                              initialCatalog={uiMessages}
+                                              initialLocale={uiLocale}
+                                              initialPathname={initialPathname}
+                                            >
+                                              {mainContent}
+                                            </LocalizedRouteBoundary>
+                                            <PodcastPlayerSpacer />
+                                          </PodcastPlayerProvider>
+                                        </SidebarInset>
+                                      </div>
+                                    </SidebarProvider>
+                                  </SignedInMessagesSidebarProvider>
                                 </AsideProvider>
                               </NavIntentProvider>
                             )}

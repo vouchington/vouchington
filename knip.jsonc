@@ -92,7 +92,6 @@
     "playwright": {
       "entry": [
         "global-setup.mts",
-        "credentialed-global-setup.mts",
         "setup/**/*.setup.mts",
         "tests/**/*.spec.mts",
         "credentialed/**/*.spec.mts",

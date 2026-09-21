@@ -62,13 +62,10 @@ describe('DERIVED_PAGE_SHORTCUTS parity', () => {
     expect(shortcut && t(shortcut.label)).toBe('Recommend New Topics')
   })
 
-  it('marks chat items with featureFlag', () => {
-    const chatItem = DERIVED_PAGE_SHORTCUTS.find(s => s.href === '/chat')
-    expect(chatItem).toBeDefined()
-    expect(chatItem?.bucket).toBe('authenticated')
-    expect(chatItem?.featureFlag).toBe('chat')
-
+  it('keeps support discoverable without exposing a hosted chat shortcut', () => {
+    expect(DERIVED_PAGE_SHORTCUTS.some(s => s.href === '/chat')).toBe(false)
     const supportChat = DERIVED_PAGE_SHORTCUTS.find(s => s.href === '/chat/support')
+    expect(supportChat?.bucket).toBe('authenticated')
     expect(supportChat?.featureFlag).toBe('chat')
   })
 

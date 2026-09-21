@@ -78,8 +78,6 @@ const RULES: readonly [string, NavIntentId | null][] = [
   ['/urls', 'web-search'],
   ['/url/', 'web-search'],
   ['/crawler', 'web-search'],
-  ['/chat', 'chat'],
-  ['/my/chats', 'chat'],
   ['/my/posts', 'posts'],
   ['/my/topics', 'topics'],
   ['/my/urls', 'web-search'],

@@ -112,7 +112,7 @@ test.describe('Support — /chat/support new thread form', () => {
     })
 
     test('creates a support thread linked to an owned conversation', async ({ page }) => {
-      await navigateTo(page, '/chat')
+      await navigateTo(page, '/chat/support/new')
       const conversationId = await createConversation(page)
       await navigateTo(page, `/chat/support/new?conversation_id=${conversationId}`)
 

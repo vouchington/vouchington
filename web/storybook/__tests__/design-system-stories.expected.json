@@ -43,14 +43,6 @@
   "card.stories.tsx": ["Default"],
   "cards-manager.stories.tsx": ["EmptyState", "WithCards"],
   "carousel.stories.tsx": ["Horizontal", "Vertical"],
-  "chat-input.stories.tsx": ["Default", "WithText", "Streaming", "Disabled"],
-  "chat-messages.stories.tsx": [
-    "EmptyState",
-    "SingleUserMessage",
-    "Conversation",
-    "Streaming",
-    "StreamingWithToolCall"
-  ],
   "checkbox.stories.tsx": ["Default", "Card"],
   "command.stories.tsx": ["CommandPalette"],
   "components.stories.ts": ["Overview"],

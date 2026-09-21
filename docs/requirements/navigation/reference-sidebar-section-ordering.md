@@ -6,12 +6,11 @@
 
 Sections are ordered to match the user journey: discover → engage → contribute → share.
 
-**Explore → Communities → Share → Topics → Trust → Chats → Help → Growth → CMS → CRM → Engineering**
+**Explore → Communities → Share → Topics → Trust → Help → Growth → CMS → CRM → Engineering**
 
 - **Explore** — universal discovery, always visible; authenticated users see News Feed and Posts Feed at the top. News is visible to all users in the News intent Browse group (`/news`).
 - **Share** — creation tools (authenticated only)
 - **Topics / Trust** — reference and taxonomy; lower-frequency navigation targets
-- **Chats** — contextual, only appears on `/chat` routes for authenticated users
 - **Growth** — analytics for administrators and investors
 - **CMS** — content, moderation analytics, and agent management for administrators (URLs, Agents, Topics)
 - **CRM** — customer support and influencer management for administrators

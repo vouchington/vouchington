@@ -1,8 +1,6 @@
-// Credentialed E2E suite — requires real cloud credentials (AWS S3, OpenAI).
-// Uses the same server topology as playwright.config.mts but adds the CPU worker
-// (ai_agents queue consumer) started in credentialed-global-setup.mts so chat
-// jobs are processed end-to-end, and pins WORKER_PORT=8787 so the S3 CORS
-// allow-list matches the browser Origin.
+// Credentialed E2E suite — requires real cloud credentials for S3.
+// Uses the same base setup and server topology as playwright.config.mts, and
+// pins WORKER_PORT=8787 so the S3 CORS allow-list matches the browser Origin.
 //
 // Run locally (after source .env with real creds + prior build):
 //   WORKER_PORT=8787 pnpm exec playwright test --config playwright.credentialed.config.mts --reporter=line
@@ -23,6 +21,6 @@ export default defineConfig(
     backendCommand: 'NODE_ENV=test PLAYWRIGHT_TEST=true node backend/entrypoints/api/serve.mts',
     reuseExistingServer,
     projects: [{ name: 'chromium', use: CHROMIUM_USE }],
-    globalSetup: './playwright/credentialed-global-setup.mts',
+    globalSetup: './playwright/global-setup.mts',
   }),
 )

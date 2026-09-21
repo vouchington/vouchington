@@ -55,12 +55,10 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     // credentialed suite: ci.yml job gated on trusted-secret-context; workflow has secrets+OIDC
     const credJob = jobSection(read('.github/workflows/ci.yml'), 'test-playwright-credentialed')
     expect(credJob).toContain("needs.detect-changes.outputs.trusted-secret-context == 'true'")
-    expect(credJob).toContain(
-      "OPENAI_API_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}",
-    )
+    expect(credJob).not.toContain('OPENAI_API_KEY')
     expect(credJob).toContain('id-token: write')
     const credWf = read('.github/workflows/tests-playwright-credentialed.yml')
-    expect(credWf).toContain('OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}')
+    expect(credWf).not.toContain('OPENAI_API_KEY')
     expect(credWf).not.toContain('./.github/actions/upload-codecov')
   })
 

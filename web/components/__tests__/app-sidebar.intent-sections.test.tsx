@@ -58,22 +58,25 @@ describe('AppSidebar intent sections', () => {
   })
 
   describe('Chat intent', () => {
-    it('hides Chats section for unauthenticated users at /chat', () => {
-      setMockPathname('/chat')
+    it('hides Chat section for unauthenticated users at /chat/support', () => {
+      setMockPathname('/chat/support')
       renderSidebar()
-      expect(screen.queryByText('Chats')).toBeNull()
+      expect(screen.queryByText('Chat')).toBeNull()
     })
 
-    it.each(['/chat', '/chat/abc-123'])('does not show static Messages group at %s', pathname => {
-      setMockPathname(pathname)
+    it('does not show static Messages group at /chat/support', () => {
+      setMockPathname('/chat/support')
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
       expect(screen.queryByText('Messages')).toBeNull()
     })
 
-    it('does not show Support link without support feature flag', () => {
-      setMockPathname('/chat')
+    it('shows Support link when the chat feature flag is enabled', () => {
+      setMockPathname('/chat/support')
       renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.queryByRole('link', { name: /^Support$/i })).toBeNull()
+      expect(screen.getByRole('link', { name: /^Support$/i })).toHaveAttribute(
+        'href',
+        '/chat/support',
+      )
     })
   })
 

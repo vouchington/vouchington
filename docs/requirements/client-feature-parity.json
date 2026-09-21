@@ -408,7 +408,7 @@
       "title": "Member support threads",
       "domain": "Support",
       "intents": ["chat"],
-      "requirements": ["docs/requirements/content/CHAT.md"],
+      "requirements": ["docs/requirements/reference-support.md"],
       "matrixRows": [
         {
           "table": "A",
@@ -416,7 +416,7 @@
         },
         {
           "table": "B",
-          "surface": "chat / support"
+          "surface": "member support"
         }
       ],
       "clients": {
@@ -2057,7 +2057,7 @@
       "matrixRows": [
         {
           "table": "B",
-          "surface": "chat / support"
+          "surface": "staff support"
         }
       ],
       "clients": {

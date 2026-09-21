@@ -21,17 +21,13 @@ describe('getActiveIntent', () => {
     })
   })
 
-  describe('chat intent', () => {
-    it('resolves /chat to chat', () => {
-      expect(getActiveIntent('/chat')).toBe('chat')
-    })
-
+  describe('support navigation', () => {
     it('resolves /chat/support to chat (before /support → crm)', () => {
       expect(getActiveIntent('/chat/support')).toBe('chat')
     })
 
-    it('resolves /my/chats to chat', () => {
-      expect(getActiveIntent('/my/chats')).toBe('chat')
+    it('does not retain a hosted chat route resolver', () => {
+      expect(getActiveIntent('/chat')).toBe('news')
     })
   })
 

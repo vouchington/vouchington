@@ -272,7 +272,7 @@ describe('loadServerMessages', () => {
   })
 
   it('emits development html props from the catalog snapshot revision', async () => {
-    mockHeadersGet.mockReturnValue('/chat')
+    mockHeadersGet.mockReturnValue('/chat/support')
     mockGetBatch.mockResolvedValue(localizationBatch('Chat', 60))
     const catalog = await loadServerMessages('en')
     vi.stubEnv('NODE_ENV', 'development')

@@ -44,33 +44,4 @@ test.describe('Aside accordion behavior', () => {
     await trigger.click()
     await expect(trigger).toHaveAttribute('aria-expanded', 'true')
   })
-
-  test('Communities accordion starts open by default', async ({ page }) => {
-    await page.setViewportSize(LG_VIEWPORT)
-    // Use /chat which has PopularCommunitiesAside unconditionally (not activity-gated)
-    await navigateTo(page, '/chat')
-
-    const aside = page.locator('main aside')
-    const container = aside.getByTestId('aside-accordion-communities')
-    const trigger = aside.getByTestId('aside-accordion-communities-trigger')
-
-    await expect(container, 'seeded communities should be visible').toBeVisible()
-    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
-    await expect(aside.getByTestId('popular-communities-browse-link')).toBeVisible()
-  })
-
-  test('Communities accordion closes on click', async ({ page }) => {
-    await page.setViewportSize(LG_VIEWPORT)
-    // Use /chat which has PopularCommunitiesAside unconditionally (not activity-gated)
-    await navigateTo(page, '/chat')
-
-    const aside = page.locator('main aside')
-    const trigger = aside.getByTestId('aside-accordion-communities-trigger')
-
-    await expect(trigger, 'seeded communities should be visible').toBeVisible()
-    await trigger.click()
-
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
-    await expect(aside.getByTestId('popular-communities-browse-link')).toBeHidden()
-  })
 })

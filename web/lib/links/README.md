@@ -35,7 +35,6 @@ Full exported helper list from `entity-href.ts`. Directory-scoped invariants: [C
 - `agentHref(agent)` — builds `/agent/{slug ?? id}` (slug-preferred)
 - `createAgentPathname(agent, suffix?)` — builds `/agent/{slug ?? id}{suffix}` for agent sub-routes
 - `agentConversationHref(agent, conversation)` — builds `/agent/{slug ?? id}/conversation/{id}`
-- `chatHref(conversation)` — builds `/chat/{id}`
 - `chatSupportThreadHref(thread)` — builds `/chat/support/{id}`
 - `messagesHref(conversation)` — builds `/messages/{id}`
 - `modmailThreadHref(community, thread)` — builds `/messages/modmail/{slug}/{id}`

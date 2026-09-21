@@ -14,7 +14,6 @@ vi.mock(
 
 import { clientApi } from '../instance'
 import { getApiKeys } from '../api-keys'
-import { sendConversationChatStream } from '../conversation-stream'
 import { fetchCaptchaConfig } from '../captcha-config'
 import { getFeatureFlagsClient } from '../feature-flags'
 import { exportRssFeeds, getRssFeedImport } from '../import-export'
@@ -58,24 +57,6 @@ describe('simple client api helpers', () => {
     expect(await fetchCaptchaConfig()).toBe(response)
 
     expect(mockGet).toHaveBeenCalledWith('/api/v1/captcha-config')
-  })
-
-  it('sends conversation chat streams with fetch options intact', async () => {
-    const response = new Response('stream')
-    const fetchMock = vi.fn<VitestLooseMock>().mockResolvedValueOnce(response)
-    vi.stubGlobal('fetch', fetchMock)
-    const signal = new AbortController().signal
-
-    const result = await sendConversationChatStream('conversation-1', 'hello', signal)
-
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/conversations/conversation-1/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ message: 'hello' }),
-      signal,
-    })
-    expect(result).toBe(response)
   })
 
   it('marks a notification read using keepalive fetch', async () => {

@@ -101,8 +101,10 @@ test.describe('Per-page aside content — fresh user', () => {
     await navigateTo(page, '/feed/posts')
 
     const aside = page.locator('main aside')
+    const communities = aside.getByTestId('aside-accordion-communities')
     const trigger = aside.getByTestId('aside-accordion-communities-trigger')
 
+    await expect(communities).toBeVisible()
     await expect(
       trigger,
       'communities accordion visible for user with no memberships',

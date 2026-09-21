@@ -144,9 +144,6 @@ vi.mock(
       VoteStoreProvider: ({ children }: { children: ReactNode }) => children,
     }) as unknown as VoteStoreProviderModule,
 )
-vi.mock(import('@/lib/chat-sidebar-context'), () => ({
-  SignedInChatSidebarProvider: ({ children }: { children: ReactNode }) => children,
-}))
 vi.mock(import('@/components/ui/tooltip'), () => ({
   TooltipProvider: ({ children }: { children: ReactNode }) => children,
 }))

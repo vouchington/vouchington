@@ -88,7 +88,6 @@ PRs and main pushes only).
 | Spec                                                                          | What it tests                                      | Credential required                           |
 | ----------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------------------- |
 | [`credentialed/image-upload.spec.mts`](../credentialed/image-upload.spec.mts) | Real S3 presigned PUT (CORS allow-list validation) | `S3_AWS_ACCESS_KEY_ID` or `AWS_ACCESS_KEY_ID` |
-| [`credentialed/chat.spec.mts`](../credentialed/chat.spec.mts)                 | Real OpenAI streaming chat response                | `OPENAI_API_KEY`                              |
 
 ### Sidebar Starts Open
 
@@ -114,7 +113,7 @@ Tests are organized by feature area:
 - [`auth/`](auth/) - Authentication, login, passkeys, session persistence
 - [`branding/`](branding/) - Multi-vertical branding
 - [`caching/`](caching/) - Signed-out browser caching behavior
-- [`chat/`](chat/) - Chat interface
+- [`chat/`](chat/) - Member support threads
 - [`communities/`](communities/) - Community browse, create, join, settings
 - [`cookie-consent/`](cookie-consent/) - Cookie consent banner
 - [`feed/`](feed/) - Feed pages, media, share/send

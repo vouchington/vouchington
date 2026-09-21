@@ -175,7 +175,6 @@ Pages that set `showFooter={false}`:
 - `/plans`, `/article/keyboard-shortcuts` (static marketing/info)
 - `/communities` list page (no infinite scroll)
 - `/my/*` settings pages
-- `/chat` (fixed-height chat)
 - `/` home page (logged-out landing)
 - Post create pages: `/discussions/create`, `/reviews/create`, `/data-points/create`, `/articles/create`, `/blog-posts/create` (each page sets `showFooter={false}` directly)
 

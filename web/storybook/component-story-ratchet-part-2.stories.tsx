@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+
 import { componentStoryRatchetParameters } from './component-story-ratchet-parameters'
 import {
   ComponentStoryRatchetGrid,
@@ -17,8 +18,6 @@ import {
   MicrosoftLoginButton as AuthOauthProviderButtonsMicrosoftLoginButton,
   XLoginButton as AuthOauthProviderButtonsXLoginButton,
 } from '@/components/auth/oauth-provider-buttons'
-import { ChatConversationItem as ChatChatsSidebarGroupConversationItemChatConversationItem } from '@/components/chat/chats-sidebar-group-conversation-item'
-import { EditingInput as ChatChatsSidebarGroupEditingInputEditingInput } from '@/components/chat/chats-sidebar-group-editing-input'
 import { CommandSearch as CommandSearchCommandSearch } from '@/components/command-search'
 import { CommandLinkItem as CommandSearchCommandLinkItemCommandLinkItem } from '@/components/command-search/command-link-item'
 import {
@@ -70,14 +69,6 @@ const ratchetedComponentsPart2 = [
     key: 'web/components/auth/oauth-provider-buttons.tsx#XLoginButton',
     component: AuthOauthProviderButtonsXLoginButton,
   },
-  {
-    key: 'web/components/chat/chats-sidebar-group-conversation-item.tsx#ChatConversationItem',
-    component: ChatChatsSidebarGroupConversationItemChatConversationItem,
-  },
-  {
-    key: 'web/components/chat/chats-sidebar-group-editing-input.tsx#EditingInput',
-    component: ChatChatsSidebarGroupEditingInputEditingInput,
-  },
   { key: 'web/components/command-search.tsx#CommandSearch', component: CommandSearchCommandSearch },
   {
     key: 'web/components/command-search/command-link-item.tsx#CommandLinkItem',
@@ -101,9 +92,7 @@ const ratchetedComponentsPart2 = [
   },
 ] satisfies RatchetedComponent[]
 
-const meta = {
-  title: 'Coverage/Component Story Ratchet Part 2',
-} satisfies Meta
+const meta = { title: 'Coverage/Component Story Ratchet Part 2' } satisfies Meta
 
 export default meta
 type Story = StoryObj<typeof meta>

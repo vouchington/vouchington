@@ -46,8 +46,6 @@ color, background, or inset ring/shadow treatments instead.
 |                                  | Sources                                                  | `/sources`                    | yes    | yes  | yes   | yes      |
 |                                  | Referral Programs                                        | `/referral-programs`          | yes    | yes  | yes   | yes      |
 | **Trust**                        | Domains                                                  | `/domains`                    | yes    | yes  | yes   | yes      |
-| **Chats**†                       | New Chat                                                 | `/chat`                       | —      | yes  | yes   | yes      |
-|                                  | [conversations]                                          | `/chat/:id`                   | —      | yes  | yes   | yes      |
 | **Help**                         | Support                                                  | `/chat/support`               | —      | yes  | yes   | yes      |
 | **Growth**                       | Growth                                                   | `/growth`                     | —      | —    | yes   | yes      |
 | **Users & Friends**              | Users                                                    | `/users`                      | —      | yes  | yes   | yes      |
@@ -70,8 +68,6 @@ color, background, or inset ring/shadow treatments instead.
 |                                  | Valkey                                                   | `/admin/valkey`               | —      | —    | yes   | —        |
 | **Engineering / Dynamic Config** | Dynamic Config                                           | `/admin/dynamic-config`       | —      | —‡   | yes   | yes      |
 |                                  | Vote Integrity                                           | `/vote-integrity/flags`       | —      | —    | yes   | —        |
-
-† Chats section only visible on `/chat` routes (authenticated users only).
 
 ‡ Dynamic Config is role-gated, not available to every authenticated user. Administrators,
 moderators, developers, customer support, and investors can view it. Each namespace's authoritative

@@ -26,14 +26,15 @@ describe('getMatchingShortcuts', () => {
     expect(results.some(s => s.href === '/news')).toBe(true)
   })
 
-  it('does not return authenticated shortcuts for unauthenticated user', () => {
+  it('does not return support shortcuts for unauthenticated user', () => {
     const results = getMatchingShortcuts(t, 'chat', false, false)
-    expect(results.some(s => t(s.label) === 'New Chat')).toBe(false)
+    expect(results.some(s => t(s.label) === 'Support')).toBe(false)
   })
 
-  it('returns New Chat shortcut for authenticated user', () => {
+  it('returns Support shortcut for authenticated user', () => {
     const results = getMatchingShortcuts(t, 'chat', false, true, { chat: true })
-    expect(results.some(s => t(s.label) === 'New Chat')).toBe(true)
+    expect(results.some(s => t(s.label) === 'Support')).toBe(true)
+    expect(results.some(s => t(s.label) === 'New Chat')).toBe(false)
   })
 
   it('limits results to 5', () => {

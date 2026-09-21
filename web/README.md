@@ -97,7 +97,6 @@ drift. See [`web/components/shared/time-ago.tsx`](components/shared/time-ago.tsx
 - Error handling: [error-handling.md](../docs/overview/architecture/error-handling.md)
 - Currency-aware integer money contract: [monetary-values.md](../docs/overview/architecture/monetary-values.md)
 - Post requirements: [POSTS.md](../docs/requirements/content/POSTS.md)
-- Chat, SSE, and no-refresh invariant: [CHAT.md](../docs/requirements/content/CHAT.md)
 - Intent-based navigation (vocabulary, taxonomy, resolver): [NAVIGATION.md](../docs/requirements/navigation/NAVIGATION.md)
 
 ## Related

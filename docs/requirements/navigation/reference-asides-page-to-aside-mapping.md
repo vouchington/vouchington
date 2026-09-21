@@ -136,16 +136,6 @@ Routes: `/communities/:slug/*`
 
 Already has community about card. No RSC asides.
 
-### Chat Pages
-
-Routes: `/chat/*`, `showFooter={false}`
-
-Set via `web/app/(chat)/layout.tsx`:
-
-| Order | Type | Aside                               | Auth | Notes |
-| ----- | ---- | ----------------------------------- | ---- | ----- |
-| 1     | RSC  | PopularCommunitiesAside (accordion) | any  |       |
-
 ### Admin/Growth Pages
 
 Routes: `/admin/*`, `/growth`
