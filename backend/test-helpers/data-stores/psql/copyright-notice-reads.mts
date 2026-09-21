@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function readCopyrightNoticeTargetId(noticeId: string): Promise<string> {
@@ -29,15 +29,6 @@ export async function readTestCopyrightActionIntentState(intentId: string): Prom
     SELECT state FROM copyright_notice_action_intents WHERE id = ${intentId}
   `)
   return rows[0]?.state ?? null
-}
-
-export async function markTestCopyrightDeliveryIntentFailed(intentId: string): Promise<void> {
-  await write(sql`/* markTestCopyrightDeliveryIntentFailed */
-    UPDATE copyright_notice_delivery_intents
-    SET state = 'failed', claimed_at = NULL, failed_at = CURRENT_TIMESTAMP, next_attempt_at = NULL,
-      delivery_attempt_count = 5, failure_ciphertext = NULL
-    WHERE id = ${intentId}
-  `)
 }
 
 export async function countTestCopyrightLifecycleEvents(input: {
