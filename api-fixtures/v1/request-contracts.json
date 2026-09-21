@@ -592,6 +592,16 @@
             }
           ]
         },
+        "profile_image_placement": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/ImagePlacementTuple"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "roles": {
           "items": {
             "type": "string"
@@ -896,6 +906,16 @@
             }
           ]
         },
+        "banner_image_placement": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/ImagePlacementTuple"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "created_at": {
           "type": "string"
         },
@@ -1001,6 +1021,16 @@
             },
             {
               "type": "string"
+            }
+          ]
+        },
+        "profile_image_placement": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/ImagePlacementTuple"
+            },
+            {
+              "type": "null"
             }
           ]
         },
@@ -2619,6 +2649,188 @@
       ],
       "type": "object"
     },
+    "CopyrightHoldResolutionKind": {
+      "enum": ["dismissed", "proceeding_ended", "superseded"],
+      "type": "string"
+    },
+    "CopyrightLegalHoldAssessmentRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "assessed_at": {
+          "type": "string"
+        },
+        "assessed_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "ccb_claim_kind": {
+          "anyOf": [
+            {
+              "const": "claim"
+            },
+            {
+              "const": "counterclaim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "commenced_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "copyright_notice_submission_id": {
+          "type": "string"
+        },
+        "from_original_claimant": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "proceeding_kind": {
+          "anyOf": [
+            {
+              "const": "ccb"
+            },
+            {
+              "const": "federal_court"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rationale_ciphertext": {
+          "type": "string"
+        },
+        "received_by_designated_agent_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "same_material": {
+          "type": "boolean"
+        },
+        "target_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "assessed_at",
+        "assessed_by_id",
+        "ccb_claim_kind",
+        "commenced_at",
+        "copyright_notice_submission_id",
+        "from_original_claimant",
+        "id",
+        "proceeding_kind",
+        "rationale_ciphertext",
+        "received_by_designated_agent_at",
+        "same_material",
+        "target_ids"
+      ],
+      "type": "object"
+    },
+    "CopyrightLegalHoldResolutionRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "copyright_notice_legal_hold_assessment_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "rationale_ciphertext": {
+          "type": "string"
+        },
+        "resolution_kind": {
+          "$ref": "#/components/schemas/CopyrightHoldResolutionKind"
+        },
+        "resolved_at": {
+          "type": "string"
+        },
+        "resolved_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "copyright_notice_legal_hold_assessment_id",
+        "id",
+        "rationale_ciphertext",
+        "resolution_kind",
+        "resolved_at",
+        "resolved_by_id"
+      ],
+      "type": "object"
+    },
+    "CopyrightPublicNotice": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "jurisdiction": {
+          "const": "us_dmca"
+        },
+        "provisional_withholding_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "received_at": {
+          "type": "string"
+        },
+        "target_count": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "accepted_at",
+        "id",
+        "jurisdiction",
+        "provisional_withholding_at",
+        "received_at",
+        "target_count"
+      ],
+      "type": "object"
+    },
     "CopyrightRestrictionRecord": {
       "additionalProperties": false,
       "properties": {
@@ -2709,6 +2921,581 @@
         "imposed_by_id",
         "lifted_at",
         "lifted_by_id"
+      ],
+      "type": "object"
+    },
+    "CopyrightStaffCase": {
+      "additionalProperties": false,
+      "properties": {
+        "action_intents": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "enum": ["restore", "withhold"],
+                "type": "string"
+              },
+              "failure_message": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "state": {
+                "enum": ["blocked", "claimed", "completed", "failed", "pending", "stale"],
+                "type": "string"
+              }
+            },
+            "required": ["action", "failure_message", "id", "state"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "appeals": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "reason": {
+                "type": "string"
+              },
+              "recommendation": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "rationale": {
+                        "type": "string"
+                      },
+                      "recommendation": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "rationale", "recommendation"],
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "submission_id": {
+                "type": "string"
+              },
+              "target_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": ["reason", "recommendation", "submission_id", "target_ids"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "claimant": {
+          "additionalProperties": false,
+          "properties": {
+            "contact": {
+              "type": "string"
+            },
+            "display_name": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": ["contact", "display_name"],
+          "type": "object"
+        },
+        "counter_notices": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "received_at": {
+                "type": "string"
+              },
+              "statement": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              },
+              "submission_id": {
+                "type": "string"
+              },
+              "target_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": ["received_at", "statement", "submission_id", "target_ids"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "delivery_intents": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "channel": {
+                "enum": ["email", "in_app"],
+                "type": "string"
+              },
+              "delivery_attempt_count": {
+                "type": "number"
+              },
+              "delivery_kind": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "state": {
+                "enum": ["bounced", "claimed", "failed", "pending", "sent"],
+                "type": "string"
+              }
+            },
+            "required": ["channel", "delivery_attempt_count", "delivery_kind", "id", "state"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "email_correspondence": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "enum": ["admitted", "rejected"],
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "appeal",
+                  "counter_notice",
+                  "court_or_ccb_hold",
+                  "supplement",
+                  "withdrawal"
+                ],
+                "type": "string"
+              },
+              "reviewed_at": {
+                "type": "string"
+              },
+              "submission_id": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "required": ["action", "kind", "reviewed_at", "submission_id"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "byte_size": {
+                "type": "number"
+              },
+              "id": {
+                "type": "string"
+              },
+              "mime_type": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "submission_id": {
+                "type": "string"
+              }
+            },
+            "required": ["byte_size", "id", "mime_type", "sha256", "submission_id"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "form_review": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "intake_id": {
+                  "type": "string"
+                },
+                "screening": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "rationale": {
+                          "type": "string"
+                        },
+                        "recommendation": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["rationale", "recommendation"],
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "source_kind": {
+                  "type": "string"
+                }
+              },
+              "required": ["intake_id", "screening", "source_kind"],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "jurisdiction": {
+          "const": "us_dmca"
+        },
+        "legal_holds": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "assessment": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "ccb_claim_kind": {
+                        "anyOf": [
+                          {
+                            "const": "claim"
+                          },
+                          {
+                            "const": "counterclaim"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "commenced_at": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "from_original_claimant": {
+                        "type": "boolean"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "proceeding_kind": {
+                        "anyOf": [
+                          {
+                            "const": "ccb"
+                          },
+                          {
+                            "const": "federal_court"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "qualifying": {
+                        "type": "boolean"
+                      },
+                      "received_by_designated_agent_at": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "resolved": {
+                        "type": "boolean"
+                      },
+                      "same_material": {
+                        "type": "boolean"
+                      },
+                      "target_ids": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "ccb_claim_kind",
+                      "commenced_at",
+                      "from_original_claimant",
+                      "id",
+                      "proceeding_kind",
+                      "qualifying",
+                      "received_by_designated_agent_at",
+                      "resolved",
+                      "same_material",
+                      "target_ids"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "received_at": {
+                "type": "string"
+              },
+              "statement": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              },
+              "submission_id": {
+                "type": "string"
+              }
+            },
+            "required": ["assessment", "received_at", "statement", "submission_id"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "received_at": {
+          "type": "string"
+        },
+        "restrictions": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "imposed_at": {
+                "type": "string"
+              },
+              "status": {
+                "enum": ["confirmed", "lifted", "pending_review", "reversed"],
+                "type": "string"
+              },
+              "target_id": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "imposed_at", "status", "target_id"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "targets": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "hosted_use_url": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "image_id": {
+                "type": "string"
+              },
+              "placement_key": {
+                "type": "string"
+              },
+              "placement_revision": {
+                "type": "number"
+              }
+            },
+            "required": ["hosted_use_url", "id", "image_id", "placement_key", "placement_revision"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "work_description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action_intents",
+        "appeals",
+        "claimant",
+        "counter_notices",
+        "delivery_intents",
+        "email_correspondence",
+        "evidence",
+        "form_review",
+        "id",
+        "jurisdiction",
+        "legal_holds",
+        "received_at",
+        "restrictions",
+        "targets",
+        "work_description"
+      ],
+      "type": "object"
+    },
+    "CopyrightStaffEmailIntake": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "linked_notice": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "targets": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "placement_key": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "placement_key"],
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": ["id", "targets"],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parsed_email": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "body_text": {
+                  "type": "string"
+                },
+                "sender_email": {
+                  "type": "string"
+                },
+                "subject": {
+                  "type": "string"
+                }
+              },
+              "required": ["body_text", "sender_email", "subject"],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parser_error": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "raw_email": {
+          "additionalProperties": false,
+          "properties": {
+            "byte_size": {
+              "type": "number"
+            },
+            "download_url": {
+              "type": "string"
+            },
+            "mime_type": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string"
+            }
+          },
+          "required": ["byte_size", "download_url", "mime_type", "sha256"],
+          "type": "object"
+        },
+        "received_at": {
+          "type": "string"
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "structured_output": {
+                  "$ref": "#/components/schemas/Record_string_unknown"
+                }
+              },
+              "required": ["id", "structured_output"],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "review_path": {
+          "enum": ["initial", "matched_thread", "unresolved_thread"],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "linked_notice",
+        "parsed_email",
+        "parser_error",
+        "raw_email",
+        "received_at",
+        "recommendation",
+        "review_path"
       ],
       "type": "object"
     },
@@ -5512,6 +6299,16 @@
                   }
                 ]
               },
+              "profile_image_placement": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ImagePlacementTuple"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "public_verified_name_display": {
                 "anyOf": [
                   {
@@ -5909,6 +6706,22 @@
         "verified"
       ],
       "type": "string"
+    },
+    "ImagePlacementTuple": {
+      "additionalProperties": false,
+      "properties": {
+        "image_id": {
+          "type": "string"
+        },
+        "placement_id": {
+          "type": "string"
+        },
+        "placement_revision": {
+          "type": "number"
+        }
+      },
+      "required": ["image_id", "placement_id", "placement_revision"],
+      "type": "object"
     },
     "ImageUploadState": {
       "additionalProperties": false,
@@ -9468,6 +10281,16 @@
             }
           ]
         },
+        "profile_image_placement": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/ImagePlacementTuple"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "roles": {
           "items": {
             "type": "string"
@@ -11673,9 +12496,21 @@
               },
               "order_index": {
                 "type": "number"
+              },
+              "placement_id": {
+                "type": "string"
+              },
+              "placement_revision": {
+                "type": "number"
               }
             },
-            "required": ["caption", "image_id", "order_index"],
+            "required": [
+              "caption",
+              "image_id",
+              "order_index",
+              "placement_id",
+              "placement_revision"
+            ],
             "type": "object"
           },
           "type": "array"
@@ -12300,7 +13135,7 @@
       "required": ["__entity_type", "id", "votes_count_down", "votes_count_up", "votes_score_net"],
       "type": "object"
     },
-    "PostImage": {
+    "PostImagePlacement": {
       "additionalProperties": false,
       "properties": {
         "caption": {
@@ -12311,9 +13146,15 @@
         },
         "order_index": {
           "type": "number"
+        },
+        "placement_id": {
+          "type": "string"
+        },
+        "placement_revision": {
+          "type": "number"
         }
       },
-      "required": ["caption", "image_id", "order_index"],
+      "required": ["caption", "image_id", "order_index", "placement_id", "placement_revision"],
       "type": "object"
     },
     "PostMetrics": {
@@ -12548,6 +13389,16 @@
             },
             {
               "type": "string"
+            }
+          ]
+        },
+        "image_placement": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/ImagePlacementTuple"
+            },
+            {
+              "type": "null"
             }
           ]
         },
@@ -12860,6 +13711,16 @@
                 },
                 {
                   "type": "string"
+                }
+              ]
+            },
+            "profile_image_placement": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ImagePlacementTuple"
+                },
+                {
+                  "type": "null"
                 }
               ]
             },
@@ -13593,6 +14454,16 @@
               }
             ]
           },
+          "profile_image_placement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImagePlacementTuple"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "public_verified_name_display": {
             "anyOf": [
               {
@@ -13756,6 +14627,16 @@
               }
             ]
           },
+          "hero_image_placement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImagePlacementTuple"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "homepage_url_id": {
             "anyOf": [
               {
@@ -13809,6 +14690,16 @@
               },
               {
                 "type": "string"
+              }
+            ]
+          },
+          "logo_image_placement": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImagePlacementTuple"
+              },
+              {
+                "type": "null"
               }
             ]
           },
@@ -15038,9 +15929,21 @@
                   },
                   "order_index": {
                     "type": "number"
+                  },
+                  "placement_id": {
+                    "type": "string"
+                  },
+                  "placement_revision": {
+                    "type": "number"
                   }
                 },
-                "required": ["caption", "image_id", "order_index"],
+                "required": [
+                  "caption",
+                  "image_id",
+                  "order_index",
+                  "placement_id",
+                  "placement_revision"
+                ],
                 "type": "object"
               },
               "type": "array"
@@ -16521,6 +17424,16 @@
             }
           ]
         },
+        "hero_image_placement": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/ImagePlacementTuple"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "homepage_url_id": {
           "anyOf": [
             {
@@ -16574,6 +17487,16 @@
             },
             {
               "type": "string"
+            }
+          ]
+        },
+        "logo_image_placement": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/ImagePlacementTuple"
+            },
+            {
+              "type": "null"
             }
           ]
         },
@@ -19060,6 +19983,16 @@
                 }
               ]
             },
+            "hero_image_placement": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ImagePlacementTuple"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "homepage_url_id": {
               "anyOf": [
                 {
@@ -19113,6 +20046,16 @@
                 },
                 {
                   "type": "string"
+                }
+              ]
+            },
+            "logo_image_placement": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ImagePlacementTuple"
+                },
+                {
+                  "type": "null"
                 }
               ]
             },
@@ -19305,6 +20248,16 @@
                           }
                         ]
                       },
+                      "hero_image_placement": {
+                        "anyOf": [
+                          {
+                            "$ref": "#/components/schemas/ImagePlacementTuple"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "homepage_url_id": {
                         "anyOf": [
                           {
@@ -19358,6 +20311,16 @@
                           },
                           {
                             "type": "string"
+                          }
+                        ]
+                      },
+                      "logo_image_placement": {
+                        "anyOf": [
+                          {
+                            "$ref": "#/components/schemas/ImagePlacementTuple"
+                          },
+                          {
+                            "type": "null"
                           }
                         ]
                       },
@@ -21511,6 +22474,64 @@
           }
         },
         "required": ["idOrSlug"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-email-intakes/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-email-intakes/:id/raw": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-notices/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-notices/:id/participant": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "targetId"],
         "type": "object"
       }
     },
@@ -25632,9 +26653,34 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/copyright-legal-hold-assessments/:id/resolutions": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/copyright-notices": {
       "body": {
         "$ref": "#/components/schemas/Record_string_unknown"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/action-intents/:intentId/replays": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "intentId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "intentId"],
+        "type": "object"
       }
     },
     "POST:/api/v1/copyright-notices/:id/appeals": {
@@ -25662,6 +26708,20 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/delivery-intents/:intentId/replays": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "intentId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "intentId"],
         "type": "object"
       }
     },
@@ -25694,6 +26754,17 @@
       }
     },
     "POST:/api/v1/copyright-submissions/:id/counter-notice-reviews": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-submissions/:id/legal-hold-assessments": {
       "path": {
         "properties": {
           "id": {
