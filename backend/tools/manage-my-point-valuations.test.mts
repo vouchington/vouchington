@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import manageMyPointValuationsTool from './manage-my-point-valuations.mts'
+import getMyPointValuationsTool from './get-my-point-valuations.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import { insertTestRewardsProgram } from '@voucha/test-helpers/entities/rewards-programs'
 import type { PrivateUser } from '@services/users/types'
@@ -38,8 +39,7 @@ describe('manage_my_point_valuations tool — real DB', () => {
 
   it('list returns empty initially', async () => {
     const freshUser = await createTestUser()
-    const execute = manageMyPointValuationsTool.function(freshUser)
-    const result = await execute({ action: 'list' })
+    const result = await getMyPointValuationsTool.function(freshUser)({})
     expect(result.success).toBe(true)
     const page = result.result as IndividualRewardsProgramPointValuationPage
     expect(page.results).toEqual([])
@@ -66,8 +66,7 @@ describe('manage_my_point_valuations tool — real DB', () => {
   })
 
   it('list after add returns the valuation', async () => {
-    const execute = manageMyPointValuationsTool.function(user)
-    const result = await execute({ action: 'list' })
+    const result = await getMyPointValuationsTool.function(user)({})
     expect(result.success).toBe(true)
     const page = result.result as IndividualRewardsProgramPointValuationPage
     expect(page.results.some(v => v.rewards_program_id === rewardsProgramId)).toBe(true)

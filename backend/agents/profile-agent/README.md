@@ -22,6 +22,10 @@ The chat orchestrator delegates to this agent when:
 | Tool                          | Purpose                                       |
 | ----------------------------- | --------------------------------------------- |
 | `get_my_profile`              | Retrieve current wallet and financial profile |
+| `get_my_cards`                | List wallet cards                             |
+| `get_my_point_valuations`     | List rewards-program point valuations         |
+| `get_my_rewards_statuses`     | List loyalty tier statuses                    |
+| `get_my_spending`             | List spending by category                     |
 | `manage_my_cards`             | Add, update, or remove wallet cards           |
 | `manage_my_point_valuations`  | Set rewards program point values              |
 | `manage_my_rewards_statuses`  | Track loyalty tier statuses                   |

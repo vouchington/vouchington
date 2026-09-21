@@ -28,6 +28,21 @@ describe('listMcpToolsForUser', () => {
     expect(tools.map(tool => tool.name)).not.toContain('search_posts')
   })
 
+  it('separates resource read and write tools by scope', () => {
+    const readOnlyNames = listMcpToolsForUser(user, ['cards:read'], USER_MCP_SERVER_CONFIG).map(
+      tool => tool.name,
+    )
+    const writeNames = listMcpToolsForUser(
+      user,
+      ['cards:read', 'cards:write'],
+      USER_MCP_SERVER_CONFIG,
+    ).map(tool => tool.name)
+
+    expect(readOnlyNames).toContain('get_my_cards')
+    expect(readOnlyNames).not.toContain('manage_my_cards')
+    expect(writeNames).toContain('manage_my_cards')
+  })
+
   it('keeps legacy broad grants compatible', () => {
     const readOnly = listMcpToolsForUser(user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG)
     const withWrite = listMcpToolsForUser(

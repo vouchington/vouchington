@@ -40,11 +40,15 @@
 | `search_topics`          | Look up topic IDs by name                               |
 | `get_topic_details`      | Card attributes to enrich discovery results             |
 
-### Profile agent ([`profile-agent/`](profile-agent/)) — 7 tools
+### Profile agent ([`profile-agent/`](profile-agent/)) — 11 tools
 
 | Tool                          | Purpose                                           |
 | ----------------------------- | ------------------------------------------------- |
 | `get_my_profile`              | Read current wallet and financial profile         |
+| `get_my_cards`                | List wallet cards                                 |
+| `get_my_point_valuations`     | List point valuations for rewards programs        |
+| `get_my_rewards_statuses`     | List rewards program statuses                     |
+| `get_my_spending`             | List spending by category                         |
 | `update_my_financial_profile` | Update credit score, income, etc.                 |
 | `manage_my_cards`             | Add/remove cards from wallet                      |
 | `manage_my_point_valuations`  | Set point valuations for rewards programs         |

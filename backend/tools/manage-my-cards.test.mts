@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import manageMyCardsTool from './manage-my-cards.mts'
+import getMyCardsTool from './get-my-cards.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import { insertTestCard } from '@voucha/test-helpers/entities/cards'
 import type { PrivateUser } from '@services/users/types'
@@ -21,7 +22,8 @@ describe('manage_my_cards tool — real DB', () => {
       await execute({ action: 'add', card_id: topicId })
     }
 
-    const first = await execute({ action: 'list', limit: 1 })
+    const list = getMyCardsTool.function(paginationUser)
+    const first = await list({ limit: 1 })
     const firstPage = first.result as {
       results: Array<{ id: string }>
       page_info: { has_next_page: boolean; end_cursor: string | null }
@@ -29,8 +31,7 @@ describe('manage_my_cards tool — real DB', () => {
     expect(firstPage.results).toHaveLength(1)
     expect(firstPage.page_info.has_next_page).toBe(true)
 
-    const second = await execute({
-      action: 'list',
+    const second = await list({
       limit: 1,
       after: firstPage.page_info.end_cursor!,
     })
@@ -38,8 +39,7 @@ describe('manage_my_cards tool — real DB', () => {
   })
   it('list returns empty initially', async () => {
     const freshUser = await createTestUser()
-    const execute = manageMyCardsTool.function(freshUser)
-    const result = await execute({ action: 'list' })
+    const result = await getMyCardsTool.function(freshUser)({})
     expect(result.success).toBe(true)
     expect(Array.isArray((result.result as { results: unknown[] }).results)).toBe(true)
     expect((result.result as { results: unknown[] }).results).toHaveLength(0)
@@ -54,8 +54,7 @@ describe('manage_my_cards tool — real DB', () => {
   })
 
   it('list after add returns the card', async () => {
-    const execute = manageMyCardsTool.function(user)
-    const result = await execute({ action: 'list' })
+    const result = await getMyCardsTool.function(user)({})
     expect(result.success).toBe(true)
     const cards = (result.result as { results: Array<{ card_id: string }> }).results
     expect(cards.some(c => c.card_id === cardId)).toBe(true)

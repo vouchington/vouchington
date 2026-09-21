@@ -1,7 +1,11 @@
 import addRelatedTopicTool from '../add-related-topic.mts'
 import compareTopicsTool from '../compare-topics.mts'
 import getDomainRatingsTool from '../get-domain-ratings.mts'
+import getMyCardsTool from '../get-my-cards.mts'
+import getMyPointValuationsTool from '../get-my-point-valuations.mts'
 import getMyProfileTool from '../get-my-profile.mts'
+import getMyRewardsStatusesTool from '../get-my-rewards-statuses.mts'
+import getMySpendingTool from '../get-my-spending.mts'
 import getRecommendedTopicsTool from '../get-recommended-topics.mts'
 import getReferralLinksTool from '../get-referral-links.mts'
 import getTopicDetailsTool from '../get-topic-details.mts'
@@ -34,7 +38,11 @@ export const ALL_TOOLS: readonly Tool[] = [
   addRelatedTopicTool,
   compareTopicsTool,
   getDomainRatingsTool,
+  getMyCardsTool,
+  getMyPointValuationsTool,
   getMyProfileTool,
+  getMyRewardsStatusesTool,
+  getMySpendingTool,
   getRecommendedTopicsTool,
   getReferralLinksTool,
   getTopicDetailsTool,

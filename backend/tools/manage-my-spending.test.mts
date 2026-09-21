@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import manageMySpendingTool from './manage-my-spending.mts'
+import getMySpendingTool from './get-my-spending.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import { insertTestSpendingCategory } from '@voucha/test-helpers/entities/spending-categories'
 import type { HouseholdSpendingCategoryPage } from '@services/individuals-households'
@@ -35,7 +36,7 @@ describe('manage_my_spending tool — real DB', () => {
       })
     ).result as { id: string }
 
-    const listed = await execute({ action: 'list' })
+    const listed = await getMySpendingTool.function(freshUser)({})
     expect(listed.success).toBe(true)
     const page = listed.result as HouseholdSpendingCategoryPage
     expect(page.results).toContainEqual(
@@ -69,8 +70,7 @@ describe('manage_my_spending tool — real DB', () => {
   })
 
   it('list after add returns the spending category', async () => {
-    const execute = manageMySpendingTool.function(user)
-    const result = await execute({ action: 'list' })
+    const result = await getMySpendingTool.function(user)({})
     expect(result.success).toBe(true)
     const page = result.result as HouseholdSpendingCategoryPage
     expect(

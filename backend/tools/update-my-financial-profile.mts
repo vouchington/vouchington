@@ -71,7 +71,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
-    requiredScopes: { mcp: ['financial-profile:write'] },
+    requiredScopes: { mcp: ['financial-profile:read', 'financial-profile:write'] },
     annotations: { destructiveHint: true },
     api: [
       { method: 'GET', path: '/api/v1/my/financial-profile' },

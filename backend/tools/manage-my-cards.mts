@@ -1,7 +1,6 @@
 import {
   createIndividualCard,
   deleteIndividualCardById,
-  getIndividualCards,
   updateIndividualCardById,
 } from '@services/individuals-households'
 import { createManageEntityTool } from './create-manage-entity-tool.mts'
@@ -16,16 +15,6 @@ export default createManageEntityTool({
     card_id: {
       type: 'string',
       description: 'The topic UUID of the card to add (required for action=add)',
-    },
-  },
-  listProperties: {
-    after: {
-      type: 'string',
-      description: 'Opaque cursor from the previous list page',
-    },
-    limit: {
-      type: 'number',
-      description: 'Number of cards to return, from 1 to 100',
     },
   },
   updateProperties: {
@@ -58,8 +47,6 @@ export default createManageEntityTool({
       description: 'Date the sign-up bonus was received in YYYY-MM-DD format',
     },
   },
-  listFn: (user, args: { action: 'list'; after?: string; limit?: number }) =>
-    getIndividualCards(user, user, { after: args.after, limit: args.limit }),
   addFn: (user, args) => createIndividualCard(user, user, args.card_id as string),
   updateFn: (user, args) =>
     updateIndividualCardById(user, user, args.id, {
@@ -74,10 +61,9 @@ export default createManageEntityTool({
   removeFn: (user, id) => deleteIndividualCardById(user, user, id),
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
-    requiredScopes: { mcp: ['cards:write'] },
+    requiredScopes: { mcp: ['cards:read', 'cards:write'] },
     annotations: { destructiveHint: true },
     api: [
-      { method: 'GET', path: '/api/v1/my/cards' },
       { method: 'POST', path: '/api/v1/my/cards' },
       { method: 'PATCH', path: '/api/v1/my/cards/:id' },
       { method: 'DELETE', path: '/api/v1/my/cards/:id' },

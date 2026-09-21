@@ -16,5 +16,5 @@ chat (orchestrator)          5 tools, max 5 iterations
 Each subagent calls tools, which call services:
     run_research_agent → search_posts → services/posts/search
     run_discovery_agent → get_trending_topics → services/trending-topics/get-trending-topics
-    run_profile_agent → manage_my_cards → services/my-cards/manage
+    run_profile_agent → get_my_cards / manage_my_cards → services/my-cards
 ```
