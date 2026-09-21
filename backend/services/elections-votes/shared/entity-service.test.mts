@@ -1,6 +1,9 @@
-import { beginTransaction } from '@data-stores/psql'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { describe, expect, it, vi } from 'vitest'
+import {
+  commitTestElectionVoteTransaction,
+  rollbackTestElectionVoteTransaction,
+} from '../../../test-helpers/data-stores/psql/election-vote-transactions.mts'
 import { TOPIC_ELECTION_CONFIG } from '../topic/config.mts'
 import { getTopicElectionVote } from '../topic/votes-get.mts'
 import { createVotesUpsert } from './entity-service.mts'
@@ -23,14 +26,10 @@ describe('createVotesUpsert', () => {
       afterUpsert,
     })
 
-    await using transaction = await beginTransaction()
-    await upsertVotes(user.id, [{ entityId: topicId, score: 1 }], undefined, {
-      query: transaction,
+    await commitTestElectionVoteTransaction(upsertVotes, user.id, topicId, () => {
+      expect(enqueueElectionStats).not.toHaveBeenCalled()
+      expect(afterUpsert).not.toHaveBeenCalled()
     })
-
-    expect(enqueueElectionStats).not.toHaveBeenCalled()
-    expect(afterUpsert).not.toHaveBeenCalled()
-    await transaction.commit()
     expect(enqueueElectionStats).toHaveBeenCalledExactlyOnceWith([topicId])
     expect(afterUpsert).toHaveBeenCalledExactlyOnceWith(
       [topicId],
@@ -54,11 +53,7 @@ describe('createVotesUpsert', () => {
       afterUpsert,
     })
 
-    await using transaction = await beginTransaction()
-    await upsertVotes(user.id, [{ entityId: topicId, score: 1 }], undefined, {
-      query: transaction,
-    })
-    await transaction.rollback()
+    await rollbackTestElectionVoteTransaction(upsertVotes, user.id, topicId)
 
     expect(enqueueElectionStats).not.toHaveBeenCalled()
     expect(afterUpsert).not.toHaveBeenCalled()

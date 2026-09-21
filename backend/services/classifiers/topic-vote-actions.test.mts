@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
-import { createTestUser } from '../../test-helpers/entities/users.mts'
+import { createTestPost } from '../../test-helpers/entities/create-test-entities.mts'
+import { createSystemUser, createTestUser } from '../../test-helpers/entities/users.mts'
 import { upsertTopicElectionVotes, getTopicElectionVote } from '@services/elections-votes/topic'
 import { persistClassifierDecision } from './persist-classifier-decision.mts'
 import { applyTopicClassifierDecisionVotes } from './topic-vote-actions.mts'
@@ -41,7 +42,10 @@ describe('applyTopicClassifierDecisionVotes', () => {
   it('maps persisted effective thresholds into durable semantic votes', async () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()
-    const [actor, human] = await Promise.all([createTestUser(), createTestUser()])
+    const [actor, human] = await Promise.all([
+      createSystemUser(`classifier-vote-${uuidv7()}`),
+      createTestUser(),
+    ])
     const decision = await persistTopicDecision(fixture, uuidv7(), 0.25)
     await upsertTopicElectionVotes(human.id, [{ entityId: fixture.topicId, score: 1 }])
 
@@ -65,7 +69,7 @@ describe('applyTopicClassifierDecisionVotes', () => {
   it('rejects incomplete bindings and story results without changing votes', async () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()
-    const actor = await createTestUser()
+    const actor = await createSystemUser(`classifier-vote-${uuidv7()}`)
     const decision = await persistTopicDecision(fixture, uuidv7(), 0.8)
 
     await expect(
@@ -112,7 +116,7 @@ describe('applyTopicClassifierDecisionVotes', () => {
   it('replays exactly and fences an older batch behind a newer application', async () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()
-    const actor = await createTestUser()
+    const actor = await createSystemUser(`classifier-vote-${uuidv7()}`)
     const older = await persistTopicDecision(fixture, uuidv7({ msecs: 1_000 }), 0.1)
     const newer = await persistTopicDecision(fixture, uuidv7({ msecs: 2_000 }), 0.9)
     const input = (batchId: string) => ({
@@ -141,16 +145,62 @@ describe('applyTopicClassifierDecisionVotes', () => {
     })
   })
 
+  it('fences older decisions across different subjects for the same actor and topic', async () => {
+    const fixture = await createClassifierFixture()
+    await fixture.activateClassifierConfigurations()
+    const actor = await createSystemUser(`classifier-vote-${uuidv7()}`)
+    const otherPost = await createTestPost()
+    const older = await persistTopicDecision(fixture, uuidv7({ msecs: 1_000 }), 0.1)
+    const newer = await persistTopicDecision(fixture, uuidv7({ msecs: 2_000 }), 0.9, otherPost.id)
+    const input = (batchId: string) => ({
+      batchId,
+      sharedActorId: actor.id,
+      expectedBindings: [{ topicId: fixture.topicId, storedCandidateId: fixture.topicCandidateId }],
+    })
+
+    await expect(applyTopicClassifierDecisionVotes(input(newer.decision.batchId))).resolves.toEqual(
+      { appliedTopicIds: [fixture.topicId] },
+    )
+    await expect(applyTopicClassifierDecisionVotes(input(older.decision.batchId))).resolves.toEqual(
+      { appliedTopicIds: [] },
+    )
+    await expect(getTopicElectionVote(actor.id, fixture.topicId)).resolves.toMatchObject({
+      choice: 'like',
+    })
+  })
+
+  it('rejects a human shared actor without changing their vote', async () => {
+    const fixture = await createClassifierFixture()
+    await fixture.activateClassifierConfigurations()
+    const human = await createTestUser()
+    const decision = await persistTopicDecision(fixture, uuidv7(), 0.1)
+    await upsertTopicElectionVotes(human.id, [{ entityId: fixture.topicId, score: 1 }])
+
+    await expect(
+      applyTopicClassifierDecisionVotes({
+        batchId: decision.decision.batchId,
+        sharedActorId: human.id,
+        expectedBindings: [
+          { topicId: fixture.topicId, storedCandidateId: fixture.topicCandidateId },
+        ],
+      }),
+    ).rejects.toThrow('Classifier topic votes require a system actor')
+    await expect(getTopicElectionVote(human.id, fixture.topicId)).resolves.toMatchObject({
+      choice: 'like',
+    })
+  })
+
   async function persistTopicDecision(
     fixture: Awaited<ReturnType<typeof createClassifierFixture>>,
     batchId: string,
     probability: number,
+    postId = fixture.postId,
   ) {
     return persistClassifierDecision({
       batchId,
       classifierId: fixture.classifierId,
       promptVersionId: fixture.promptVersionId,
-      subject: { postId: fixture.postId, rssFeedItemId: null },
+      subject: { postId, rssFeedItemId: null },
       scope: { scopeCategory: 'global', scopeCommunityId: null },
       calls: [
         {
