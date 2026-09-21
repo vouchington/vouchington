@@ -66,7 +66,7 @@ describe('workflow shell scripts', () => {
     await writeFile(join(bundle, 'tooling.json'), '{}')
     writeVitestBlobManifest(bundle, {
       suite: 'tooling',
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       revision: 'a'.repeat(40),
       runId: '9131',
       runAttempt: 2,
@@ -78,7 +78,7 @@ describe('workflow shell scripts', () => {
       {
         env: {
           ...process.env,
-          GITHUB_REPOSITORY: 'jonathanong/filaments',
+          GITHUB_REPOSITORY: 'vouchington/vouchington',
           GITHUB_RUN_ATTEMPT: '2',
           GITHUB_RUN_ID: '9131',
           GITHUB_SHA: 'a'.repeat(40),
@@ -116,7 +116,7 @@ describe('workflow shell scripts', () => {
     await execFileAsync('./ci/merge-vitest-reports.sh', [primary, fallback, mergeDir], {
       env: {
         ...process.env,
-        GITHUB_REPOSITORY: 'jonathanong/filaments',
+        GITHUB_REPOSITORY: 'vouchington/vouchington',
         GITHUB_RUN_ATTEMPT: '2',
         GITHUB_RUN_ID: '9131',
         GITHUB_SHA: 'a'.repeat(40),

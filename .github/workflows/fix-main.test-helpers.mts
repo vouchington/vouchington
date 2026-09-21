@@ -56,7 +56,7 @@ export function renderCodexFixMainPrompt(relatedCandidates: string) {
         '--var',
         'WORKFLOW_NAME=CI',
         '--var',
-        'RUN_URL=https://github.com/jonathanong/filaments/actions/runs/123',
+        'RUN_URL=https://github.com/vouchington/vouchington/actions/runs/123',
         '--var',
         'RUN_ID=123',
         '--var',

@@ -41,7 +41,7 @@ function runExpectationResolver(
     env: {
       ...process.env,
       GITHUB_OUTPUT: outputPath,
-      GITHUB_REPOSITORY: 'jonathanong/filaments',
+      GITHUB_REPOSITORY: 'vouchington/vouchington',
       GITHUB_RUN_ATTEMPT: '2',
       GITHUB_RUN_ID: '9131',
       GITHUB_SHA: 'a'.repeat(40),

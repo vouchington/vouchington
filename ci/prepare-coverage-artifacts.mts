@@ -6,6 +6,7 @@ import { expectedCollectorVersion, preparePatchCoverageArtifacts } from 'coverag
 
 import { coverageSuiteDescriptor } from './coverage-suites.mts'
 import { shardedCoverageJobs } from './coverage-suite-descriptors.mts'
+import { coverageRepository } from './coverage-repository.mts'
 
 export interface PrepareCoverageArtifactsOptions {
   readonly root: string
@@ -117,7 +118,7 @@ async function main(): Promise<number> {
       root: process.cwd(),
       sourceDir: process.env.COVERAGE_FALLBACK_DIR ?? './coverage-fallback',
       artifactsDir: process.env.COVERAGE_ARTIFACTS_DIR ?? './coverage-artifacts',
-      repository: process.env.GITHUB_REPOSITORY || 'vouchington/vouchington',
+      repository: coverageRepository(process.env),
       revision:
         process.env.GITHUB_SHA ??
         execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),

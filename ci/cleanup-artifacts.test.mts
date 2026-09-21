@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { main } from './cleanup-artifacts.mts'
 
-const ENV = { GITHUB_TOKEN: 'test-token', GITHUB_REPOSITORY: 'voucha/filaments' }
+const ENV = { GITHUB_TOKEN: 'test-token', GITHUB_REPOSITORY: 'vouchington/vouchington' }
 
 describe('main', () => {
   afterEach(() => {
@@ -17,7 +17,7 @@ describe('main', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.stubGlobal('fetch', vi.fn<typeof fetch>())
     await expect(
-      main(['run', '--run-id', '1'], { GITHUB_REPOSITORY: 'voucha/filaments' }),
+      main(['run', '--run-id', '1'], { GITHUB_REPOSITORY: 'vouchington/vouchington' }),
     ).resolves.toBe(0)
     expect(fetch).not.toHaveBeenCalled()
   })
@@ -38,7 +38,7 @@ describe('main', () => {
     await expect(
       main(['run', '--run-id', '1'], {
         GH_TOKEN: 'gh-token',
-        GITHUB_REPOSITORY: 'voucha/filaments',
+        GITHUB_REPOSITORY: 'vouchington/vouchington',
       }),
     ).resolves.toBe(0)
     expect(fetch).toHaveBeenCalled()

@@ -57,7 +57,7 @@ export function executeGateWithTitle(
   const githubOutputPath = join(temporaryDirectory, 'github-output')
   const prJsonPath = join(temporaryDirectory, 'pr.json')
   const ghLogPath = join(temporaryDirectory, 'gh.log')
-  const trustedPrUrl = 'https://github.com/jonathanong/filaments/pull/7611'
+  const trustedPrUrl = 'https://github.com/vouchington/vouchington/pull/7611'
 
   try {
     mkdirSync(fakeBinDirectory)
@@ -79,7 +79,7 @@ export function executeGateWithTitle(
         head: {
           ref: 'fix/pr-title-output',
           sha: '1111111111111111111111111111111111111111',
-          repo: { full_name: options.headRepo ?? 'jonathanong/filaments' },
+          repo: { full_name: options.headRepo ?? 'vouchington/vouchington' },
         },
         html_url: trustedPrUrl,
         title: prTitle,
@@ -93,7 +93,7 @@ export function executeGateWithTitle(
         FAKE_GH_LOG: ghLogPath,
         FAKE_PR_JSON: prJsonPath,
         GITHUB_OUTPUT: githubOutputPath,
-        GITHUB_REPOSITORY: 'jonathanong/filaments',
+        GITHUB_REPOSITORY: 'vouchington/vouchington',
         GITHUB_WORKSPACE: process.cwd(),
         PATH: `${fakeBinDirectory}:${process.env['PATH'] ?? ''}`,
         PR_NUMBER: '7611',

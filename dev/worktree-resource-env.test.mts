@@ -131,8 +131,8 @@ describe('worktree-resource-env', () => {
 
     it('gives sibling tmp clones distinct resource identities', async () => {
       const processTmpdir = await makeIsolatedTmp()
-      const first = join(processTmpdir, 'job-a', 'filaments')
-      const second = join(processTmpdir, 'job-b', 'filaments')
+      const first = join(processTmpdir, 'job-a', 'vouchington')
+      const second = join(processTmpdir, 'job-b', 'vouchington')
       await mkdir(first, { recursive: true })
       await mkdir(second, { recursive: true })
       await mkdir(join(second, '.git'), { recursive: true })

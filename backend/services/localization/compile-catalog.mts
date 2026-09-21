@@ -29,7 +29,7 @@ export async function compileCatalogForProcess(options?: {
   output?: string
 }): Promise<string> {
   const output =
-    options?.output ?? join(catalogScratchDirectory(), `filaments-catalog-${process.pid}.sqlite`)
+    options?.output ?? join(catalogScratchDirectory(), `vouchington-catalog-${process.pid}.sqlite`)
   await compileCatalogDirectory(options?.source ?? 'localization/catalog', output)
   process.env.LOCALIZATION_SQLITE_PATH = output
   return output

@@ -21,6 +21,7 @@ import {
 } from 'coverage-check'
 
 import { coverageConfigForScope } from '../test-helpers/vitest-config/coverage-config.mts'
+import { coverageRepository } from './coverage-repository.mts'
 
 export const CHANGED_SUITE_NAME = 'changed'
 
@@ -48,10 +49,6 @@ function changedCoverageDescriptor(testFiles: readonly string[]): CoverageSuiteD
   }
 }
 
-function repositoryIdentity(env: NodeJS.ProcessEnv): string {
-  return env.GITHUB_REPOSITORY || 'jonathanong/filaments'
-}
-
 function revisionIdentity(root: string): string {
   return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim()
 }
@@ -67,7 +64,7 @@ export function stampChangedCoverage(
     lcovPath: join(pairDir, 'lcov.info'),
     manifestPath: join(pairDir, COVERAGE_MANIFEST_FILENAME),
     descriptor: changedCoverageDescriptor(testFiles),
-    repository: repositoryIdentity(process.env),
+    repository: coverageRepository(process.env),
     revision: revisionIdentity(root),
     run: null,
     collectorVersion: VITEST_COLLECTOR_VERSION,
@@ -85,7 +82,7 @@ export function validateChangedCoverage(
     lcovPath: join(pairDir, 'lcov.info'),
     manifestPath: join(pairDir, COVERAGE_MANIFEST_FILENAME),
     descriptor: changedCoverageDescriptor(testFiles),
-    repository: repositoryIdentity(process.env),
+    repository: coverageRepository(process.env),
     revision: revisionIdentity(root),
     expectedRun: null,
     expectedCollectorVersion: VITEST_COLLECTOR_VERSION,

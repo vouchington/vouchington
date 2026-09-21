@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { runCleanup, sweepCleanup, type CleanupDeps } from './cleanup-artifacts-commands.mts'
 import type { GithubArtifact } from './cleanup-artifacts-github.mts'
 
-const REPO = 'voucha/filaments'
+const REPO = 'vouchington/vouchington'
 const TOKEN = 'test-token'
 
 function artifact(overrides: Partial<GithubArtifact> = {}): GithubArtifact {

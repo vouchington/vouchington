@@ -89,7 +89,7 @@ describe('render-harness-prompt', () => {
         '--var',
         'PROMPT_NAME=test-pruning.md',
         '--var',
-        'RUN_URL=https://github.com/jonathanong/filaments/actions/runs/123',
+        'RUN_URL=https://github.com/vouchington/vouchington/actions/runs/123',
         '--var-file',
         'PROMPT_BODY=docs/prompts/scheduled/test-pruning.md',
       ])

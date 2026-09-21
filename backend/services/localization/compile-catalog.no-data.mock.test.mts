@@ -87,7 +87,7 @@ describe('compileCatalogDirectory', () => {
     expect(process.env.LOCALIZATION_SQLITE_PATH).toBe(output)
     expect(existsSync(output)).toBe(true)
     const fallback = await compileCatalogForProcess({ source })
-    expect(fallback).toMatch(/filaments-catalog-\d+\.sqlite$/u)
+    expect(fallback).toMatch(/vouchington-catalog-\d+\.sqlite$/u)
     expect(process.env.LOCALIZATION_SQLITE_PATH).toBe(fallback)
     expect(existsSync(fallback)).toBe(true)
   })
