@@ -103,9 +103,10 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
     )
   })
 
-  it('uses a fixed logical asset origin so web builds remain independent of shard ports', () => {
-    expect(credentialedWorkflowText).toMatch(/NEXT_PUBLIC_ASSET_PREFIX: http:\/\/localhost(\s|$)/)
-    expect(credentialedWorkflowText).toMatch(/CSP_ASSET_ORIGIN=http:\/\/localhost(\s|$)/)
+  it('uses the same-origin Worker asset route and consumes the shared build', () => {
+    expect(credentialedWorkflowText).not.toContain('NEXT_PUBLIC_ASSET_PREFIX:')
+    expect(credentialedWorkflowText).not.toContain('CSP_ASSET_ORIGIN=http://localhost')
+    expect(credentialedWorkflowText).toContain('shared-build-cache-mode: consumer')
     expect(credentialedWorkflowText).not.toContain(
       'NEXT_PUBLIC_ASSET_PREFIX=http://localhost:$NEXT_PORT',
     )

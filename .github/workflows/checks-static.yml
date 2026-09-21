@@ -73,9 +73,7 @@ jobs:
 
   static-web:
     if: inputs.web
-    # Pinned to Linux: it now shares the build-web-targets composite with the Playwright/web-
-    # integration consumers, so its output must match their Linux platform key
-    # (#10990) rather than floating onto macOS overflow capacity.
+    # The cached standalone build is consumed by Linux web test jobs.
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
@@ -103,25 +101,11 @@ jobs:
       - name: Check web dependencies
         run: pnpm exec depcruise --config web/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content web
         timeout-minutes: 3
-      - name: Configure static production build
-        # build-web-targets' own `run:` steps only inherit env exported via $GITHUB_ENV (or
-        # job/workflow-level env), not this step's own `env:` block, so the two build-time
-        # inputs it needs from us go through $GITHUB_ENV instead. NEXT_TEST_BUILD=0 forces the
-        # same minified, non-test build profile static-web has always produced --
-        # ci/setup-web-integration.mts otherwise defaults it to '1' for its Playwright/web-
-        # integration callers. IMAGE_ORIGIN matches the smoke-test step below.
-        #
-        # Not set here: NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY / ALLOW_TURNSTILE_TEST_KEY, unlike
-        # the retired `Build web` step. ci/setup-web-integration.mts's own `next build` invocation
-        # defaults both to the identical values, so this build's behavior is unchanged (#10990).
-        run: |
-          echo "IMAGE_ORIGIN=http://localhost:3100" >> "$GITHUB_ENV"
-          echo "NEXT_TEST_BUILD=0" >> "$GITHUB_ENV"
-        timeout-minutes: 1
       - uses: ./.github/actions/build-web-targets
         timeout-minutes: 13
         with:
           artifact-suffix: static-web
+          shared-build-cache-mode: producer
           web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
       - name: Smoke test web
         run: ./web/scripts/tests/smoke-test-web.sh

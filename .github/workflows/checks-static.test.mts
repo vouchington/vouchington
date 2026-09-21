@@ -155,14 +155,11 @@ fi\n`,
     // checks-static.yml#static-web) — restating the literal here would duplicate it.
   })
 
-  it('exports the static production build profile via $GITHUB_ENV ahead of the composite invocation', () => {
+  it('produces the shared build with the composite production profile', () => {
     const job = jobSection('static-web')
-    const configureIndex = job.indexOf('- name: Configure static production build')
-    const buildTargetsIndex = job.indexOf('uses: ./.github/actions/build-web-targets')
-    expect(configureIndex).toBeGreaterThan(-1)
-    expect(configureIndex).toBeLessThan(buildTargetsIndex)
-    expect(job).toContain('echo "IMAGE_ORIGIN=http://localhost:3100" >> "$GITHUB_ENV"')
-    expect(job).toContain('echo "NEXT_TEST_BUILD=0" >> "$GITHUB_ENV"')
+    expect(job).toContain('shared-build-cache-mode: producer')
+    expect(job).not.toContain('NEXT_TEST_BUILD=0')
+    expect(job).toContain('IMAGE_ORIGIN: http://localhost:3100')
   })
 
   it('owns the lambdas dependency and TypeScript checks lifted from tests-lambdas.yml', () => {

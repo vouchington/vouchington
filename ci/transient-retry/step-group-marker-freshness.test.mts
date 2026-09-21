@@ -33,43 +33,53 @@ interface YamlWorkflow {
   runs?: { steps?: YamlStep[] }
 }
 
-// Enumerates every `run:` or local `uses:` step in a workflow (`jobs.*.steps[]`) or composite action
-// (`runs.steps[]`) and reconstructs the exact GitHub Actions step-header text GitHub would emit for
-// it. `split('\n')[0]` is correct for all three `run:` scalar styles: a `>-` folded block is already
+// Groups `run:` and local `uses:` step headers by job, matching GitHub's per-job log boundary.
+// A reusable workflow can invoke the same action in distinct jobs without making log slicing
+// ambiguous. `split('\n')[0]` is correct for all three `run:` scalar styles: a `>-` folded block is already
 // one space-joined line after `parse()`, a `|` literal block echoes only its first line in the header,
 // and a plain scalar is unaffected by the split. A local `uses:` value is already one action path.
-function stepHeaders(yamlPath: string): string[] {
+function stepHeaderGroups(yamlPath: string): string[][] {
   const parsed = load(readFileSync(new URL(yamlPath, import.meta.url), 'utf8')) as YamlWorkflow
-  const steps =
-    parsed.runs?.steps ?? Object.values(parsed.jobs ?? {}).flatMap(job => job.steps ?? [])
-
-  return steps.flatMap(step => {
-    if (typeof step.run === 'string') return [`##[group]Run ${step.run.split('\n')[0]}`]
-    if (typeof step.uses === 'string' && step.uses.startsWith('./')) {
-      return [`##[group]Run ${step.uses}`]
-    }
-    return []
-  })
+  const jobSteps = parsed.runs?.steps
+    ? [parsed.runs.steps]
+    : Object.values(parsed.jobs ?? {}).map(job => job.steps ?? [])
+  return jobSteps.map(steps =>
+    steps.flatMap(step => {
+      if (typeof step.run === 'string') return [`##[group]Run ${step.run.split('\n')[0]}`]
+      if (typeof step.uses === 'string' && step.uses.startsWith('./')) {
+        return [`##[group]Run ${step.uses}`]
+      }
+      return []
+    }),
+  )
 }
 
-// Freshness + no duplicate: exactly one step's header may equal the marker. Two identical `run:`
+// Freshness + no duplicate: the expected jobs must contain a marker, and at most one step per job
+// may match it. Two identical `run:`
 // steps would both satisfy `header !== marker` as false and so both get excluded from the prefix
 // check below, silently passing uniqueness even though sliceGithubActionsStepGroup()'s indexOf()
 // always slices the first occurrence — a failure in the second, identical step would go unseen
 // (flagged by @chatgpt-codex-connector on PR #10604).
 //
-// Uniqueness: no OTHER step's header may start with it — a shorter marker that is only a prefix of
-// a sibling's header would make indexOf() match the first (wrong) occurrence. Both checks are scoped
-// to this one file only: a real job log concatenates steps from the workflow AND every composite
-// action it invokes, so a cross-file collision is out of this check's reach.
-function assertMarkerIsFreshAndUnique(marker: string, yamlPath: string): void {
-  const headers = stepHeaders(yamlPath)
-
-  const exactMatches = headers.filter(header => header === marker)
-  expect(exactMatches).toHaveLength(1)
-
-  const prefixCollisions = headers.filter(header => header !== marker && header.startsWith(marker))
-  expect(prefixCollisions).toEqual([])
+// Uniqueness: no OTHER step's header in that job may start with it — a shorter marker that is only
+// a prefix of a sibling's header would make indexOf() match the first (wrong) occurrence. A real
+// job log concatenates its workflow steps and every composite action it invokes, so a cross-file
+// collision remains out of this check's reach.
+function assertMarkerIsFreshAndUnique(
+  marker: string,
+  yamlPath: string,
+  expectedJobCount = 1,
+): void {
+  const groups = stepHeaderGroups(yamlPath)
+  expect(groups.filter(headers => headers.includes(marker))).toHaveLength(expectedJobCount)
+  for (const headers of groups) {
+    const exactMatches = headers.filter(header => header === marker)
+    expect(exactMatches.length).toBeLessThanOrEqual(1)
+    const prefixCollisions = headers.filter(
+      header => header !== marker && header.startsWith(marker),
+    )
+    expect(prefixCollisions).toEqual([])
+  }
 }
 
 describe('step-group-marker-freshness', () => {
@@ -82,15 +92,16 @@ describe('step-group-marker-freshness', () => {
     })
 
     it.each([
-      ['checks-static.yml', '../../.github/workflows/checks-static.yml'],
-      ['tests-playwright.yml', '../../.github/workflows/tests-playwright.yml'],
+      ['checks-static.yml', '../../.github/workflows/checks-static.yml', 1],
+      ['tests-playwright.yml', '../../.github/workflows/tests-playwright.yml', 2],
       [
         'tests-playwright-credentialed.yml',
         '../../.github/workflows/tests-playwright-credentialed.yml',
+        1,
       ],
-      ['tests-web-integration.yml', '../../.github/workflows/tests-web-integration.yml'],
-    ])('build-web-targets marker matches %s', (_workflowName, yamlPath) => {
-      assertMarkerIsFreshAndUnique(buildWebTargetsStepMarker, yamlPath)
+      ['tests-web-integration.yml', '../../.github/workflows/tests-web-integration.yml', 2],
+    ])('build-web-targets marker matches %s', (_workflowName, yamlPath, expectedJobCount) => {
+      assertMarkerIsFreshAndUnique(buildWebTargetsStepMarker, yamlPath, expectedJobCount)
     })
 
     it('oxlint type-aware marker matches static-code-analysis.yml', () => {

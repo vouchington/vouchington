@@ -1,9 +1,8 @@
 name: Build web targets
 description: >
   Builds the Cloudflare Worker and Next.js standalone server for integration
-  and Playwright tests. Sources .env if present so test-specific variables
-  (PORT, NEXT_PORT, NEXT_PUBLIC_API_BASE_URL, NEXT_PUBLIC_ASSET_PREFIX, etc.)
-  are available to the build.
+  and Playwright tests. Sources .env if present; shared-cache producer and
+  consumer fallback builds then use the canonical CI profile.
 
 inputs:
   artifact-suffix:
@@ -20,18 +19,78 @@ inputs:
     description: Forwarded value of the `WEB_BUILD_FS_CACHE_ENABLED` repo variable.
     required: false
     default: 'false'
+  shared-build-cache-mode:
+    description: >
+      Whether this job produces or consumes the exact run-scoped web runtime build cache.
+      Consumers rebuild when the cache cannot be restored as a complete runtime tree.
+    required: true
 
 runs:
   using: composite
   steps:
+    - name: Validate shared build cache mode
+      shell: bash
+      env:
+        SHARED_BUILD_CACHE_MODE: ${{ inputs.shared-build-cache-mode }}
+      run: |
+        case "$SHARED_BUILD_CACHE_MODE" in
+          producer|consumer) ;;
+          *)
+            echo "shared-build-cache-mode must be producer or consumer; got $SHARED_BUILD_CACHE_MODE" >&2
+            exit 1
+            ;;
+        esac
+    - name: Clear shared web build runtime paths
+      if: ${{ inputs.shared-build-cache-mode == 'consumer' }}
+      shell: bash
+      run: rm -rf web/.next/standalone web/.next/static cloudflare-worker/dist
+    - name: Restore shared web build runtime paths
+      id: restore-web-targets
+      if: ${{ inputs.shared-build-cache-mode == 'consumer' }}
+      continue-on-error: true
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          web/.next/standalone
+          web/.next/static
+          cloudflare-worker/dist
+        key: ${{ runner.os }}-${{ runner.arch }}-web-build-targets-ci-production-worker-assets-v1-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+    - name: Validate restored web build runtime paths
+      id: validate-restored-web-targets
+      if: ${{ inputs.shared-build-cache-mode == 'consumer' }}
+      shell: bash
+      run: |
+        if [ "${{ steps.restore-web-targets.outputs.cache-hit }}" = 'true' ] && \
+          node ci/web-build-cache-manifest.mts verify; then
+          echo 'complete=true' >> "$GITHUB_OUTPUT"
+        else
+          echo 'complete=false' >> "$GITHUB_OUTPUT"
+        fi
     - name: Build web targets
+      if: ${{ inputs.shared-build-cache-mode == 'producer' || steps.validate-restored-web-targets.outputs.complete != 'true' }}
       shell: bash
       env:
         VOUCHINGTON_SETUP_WEB_TIMINGS_JSON: ${{ runner.temp }}/web-build-timings.json
         WEB_BUILD_FS_CACHE_ENABLED: ${{ inputs.web-build-fs-cache-enabled }}
       run: |
         if [ -f .env ]; then set -a; source .env; set +a; fi
+        export NEXT_TEST_BUILD=0
+        export NEXT_PUBLIC_ASSET_PREFIX=''
         node ci/setup-web-integration.mts
+    - name: Stamp shared web build manifest
+      if: ${{ inputs.shared-build-cache-mode == 'producer' && success() }}
+      shell: bash
+      run: node ci/web-build-cache-manifest.mts write
+    - name: Save shared web build runtime paths
+      if: ${{ inputs.shared-build-cache-mode == 'producer' && success() }}
+      continue-on-error: true
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          web/.next/standalone
+          web/.next/static
+          cloudflare-worker/dist
+        key: ${{ runner.os }}-${{ runner.arch }}-web-build-targets-ci-production-worker-assets-v1-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
     - name: Summarize web build timings
       # Renders via ci/write-web-build-timings-summary.mts rather than a raw `cat` into a JSON
       # fence, for readability (issue #10937). Tolerates a missing timings file silently.

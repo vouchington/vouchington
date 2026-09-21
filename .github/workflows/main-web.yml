@@ -142,6 +142,8 @@ jobs:
     needs: [static-checks]
     if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
     uses: ./.github/workflows/tests-web-integration.yml
+    with:
+      shared_build_available: true
     permissions:
       actions: read
       contents: read
@@ -155,6 +157,7 @@ jobs:
       actions: read
       contents: read
     with:
+      shared_build_available: true
       event-name: ${{ github.event_name }}
       # OTel trace export is opt-in (debugging only) — default off to avoid
       # continuous GitHub Actions artifact storage cost from every main run

@@ -154,7 +154,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-lambdas.yml`                 | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 37            |
 | `tests-playwright-credentialed.yml` | `playwright-credentialed-tests` | job    | `ubuntu-latest`                       | 25            |
 | `tests-playwright.yml`              | `playwright-tests`              | matrix | `ubuntu-latest`                       | 35            |
-| `tests-playwright.yml`              | `select`                        | job    | `ubuntu-latest`                       | 5             |
+| `tests-playwright.yml`              | `select`                        | job    | `ubuntu-latest`                       | 20            |
 | `tests-portability.yml`             | `portability-linux`             | job    | `ubuntu-latest`                       | 17            |
 | `tests-portability.yml`             | `portability-macos`             | job    | `macos-latest`                        | 17            |
 | `tests-postgres-schema.yml`         | `postgres-schema-tests`         | job    | `ubuntu-latest`                       | 20            |
@@ -163,7 +163,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-ts-shared.yml`               | `ts-shared`                     | job    | `ubuntu-latest`                       | 17            |
 | `tests-web-api.yml`                 | `prep`                          | job    | `ubuntu-latest`                       | 8             |
 | `tests-web-api.yml`                 | `web-api-tests`                 | matrix | `ubuntu-latest`                       | 27            |
-| `tests-web-integration.yml`         | `prep`                          | job    | `ubuntu-latest`                       | 8             |
+| `tests-web-integration.yml`         | `prep`                          | job    | `ubuntu-latest`                       | 20            |
 | `tests-web-integration.yml`         | `web-integration-tests`         | matrix | `ubuntu-latest`                       | 26            |
 | `tests-web.yml`                     | `prep`                          | job    | `ubuntu-latest`                       | 8             |
 | `tests-web.yml`                     | `web-tests`                     | matrix | `ubuntu-latest`                       | 32            |

@@ -18,6 +18,10 @@ on:
         type: boolean
         required: false
         default: false
+      shared_build_available:
+        description: 'A preceding job in this run produced the shared web build'
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       otel_enabled:
@@ -37,7 +41,7 @@ concurrency:
 jobs:
   select:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     permissions:
       contents: read
     outputs:
@@ -71,6 +75,13 @@ jobs:
           fi
           echo "total=$total" >> "$GITHUB_OUTPUT"
           echo "matrix=[$(seq -s, 1 "$total")]" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/build-web-targets
+        if: ${{ steps.select.outputs.skip != 'true' && !inputs.shared_build_available && steps.shards.outputs.total != '1' }}
+        timeout-minutes: 13
+        with:
+          artifact-suffix: playwright-producer
+          shared-build-cache-mode: producer
+          web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
       - name: Upload Playwright test plan
         if: ${{ !cancelled() }}
         timeout-minutes: 1
@@ -99,7 +110,6 @@ jobs:
       API_KEY_CHECKSUM_SECRET: this is a fake Playwright CI API key checksum secret
       VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake Playwright CI OTP HMAC secret
       VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-playwright-ci-key:raw32:this fake test key is not secret
-      NEXT_PUBLIC_ASSET_PREFIX: http://localhost
     strategy:
       fail-fast: false
       matrix:
@@ -287,7 +297,6 @@ jobs:
           {
             echo "BACKEND_ORIGIN=http://localhost:$PORT"
             echo "WEB_ORIGIN=http://localhost:$NEXT_PORT"
-            echo "CSP_ASSET_ORIGIN=http://localhost"
             echo 'CSP_BROWSER_UPLOAD_ORIGINS=["https://test-images.s3.us-west-2.amazonaws.com","https://test-images.s3.dualstack.us-west-2.amazonaws.com"]'
             echo "CF_WORKER_SECRET=$CF_WORKER_SECRET"
           } > cloudflare-worker/.dev.vars
@@ -300,6 +309,7 @@ jobs:
         timeout-minutes: 13
         with:
           artifact-suffix: playwright-${{ matrix.shard }}
+          shared-build-cache-mode: consumer
           web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
       - name: Compile localization catalog
         timeout-minutes: 3

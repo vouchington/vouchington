@@ -24,6 +24,10 @@ on:
         description: 'Run Vitest in the web-integration shard runner'
         type: boolean
         default: true
+      shared_build_available:
+        description: 'A preceding job in this run produced the shared web build'
+        type: boolean
+        default: false
       shard_total_override:
         description: 'Explicit shard count for a selected run'
         required: false
@@ -60,7 +64,7 @@ env:
 jobs:
   prep:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     permissions:
       contents: read
     outputs:
@@ -83,6 +87,16 @@ jobs:
         id: shards
         with:
           total: ${{ steps.shard-total.outputs.shard-total }}
+      - uses: ./.github/actions/setup-node-pnpm
+        if: ${{ !inputs.shared_build_available && steps.shards.outputs.total != '1' }}
+        timeout-minutes: 5
+      - uses: ./.github/actions/build-web-targets
+        if: ${{ !inputs.shared_build_available && steps.shards.outputs.total != '1' }}
+        timeout-minutes: 13
+        with:
+          artifact-suffix: web-integration-producer
+          shared-build-cache-mode: producer
+          web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
 
   web-integration-tests:
     needs: [prep]
@@ -143,6 +157,8 @@ jobs:
       - uses: ./.github/actions/build-web-targets
         timeout-minutes: 13
         with:
+          artifact-suffix: web-integration-${{ matrix.shard }}
+          shared-build-cache-mode: consumer
           web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
 
       - name: Run web integration tests
