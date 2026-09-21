@@ -1,7 +1,6 @@
 import {
   createHouseholdSpendingCategory,
   deleteHouseholdSpendingCategoryById,
-  getHouseholdSpendingCategoriesByUserId,
   updateHouseholdSpendingCategoryById,
 } from '@services/individuals-households'
 import { createManageEntityTool } from './create-manage-entity-tool.mts'
@@ -36,17 +35,6 @@ export default createManageEntityTool({
       description: 'A note about the spending',
     },
   },
-  listProperties: {
-    after: { type: 'string', description: 'Opaque cursor from the prior list page' },
-    limit: { type: 'number', minimum: 1, maximum: 100, description: 'Entries per list page' },
-  },
-  listFn: (user, args) => {
-    const pagination = args as { after?: string; limit?: number }
-    return getHouseholdSpendingCategoriesByUserId(user, user, {
-      after: pagination.after,
-      limit: pagination.limit,
-    })
-  },
   addFn: (user, args) =>
     createHouseholdSpendingCategory(user, user, args.spending_category_id as string, {
       amount: args.amount as Money,
@@ -62,10 +50,9 @@ export default createManageEntityTool({
   removeFn: (user, id) => deleteHouseholdSpendingCategoryById(user, id),
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
-    requiredScopes: { mcp: ['spending:write'] },
+    requiredScopes: { mcp: ['spending:read', 'spending:write'] },
     annotations: { destructiveHint: true },
     api: [
-      { method: 'GET', path: '/api/v1/my/spending-categories' },
       { method: 'POST', path: '/api/v1/my/spending-categories' },
       { method: 'PATCH', path: '/api/v1/my/spending-categories/:id' },
       { method: 'DELETE', path: '/api/v1/my/spending-categories/:id' },

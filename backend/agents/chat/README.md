@@ -87,6 +87,10 @@ per the agent conventions ("Do not inject user data into the system prompt"). Us
 | `compare_topics`              | Side-by-side comparison of two cards or products                 |
 | `get_referral_links`          | Retrieve prioritized referral links for a card                   |
 | `get_my_profile`              | User's wallet, cards, valuations, and financial profile          |
+| `get_my_cards`                | List wallet cards                                                |
+| `get_my_point_valuations`     | List rewards-program point valuations                            |
+| `get_my_rewards_statuses`     | List loyalty tier statuses                                       |
+| `get_my_spending`             | List spending by category                                        |
 | `update_my_financial_profile` | Save credit score, income, or other financial details            |
 | `manage_my_cards`             | Add, update, or remove cards from wallet                         |
 | `manage_my_point_valuations`  | Set rewards program point valuations                             |

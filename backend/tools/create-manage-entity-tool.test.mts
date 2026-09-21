@@ -5,31 +5,6 @@ import type { BasicUser, PrivateUser } from '@services/users/types'
 import { randomUUID } from 'node:crypto'
 
 describe('createManageEntityTool', () => {
-  it('passes typed list-only arguments to the list implementation', async () => {
-    const user = await createTestUser()
-    const received: Array<{ action: 'list'; after?: string; limit?: number }> = []
-    const tool = createManageEntityTool({
-      toolName: 'test_paginated_entities',
-      description: 'Test paginated entities',
-      addProperties: {},
-      updateProperties: {},
-      listProperties: { after: { type: 'string' }, limit: { type: 'number' } },
-      listFn: (_privateUser, args: { action: 'list'; after?: string; limit?: number }) => {
-        received.push(args)
-        return Promise.resolve([])
-      },
-      addFn: () => Promise.resolve(null),
-      updateFn: () => Promise.resolve(null),
-      removeFn: () => Promise.resolve(null),
-    })
-
-    await tool.function(user)({ action: 'list', after: 'cursor', limit: 5 })
-
-    expect(received).toEqual([{ action: 'list', after: 'cursor', limit: 5 }])
-    expect(tool.schema.parameters).toMatchObject({
-      properties: { after: { type: 'string' }, limit: { type: 'number' } },
-    })
-  })
   it('hydrates BasicUser callers before invoking config functions', async () => {
     const user = await createTestUser()
     const receivedUsers: PrivateUser[] = []
@@ -38,17 +13,16 @@ describe('createManageEntityTool', () => {
       description: 'Test manage entities',
       addProperties: {},
       updateProperties: {},
-      listFn: privateUser => {
+      addFn: privateUser => {
         receivedUsers.push(privateUser)
-        return Promise.resolve([])
+        return Promise.resolve(null)
       },
-      addFn: () => Promise.resolve(null),
       updateFn: () => Promise.resolve(null),
       removeFn: () => Promise.resolve(null),
     })
     const basicUser: BasicUser = { __entity_type: 'user', id: user.id, roles: [] }
 
-    const result = await tool.function(basicUser)({ action: 'list' })
+    const result = await tool.function(basicUser)({ action: 'add' })
 
     expect(result.success).toBe(true)
     expect(receivedUsers[0]?.id).toBe(user.id)
@@ -62,10 +36,6 @@ describe('createManageEntityTool', () => {
       description: 'Test manage entities',
       addProperties: {},
       updateProperties: {},
-      listFn: () => {
-        calls.push('list')
-        return Promise.resolve([])
-      },
       addFn: () => Promise.resolve(null),
       updateFn: () => Promise.resolve(null),
       removeFn: () => Promise.resolve(null),
@@ -76,7 +46,7 @@ describe('createManageEntityTool', () => {
       roles: [],
     }
 
-    await expect(tool.function(user)({ action: 'list' })).rejects.toMatchObject({ status: 401 })
+    await expect(tool.function(user)({ action: 'add' })).rejects.toMatchObject({ status: 401 })
     expect(calls).toEqual([])
   })
 
@@ -88,10 +58,6 @@ describe('createManageEntityTool', () => {
       description: 'Test manage entities',
       addProperties: {},
       updateProperties: {},
-      listFn: () => {
-        calls.push('list')
-        return Promise.resolve([])
-      },
       addFn: () => {
         calls.push('add')
         return Promise.resolve(null)
@@ -120,7 +86,6 @@ describe('createManageEntityTool', () => {
       description: 'Test manage entities',
       addProperties: {},
       updateProperties: {},
-      listFn: () => Promise.resolve([]),
       addFn: () => Promise.resolve(null),
       updateFn: () => {
         calls.push('update')

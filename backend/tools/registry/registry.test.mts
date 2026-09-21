@@ -4,11 +4,13 @@ import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS, getRegisteredToolByName } from './index.mts'
 import { getToolRequiredScopes, isToolMcpEligible, listToolsForSurface } from './select.mts'
 import type { Tool } from '../types.mts'
+import { SCOPE_DEFINITIONS } from '@modules/scopes'
 
 const TOOLS_DIR = path.join(import.meta.dirname, '..')
 
 // Files in tools/ that are NOT tool definitions (factories, helpers, types, barrel)
 const NON_TOOL_FILES = new Set([
+  'create-get-my-entity-list-tool.mts',
   'create-manage-entity-tool.mts',
   'get-domain-ratings-helpers.mts',
   'index.mts',
@@ -90,6 +92,26 @@ describe('tool registry', () => {
         .filter(surface => getToolRequiredScopes(tool, surface) == null)
         .map(surface => `${tool.schema.name}:${surface}`)
     })
+    expect(missing).toEqual([])
+  })
+
+  it('declares prerequisites for each MCP write scope', () => {
+    const missing = ALL_TOOLS.flatMap(tool =>
+      (tool.meta?.surfaces ?? ['internal'])
+        .filter(
+          (surface): surface is 'mcp' | 'admin_mcp' => surface === 'mcp' || surface === 'admin_mcp',
+        )
+        .flatMap(surface => {
+          const scopes = getToolRequiredScopes(tool, surface) ?? []
+          return scopes.flatMap(scope => {
+            const prerequisite = SCOPE_DEFINITIONS[scope].requires
+            return prerequisite != null && !scopes.includes(prerequisite as typeof scope)
+              ? [`${tool.schema.name}:${scope}:${prerequisite}`]
+              : []
+          })
+        }),
+    )
+
     expect(missing).toEqual([])
   })
 
