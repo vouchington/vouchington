@@ -21,7 +21,7 @@ describe('media delivery registry keys', () => {
     expect(() =>
       getMediaDeliveryPath({
         delivery_key: 'image-placement:missing',
-        desired_state: 'allowed',
+        desired_state: 'allow',
         route_kind: 'placement',
         placement_id: null,
         placement_revision: null,
