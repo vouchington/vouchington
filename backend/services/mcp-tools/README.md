@@ -4,13 +4,14 @@ Implements the MCP (Model Context Protocol) server logic: listing tools, executi
 
 ## Modules
 
-| File                 | Description                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------ |
-| `config.mts`         | User/admin MCP server names, routes, and surfaces                                    |
-| `list-tools.mts`     | Filter registered tools by configured surface, role, plan, and API key permissions   |
-| `call-tool.mts`      | Execute a tool call with full authorization enforcement                              |
-| `handle-request.mts` | Stateless per-request MCP transport using `WebStandardStreamableHTTPServerTransport` |
-| `index.mts`          | Barrel: exports request handlers, helpers, and user/admin MCP configs                |
+| File                            | Description                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------ |
+| `config.mts`                    | User/admin MCP server names, routes, and surfaces                                    |
+| `list-tools.mts`                | Filter registered tools by configured surface, role, plan, and API key permissions   |
+| `call-tool.mts`                 | Execute a tool call with full authorization enforcement                              |
+| `serialize-mcp-tool-result.mts` | Bounded JSON serializer for MCP tool results                                         |
+| `handle-request.mts`            | Stateless per-request MCP transport using `WebStandardStreamableHTTPServerTransport` |
+| `index.mts`                     | Barrel: exports request handlers, helpers, and user/admin MCP configs                |
 
 ## Authorization
 
