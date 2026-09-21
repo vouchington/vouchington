@@ -73,9 +73,10 @@ a second Git diff, so the safety routing and test selection cannot disagree abou
    `no-mistakes` 0.34+ resolves each import with the config that owns the importing file, so web's
    `@/*` alias and aliases in other workspaces can coexist without one global configuration
    shadowing another.
-3. **Full suite always runs** — CI does not read PR labels at all. The `vitest:full` and
-   `playwright:full` labels are no-ops; every pull-request CI attempt runs the full Vitest suite
-   unconditionally, so there is no narrowing behavior to opt out of.
+3. **Full suite is selected** — CI does not read PR labels at all. The `vitest:full` and
+   `playwright:full` labels are no-ops; every pull-request CI attempt selects the full Vitest suite.
+   A failed upstream static or application test can suppress dependent jobs, and there is no
+   label-driven narrowing behavior to opt out of.
 4. **`.no-mistakes.yml` `pullRequest` environment** — `test_plan.vitest.environments.pullRequest`
    defines `direct`, `dependencies`, and a 1% `sample` group (`sampleWhenLimited: true`), plus
    broad `fullSuiteTriggers` only for high-risk root configuration. Every current Vitest trigger

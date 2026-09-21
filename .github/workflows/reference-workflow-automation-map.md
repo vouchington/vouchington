@@ -122,7 +122,7 @@ flowchart TD
 
     static-lambdas --> test-lambdas
     static-worker --> test-cloudflare-worker
-    application-vitest["application Vitest roots settled\n(ts-shared, backend modules/unit/schema, web/API/integration, lambdas, worker)"]
+    application-vitest["application Vitest roots passed or skipped\n(ts-shared, backend modules/unit/schema, web/API/integration, lambdas, worker)"]
     test-ts-shared --> application-vitest
     test-backend-modules --> application-vitest
     test-backend --> application-vitest
@@ -159,6 +159,8 @@ flowchart TD
     tests-processing --> tests["tests ✓"]
     detect --> build-backend["build-backend\n(api + worker via docker bake; backend image changes + trusted secrets)"]
     detect --> build-web["build-web\n(web image changes + trusted secrets)"]
+    tests --> build-backend
+    tests --> build-web
     select-ci -. "full-ci / run-build-backend\n(or infra path)" .-> build-backend
     select-ci -. "full-ci / run-build-web\n(or infra path)" .-> build-web
     build-backend --> build["build ✓"]

@@ -33,6 +33,8 @@ export const routePolicy = {
   forbiddenJobs: [],
   requiredDirectEdges: [
     edge('.github/workflows/ci.yml#tests', '.github/workflows/ci.yml#build'),
+    edge(ciJob('tests'), ciJob('build-backend')),
+    edge(ciJob('tests'), ciJob('build-web')),
     ...['static-backend', 'static-web', 'static-lambdas', 'static-cloudflare-worker'].map(job =>
       edge(ciJob('static-code-analysis'), ciJob(job)),
     ),
@@ -146,7 +148,7 @@ export const routePolicy = {
       innerDownstreamJobs: [],
       outerCallers: {
         '.github/workflows/ci.yml#test-backend-unit': splitIds(
-          '.github/workflows/ci.yml#build .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing .github/workflows/ci.yml#upload-codecov',
+          '.github/workflows/ci.yml#build .github/workflows/ci.yml#build-backend .github/workflows/ci.yml#build-web .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing .github/workflows/ci.yml#upload-codecov',
         ),
         '.github/workflows/main-backend.yml#test-backend-unit': [],
       },
