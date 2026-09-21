@@ -47,6 +47,46 @@ describe('copyright email raw evidence', () => {
       /digest does not match/,
     )
   })
+
+  it('refuses evidence whose object size no longer matches the immutable receipt', async () => {
+    const bytes = Buffer.from('original email')
+    const intake = await createIntake(bytes)
+    const moderator = { ...(await createTestUser()), roles: ['moderator'] } as Awaited<
+      ReturnType<typeof createTestUser>
+    >
+    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
+    vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({
+      Body: Readable.from([bytes]),
+      ContentLength: bytes.byteLength + 1,
+    } as never)
+
+    await expect(loadCopyrightEmailRawEvidence(intake.id, moderator)).rejects.toThrow(
+      /size does not match/,
+    )
+  })
+
+  it('refuses a truncated or oversized evidence stream', async () => {
+    const bytes = Buffer.from('original email')
+    const intake = await createIntake(bytes)
+    const moderator = { ...(await createTestUser()), roles: ['moderator'] } as Awaited<
+      ReturnType<typeof createTestUser>
+    >
+    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
+    vi.spyOn(S3Client.prototype, 'send')
+      .mockResolvedValueOnce({
+        Body: Readable.from([Buffer.concat([bytes, Buffer.from('x')])]),
+      } as never)
+      .mockResolvedValueOnce({
+        Body: Readable.from([bytes.subarray(0, 4)]),
+      } as never)
+
+    await expect(loadCopyrightEmailRawEvidence(intake.id, moderator)).rejects.toThrow(
+      /exceeds its immutable receipt size/,
+    )
+    await expect(loadCopyrightEmailRawEvidence(intake.id, moderator)).rejects.toThrow(
+      /size does not match/,
+    )
+  })
 })
 
 async function createIntake(bytes: Buffer) {
