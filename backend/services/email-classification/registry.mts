@@ -9,8 +9,7 @@ type TransactionalEntry = {
 
 type MarketingEntry = {
   classification: 'marketing'
-  unsubscribe:
-    { scheme: 'user-category'; category: EmailUnsubscribeCategory }
+  unsubscribe: { scheme: 'user-category'; category: EmailUnsubscribeCategory }
   hasActiveSender: boolean
 }
 

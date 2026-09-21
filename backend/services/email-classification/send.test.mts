@@ -116,5 +116,4 @@ describe('sendClassifiedEmail', () => {
 
     expect(ses.sendEmail).toHaveBeenCalled()
   })
-
 })

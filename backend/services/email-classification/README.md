@@ -29,9 +29,9 @@ processor without a registry entry fails CI.
 
 ## Functions
 
-| Function                    | File            | Description                                                                                                                                                                                               |
-| --------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sendClassifiedEmail`       | send.mts        | Looks up the registry entry, applies suppression checks for marketing email, then sends via SES or Gmail SMTP with the right headers/config set                                                           |
+| Function                    | File            | Description                                                                                                                                           |
+| --------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sendClassifiedEmail`       | send.mts        | Looks up the registry entry, applies suppression checks for marketing email, then sends via SES or Gmail SMTP with the right headers/config set       |
 | `buildClassifiedSendParams` | send-params.mts | Pure function: `EmailType` + `{ userId? }` → `{ headers?, configurationSetName? }`; throws `TypeError` if a marketing type is called without `userId` |
 
 ## Suppression Checks (marketing only)
@@ -40,7 +40,7 @@ processor without a registry entry fails CI.
 
 1. `unsubscribe.scheme === 'user-category'` and the user has opted out of that category
    (`getEmailPreferences`, `@services/users`).
-3. The recipient address has a permanent SES bounce or complaint on file
+2. The recipient address has a permanent SES bounce or complaint on file
    (`isEmailSuppressed`, `@services/ses-bounce-events`).
 
 Transactional email skips all three checks — it is never suppressed by marketing preferences.
