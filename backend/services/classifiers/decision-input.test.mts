@@ -39,7 +39,7 @@ describe('normalizeClassifierDecisionInput', () => {
       'batch ID',
       (input: PersistClassifierDecisionInput) => ({
         ...input,
-        batchId: uuidv7().replace('-7', '-4'),
+        batchId: '00000000-0000-4000-8000-000000000000',
       }),
       'batch ID must be UUIDv7',
     ],
