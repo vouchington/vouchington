@@ -13,11 +13,11 @@ Key points for this worker:
   HTTPS local development uses the same-origin Worker URL to avoid mixed content. CloudFront owns
   them in staging and production. Each environment selects that route through
   `NEXT_PUBLIC_ASSET_PREFIX`.
-  Playwright CI builds use the fixed logical origin `http://localhost`; Chromium maps that origin's
-  default port to the shard's Next standalone port, so browser asset traffic bypasses Wrangler while
-  the compiled build remains reusable across shard ports (formerly filed as
-  jonathanong/filaments#10990).
-  Web-integration builds leave the prefix unset and verify assets through the same-origin Worker.
+  Playwright and web-integration CI builds leave the prefix unset. Browser asset requests use the
+  same-origin Worker route to the job's Next standalone server, so the shared build does not depend
+  on per-job ports. See the [asset-routing table](../docs/overview/architecture/caching-strategy.md#asset-routing)
+  for the environment comparison and [E2E and Visual](../docs/development/reference-tests-e2e-and-visual.md)
+  for the CI build profile.
 - Images (`/images/*` and `/sideload/*`) are served via the image-host CloudFront distribution in production, not through this worker.
 - Cached responses include `stale-while-revalidate` (2× TTL) so the edge serves stale content instantly during revalidation
 - `stale-if-error=86400` configures a 24h stale-on-origin-error cap; staging validation must confirm Workers Cache honors the directive

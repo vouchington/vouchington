@@ -30,8 +30,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   experimental: {
     authInterrupts: true,
-    // Turbopack defaults minify=true for `next build`; skip it for test builds
-    // (NEXT_TEST_BUILD=1) to skip minification for faster CI builds.
+    // Local NEXT_TEST_BUILD=1 builds skip Turbopack's default minification.
     turbopackMinify: isTestBuild ? false : undefined,
     // Turbopack's persistent filesystem cache for builds. Off by default (matching
     // Next.js 16's own experimental default): in CI the cache grew to 1.5 GB per

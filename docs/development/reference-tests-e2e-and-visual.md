@@ -43,15 +43,19 @@ Next.js standalone server (`node server.js`) and the pre-built Cloudflare Worker
 `next dev` and on-the-fly `wrangler dev` (without `--no-bundle`) are dev-loop only
 (`./dev/tmux`, `pnpm --dir web dev`).
 
-Next.js automation builds set `NEXT_TEST_BUILD=1`, which keeps `reactCompiler: true` but
-skips build-only post-processing that does not affect localhost behavior: JS minification,
-and Next.js gzip compression.
-In React Compiler work, a **compiler-enabled build test** means this `NEXT_TEST_BUILD=1` Next.js
+Local automation builds default to `NEXT_TEST_BUILD=1`. This keeps `reactCompiler: true` but
+skips Turbopack minification and Next.js gzip compression. The shared CI web test build explicitly
+sets `NEXT_TEST_BUILD=0` and leaves `NEXT_PUBLIC_ASSET_PREFIX` empty. Playwright and web-integration
+jobs use that production-profile build, with browser assets served through the same-origin Worker;
+see [Caching Architecture](../../cloudflare-worker/reference-caching-architecture.md).
+
+In React Compiler work, a **compiler-enabled build test** can use the local `NEXT_TEST_BUILD=1`
 build: it proves production source is transformed by the compiler. It does not mean compiling
 Vitest or Storybook, which remain behavior-focused and intentionally use their normal transforms.
-Docker image builds and manual `pnpm --dir web build` runs do not set this flag, so production builds
-keep the full production optimization path. Set `NEXT_TEST_BUILD=0` before local automation
-commands when debugging fully optimized build behavior.
+Docker image builds are separate from the shared CI web test build and its cache. They and manual
+`pnpm --dir web build` runs do not set this flag by default, so they keep the full production
+optimization path. Set `NEXT_TEST_BUILD=0` before local automation commands when reproducing
+CI's fully optimized build behavior.
 
 In-build TypeScript type checking is disabled for **every** build
 (`typescript.ignoreBuildErrors: true`), not just `NEXT_TEST_BUILD` ones. Types are still
