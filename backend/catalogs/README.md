@@ -111,6 +111,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../queues/user-rss-feed-imports/README.md`](../queues/user-rss-feed-imports/README.md)
 - [`../queues/vote-integrity/README.md`](../queues/vote-integrity/README.md)
 - [`../queues/vote-weight/README.md`](../queues/vote-weight/README.md)
+- [`../queues/wikipedia-recommender/README.md`](../queues/wikipedia-recommender/README.md)
 
 ## Services
 
