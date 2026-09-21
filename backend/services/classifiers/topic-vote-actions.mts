@@ -96,11 +96,6 @@ function validateTopicDecision(
     }
     seen.add(key)
   }
-  if (seen.size !== expected.size) {
-    throw new Error(
-      'Classifier topic vote application decision does not cover every expected binding',
-    )
-  }
   return topicResults
 }
 

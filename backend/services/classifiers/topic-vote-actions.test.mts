@@ -7,6 +7,37 @@ import { persistClassifierDecision } from './persist-classifier-decision.mts'
 import { applyTopicClassifierDecisionVotes } from './topic-vote-actions.mts'
 
 describe('applyTopicClassifierDecisionVotes', () => {
+  it('rejects malformed application inputs before reading a decision', async () => {
+    const batchId = uuidv7()
+    const sharedActorId = uuidv7()
+    const binding = { topicId: uuidv7(), storedCandidateId: uuidv7() }
+
+    await expect(
+      applyTopicClassifierDecisionVotes({
+        batchId: 'not-a-uuid',
+        sharedActorId,
+        expectedBindings: [binding],
+      }),
+    ).rejects.toThrow('Classifier topic vote application requires UUID batch and shared actor IDs')
+    await expect(
+      applyTopicClassifierDecisionVotes({ batchId, sharedActorId, expectedBindings: [] }),
+    ).rejects.toThrow('Classifier topic vote application requires expected bindings')
+    await expect(
+      applyTopicClassifierDecisionVotes({
+        batchId,
+        sharedActorId,
+        expectedBindings: [{ topicId: 'not-a-uuid', storedCandidateId: null }],
+      }),
+    ).rejects.toThrow('Classifier topic vote application binding IDs must be UUIDs')
+    await expect(
+      applyTopicClassifierDecisionVotes({
+        batchId,
+        sharedActorId,
+        expectedBindings: [binding, binding],
+      }),
+    ).rejects.toThrow('Classifier topic vote application cannot duplicate bindings')
+  })
+
   it('maps persisted effective thresholds into durable semantic votes', async () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()
