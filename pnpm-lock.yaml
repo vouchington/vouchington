@@ -202,6 +202,9 @@ importers:
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
+      '@modules/openrouter-utils':
+        specifier: workspace:^
+        version: link:../../modules/openrouter-utils
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
@@ -319,6 +322,9 @@ importers:
         specifier: ^7.15.0
         version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
+      '@modules/openrouter-utils':
+        specifier: workspace:^
+        version: link:../../modules/openrouter-utils
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
@@ -2387,6 +2393,18 @@ importers:
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
+      openai:
+        specifier: ^7.15.0
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+
+  backend/modules/openrouter-utils:
+    dependencies:
+      '@modules/openai-utils':
+        specifier: workspace:^
+        version: link:../openai-utils
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../utils
       openai:
         specifier: ^7.15.0
         version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
@@ -29506,6 +29524,14 @@ snapshots:
       define-lazy-prop: 3.0.0
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
+
+  openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2):
+    optionalDependencies:
+      '@aws-sdk/credential-provider-node': 3.972.83
+      '@smithy/signature-v4': 5.7.3
+      undici: 8.10.2
+      ws: 8.21.3
+      zod: 4.6.2
 
   openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2):
     optionalDependencies:

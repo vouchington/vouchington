@@ -14,14 +14,39 @@ const INITIAL_RETRY_DELAY_MS = 500
 const MAX_RETRY_DELAY_MS = 8_000
 
 type RawCreateOptions = Parameters<typeof openai.responses.create>[1]
+export interface OpenAICompatibleRequestOptions {
+  maxRetries?: number
+  signal?: AbortSignal | null
+}
 
 /* no-mistakes: integration=openai */
 export async function createOpenAIResponseWithRetries(
   params: ResponseCreateParamsStreaming,
   options?: RawCreateOptions,
 ): Promise<{ stream: AsyncIterable<ResponseStreamEvent>; requestStartedAt: Date }> {
+  return await createOpenAICompatibleResponseWithRetries(
+    async (request, requestOptions) => await openai.responses.create(request, requestOptions),
+    params,
+    options,
+  )
+}
+
+/**
+ * Applies the direct OpenAI transport's retry and uncertainty policy to an OpenAI-compatible
+ * Responses endpoint. Callers must supply an endpoint that accepts the same SDK request shape.
+ */
+export async function createOpenAICompatibleResponseWithRetries<
+  TOptions extends OpenAICompatibleRequestOptions,
+>(
+  createResponse: (
+    params: ResponseCreateParamsStreaming,
+    options?: TOptions,
+  ) => Promise<AsyncIterable<ResponseStreamEvent>>,
+  params: ResponseCreateParamsStreaming,
+  options?: TOptions,
+): Promise<{ stream: AsyncIterable<ResponseStreamEvent>; requestStartedAt: Date }> {
   const maxRetries = options?.maxRetries ?? 2
-  const sdkOptions = { ...options, maxRetries: 0 }
+  const sdkOptions = { ...options, maxRetries: 0 } as TOptions
   const hooks = getOpenAIResponseAttemptHooks()
   for (let attempt = 1; ; attempt += 1) {
     options?.signal?.throwIfAborted()
@@ -31,7 +56,7 @@ export async function createOpenAIResponseWithRetries(
     options?.signal?.throwIfAborted()
     try {
       // oxlint-disable-next-line no-await-in-loop -- a retry cannot begin until this physical request settles
-      return { stream: await openai.responses.create(params, sdkOptions), requestStartedAt }
+      return { stream: await createResponse(params, sdkOptions), requestStartedAt }
     } catch (error) {
       const isFlexResourceUnavailable = isOpenAIFlexResourceUnavailableError(error)
       if (isFlexResourceUnavailable && attempt <= maxRetries) {

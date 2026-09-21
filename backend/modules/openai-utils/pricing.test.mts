@@ -1,5 +1,36 @@
 import { describe, expect, it } from 'vitest'
-import { calcCostMicrounits } from './pricing.mts'
+import { calcCostMicrounits, getExplicitCostMicrounits } from './pricing.mts'
+
+describe('getExplicitCostMicrounits', () => {
+  it('converts an authoritative provider-reported USD cost to microunits', () => {
+    expect(
+      getExplicitCostMicrounits({ input_tokens: 1, output_tokens: 1, cost: 0.001_234_5 }),
+    ).toBe(1235)
+  })
+
+  it('returns null when the provider did not report billed cost', () => {
+    expect(getExplicitCostMicrounits({ input_tokens: 1, output_tokens: 1 })).toBeNull()
+  })
+
+  it.each([-1, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rejects invalid provider-reported cost %s',
+    cost => {
+      expect(() => getExplicitCostMicrounits({ input_tokens: 1, output_tokens: 1, cost })).toThrow(
+        'Provider usage cost must be a non-negative finite USD amount',
+      )
+    },
+  )
+
+  it('rejects provider-reported cost outside the JSON-safe microunit range', () => {
+    expect(() =>
+      getExplicitCostMicrounits({
+        input_tokens: 1,
+        output_tokens: 1,
+        cost: Number.MAX_SAFE_INTEGER,
+      }),
+    ).toThrow('Provider usage cost exceeds the maximum JSON-safe integer')
+  })
+})
 
 describe('calcCostMicrounits', () => {
   it('computes cost for gpt-5.4-nano at flex tier', () => {

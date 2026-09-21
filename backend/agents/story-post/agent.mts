@@ -1,9 +1,10 @@
 import {
-  createOpenAIResponse,
   parseLLMJsonResponse,
   DEFAULT_AGENT_MODEL,
   callRecordingAgentResponseUsage,
   QUEUED_BACKGROUND_RETRY_POLICY,
+  createOpenRouterResponse,
+  toOpenRouterModel,
 } from '@agents/_shared'
 import { extractTextFromOpenAIResponse } from '@modules/openai-utils/responses'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
@@ -15,7 +16,9 @@ export interface StoryPostAgentResult {
 }
 
 interface CallStoryPostAgentDeps {
-  createOpenAIResponse?: typeof createOpenAIResponse
+  createOpenRouterResponse?: typeof createOpenRouterResponse
+  /** Test seam retained while direct OpenAI is retired from production callers. */
+  createOpenAIResponse?: typeof import('@modules/openai-utils/create-response').createOpenAIResponse
 }
 
 const SYSTEM_INSTRUCTIONS = `You are a news editor. Given a news story and its source articles, generate a title and summary for the story post.
@@ -33,13 +36,14 @@ Respond with valid JSON in this exact format:
   "ai_summary_markdown": "2-3 sentence markdown summary of the event"
 }`
 
-/* no-mistakes: integration=openai */
+/* no-mistakes: integration=openrouter */
 export async function callStoryPostAgent(
   story: Story,
   itemSummaries: Array<{ title: string; summary: string }>,
   deps: CallStoryPostAgentDeps = {},
 ): Promise<StoryPostAgentResult> {
-  const createResponse = deps.createOpenAIResponse ?? createOpenAIResponse
+  const createResponse =
+    deps.createOpenRouterResponse ?? deps.createOpenAIResponse ?? createOpenRouterResponse
 
   const [sanitizedArticles, sanitizedStoryTitle] = await Promise.all([
     Promise.all(
@@ -67,7 +71,7 @@ export async function callStoryPostAgent(
     () =>
       createResponse(
         {
-          model: DEFAULT_AGENT_MODEL,
+          model: toOpenRouterModel(DEFAULT_AGENT_MODEL),
           instructions: SYSTEM_INSTRUCTIONS,
           input: content,
           safety_identifier: story.id,
@@ -82,7 +86,7 @@ export async function callStoryPostAgent(
         },
         { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
       ),
-    { agentSlug: 'story-post' },
+    { agentSlug: 'story-post', responseProvider: 'openrouter' },
   )
 
   const text = extractTextFromOpenAIResponse(response)

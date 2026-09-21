@@ -102,6 +102,7 @@ export async function runAppealResolutionAgent(
       agentSlug: 'appeal-resolution',
       communityId: appeal.community_id,
       postId: appeal.post_id,
+      responseProvider: 'openrouter',
     },
   )
 

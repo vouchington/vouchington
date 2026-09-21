@@ -4,6 +4,10 @@ This agent runs on post and RSS feed item creation; it does not run on update.
 Its main purpose is to automatically add "related topic" relations to posts and RSS feed items.
 It uses the `autotagger` system user.
 
+The retained reasoning/tool-search loop uses OpenRouter's OpenResponses-compatible transport. This
+is distinct from C6's future embedding-prefilter classifier path: OpenRouter responses settle
+foreground usage directly and never enter the direct OpenAI background-response reconciler.
+
 Agentic-run errors store safe error metadata (`name` and `message`) only. Stack traces stay in
 internal logging and are not persisted in the run error JSON.
 

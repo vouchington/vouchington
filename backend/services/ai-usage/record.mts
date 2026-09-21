@@ -1,6 +1,10 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { calcCostMicrounits, normalizeCachedInputTokens } from '@modules/openai-utils/pricing'
+import {
+  calcCostMicrounits,
+  getExplicitCostMicrounits,
+  normalizeCachedInputTokens,
+} from '@modules/openai-utils/pricing'
 import type { OpenAIUsage } from '@modules/openai-utils/create-response'
 
 export interface RecordAiUsageOptions {
@@ -38,7 +42,8 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
   const { responseId, communityId, postId, agentSlug, model, serviceTier, usage, createdAt } =
     options
   const run = options.query ?? write
-  const costMicrounits = calcCostMicrounits(model, serviceTier, usage)
+  const costMicrounits =
+    getExplicitCostMicrounits(usage) ?? calcCostMicrounits(model, serviceTier, usage)
   const cachedInputTokens = normalizeCachedInputTokens(usage)
   if (responseId !== undefined) {
     const { rows } = await run<RecordedRow>(sql`/* recordAiUsage */

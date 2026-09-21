@@ -62,6 +62,17 @@ export function normalizeCachedInputTokens(usage: OpenAIUsage): number {
   return Math.min(usage.input_tokens, Math.max(0, usage.input_tokens_details?.cached_tokens ?? 0))
 }
 
+/** Uses a compatible provider's authoritative billed USD cost when one is present. */
+export function getExplicitCostMicrounits(usage: OpenAIUsage): number | null {
+  if (usage.cost === undefined) return null
+  if (!Number.isFinite(usage.cost) || usage.cost < 0)
+    throw new TypeError('Provider usage cost must be a non-negative finite USD amount')
+  const microunits = Math.round(usage.cost * 1_000_000)
+  if (!Number.isSafeInteger(microunits))
+    throw new RangeError('Provider usage cost exceeds the maximum JSON-safe integer')
+  return microunits
+}
+
 export function calcCostMicrounits(
   model: string,
   serviceTier: string,

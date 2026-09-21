@@ -78,6 +78,24 @@ describe('recordAiUsage', () => {
     expect(row?.input_tokens).toBe(100)
   })
 
+  it('uses the provider-reported OpenRouter cost instead of local model pricing', async () => {
+    const post = await createTestPost({ user })
+
+    await recordAiUsage({
+      responseId: `resp_openrouter_${randomUUID()}`,
+      communityId: null,
+      postId: post.id,
+      agentSlug: 'test-openrouter-billed-cost',
+      model: 'openai/gpt-5.4-nano',
+      serviceTier: 'flex',
+      usage: { input_tokens: 100, output_tokens: 50, cost: 0.001_234_5 },
+    })
+
+    const row = await findAiUsageRecordForPost(post.id, 'test-openrouter-billed-cost')
+    expect(row?.pricing_status).toBe('priced')
+    expect(row?.cost_microunits).toBe('1235')
+  })
+
   it('records unknown pricing without treating it as zero-cost priced usage', async () => {
     const community = await insertTestCommunity({
       createdById: user.id,

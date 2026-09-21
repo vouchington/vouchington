@@ -1,6 +1,6 @@
 import { APIError } from 'openai'
 import { describe, expect, it, type TestContext, vi } from 'vitest'
-import { liveOpenAITest } from './openai-live.mts'
+import { liveOpenAITest, liveOpenRouterTest } from './openai-live.mts'
 
 describe('liveOpenAITest', () => {
   it('passes a successful body straight through', async () => {
@@ -41,6 +41,20 @@ describe('liveOpenAITest', () => {
 
     expect(context.skip).toHaveBeenCalledExactlyOnceWith(
       'OpenAI was unavailable — OpenAI returned 503 (status=503)',
+    )
+    warn.mockRestore()
+  })
+
+  it('attributes an OpenRouter outage to OpenRouter', async () => {
+    const context = makeContext()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await liveOpenRouterTest(async () => {
+      throw new APIError(503, undefined, undefined, new Headers())
+    })(context.value)
+
+    expect(context.skip).toHaveBeenCalledExactlyOnceWith(
+      'OpenRouter was unavailable — OpenRouter returned 503 (status=503)',
     )
     warn.mockRestore()
   })

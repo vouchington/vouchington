@@ -146,7 +146,7 @@ describe('agent', () => {
     ).rejects.toThrow('Invalid story post agent result')
   })
 
-  it('calls createOpenAIResponse with correct model and safety_identifier', async () => {
+  it('uses the OpenRouter model namespace and preserves safety_identifier', async () => {
     const jsonResponse = JSON.stringify({ title: 'Test', ai_summary_markdown: 'Summary.' })
     const createOpenAIResponse = vi
       .fn<CreateOpenAIResponse>()
@@ -157,7 +157,7 @@ describe('agent', () => {
 
     expect(createOpenAIResponse).toHaveBeenCalledOnce()
     const callArgs = createOpenAIResponse.mock.calls[0][0] as Record<string, unknown>
-    expect(callArgs.model).toBe('gpt-5.4-nano')
+    expect(callArgs.model).toBe('openai/gpt-5.4-nano')
     expect(callArgs.safety_identifier).toBe('story-abc')
   })
 

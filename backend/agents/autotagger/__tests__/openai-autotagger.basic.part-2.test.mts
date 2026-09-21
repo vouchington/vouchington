@@ -191,8 +191,8 @@ describe('openai-autotagger basic', () => {
     expect(createConversationMessageAgenticRun).toHaveBeenCalledWith({
       conversationId: 'conversation-1',
       conversationMessageId: 'message-1',
-      modelName: 'gpt-5.4-nano',
-      modelProvider: 'openai',
+      modelName: 'openai/gpt-5.4-nano',
+      modelProvider: 'openrouter',
       input: { content: 'hello world' },
     })
     expect(updateConversationMessageAgenticRunError).toHaveBeenCalledWith(

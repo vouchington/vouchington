@@ -41,7 +41,10 @@ export async function recordToolLoopUsage(
   await recordUsage({ response, agentSlug, communityId, postId, createdAt })
 }
 
-type RecordToolLoopParams = Pick<RunToolLoopConfig, 'agentSlug' | 'communityId' | 'postId'> & {
+type RecordToolLoopParams = Pick<
+  RunToolLoopConfig,
+  'agentSlug' | 'communityId' | 'postId' | 'responseProvider'
+> & {
   createdAt?: Date
 }
 
@@ -89,7 +92,7 @@ export async function callRecordingToolLoopUsage(
 
   return callRecordingAgentResponseUsage(
     () => createResponse(params, options),
-    { agentSlug, communityId, postId },
+    { agentSlug, communityId, postId, responseProvider: recordParams.responseProvider },
     deps,
   )
 }

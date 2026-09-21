@@ -124,6 +124,7 @@ export async function runReportJudgementAgent(
       agentSlug: 'report-judgement',
       communityId: entityContent.communityId,
       postId: entityType === 'post' || entityType === 'comment' ? entityId : undefined,
+      responseProvider: 'openrouter',
     },
   )
 

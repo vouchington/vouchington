@@ -4,16 +4,12 @@ import {
   OpenAiSpendCapBreachError,
 } from '@services/ai-usage'
 import onError from '@modules/on-error'
-import {
-  acquireBackgroundResponseLease,
-  type OwnedBackgroundResponseLease,
-} from '@services/openai-background-responses'
+import { createBackgroundResponseRegistrationHooks } from './record-response-background-hooks.mts'
 import {
   OpenAIResponseNotCompletedError,
   runWithBackgroundResponseHooks,
   runWithOpenAIResponseAttemptHooks,
   type OpenAIResponse,
-  type BackgroundResponseHooks,
 } from './create-response.mts'
 import { createOpenAIResponseAttemptHooks } from './openai-response-attempt-hooks.mts'
 import { addAccumulatedTokens } from './token-accumulator.mts'
@@ -112,7 +108,10 @@ export async function recordAgentResponseUsage(
 type CallRecordingAgentResponseUsageParams = Omit<
   RecordAgentResponseUsageParams,
   'response' | 'registration'
->
+> & {
+  /** OpenRouter has no compatible retrieve/cancel lifecycle, so it settles foreground usage directly. */
+  responseProvider?: 'openai' | 'openrouter'
+}
 
 /**
  * Calls fn and records the ledger row for a resolved response or a thrown
@@ -154,35 +153,22 @@ export async function callRecordingAgentResponseUsage<T>(
   const requestStartedAt = new Date()
   const attemptHooks = createOpenAIResponseAttemptHooks(params.agentSlug, deps)
 
-  let registration: BackgroundResponseRegistration | undefined
-  const hooks: BackgroundResponseHooks = {
-    onResponseCreated: async responseId => {
-      let lease: OwnedBackgroundResponseLease | undefined
-      try {
-        lease = await acquireBackgroundResponseLease({ responseId, ...params })
-      } catch (error) {
-        onError(
-          error instanceof Error
-            ? error
-            : new Error('Background response lease acquisition failed', { cause: error }),
-        )
-      }
-      registration = { responseId, lease }
-      return lease
-    },
-  }
+  const background =
+    params.responseProvider === 'openrouter'
+      ? undefined
+      : createBackgroundResponseRegistrationHooks(params)
 
   let response: T
   try {
     response = await runWithOpenAIResponseAttemptHooks(attemptHooks, () =>
-      runWithBackgroundResponseHooks(hooks, fn),
+      background ? runWithBackgroundResponseHooks(background.hooks, fn) : fn(),
     )
   } catch (error) {
     if (error instanceof OpenAIResponseNotCompletedError) {
       await recordUsage({
         response: error,
         ...params,
-        registration,
+        registration: background?.getRegistration(),
         createdAt: requestStartedAt,
       })
     }
@@ -191,7 +177,7 @@ export async function callRecordingAgentResponseUsage<T>(
   await recordUsage({
     response: response as OpenAIResponse,
     ...params,
-    registration,
+    registration: background?.getRegistration(),
     createdAt: requestStartedAt,
   })
   return response

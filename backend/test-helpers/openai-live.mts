@@ -15,13 +15,27 @@ import { describeOpenAIUpstreamFailure, type OpenAIUpstreamFailure } from '@modu
  * still fail the test, so the check keeps proving what it was added to prove.
  */
 export function liveOpenAITest(body: () => Promise<void>): (context: TestContext) => Promise<void> {
+  return liveOpenAICompatibleTest('OpenAI', body)
+}
+
+/** Wraps a live OpenRouter test so a provider outage skips instead of failing. */
+export function liveOpenRouterTest(
+  body: () => Promise<void>,
+): (context: TestContext) => Promise<void> {
+  return liveOpenAICompatibleTest('OpenRouter', body)
+}
+
+function liveOpenAICompatibleTest(
+  provider: 'OpenAI' | 'OpenRouter',
+  body: () => Promise<void>,
+): (context: TestContext) => Promise<void> {
   return async context => {
     try {
       await body()
     } catch (error) {
       const upstream = describeOpenAIUpstreamFailure(error)
       if (upstream === null) throw error
-      const note = formatOpenAIUpstreamSkip(upstream)
+      const note = formatOpenAIUpstreamSkip(provider, upstream)
       // Logged as well as attached to the skip: one skipped test is easy to miss in a 50-test
       // summary, and the status and request id are what make a recurrence attributable to OpenAI.
       console.warn(note)
@@ -30,12 +44,17 @@ export function liveOpenAITest(body: () => Promise<void>): (context: TestContext
   }
 }
 
-function formatOpenAIUpstreamSkip(failure: OpenAIUpstreamFailure): string {
+function formatOpenAIUpstreamSkip(
+  provider: 'OpenAI' | 'OpenRouter',
+  failure: OpenAIUpstreamFailure,
+): string {
   const details = [
     failure.status === undefined ? null : `status=${failure.status}`,
     failure.requestId === undefined ? null : `request_id=${failure.requestId}`,
     failure.code === undefined ? null : `code=${failure.code}`,
   ].filter(detail => detail !== null)
   const suffix = details.length > 0 ? ` (${details.join(', ')})` : ''
-  return `OpenAI was unavailable — ${failure.reason}${suffix}`
+  const reason =
+    provider === 'OpenRouter' ? failure.reason.replace(/^OpenAI\b/, 'OpenRouter') : failure.reason
+  return `${provider} was unavailable — ${reason}${suffix}`
 }

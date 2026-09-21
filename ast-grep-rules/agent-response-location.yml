@@ -7,6 +7,7 @@ files:
 ignores:
   - 'backend/agents/**'
   - 'backend/modules/openai-utils/**'
+  - 'backend/modules/openrouter-utils/**'
   - '**/*.test.mts'
   - '**/*.spec.mts'
 rule:
@@ -23,6 +24,9 @@ examples:
   - code: "createOpenAIResponse({ model: 'gpt-4o' })"
     isValid: true
     file: 'backend/agents/my-agent/run.mts'
+  - code: "client.responses.create({ model: 'openai/gpt-5.4-nano' })"
+    isValid: true
+    file: 'backend/modules/openrouter-utils/create-response.mts'
   - code: 'callSomeOtherFunction()'
     isValid: true
     file: 'backend/modules/other/handler.mts'

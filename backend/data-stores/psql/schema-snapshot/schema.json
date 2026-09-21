@@ -10,7 +10,8 @@
         "anthropic",
         "windows_foundry",
         "openai_compatible",
-        "android_aicore"
+        "android_aicore",
+        "openrouter"
       ]
     },
     "agent_models": {
@@ -20,7 +21,8 @@
         "claude-sonnet-5",
         "phi-silica",
         "windows-system-language-model",
-        "android-aicore-system"
+        "android-aicore-system",
+        "openai/gpt-5.4-nano"
       ]
     },
     "agent_types": {

@@ -8,6 +8,10 @@ When a moderation report is created or materially changes the report context for
 
 Automatic runs skip when the latest stored judgement already matches the current report context. Moderation staff (site moderators and admins) may force a re-run via `POST /api/v1/reports/:id/judgements`; the re-run gathers all accumulated reports for the entity and feeds them as context.
 
+Structured model calls use OpenRouter's OpenResponses-compatible API. Terminal provider metadata
+settles the shared usage ledger directly; this agent does not use the direct OpenAI
+background-response reconciler.
+
 ```mermaid
 flowchart TD
   report[Report created or context changed] --> freshness{Latest judgement matches context?}

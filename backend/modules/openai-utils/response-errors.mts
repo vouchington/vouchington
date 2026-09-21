@@ -4,6 +4,7 @@ import { APIConnectionError, APIError, APIUserAbortError } from 'openai'
 type ResponseUsage = NonNullable<Response['usage']>
 export type OpenAIUsage = Pick<ResponseUsage, 'input_tokens' | 'output_tokens'> & {
   input_tokens_details?: Pick<ResponseUsage['input_tokens_details'], 'cached_tokens'>
+  cost?: number
 }
 
 export class OpenAIResponseStreamError extends Error {
@@ -24,7 +25,7 @@ export class OpenAIResponseStreamError extends Error {
  * here rather than discarded, letting every consumer record the spend before the error propagates.
  */
 export class OpenAIResponseNotCompletedError extends Error {
-  // Only absent if OpenAI's response body itself omits an id, which should not happen in
+  // Only absent if an OpenResponses provider response body itself omits an id, which should not happen in
   // practice — kept optional rather than defaulted so a missing id is visible, not papered over.
   readonly id?: string
   readonly status: string

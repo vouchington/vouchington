@@ -1,7 +1,8 @@
 import {
-  createOpenAIResponse,
   DEFAULT_AGENT_MODEL,
   QUEUED_BACKGROUND_RETRY_POLICY,
+  createOpenRouterResponse,
+  toOpenRouterModel,
 } from '@agents/_shared'
 import {
   renderContentPolicyForPrompt,
@@ -50,14 +51,14 @@ Respond with a JSON object containing:
 - Always be conservative — if unsure, escalate.
 - Do not assume guilt; consider context and community rules.`
 
-/* v8 ignore start -- thin OpenAI integration wrapper; exercised by credentialed *.openai.test.mts */
+/* v8 ignore start -- thin OpenRouter integration wrapper; exercised by credentialed *.openrouter.test.mts */
 export function callJudgementModel(
   input: string,
   safetyIdentifier: string,
-): Promise<Awaited<ReturnType<typeof createOpenAIResponse>>> {
-  return createOpenAIResponse(
+): Promise<Awaited<ReturnType<typeof createOpenRouterResponse>>> {
+  return createOpenRouterResponse(
     {
-      model: DEFAULT_AGENT_MODEL,
+      model: toOpenRouterModel(DEFAULT_AGENT_MODEL),
       instructions: SYSTEM_PROMPT,
       input,
       safety_identifier: safetyIdentifier,
@@ -74,7 +75,7 @@ export function callJudgementModel(
           schema: JUDGEMENT_JSON_SCHEMA,
         },
       },
-    } as unknown as Parameters<typeof createOpenAIResponse>[0],
+    } as unknown as Parameters<typeof createOpenRouterResponse>[0],
     { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
   )
 }

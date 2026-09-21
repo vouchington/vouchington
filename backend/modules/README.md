@@ -13,6 +13,7 @@ and process orchestration. Do not re-queue those facades as extract-the-module w
 
 - ActivityPub inbox storage policy: [activitypub-inbox-storage-policy/README.md](activitypub-inbox-storage-policy/README.md)
 - Error handling: [on-error/README.md](on-error/README.md)
+- OpenRouter retained-agent transport: [openrouter-utils/README.md](openrouter-utils/README.md)
 - API and OAuth scope grammar: [scopes/README.md](scopes/README.md)
 - Backend context: [../CLAUDE.md](../CLAUDE.md)
 - Services (use modules; use data-stores): [../services/CLAUDE.md](../services/CLAUDE.md)

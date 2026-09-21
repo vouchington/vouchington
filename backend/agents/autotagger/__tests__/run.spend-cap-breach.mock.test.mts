@@ -7,14 +7,14 @@ import {
   insertTestPost,
   setupTestAutotaggerAgent,
 } from '@voucha/test-helpers'
-import { createOpenAIResponse } from '@modules/openai-utils/create-response'
+import { createOpenRouterResponse } from '@modules/openrouter-utils'
 import { OpenAiSpendCapBreachError, type OpenAiSpendCapBreach } from '@services/ai-usage'
 
-vi.mock<typeof import('@modules/openai-utils/create-response')>(
-  import('@modules/openai-utils/create-response'),
+vi.mock<typeof import('@modules/openrouter-utils')>(
+  import('@modules/openrouter-utils'),
   async importOriginal => ({
     ...(await importOriginal()),
-    createOpenAIResponse: vi.fn<VitestLooseMock>(),
+    createOpenRouterResponse: vi.fn<VitestLooseMock>(),
   }),
 )
 
@@ -28,7 +28,7 @@ describe('runAutotaggerOnPost spend-cap breach', () => {
   }, 30_000)
 
   beforeEach(() => {
-    vi.mocked(createOpenAIResponse).mockReset()
+    vi.mocked(createOpenRouterResponse).mockReset()
   })
 
   it('rethrows OpenAiSpendCapBreachError instead of swallowing it into an error result', async () => {
@@ -51,7 +51,7 @@ describe('runAutotaggerOnPost spend-cap breach', () => {
       dailyCapMicrounits: 10_000_000,
       day: '2026-03-01',
     }
-    vi.mocked(createOpenAIResponse).mockRejectedValueOnce(new OpenAiSpendCapBreachError(breach))
+    vi.mocked(createOpenRouterResponse).mockRejectedValueOnce(new OpenAiSpendCapBreachError(breach))
 
     await expect(runAutotaggerOnPost(post as Post)).rejects.toThrow(OpenAiSpendCapBreachError)
   })

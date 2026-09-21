@@ -10,17 +10,15 @@ import {
   findAiUsageRecordForPost,
   pollUntilNotNull,
 } from '@voucha/test-helpers'
-import {
-  createOpenAIResponse,
-  OpenAIResponseNotCompletedError,
-} from '@modules/openai-utils/create-response'
+import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
+import { createOpenRouterResponse } from '@modules/openrouter-utils'
 import type { Response } from 'openai/resources/responses/responses'
 
-vi.mock<typeof import('@modules/openai-utils/create-response')>(
-  import('@modules/openai-utils/create-response'),
+vi.mock<typeof import('@modules/openrouter-utils')>(
+  import('@modules/openrouter-utils'),
   async importOriginal => ({
     ...(await importOriginal()),
-    createOpenAIResponse: vi.fn<VitestLooseMock>(),
+    createOpenRouterResponse: vi.fn<VitestLooseMock>(),
   }),
 )
 
@@ -33,10 +31,10 @@ describe('runAutotaggerOnPost cost tracking', () => {
     testUserId = testUser!.id
   }, 30_000)
 
-  // The mocked createOpenAIResponse is shared module state across every test in this file --
+  // The mocked createOpenRouterResponse is shared module state across every test in this file --
   // reset call history and queued resolutions so one test's mock setup can't leak into the next.
   beforeEach(() => {
-    vi.mocked(createOpenAIResponse).mockReset()
+    vi.mocked(createOpenRouterResponse).mockReset()
   })
 
   it('records a ledger row priced at the model/tier OpenAI actually served, not requested', async () => {
@@ -59,7 +57,7 @@ describe('runAutotaggerOnPost cost tracking', () => {
     // OpenAI served (not requested), and that this is exercised through the generalized
     // runToolLoop seam (recordToolLoopUsage), distinct from the direct-call seam moderation's
     // cost-tracking test covers.
-    vi.mocked(createOpenAIResponse).mockResolvedValueOnce({
+    vi.mocked(createOpenRouterResponse).mockResolvedValueOnce({
       id: `resp_autotagger_cost_track_${randomUUID()}`,
       status: 'completed',
       model: 'gpt-5.4-nano-2026-03-17',
@@ -89,7 +87,7 @@ describe('runAutotaggerOnPost cost tracking', () => {
     expect(result).not.toBeNull()
     expect(result!.skipped).toBe(false)
     expect(result!.topics_added).toEqual([])
-    expect(vi.mocked(createOpenAIResponse)).toHaveBeenCalledOnce()
+    expect(vi.mocked(createOpenRouterResponse)).toHaveBeenCalledOnce()
 
     // recordToolLoopUsage is fire-and-forget (never awaited by runToolLoop) -- poll until the
     // insert commits rather than racing it with a bare read.
@@ -126,7 +124,7 @@ describe('runAutotaggerOnPost cost tracking', () => {
       community_id: community.id,
     }
 
-    vi.mocked(createOpenAIResponse).mockResolvedValueOnce({
+    vi.mocked(createOpenRouterResponse).mockResolvedValueOnce({
       id: `resp_autotagger_community_cost_track_${randomUUID()}`,
       status: 'completed',
       model: 'gpt-5.4-nano-2026-03-17',
@@ -154,7 +152,7 @@ describe('runAutotaggerOnPost cost tracking', () => {
     const result = await runAutotaggerOnPost(post as Post)
 
     expect(result).not.toBeNull()
-    expect(vi.mocked(createOpenAIResponse)).toHaveBeenCalledOnce()
+    expect(vi.mocked(createOpenRouterResponse)).toHaveBeenCalledOnce()
 
     const row = await pollUntilNotNull(() => findAiUsageRecordForPost(postId, 'autotagger'))
     if (!row) throw new Error('ai_usage_records row was not written')
@@ -180,7 +178,7 @@ describe('runAutotaggerOnPost cost tracking', () => {
     // callRecordingFailedUsage records from the thrown OpenAIResponseNotCompletedError -- not
     // just from a successful response -- so a queued retry after this failure doesn't compound
     // an unrecorded charge with another one.
-    vi.mocked(createOpenAIResponse).mockRejectedValueOnce(
+    vi.mocked(createOpenRouterResponse).mockRejectedValueOnce(
       new OpenAIResponseNotCompletedError('OpenAI response incomplete: max_output_tokens', {
         status: 'incomplete',
         model: 'gpt-5.4-nano-2026-03-17',

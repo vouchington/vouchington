@@ -1,4 +1,5 @@
 import { createOpenAIResponse } from './create-response.mts'
+import { createOpenRouterResponse } from '@modules/openrouter-utils'
 import { agentToolsToSchemas } from './build-agent-tools.mts'
 import {
   getFunctionCallsFromOutput,
@@ -58,7 +59,17 @@ export async function runToolLoop(config: RunToolLoopConfig): Promise<RunToolLoo
   } = config
 
   const toSchemas = deps.agentToolsToSchemas ?? agentToolsToSchemas
-  const createResponse = deps.createOpenAIResponse ?? createOpenAIResponse
+  const createResponse =
+    config.responseProvider === 'openrouter'
+      ? (
+          params: Parameters<typeof createOpenAIResponse>[0],
+          options: Parameters<typeof createOpenAIResponse>[1],
+        ) =>
+          (deps.createOpenRouterResponse ?? createOpenRouterResponse)(
+            params as never,
+            options as never,
+          )
+      : (deps.createOpenAIResponse ?? createOpenAIResponse)
   const getCalls = deps.getFunctionCallsFromOutput ?? getFunctionCallsFromOutput
   const executeCalls = deps.executeToolCalls ?? executeToolCalls
 
@@ -94,7 +105,7 @@ export async function runToolLoop(config: RunToolLoopConfig): Promise<RunToolLoo
         ...extraParams,
       } as Parameters<typeof createResponse>[0],
       { signal, maxRetries },
-      { agentSlug, communityId, postId },
+      { agentSlug, communityId, postId, responseProvider: config.responseProvider },
       { recordAgentResponseUsage: deps.recordAgentResponseUsage },
     )
 
@@ -151,11 +162,7 @@ export async function runToolLoop(config: RunToolLoopConfig): Promise<RunToolLoo
     }
   }
 
-  // Fallback: request final answer without tools.
-  // Submit the last iteration's toolResults so the previous response's pending
-  // function_calls are satisfied and the model has access to the tool outputs.
-  // Fall back to the original input only when no tool results were produced
-  // (pathological case: maxIterations: 0).
+  // Submit pending function_call outputs before requesting the final answer without tools.
   await assertSpendCapNotBreachedForIteration(agentSlug, deps)
 
   const finalResponse = await callRecordingToolLoopUsage(
@@ -171,7 +178,7 @@ export async function runToolLoop(config: RunToolLoopConfig): Promise<RunToolLoo
       ...extraParams,
     } as Parameters<typeof createResponse>[0],
     { signal, maxRetries },
-    { agentSlug, communityId, postId },
+    { agentSlug, communityId, postId, responseProvider: config.responseProvider },
     { recordAgentResponseUsage: deps.recordAgentResponseUsage },
   )
 

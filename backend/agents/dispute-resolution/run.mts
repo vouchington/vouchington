@@ -91,6 +91,7 @@ export async function runDisputeResolutionAgent(
       agentSlug: 'dispute-resolution',
       communityId: entityContent.communityId,
       postId: dispute.post_id,
+      responseProvider: 'openrouter',
     },
   )
 
