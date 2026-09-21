@@ -26,6 +26,7 @@ import {
   itemContentEncoded,
   itemGuid,
   itemLink,
+  feedTextValue,
 } from '@services/rss-feed-items/clean-helpers'
 import {
   extractMediaDescription,
@@ -65,7 +66,6 @@ export function buildRssFeedItemsFromFeed(
   feed: ParsedFeed,
   feedUrl?: string,
 ): RssFeedItemToUpsert[] {
-  // This legacy helper keeps item count unbounded but still applies category normalization/capping.
   return buildBoundedRssFeedItemsFromFeed(feed, feedUrl, { maxItems: Number.POSITIVE_INFINITY })
     .items
 }
@@ -132,7 +132,7 @@ function buildFeedItem(
   feedUrl?: string,
 ): RssFeedItemToUpsert {
   const contentEncoded = itemContentEncoded(item)
-  const content = typeof item.content === 'string' ? item.content : contentEncoded
+  const content = feedTextValue(item.content) ?? contentEncoded
   const mediaDescription = extractMediaDescription(item)
   const mediaStarRating = extractMediaStarRating(item)
   const mediaStatistics = extractMediaStatistics(item)
@@ -168,11 +168,11 @@ function buildFeedItem(
     guid,
     pubDate: sanitizeRssFeedItemDateString(item.pubDate),
     isoDate: itemIsoDate(item),
-    title: typeof item.title === 'string' ? item.title : undefined,
+    title: feedTextValue(item.title),
     content,
     'content:encoded': contentEncoded,
     description: typeof item.description === 'string' ? item.description : undefined,
-    summary: typeof item.summary === 'string' ? item.summary : undefined,
+    summary: feedTextValue(item.summary),
     contentSnippet: typeof item.contentSnippet === 'string' ? item.contentSnippet : undefined,
     'content:encodedSnippet':
       typeof item['content:encodedSnippet'] === 'string'
