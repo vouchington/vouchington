@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations()
-  return createNoIndexMetadata(t('oauth.consent.metadataTitle'))
+  return createNoIndexMetadata(t('shared.oauth.consent.metadataTitle'))
 }
 
 export default async function OAuthConsentPage({
@@ -40,9 +40,9 @@ export default async function OAuthConsentPage({
       >
         <CardHeader>
           <CardTitle data-pw='oauth-consent-title'>
-            {t('oauth.consent.title', { clientName: request.client_name })}
+            {t('shared.oauth.consent.title', { clientName: request.client_name })}
           </CardTitle>
-          <CardDescription>{t('oauth.consent.description')}</CardDescription>
+          <CardDescription>{t('shared.oauth.consent.description')}</CardDescription>
         </CardHeader>
         <CardContent className='space-y-5'>
           <section aria-labelledby='oauth-resource-heading'>
@@ -50,7 +50,7 @@ export default async function OAuthConsentPage({
               id='oauth-resource-heading'
               className='text-sm font-medium'
             >
-              {t('oauth.consent.resourceHeading')}
+              {t('shared.oauth.consent.resourceHeading')}
             </h2>
             <p
               className='mt-1 break-all text-sm text-muted-foreground'
@@ -64,7 +64,7 @@ export default async function OAuthConsentPage({
               id='oauth-permissions-heading'
               className='text-sm font-medium'
             >
-              {t('oauth.consent.permissionsHeading')}
+              {t('shared.oauth.consent.permissionsHeading')}
             </h2>
             <ul
               className='mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground'
@@ -77,7 +77,9 @@ export default async function OAuthConsentPage({
               ))}
             </ul>
           </section>
-          <p className='text-sm text-muted-foreground'>{t('oauth.consent.passwordNotice')}</p>
+          <p className='text-sm text-muted-foreground'>
+            {t('shared.oauth.consent.passwordNotice')}
+          </p>
           <ConsentActions requestId={request.id} />
         </CardContent>
       </Card>

@@ -138,8 +138,8 @@ describe('web route localization bounds', () => {
       return emptyBatchBytes + entryBytes + aliases.length - 1
     }
     const counts: number[] = []
-    expect(ROUTE_SELECTORS).toHaveLength(414)
-    expect(new Set(ROUTE_SELECTORS.map(route => route.selectorId)).size).toBe(414)
+    expect(ROUTE_SELECTORS).toHaveLength(415)
+    expect(new Set(ROUTE_SELECTORS.map(route => route.selectorId)).size).toBe(415)
     for (const route of ROUTE_SELECTORS) {
       for (const locale of locales) {
         const messages = {
@@ -187,6 +187,18 @@ describe('web route localization bounds', () => {
     expect(batch.messages).toHaveProperty(
       'extracted.memberships.benefitCatalog.supportServiceLevelTooltip_0c11c1c2',
     )
+  })
+
+  it('includes OAuth consent copy in the consent route selector', () => {
+    const consent = ROUTE_SELECTORS.find(route => route.pattern === '/oauth/consent')
+    if (!consent) throw new Error('Missing /oauth/consent route')
+    const batch = resolveLocalizationBatch(database, {
+      consumer: 'web',
+      locales: ['en'],
+      selectors: [WEB_CHROME_SELECTOR, consent.selectorId],
+    })
+    expect(batch.messages).toHaveProperty('shared.oauth.consent.title')
+    expect(batch.messages).toHaveProperty('shared.oauth.consent.allow')
   })
 
   it.each([

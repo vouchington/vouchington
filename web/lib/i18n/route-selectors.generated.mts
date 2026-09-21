@@ -254,7 +254,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/news", selectorId: "web.route.0feb7ec997413041.0f18d917ef5bc3f9", hasMembership: true },
   { pattern: "/news-sources", selectorId: "web.route.eb3e0a6f6cb7e376.9bf8d26881d93332", hasMembership: true },
   { pattern: "/notification-redirect", selectorId: "web.route.cbe28070f3ad3960.52480337c5e47686", hasMembership: true },
-  { pattern: "/oauth/consent", selectorId: "web.route.1de8eb61ea463478.fd15d2405c912b1a", hasMembership: true },
+  { pattern: "/oauth/consent", selectorId: "web.route.1de8eb61ea463478.46b03650f75635b2", hasMembership: true },
   { pattern: "/offline", selectorId: "web.route.52151d782a0852b1.ba32dd102fc5d277", hasMembership: true },
   { pattern: "/plans", selectorId: "web.route.cf2f17d9f99c7c62.5d78ba58553d517c", hasMembership: true },
   { pattern: "/podcast-episodes", selectorId: "web.route.faca269185ccca0b.0f18d917ef5bc3f9", hasMembership: true },

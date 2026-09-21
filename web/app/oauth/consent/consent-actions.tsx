@@ -20,7 +20,7 @@ export function ConsentActions({ requestId }: { requestId: string }) {
     } catch (error) {
       setPendingDecision(null)
       onError(error, {
-        fallback: t('oauth.consent.authorizationError'),
+        fallback: t('shared.oauth.consent.authorizationError'),
         tags: { form: 'oauth-consent' },
       })
     }
@@ -37,7 +37,7 @@ export function ConsentActions({ requestId }: { requestId: string }) {
         data-pw='oauth-consent-approve'
         onClick={async () => decide('approve')}
       >
-        {t('oauth.consent.allow')}
+        {t('shared.oauth.consent.allow')}
       </Button>
       <Button
         type='button'
@@ -48,7 +48,7 @@ export function ConsentActions({ requestId }: { requestId: string }) {
         data-pw='oauth-consent-deny'
         onClick={async () => decide('deny')}
       >
-        {t('oauth.consent.deny')}
+        {t('shared.oauth.consent.deny')}
       </Button>
     </ButtonGroup>
   )
