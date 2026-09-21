@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import type {
   getImportRowWithBatch,
-  processCrmContactRow,
   processRssFeedRow,
   processTopicRow,
   updateRowCompleted,
@@ -17,7 +16,6 @@ import { processImportRow } from '../processors.mts'
 const captureException = sentryCaptureExceptionMock
 
 const mockGetImportRowWithBatch = vi.fn<typeof getImportRowWithBatch>()
-const mockProcessCrmContactRow = vi.fn<typeof processCrmContactRow>()
 const mockProcessRssFeedRow = vi.fn<typeof processRssFeedRow>()
 const mockProcessTopicRow = vi.fn<typeof processTopicRow>()
 const mockUpdateRowCompleted = vi.fn<typeof updateRowCompleted>()
@@ -69,29 +67,6 @@ describe('processImportRow', () => {
     await runProcessImportRow('batch-001', 'row-001')
 
     expect(mockUpdateRowCompleted).toHaveBeenCalledWith('row-001', 'entity-001')
-    expect(mockPublishImportProgress).toHaveBeenCalledWith('batch-001', baseProgress)
-  })
-
-  it('publishes progress and resolves on successful crm_contact row', async () => {
-    const row = makeRow({ input_data: { name: 'Jane Doe', email: 'tests+jane@voucha.ai' } })
-
-    mockGetImportRowWithBatch.mockResolvedValue({
-      batch: {
-        id: 'batch-001',
-        import_type: 'crm_contact',
-        created_by_id: 'user-001',
-        metadata: {},
-      },
-      row,
-    })
-    mockGetPrivateUserByAny.mockResolvedValue(adminUser)
-    mockProcessCrmContactRow.mockResolvedValue('entity-002')
-    mockUpdateRowCompleted.mockResolvedValue(baseProgress)
-
-    await runProcessImportRow('batch-001', 'row-001')
-
-    expect(mockProcessCrmContactRow).toHaveBeenCalledWith(adminUser, row)
-    expect(mockUpdateRowCompleted).toHaveBeenCalledWith('row-001', 'entity-002')
     expect(mockPublishImportProgress).toHaveBeenCalledWith('batch-001', baseProgress)
   })
 
@@ -259,7 +234,6 @@ function runProcessImportRow(
   return processImportRow(batchId, rowId, options, {
     getImportRowWithBatch: mockGetImportRowWithBatch,
     getPrivateUserByAny: mockGetPrivateUserByAny,
-    processCrmContactRow: mockProcessCrmContactRow,
     processRssFeedRow: mockProcessRssFeedRow,
     processTopicRow: mockProcessTopicRow,
     publishImportProgress: mockPublishImportProgress,

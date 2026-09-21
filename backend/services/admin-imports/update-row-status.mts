@@ -43,10 +43,6 @@ export async function updateRowCompleted(
             WHEN batch.import_type = 'topic' THEN ${createdEntityId}::uuid
             ELSE NULL
           END,
-          crm_contact_id = CASE
-            WHEN batch.import_type = 'crm_contact' THEN ${createdEntityId}::uuid
-            ELSE NULL
-          END,
           rss_feed_id = CASE
             WHEN batch.import_type = 'rss_feed' THEN ${createdEntityId}::uuid
             ELSE NULL

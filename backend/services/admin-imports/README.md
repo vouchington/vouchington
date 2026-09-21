@@ -1,6 +1,6 @@
 # Admin Imports Service
 
-Bulk import service for creating and updating topics and CRM contacts via a CSV-based validate-then-enqueue pipeline. Topic rows are idempotent upserts keyed by `slug`; CRM contact rows are idempotent upserts keyed by `email`.
+Bulk import service for creating and updating topics via a CSV-based validate-then-enqueue pipeline. Topic rows are idempotent upserts keyed by `slug`.
 
 ## Contents
 

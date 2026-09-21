@@ -32,7 +32,7 @@ export async function getImportRowsByBatchId(batchId: string): Promise<ImportRow
     sql`/* getImportRowsByBatchId */
     SELECT
       row_definition.*,
-      COALESCE(row_definition.topic_id, row_definition.crm_contact_id, row_definition.rss_feed_id)
+      COALESCE(row_definition.topic_id, row_definition.rss_feed_id)
         AS created_entity_id
     FROM admin_import_rows row_definition
     WHERE row_definition.batch_id = ${batchId}
@@ -81,7 +81,7 @@ export async function getImportRowWithBatch(
     sql`/* getImportRowWithBatch */
     SELECT
       r.*,
-      COALESCE(r.topic_id, r.crm_contact_id, r.rss_feed_id) AS created_entity_id,
+      COALESCE(r.topic_id, r.rss_feed_id) AS created_entity_id,
       b.import_type AS batch_import_type,
       b.created_by_id AS batch_created_by_id,
       b.metadata AS batch_metadata

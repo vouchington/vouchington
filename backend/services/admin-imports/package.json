@@ -25,7 +25,6 @@
     "@modules/csv": "workspace:^",
     "@modules/queue-errors": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@services/crm-contacts": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/referral-program-link-validations": "workspace:^",
     "@services/rss-feeds": "workspace:^",
