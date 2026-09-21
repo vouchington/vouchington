@@ -73,7 +73,7 @@ describe('root Auto Harness migration safety audit', () => {
     expect(text).toContain('ci/harness-session-dispatch.mts')
   })
 
-  it('names every Harness concurrency identity in the Filaments namespace', () => {
+  it('names every Harness concurrency identity in the configured namespace', () => {
     const identities = callerEntries.flatMap(([file]) =>
       Object.values(readWorkflow(file).workflow.jobs ?? {}).flatMap(job =>
         job.with?.['concurrency-id'] === undefined ? [] : [job.with['concurrency-id']],

@@ -1,15 +1,15 @@
 ---
 name: static-analysis-checklist
-description: Use when changing a Filaments static-analysis rule, configuration, fixture corpus, suppression, allowlist, or repository guard.
+description: Use when changing a Vouchington static-analysis rule, configuration, fixture corpus, suppression, allowlist, or repository guard.
 ---
 
-# Filaments Static Analysis Adapter
+# Vouchington Static Analysis Adapter
 
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-workflow:static-analysis-checklist`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/static-analysis-checklist/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 Treat [`static-code-analysis/README.md`](../../../static-code-analysis/README.md) as canonical.
 Read its rule-placement, guard-authoring, migration-cleanup, and rollout sections before choosing

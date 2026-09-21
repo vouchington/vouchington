@@ -51,7 +51,7 @@ The repository reduces the risk with layered authorization, freshness, scope, an
    each accepted session is linked to the staffed Harness UI from the Actions summary.
 8. New sessions expire from the queue after one hour. Incident-response session drain is Auto
    Harness's own operator-authenticated repository-wide control
-   (`POST /repositories/:id/drain`), not a Filaments workflow — see
+   (`POST /repositories/:id/drain`), not a Vouchington workflow — see
    [Repository admission](https://github.com/jonathanong/auto-harness/blob/main/docs/api.md#repository-admission)
    for how operators authenticate and invoke it.
 
@@ -69,13 +69,13 @@ repoint is a plain variable update that does neither on its own. Checkpoint comm
 independently of gate state (the routine `checkpoint-dispatch` update in `shepherd.yml` runs once the
 already-enabled Shepherd flow is admitted, not when gates are disabled); a repoint simply never
 touches them. Session draining is Auto Harness's own operator-authenticated repository-wide control
-(Required control 8), unrelated to Filaments' `HARNESS_*_ENABLED` gates entirely. Every
+(Required control 8), unrelated to Vouchington' `HARNESS_*_ENABLED` gates entirely. Every
 already-resumable checkpoint — including one from a PR closed before the repoint, or one an
 ancestry-based reset could later reach — keeps resuming against its original pre-repoint Command:
 `selectResumeCheckpoint` only tombstones a `complete` or `unresumable` status, so neither the
 checkpoint failing nor its PR closing stops resumability by itself, and the `/shepherd` gate does not
 validate PR open state before resuming. The binding persists until a `complete`/`unresumable`
-tombstone, ancestry divergence, or server-side invalidation; Filaments does not patch checkpoint
+tombstone, ancestry divergence, or server-side invalidation; Vouchington does not patch checkpoint
 comments as part of a repoint. Server-side resume-time Command rebinding, which would close this gap
 without a manual sweep, is tracked upstream in
 [`jonathanong/auto-harness#402`](https://github.com/jonathanong/auto-harness/issues/402). `/plan`,

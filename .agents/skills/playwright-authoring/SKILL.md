@@ -10,7 +10,7 @@ description: Use when adding or changing Playwright specs, helpers, fixtures, au
 Claude Code and Codex load `vouchington-testing:playwright-authoring`; Grok, Cursor, and OpenCode read
 `node_modules/vouchington-tooling/skills/playwright-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 Read [`playwright/CLAUDE.md`](../../../playwright/CLAUDE.md) for scope, then use
 [`playwright/README.md`](../../../playwright/README.md) for authentication, locator, waiting,

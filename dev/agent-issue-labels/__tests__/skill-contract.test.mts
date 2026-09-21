@@ -74,18 +74,13 @@ describe('Vouchington workflow skill adapters', () => {
 
       expect(adapter).toContain(`${plugin}:${canonicalName}`)
       expect(adapter).toContain(installedCanonicalSkill)
-      // Five adapters (github-issue, organize-github-issues, review-github-issue-taxonomy,
-      // planning, pr-description) were renamed from "Filaments" to "Vouchington" prose; the rest
-      // still say "Filaments additions". Both spellings are the same local-overlay heading.
-      expect(adapter).toMatch(
-        /Filaments additions|Vouchington additions|Filaments-only SDLC and safety policy/i,
-      )
+      expect(adapter).not.toContain('Filaments')
       expect(lstatSync(claudePath).isSymbolicLink()).toBe(true)
       expect(readlinkSync(claudePath)).toBe(`../../.agents/skills/${name}`)
     },
   )
 
-  it('keeps only Filaments issue routing and taxonomy policy in the local adapter', () => {
+  it('keeps only Vouchington issue routing and taxonomy policy in the local adapter', () => {
     const skill = read('.agents/skills/github-issue/SKILL.md')
 
     expect(skill).toContain('`vouchington/vouchington`')
@@ -109,7 +104,7 @@ describe('Vouchington workflow skill adapters', () => {
     ['review-ci-logs', ['frequency × impact × diagnosability']],
     ['blackboard', ['## Mandatory journal triggers', '[ -n "${VAR+x}" ]']],
     ['retrospective', ['≤10 tool calls', 'unknown — no journal']],
-  ] as const)('%s retains its Filaments-only safety invariants', (name, invariants) => {
+  ] as const)('%s retains its Vouchington-only safety invariants', (name, invariants) => {
     const skill = read(`.agents/skills/${name}/SKILL.md`)
 
     for (const invariant of invariants) expect(skill).toContain(invariant)

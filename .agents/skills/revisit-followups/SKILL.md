@@ -1,15 +1,15 @@
 ---
 name: revisit-followups
-description: Scan merged Filaments PR Shepherd Journals, instructions, and closed issues for actionable deferred follow-ups using the portable Vouchington workflow.
+description: Scan merged Vouchington PR Shepherd Journals, instructions, and closed issues for actionable deferred follow-ups using the portable Vouchington workflow.
 ---
 
-# Filaments Follow-up Review Adapter
+# Vouchington Follow-up Review Adapter
 
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-workflow:revisit-followups`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/revisit-followups/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 ### Scope and collection
 
@@ -59,6 +59,6 @@ source PR/Shepherd Journal, `CLAUDE.md` path, or closed issue text; its current-
 filenames, or other session-private identifiers in an issue body.
 
 Use the local [GitHub issue workflow](../github-issue/SKILL.md) for duplicate detection,
-classification, and creation. Treat Filaments `docs/**`, `CLAUDE.md`, and closed-issue comments as
+classification, and creation. Treat Vouchington `docs/**`, `CLAUDE.md`, and closed-issue comments as
 local evidence sources; preserve the source PR and journal references in any created issue. Do not
 reopen resolved work or infer authorization to implement a discovered follow-up.

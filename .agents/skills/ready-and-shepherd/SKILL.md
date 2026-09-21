@@ -15,7 +15,7 @@ allowed-tools: ['Bash', 'Read', 'Write', 'Grep']
 # Ready And Shepherd
 
 Internal mechanics used by [triage-prs](../triage-prs/SKILL.md) Step 4 and the
-Filaments [triage-security](../triage-security/SKILL.md) adapter to move
+Vouchington [triage-security](../triage-security/SKILL.md) adapter to move
 a batch-triaged draft PR to ready and hand it to the external CI-dispatched Auto Harness
 shepherd. **Only these two triage skills invoke this skill.** It is not a
 general-purpose "mark any draft PR ready" tool — if you're working a single PR in
@@ -97,7 +97,7 @@ fi
 ### Security-triage provider-local handoff
 
 `--codex-security-local-handoff` is reserved exclusively for
-the Filaments `triage-security` adapter after the public `security-triage` plugin
+the Vouchington `triage-security` adapter after the public `security-triage` plugin
 has created and resolved the provider's PR and the adapter has verified its actual
 diff. While Harness dispatch is disabled,
 this mode may only transition the draft to ready and idempotently apply the required

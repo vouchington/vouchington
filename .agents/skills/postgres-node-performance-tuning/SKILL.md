@@ -1,16 +1,16 @@
 ---
 name: postgres-node-performance-tuning
-description: PostgreSQL performance policy for Filaments Node.js services, including local query helpers, replica routing, EXPLAIN gates, and large-data worker placement.
+description: PostgreSQL performance policy for Vouchington Node.js services, including local query helpers, replica routing, EXPLAIN gates, and large-data worker placement.
 ---
 
-# Filaments PostgreSQL Performance Adapter
+# Vouchington PostgreSQL Performance Adapter
 
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-database:postgres-node-performance-tuning`; Grok, Cursor, and OpenCode read
 `node_modules/vouchington-tooling/skills/postgres-node-performance-tuning/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 Read [`backend/data-stores/psql/CLAUDE.md`](../../../backend/data-stores/psql/CLAUDE.md) and the
 nearest owning `CLAUDE.md` before changing a query, index, connection route, or migration.

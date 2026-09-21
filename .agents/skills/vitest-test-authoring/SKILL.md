@@ -10,7 +10,7 @@ description: Use when adding or changing Vitest tests, mocks, or fixtures in bac
 Claude Code and Codex load `vouchington-testing:vitest-test-authoring`; Grok, Cursor, and OpenCode read
 `node_modules/vouchington-tooling/skills/vitest-test-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 Shared Vitest contract for every non-web workspace. `web/**` has its own exemption — see
 [`web-vitest-test-authoring`](../web-vitest-test-authoring/SKILL.md). Read

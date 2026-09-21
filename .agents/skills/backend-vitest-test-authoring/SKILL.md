@@ -10,7 +10,7 @@ description: Use when adding or changing backend tests, test fixtures, backend t
 Claude Code and Codex load `vouchington-testing:backend-vitest-test-authoring`; Grok, Cursor, and OpenCode read
 `node_modules/vouchington-tooling/skills/backend-vitest-test-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 Read the nearest backend `CLAUDE.md`, then
 [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) for the shared mock-boundary and

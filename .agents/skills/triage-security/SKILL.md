@@ -1,15 +1,15 @@
 ---
 name: triage-security
 description: |
-  Filaments adapter for the public security-triage plugin. Routes verified
-  security-triage handoffs into Filaments issue policy and PR post-processing.
+  Vouchington adapter for the public security-triage plugin. Routes verified
+  security-triage handoffs into Vouchington issue policy and PR post-processing.
 argument-hint: '[severity filter or finding scope; blank = current critical,high filter]'
 allowed-tools: ['Bash', 'Read', 'Grep', 'Glob', 'Agent', 'ToolSearch']
 ---
 
 # Triage Security
 
-This is a Filaments-only adapter. Use public `security-triage` plugin version
+This is a Vouchington-only adapter. Use public `security-triage` plugin version
 0.1.0 or later for Codex Security finding intake, classification, approval,
 hosted disposition changes, and provider-created fix PRs. It emits the
 `codex-security-triage/v1` handoff; do not recreate those generic operations in
@@ -39,7 +39,7 @@ consumer remote names may differ after canonical normalization. Reject a record
 missing any required section.
 
 Completed `close` and `lower_severity` records require nonempty execution
-receipts. In Filaments they are verified and reported only: never create an issue,
+receipts. In Vouchington they are verified and reported only: never create an issue,
 post-process a PR, or make another mutation for either disposition.
 
 Bucket records only when `disposition: 'grouped_issue'` and
@@ -50,7 +50,7 @@ findings, never one issue workflow per finding. Reject missing or unstable group
 keys. Keep duplicate search, live taxonomy, labels, milestones, issue creation,
 and post-create verification local by following
 [github-issue](../github-issue/SKILL.md). The shared plugin never creates or
-classifies Filaments issues.
+classifies Vouchington issues.
 
 For every provider-created PR record, require `disposition: 'provider_fix_pr'`,
 `execution.status: 'completed'`, and `providerPullRequest`, plus a verified
@@ -65,7 +65,7 @@ finding and evidence, and no unrelated changes. Block on mismatch before invokin
 ready-and-shepherd <N> --codex-security-local-handoff
 ```
 
-This is Filaments post-processing only: it does not create, repair, or replace
+This is Vouchington post-processing only: it does not create, repair, or replace
 the provider PR. Preserve the canonical
 [agent-authored PR creation feedback](../agent-workflow/code-review.md#agent-authored-pr-creation-feedback)
 record and invoke [retrospective](../retrospective/SKILL.md) once before the

@@ -1,15 +1,15 @@
 ---
 name: retrospective
-description: Provide a Filaments session retrospective. Loads the portable Vouchington retrospective workflow, then applies local evidence, validation, and storage rules.
+description: Provide a Vouchington session retrospective. Loads the portable Vouchington retrospective workflow, then applies local evidence, validation, and storage rules.
 ---
 
-# Filaments Retrospective Adapter
+# Vouchington Retrospective Adapter
 
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-workflow:retrospective`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/retrospective/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 **Budget: ≤10 tool calls, ≤5 minutes, ≤25k tokens.** Aggregate already-captured facts; do not
 re-mine transcripts. Do not dispatch a subagent or read raw session JSONL, and do not use

@@ -6,13 +6,13 @@ description: |
   before-push commands, git, and PR conventions.
 ---
 
-# Filaments Agent Workflow Adapter
+# Vouchington Agent Workflow Adapter
 
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-workflow:agent-workflow`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/agent-workflow/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-The remaining rules are Filaments-only SDLC and safety policy.
+The remaining rules are Vouchington-only SDLC and safety policy.
 
 This is the shared workflow for Claude Code, Codex, Grok, Cursor, and OpenCode agents working in this repository. It is referenced from [`.husky/CLAUDE.md`](../../../.husky/CLAUDE.md). Codex, Grok, and Cursor read checked-in `CLAUDE.md` files; do not add generated `AGENTS.md` copies of repo or workspace agent instructions. See [agent-harness-parity.md](../../../docs/development/agent-harness-parity.md).
 
