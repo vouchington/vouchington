@@ -110,9 +110,9 @@ export const SECRET_INVENTORY = {
   SENTRY_AUTH_TOKEN: {
     provisioned: false,
     notes:
-      'Sentry organization token used only by the trusted main-branch web image publication ' +
-      'to create releases and upload Next.js source maps (repo secret). Provision after the ' +
-      'Sentry projects and GitHub integration exist.',
+      'Optional Sentry organization token for trusted main-branch web image publication. ' +
+      'When present, it creates releases and uploads Next.js source maps; without it, ' +
+      'the validated image still publishes (repo secret).',
   },
   STRIPE_SECRET_KEY: {
     provisioned: true,
