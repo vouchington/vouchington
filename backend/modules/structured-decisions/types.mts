@@ -19,13 +19,20 @@ export type StructuredDecisionRequest = {
   state: string
   questions: readonly StructuredDecisionQuestion[]
 }
-export type NoulAnswer = { id: string; type: 'noul'; probability: number }
+export type StructuredDecisionNativeAnswer = Readonly<Record<string, unknown>>
+export type NoulAnswer = {
+  id: string
+  type: 'noul'
+  probability: number
+  raw: StructuredDecisionNativeAnswer
+}
 export type ChoiceAnswer = {
   id: string
   type: 'choice'
   choice: string
   confidence: number
   probabilities: Readonly<Record<string, number>>
+  raw: StructuredDecisionNativeAnswer
 }
 export type ScoreAnswer = {
   id: string
@@ -34,6 +41,7 @@ export type ScoreAnswer = {
   confidence: number
   legend: readonly string[]
   probabilities: Readonly<Record<string, number>>
+  raw: StructuredDecisionNativeAnswer
 }
 export type StructuredDecisionAnswer = NoulAnswer | ChoiceAnswer | ScoreAnswer
 export type StructuredDecisionResult = {

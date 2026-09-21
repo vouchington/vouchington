@@ -11,13 +11,15 @@ flowchart LR
   Client --> OpenRouter[OpenRouter Decisions]
   TypeSafe --> Decode[Strict decoder]
   OpenRouter --> Decode
-  Decode --> Result[Typed results and raw envelope]
+  Decode --> Result[Typed results, native answers, and raw envelope]
 ```
 
 Callers explicitly select one transport. Retries repeat the same Jev model on that transport only;
 the client never changes provider or model after an ambiguous attempt. Every returned answer must
 match one requested ID and primitive, use valid probabilities, and completely cover the request.
 Partial, malformed, duplicate, unknown, and non-normalized results reject as a whole.
+Each normalized answer also retains its validated native provider fragment so the classifier layer
+can persist one auditable response per candidate without copying the entire response envelope.
 
 The deterministic test suite owns request validation, provider decoding, and retry behavior. One
 credentialed OpenRouter test verifies the native contract using all three primitives. The opt-in
@@ -56,11 +58,42 @@ moderation candidates reference their stored candidate row; dynamically prefilte
 story candidates leave that reference null and use the concrete result owner directly. Topic and
 story results are sibling UUIDv7 RANGE parents, partitioned directly by `topic_id` and `story_id`;
 that keeps pruning and foreign keys concrete without a polymorphic result owner. Result scope must
-match the batch. C3 owns validating the complete remote answer set and inserting every batch,
-candidate snapshot, and result transactionally before any threshold-driven action can run.
+match the batch.
+
+## Multi-candidate call layer
+
+`@agents/classifiers` binds each concrete topic or story candidate to a Noul question or Choice
+criterion while keeping the classified post or RSS item as the separate state. Choice may include
+one unbound option such as `none`; it never creates a synthetic candidate result. Noul persists its
+probability, while Choice persists the probability of each bound criterion. Score is rejected until
+a classifier defines a real scalar projection rather than inventing one in the generic layer.
+State and question text are branded safe values: callers sanitize and wrap every external fragment,
+then interpolate those fragments through a static template tag. Choice criteria are opaque keys,
+not user-authored labels.
+
+The caller supplies an exact, synchronous context measurer for the active provider and model. There
+is deliberately no character, byte, or candidate-count approximation. Direct TypeSafe requests are
+bounded by the documented 64,000-token request limit and the 32,000-token state-plus-longest-question
+limit. OpenRouter requests use its advertised 32,000-token model context. Questions are indivisible
+and packed by deterministic first fit in input order; a single question that cannot fit fails before
+any provider request.
+
+Shards execute sequentially through one supplied C1 client, which retains ownership of same-route
+retry behavior. Every answer must map back to exactly one requested question and every bound
+candidate must appear exactly once across the batch. Provider calls finish before persistence begins.
+The caller supplies the prompt version it rendered; execution rejects if that version is no longer
+the classifier's active prompt before any provider call. Topic classifiers accept post subjects and
+story classifiers accept RSS-item subjects only. `@services/classifiers` rechecks both invariants,
+then writes the caller-owned UUIDv7 batch, stored-candidate threshold
+snapshots, ordered call rows, and topic or story results in one PostgreSQL transaction. Runtime
+prefiltered candidates use prompt defaults. A repeated identical batch ID returns the existing
+decision; conflicting reuse fails closed. No generic classifier code casts votes, applies labels,
+tags topics, or changes story membership.
 
 ## Related
 
 - [AI agents](ai-agents.md)
 - [Environment variables](../infrastructure/reference-environment-variables-ai-ml.md)
 - [Structured-decision module](../../../backend/modules/structured-decisions/README.md)
+- [Classifier call layer](../../../backend/agents/classifiers/README.md)
+- [Classifier persistence service](../../../backend/services/classifiers/README.md)

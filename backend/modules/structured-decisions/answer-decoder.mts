@@ -1,6 +1,7 @@
 import {
   StructuredDecisionError,
   type StructuredDecisionAnswer,
+  type StructuredDecisionNativeAnswer,
   type StructuredDecisionQuestion,
 } from './types.mts'
 
@@ -9,11 +10,18 @@ const TOLERANCE = 0.0001
 export function decodeAnswer(
   raw: unknown,
   question: StructuredDecisionQuestion,
+  answerId: string,
 ): StructuredDecisionAnswer {
-  if (!record(raw) || raw.id !== question.id || raw.type !== question.type)
+  if (
+    !record(raw) ||
+    answerId !== question.id ||
+    (typeof raw.id === 'string' && raw.id !== answerId) ||
+    raw.type !== question.type
+  )
     invalid('Provider answer type does not match the requested question.')
+  const native = raw as StructuredDecisionNativeAnswer
   if (question.type === 'noul')
-    return { id: question.id, type: 'noul', probability: probability(raw.noul) }
+    return { id: question.id, type: 'noul', probability: probability(raw.noul), raw: native }
   const confidence = probability(raw.confidence)
   if (question.type === 'choice') {
     if (typeof raw.choice !== 'string' || !question.criteria.includes(raw.choice))
@@ -24,6 +32,7 @@ export function decodeAnswer(
       choice: raw.choice,
       confidence,
       probabilities: probabilities(raw.probabilities, question.criteria),
+      raw: native,
     }
   }
   if (
@@ -50,6 +59,7 @@ export function decodeAnswer(
     confidence,
     legend,
     probabilities: probabilities(rawProbabilities, keys),
+    raw: native,
   }
 }
 

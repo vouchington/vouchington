@@ -38,6 +38,8 @@ describe('OpenRouter Decisions', () => {
     expect(noul.probability).toBeGreaterThanOrEqual(0)
     expect(noul.probability).toBeLessThanOrEqual(1)
     expect(noul).not.toHaveProperty('confidence')
+    expect(noul.raw).toMatchObject({ type: 'noul', noul: noul.probability })
+    expect(noul.raw).not.toHaveProperty('id')
 
     expect(choice).toMatchObject({ id: 'topic', type: 'choice' })
     if (choice?.type !== 'choice') throw new Error('Expected a Choice answer.')
@@ -49,6 +51,13 @@ describe('OpenRouter Decisions', () => {
     expect(Object.values(choice.probabilities).reduce((sum, value) => sum + value, 0)).toBeCloseTo(
       1,
     )
+    expect(choice.raw).toMatchObject({
+      type: 'choice',
+      choice: choice.choice,
+      confidence: choice.confidence,
+      probabilities: choice.probabilities,
+    })
+    expect(choice.raw).not.toHaveProperty('id')
 
     expect(score).toMatchObject({ id: 'quality', type: 'score' })
     if (score?.type !== 'score') throw new Error('Expected a Score answer.')
@@ -60,5 +69,12 @@ describe('OpenRouter Decisions', () => {
     expect(Object.keys(score.probabilities).sort()).toEqual(['0', '1'])
     expect(Object.values(score.probabilities).every(value => value >= 0 && value <= 1)).toBe(true)
     expect(Object.values(score.probabilities).reduce((sum, value) => sum + value, 0)).toBeCloseTo(1)
+    expect(score.raw).toMatchObject({
+      type: 'score',
+      score: score.score,
+      confidence: score.confidence,
+      probabilities: score.probabilities,
+    })
+    expect(score.raw).not.toHaveProperty('id')
   })
 })

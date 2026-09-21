@@ -85,13 +85,20 @@ describe('createStructuredDecisionClient', () => {
     const result = await client.decide(request)
 
     expect(result.answers).toEqual([
-      { id: 'spam', type: 'noul', probability: 0.2 },
+      { id: 'spam', type: 'noul', probability: 0.2, raw: { id: 'spam', type: 'noul', noul: 0.2 } },
       {
         id: 'topic',
         type: 'choice',
         choice: 'food',
         confidence: 0.8,
         probabilities: { food: 0.8, sports: 0.2 },
+        raw: {
+          id: 'topic',
+          type: 'choice',
+          choice: 'food',
+          confidence: 0.8,
+          probabilities: { food: 0.8, sports: 0.2 },
+        },
       },
       {
         id: 'quality',
@@ -100,6 +107,14 @@ describe('createStructuredDecisionClient', () => {
         confidence: 0.9,
         legend: ['poor', 'excellent'],
         probabilities: { poor: 0.1, excellent: 0.9 },
+        raw: {
+          id: 'quality',
+          type: 'score',
+          score: 1,
+          confidence: 0.9,
+          legend: ['poor', 'excellent'],
+          probabilities: { poor: 0.1, excellent: 0.9 },
+        },
       },
     ])
     expect(result.raw).toEqual(makeOpenRouterBody())
