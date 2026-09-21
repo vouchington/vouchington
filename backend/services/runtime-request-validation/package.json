@@ -1,5 +1,5 @@
 {
-  "name": "@services/mcp-tools",
+  "name": "@services/runtime-request-validation",
   "version": "1.0.0",
   "private": true,
   "license": "UNLICENSED",
@@ -13,15 +13,8 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "@modules/on-error": "workspace:^",
-    "@modules/scopes": "workspace:^",
-    "@services/users": "workspace:^",
-    "@voucha/tools": "workspace:^",
+    "@voucha/api-fixtures": "workspace:^",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1"
-  },
-  "devDependencies": {
-    "@voucha/test-helpers": "workspace:^"
   }
 }

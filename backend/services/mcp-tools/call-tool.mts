@@ -10,6 +10,7 @@ import { isToolAllowedForUser } from './authorization.mts'
 import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
 import { hasScope, type ApiScope } from '@modules/scopes'
+import { validateToolArguments } from './validate-tool-arguments.mts'
 
 type UserForCall = BasicUser & {
   membership_plan: 'plus' | 'pro' | null
@@ -177,6 +178,11 @@ export async function callMcpTool(
       ErrorCode.InvalidRequest,
       `Tool requires ${config.writePermission} permission: ${toolName}`,
     )
+  }
+
+  const validationError = validateToolArguments(tool.schema.parameters, args)
+  if (validationError) {
+    throw new McpError(ErrorCode.InvalidParams, `Invalid tool arguments: ${validationError}`)
   }
 
   try {

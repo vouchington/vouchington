@@ -66,6 +66,13 @@ Use `response-helpers.mts` for standard route preambles:
   explicit accepted-media-type exception. Enforcement is body-bearing only, so bodyless mutations
   pass through without a `Content-Type` header.
 
+Generated request contracts are available to route-family migrations through
+`@services/runtime-request-validation`. Callers must authenticate and authorize first, then
+validate before the route invokes a service or writes state. This avoids leaking detailed schema
+failures to unauthenticated callers. `api-fixtures/v1/openapi.json` and
+`api-fixtures/v1/request-contracts.json` are sibling compiler-generated outputs; runtime code uses
+only the latter. Routes with signature-verified or raw bodies keep their specialized parsers.
+
 Route modification invariants live in [CLAUDE.md](CLAUDE.md).
 
 ## Response Patterns

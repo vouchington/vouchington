@@ -149,6 +149,7 @@ for the full static-analysis catalog.
 
 - [OAuth authorization server](oauth-authorization-server/README.md) — Issued OAuth credentials, consent, rotation, and validation
 - [Post publication reconciliation](post-publication/README.md) — Durable capture, projection, and shadow-repair services
+- [Runtime request validation](runtime-request-validation/README.md) — Generated-contract validation for third-party API routes
 - [Backend Vitest test authoring skill](../../.agents/skills/backend-vitest-test-authoring/SKILL.md) — Tests, fixtures, integration boundaries, and provider mocks
 - [Agent conventions](CLAUDE.md) — Service authoring rules for agents
 - [Systems (Job Queues)](../queues/README.md) — Background job processing

@@ -153,6 +153,10 @@ applies this schema.
 
 ## OpenAPI Query Contracts
 
+`api-fixtures/v1/request-contracts.json` is a generated executable sibling of `openapi.json`.
+Both are emitted in one compiler-backed generation and checked together. The TypeScript request
+contracts remain authoritative: consumers must not reconstruct runtime validation from OpenAPI.
+
 The generated `api-fixtures/v1/openapi.json` combines response contracts with query parameters from
 explicit `apiQuery('METHOD:/route', ...carriers)` markers in backend route handlers. The generator
 uses the TypeScript checker to inspect each carrier's typed `queryContract`; it never imports or

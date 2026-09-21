@@ -1,8 +1,9 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
+import { validateRegisteredMcpRequest } from './validate-registered-request.mts'
 import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
 import type { ApiScope } from '@modules/scopes'
@@ -18,6 +19,9 @@ type McpRequestContext = {
 }
 
 export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<Response> {
+  const invalidRequestResponse = validateRegisteredMcpRequest(ctx.parsedBody)
+  if (invalidRequestResponse) return invalidRequestResponse
+
   const server = new Server(
     { name: ctx.config.serverName, version: '1.0.0' },
     { capabilities: { tools: {} } },

@@ -6644,6 +6644,12 @@ importers:
       '@voucha/tools':
         specifier: workspace:^
         version: link:../../tools
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -8847,6 +8853,18 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+
+  backend/services/runtime-request-validation:
+    dependencies:
+      '@voucha/api-fixtures':
+        specifier: workspace:^
+        version: link:../../../api-fixtures
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
 
   backend/services/search:
     dependencies:
