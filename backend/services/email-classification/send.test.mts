@@ -2,12 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
 import * as gmailSmtp from '@modules/gmail-smtp'
 import { createTestUser } from '@voucha/test-helpers'
-import {
-  createCrmContact,
-  updateCrmContact,
-  optOutCrmContactByEmail,
-  archiveCrmContact,
-} from '@services/crm-contacts'
 import { updateUserFields } from '@services/users/update-fields'
 import { createSesBounceEvent } from '@services/ses-bounce-events'
 import { sendClassifiedEmail } from './send.mts'
@@ -84,63 +78,6 @@ describe('sendClassifiedEmail', () => {
     expect(ses.sendEmail).not.toHaveBeenCalled()
   })
 
-  it('sends CRM marketing email with crm-contact unsubscribe headers when the contact has not opted out', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const suffix = r()
-    const email = `tests+crm-${suffix}@voucha.ai`
-    await createCrmContact(admin!, { name: `CRM Contact ${suffix}`, email })
-
-    await sendClassifiedEmail('processSendCrmEmail', {
-      to: email,
-      subject: 'Partner outreach',
-      crmEmail: email,
-    })
-
-    expect(ses.sendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          'List-Unsubscribe': expect.stringContaining('/api/v1/crm/unsubscribe?token='),
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        }),
-      }),
-    )
-  })
-
-  it('suppresses CRM marketing email when the contact has opted out', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const suffix = r()
-    const email = `tests+crm-optout-${suffix}@voucha.ai`
-    const contact = await createCrmContact(admin!, { name: `Opted Out ${suffix}`, email })
-    await updateCrmContact(admin!, contact.id, { opted_out_at: new Date() })
-
-    const result = await sendClassifiedEmail('processSendCrmEmail', {
-      to: email,
-      subject: 'Partner outreach',
-      crmEmail: email,
-    })
-
-    expect(result).toBeNull()
-    expect(ses.sendEmail).not.toHaveBeenCalled()
-  })
-
-  it('suppresses CRM marketing email when the contact was opted out before being archived', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const suffix = r()
-    const email = `tests+crm-archived-optout-${suffix}@voucha.ai`
-    const contact = await createCrmContact(admin!, { name: `Archived Opted Out ${suffix}`, email })
-    await optOutCrmContactByEmail(email)
-    await archiveCrmContact(admin!, contact.id)
-
-    const result = await sendClassifiedEmail('processSendCrmEmail', {
-      to: email,
-      subject: 'Partner outreach',
-      crmEmail: email,
-    })
-
-    expect(result).toBeNull()
-    expect(ses.sendEmail).not.toHaveBeenCalled()
-  })
-
   it('suppresses marketing email when the recipient has a permanent bounce on file', async () => {
     const user = await createTestUser()
     const suffix = r()
@@ -180,17 +117,4 @@ describe('sendClassifiedEmail', () => {
     expect(ses.sendEmail).toHaveBeenCalled()
   })
 
-  it('sends via Gmail SMTP when provider is gmail_smtp', async () => {
-    const suffix = r()
-    const email = `tests+gmail-${suffix}@voucha.ai`
-    await sendClassifiedEmail('processSendCrmEmail', {
-      to: email,
-      subject: 'Partner outreach',
-      crmEmail: email,
-      provider: 'gmail_smtp',
-    })
-
-    expect(gmailSmtp.sendGmailEmail).toHaveBeenCalled()
-    expect(ses.sendEmail).not.toHaveBeenCalled()
-  })
 })

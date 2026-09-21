@@ -507,24 +507,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/agents/crm-outreach:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-
   backend/agents/customer-support:
     dependencies:
       '@agents/_shared':
@@ -846,9 +828,6 @@ importers:
       '@agents/community-moderation':
         specifier: workspace:^
         version: link:../agents/community-moderation
-      '@agents/crm-outreach':
-        specifier: workspace:^
-        version: link:../agents/crm-outreach
       '@agents/moderation':
         specifier: workspace:^
         version: link:../agents/moderation
@@ -1161,15 +1140,6 @@ importers:
       '@services/crawls':
         specifier: workspace:^
         version: link:../services/crawls
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../services/crm-contacts
-      '@services/crm-messages':
-        specifier: workspace:^
-        version: link:../services/crm-messages
-      '@services/crm-notes':
-        specifier: workspace:^
-        version: link:../services/crm-notes
       '@services/curated-aside-items':
         specifier: workspace:^
         version: link:../services/curated-aside-items
@@ -5272,111 +5242,6 @@ importers:
         specifier: 0.0.2
         version: 0.0.2
 
-  backend/services/crm-contacts:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/token-secrets':
-        specifier: workspace:^
-        version: link:../../modules/token-secrets
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/services/crm-messages:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@queues/emails':
-        specifier: workspace:^
-        version: link:../../queues/emails
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../crm-contacts
-      '@services/ses-bounce-events':
-        specifier: workspace:^
-        version: link:../ses-bounce-events
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/services/crm-notes:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../crm-contacts
-      '@services/crm-messages':
-        specifier: workspace:^
-        version: link:../crm-messages
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/services/curated-aside-items:
     dependencies:
       '@data-stores/psql':
@@ -5791,9 +5656,6 @@ importers:
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../crm-contacts
       '@services/ses-bounce-events':
         specifier: workspace:^
         version: link:../ses-bounce-events
@@ -11611,9 +11473,6 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../../services/crm-contacts
       '@services/email-classification':
         specifier: workspace:^
         version: link:../../services/email-classification
@@ -12768,7 +12627,7 @@ importers:
         version: 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@react-email/ui':
         specifier: ^6.9.5
-        version: 6.9.5(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 6.9.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ts-shared/languages':
         specifier: workspace:^
         version: link:../ts-shared/languages
@@ -25844,10 +25703,10 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@react-email/ui@6.9.5(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@react-email/ui@6.9.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       esbuild: 0.28.1
-      next: 16.3.3(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      next: 16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     transitivePeerDependencies:
       - '@babel/core'
       - '@opentelemetry/api'
@@ -29682,7 +29541,7 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  next@16.3.3(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@next/env': 16.3.3
       '@swc/helpers': 0.5.23

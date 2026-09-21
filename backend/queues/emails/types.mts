@@ -87,17 +87,6 @@ export type ProcessSendCommunityModerationSummaryEmailVariables = Omit<
   physicalAddress?: string
 }
 
-export type ProcessSendCrmEmailVariables = {
-  contactName: string
-  senderName: string
-  bodyHtml: string
-  ctaUrl?: string
-  ctaLabel?: string
-  imageUrl?: string
-  provider: 'ses' | 'gmail_smtp'
-  uiLocale?: string | null
-}
-
 export type ProcessSendSupportEmailVariables = {
   bodyText: string
   subject?: string
@@ -126,7 +115,6 @@ export type EmailSendJobs =
   | 'processSendPostReferralLinkEmail'
   | 'processSendFollowNewsSourcesEmail'
   | 'processSendCommunityModerationSummaryEmail'
-  | 'processSendCrmEmail'
   | 'processSendSupportEmail'
   | 'processSendWelcomeEmail'
   | 'processSendCommunityApplicationDecisionEmail'

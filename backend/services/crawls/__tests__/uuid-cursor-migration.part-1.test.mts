@@ -21,9 +21,6 @@ import '../../communities/publications/list-user-removed.mts'
 import '../../communities/restrictions/search.mts'
 import '../../communities/search/cursor.mts'
 import '../../crawls/search.mts'
-import '../../crm-contacts/search.mts'
-import '../../crm-messages/get.mts'
-import '../../crm-notes/get.mts'
 import '../../feeds/referral-links/get.mts'
 
 const ID = '00000000-0000-4000-8000-000000000001'
@@ -156,21 +153,6 @@ const cases: CursorCase[] = [
   ),
   cursorCase('searchCrawlsForUrl', async () =>
     (await import('../../crawls/search.mts')).searchCrawlsForUrl(ID, { after: simple, limit: 1 }),
-  ),
-  cursorCase('searchCrmContacts', async () =>
-    (await import('../../crm-contacts/search.mts')).searchCrmContacts({ after: name, limit: 1 }),
-  ),
-  cursorCase('getCrmMessagesByConversationId', async () =>
-    (await import('../../crm-messages/get.mts')).getCrmMessagesByConversationId(ID, {
-      after: simple,
-      limit: 1,
-    }),
-  ),
-  cursorCase('getCrmNotesByContactId', async () =>
-    (await import('../../crm-notes/get.mts')).getCrmNotesByContactId(ID, {
-      after: simple,
-      limit: 1,
-    }),
   ),
   cursorCase('getReferralLinksFeed', async () =>
     (await import('../../feeds/referral-links/get.mts')).getReferralLinksFeed(

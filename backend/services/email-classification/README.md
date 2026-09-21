@@ -20,7 +20,6 @@ fails if any file outside `send.mts` imports `sendEmail`/`sendGmailEmail`.
   `SES_CONFIGURATION_SET_MARKETING`; `unsubscribe` is one of:
   - `{ scheme: 'user-category', category }` — per-user preference, `category` is one of
     `outcome_emails` | `news_digest` | `community_digest` (`@services/users`).
-  - `{ scheme: 'crm-contact' }` — CRM recipient, keyed by email rather than a user account.
   - `hasActiveSender: false` marks a registry-only entry with no processor wired up yet (e.g.
     `newsDigest`, tracked by #1167/#1351).
 
@@ -33,7 +32,7 @@ processor without a registry entry fails CI.
 | Function                    | File            | Description                                                                                                                                                                                               |
 | --------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `sendClassifiedEmail`       | send.mts        | Looks up the registry entry, applies suppression checks for marketing email, then sends via SES or Gmail SMTP with the right headers/config set                                                           |
-| `buildClassifiedSendParams` | send-params.mts | Pure function: `EmailType` + `{ userId?, crmEmail? }` → `{ headers?, configurationSetName? }`; throws `TypeError` if a marketing type is called without the context field its unsubscribe scheme requires |
+| `buildClassifiedSendParams` | send-params.mts | Pure function: `EmailType` + `{ userId? }` → `{ headers?, configurationSetName? }`; throws `TypeError` if a marketing type is called without `userId` |
 
 ## Suppression Checks (marketing only)
 
@@ -41,8 +40,6 @@ processor without a registry entry fails CI.
 
 1. `unsubscribe.scheme === 'user-category'` and the user has opted out of that category
    (`getEmailPreferences`, `@services/users`).
-2. `unsubscribe.scheme === 'crm-contact'` and the CRM contact has `opted_out_at` set
-   (`getCrmContactByEmail`, `@services/crm-contacts`).
 3. The recipient address has a permanent SES bounce or complaint on file
    (`isEmailSuppressed`, `@services/ses-bounce-events`).
 
@@ -54,14 +51,9 @@ Headers are built per-scheme and point at different endpoints:
 
 - `user-category` → `createListUnsubscribeHeaders(userId, category)` (`@services/users`) →
   `/api/v1/email-unsubscribe?token=...`.
-- `crm-contact` → `createCrmListUnsubscribeHeaders(email)` (`@services/crm-contacts`) →
-  `/api/v1/crm/unsubscribe?token=...`. The endpoint (`backend/api/v1/crm/unsubscribe.mts`) and
-  landing page (`web/app/crm/unsubscribe/`) are documented in
-  [../crm-contacts/README.md](../crm-contacts/README.md).
 
 ## Related
 
 - Processors that call `sendClassifiedEmail`: [../../workers/emails/README.md](../../workers/emails/README.md), [../../workers/memberships/README.md](../../workers/memberships/README.md)
-- CRM contact opt-out state: [../crm-contacts/README.md](../crm-contacts/README.md)
 - User notification/email preferences: [../users/README.md](../users/README.md)
 - SES send + config sets: [../../modules/aws/README.md](../../modules/aws/README.md)

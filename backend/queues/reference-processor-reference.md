@@ -68,7 +68,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | emails                                       | processSendPostReferralLinkEmail               | —                                         | 10               |
 | emails                                       | processSendFollowNewsSourcesEmail              | —                                         | 10               |
 | emails                                       | processSendCommunityModerationSummaryEmail     | —                                         | 10               |
-| emails                                       | processSendCrmEmail                            | —                                         | 10               |
 | emails                                       | processSendSupportEmail                        | —                                         | 10               |
 | entity-listeners                             | processUserCreated                             | —                                         | 10               |
 | entity-listeners                             | processAutoFollowReferrer                      | —                                         | 10               |

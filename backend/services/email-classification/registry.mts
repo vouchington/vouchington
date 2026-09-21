@@ -10,8 +10,7 @@ type TransactionalEntry = {
 type MarketingEntry = {
   classification: 'marketing'
   unsubscribe:
-    | { scheme: 'user-category'; category: EmailUnsubscribeCategory }
-    | { scheme: 'crm-contact' }
+    { scheme: 'user-category'; category: EmailUnsubscribeCategory }
   hasActiveSender: boolean
 }
 
@@ -48,11 +47,6 @@ export const EMAIL_CLASSIFICATIONS: Record<EmailType, EmailClassificationEntry> 
   processSendCommunityModerationSummaryEmail: {
     classification: 'marketing',
     unsubscribe: { scheme: 'user-category', category: 'community_digest' },
-    hasActiveSender: true,
-  },
-  processSendCrmEmail: {
-    classification: 'marketing',
-    unsubscribe: { scheme: 'crm-contact' },
     hasActiveSender: true,
   },
   // Registry-only: no sender exists yet. Tracked by #1167/#1351.

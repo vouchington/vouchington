@@ -88,7 +88,6 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/my/api-keys': { category: 'sensitive' },
   'DELETE:/api/v1/my/api-keys/:id': { category: 'sensitive' },
   'POST:/api/v1/email-unsubscribe': { category: 'write', multiplier: 1000 },
-  'POST:/api/v1/crm/unsubscribe': { category: 'write', multiplier: 1000 },
 
   // Write operations with lower multiplier (vote-like actions)
   'PUT:/api/v1/entity-relations/:id/vote': { category: 'write', multiplier: 0.5 },
