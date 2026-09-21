@@ -72,11 +72,6 @@
     },
     {
       "scope": "tooling",
-      "file": "static-code-analysis/repo-file-policy/client-parity-matrix-guard.mts",
-      "complexity": 68
-    },
-    {
-      "scope": "tooling",
       "file": "static-code-analysis/repo-file-policy/client-parity-matrix-parser.mts",
       "complexity": 56
     },
