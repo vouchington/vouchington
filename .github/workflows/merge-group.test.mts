@@ -7,7 +7,10 @@ import { requiredNamedStep, type WorkflowJob } from './workflow-test-helpers.mts
 
 type Workflow = {
   concurrency?: { 'cancel-in-progress'?: string; group?: string }
-  jobs?: Record<string, WorkflowJob>
+  jobs?: Record<
+    string,
+    WorkflowJob & { if?: string; permissions?: Record<string, string>; needs?: string[] }
+  >
   permissions?: Record<string, string>
   on?: {
     merge_group?: { branches?: string[]; types?: string[] }
