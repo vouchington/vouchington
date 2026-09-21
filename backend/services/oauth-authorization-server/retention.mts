@@ -29,7 +29,6 @@ export async function deleteExpiredOAuthAuthorizationServerArtifactsBatch(
     options.lowerBoundDate,
     batchSize,
   )
-  // ast-grep-ignore: no-three-sequential-awaits -- one transaction deletes related artifacts in dependency order
   const accessCount = await deleteExpiredRows(
     query,
     'oauth_access_tokens',
