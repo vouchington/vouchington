@@ -22,7 +22,7 @@ permissions:
 jobs:
   static-code-analysis:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -131,11 +131,7 @@ jobs:
   no-mistakes-owned:
     needs: [static-code-analysis]
     runs-on: ubuntu-latest
-    timeout-minutes: 55
-    concurrency:
-      group: no-mistakes-invocation
-      cancel-in-progress: false
-      queue: max
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

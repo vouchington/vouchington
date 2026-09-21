@@ -142,8 +142,8 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `shepherd.yml`                      | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
 | `shepherd.yml`                      | `gate`                          | job    | `ubuntu-latest`                       | 8             |
 | `shepherd.yml`                      | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
-| `static-code-analysis.yml`          | `no-mistakes-owned`             | job    | `ubuntu-latest`                       | 55            |
-| `static-code-analysis.yml`          | `static-code-analysis`          | job    | `ubuntu-latest`                       | 50            |
+| `static-code-analysis.yml`          | `no-mistakes-owned`             | job    | `ubuntu-latest`                       | 30            |
+| `static-code-analysis.yml`          | `static-code-analysis`          | job    | `ubuntu-latest`                       | 30            |
 | `storybook.yml`                     | `storybook`                     | job    | `ubuntu-latest`                       | 94            |
 | `sync-articles.yml`                 | `publish`                       | job    | `ubuntu-slim`                         | 5             |
 | `tests-backend-credentialed.yml`    | `backend-credentialed-tests`    | job    | `ubuntu-latest`                       | 20            |

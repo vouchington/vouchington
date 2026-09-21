@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 const workflow = readFileSync('.github/workflows/static-code-analysis.yml', 'utf8')
@@ -117,12 +118,17 @@ describe('static-code-analysis workflow', () => {
     expect(workflow.slice(oxfmt, oxfmt + 80)).not.toContain('if: ${{ inputs.docs_only != true }}')
   })
 
-  it('FIFO-serializes only the no-mistakes-owned job across pull requests', () => {
-    expect(workflow).toContain('  no-mistakes-owned:')
-    expect(workflow).toContain('    needs: [static-code-analysis]')
-    expect(workflow).toContain('      group: no-mistakes-invocation')
-    expect(workflow).toContain('      cancel-in-progress: false')
-    expect(workflow).toContain('      queue: max')
+  it('runs no-mistakes after static checks without a cross-PR job queue', () => {
+    const parsed = load(workflow) as {
+      jobs: Record<string, { needs?: string[]; concurrency?: unknown; 'timeout-minutes'?: number }>
+    }
+    const noMistakes = parsed.jobs['no-mistakes-owned']
+
+    expect(noMistakes).toBeDefined()
+    expect(noMistakes?.needs).toEqual(['static-code-analysis'])
+    expect(noMistakes?.concurrency).toBeUndefined()
+    expect(noMistakes?.['timeout-minutes']).toBeLessThanOrEqual(30)
+    expect(parsed.jobs['static-code-analysis']?.['timeout-minutes']).toBeLessThanOrEqual(30)
   })
 
   it('runs remaining repo-owned static checks in CI', () => {
