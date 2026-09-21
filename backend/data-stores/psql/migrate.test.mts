@@ -10,6 +10,7 @@ import {
   applyAllMigrations,
   runAllMigrations,
   runMigrations,
+  type PostCommitMigrationHook,
   type VerifySchemaAfterMigration,
 } from './migrate.mts'
 
@@ -23,7 +24,10 @@ describe('applyAllMigrations', () => {
 
     try {
       await runAllMigrations({ apply, exit, logger, verifySchema })
-      expect(apply).toHaveBeenCalledWith(expect.any(String), { forced: true })
+      expect(apply).toHaveBeenCalledWith(expect.any(String), {
+        forced: true,
+        afterCommit: expect.any(Function),
+      })
       expect(verifySchema).toHaveBeenCalledTimes(1)
       expect(exit).toHaveBeenNthCalledWith(1, 0)
       expect(logger.error).not.toHaveBeenCalled()
@@ -86,6 +90,29 @@ describe('applyAllMigrations', () => {
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({
         message: expect.stringContaining('Migration application did not complete'),
+        cause: failure,
+      }),
+    )
+    expect(logger.log).not.toHaveBeenCalledWith('Migrations complete!')
+    expect(exit).toHaveBeenCalledExactlyOnceWith(1)
+  })
+
+  it('reports a failed post-commit hook after migration application committed', async () => {
+    const failure = new Error('post-commit enqueue failed')
+    const apply = vi.fn<typeof applyAllMigrations>(async (_rootDir, options) => {
+      await options?.afterCommit?.()
+    })
+    const afterCommit = vi.fn<PostCommitMigrationHook>().mockRejectedValue(failure)
+    const exit = vi.fn<typeof process.exit>()
+    const logger = { error: vi.fn<(error: unknown) => void>(), log: vi.fn<() => void>() }
+    const verifySchema = vi.fn<VerifySchemaAfterMigration>().mockResolvedValue(undefined)
+
+    await runAllMigrations({ apply, afterCommit, exit, logger, verifySchema })
+
+    expect(verifySchema).not.toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('post-commit hook did not complete'),
         cause: failure,
       }),
     )
