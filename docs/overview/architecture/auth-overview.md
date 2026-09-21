@@ -8,6 +8,7 @@
 - <a id="valkey-state"></a>[Valkey State](reference-auth-overview-valkey-state.md)
 - <a id="request-flow"></a>[Request Flow](reference-auth-overview-valkey-state.md#request-flow)
 - <a id="login-flows"></a>[Login Flows](reference-auth-overview-login-flows.md)
+- <a id="oauth-authorization-server"></a>[OAuth Authorization Server](../../requirements/security/OAUTH-AUTHORIZATION-SERVER.md)
 - <a id="logout"></a>[Logout](reference-auth-overview-login-flows.md#logout)
 - <a id="server-side-auth"></a>[Server-Side Auth](reference-auth-overview-server-side-auth.md)
 - <a id="edge-caching"></a>[Edge Caching](reference-auth-overview-server-side-auth.md#edge-caching)

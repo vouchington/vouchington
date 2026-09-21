@@ -1,4 +1,4 @@
-import { isSitemapRoute, RSS_ROUTE_RE } from './routing.mts'
+import { isOAuthAuthorizationServerRoute, isSitemapRoute, RSS_ROUTE_RE } from './routing.mts'
 
 const PRIVATE_BACKEND_CACHE_BYPASS_PREFIXES = [
   '/api/v1/my',
@@ -6,6 +6,7 @@ const PRIVATE_BACKEND_CACHE_BYPASS_PREFIXES = [
   '/api/v1/feeds',
   '/api/v1/bookmarks',
   '/api/v1/auth',
+  '/api/v1/oauth',
   '/api/v1/session',
   '/api/v1/recommended-topics',
 ]
@@ -17,9 +18,11 @@ export const canUseCache = (request: Request, cacheMode: 'cache' | 'bypass'): bo
 export const isPrivateBackendCacheBypassRoute = (pathname: string): boolean => {
   const normalizedPathname = pathname.toLowerCase()
   return (
+    isOAuthAuthorizationServerRoute(pathname) ||
     PRIVATE_BACKEND_CACHE_BYPASS_PREFIXES.some(
       prefix => normalizedPathname === prefix || normalizedPathname.startsWith(`${prefix}/`),
-    ) || POST_ANCESTORS_ROUTE_RE.test(normalizedPathname)
+    ) ||
+    POST_ANCESTORS_ROUTE_RE.test(normalizedPathname)
   )
 }
 
@@ -40,6 +43,9 @@ export const isLoginRoute = (pathname: string): boolean =>
 // provider's callback params (code/state) to the client relay script, minting a stale session.
 export const isAuthCallbackRoute = (pathname: string): boolean =>
   pathname === '/auth/callback' || pathname.startsWith('/auth/callback/')
+
+export const isOAuthConsentRoute = (pathname: string): boolean =>
+  pathname === '/oauth/consent' || pathname === '/oauth/consent/'
 
 // Referral attribution needs origin to run (cookies stripped + HIT skips origin on cacheable
 // audiences); `/@` is a loose superset of web's LANDING_PAGE_HANDLE_RE, so a false positive costs one extra origin hit.

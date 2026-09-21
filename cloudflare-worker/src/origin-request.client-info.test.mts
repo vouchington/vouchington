@@ -54,6 +54,26 @@ describe('buildWorkerOriginRequest client information', () => {
     expect(originRequest.headers.get('x-voucha-app-version')).toBe('1.0+1')
   })
 
+  it('preserves Basic client authentication only for OAuth credential routes', () => {
+    const authorization = `Basic ${Buffer.from('client:secret').toString('base64')}`
+
+    expect(
+      build(new Request('https://voucha.ai/token', { headers: { authorization } })).headers.get(
+        'authorization',
+      ),
+    ).toBe(authorization)
+    expect(
+      build(new Request('https://voucha.ai/revoke', { headers: { authorization } })).headers.get(
+        'authorization',
+      ),
+    ).toBe(authorization)
+    expect(
+      build(
+        new Request('https://voucha.ai/api/v1/posts', { headers: { authorization } }),
+      ).headers.get('authorization'),
+    ).toBeNull()
+  })
+
   it('replaces spoofed request kinds with a trusted cache-fill marker', () => {
     const originRequest = build(
       new Request('https://voucha.ai/api/v1/posts', {

@@ -1,5 +1,6 @@
 import { ensureSession } from './auth/session-mint.mts'
 import { replaceSessionCookies } from './cookies.mts'
+import { isOAuthClientAuthenticatedRoute } from './oauth-authorization-server-routing.mts'
 import { captureWorkerException } from './sentry.mts'
 import { buildOriginRequest } from './proxy.mts'
 import { edgeErrorResponse } from './error-response.mts'
@@ -79,6 +80,8 @@ export function buildWorkerOriginRequest({
     requestId,
     forceIdentityEncoding,
     target === 'backend',
+    target === 'backend' &&
+      isOAuthClientAuthenticatedRoute(new URL(originRequestSource.url).pathname),
   )
   if (target === 'backend') {
     const headers = new Headers(originRequest.headers)

@@ -5,6 +5,7 @@ import {
   isAuthCallbackRoute,
   isFullyCachedRoute,
   isLoginRoute,
+  isOAuthConsentRoute,
   isPrivateBackendCacheBypassRoute,
 } from './cache-route-policy.mts'
 
@@ -137,7 +138,7 @@ export const getCachePolicy = (input: CachePolicyInput): CachePolicy => {
     return BYPASS_POLICY
   }
 
-  if (isPrivateBackendCacheBypassRoute(input.pathname)) {
+  if (isPrivateBackendCacheBypassRoute(input.pathname) || isOAuthConsentRoute(input.pathname)) {
     return input.botTier === null ? NO_STORE_BYPASS_POLICY : BOT_NO_STORE_BYPASS_POLICY
   }
 

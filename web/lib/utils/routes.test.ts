@@ -25,6 +25,15 @@ describe('isBackendPath', () => {
     expect(isBackendPath('/sitemap.xml')).toBe(true)
   })
 
+  it('returns true only for exact OAuth authorization-server paths', () => {
+    for (const pathname of ['/authorize', '/register', '/revoke', '/token']) {
+      expect(isBackendPath(pathname)).toBe(true)
+    }
+    expect(isBackendPath('/oauth/consent')).toBe(false)
+    expect(isBackendPath('/authorize/help')).toBe(false)
+    expect(isBackendPath('/tokenized')).toBe(false)
+  })
+
   it('returns false for paths that start with /sitemap.xml but are not exact', () => {
     expect(isBackendPath('/sitemap.xml/something')).toBe(false)
   })

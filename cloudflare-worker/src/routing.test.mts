@@ -12,6 +12,7 @@ import {
   getRouteTarget,
   getSitemapOriginPath,
   isAdminBackendRoute,
+  isOAuthAuthorizationServerRoute,
   isSitemapRoute,
 } from './routing.mts'
 
@@ -21,6 +22,17 @@ describe('routing', () => {
     expect(getRouteTarget('/sitemaps/discussion/2026-03-04/index.xml')).toBe('sitemaps')
     expect(getRouteTarget('/api')).toBe('backend')
     expect(getRouteTarget('/api/v1/posts')).toBe('backend')
+  })
+
+  it('routes exact OAuth authorization-server paths to backend', () => {
+    for (const pathname of ['/authorize', '/register', '/revoke', '/token']) {
+      expect(isOAuthAuthorizationServerRoute(pathname)).toBe(true)
+      expect(getRouteTarget(pathname)).toBe('backend')
+    }
+    for (const pathname of ['/authorize/help', '/registered', '/tokenized', '/oauth/consent']) {
+      expect(isOAuthAuthorizationServerRoute(pathname)).toBe(false)
+      expect(getRouteTarget(pathname)).toBe('web')
+    }
   })
 
   it.each(['facebook', 'x', 'github'])(

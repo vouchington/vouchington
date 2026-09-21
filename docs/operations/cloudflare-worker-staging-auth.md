@@ -44,6 +44,9 @@ signature, bearer, OAuth-state, or public-discovery boundary remains in force.
 | `/auth/callback/facebook/broker`                    | `GET`         | Facebook OAuth      | OAuth state                          |
 | `/auth/callback/x/broker`                           | `GET`         | X OAuth             | OAuth state                          |
 | `/auth/callback/github/broker`                      | `GET`         | GitHub OAuth        | OAuth state                          |
+| `/register`                                         | `POST`        | OAuth clients       | DCR metadata validation              |
+| `/revoke`                                           | `POST`        | OAuth clients       | OAuth client authentication          |
+| `/token`                                            | `POST`        | OAuth clients       | OAuth client authentication and PKCE |
 | `/infra/ping`                                       | `GET`, `HEAD` | Health checks       | none (public)                        |
 | `/infra/cache-purge`                                | `POST`        | Backend             | shared key                           |
 | `/manifest.webmanifest`                             | `GET`, `HEAD` | Browsers (PWA)      | none (spec-mandated anonymous fetch) |

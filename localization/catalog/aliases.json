@@ -9289,5 +9289,14 @@
 {"alias":"settings.notificationSettings.loadErrorFallback","consumer":"web","copyId":"copy.settings.notificationSettings.loadErrorFallback"},
 {"alias":"settings.notificationSettings.retry","consumer":"web","copyId":"copy.extracted.contactid.adminSupportContactDetailClient.retry_942087cc"},
 {"alias":"shared.countLabel.format","consumer":"web","copyId":"copy.shared.countLabel.format"},
+{"alias":"shared.oauth.consent.allow","consumer":"web","copyId":"copy.oauth.consent.allow"},
+{"alias":"shared.oauth.consent.authorizationError","consumer":"web","copyId":"copy.oauth.consent.authorizationError"},
+{"alias":"shared.oauth.consent.deny","consumer":"web","copyId":"copy.oauth.consent.deny"},
+{"alias":"shared.oauth.consent.description","consumer":"web","copyId":"copy.oauth.consent.description"},
+{"alias":"shared.oauth.consent.metadataTitle","consumer":"web","copyId":"copy.oauth.consent.metadataTitle"},
+{"alias":"shared.oauth.consent.passwordNotice","consumer":"web","copyId":"copy.oauth.consent.passwordNotice"},
+{"alias":"shared.oauth.consent.permissionsHeading","consumer":"web","copyId":"copy.oauth.consent.permissionsHeading"},
+{"alias":"shared.oauth.consent.resourceHeading","consumer":"web","copyId":"copy.oauth.consent.resourceHeading"},
+{"alias":"shared.oauth.consent.title","consumer":"web","copyId":"copy.oauth.consent.title"},
 {"alias":"shared.timeAgo.relativeDuration","consumer":"web","copyId":"copy.shared.timeAgo.relativeDuration"}
 ]
