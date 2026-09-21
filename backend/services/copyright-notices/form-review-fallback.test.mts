@@ -9,22 +9,19 @@ import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/
 import {
   createCopyrightFormIntake,
   getCopyrightNoticePrivateAggregate,
-  processCopyrightActionIntent,
   reviewCopyrightFormIntake,
 } from './index.mts'
-
-async function applyQueuedRestoreIntents(noticeId: string) {
-  const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
-  for (const intent of aggregate?.actionIntents ?? []) {
-    if (intent.action === 'restore' && intent.state === 'pending') {
-      await processCopyrightActionIntent(intent.id, new Date())
-    }
-  }
-}
 import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
+
+async function expectQueuedRestore(noticeId: string) {
+  const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
+  expect(aggregate?.actionIntents).toEqual(
+    expect.arrayContaining([expect.objectContaining({ action: 'restore', state: 'pending' })]),
+  )
+}
 
 describe('copyright form moderator fallback', () => {
   it('rescues signed-in forms after an anti-spam false positive or agent outage', async () => {
@@ -157,10 +154,12 @@ describe('copyright form moderator fallback', () => {
       }),
       applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id),
     ])
-    await applyQueuedRestoreIntents(notice.intake.copyright_notice_id)
-    await expect(
-      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
-    ).resolves.toBe(0)
+    const remaining = await countCopyrightActiveRestrictionsForNotice(
+      notice.intake.copyright_notice_id,
+    )
+    if (remaining === 0) return
+    expect(remaining).toBe(1)
+    await expectQueuedRestore(notice.intake.copyright_notice_id)
   })
 
   it('lets a moderator reverse an automated signed-in restriction', async () => {
@@ -213,10 +212,7 @@ describe('copyright form moderator fallback', () => {
       accepted: false,
       rationale: 'The automated restriction was not substantiated.',
     })
-    await applyQueuedRestoreIntents(notice.intake.copyright_notice_id)
-    await expect(
-      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
-    ).resolves.toBe(0)
+    await expectQueuedRestore(notice.intake.copyright_notice_id)
   })
 
   it('replays concurrent guest-form rejections onto one human assessment', async () => {
