@@ -1024,6 +1024,9 @@ importers:
       '@queues/vote-weight':
         specifier: workspace:^
         version: link:../queues/vote-weight
+      '@queues/wikipedia-recommender':
+        specifier: workspace:^
+        version: link:../queues/wikipedia-recommender
       '@services/account-data-requests':
         specifier: workspace:^
         version: link:../services/account-data-requests
@@ -1814,6 +1817,9 @@ importers:
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
+      '@queues/wikipedia-recommender':
+        specifier: workspace:^
+        version: link:../../queues/wikipedia-recommender
       '@workers/ai-agents':
         specifier: workspace:^
         version: link:../../workers/ai-agents
@@ -3315,6 +3321,15 @@ importers:
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
+
+  backend/queues/wikipedia-recommender:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
 
   backend/rss:
     dependencies:

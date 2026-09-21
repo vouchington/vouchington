@@ -93,8 +93,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 30 manifests and 74 runtime schedulers', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(30)
+  it('imports the exact 31 manifests, including the scheduler tombstone, and 74 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(31)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),
@@ -109,11 +109,14 @@ describe('scheduled job manifest catalog', () => {
     }
   })
 
-  it('uses only policy-managed queues or the universal heartbeat queue', () => {
+  it('uses only policy-managed queues, the universal heartbeat queue, or empty tombstones', () => {
     const queues = new Set(policyManagedWorkerQueueNames())
     expect(
       SCHEDULED_JOB_MANIFESTS.every(
-        manifest => queues.has(manifest.queueName) || manifest.queueName === 'heartbeat',
+        manifest =>
+          queues.has(manifest.queueName) ||
+          manifest.queueName === 'heartbeat' ||
+          manifest.jobs.length === 0,
       ),
     ).toBe(true)
   })
