@@ -16,6 +16,10 @@ the staged Vouchington fixture contract; Vouchington retains the matrix and chec
 coverage rather than asserting that an external checkout has tracked files. Both repositories keep
 active Table C issues synchronized so a full summary row cannot hide a lower-level native mismatch.
 
+Historical `[#N]` identifiers in the matrix are archival provenance from the predecessor tracker.
+They deliberately remain plain text: the identifiers retain their evidence context without exposing
+or implying a public destination for predecessor issues or milestones.
+
 Lifecycle parity is additionally executable through the stable scenario IDs in
 [`api-fixtures/v1/lifecycle-scenarios.json`](../../api-fixtures/v1/lifecycle-scenarios.json). The
 [fixture authoring guide](../../backend/test-helpers/api-fixtures/README.md#lifecycle-scenario-contract)

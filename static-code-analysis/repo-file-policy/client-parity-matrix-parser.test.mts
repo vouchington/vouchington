@@ -125,17 +125,23 @@ describe('parseClientParityMatrix', () => {
     )
   })
 
-  it('preserves the issue-definition protocol for canonical URL validation', () => {
-    const { definitions } = parseClientParityMatrix(
+  it('captures numeric issue link definitions so the guard can reject them', () => {
+    const { issueLinkDefinitions } = parseClientParityMatrix(
       [
         '[#1111] and [#2222]',
-        '[#1111]: https://github.com/jonathanong/filaments/issues/1111',
-        '[#2222]: http://github.com/jonathanong/filaments/issues/2222',
+        '[#1111]: https://github.com/vouchington/vouchington-infra/issues/1111',
+        '[#2222]: https://github.com/vouchington/vouchington/issues/2222',
       ].join('\n'),
     )
-    expect(definitions).toEqual([
-      expect.objectContaining({ issueId: '1111', protocol: 'https' }),
-      expect.objectContaining({ issueId: '2222', protocol: 'http' }),
+    expect(issueLinkDefinitions).toEqual([
+      expect.objectContaining({
+        issueId: '1111',
+        url: 'https://github.com/vouchington/vouchington-infra/issues/1111',
+      }),
+      expect.objectContaining({
+        issueId: '2222',
+        url: 'https://github.com/vouchington/vouchington/issues/2222',
+      }),
     ])
   })
 })

@@ -28,7 +28,4 @@
 | Deep linking                                                      | 🟢  | 🟢           | 🟢           | Both native clients dispatch supported deep links into rendered native destinations.                                                                                                                                                                                                           |
 | Navigation customization                                          | 🟢  | 🟢           | 🟢           | Native navigation behavior is rendered and tested.                                                                                                                                                                                                                                             |
 
-[#11570]: https://github.com/jonathanong/filaments/issues/11570
-[#8600]: https://github.com/jonathanong/filaments/issues/8600
-[#8625]: https://github.com/jonathanong/filaments/issues/8625
 [vouchington/vouchington-clients#138]: https://github.com/vouchington/vouchington-clients/pull/138
