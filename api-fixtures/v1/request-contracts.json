@@ -2619,6 +2619,99 @@
       ],
       "type": "object"
     },
+    "CopyrightRestrictionRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "authorizing_assessment_id": {
+          "type": "string"
+        },
+        "copyright_notice_target_id": {
+          "type": "string"
+        },
+        "human_review_action": {
+          "anyOf": [
+            {
+              "const": "confirm"
+            },
+            {
+              "const": "reverse"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "human_reviewed_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "human_reviewed_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "imposed_at": {
+          "type": "string"
+        },
+        "imposed_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "lifted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "lifted_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "authorizing_assessment_id",
+        "copyright_notice_target_id",
+        "human_review_action",
+        "human_reviewed_at",
+        "human_reviewed_by_id",
+        "id",
+        "imposed_at",
+        "imposed_by_id",
+        "lifted_at",
+        "lifted_by_id"
+      ],
+      "type": "object"
+    },
     "Country": {
       "additionalProperties": false,
       "properties": {
@@ -8968,6 +9061,16 @@
             }
           ]
         },
+        "copyright_notice_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "created_at": {
           "type": "string"
         },
@@ -8977,6 +9080,7 @@
             "community_application_decision",
             "community_ownership_transfer",
             "community_role_change",
+            "copyright_notice",
             "critical_moderation_alert",
             "direct_message",
             "follow",
@@ -9131,6 +9235,7 @@
         "body",
         "community_id",
         "conversation_id",
+        "copyright_notice_id",
         "created_at",
         "entity_type",
         "event_key",
@@ -25469,6 +25574,133 @@
           }
         },
         "required": ["conversationId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-email-intakes/:id/approvals": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-email-intakes/:id/correspondence": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-email-intakes/:id/rejections": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-form-intakes/:id/reviews": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/appeals": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/counter-notices": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "restrictionId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "restrictionId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-submissions/:id/appeal-reviews": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-submissions/:id/counter-notice-reviews": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
         "type": "object"
       }
     },
