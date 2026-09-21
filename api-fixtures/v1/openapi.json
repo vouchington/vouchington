@@ -708,22 +708,6 @@
         "required": ["completed", "failed", "pending", "total"],
         "type": "object"
       },
-      "BatchValidationResult": {
-        "additionalProperties": false,
-        "properties": {
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/RowValidationResult"
-            },
-            "type": "array"
-          },
-          "valid": {
-            "type": "boolean"
-          }
-        },
-        "required": ["rows", "valid"],
-        "type": "object"
-      },
       "BeginBlueskyLinkRequest": {
         "additionalProperties": false,
         "properties": {
@@ -6938,7 +6922,7 @@
         "type": "object"
       },
       "ImportType": {
-        "enum": ["crm_contact", "rss_feed", "topic"],
+        "enum": ["rss_feed", "topic"],
         "type": "string"
       },
       "IndividualCard": {
@@ -16182,25 +16166,6 @@
           }
         },
         "required": ["id", "name", "slug"],
-        "type": "object"
-      },
-      "RowValidationResult": {
-        "additionalProperties": false,
-        "properties": {
-          "errors": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "row_index": {
-            "type": "number"
-          },
-          "valid": {
-            "type": "boolean"
-          }
-        },
-        "required": ["errors", "row_index", "valid"],
         "type": "object"
       },
       "RssFeedCategory": {
@@ -44522,85 +44487,6 @@
               }
             },
             "description": "OK"
-          },
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        }
-      }
-    },
-    "/api/v1/imports/crm-contacts": {
-      "post": {
-        "operationId": "post_api_v1_imports_crm-contacts",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "csv": {}
-                },
-                "type": "object"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "batch": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "created_at": {
-                          "type": "string"
-                        },
-                        "id": {
-                          "type": "string"
-                        },
-                        "import_type": {
-                          "$ref": "#/components/schemas/ImportType"
-                        },
-                        "total_rows": {
-                          "type": "number"
-                        }
-                      },
-                      "required": ["created_at", "id", "import_type", "total_rows"],
-                      "type": "object"
-                    },
-                    "valid": {
-                      "const": true
-                    }
-                  },
-                  "required": ["batch", "valid"],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Created"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "valid": {
-                      "const": false
-                    },
-                    "validation": {
-                      "$ref": "#/components/schemas/BatchValidationResult"
-                    }
-                  },
-                  "required": ["valid", "validation"],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
           },
           "default": {
             "$ref": "#/components/responses/Error"

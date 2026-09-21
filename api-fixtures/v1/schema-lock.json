@@ -1087,14 +1087,6 @@
       "fixtureIds": ["native.households.create.default"],
       "hash": "56c574f5f689434e1990c3aac4f384cc1679079063a244a7196d1b7dbe940fc0"
     },
-    "POST:/api/v1/imports/crm-contacts#success": {
-      "fixtureIds": ["native.crm.import.success.default"],
-      "hash": "cfc494154d52cdb5f26027a2d40a239b3a9c3e0e88adf3448c5cd00ff046d5b3"
-    },
-    "POST:/api/v1/imports/crm-contacts#validation": {
-      "fixtureIds": ["native.crm.import.validation.default"],
-      "hash": "31f552224a7176534594671c4f4499ddf22a63ad2ead9056a732bc819e779e04"
-    },
     "POST:/api/v1/lists/:id/import": {
       "fixtureIds": ["native.list-import.default"],
       "hash": "61903f7a3460db4344e72d92cd565ab42021b91dee99fd9e097d828b8a5c9d66"
@@ -1541,14 +1533,6 @@
     "native.crm.contacts.default": {
       "fixtureIds": ["native.crm.contacts.default"],
       "hash": "3767e6f384cd1f55e1ffd93b74db1991f287c3e8d0b1d433bd6b0be0acbf290f"
-    },
-    "native.crm.import.success.default": {
-      "fixtureIds": ["native.crm.import.success.default"],
-      "hash": "a63fba0b7b8ecbdedea6fcf7b66fa13e898af31e16455976da099e1b0cac6684"
-    },
-    "native.crm.import.validation.default": {
-      "fixtureIds": ["native.crm.import.validation.default"],
-      "hash": "1c2419337b6f61541e658848089332f7e34ccf2e5b8c90a3f632fb8ed8d9ac4a"
     },
     "native.dynamic-config.history.default": {
       "fixtureIds": ["native.dynamic-config.history.default"],

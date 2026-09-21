@@ -21,7 +21,6 @@ import { nativeStaffSupportApiFixtureCases } from './native-staff-support-cases.
 import { nativeMembershipApiFixtureCases } from './native-membership-cases.mts'
 import { nativeImportExportApiFixtureCases } from './native-import-export-cases.mts'
 import { nativeCrmApiFixtureCases } from './native-crm-cases.mts'
-import { nativeCrmImportApiFixtureCases } from './native-crm-import-cases.mts'
 import { nativeModerationApiFixtureCases } from './native-moderation-cases.mts'
 import { nativeTagsBookmarksApiFixtureCases } from './native-tags-bookmarks-cases.mts'
 import { nativeUserAccountDataApiFixtureCases } from './native-user-account-data-cases.mts'
@@ -134,10 +133,6 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-crm-cases.mts',
     nativeCrmApiFixtureCases,
-  ),
-  ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/native-crm-import-cases.mts',
-    nativeCrmImportApiFixtureCases,
   ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-moderation-cases.mts',
