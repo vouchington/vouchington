@@ -113,6 +113,7 @@ jobs:
     uses: ./.github/workflows/publish-web-images.yml
     permissions:
       actions: read
+      attestations: write
       contents: read
       id-token: write
       packages: write

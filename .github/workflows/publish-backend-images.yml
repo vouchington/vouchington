@@ -13,6 +13,7 @@ on:
         required: true
 permissions:
   actions: read
+  attestations: write
   contents: read
   id-token: write
   packages: write
@@ -57,7 +58,7 @@ jobs:
       - id: build
         uses: ./.github/actions/build-backend-images
 
-      # Deliberately the last step in the job. Everything published here has already passed the
+      # Deliberately the last build step in the job. Everything published here has already passed the
       # API, worker-cpu and worker-io smoke tests and the Trivy CRITICAL/HIGH gate, so the image
       # that reaches the registry is the image that was tested -- which is the whole point of
       # publishing from this repository rather than rebuilding somewhere else.
@@ -65,6 +66,7 @@ jobs:
       # The images are pushed from the local daemon rather than built with a registry output,
       # which would upload them before any of those checks had run.
       - name: Publish validated backend images to GHCR
+        id: publish
         # success() is explicit rather than implicit: this is a publication gate, and a reader
         # should not have to know that GitHub ANDs it in for conditions without a status function.
         if: ${{ success() }}
@@ -77,11 +79,6 @@ jobs:
           REGISTRY_USERNAME: ${{ github.actor }}
         run: |
           set -euo pipefail
-
-          # These runners are not guaranteed ephemeral, so the credential is removed on every
-          # exit path rather than only on success.
-          cleanup() { docker logout ghcr.io >/dev/null 2>&1 || true; }
-          trap cleanup EXIT
 
           printf '%s' "$REGISTRY_PASSWORD" |
             docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
@@ -107,6 +104,45 @@ jobs:
               exit 1
             fi
 
+            case "$target" in
+              api) output_name=api_digest ;;
+              worker-cpu) output_name=worker_cpu_digest ;;
+              worker-io) output_name=worker_io_digest ;;
+              *) echo "::error::Unexpected backend image target: $target" ; exit 1 ;;
+            esac
+            printf '%s=%s\n' "$output_name" "$digest" >> "$GITHUB_OUTPUT"
+
             echo "✓ published $remote_image ($digest)"
             echo "- \`$remote_image\` — \`$digest\`" >> "$GITHUB_STEP_SUMMARY"
           done
+
+      - name: Attest api image provenance
+        if: ${{ success() && steps.publish.outputs.api_digest != '' }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/api
+          subject-digest: ${{ steps.publish.outputs.api_digest }}
+          create-storage-record: false
+          push-to-registry: true
+
+      - name: Attest worker-cpu image provenance
+        if: ${{ success() && steps.publish.outputs.worker_cpu_digest != '' }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/worker-cpu
+          subject-digest: ${{ steps.publish.outputs.worker_cpu_digest }}
+          create-storage-record: false
+          push-to-registry: true
+
+      - name: Attest worker-io image provenance
+        if: ${{ success() && steps.publish.outputs.worker_io_digest != '' }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/worker-io
+          subject-digest: ${{ steps.publish.outputs.worker_io_digest }}
+          create-storage-record: false
+          push-to-registry: true
+
+      - name: Log out of GHCR
+        if: ${{ always() }}
+        run: docker logout ghcr.io >/dev/null 2>&1 || true

@@ -218,7 +218,16 @@ describe.each(imagePublicationCases)('$workspace image publication', config => {
   const compositeSteps = compositeAction.runs?.steps ?? []
   const compositeStepIndex = (name: string) => compositeSteps.findIndex(step => step?.name === name)
   const publishWorkflow = parseYaml(publishSource) as {
-    jobs?: Record<string, { steps?: { name?: string; uses?: string; if?: string }[] }>
+    jobs?: Record<
+      string,
+      {
+        steps?: {
+          name?: string
+          uses?: string
+          if?: string
+        }[]
+      }
+    >
   }
   const publishSteps = publishWorkflow.jobs?.build?.steps ?? []
   const publishStepIndex = publishSteps.findIndex(step => step?.name === config.publishStepName)
@@ -227,8 +236,6 @@ describe.each(imagePublicationCases)('$workspace image publication', config => {
   )
 
   it('keeps the build itself local and pushes from the daemon afterwards', () => {
-    // A `type=registry` output would upload before any check in the job had run, so what reaches
-    // the registry must instead be what was already tested.
     for (const source of [buildSource, compositeActionSource]) {
       expect(source).not.toContain('type=registry')
     }
@@ -281,8 +288,6 @@ describe.each(imagePublicationCases)('$workspace image publication', config => {
 })
 
 describe('image publication build cache', () => {
-  // Only backend's build sources are also asserted free of a BuildKit cache -- see "keeps backend
-  // validation outputs and caches local to its BuildKit daemon" above.
   it.each(imagePublicationCases.filter(config => config.noCacheInBuildSources))(
     'keeps $workspace build sources free of a BuildKit cache',
     ({ buildWorkflowPath, compositeActionPath }) => {
