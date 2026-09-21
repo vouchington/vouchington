@@ -4,7 +4,6 @@ This catalog keeps package documentation directly discoverable from the owning `
 
 - [`../activitypub/README.md`](../activitypub/README.md)
 - [`../bluesky/README.md`](../bluesky/README.md)
-- [`../v1/admin/crm/README.md`](../v1/admin/crm/README.md)
 - [`../v1/admin/growth-metrics/README.md`](../v1/admin/growth-metrics/README.md)
 - [`../v1/admin/rss-feed-categories/README.md`](../v1/admin/rss-feed-categories/README.md)
 - [`../v1/admin/support/README.md`](../v1/admin/support/README.md)
@@ -14,7 +13,6 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../v1/bookmarks/README.md`](../v1/bookmarks/README.md)
 - [`../v1/communities/README.md`](../v1/communities/README.md)
 - [`../v1/countries/README.md`](../v1/countries/README.md)
-- [`../v1/crm/README.md`](../v1/crm/README.md)
 - [`../v1/curated-aside-items/README.md`](../v1/curated-aside-items/README.md)
 - [`../v1/currencies/README.md`](../v1/currencies/README.md)
 - [`../v1/disputes/README.md`](../v1/disputes/README.md)

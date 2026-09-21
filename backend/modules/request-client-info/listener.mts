@@ -20,7 +20,6 @@ const EXEMPT_API_PREFIXES = [
   '/api/v1/mcp',
   '/api/v1/admin/mcp',
   '/api/v1/email-unsubscribe',
-  '/api/v1/crm/unsubscribe',
 ]
 const NATIVE_BOOTSTRAP_PATHS = new Set([
   '/api/v1/auth/email-address/tokens',

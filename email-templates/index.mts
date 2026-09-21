@@ -3,7 +3,6 @@ export * from './community-invite-renderer.mts'
 export * from './community-moderation-summary-renderer.mts'
 export * from './community-ownership-transfer-renderer.mts'
 export * from './community-role-change-renderer.mts'
-export * from './crm-outreach-renderer.mts'
 export * from './data-export-ready-renderer.mts'
 export * from './email-verification-renderer.mts'
 export * from './follow-news-sources-renderer.mts'
@@ -19,7 +18,6 @@ export type {
   CommunityModerationSummaryEmailProps,
   CommunityOwnershipTransferEmailProps,
   CommunityRoleChangeEmailProps,
-  CrmOutreachEmailProps,
   DataExportReadyEmailProps,
   EmailRenderResult,
   EmailRenderResultPromise,

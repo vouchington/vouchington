@@ -1,6 +1,5 @@
 import { sendEmail } from '@modules/aws/ses'
 import { sendGmailEmail } from '@modules/gmail-smtp'
-import { wasCrmContactEmailOptedOut } from '@services/crm-contacts'
 import { isEmailSuppressed } from '@services/ses-bounce-events'
 import { getEmailPreferences, type EmailPreferences } from '@services/users'
 import { EMAIL_CLASSIFICATIONS, type EmailType } from './registry.mts'
@@ -12,7 +11,6 @@ export type SendClassifiedEmailOptions = {
   html?: string
   text?: string
   userId?: string
-  crmEmail?: string
   provider?: 'ses' | 'gmail_smtp'
   source?: string
   replyToAddress?: string
@@ -31,16 +29,11 @@ export async function sendClassifiedEmail(
       if (isUnsubscribedFromCategory(prefs, entry.unsubscribe.category)) return null
     }
 
-    if (entry.unsubscribe.scheme === 'crm-contact') {
-      if (await wasCrmContactEmailOptedOut(options.crmEmail || options.to)) return null
-    }
-
     if (await isEmailSuppressed(options.to)) return null
   }
 
   const params = buildClassifiedSendParams(type, {
     userId: options.userId,
-    crmEmail: options.crmEmail || options.to,
   })
 
   if (options.provider === 'gmail_smtp') {

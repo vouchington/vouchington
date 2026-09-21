@@ -27,7 +27,6 @@
     "@services/communities": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/copyright-notices": "workspace:^",
-    "@services/crm-contacts": "workspace:^",
     "@services/email-classification": "workspace:^",
     "@services/engagement-emails": "workspace:^",
     "@services/users": "workspace:^",

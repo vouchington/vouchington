@@ -180,7 +180,6 @@ describe('request client information listener', () => {
     ['GET', '/api/v1/mcp', {}],
     ['GET', '/api/v1/admin/mcp/tools', {}],
     ['POST', '/api/v1/email-unsubscribe', {}],
-    ['POST', '/api/v1/crm/unsubscribe', {}],
     ['GET', '/api/v1/posts', { 'x-voucha-request-kind': 'bot' }],
     ['GET', '/api/v1/posts', { 'x-voucha-request-kind': 'cache-fill' }],
   ])('exempts %s %s trusted traffic', async (method, path, headers) => {
