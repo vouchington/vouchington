@@ -172,12 +172,12 @@ function expectGraphRequests(expectedCalls = 1): void {
     expect(derivedResolveFiles[index]).toEqual(
       expect.arrayContaining(['web/lib/dynamic.ts', 'web/lib/labels.ts']),
     )
+    expect(dependencyReports.at(-1)?.id).toBe('resolve-closure')
+    expect(requestedFiles(dependencyReports.at(-1)!)).toEqual([
+      ...new Set(dependencyReports.slice(0, -1).flatMap(requestedFiles)),
+    ])
     expect(options.reports.filter(report => report.type === 'resolveCheckDependencies')).toEqual([
-      {
-        id: 'resolve-check',
-        type: 'resolveCheckDependencies',
-        dependencyReportIds: dependencyReports.map(report => report.id),
-      },
+      expect.objectContaining({ id: 'resolve-check', dependencyReportIds: ['resolve-closure'] }),
     ])
   }
 }

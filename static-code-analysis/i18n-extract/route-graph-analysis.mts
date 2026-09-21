@@ -31,6 +31,12 @@ export async function analyzeRouteDependencies(
         relationships: DEPENDENCY_RELATIONSHIPS,
       })),
     )
+  const resolveClosure = {
+    id: 'resolve-closure',
+    type: 'dependencies' as const,
+    files: [...new Set([...discovered.flatMap(route => route.files), ...globalFiles])],
+    relationships: DEPENDENCY_RELATIONSHIPS,
+  }
   return await withI18nAnalysisBudget(
     'analyzeProject',
     analyzeProject({
@@ -38,10 +44,11 @@ export async function analyzeRouteDependencies(
       jobs: 0,
       reports: [
         ...dependencyReports,
+        resolveClosure,
         {
           id: 'resolve-check',
           type: 'resolveCheckDependencies' as const,
-          dependencyReportIds: dependencyReports.map(report => report.id),
+          dependencyReportIds: [resolveClosure.id],
         },
       ],
     }),
