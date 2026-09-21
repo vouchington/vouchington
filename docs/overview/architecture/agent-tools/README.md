@@ -32,13 +32,17 @@ A tool may be on multiple surfaces simultaneously. Almost all public tools carry
 
 ## Plan Gating
 
-`meta.plan` sets the minimum membership plan required to invoke the tool. Possible values:
+`meta.plan` sets the minimum membership plan for third-party user MCP automation. It is evaluated
+only by the user MCP `tools/list` and `tools/call` boundary; it does not paywall first-party native,
+direct REST, internal agent, or authorized staff/admin work. Possible values:
 
 - `'free'` (default when absent) — available to all authenticated users
 - `'plus'` — requires Plus or Pro membership
 - `'pro'` — requires Pro membership
 
-No tools are plan-gated in the initial release; the mechanism exists for future use.
+All current user-MCP mutations require Plus, which Pro inherits. Authorized reads remain free. The
+generated catalog identifies the plan per user-MCP tool; the first-party client manifest deliberately
+omits it because native use is not subject to this automation paywall.
 
 ---
 

@@ -2,7 +2,12 @@ import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS, getRegisteredToolByName } from './index.mts'
-import { getToolRequiredScopes, isToolMcpEligible, listToolsForSurface } from './select.mts'
+import {
+  getMcpPlanInvariantViolations,
+  getToolRequiredScopes,
+  isToolMcpEligible,
+  listToolsForSurface,
+} from './select.mts'
 import type { Tool } from '../types.mts'
 import { SCOPE_DEFINITIONS } from '@modules/scopes'
 
@@ -113,6 +118,31 @@ describe('tool registry', () => {
     )
 
     expect(missing).toEqual([])
+  })
+
+  it('requires paid plans for user MCP mutations without paywalling reads or admin tools', () => {
+    expect(getMcpPlanInvariantViolations(ALL_TOOLS)).toEqual([])
+  })
+
+  it('rejects a mutating tool shared between user and admin MCP surfaces', () => {
+    const tool: Tool = {
+      schema: { name: 'shared_mutation', type: 'function', parameters: null, strict: null },
+      function: () => () => Promise.resolve({}),
+      meta: {
+        surfaces: ['mcp', 'admin_mcp'],
+        plan: 'plus',
+        annotations: { destructiveHint: true },
+        requiredScopes: {
+          mcp: ['cards:read', 'cards:write'],
+          admin_mcp: ['support-messages:read'],
+        },
+        api: null,
+      },
+    }
+
+    expect(getMcpPlanInvariantViolations([tool])).toEqual([
+      'shared_mutation: mutating tools cannot share mcp and admin_mcp surfaces',
+    ])
   })
 
   it('rejects scopes declared for the opposite MCP audience', () => {

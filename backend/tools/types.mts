@@ -39,7 +39,7 @@ export type ToolApiEndpoint = {
 export type ToolMeta = {
   // Which surfaces this tool is exposed on. Defaults to ['internal'] when absent.
   surfaces: readonly ToolSurface[]
-  // Minimum membership plan required. Default 'free'. No tools plan-gated initially (mechanism only).
+  // Minimum plan for third-party user MCP dispatch. Internal, client, REST, and admin MCP paths do not use it.
   plan?: 'free' | 'plus' | 'pro'
   annotations?: ToolAnnotations
   // Canonical scopes required for an externally callable surface. Internal and client-only tools need none.

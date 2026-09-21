@@ -14,6 +14,7 @@ type ToolEntry = {
   name: string
   description: string | null
   surfaces: string[]
+  plan: string | null
   requiredScopes: string[]
   readOnlyHint: boolean
   destructiveHint: boolean
@@ -78,6 +79,10 @@ function extractRequiredScopes(src: string): string[] {
   return block == null ? [] : [...block.matchAll(/'([^']+:[^']+)'/g)].map(match => match[1])
 }
 
+function extractPlan(src: string): string | null {
+  return extractNameField(src, 'plan')
+}
+
 /** Parse api field: either null or an array of {method, path} objects. */
 function extractApi(src: string): ApiEndpoint[] | null {
   // api: null
@@ -122,6 +127,7 @@ function parseToolFile(filePath: string): ToolEntry | null {
     name,
     description,
     surfaces,
+    plan: extractPlan(src),
     requiredScopes: extractRequiredScopes(src),
     readOnlyHint,
     destructiveHint,
@@ -133,15 +139,16 @@ function parseToolFile(filePath: string): ToolEntry | null {
 function generateToolTable(tools: ToolEntry[]): string {
   const rows = tools.map(tool => {
     const surfacesStr = tool.surfaces.join(', ')
+    const planStr = tool.surfaces.includes('mcp') ? (tool.plan ?? 'free') : '—'
     const hintStr = tool.readOnlyHint ? 'read-only' : tool.destructiveHint ? 'mutating' : '—'
     const apiStr =
       tool.api == null ? '—' : tool.api.map(e => `\`${e.method} ${e.path}\``).join(', ')
-    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${tool.requiredScopes.join(', ') || '—'} | ${hintStr} | ${apiStr} |`
+    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${planStr} | ${tool.requiredScopes.join(', ') || '—'} | ${hintStr} | ${apiStr} |`
   })
 
   return [
-    '| Tool | Description | Surfaces | Required scopes | Hint | REST Equivalent |',
-    '| ---- | ----------- | -------- | --------------- | ---- | --------------- |',
+    '| Tool | Description | Surfaces | User MCP automation plan | Required scopes | Hint | REST Equivalent |',
+    '| ---- | ----------- | -------- | ------------------------ | --------------- | ---- | --------------- |',
     ...rows,
   ].join('\n')
 }

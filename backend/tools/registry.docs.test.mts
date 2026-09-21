@@ -24,6 +24,7 @@ type ToolEntry = {
   name: string
   description: string | null
   surfaces: string[]
+  plan: string | null
   requiredScopes: string[]
   readOnlyHint: boolean
   destructiveHint: boolean
@@ -82,6 +83,10 @@ function extractRequiredScopes(src: string): string[] {
   return block == null ? [] : [...block.matchAll(/'([^']+:[^']+)'/g)].map(match => match[1])
 }
 
+function extractPlan(src: string): string | null {
+  return extractNameField(src, 'plan')
+}
+
 function extractApi(src: string): ApiEndpoint[] | null {
   if (/api:\s*null/.test(src)) return null
   const apiBlockRe = /api:\s*\[([^\]]*)\]/s
@@ -105,6 +110,7 @@ function parseToolFile(filePath: string): ToolEntry | null {
     name,
     description: extractDescription(src),
     surfaces: extractSurfaces(src),
+    plan: extractPlan(src),
     requiredScopes: extractRequiredScopes(src),
     readOnlyHint: /readOnlyHint:\s*true/.test(src),
     destructiveHint: /destructiveHint:\s*true/.test(src),
@@ -116,13 +122,14 @@ function generateToolTable(tools: ToolEntry[]): string {
   const rows = tools.map(tool => {
     const surfacesStr = tool.surfaces.join(', ')
     const hintStr = tool.readOnlyHint ? 'read-only' : tool.destructiveHint ? 'mutating' : '—'
+    const planStr = tool.surfaces.includes('mcp') ? (tool.plan ?? 'free') : '—'
     const apiStr =
       tool.api == null ? '—' : tool.api.map(e => `\`${e.method} ${e.path}\``).join(', ')
-    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${tool.requiredScopes.join(', ') || '—'} | ${hintStr} | ${apiStr} |`
+    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${planStr} | ${tool.requiredScopes.join(', ') || '—'} | ${hintStr} | ${apiStr} |`
   })
   return [
-    '| Tool | Description | Surfaces | Required scopes | Hint | REST Equivalent |',
-    '| ---- | ----------- | -------- | --------------- | ---- | --------------- |',
+    '| Tool | Description | Surfaces | User MCP automation plan | Required scopes | Hint | REST Equivalent |',
+    '| ---- | ----------- | -------- | ------------------------ | --------------- | ---- | --------------- |',
     ...rows,
   ].join('\n')
 }
@@ -202,6 +209,19 @@ describe('docs freshness', () => {
         requiredScopes: tool.requiredScopes,
       })),
     })
+  })
+
+  it('publishes paid plans only in the user MCP catalog', () => {
+    const doc = readFileSync(
+      path.join(ROOT, 'docs/overview/architecture/agent-tools/catalog.md'),
+      'utf-8',
+    )
+    const manifest = readFileSync(path.join(ROOT, 'backend/tools/manifest.json'), 'utf-8')
+
+    expect(doc).toContain('User MCP automation plan')
+    expect(doc).toContain('`manage_my_cards`')
+    expect(doc).toContain('plus')
+    expect(manifest).not.toContain('"plan"')
   })
 
   it('every client/mcp/admin_mcp tool api path corresponds to a real route', async () => {
