@@ -670,6 +670,40 @@ CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__classifier_kind
 CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__threshold
   ON topic_classifier_results (threshold_id, topic_id DESC);
 
+CREATE TABLE IF NOT EXISTS classifier_topic_vote_applications (
+  shared_actor_id UUID NOT NULL REFERENCES users ON DELETE RESTRICT,
+  topic_id UUID NOT NULL REFERENCES topics ON DELETE CASCADE,
+  post_id UUID REFERENCES posts ON DELETE CASCADE,
+  rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
+  classifier_id UUID NOT NULL,
+  prompt_version_id UUID NOT NULL,
+  batch_id UUID NOT NULL,
+  result_id UUID NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_classifier_topic_vote_applications__actor_topic_subject
+    UNIQUE NULLS NOT DISTINCT (shared_actor_id, topic_id, post_id, rss_feed_item_id),
+  CONSTRAINT chk_classifier_topic_vote_applications__one_subject CHECK (
+    num_nonnulls(post_id, rss_feed_item_id) = 1
+  ),
+  CONSTRAINT fk_classifier_topic_vote_applications__batch_classifier
+    FOREIGN KEY (batch_id, classifier_id)
+    REFERENCES classifier_decision_batches (id, classifier_id) ON DELETE CASCADE,
+  CONSTRAINT fk_classifier_topic_vote_applications__batch_prompt
+    FOREIGN KEY (batch_id, prompt_version_id)
+    REFERENCES classifier_decision_batches (id, prompt_version_id) ON DELETE CASCADE,
+  CONSTRAINT fk_classifier_topic_vote_applications__result
+    FOREIGN KEY (topic_id, result_id)
+    REFERENCES topic_classifier_results (topic_id, id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_classifier_topic_vote_applications__batch
+  ON classifier_topic_vote_applications (batch_id);
+
+CREATE OR REPLACE TRIGGER trigger_classifier_topic_vote_applications_updated_at
+  BEFORE UPDATE ON classifier_topic_vote_applications
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
 CREATE TABLE IF NOT EXISTS story_classifier_results (
   story_id UUID NOT NULL REFERENCES stories ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),

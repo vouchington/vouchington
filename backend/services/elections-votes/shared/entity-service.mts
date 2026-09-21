@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import { validateUUID } from '@modules/utils/ids'
 import createError from 'http-errors'
@@ -64,8 +65,15 @@ export function createVotesUpsert(
       sessionId: null,
       userAgent: null,
     },
+    queryOptions: QueryOptions = {},
   ): Promise<ElectionVoteMutationResult[]> {
-    const upsertedVotes = await upsertElectionVotesShared(config, userId, votes, context)
+    const upsertedVotes = await upsertElectionVotesShared(
+      config,
+      userId,
+      votes,
+      context,
+      queryOptions,
+    )
     const entityIds = options.getEntityIds?.(votes, upsertedVotes) ?? [
       ...new Set(votes.map(vote => vote.entityId)),
     ]
