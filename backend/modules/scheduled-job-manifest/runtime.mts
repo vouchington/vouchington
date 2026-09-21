@@ -39,6 +39,17 @@ export async function upsertScheduledJobManifest(
   await removeExtraSchedulers(queue, jobs)
 }
 
+export async function removeScheduledJobScheduler(
+  queue: Pick<ScheduledJobQueue, 'getRepeatableJobs' | 'removeJobScheduler'>,
+  schedulerId: string,
+): Promise<{ before: readonly string[]; after: readonly string[]; removed: boolean }> {
+  const before = (await queue.getRepeatableJobs()).map(entry => entry.name)
+  const removed = before.includes(schedulerId)
+  if (removed) await queue.removeJobScheduler(schedulerId)
+  const after = (await queue.getRepeatableJobs()).map(entry => entry.name)
+  return { before, after, removed }
+}
+
 async function registerJobs(
   queue: ScheduledJobQueue,
   jobs: ScheduledJobManifest['jobs'],

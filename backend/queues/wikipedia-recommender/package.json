@@ -2,7 +2,7 @@
   "name": "@queues/wikipedia-recommender",
   "version": "1.0.0",
   "private": true,
-  "description": "",
+  "description": "Deployment tombstone for the retired Wikipedia recommender scheduler",
   "license": "UNLICENSED",
   "author": "",
   "type": "module",
@@ -16,8 +16,6 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/scheduled-job-manifest": "workspace:^",
-    "@voucha/types": "workspace:^",
-    "glide-mq": "^0.15.5"
+    "@modules/scheduled-job-manifest": "workspace:^"
   }
 }

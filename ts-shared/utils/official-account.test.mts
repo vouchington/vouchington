@@ -36,7 +36,6 @@ describe('isOfficialAccount', () => {
     expect(isOfficialAccount({ roles: [], username: 'customer-support' })).toBe(true)
     expect(isOfficialAccount({ roles: [], username: 'rss-feed-auto-updater' })).toBe(true)
     expect(isOfficialAccount({ roles: [], username: 'story-teller' })).toBe(true)
-    expect(isOfficialAccount({ roles: [], username: 'wikipedia-recommender' })).toBe(true)
   })
 
   it('returns true for the voucha username', () => {

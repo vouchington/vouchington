@@ -1,6 +1,5 @@
 import addRelatedTopicTool from '../add-related-topic.mts'
 import compareTopicsTool from '../compare-topics.mts'
-import createWikipediaTopicRecommendationTool from '../create-wikipedia-topic-recommendation.mts'
 import getDomainRatingsTool from '../get-domain-ratings.mts'
 import getMyProfileTool from '../get-my-profile.mts'
 import getRecommendedTopicsTool from '../get-recommended-topics.mts'
@@ -34,7 +33,6 @@ import type { Tool } from '../types.mts'
 export const ALL_TOOLS: readonly Tool[] = [
   addRelatedTopicTool,
   compareTopicsTool,
-  createWikipediaTopicRecommendationTool,
   getDomainRatingsTool,
   getMyProfileTool,
   getRecommendedTopicsTool,

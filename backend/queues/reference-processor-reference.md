@@ -31,7 +31,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | ai_agents                                    | story-clustering                               | —                                         | 15               |
 | ai_agents                                    | autotagger-post                                | —                                         | 20               |
 | ai_agents                                    | autotagger-rss-feed-item                       | —                                         | 20               |
-| ai_agents                                    | wikipedia-recommender                          | —                                         | 25               |
 | bloom-filters                                | processPopulateBloomFilter                     | —                                         | 5 (baseline)     |
 | bloom-filters                                | processRebuildBloomFilter                      | —                                         | 5 (baseline)     |
 | bloom-filters                                | processBackfillBloomFilter                     | —                                         | 5 (baseline)     |
@@ -165,7 +164,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | vote-integrity                               | processVoteIntegrityCheck                      | —                                         | 10               |
 | vote-weight                                  | processRecalculateVoteWeightDispatcher         | —                                         | 100              |
 | vote-weight                                  | processRecalculateUserVoteWeight               | —                                         | 10               |
-| wikipedia-recommender                        | dispatch                                       | dispatcher                                | 100              |
 | customer_support                             | embedSupportMessage                            | —                                         | 10               |
 | bluesky-follow-propagation                   | reconcileFollow                                | —                                         | 10               |
 | bluesky-follow-propagation                   | backfillBlueskyFollowPropagation               | —                                         | 100              |

@@ -2,5 +2,5 @@ export type { ScheduledJobManifest, ScheduledJobQueue, ProjectedScheduledJob } f
 
 export { defineScheduledJobManifest } from './manifest.mts'
 export { projectScheduledJobs } from './projection.mts'
-export { upsertScheduledJobManifest } from './runtime.mts'
+export { removeScheduledJobScheduler, upsertScheduledJobManifest } from './runtime.mts'
 export { SCHEDULING_FLOOR_MS, validateScheduledJobManifests } from './validation.mts'

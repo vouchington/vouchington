@@ -88,13 +88,12 @@ const EXPECTED_SCHEDULED_JOBS = [
   'urls-domains-blacklist/blacklistDispatcher',
   'user-deletions/userDeletionRecovery',
   'vote-weight/dailyVoteWeightRecalculation',
-  'wikipedia-recommender/wikipedia-recommender-dispatch',
 ].sort()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 31 manifests and 75 runtime schedulers', () => {
+  it('imports the exact 31 manifests, including the scheduler tombstone, and 74 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(31)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
@@ -110,11 +109,14 @@ describe('scheduled job manifest catalog', () => {
     }
   })
 
-  it('uses only policy-managed queues or the universal heartbeat queue', () => {
+  it('uses only policy-managed queues, the universal heartbeat queue, or empty tombstones', () => {
     const queues = new Set(policyManagedWorkerQueueNames())
     expect(
       SCHEDULED_JOB_MANIFESTS.every(
-        manifest => queues.has(manifest.queueName) || manifest.queueName === 'heartbeat',
+        manifest =>
+          queues.has(manifest.queueName) ||
+          manifest.queueName === 'heartbeat' ||
+          manifest.jobs.length === 0,
       ),
     ).toBe(true)
   })
@@ -141,7 +143,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(58)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(57)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

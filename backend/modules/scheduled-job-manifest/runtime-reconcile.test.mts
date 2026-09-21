@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { Queue } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import type { ScheduledJobDefinition, ScheduledJobQueue } from './types.mts'
-import { defineScheduledJobManifest, upsertScheduledJobManifest } from './index.mts'
+import {
+  defineScheduledJobManifest,
+  removeScheduledJobScheduler,
+  upsertScheduledJobManifest,
+} from './index.mts'
 
 describe('upsertScheduledJobManifest leftover scheduler reconcile', () => {
   it('removes leftover schedulers after a successful upsert', async () => {
@@ -141,6 +145,30 @@ describe('upsertScheduledJobManifest leftover scheduler reconcile', () => {
     ).rejects.toThrow('upsert failed')
     expect(getRepeatableJobs).not.toHaveBeenCalled()
     expect(removeJobScheduler).not.toHaveBeenCalled()
+  })
+})
+
+describe('removeScheduledJobScheduler', () => {
+  it('removes only the requested scheduler and is idempotent', async () => {
+    const queue = new Queue(`targeted-tombstone-${randomUUID()}`, {})
+    await queue.upsertJobScheduler(
+      'wikipedia-recommender-dispatch',
+      { every: 60_000 },
+      { name: 'dispatch' },
+    )
+    await queue.upsertJobScheduler('unrelated-scheduler', { every: 60_000 }, { name: 'unrelated' })
+
+    const first = await removeScheduledJobScheduler(queue, 'wikipedia-recommender-dispatch')
+    const second = await removeScheduledJobScheduler(queue, 'wikipedia-recommender-dispatch')
+
+    expect(first.removed).toBe(true)
+    expect(first.before).toContain('wikipedia-recommender-dispatch')
+    expect(first.after).toEqual(['unrelated-scheduler'])
+    expect(second).toEqual({
+      before: ['unrelated-scheduler'],
+      after: ['unrelated-scheduler'],
+      removed: false,
+    })
   })
 })
 

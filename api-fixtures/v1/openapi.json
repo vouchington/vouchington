@@ -212,7 +212,7 @@
         "type": "object"
       },
       "AgentType": {
-        "enum": ["autotagger", "moderator", "recommender", "storyteller"],
+        "enum": ["autotagger", "moderator", "storyteller"],
         "type": "string"
       },
       "AggregatedQueueStats": {
@@ -3226,9 +3226,6 @@
           },
           "topic_type": {
             "enum": ["card", "referral_program", "topic"],
-            "type": "string"
-          },
-          "topic_wikipedia_pageid": {
             "type": "string"
           }
         },
@@ -10830,9 +10827,6 @@
           "topic_type": {
             "enum": ["card", "referral_program", "topic"],
             "type": "string"
-          },
-          "topic_wikipedia_pageid": {
-            "type": "string"
           }
         },
         "type": "object"
@@ -12028,16 +12022,6 @@
                   "topic_type": {
                     "enum": ["card", "referral_program", "topic"],
                     "type": "string"
-                  },
-                  "topic_wikipedia_pageid": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
                   }
                 },
                 "required": [
@@ -12057,8 +12041,7 @@
                   "topic_markdown",
                   "topic_slug",
                   "topic_title",
-                  "topic_type",
-                  "topic_wikipedia_pageid"
+                  "topic_type"
                 ],
                 "type": "object"
               },
@@ -57760,16 +57743,6 @@
                             "topic_type": {
                               "enum": ["card", "referral_program", "topic"],
                               "type": "string"
-                            },
-                            "topic_wikipedia_pageid": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
                             }
                           },
                           "required": [
@@ -57789,8 +57762,7 @@
                             "topic_markdown",
                             "topic_slug",
                             "topic_title",
-                            "topic_type",
-                            "topic_wikipedia_pageid"
+                            "topic_type"
                           ],
                           "type": "object"
                         },
@@ -58712,16 +58684,6 @@
                             "topic_type": {
                               "enum": ["card", "referral_program", "topic"],
                               "type": "string"
-                            },
-                            "topic_wikipedia_pageid": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
                             }
                           },
                           "required": [
@@ -58741,8 +58703,7 @@
                             "topic_markdown",
                             "topic_slug",
                             "topic_title",
-                            "topic_type",
-                            "topic_wikipedia_pageid"
+                            "topic_type"
                           ],
                           "type": "object"
                         },
@@ -59435,16 +59396,6 @@
                             "topic_type": {
                               "enum": ["card", "referral_program", "topic"],
                               "type": "string"
-                            },
-                            "topic_wikipedia_pageid": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
                             }
                           },
                           "required": [
@@ -59464,8 +59415,7 @@
                             "topic_markdown",
                             "topic_slug",
                             "topic_title",
-                            "topic_type",
-                            "topic_wikipedia_pageid"
+                            "topic_type"
                           ],
                           "type": "object"
                         },
@@ -60183,16 +60133,6 @@
                             "topic_type": {
                               "enum": ["card", "referral_program", "topic"],
                               "type": "string"
-                            },
-                            "topic_wikipedia_pageid": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
                             }
                           },
                           "required": [
@@ -60212,8 +60152,7 @@
                             "topic_markdown",
                             "topic_slug",
                             "topic_title",
-                            "topic_type",
-                            "topic_wikipedia_pageid"
+                            "topic_type"
                           ],
                           "type": "object"
                         },

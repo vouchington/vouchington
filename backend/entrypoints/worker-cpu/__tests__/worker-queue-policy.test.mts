@@ -45,13 +45,18 @@ describe('worker queue policy', () => {
     }
   })
 
-  it('allows only the worker-cpu heartbeat schedule to always run', () => {
-    expect(alwaysRunQueueNames(CPU_SCHEDULE_DEFINITIONS)).toEqual(['heartbeat'])
+  it('allows only universal and scheduler-tombstone definitions to always run', () => {
+    expect(alwaysRunQueueNames(CPU_SCHEDULE_DEFINITIONS)).toEqual([
+      'heartbeat',
+      'wikipedia-recommender',
+    ])
     expect(alwaysRunQueueNames(IO_SCHEDULE_DEFINITIONS)).toEqual([])
   })
 
-  it('backs every worker-cpu registered schedule queue with a live worker', () => {
-    for (const queueName of queueNames(CPU_SCHEDULE_DEFINITIONS)) {
+  it('backs every non-universal worker-cpu schedule queue with a live worker', () => {
+    for (const queueName of queueNames(
+      CPU_SCHEDULE_DEFINITIONS.filter(({ alwaysRun }) => !alwaysRun),
+    )) {
       expect(allLiveWorkerQueueNames()).toContain(queueName)
     }
   })

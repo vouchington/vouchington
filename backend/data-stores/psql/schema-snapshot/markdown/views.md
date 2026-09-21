@@ -307,7 +307,7 @@ UNION ALL
         END AS display_account,
     profile_image_id,
     ARRAY[]::text[] AS roles,
-    COALESCE(((username = ANY (ARRAY['system'::text, 'autotagger'::text, 'customer-support'::text, 'rss-feed-auto-updater'::text, 'story-teller'::text, 'wikipedia-recommender'::text, 'voucha'::text])) OR (EXISTS ( SELECT 1
+    COALESCE(((username = ANY (ARRAY['system'::text, 'autotagger'::text, 'customer-support'::text, 'rss-feed-auto-updater'::text, 'story-teller'::text, 'voucha'::text])) OR (EXISTS ( SELECT 1
            FROM (user_roles
              LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))
           WHERE ((user_roles.user_id = users.id) AND (user_roles_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text, 'customer_support'::text]))))) OR (EXISTS ( SELECT 1
@@ -521,7 +521,7 @@ UNION ALL
                      LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg
                        FROM (post_topic_recommendations_hostnames ptrh
                          JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))
-                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_wikipedia_pageid', ptr.topic_wikipedia_pageid, 'topic_type', ptr.topic_type, 'example_referral_link', ptr.example_referral_link, 'landing_page_urls', ptr.landing_page_urls, 'approval_error_message', ptr.approval_error_message, 'status',
+                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ptr.example_referral_link, 'landing_page_urls', ptr.landing_page_urls, 'approval_error_message', ptr.approval_error_message, 'status',
                     CASE
                         WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text
                         WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text

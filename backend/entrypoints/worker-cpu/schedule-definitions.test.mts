@@ -8,7 +8,6 @@ import { upsertSchedules as upsertQueueMetricsSchedules } from '@queues/heartbea
 import { upsertSchedules as upsertImageSchedules } from '@queues/images/enqueues/schedules'
 import { upsertSchedules as upsertOpenAiModerationSchedules } from '@queues/openai-moderation/enqueues/schedules'
 import { upsertSchedules as upsertUnfurlReferralLinkSchedules } from '@queues/unfurl-referral-links/enqueues/schedules'
-import { upsertSchedules as upsertWikipediaRecommenderSchedules } from '@queues/wikipedia-recommender/enqueues/schedules'
 import { CPU_ONLY_SCHEDULE_DEFINITIONS } from './schedule-definitions.mts'
 
 describe('worker-cpu CPU_ONLY_SCHEDULE_DEFINITIONS load functions', () => {
@@ -32,9 +31,6 @@ describe('worker-cpu CPU_ONLY_SCHEDULE_DEFINITIONS load functions', () => {
     )
     await expect(byQueue('bedrock-embeddings-batch').load()).resolves.toBe(
       upsertBedrockEmbeddingBatchSchedules,
-    )
-    await expect(byQueue('wikipedia-recommender').load()).resolves.toBe(
-      upsertWikipediaRecommenderSchedules,
     )
     await expect(byQueue('ai_agents').load()).resolves.toBe(upsertAiAgentsSchedules)
     await expect(byQueue('heartbeat').load()).resolves.toBe(upsertQueueMetricsSchedules)

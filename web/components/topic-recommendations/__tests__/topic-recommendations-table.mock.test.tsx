@@ -121,7 +121,6 @@ const data: PostsResponseBody = {
         hostname_id: 'hostname-1',
         hostname: { __entity_type: 'hostname', id: 'hostname-1', hostname: 'example.com' },
         hostnames: [{ __entity_type: 'hostname', id: 'hostname-1', hostname: 'example.com' }],
-        topic_wikipedia_pageid: null,
         approval_error_message: null,
         status: 'pending',
         reviewed_at: null,

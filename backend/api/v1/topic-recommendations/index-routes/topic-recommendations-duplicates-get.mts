@@ -1,5 +1,5 @@
 import type { Context } from '@jongleberry/api-server'
-import { findTopicRecommendationDuplicates } from '@services/wikipedia-topic-recommendations'
+import { findTopicRecommendationDuplicates } from '@services/topic-recommendations'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
 

@@ -23,5 +23,6 @@ Fetches a page summary from the Wikimedia REST v1 API. Returns `null` if the pag
 ## Related
 
 - Parent: [../README.md](../README.md)
-- Wikipedia recommender system: [../../queues/wikipedia-recommender/README.md](../../queues/wikipedia-recommender/README.md)
-- Wikipedia recommender service: [../../services/wikipedia-topic-recommendations/README.md](../../services/wikipedia-topic-recommendations/README.md)
+- Wikipedia search tool: [../../tools/search-wikipedia.mts](../../tools/search-wikipedia.mts)
+- Wikipedia summary tool: [../../tools/get-wikipedia-summary.mts](../../tools/get-wikipedia-summary.mts)
+- Research agent: [../../agents/research-agent/README.md](../../agents/research-agent/README.md)

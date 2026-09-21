@@ -191,7 +191,7 @@ config-driven operations, and views. After migration the database contains:
   `vague-post`, `shit-post`, `buying`, `selling`, `trade`, `for-hire`, `hiring`, `voucha`) seeded by
   [`config-driven/0005-00-01-seed-topics.mts`](config-driven/0005-00-01-seed-topics.mts)
 - **Agents** — `system` user, agent system users (`autotagger`, `customer-support`,
-  `story-teller`, `wikipedia-recommender`, and all moderator slugs including `click-bait`,
+  `story-teller`, and all moderator slugs including `click-bait`,
   `vague-post`, and `shit-post`),
   agent rows, `agents__moderators` rows, and active moderator prompts seeded by
   [`config-driven/0010-00-01-seed-agents.mts`](config-driven/0010-00-01-seed-agents.mts).

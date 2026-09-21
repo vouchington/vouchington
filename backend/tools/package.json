@@ -40,12 +40,9 @@
     "@services/trending-topics": "workspace:^",
     "@services/user-financial-profiles": "workspace:^",
     "@services/users": "workspace:^",
-    "@services/wikipedia-topic-recommendations": "workspace:^",
     "@ts-shared/data-points": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/money": "workspace:^",
-    "@ts-shared/utils": "workspace:^",
-    "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "undici": "^8.10.2"
   },

@@ -18,7 +18,6 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 | `processCustomerSupport`                    | `customer-support`                       | Generates a customer support response                                                                                                                          |
 | `processStoryPost`                          | `story-post`                             | Generates or refreshes a story summary; entity recovery uses the awaited enqueue so queue failure retains the durable checkpoint for retry.                    |
 | `processStoryClustering`                    | `story-clustering`                       | Clusters an RSS feed item into stories; re-enqueues with 5 s delay (up to 10 times) when embedding is not yet visible — mirrors the autotagger retry pattern   |
-| `processWikipediaRecommender`               | `wikipedia-recommender`                  | Recommends topics for content entities                                                                                                                         |
 | `processReconcileBackgroundResponses`       | `reconcile-background-responses`         | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
 | `processReconcileChatRuntimeGenerations`    | `reconcile-chat-runtime-generations`     | Fails stale hosted-chat generations and releases their conversation turn after an interrupted worker                                                           |
 | `processReconcileMemberSupportAgentIntents` | `reconcile-member-support-agent-intents` | Re-enqueues member-created support drafts that committed before keyed queue delivery                                                                           |
@@ -42,7 +41,7 @@ new coordinator instead of deduplicating against the old active job. Coordinator
 explicitly reported best-effort optimization: if the dedicated queue is unavailable after
 registration, the source job still reaches its midnight delay fallback.
 
-> **Chat starvation risk**: `chat` jobs use priority 1, but all worker slots can be occupied by long-running background jobs (autotagger, moderation, wikipedia-recommender) before a chat job arrives. If interactive chat latency spikes, tune `WORKER_CONCURRENCY_AI_AGENTS` or split chat into a dedicated queue.
+> **Chat starvation risk**: `chat` jobs use priority 1, but all worker slots can be occupied by long-running background jobs (autotagger and moderation) before a chat job arrives. If interactive chat latency spikes, tune `WORKER_CONCURRENCY_AI_AGENTS` or split chat into a dedicated queue.
 
 ## Enqueue Files
 
@@ -53,7 +52,6 @@ registration, the source job still reaches its midnight delay fallback.
 - [`enqueues/moderation.mts`](enqueues/moderation.mts) — moderation jobs
 - [`enqueues/story-clustering.mts`](enqueues/story-clustering.mts) — story clustering jobs
 - [`enqueues/story-post.mts`](enqueues/story-post.mts) — fire-and-forget creation enqueue plus an awaited recovery variant that propagates delivery failure
-- [`enqueues/wikipedia-recommender.mts`](enqueues/wikipedia-recommender.mts) — wikipedia recommender jobs
 - [`enqueues/reconcile-background-responses.mts`](enqueues/reconcile-background-responses.mts) — background-response sweeper job
 - [`enqueues/reconcile-chat-runtime-generations.mts`](enqueues/reconcile-chat-runtime-generations.mts) — hosted-chat runtime recovery job
 - [`enqueues/reconcile-member-support-agent-intents.mts`](enqueues/reconcile-member-support-agent-intents.mts) - member support draft-intent recovery job

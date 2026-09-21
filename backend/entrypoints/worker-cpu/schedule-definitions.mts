@@ -47,16 +47,17 @@ export const CPU_ONLY_SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/openai-moderation/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'bedrock-embeddings-batch',
+    queueName: 'wikipedia-recommender',
+    alwaysRun: true,
     load: () =>
-      import('@queues/bedrock-embeddings-batch/enqueues/schedules').then(
+      import('@queues/wikipedia-recommender/enqueues/schedules').then(
         module => module.upsertSchedules,
       ),
   },
   {
-    queueName: 'wikipedia-recommender',
+    queueName: 'bedrock-embeddings-batch',
     load: () =>
-      import('@queues/wikipedia-recommender/enqueues/schedules').then(
+      import('@queues/bedrock-embeddings-batch/enqueues/schedules').then(
         module => module.upsertSchedules,
       ),
   },

@@ -21,7 +21,6 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../agents/profile-agent/README.md`](../agents/profile-agent/README.md)
 - [`../agents/report-judgement/README.md`](../agents/report-judgement/README.md)
 - [`../agents/research-agent/README.md`](../agents/research-agent/README.md)
-- [`../agents/wikipedia-recommender/README.md`](../agents/wikipedia-recommender/README.md)
 
 ## Data Stores
 
@@ -284,7 +283,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/valkey-admin/README.md`](../services/valkey-admin/README.md)
 - [`../services/web-risk/README.md`](../services/web-risk/README.md)
 - [`../services/web-search/README.md`](../services/web-search/README.md)
-- [`../services/wikipedia-topic-recommendations/README.md`](../services/wikipedia-topic-recommendations/README.md)
+- [`../services/topic-recommendations/README.md`](../services/topic-recommendations/README.md)
 
 ## Workers
 
@@ -385,5 +384,3 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../workers/vote-integrity/VALKEY_REQUESTS.md`](../workers/vote-integrity/VALKEY_REQUESTS.md)
 - [`../workers/vote-weight/README.md`](../workers/vote-weight/README.md)
 - [`../workers/vote-weight/VALKEY_REQUESTS.md`](../workers/vote-weight/VALKEY_REQUESTS.md)
-- [`../workers/wikipedia-recommender/README.md`](../workers/wikipedia-recommender/README.md)
-- [`../workers/wikipedia-recommender/VALKEY_REQUESTS.md`](../workers/wikipedia-recommender/VALKEY_REQUESTS.md)

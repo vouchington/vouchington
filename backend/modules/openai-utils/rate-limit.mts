@@ -35,14 +35,6 @@ export function isOpenAIFlexResourceUnavailableError(error?: unknown): boolean {
   return FLEX_RESOURCE_UNAVAILABLE_PATTERN.test(error.message)
 }
 
-/** Returns true for auth/permission errors that are not recoverable by retrying. */
-export function isOpenAIAuthError(error?: unknown): boolean {
-  if (error instanceof APIError) {
-    return error.status === 401 || error.status === 403
-  }
-  return false
-}
-
 /** Returns true for transient server errors on the OpenAI API (e.g. flex-tier 5xx).
  *  Responses API calls disable SDK retries and treat these as accounting-ambiguous. */
 export function isOpenAIServerError(error?: unknown): boolean {

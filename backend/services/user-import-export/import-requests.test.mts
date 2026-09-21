@@ -14,7 +14,7 @@ import {
   insertTestRssFeedDirect,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { createTopicRecommendation } from '@services/wikipedia-topic-recommendations'
+import { createTopicRecommendation } from '@services/topic-recommendations'
 import { importSingleRssFeed, importTopics } from './index.mts'
 import { autoFollowOnRecommendationApproval } from './auto-follow-on-approval.mts'
 

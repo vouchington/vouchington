@@ -2602,7 +2602,7 @@
     },
     "GET:/api/v1/agents/:idOrSlug": {
       "bodyKind": "content",
-      "hash": "4e0c3722b80075e56bf18ea7d5490b13a0f38e24399928834338defaef51f2fb",
+      "hash": "3c686702625c86deb419266b129332f9a87ec3b11e948a45ca0ef282729d9dd6",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -2722,10 +2722,6 @@
               {
                 "type": "literal",
                 "value": "moderator"
-              },
-              {
-                "type": "literal",
-                "value": "recommender"
               },
               {
                 "type": "literal",
@@ -28565,7 +28561,7 @@
     },
     "GET:/api/v1/posts": {
       "bodyKind": "content",
-      "hash": "48a5242ebdd9dfbdfc48c33c42b45290aabd3ee484195a09d23b6f265d50beea",
+      "hash": "b7c5ef76f944b897cb70247361ee6d8441a0459f6fe4f38c757c5f147b09e55d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -30199,20 +30195,6 @@
                               {
                                 "type": "literal",
                                 "value": "topic"
-                              }
-                            ]
-                          }
-                        },
-                        "topic_wikipedia_pageid": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
                               }
                             ]
                           }
@@ -46509,7 +46491,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/posts/:listType": {
       "bodyKind": "content",
-      "hash": "3719a80e8bebd229970b7e0785494b59d347ff8d3e7e6b1bd3421e3605c39a50",
+      "hash": "27ddb00f48b2d4868803635f3af059ca73a0489c9270d447f5c1fc0758768a01",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -47674,20 +47656,6 @@
                               {
                                 "type": "literal",
                                 "value": "topic"
-                              }
-                            ]
-                          }
-                        },
-                        "topic_wikipedia_pageid": {
-                          "required": true,
-                          "schema": {
-                            "type": "union",
-                            "variants": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
                               }
                             ]
                           }
@@ -73064,7 +73032,7 @@
       ],
       "path": "/api/v1/topic-recommendations/recommendation-1",
       "responseSchema": {
-        "hash": "744c193d49b24ab11372e7cd854339b3ce469b5c1012ba5419f2bd9a298fd043",
+        "hash": "ed1209544cd19ada812831cbce440eecb9074f86c7f3b62767e2bfea9520d14d",
         "key": "native.topic-recommendation.detail.default"
       },
       "route": {

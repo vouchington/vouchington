@@ -20,5 +20,5 @@ import '@services/posts/register-post-related-urls-guard'
 import '@services/bookmarks/register-bookmark-bloom-handler'
 // Registers with @services/topics' image-exists-guard registry.
 import '@services/images/register-image-exists-guard'
-// Registers with @services/wikipedia-topic-recommendations' recommendation-approved-handler registry.
+// Registers with @services/topic-recommendations' recommendation-approved-handler registry.
 import '@services/user-import-export/register-auto-follow-on-approval-handler'

@@ -50,7 +50,6 @@
     "@workers/crawler": "workspace:^",
     "@workers/images": "workspace:^",
     "@workers/language-detection": "workspace:^",
-    "@workers/unfurl-referral-links": "workspace:^",
-    "@workers/wikipedia-recommender": "workspace:^"
+    "@workers/unfurl-referral-links": "workspace:^"
   }
 }

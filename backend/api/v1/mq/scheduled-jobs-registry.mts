@@ -14,7 +14,6 @@ export const SCHEDULED_JOB_API_ORDER = [
   'dispatchEngagementEmails',
   'dispatchCommunityModerationSummaryEmails',
   'reconcilePostCategoryFinalizations',
-  'wikipedia-recommender-dispatch',
   'account-data-requests-cleanup',
   'cleanup-abandoned-uploads-schedule',
   'reconcile-image-quarantines',

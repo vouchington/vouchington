@@ -71,8 +71,6 @@ these reasons:
   MCP-style dispatch. They require agent wiring via `withCurry`.
 - **Internal-only data** — tools like `search_crawls`, `search_crawl_chunks`,
   `search_rss_feed_items` operate on data not appropriate for direct client consumption.
-- **Workflow tools** — `create_wikipedia_topic_recommendation` is an internal workflow step
-  and not a standalone user-facing capability.
 
 ---
 

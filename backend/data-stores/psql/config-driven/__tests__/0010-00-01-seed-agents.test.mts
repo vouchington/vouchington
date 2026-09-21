@@ -22,7 +22,6 @@ describe('0010-00-01-seed-agents idempotent', () => {
     expect(sql).toContain("'autotagger'")
     expect(sql).toContain("'customer-support'")
     expect(sql).toContain("'story-teller'")
-    expect(sql).toContain("'wikipedia-recommender'")
     expect(sql).toContain("'voucha'")
     expect(sql).toContain("'click-bait'")
     expect(sql).toContain("'vague-post'")
@@ -67,10 +66,10 @@ describe('0010-00-01-seed-agents idempotent', () => {
     expect(sql).toContain("'storyteller',")
   })
 
-  it('generates recommender agent row for wikipedia-recommender', () => {
+  it('does not recreate the retired Wikipedia recommender identity or agent type', () => {
     const sql = generateSeedAgentsSQL()
-    expect(sql).toContain("WHERE u.username = 'wikipedia-recommender'")
-    expect(sql).toContain("'recommender',")
+    expect(sql).not.toContain('wikipedia-recommender')
+    expect(sql).not.toContain("'recommender',")
   })
 
   it('generates agents__moderators rows with slug upsert', () => {

@@ -31,8 +31,8 @@
     "@services/entity-relations": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/rss-feeds": "workspace:^",
+    "@services/topic-recommendations": "workspace:^",
     "@services/users": "workspace:^",
-    "@services/wikipedia-topic-recommendations": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2"

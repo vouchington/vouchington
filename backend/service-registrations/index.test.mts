@@ -19,7 +19,7 @@ describe('service registrations', () => {
       import('@services/entity-relations/post-related-urls-guard-registry'),
       import('@services/entity-relations/referral-link-guard-registry'),
       import('@services/topics/image-exists-guard-registry'),
-      import('@services/wikipedia-topic-recommendations/recommendation-approved-handler-registry'),
+      import('@services/topic-recommendations/recommendation-approved-handler-registry'),
     ])
 
     expect(getRegisteredBlockedHostnameGuard()).toBeTypeOf('function')

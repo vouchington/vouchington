@@ -14,7 +14,6 @@ OpenAI API utilities — rate limit handling for glide-mq workers and response t
   retry against it as free and a retry against anything else as spend.
 - `isOpenAIServerError(error): boolean` — detects 5xx OpenAI API errors. Responses creation
   disables SDK retries; only the response boundary's explicitly unbilled flex retry is automatic.
-- `isOpenAIAuthError(error): boolean` — detects 401/403 auth errors
 - `getRetryAfterDuration(error): number` — extracts the `Retry-After` delay in ms (defaults to 60000 ms)
 - `handleOpenAIRateLimit(error, worker): Promise<never>` — rate-limits a glide-mq `Worker` and rethrows as `RateLimitError`
 

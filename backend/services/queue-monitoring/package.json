@@ -25,6 +25,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/scheduled-job-manifest": "workspace:^",
     "@modules/worker-queue-inventory": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@voucha/types": "workspace:^",

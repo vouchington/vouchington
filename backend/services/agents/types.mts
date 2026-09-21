@@ -1,6 +1,6 @@
 import type { AgentModel, AgentModelProvider } from '@voucha/types/entities/agent-model'
 
-export type AgentType = 'moderator' | 'autotagger' | 'storyteller' | 'recommender'
+export type AgentType = 'moderator' | 'autotagger' | 'storyteller'
 
 export type { AgentModel, AgentModelProvider }
 

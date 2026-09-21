@@ -23,7 +23,6 @@
     "@agents/moderation": "workspace:^",
     "@agents/report-judgement": "workspace:^",
     "@agents/story-post": "workspace:^",
-    "@agents/wikipedia-recommender": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@data-stores/valkey-pubsub": "workspace:^",
     "@jongleberry/vurst-ai": "^0.4.3",

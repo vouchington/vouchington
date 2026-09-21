@@ -63,7 +63,6 @@ export const createPostTextEmbeddingContent = (
         topic_hostname?: string
         topic_hostnames?: string[]
         topic_aliases?: string[]
-        topic_wikipedia_pageid?: string
       })
     | { title: string; markdown: string; structured_data?: unknown; ai_summary_markdown?: string },
 ) => {
@@ -101,7 +100,6 @@ function createTopicRecommendationEmbeddingContent(
         topic_hostname?: string
         topic_hostnames?: string[]
         topic_aliases?: string[]
-        topic_wikipedia_pageid?: string
       })
     | { title: string; markdown: string },
 ): string {
@@ -147,21 +145,13 @@ function createTopicRecommendationEmbeddingContent(
         ? post.topic_aliases
         : undefined
 
-  const topicWikipediaPageId =
-    'topic_recommendation' in post && post.topic_recommendation
-      ? (post.topic_recommendation.topic_wikipedia_pageid ?? undefined)
-      : 'topic_wikipedia_pageid' in post
-        ? post.topic_wikipedia_pageid
-        : undefined
-
   if (
     !topicTitle &&
     !topicSlug &&
     !topicMarkdown &&
     !topicHostname &&
     !topicHostnames?.length &&
-    !topicAliases?.length &&
-    !topicWikipediaPageId
+    !topicAliases?.length
   ) {
     return ''
   }
@@ -169,7 +159,6 @@ function createTopicRecommendationEmbeddingContent(
   return [
     topicTitle ? `Recommended topic title: ${topicTitle}` : '',
     topicSlug ? `Recommended topic slug: ${topicSlug}` : '',
-    topicWikipediaPageId ? `Recommended topic Wikipedia page ID: ${topicWikipediaPageId}` : '',
     topicMarkdown ? `Recommended topic markdown:\n${topicMarkdown}` : '',
     topicAliases?.length ? `Recommended topic aliases: ${topicAliases.join(', ')}` : '',
     topicHostname ? `Recommended primary hostname: ${topicHostname}` : '',

@@ -100,7 +100,6 @@ export type Post = {
       id: string
       hostname: string
     }>
-    topic_wikipedia_pageid: string | null
     topic_type: 'topic' | 'referral_program' | 'card'
     example_referral_link: string | null
     landing_page_urls: string[]

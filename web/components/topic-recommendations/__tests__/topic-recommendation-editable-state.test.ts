@@ -26,7 +26,6 @@ const makePost = (
       { __entity_type: 'hostname', id: 'hostname-1', hostname: 'example.com' },
       { __entity_type: 'hostname', id: 'hostname-2', hostname: 'example.org' },
     ],
-    topic_wikipedia_pageid: null,
     approval_error_message: null,
     status: 'pending',
     reviewed_at: null,

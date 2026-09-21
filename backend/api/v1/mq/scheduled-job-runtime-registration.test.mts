@@ -71,9 +71,9 @@ import {
 import { voteWeightQueue } from '@queues/vote-weight/queues'
 import {
   scheduledJobManifest as wikipediaManifest,
-  upsertSchedules as registerWikipedia,
+  upsertSchedules as registerWikipediaTombstone,
 } from '@queues/wikipedia-recommender/enqueues/schedules'
-import { wikipediaRecommender } from '@queues/wikipedia-recommender/queues'
+import { wikipediaRecommenderSchedulerTombstone } from '@queues/wikipedia-recommender/queues'
 
 const REGISTRATIONS = [
   [registerAiAgents, ai_agents, aiAgentsManifest],
@@ -90,7 +90,7 @@ const REGISTRATIONS = [
   [registerUnfurl, unfurlReferralLinksQueue, unfurlManifest],
   [registerBlacklist, urlsDomainsBlacklist, blacklistManifest],
   [registerVoteWeight, voteWeightQueue, voteWeightManifest],
-  [registerWikipedia, wikipediaRecommender, wikipediaManifest],
+  [registerWikipediaTombstone, wikipediaRecommenderSchedulerTombstone, wikipediaManifest],
 ] as const
 
 describe('scheduled job runtime registration', () => {

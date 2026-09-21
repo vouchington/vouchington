@@ -33,7 +33,6 @@
 - `moderator`
 - `autotagger`
 - `storyteller`
-- `recommender`
 
 ## `api_key_types`
 

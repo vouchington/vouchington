@@ -14,11 +14,7 @@ import {
   processCommunityModerationDispatcher,
   processCommunityModerationPrompt,
 } from './processors/process-community-moderation.mts'
-import {
-  processCustomerSupport,
-  processStoryClustering,
-  processWikipediaRecommender,
-} from './processors/process-misc.mts'
+import { processCustomerSupport, processStoryClustering } from './processors/process-misc.mts'
 import { processStoryPost } from './processors/process-story-post.mts'
 import { processReportJudgement } from './processors/process-report-judgement.mts'
 import { processDisputeResolution } from './processors/process-dispute-resolution.mts'
@@ -79,10 +75,6 @@ export function processAIAgent(
     case 'story-clustering':
       return processStoryClustering(
         job as Job<import('@queues/ai-agents/types').StoryClusteringJobData>,
-      )
-    case 'wikipedia-recommender':
-      return processWikipediaRecommender(
-        job as Job<import('@queues/ai-agents/types').WikipediaRecommenderJobData>,
       )
     case 'story-post':
       return processStoryPost(job as Job<import('@queues/ai-agents/types').StoryPostJobData>)

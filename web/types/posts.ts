@@ -127,7 +127,6 @@ export interface Post {
       id: string
       hostname: string
     }>
-    topic_wikipedia_pageid: string | null
     approval_error_message: string | null
     status: TopicRecommendationStatus
     reviewed_at: string | null
