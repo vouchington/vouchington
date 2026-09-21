@@ -14,7 +14,7 @@ type Step = {
 
 type Workflow = {
   permissions?: Record<string, string>
-  jobs?: Record<string, { steps?: Step[] }>
+  jobs?: Record<string, { permissions?: Record<string, string>; steps?: Step[] }>
 }
 
 const readWorkflow = (path: string): [string, Workflow] => {
@@ -25,11 +25,13 @@ const readWorkflow = (path: string): [string, Workflow] => {
 const cases = [
   {
     path: '.github/workflows/publish-backend-images.yml',
+    caller: '.github/workflows/main-backend.yml',
     subjects: ['api', 'worker-cpu', 'worker-io'],
     outputs: ['api_digest', 'worker_cpu_digest', 'worker_io_digest'],
   },
   {
     path: '.github/workflows/publish-web-images.yml',
+    caller: '.github/workflows/main-web.yml',
     subjects: ['web'],
     outputs: ['web_digest'],
   },
@@ -45,6 +47,14 @@ describe.each(cases)('$path image provenance', config => {
       attestations: 'write',
       packages: 'write',
     })
+  })
+
+  it('keeps the trusted main caller permissioned for attestations', () => {
+    const [, callerWorkflow] = readWorkflow(config.caller)
+    const caller = Object.values(callerWorkflow.jobs ?? {}).find(
+      job => job.permissions?.packages === 'write',
+    )
+    expect(caller?.permissions?.attestations).toBe('write')
   })
 
   it('exports each push digest and attests it after the push', () => {
@@ -75,6 +85,9 @@ describe.each(cases)('$path image provenance', config => {
     expect(source).toContain('docker login ghcr.io')
     const logoutIndex = steps.findIndex(step => step.name === 'Log out of GHCR')
     expect(logoutIndex).toBeGreaterThan(publishIndex)
+    for (const attestation of steps.filter(step => step.uses?.startsWith('actions/attest@'))) {
+      expect(logoutIndex).toBeGreaterThan(steps.indexOf(attestation))
+    }
     expect(steps[logoutIndex]?.if).toContain('always()')
   })
 })
