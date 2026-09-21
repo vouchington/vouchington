@@ -1268,6 +1268,9 @@ importers:
       '@services/oauth':
         specifier: workspace:^
         version: link:../services/oauth
+      '@services/oauth-authorization-server':
+        specifier: workspace:^
+        version: link:../services/oauth-authorization-server
       '@services/official-referral-program-links':
         specifier: workspace:^
         version: link:../services/official-referral-program-links
@@ -5415,6 +5418,9 @@ importers:
       '@services/oauth':
         specifier: workspace:^
         version: link:../oauth
+      '@services/oauth-authorization-server':
+        specifier: workspace:^
+        version: link:../oauth-authorization-server
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
@@ -7429,6 +7435,28 @@ importers:
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
+  backend/services/oauth-authorization-server:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@modules/scopes':
+        specifier: workspace:^
+        version: link:../../modules/scopes
+      '@modules/token-secrets':
+        specifier: workspace:^
+        version: link:../../modules/token-secrets
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      uuid:
+        specifier: ^14.0.2
+        version: 14.0.2
+    devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

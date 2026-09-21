@@ -1,8 +1,10 @@
 {
-  "name": "@services/data-retention",
+  "name": "@services/oauth-authorization-server",
   "version": "1.0.0",
   "private": true,
+  "description": "",
   "license": "UNLICENSED",
+  "author": "",
   "type": "module",
   "main": "index.mts",
   "exports": {
@@ -17,22 +19,15 @@
       "default": "./*.mts"
     }
   },
+  "scripts": {},
   "dependencies": {
-    "@data-stores/analytics": "workspace:^",
     "@data-stores/psql": "workspace:^",
+    "@modules/scopes": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@services/contribution-gating": "workspace:^",
-    "@services/oauth": "workspace:^",
-    "@services/oauth-authorization-server": "workspace:^",
-    "@services/post-publication": "workspace:^",
-    "@services/user-import-export": "workspace:^",
-    "@services/users": "workspace:^",
-    "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.2"
   },
   "devDependencies": {
-    "@services/oauth-accounts": "workspace:^",
-    "@services/user-deletions": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

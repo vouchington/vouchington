@@ -12,6 +12,13 @@ import type { RouteRateLimitEntry } from './types.mts'
  * multiplier: scales the category threshold up/down (e.g. 0.5 = half rate)
  */
 export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
+  // OAuth authorization server — public protocol operations and authenticated consent.
+  'GET:/authorize': { category: 'sensitive' },
+  'POST:/register': { category: 'sensitive' },
+  'POST:/token': { category: 'sensitive' },
+  'POST:/revoke': { category: 'sensitive' },
+  'GET:/api/v1/oauth/authorization-requests/:id': { category: 'sensitive' },
+  'POST:/api/v1/oauth/authorization-requests/:id/decisions': { category: 'sensitive' },
   // Auth & sessions — sensitive: low threshold, high-risk operations
   'POST:/api/v1/auth/email-address/tokens': { category: 'sensitive' },
   'POST:/api/v1/auth/email-address/login': { category: 'sensitive', multiplier: 2 },

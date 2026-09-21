@@ -20,6 +20,7 @@ import {
   cleanupExpiredBlueskyLinkCompletions,
 } from './cleanup-bluesky.mts'
 import { cleanupExpiredOAuthAuthorizations } from './cleanup-oauth-authorizations.mts'
+import { cleanupExpiredOAuthAuthorizationServerArtifacts } from './cleanup-oauth-authorization-server.mts'
 import { cleanupTerminalNotificationPushIntents } from './cleanup-notification-push-intents.mts'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
 import { pruneExpiredContributionAdmissions } from '@services/contribution-gating/admission'
@@ -28,6 +29,7 @@ import { pruneExpiredTopicImportAttempts } from '@services/user-import-export/to
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
+export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
 
 const TOPIC_IMPORT_ATTEMPT_DELETION_BATCH_SIZE = 25
@@ -61,6 +63,7 @@ type DataRetentionCleanupOptions = {
   oldReferralAttributions?: CleanupOptions
   orphanedOAuthAccounts?: CleanupOptions
   expiredOAuthAuthorizations?: ExpiryCleanupOptions
+  expiredOAuthServerArtifacts?: ExpiryCleanupOptions
   expiredBlueskyLinkCompletions?: Omit<CleanupOptions, 'retentionDays'>
   abandonedBlueskyLinkSessions?: Omit<CleanupOptions, 'retentionDays'>
   expiredContributionAdmissions?: ExpiryCleanupOptions
@@ -74,6 +77,7 @@ type DataRetentionCleanupResult = {
   oldReferralAttributions: CleanupResult
   orphanedOAuthAccounts: CleanupResult
   expiredOAuthAuthorizations: CleanupResult
+  expiredOAuthServerArtifacts: CleanupResult
   expiredBlueskyLinkCompletions: CleanupResult
   abandonedBlueskyLinkSessions: CleanupResult
   expiredContributionAdmissions: CleanupResult
@@ -89,6 +93,9 @@ export async function runDataRetentionCleanup(
   // long-interrupted cleanup run cannot retain avoidable references ahead of parent cleanup.
   const expiredOAuthAuthorizations = await cleanupExpiredOAuthAuthorizations(
     options.expiredOAuthAuthorizations,
+  )
+  const expiredOAuthServerArtifacts = await cleanupExpiredOAuthAuthorizationServerArtifacts(
+    options.expiredOAuthServerArtifacts,
   )
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const softDeletedUsers = await cleanupSoftDeletedUsers(options.softDeletedUsers)
@@ -121,6 +128,7 @@ export async function runDataRetentionCleanup(
     oldReferralAttributions,
     orphanedOAuthAccounts,
     expiredOAuthAuthorizations,
+    expiredOAuthServerArtifacts,
     expiredBlueskyLinkCompletions,
     abandonedBlueskyLinkSessions,
     expiredContributionAdmissions,

@@ -43860,7 +43860,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_oauth_access_tokens__expiry": {
           "accessMethod": "btree",
@@ -44171,7 +44171,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_oauth_authorization_codes__expiry": {
           "accessMethod": "btree",
@@ -44472,7 +44472,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_oauth_authorization_requests__browser": {
           "accessMethod": "btree",
@@ -46241,7 +46241,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_oauth_refresh_token_families__expiry": {
           "accessMethod": "btree",
@@ -46513,7 +46513,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_oauth_refresh_tokens__expiry": {
           "accessMethod": "btree",

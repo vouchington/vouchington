@@ -196,6 +196,7 @@
     "@services/my": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/oauth": "workspace:^",
+    "@services/oauth-authorization-server": "workspace:^",
     "@services/official-referral-program-links": "workspace:^",
     "@services/openai-moderation": "workspace:^",
     "@services/passkeys": "workspace:^",

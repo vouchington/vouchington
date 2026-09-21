@@ -32,6 +32,7 @@ leaf for endpoint-specific details; otherwise the README's inline section is can
 | Individuals             | [v1/individuals/README.md](./v1/individuals/README.md)                         | Current user's individual profile              |
 | Memberships             | [v1/memberships/README.md](./v1/memberships/README.md)                         | Plans, billing, and grants                     |
 | MQ admin                | [v1/mq/README.md](./v1/mq/README.md)                                           | Queue monitoring and management                |
+| OAuth authorization     | [oauth/README.md](./oauth/README.md)                                           | OAuth 2.1 authorization server and consent     |
 | My                      | [v1/my/README.md](./v1/my/README.md)                                           | Current-user cards, profile, rewards, spending |
 | PostgreSQL admin        | [v1/psql/README.md](./v1/psql/README.md)                                       | Migrations, partitions, materialized views     |
 | Posts                   | [v1/posts/README.md](./v1/posts/README.md)                                     | Post CRUD, ratings, search, descendants        |

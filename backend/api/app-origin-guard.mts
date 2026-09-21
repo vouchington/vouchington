@@ -8,6 +8,7 @@ import { BACKEND_BASELINE_RAW_SECURITY_HEADERS } from './security-header-helpers
 // cannot supply the secret (an AWS-signed webhook, a health check) — see
 // docs/overview/architecture/event-ingress.md. Do not add a new entry without updating that doc.
 export const WORKER_SECRET_EXEMPT_PATHS = new Set(['/infra/ping'])
+export const CROSS_SITE_OAUTH_PROTOCOL_PATHS = new Set(['/register', '/revoke', '/token'])
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
 type HttpListener = (req: IncomingMessage, res: ServerResponse) => void
@@ -88,6 +89,9 @@ function logGuardRejectedRequest(
 
 function isCrossSiteMutation(req: IncomingMessage, method: string): boolean {
   if (!MUTATING_METHODS.has(method)) return false
+  if (method === 'POST' && CROSS_SITE_OAUTH_PROTOCOL_PATHS.has(getRequestPath(req.url ?? '/'))) {
+    return false
+  }
   if (hasBearerAuth(req.headers.authorization)) return false
 
   const secFetchSite = headerValue(req.headers['sec-fetch-site'])?.toLowerCase()

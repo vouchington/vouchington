@@ -9,6 +9,7 @@ interface RouteRateLimitExtras {
   email?: string
   deviceToken?: string
   sessionToken?: string
+  identityMode?: 'ip-only'
 }
 
 declare module '@jongleberry/api-server' {
@@ -29,6 +30,12 @@ const extensions = {
     // Pre-compute session data once so identity resolution does not trigger a
     // second JWT/Valkey check. Route rate limiting uses signed session claims
     // and does not load the private user record on the hot path.
+    if (extras?.identityMode === 'ip-only') {
+      const result = await checkRouteRateLimit(routeKey, { ip: ctx.ip ?? 'unknown' }, null)
+      applyRateLimitResult(this, result)
+      return
+    }
+
     const { sessionData, deviceData } = await resolveRouteRateLimitTokenData(ctx, extras)
     const deviceClass =
       deviceData && 'dc' in deviceData && deviceData.dc === 'attested' ? 'attested' : undefined
@@ -47,18 +54,22 @@ const extensions = {
 
     if (extras?.email) identities.email = extras.email
 
-    const result = await checkRouteRateLimit(routeKey, identities, null)
-
-    if (result.limit > 0) {
-      this.set('X-RateLimit-Limit', String(result.limit))
-      this.set('X-RateLimit-Remaining', String(result.remaining))
-    }
-
-    if (result.limited) {
-      this.set('Retry-After', String(result.retryAfterSeconds))
-      this.throw(429, 'Rate limit exceeded. Please try again later.')
-    }
+    applyRateLimitResult(this, await checkRouteRateLimit(routeKey, identities, null))
   },
+}
+
+function applyRateLimitResult(
+  ctx: Context,
+  result: Awaited<ReturnType<typeof checkRouteRateLimit>>,
+): void {
+  if (result.limit > 0) {
+    ctx.set('X-RateLimit-Limit', String(result.limit))
+    ctx.set('X-RateLimit-Remaining', String(result.remaining))
+  }
+  if (result.limited) {
+    ctx.set('Retry-After', String(result.retryAfterSeconds))
+    ctx.throw(429, 'Rate limit exceeded. Please try again later.')
+  }
 }
 
 async function resolveRouteRateLimitTokenData(ctx: Context, extras?: RouteRateLimitExtras) {
