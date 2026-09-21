@@ -58,6 +58,12 @@ jobs:
       (
         (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-static-web == 'true')) ||
         needs.detect-changes.outputs.web == 'true' ||
+        needs.detect-changes.outputs.web-integration == 'true' ||
+        needs.detect-changes.outputs.playwright == 'true' ||
+        needs.detect-changes.outputs.playwright-credentialed == 'true' ||
+        needs.select-ci.outputs.run-test-web-integration == 'true' ||
+        needs.select-ci.outputs.run-test-playwright == 'true' ||
+        needs.select-ci.outputs.run-test-playwright-credentialed == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
       )
     uses: ./.github/workflows/checks-static.yml
@@ -334,6 +340,7 @@ jobs:
       needs.select-ci.outputs.skip-test-web-integration != 'true'
     uses: ./.github/workflows/tests-web-integration.yml
     with:
+      shared_build_available: ${{ needs.static-web.result == 'success' }}
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
       full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-web-integration == 'true' }}
@@ -389,6 +396,7 @@ jobs:
       )
     uses: ./.github/workflows/tests-playwright.yml
     with:
+      shared_build_available: ${{ needs.static-web.result == 'success' }}
       event-name: ${{ github.event_name }}
       otel_enabled: ${{ vars.PLAYWRIGHT_OTEL_ENABLED == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.trusted-secret-context == 'true' }}
     permissions:

@@ -32,6 +32,18 @@ describe('web integration workflow', () => {
     )
   })
 
+  it('builds once before standalone fan-out and rebuilds in a shard on cache miss', () => {
+    const workflow = readFileSync('.github/workflows/tests-web-integration.yml', 'utf8')
+    const prep = workflow.split('\n  prep:')[1]?.split('\n  web-integration-tests:')[0]
+    const tests = workflow.split('\n  web-integration-tests:')[1]
+    expect(prep).toContain("!inputs.shared_build_available && steps.shards.outputs.total != '1'")
+    expect(prep).toContain('shared-build-cache-mode: producer')
+    expect(tests).toContain('shared-build-cache-mode: consumer')
+    expect(readFileSync('.github/workflows/ci.yml', 'utf8')).toContain(
+      "shared_build_available: ${{ needs.static-web.result == 'success' }}",
+    )
+  })
+
   it('preserves a narrowed selection as newline-delimited positional arguments', () => {
     const workflow = readFileSync('.github/workflows/tests-web-integration.yml', 'utf8')
     const script = workflow

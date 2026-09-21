@@ -14,6 +14,12 @@ const ALLOWED_CACHE_PATHS = new Set([
   '${{ steps.pnpm-store.outputs.path }}',
   '~/.cache/ms-playwright',
 ])
+const SHARED_WEB_RUNTIME_PATHS = [
+  'web/.next/standalone',
+  'web/.next/static',
+  'cloudflare-worker/dist',
+]
+const SHARED_WEB_ACTION = '.github/actions/build-web-targets/action.yml'
 
 const yamlPaths = [
   ...readdirSync('.github/workflows').map(file => join('.github/workflows', file)),
@@ -51,14 +57,20 @@ function normalizedCachePaths(value: unknown): string[] | null {
   )
 }
 
-function cachePathsAreAllowed(value: unknown): boolean {
+function cachePathsAreAllowed(value: unknown, sourcePath = ''): boolean {
   const paths = normalizedCachePaths(value)
-  return paths !== null && paths.length > 0 && paths.every(path => ALLOWED_CACHE_PATHS.has(path))
+  if (paths === null || paths.length === 0) return false
+  if (paths.every(path => ALLOWED_CACHE_PATHS.has(path))) return true
+  return (
+    sourcePath === SHARED_WEB_ACTION &&
+    paths.length === SHARED_WEB_RUNTIME_PATHS.length &&
+    paths.every((path, index) => path === SHARED_WEB_RUNTIME_PATHS[index])
+  )
 }
 
 function cachePathViolations(source: string, label: string): string[] {
   return cacheSteps(source).flatMap((step, index) =>
-    cachePathsAreAllowed(step.with?.path)
+    cachePathsAreAllowed(step.with?.path, label)
       ? []
       : [
           `${label}: actions/cache step ${index + 1} has unapproved path ${JSON.stringify(step.with?.path)}.`,
@@ -70,6 +82,7 @@ describe('actions/cache path allowlist', () => {
   it.each([
     ['pnpm store', '${{ steps.pnpm-store.outputs.path }}', true],
     ['Playwright browsers', '~/.cache/ms-playwright', true],
+    ['shared web paths in unrelated action', SHARED_WEB_RUNTIME_PATHS, false],
     ['node_modules', 'node_modules', false],
     ['npm store', '~/.npm', false],
     ['yarn store', '~/.cache/yarn', false],
@@ -80,6 +93,13 @@ describe('actions/cache path allowlist', () => {
     expect(cachePathsAreAllowed(value)).toBe(allowed)
   })
 
+  it('allows the exact web runtime paths only in build-web-targets', () => {
+    expect(cachePathsAreAllowed(SHARED_WEB_RUNTIME_PATHS, SHARED_WEB_ACTION)).toBe(true)
+    expect(
+      cachePathsAreAllowed([...SHARED_WEB_RUNTIME_PATHS, 'web/.next/cache'], SHARED_WEB_ACTION),
+    ).toBe(false)
+  })
+
   it('detects an unapproved flow-style cache step', () => {
     const source =
       'jobs: { test: { steps: [{ uses: actions/cache@sha, with: { path: node_modules } }] } }'
@@ -88,7 +108,7 @@ describe('actions/cache path allowlist', () => {
     ])
   })
 
-  it('allows only pnpm-store and Playwright browser cache paths in repository YAML', () => {
+  it('allows only approved cache paths in repository YAML', () => {
     const violations = yamlPaths.flatMap(path =>
       cachePathViolations(readFileSync(path, 'utf8'), path),
     )

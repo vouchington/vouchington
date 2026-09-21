@@ -77,11 +77,16 @@ describe('tests-playwright.yml', () => {
     expect(shardJobMatch![0]).not.toContain('\n    concurrency:')
   })
 
-  it('builds web targets in each shard instead of restoring a shared artifact', () => {
+  it('produces one shared build for standalone runs and restores it in each shard', () => {
+    const selector = workflowJobSection(workflow, 'select')
+    const shardJob = workflowJobSection(workflow, 'playwright-tests')
     expect(workflow).not.toContain('web-targets-artifact-name')
     expect(workflow).not.toContain('restore-web-targets')
-    expect(workflow).not.toMatch(/\n {2}build-web-targets:\n/)
-    expect(workflow).toContain('uses: ./.github/actions/build-web-targets')
+    expect(selector).toContain(
+      "steps.select.outputs.skip != 'true' && !inputs.shared_build_available && steps.shards.outputs.total != '1'",
+    )
+    expect(selector).toContain('shared-build-cache-mode: producer')
+    expect(shardJob).toContain('shared-build-cache-mode: consumer')
   })
 
   it('exports IMAGE_ORIGIN from the allocated image lambda port', () => {
@@ -108,11 +113,11 @@ describe('tests-playwright.yml', () => {
     )
   })
 
-  it('uses a fixed logical asset origin so web builds remain independent of shard ports', () => {
+  it('uses the same-origin Worker asset route for the shared build', () => {
     const shardJob = workflowJobSection(workflow, 'playwright-tests')
 
-    expect(shardJob).toMatch(/NEXT_PUBLIC_ASSET_PREFIX: http:\/\/localhost(\s|$)/)
-    expect(shardJob).toMatch(/echo "CSP_ASSET_ORIGIN=http:\/\/localhost"(\s|$)/)
+    expect(shardJob).not.toContain('NEXT_PUBLIC_ASSET_PREFIX:')
+    expect(shardJob).not.toContain('CSP_ASSET_ORIGIN=http://localhost')
     expect(shardJob).not.toContain('NEXT_PUBLIC_ASSET_PREFIX=http://localhost:$NEXT_PORT')
     expect(shardJob).not.toContain('CSP_ASSET_ORIGIN=http://localhost:$NEXT_PORT')
   })
@@ -188,15 +193,15 @@ describe('tests-playwright.yml', () => {
     expect(workflow.slice(uploadIndex, uploadIndex + 200)).toContain('if: ${{ !cancelled() }}')
   })
 
-  it('delegates Playwright browser caching and does not cache Next.js builds', () => {
+  it('delegates browser and web runtime caching to their shared actions', () => {
     expect(workflow).toContain('uses: ./.github/actions/setup-playwright')
     expect(workflow).not.toContain('name: Cache Playwright browsers')
     expect(workflow).not.toMatch(/path:\s*\n\s+~\/.cache\/ms-playwright/)
-    // The shared Playwright setup owns browser caching. This workflow does not
-    // independently cache either the browsers or Next.js build output.
+    // The setup and build composites own their respective caches.
     expect(workflow).not.toContain('Restore Next.js build cache')
     expect(workflow).not.toContain('Save Next.js build cache')
     expect(workflow).not.toContain('next-build-cache-v4')
+    expect(workflow).toContain('shared-build-cache-mode: consumer')
   })
 
   it('preserves quoted NODE_OPTIONS entries when adding server flags', () => {

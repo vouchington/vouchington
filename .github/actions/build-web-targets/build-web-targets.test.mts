@@ -3,6 +3,7 @@ import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 type Step = {
+  id?: string
   name?: string
   shell?: string
   if?: string
@@ -30,17 +31,22 @@ function step(name: string): Step {
   return found
 }
 
+function cachePaths(candidate: Step): string[] {
+  const paths = candidate.with?.path
+  if (typeof paths !== 'string') throw new TypeError('cache path must be a string')
+  return paths
+    .split('\n')
+    .map(path => path.trim())
+    .filter(Boolean)
+}
+
 describe('build-web-targets composite action', () => {
   it('builds Next.js standalone and Cloudflare Worker targets', () => {
     expect(action).toContain('node ci/setup-web-integration.mts')
     expect(action).not.toContain('with-build-lock.sh')
-    // #3452 removed a shared-artifact producer/restore path for the BUILD OUTPUT
-    // (web/.next/standalone, cloudflare-worker/dist) because the large artifact could not
-    // reliably download within the restore step's timeout. `artifact-suffix` below is unrelated:
-    // it disambiguates the tiny per-shard timings JSON, not a rebuilt-output artifact, so this
-    // guard only pins the old input/action names rather than banning `inputs:` outright.
+    // Timing artifacts remain independent of the run-scoped runtime cache: the suffix avoids
+    // matrix timing-artifact collisions and is not part of the cache key.
     expect(action).not.toContain('artifact-name')
-    expect(action).not.toContain('restore-web-targets')
   })
 
   it('accepts an artifact-suffix input so matrix callers avoid a shared artifact name', () => {
@@ -55,6 +61,9 @@ describe('build-web-targets composite action', () => {
             required: false,
             default: 'false',
           }),
+          'shared-build-cache-mode': expect.objectContaining({
+            required: true,
+          }),
         },
       }),
     )
@@ -66,6 +75,72 @@ describe('build-web-targets composite action', () => {
       '${{ inputs.web-build-fs-cache-enabled }}',
     )
     expect(parsed.inputs?.['web-build-fs-cache-enabled']?.default).toBe('false')
+  })
+
+  it('restores only a complete run-scoped runtime build and rebuilds on a cache failure', () => {
+    const validateMode = step('Validate shared build cache mode')
+    expect(validateMode.run).toContain('producer|consumer')
+
+    const clearStep = step('Clear shared web build runtime paths')
+    expect(clearStep.if).toBe("${{ inputs.shared-build-cache-mode == 'consumer' }}")
+    expect(clearStep.run).toContain('web/.next/standalone')
+    expect(clearStep.run).toContain('web/.next/static')
+    expect(clearStep.run).toContain('cloudflare-worker/dist')
+
+    const restoreStep = step('Restore shared web build runtime paths')
+    expect(restoreStep.id).toBe('restore-web-targets')
+    expect(restoreStep.if).toBe("${{ inputs.shared-build-cache-mode == 'consumer' }}")
+    expect(restoreStep['continue-on-error']).toBe(true)
+    expect(restoreStep.uses?.startsWith('actions/cache/restore@')).toBe(true)
+    expect(restoreStep.uses?.slice('actions/cache/restore@'.length)).toMatch(/^[0-9a-f]{40}$/)
+    expect(cachePaths(restoreStep)).toEqual([
+      'web/.next/standalone',
+      'web/.next/static',
+      'cloudflare-worker/dist',
+    ])
+    expect(restoreStep.with?.key).toBe(
+      '${{ runner.os }}-${{ runner.arch }}-web-build-targets-ci-production-worker-assets-v1-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}',
+    )
+
+    const validateRestoredStep = step('Validate restored web build runtime paths')
+    expect(validateRestoredStep.id).toBe('validate-restored-web-targets')
+    expect(validateRestoredStep.run).toContain('steps.restore-web-targets.outputs.cache-hit')
+    expect(validateRestoredStep.run).toContain('node ci/web-build-cache-manifest.mts verify')
+
+    const buildStep = step('Build web targets')
+    expect(buildStep.if).toBe(
+      "${{ inputs.shared-build-cache-mode == 'producer' || steps.validate-restored-web-targets.outputs.complete != 'true' }}",
+    )
+  })
+
+  it('uses one canonical shared-cache build profile and saves producer output without making cache availability a gate', () => {
+    const buildStep = step('Build web targets')
+    const buildRun = buildStep.run ?? ''
+    expect(buildRun).toContain('export NEXT_TEST_BUILD=0')
+    expect(buildRun).toContain("export NEXT_PUBLIC_ASSET_PREFIX=''")
+    expect(buildRun.indexOf('source .env')).toBeLessThan(
+      buildRun.indexOf('export NEXT_TEST_BUILD=0'),
+    )
+    expect(buildRun.indexOf('export NEXT_TEST_BUILD=0')).toBeLessThan(
+      buildRun.indexOf('node ci/setup-web-integration.mts'),
+    )
+
+    const saveStep = step('Save shared web build runtime paths')
+    const stampStep = step('Stamp shared web build manifest')
+    expect(stampStep.run).toBe('node ci/web-build-cache-manifest.mts write')
+    expect(stampStep.if).toBe("${{ inputs.shared-build-cache-mode == 'producer' && success() }}")
+    expect(saveStep.if).toBe("${{ inputs.shared-build-cache-mode == 'producer' && success() }}")
+    expect(saveStep['continue-on-error']).toBe(true)
+    expect(saveStep.uses?.startsWith('actions/cache/save@')).toBe(true)
+    expect(saveStep.uses?.slice('actions/cache/save@'.length)).toMatch(/^[0-9a-f]{40}$/)
+    expect(cachePaths(saveStep)).toEqual([
+      'web/.next/standalone',
+      'web/.next/static',
+      'cloudflare-worker/dist',
+    ])
+    expect(saveStep.with?.key).toBe(
+      '${{ runner.os }}-${{ runner.arch }}-web-build-targets-ci-production-worker-assets-v1-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}',
+    )
   })
 
   it('captures a per-job web build timing report for issue #10937', () => {

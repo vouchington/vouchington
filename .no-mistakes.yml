@@ -2284,6 +2284,12 @@ rules:
         # Static web setup, retry install, pages-router, dependency, typecheck, build, and smoke budgets sum 29m; cap adds buffer. See PR #8489.
         - job: '.github/workflows/checks-static.yml#static-web'
           maxMinutes: 35
+        # A standalone Playwright run selects tests and produces one shared web build before shards start.
+        - job: '.github/workflows/tests-playwright.yml#select'
+          maxMinutes: 20
+        # A standalone web-integration run prepares its matrix and shared web build before shards start.
+        - job: '.github/workflows/tests-web-integration.yml#prep'
+          maxMinutes: 20
         # Fail-safe ceiling covering checkout/setup/validation plus headroom for the GitHub-artifact
         # coverage download and merge, including a 5m sharded-artifact fallback.
         - job: '.github/workflows/ci-test-coverage.yml#test-coverage'
