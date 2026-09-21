@@ -58,6 +58,16 @@ describe('client parity matrix metadata guard', () => {
     )
   })
 
+  it('rejects inline links on archival issue identifiers', () => {
+    expect(
+      run(['[#1111] reference', '[#2222](https://github.com/vouchington/vouchington/issues/2222)']),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('archival issue reference [#2222] must remain plain text'),
+      ]),
+    )
+  })
+
   it('rejects blank and unknown summary statuses', () => {
     const errors = run([
       '| Capability | Web | Swift | .NET | Notes |',
