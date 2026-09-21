@@ -1,9 +1,9 @@
 ---
 name: blackboard
-description: Record or read Filaments session journal notes in agent-blackboard using the portable Vouchington workflow and local hosted-connection policy.
+description: Record or read Vouchington session journal notes in agent-blackboard using the portable Vouchington workflow and local hosted-connection policy.
 ---
 
-# Filaments Blackboard Adapter
+# Vouchington Blackboard Adapter
 
 ## Canonical skill (required)
 
@@ -11,11 +11,11 @@ Claude Code and Codex load `vouchington-workflow:blackboard`; Grok, Cursor, and 
 `node_modules/vouchington-tooling/skills/blackboard/SKILL.md`. Every harness also reads the provider
 mechanics in
 `node_modules/agent-blackboard/dist/plugin/skills/agent-blackboard/SKILL.md`. Resolve supporting
-resources relative to their owning skill directories. If either canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone. Filaments keeps its
+resources relative to their owning skill directories. If either canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone. Vouchington keeps its
 project MCP registration instead of enabling the provider plugin, which would register a duplicate
 server.
 
-## Filaments additions
+## Vouchington additions
 
 Use the hosted deployment and stop-work rules in
 [agent-blackboard.md](../../../docs/development/agent-blackboard.md). The supported local replay
@@ -103,7 +103,7 @@ Pass the parent's own session id in the assignment prompt at spawn time — ther
 identity round-trip. A spawned child resolves its own session id from its runtime environment (for
 example `CODEX_THREAD_ID` for Codex, `CLAUDE_CODE_SESSION_ID` for Claude Code) through the shared
 `dev/agent-session-id/resolve.mts` identity policy, the same way any
-other Filaments blackboard consumer does, and calls `session_ensure` — or
+other Vouchington blackboard consumer does, and calls `session_ensure` — or
 `node dev/blackboard-journal.mts append --file <note-file> --parent-session-id <parent-id>` — with
 that resolved id, the parent id it was given, its own `agent` name (`--agent` when the runtime
 environment mixes harness identities), and its version before any

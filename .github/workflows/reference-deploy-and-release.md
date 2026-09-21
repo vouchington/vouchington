@@ -12,7 +12,7 @@
 | [Sync Articles](sync-articles.yml)                         | Standalone | `ubuntu-slim`      | No     | Packages an immutable article artifact for private infrastructure dispatch.                                   |
 | [Docs Publish](docs-publish.yml)                           | Standalone | `ubuntu-latest`    | No     | Builds an immutable OpenAPI and PostgreSQL-schema documentation artifact for private infrastructure dispatch. |
 
-Filaments validates source and dispatches its revision asynchronously. `vouchington-infra` owns
+Vouchington validates source and dispatches its revision asynchronously. `vouchington-infra` owns
 artifact publication and every deployment mutation. A successful dispatch is not deployment
 evidence, so operators must verify the matching private receiver run. See the
 [deployment CI/CD reference](../../docs/overview/infrastructure/reference-deployment-ci-cd-flow.md#operations-and-failure-handling).
@@ -21,6 +21,6 @@ Trusted web image publication does not require `SENTRY_AUTH_TOKEN`. When that re
 present, the build creates a Sentry release and uploads source maps; otherwise it publishes the
 validated image without source maps. The image build, smoke test, and Trivy gate run in either case.
 
-Filaments has no production application-deployment workflow. The global CI apply workflow and its
+Vouchington has no production application-deployment workflow. The global CI apply workflow and its
 trust remain disabled; operator-controlled global applies use `vouchington-infra`'s separately
 authorized exact saved-plan procedure.

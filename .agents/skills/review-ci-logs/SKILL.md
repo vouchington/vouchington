@@ -1,15 +1,15 @@
 ---
 name: review-ci-logs
-description: Audit Filaments GitHub Actions failures and misleading CI logs with the portable Vouchington workflow and local CI diagnosis policy.
+description: Audit Vouchington GitHub Actions failures and misleading CI logs with the portable Vouchington workflow and local CI diagnosis policy.
 ---
 
-# Filaments CI Log Review Adapter
+# Vouchington CI Log Review Adapter
 
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-workflow:review-ci-logs`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/review-ci-logs/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 First run `gh auth status` and resolve the repository with
 `gh repo view --json nameWithOwner --jq .nameWithOwner`. For a supplied run, inspect only that run.

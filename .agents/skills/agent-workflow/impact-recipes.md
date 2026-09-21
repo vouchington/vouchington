@@ -1,7 +1,7 @@
-# Filaments Impact Recipes
+# Vouchington Impact Recipes
 
 Use these recipes before changing a boundary that crosses packages, runtimes, or generated
-artifacts. Start with `no-mistakes`, then use the listed exact searches to cover Filaments-specific
+artifacts. Start with `no-mistakes`, then use the listed exact searches to cover Vouchington-specific
 joins that its graph does not model. The [archived generic recipes](https://github.com/jonathanong/filaments/blob/9c16169c0ef234bccd79aea5a50216505f0c8b7c/.agents/skills/no-mistakes/references/impact-recipes.md)
 remain the reference for React props, selectors, exports, and test deletion.
 
@@ -241,7 +241,7 @@ deduplication, or call disposition.
    pnpm exec no-mistakes queues edges <producer-or-worker-file> --format human
    ```
 
-   Empty output is not proof of no impact. Filaments wraps glide-mq with helpers such as
+   Empty output is not proof of no impact. Vouchington wraps glide-mq with helpers such as
    `createEnqueueFunction` and `createWorker`; an empty graph can mean that the wrapper is not
    supported. Continue with the fallback below.
 
@@ -284,5 +284,5 @@ deduplication, or call disposition.
    ```
 
 If a graph command misses a supported-looking relationship, preserve the exact command and minimal
-example when filing a Filaments `dependencies` issue for `no-mistakes`; do not silently treat the
+example when filing a Vouchington `dependencies` issue for `no-mistakes`; do not silently treat the
 missing edge as a safe boundary.

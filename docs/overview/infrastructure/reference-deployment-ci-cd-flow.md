@@ -57,7 +57,7 @@ checking out or rebuilding product source. PR and dependency-bot Storybook runs 
 For documentation, the successful trusted-main workflow uploads one protected
 `docs-<run-id>-<run-attempt>` artifact with one-day retention. It contains the generated OpenAPI
 HTML and source JSON plus the rendered PostgreSQL schema reference under its sole `docs/` root; the
-receiver selects that exact source-run artifact by immutable artifact ID. Filaments does not create
+receiver selects that exact source-run artifact by immutable artifact ID. Vouchington does not create
 the documentation landing page or hold provider credentials.
 
 For articles, the successful trusted-main workflow uploads one protected

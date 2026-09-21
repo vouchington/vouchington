@@ -8,9 +8,9 @@ description: Use when adding or changing web/** Vitest tests — the Next.js mod
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-testing:nextjs-vitest-test-authoring`; Grok, Cursor, and OpenCode read
-`node_modules/vouchington-tooling/skills/nextjs-vitest-test-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone. The local `web-vitest-test-authoring` name is intentionally retained as the Filaments-facing alias.
+`node_modules/vouchington-tooling/skills/nextjs-vitest-test-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone. The local `web-vitest-test-authoring` name is intentionally retained as the Vouchington-facing alias.
 
-## Filaments additions
+## Vouchington additions
 
 `web/**` is exempt from the non-web internal-module mock ban in
 [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) because Next.js client/server and lazy

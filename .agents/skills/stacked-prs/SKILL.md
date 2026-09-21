@@ -2,7 +2,7 @@
 name: stacked-prs
 description: |
   Recognize a native GitHub stacked pull request, or a PR whose base branch isn't `main`, and drain
-  it from the bottom-most ready layer up. Load whenever a PR is part of a stack: Filaments command
+  it from the bottom-most ready layer up. Load whenever a PR is part of a stack: Vouchington command
   catalog, ownership, concurrent per-PR shepherding, and human-gated per-layer merging.
 ---
 
@@ -16,9 +16,9 @@ the missing prerequisite; never apply this overlay alone. Decision owner for whe
 one source issue per PR, and the ~5k-changed-line split trigger: [Git And PRs](../agent-workflow/git-and-prs.md).
 This page is the CLI contract and procedure after that decision is already yes.
 
-## Filaments additions
+## Vouchington additions
 
-The remaining rules are Filaments-only mechanics, ownership, and the shepherd/merge procedure.
+The remaining rules are Vouchington-only mechanics, ownership, and the shepherd/merge procedure.
 
 ## Native GitHub stack mechanics
 

@@ -17,7 +17,7 @@ There is no main-branch coverage baseline or coverage history. Main workflows do
 
 The `coverage-check` package owns patch projection, manifest schema v2, payload integrity,
 partition validation, strict multi-source selection, and atomic canonical-output replacement.
-Filaments supplies only suite descriptors, run identity, and workflow orchestration. A manifest
+Vouchington supplies only suite descriptors, run identity, and workflow orchestration. A manifest
 binds the sparse LCOV to repository, suite/projects, revision,
 run and attempt, collector, exact LCOV digest, patch base/head and changed-line digest, plus a
 producer group/index/total. Fan-in therefore learns what shards exist from successful producers;

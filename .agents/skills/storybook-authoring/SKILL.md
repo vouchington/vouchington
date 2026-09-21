@@ -10,7 +10,7 @@ description: Use when adding or changing Storybook stories, reusable component c
 Claude Code and Codex load `vouchington-testing:storybook-authoring`; Grok, Cursor, and OpenCode read
 `node_modules/vouchington-tooling/skills/storybook-authoring/SKILL.md`. If the canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 Read [`web/storybook/CLAUDE.md`](../../../web/storybook/CLAUDE.md) before editing. Stories run
 twice: under `web-storybook` (Node, light) and `web-storybook-browser` (Vitest + Playwright

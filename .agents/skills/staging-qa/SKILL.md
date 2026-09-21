@@ -148,7 +148,7 @@ the mismatch is itself a docs bug.
 
 ## Staging database reset
 
-Filaments does not expose a staging reset workflow. Use the private infrastructure staging
+Vouchington does not expose a staging reset workflow. Use the private infrastructure staging
 database reset runbook (the "Staging database reset" step of the first-deploy checklist in the
 private `vouchington-infra` repository), which requires organization access.
 The manual procedure resets only the PostgreSQL `public` schema; it retains Valkey, queues, object

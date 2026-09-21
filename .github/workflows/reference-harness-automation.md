@@ -3,7 +3,7 @@
 [Back to Workflow Reference](WORKFLOWS.md#auto-harness-automation)
 
 Repository automation uses [Auto Harness](https://github.com/jonathanong/auto-harness) as a
-fire-and-forget agent dispatcher. Filaments retains trigger authorization, source freshness,
+fire-and-forget agent dispatcher. Vouchington retains trigger authorization, source freshness,
 transient retry, deduplication, prompt rendering, immediate failure reporting, and Shepherd
 checkpoint ownership. The selected Harness provider runs the task in an isolated worktree on a
 trusted host with repository-scoped git and GitHub CLI credentials.
@@ -107,7 +107,7 @@ The reusable workflow checks out `github.workflow_sha` without persisted credent
 persistent workspace, and invokes `ci/harness-session-dispatch.mts`, which delegates transport to
 the first-party `auto-harness-client` npm library. It sends a fixed, bounded metadata schema and an
 empty required-label list; the static `HARNESS_TARGET`/`HARNESS_FALLBACKS` route plus
-`HARNESS_REPOSITORY_ID` select the eligible Filaments worktree. Caller concurrency IDs are
+`HARNESS_REPOSITORY_ID` select the eligible Vouchington worktree. Caller concurrency IDs are
 namespaced with `filaments:`.
 
 ## Live execution boundary

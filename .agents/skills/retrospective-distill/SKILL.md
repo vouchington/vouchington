@@ -1,15 +1,15 @@
 ---
 name: retrospective-distill
-description: Distill Filaments agent-blackboard retrospective entries into actionable GitHub issues using the portable workflow and local issue policy.
+description: Distill Vouchington agent-blackboard retrospective entries into actionable GitHub issues using the portable workflow and local issue policy.
 ---
 
-# Filaments Retrospective Distillation Adapter
+# Vouchington Retrospective Distillation Adapter
 
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-workflow:retrospective-distill`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
 
-## Filaments additions
+## Vouchington additions
 
 ## Workflow
 
@@ -125,7 +125,7 @@ the record of the complete run.
 
 Use the hosted `agent-blackboard` connection documented in
 [agent-blackboard.md](../../../docs/development/agent-blackboard.md), then follow
-[distilling.md](distilling.md) for Filaments grouping and disposition policy. Create any issue via
+[distilling.md](distilling.md) for Vouchington grouping and disposition policy. Create any issue via
 [github-issue](../github-issue/SKILL.md), not by bypassing local taxonomy and duplicate checks.
 Keep deferred PR-creation-feedback themes eligible; re-evaluate a theme that names an issue, a PR,
 or a tracking issue closed without merging instead of treating its open state alone as conclusive.

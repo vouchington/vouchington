@@ -16,7 +16,7 @@ Repo-scoped Claude Code configuration. Each subdirectory is loaded by Claude Cod
 
 ## Required agent plugins
 
-The approved workflow skills are portable plugin skills with thin Filaments adapters, not copied
+The approved workflow skills are portable plugin skills with thin Vouchington adapters, not copied
 implementations. Claude Code project settings register the `vouchington` and `jonathanong`
 marketplaces and enable the workflow, testing, database, security-triage, and pr-shepherd plugins. Claude prompts for
 the required trust/install consent on first use:
@@ -54,7 +54,7 @@ be completed by a repository test.
 
 The upstream workflow, testing, and database plugins each ship one canonical `skills/` tree
 through both their `.claude-plugin` and `.codex-plugin` manifests. Claude Code and Codex adapters
-load the matching domain skill. Keep Filaments-specific rules in the local adapter or its linked
+load the matching domain skill. Keep Vouchington-specific rules in the local adapter or its linked
 documentation; do not fork portable guidance. An adapter must stop rather than applying its overlay
 alone if the canonical skill is unavailable.
 
