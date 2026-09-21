@@ -68,6 +68,7 @@
         "apple_foundation",
         "openai_compatible",
         "openai",
+        "openrouter",
         "windows_foundry"
       ],
       "type": "string"
@@ -197,183 +198,8 @@
       "required": ["agent_id", "created_at", "updated_at"],
       "type": "object"
     },
-    "AgentResponseRecord": {
-      "additionalProperties": false,
-      "properties": {
-        "agent": {
-          "const": "research"
-        },
-        "completed_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "created_by_id": {
-          "type": "string"
-        },
-        "deleted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "error": {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "message": {
-                  "type": "string"
-                }
-              },
-              "required": ["message"],
-              "type": "object"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "failed_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "input": {
-          "additionalProperties": false,
-          "properties": {
-            "context": {
-              "type": "string"
-            },
-            "task": {
-              "type": "string"
-            }
-          },
-          "required": ["task"],
-          "type": "object"
-        },
-        "job_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "model_name": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "model_provider": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "output": {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "content": {
-                  "type": "string"
-                }
-              },
-              "required": ["content"],
-              "type": "object"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "started_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "termination_reason": {
-          "anyOf": [
-            {
-              "const": "error"
-            },
-            {
-              "const": "max_iterations"
-            },
-            {
-              "const": "no_tool_calls"
-            },
-            {
-              "const": "stalled"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "updated_at": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "agent",
-        "completed_at",
-        "created_at",
-        "created_by_id",
-        "deleted_at",
-        "error",
-        "failed_at",
-        "id",
-        "input",
-        "job_id",
-        "model_name",
-        "model_provider",
-        "output",
-        "started_at",
-        "termination_reason",
-        "updated_at"
-      ],
-      "type": "object"
-    },
     "AgentType": {
-      "enum": ["autotagger", "moderator", "recommender", "storyteller"],
+      "enum": ["autotagger", "moderator", "storyteller"],
       "type": "string"
     },
     "AggregatedQueueStats": {
@@ -3383,9 +3209,6 @@
         },
         "topic_type": {
           "enum": ["card", "referral_program", "topic"],
-          "type": "string"
-        },
-        "topic_wikipedia_pageid": {
           "type": "string"
         }
       },
@@ -10982,9 +10805,6 @@
         "topic_type": {
           "enum": ["card", "referral_program", "topic"],
           "type": "string"
-        },
-        "topic_wikipedia_pageid": {
-          "type": "string"
         }
       },
       "type": "object"
@@ -12180,16 +12000,6 @@
                 "topic_type": {
                   "enum": ["card", "referral_program", "topic"],
                   "type": "string"
-                },
-                "topic_wikipedia_pageid": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
                 }
               },
               "required": [
@@ -12209,8 +12019,7 @@
                 "topic_markdown",
                 "topic_slug",
                 "topic_title",
-                "topic_type",
-                "topic_wikipedia_pageid"
+                "topic_type"
               ],
               "type": "object"
             },
@@ -19962,17 +19771,6 @@
         "type": "object"
       }
     },
-    "DELETE:/api/v1/agent-responses/:id": {
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"],
-        "type": "object"
-      }
-    },
     "DELETE:/api/v1/auth/oauth/:provider/connect": {
       "path": {
         "properties": {
@@ -21060,28 +20858,6 @@
             "type": "integer"
           }
         },
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/agent-responses/:id": {
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"],
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/agent-responses/:id/stream": {
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"],
         "type": "object"
       }
     },
@@ -24729,11 +24505,6 @@
       }
     },
     "POST:/api/v1/admin/warnings": {
-      "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
-      }
-    },
-    "POST:/api/v1/agent-responses": {
       "body": {
         "$ref": "#/components/schemas/Record_string_unknown"
       }
