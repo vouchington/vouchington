@@ -5,6 +5,7 @@ import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-mod
 
 function draft(overrides: Partial<CopyrightEmailApprovalDraft> = {}): CopyrightEmailApprovalDraft {
   return {
+    jurisdiction: 'us_dmca',
     claimant_display_name: '',
     claimant_contact: '',
     claimant_email: '',

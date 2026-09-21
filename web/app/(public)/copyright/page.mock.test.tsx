@@ -95,7 +95,14 @@ describe('copyright pages', () => {
   it('loads signed-in notice list, create, and staff queues', async () => {
     mockList.mockResolvedValue({
       copyright_notices: [
-        { id: 'notice-1', target_count: 1, accepted_at: '2026-07-01T00:00:00.000Z' },
+        {
+          id: 'notice-1',
+          jurisdiction: 'us_dmca',
+          received_at: '2026-07-01T00:00:00.000Z',
+          accepted_at: '2026-07-01T00:00:00.000Z',
+          provisional_withholding_at: null,
+          target_count: 1,
+        },
       ],
       page_info: { has_next_page: true, start_cursor: 'a', end_cursor: 'b' },
     })
