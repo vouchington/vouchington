@@ -51,7 +51,7 @@ describe('build-web workflow', () => {
     expect(steps[smoke]?.run).toContain('API_BASE_URL="http://host.docker.internal:$BACKEND_PORT"')
   })
 
-  it('keeps Sentry credentials out of validation builds and scopes them to trusted publication', () => {
+  it('keeps Sentry credentials out of validation builds and makes trusted publication uploads optional', () => {
     const buildWebSource = readFileSync('.github/workflows/build-web.yml', 'utf8')
     const compositeActionSource = readFileSync(
       '.github/actions/build-web-images/action.yml',
@@ -74,11 +74,11 @@ describe('build-web workflow', () => {
     )
     expect(compositeActionSource).not.toContain('ARG SENTRY_AUTH_TOKEN')
     expect(compositeActionSource).not.toContain('ENV SENTRY_AUTH_TOKEN')
-    expect(publishSource).toContain('SENTRY_AUTH_TOKEN:')
-    expect(publishSource).toContain('required: true')
-    expect(publishSource).toContain('[ -z "${SENTRY_AUTH_TOKEN:-}" ]')
-    expect(publishSource).toContain('exit 1')
-    expect(publishSource).toContain("sentry-source-map-upload: 'true'")
+    expect(publishSource).toContain('SENTRY_AUTH_TOKEN:\n        required: false')
+    expect(publishSource).not.toContain('Verify Sentry source-map upload credentials')
+    expect(publishSource).toContain(
+      "sentry-source-map-upload: ${{ secrets.SENTRY_AUTH_TOKEN != '' && 'true' || 'false' }}",
+    )
     expect(publishSource).toContain('sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}')
     expect(publishSource).toContain('trusted_secret_context')
     expect(mainWebSource).toContain('trusted_secret_context: true')

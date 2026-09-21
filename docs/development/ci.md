@@ -54,6 +54,11 @@ after a branch switch: they aggregate results that earlier steps already made av
 
 Cache keys that use `hashFiles` must target source files and manifests rather than broad directories, and package source globs must stay scoped to first-party package/source paths so dependency trees are not traversed while keys are evaluated. Web-stack test jobs must clear Next.js runtime output and Wrangler/Miniflare state before tests because stale caches have caused false failures; only explicit performance caches such as `web/.next/cache` may be restored, and those keys must invalidate often. Vouchington image workflows build validation-local images. Backend uses one bounded Bake invocation per job for either API plus worker-cpu or all three images, so the selected targets share one cache-busted builder solve without a remote cache. Web alone reads and writes its GHA cache. Any repository-independent remote-cache or performance design is owned by a separate initiative (formerly filed as jonathanong/filaments#10864). Private infrastructure owns production ECR image publication.
 
+Trusted main-branch web image publication keeps `SENTRY_AUTH_TOKEN` optional. A configured token
+enables Sentry release creation and source-map upload during the image build; without one, the
+validated image still publishes to GHCR without source maps. The Docker smoke and Trivy gates do
+not depend on this optional integration. See the [deploy and release workflow reference](../../.github/workflows/reference-deploy-and-release.md).
+
 GitHub-hosted runners are ephemeral and single-job-per-VM, so repository workflows do not use
 shared-host admission locks, host-pressure diagnostics, or deterministic runner port slices.
 `next build` still caps its page-data worker pool from the smaller positive physical or cgroup

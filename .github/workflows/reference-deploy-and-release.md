@@ -17,6 +17,10 @@ artifact publication and every deployment mutation. A successful dispatch is not
 evidence, so operators must verify the matching private receiver run. See the
 [deployment CI/CD reference](../../docs/overview/infrastructure/reference-deployment-ci-cd-flow.md#operations-and-failure-handling).
 
+Trusted web image publication does not require `SENTRY_AUTH_TOKEN`. When that repository secret is
+present, the build creates a Sentry release and uploads source maps; otherwise it publishes the
+validated image without source maps. The image build, smoke test, and Trivy gate run in either case.
+
 Filaments has no production application-deployment workflow. The global CI apply workflow and its
 trust remain disabled; operator-controlled global applies use `vouchington-infra`'s separately
 authorized exact saved-plan procedure.

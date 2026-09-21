@@ -12,7 +12,7 @@ on:
       AWS_TEST_ROLE_ARN:
         required: true
       SENTRY_AUTH_TOKEN:
-        required: true
+        required: false
 permissions:
   actions: read
   contents: read
@@ -35,15 +35,6 @@ jobs:
       IMAGE_REPOSITORY: voucha-validation
       SHA_TAG: sha-${{ github.sha }}
     steps:
-      - name: Verify Sentry source-map upload credentials
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: |
-          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
-            echo "::error::SENTRY_AUTH_TOKEN is required to publish web source maps."
-            exit 1
-          fi
-
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -57,7 +48,7 @@ jobs:
         with:
           next-public-asset-prefix: ${{ vars.NEXT_PUBLIC_ASSET_PREFIX }}
           sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          sentry-source-map-upload: 'true'
+          sentry-source-map-upload: ${{ secrets.SENTRY_AUTH_TOKEN != '' && 'true' || 'false' }}
           sentry-release: ${{ github.sha }}
 
       # Deliberately the last step in the job. Everything published here has already passed the
