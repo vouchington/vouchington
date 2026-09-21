@@ -74,7 +74,7 @@
     "@voucha/config": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/rss-parser": "0.0.1",
+    "@vouchington/rss-parser": "0.1.0",
     "uuid": "^14.0.2"
   }
 }

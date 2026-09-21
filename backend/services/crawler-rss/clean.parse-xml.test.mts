@@ -45,6 +45,8 @@ describe('parseRssFeedItemsFromXml', () => {
     <updated>2024-01-01T00:00:00Z</updated>
     <entry>
       <title>Atom Item</title>
+      <summary type="html">Atom &lt;em&gt;summary&lt;/em&gt;</summary>
+      <content type="html">Atom &lt;p&gt;content&lt;/p&gt;</content>
       <id>urn:uuid:entry-1</id>
       <link href="https://example.com/atom-item" />
       <updated>2024-01-01T00:00:00Z</updated>
@@ -56,6 +58,8 @@ describe('parseRssFeedItemsFromXml', () => {
       link: 'https://example.com/atom-item',
       guid: 'urn:uuid:entry-1',
       title: 'Atom Item',
+      summary: 'Atom <em>summary</em>',
+      content: 'Atom <p>content</p>',
     })
   })
 

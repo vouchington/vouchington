@@ -37,4 +37,21 @@ describe('fetchAndClassifyFeed — feed type classification', () => {
 
     expect(result).toEqual({ kind: 'feed', title: 'Test Feed', feedType: 'article' })
   })
+
+  it('keeps the title of a parsed Atom feed', async () => {
+    const atom = `<feed xmlns="http://www.w3.org/2005/Atom">
+      <title>Atom Feed</title><id>urn:feed</id><updated>2026-09-21T00:00:00Z</updated>
+      <entry><title>Entry</title><id>urn:entry</id><updated>2026-09-21T00:00:00Z</updated>
+        <link href="https://example.com/entry" /></entry>
+    </feed>`
+    const feed = parseFeedDocument(Buffer.from(atom)).feed
+    const crawlerRss = vi.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({
+      ...MOCK_FEED_RESPONSE,
+      feed,
+    })
+
+    const result = await fetchAndClassifyFeed('https://example.com/atom.xml', { crawlerRss })
+
+    expect(result).toEqual({ kind: 'feed', title: 'Atom Feed', feedType: 'article' })
+  })
 })

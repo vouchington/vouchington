@@ -33,6 +33,11 @@ export function itemContentEncoded(item: Record<string, unknown>): string | unde
   return typeof raw === 'string' ? raw : undefined
 }
 
+export function feedTextValue(value: unknown): string | undefined {
+  if (typeof value === 'string') return value
+  return hasStringValue(value) ? value.value : undefined
+}
+
 /** Normalize categories to string[] (feedsmith uses { name } or string) */
 export function itemCategories(item: Record<string, unknown>): string[] {
   const cat = item.categories

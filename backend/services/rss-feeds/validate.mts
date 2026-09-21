@@ -1,5 +1,6 @@
 import CrawlerRss from '@services/crawler-rss'
 import { classifyFeedType } from '@services/rss-feed-items/media-classify'
+import { feedTextValue } from '@services/rss-feed-items/clean-helpers'
 import { buildRssFeedItemsFromFeed } from '@services/crawler-rss/clean'
 import assert from 'http-assert'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
@@ -163,8 +164,9 @@ export async function fetchAndClassifyFeed(
  */
 export function extractFeedTitle(parsedFeed: Record<string, unknown>): string | null {
   const title =
-    parsedFeed['title'] ?? (parsedFeed['channel'] as Record<string, unknown> | undefined)?.['title']
-  if (typeof title !== 'string') return null
+    feedTextValue(parsedFeed['title']) ??
+    feedTextValue((parsedFeed['channel'] as Record<string, unknown> | undefined)?.['title'])
+  if (title === undefined) return null
   const trimmed = title.trim().slice(0, 255)
   return trimmed || null
 }

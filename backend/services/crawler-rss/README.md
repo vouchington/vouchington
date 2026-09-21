@@ -15,6 +15,11 @@ parsing, and raw-byte hashing. This adapter retains the Voucha user agent and co
 SSRF-pinned transport, timeout and response-size policy, typed crawler errors, raw redirect locations,
 and crawler analytics.
 
+`clean.mts` converts parsed entries into stored feed items. Atom text fields may arrive as
+`{ value, type }` objects; the adapter extracts `value` for title, summary, and content while
+keeping string fields from RSS and JSON Feed unchanged.
+`rss-feeds/validate.mts` applies the same normalization when naming an Atom feed.
+
 Malformed feed bodies emit failed RSS crawler analytics with `error_type='ParseFeedError'`; valid parsed feeds emit success only after parsing completes.
 
 ## Related
