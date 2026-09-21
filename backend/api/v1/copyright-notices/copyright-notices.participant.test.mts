@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { createHash } from 'node:crypto'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'

@@ -132,8 +132,8 @@ function currentPlacement(target: {
 }
 
 async function createRestoreIntent(input: {
-  claimant: { id: string; roles: string[] }
-  moderator: { id: string; roles: string[] }
+  claimant: { id: string; roles: readonly string[] }
+  moderator: { id: string; roles: readonly string[] }
   noticeId: string
   restrictionId: string
   target: { id: string; placement_revision: number }
