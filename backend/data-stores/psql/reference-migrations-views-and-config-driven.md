@@ -147,6 +147,15 @@ failure blocks the backend deploy instead of silently proceeding on top of a bro
 check attempts automated schema repair -- compare the live database against `schema.json`, or
 re-review the edited file, to find and fix the drifted object(s) by hand.
 
+The migration task reports these phases separately. If application has not completed, its error
+says that earlier schema changes may already have committed and the ledger needs inspection. Once
+application completes, a failed post-commit hook reports that the hook did not complete. A rejected
+catalog read or schema mismatch reports that migrations committed but verification did not succeed,
+with the original error as its cause. All paths exit nonzero;
+neither logs `Migrations complete!`. An unrelated idle connection loss is reported through
+`onError` but does not fail a verification whose catalog reads and comparison succeed. See the
+[connection model](reference-connection-model.md) for the pool error boundary.
+
 **Extension versions are excluded from the schema-verification comparison.**
 `verifyLiveSchemaMatchesSnapshot` normalizes every `extensions.<name>.version` field before
 comparing -- AWS Aurora, Homebrew, and any CI Postgres image each install whatever extension

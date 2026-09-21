@@ -1625,8 +1625,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: 0.0.8
-        version: 0.0.8
+        specifier: 0.0.9
+        version: 0.0.9
       pg:
         specifier: ^8.23.0
         version: 8.23.0
@@ -18302,6 +18302,10 @@ packages:
     resolution: {integrity: sha512-cZ0ElStrepidDFHFEN2PrAGVvZqEbx6QV2bP6sRI8hqHyynUAWSLj9l8h2K0XwhF0oQOP120d2OaV6tYSLeUBg==}
     engines: {node: '>=24.0.0'}
 
+  '@vouchington/postgres@0.0.9':
+    resolution: {integrity: sha512-0TLKFmnd0okidSPHiR8fLR2iYlvhr3zmJKngGPBVsZqtAYRyt/8kueBCvIParmYWIXAiBSnArxcBlmBB5KRV/w==}
+    engines: {node: '>=24.0.0'}
+
   '@vouchington/queue-errors@0.1.1':
     resolution: {integrity: sha512-DVZU3/q2cDLbBtgrpQszXld8tTKBy9Zmx9LcEoHIuDDcXm5PAeJPe2VFZo5QdUAFPvV+J91DroOJidFC4WcfpA==}
     engines: {node: '>=24.0.0'}
@@ -27299,6 +27303,16 @@ snapshots:
       phone: 3.1.71
 
   '@vouchington/postgres@0.0.8':
+    dependencies:
+      '@libpg-query/parser': 18.0.0
+      pg: 8.23.0
+      pg-cursor: 2.22.0(pg@8.23.0)
+      pgvector: 0.3.0
+      sql-template-strings: 2.2.2
+    transitivePeerDependencies:
+      - pg-native
+
+  '@vouchington/postgres@0.0.9':
     dependencies:
       '@libpg-query/parser': 18.0.0
       pg: 8.23.0

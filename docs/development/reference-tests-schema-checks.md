@@ -2,6 +2,10 @@
 
 [Back to Tests and Checks](tests.md#schema-checks)
 
+The production migration task checks the live schema after applying migrations. Its committed
+versus unverified failure reporting and connection-loss behavior are documented in
+[Migrations, Views, and Config-Driven](../../backend/data-stores/psql/reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
+
 PostgreSQL final-state schema invariants run as the `backend-postgres-schema` Vitest project:
 `pnpm run test:backend:postgres-schema` after `./dev/initialize web`, `source .env`, and
 `export READ_DATABASE_URL="$DATABASE_URL"; pnpm --dir backend run db:clean && pnpm run db:migrate`.

@@ -1,6 +1,7 @@
 import { realpathSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import onError, { flushSentry } from '@modules/on-error'
 import {
   cleanupPartitions,
   createMonthlyPartitions,
@@ -77,6 +78,7 @@ async function applyMigrationsInSession(
 }
 
 export type VerifySchemaAfterMigration = () => Promise<void>
+type MigrationPhase = 'application' | 'post-commit' | 'verification'
 
 export async function runAllMigrations(
   options: {
@@ -91,12 +93,17 @@ export async function runAllMigrations(
   const exit = options.exit ?? process.exit
   const logger = options.logger ?? console
   const verifySchema = options.verifySchema ?? verifyLiveSchemaMatchesSnapshot
+  const state: { phase: MigrationPhase } = { phase: 'application' }
   try {
     const applyOptions: Parameters<typeof apply>[1] = {
       forced: process.argv.includes('--forced'),
+      afterCommit: async () => {
+        state.phase = 'post-commit'
+        await options.afterCommit?.()
+      },
     }
-    if (options.afterCommit) applyOptions.afterCommit = options.afterCommit
     await apply(__dirname, applyOptions)
+    state.phase = 'verification'
     // Confirms the live schema actually matches what the migration ledger claims was applied.
     // This is what would have caught the incident: a migration file edited in place after
     // staging already ran the old version left staging with a missing column and a missing
@@ -105,8 +112,17 @@ export async function runAllMigrations(
     await verifySchema()
     logger.log('Migrations complete!')
   } catch (err) {
-    logger.error(err)
-    exit(1)
+    const message =
+      state.phase === 'verification'
+        ? 'Migrations committed, but schema verification did not complete successfully.'
+        : state.phase === 'post-commit'
+          ? 'Migrations committed, but the post-commit hook did not complete successfully.'
+          : 'Migration application did not complete; previously applied schema changes may have committed.'
+    const failure = new Error(message, { cause: err })
+    logger.error(failure)
+    onError(failure)
+    await flushSentry()
+    return exit(1)
   }
   exit(0)
 }

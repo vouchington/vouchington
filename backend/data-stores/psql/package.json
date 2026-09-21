@@ -28,7 +28,7 @@
     "@modules/utils": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/postgres": "0.0.8",
+    "@vouchington/postgres": "0.0.9",
     "pg": "^8.23.0",
     "sql-template-strings": "^2.2.2"
   },

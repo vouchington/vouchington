@@ -11,6 +11,11 @@
   work may need ordinary write clients; isolating them prevents lock holders from saturating
   `writePool` and lets unrelated lock keys progress concurrently
 
+The shared runtime routes each pool's idle-client `error` event to this adapter's `onError`
+handler. PostgreSQL can close an idle connection during auto-pause or failover; the pool discards
+that client and can open another. A query using a terminated connection instead rejects its query
+promise. An idle-client event alone does not mean that a concurrent schema read failed.
+
 Pool configuration includes:
 
 - `statement_timeout = 30s` (production/dev). In tests `getPsqlPoolConfiguration()` sets this to

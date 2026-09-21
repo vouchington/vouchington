@@ -5,11 +5,12 @@ import { join } from 'node:path'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import { read, write } from './index.mts'
+import { read, readPool, write } from './index.mts'
 import {
   applyAllMigrations,
   runAllMigrations,
   runMigrations,
+  type PostCommitMigrationHook,
   type VerifySchemaAfterMigration,
 } from './migrate.mts'
 
@@ -23,7 +24,10 @@ describe('applyAllMigrations', () => {
 
     try {
       await runAllMigrations({ apply, exit, logger, verifySchema })
-      expect(apply).toHaveBeenCalledWith(expect.any(String), { forced: true })
+      expect(apply).toHaveBeenCalledWith(expect.any(String), {
+        forced: true,
+        afterCommit: expect.any(Function),
+      })
       expect(verifySchema).toHaveBeenCalledTimes(1)
       expect(exit).toHaveBeenNthCalledWith(1, 0)
       expect(logger.error).not.toHaveBeenCalled()
@@ -42,9 +46,112 @@ describe('applyAllMigrations', () => {
     await runAllMigrations({ apply, exit, logger, verifySchema })
 
     expect(verifySchema).toHaveBeenCalledTimes(1)
-    expect(logger.error).toHaveBeenCalledWith(drift)
-    expect(exit).toHaveBeenNthCalledWith(1, 1)
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('committed, but schema verification did not complete'),
+        cause: drift,
+      }),
+    )
+    expect(exit).toHaveBeenCalledExactlyOnceWith(1)
     expect(logger.log).not.toHaveBeenCalledWith('Migrations complete!')
+  })
+
+  it('reports a terminated verification query as committed but unverified', async () => {
+    const apply = vi.fn<typeof applyAllMigrations>().mockResolvedValue(undefined)
+    const exit = vi.fn<typeof process.exit>()
+    const logger = { error: vi.fn<(error: unknown) => void>(), log: vi.fn<() => void>() }
+    const verifySchema = vi.fn<VerifySchemaAfterMigration>(async () => {
+      await read('/* verifyTerminatedSchemaRead */ SELECT pg_terminate_backend(pg_backend_pid())')
+    })
+
+    await runAllMigrations({ apply, exit, logger, verifySchema })
+
+    expect(verifySchema).toHaveBeenCalledTimes(1)
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('committed, but schema verification did not complete'),
+        cause: expect.objectContaining({ code: '57P01' }),
+      }),
+    )
+    expect(logger.log).not.toHaveBeenCalledWith('Migrations complete!')
+    expect(exit).toHaveBeenCalledExactlyOnceWith(1)
+  })
+
+  it('reports application failures separately from verification failures', async () => {
+    const failure = new Error('migration DDL failed')
+    const apply = vi.fn<typeof applyAllMigrations>().mockRejectedValue(failure)
+    const exit = vi.fn<typeof process.exit>()
+    const logger = { error: vi.fn<(error: unknown) => void>(), log: vi.fn<() => void>() }
+    const verifySchema = vi.fn<VerifySchemaAfterMigration>().mockResolvedValue(undefined)
+
+    await runAllMigrations({ apply, exit, logger, verifySchema })
+
+    expect(verifySchema).not.toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('Migration application did not complete'),
+        cause: failure,
+      }),
+    )
+    expect(logger.log).not.toHaveBeenCalledWith('Migrations complete!')
+    expect(exit).toHaveBeenCalledExactlyOnceWith(1)
+  })
+
+  it('reports a failed post-commit hook after migration application committed', async () => {
+    const failure = new Error('post-commit enqueue failed')
+    const apply = vi.fn<typeof applyAllMigrations>(async (_rootDir, options) => {
+      await options?.afterCommit?.()
+    })
+    const afterCommit = vi.fn<PostCommitMigrationHook>().mockRejectedValue(failure)
+    const exit = vi.fn<typeof process.exit>()
+    const logger = { error: vi.fn<(error: unknown) => void>(), log: vi.fn<() => void>() }
+    const verifySchema = vi.fn<VerifySchemaAfterMigration>().mockResolvedValue(undefined)
+
+    await runAllMigrations({ apply, afterCommit, exit, logger, verifySchema })
+
+    expect(verifySchema).not.toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('post-commit hook did not complete'),
+        cause: failure,
+      }),
+    )
+    expect(logger.log).not.toHaveBeenCalledWith('Migrations complete!')
+    expect(exit).toHaveBeenCalledExactlyOnceWith(1)
+  })
+
+  it('succeeds when an idle connection dies but verification completes', async () => {
+    await write('/* warmMigrationControlPool */ SELECT 1')
+    const apply = vi.fn<typeof applyAllMigrations>().mockResolvedValue(undefined)
+    const exit = vi.fn<typeof process.exit>()
+    const logger = { error: vi.fn<(error: unknown) => void>(), log: vi.fn<() => void>() }
+    const client = await readPool.connect()
+    const { rows } = await client.query<{ pid: number }>(
+      '/* findIdleVerificationConnection */ SELECT pg_backend_pid() AS pid',
+    )
+    client.release()
+    const pid = rows[0]?.pid
+    if (pid === undefined) throw new Error('Expected a PostgreSQL backend PID')
+    const poolCountBeforeTermination = readPool.totalCount
+    const verifySchema = vi.fn<VerifySchemaAfterMigration>(async () => {
+      const terminated = await write<{ terminated: boolean }>(
+        '/* terminateIdleVerificationConnection */ SELECT pg_terminate_backend($1) AS terminated',
+        [pid],
+      )
+      expect(terminated.rows[0]?.terminated).toBe(true)
+      await vi.waitFor(() => expect(readPool.totalCount).toBeLessThan(poolCountBeforeTermination))
+      const schemaRead = await read<{ migration_table: string | null }>(
+        "/* verifyReadAfterIdleTermination */ SELECT to_regclass('migrations')::text AS migration_table",
+      )
+      expect(schemaRead.rows).toEqual([{ migration_table: 'migrations' }])
+    })
+
+    await runAllMigrations({ apply, exit, logger, verifySchema })
+
+    expect(verifySchema).toHaveBeenCalledTimes(1)
+    expect(logger.error).not.toHaveBeenCalled()
+    expect(logger.log).toHaveBeenCalledWith('Migrations complete!')
+    expect(exit).toHaveBeenCalledExactlyOnceWith(0)
   })
 
   it('applies package SQL migrations through the platform runner', async () => {
