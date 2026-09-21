@@ -3,7 +3,8 @@ import { write, type QueryExecutor } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { OAuthProtocolError, invalidClientMetadata, invalidRequest } from './errors.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
-import { assertScopeSubset, parseOAuthScopes, validateRedirectUris } from './validation.mts'
+import { validateRedirectUris } from './redirect-uri-validation.mts'
+import { assertScopeSubset, parseOAuthScopes } from './validation.mts'
 import type {
   OAuthClient,
   OAuthClientAuthMethod,
