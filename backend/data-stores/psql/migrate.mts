@@ -1,6 +1,7 @@
 import { realpathSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import onError, { flushSentry } from '@modules/on-error'
 import {
   cleanupPartitions,
   createMonthlyPartitions,
@@ -91,12 +92,14 @@ export async function runAllMigrations(
   const exit = options.exit ?? process.exit
   const logger = options.logger ?? console
   const verifySchema = options.verifySchema ?? verifyLiveSchemaMatchesSnapshot
+  let migrationsApplied = false
   try {
     const applyOptions: Parameters<typeof apply>[1] = {
       forced: process.argv.includes('--forced'),
     }
     if (options.afterCommit) applyOptions.afterCommit = options.afterCommit
     await apply(__dirname, applyOptions)
+    migrationsApplied = true
     // Confirms the live schema actually matches what the migration ledger claims was applied.
     // This is what would have caught the incident: a migration file edited in place after
     // staging already ran the old version left staging with a missing column and a missing
@@ -105,8 +108,16 @@ export async function runAllMigrations(
     await verifySchema()
     logger.log('Migrations complete!')
   } catch (err) {
-    logger.error(err)
-    exit(1)
+    const failure = new Error(
+      migrationsApplied
+        ? 'Migrations committed, but schema verification did not complete successfully.'
+        : 'Migration application did not complete; previously applied schema changes may have committed.',
+      { cause: err },
+    )
+    logger.error(failure)
+    onError(failure)
+    await flushSentry()
+    return exit(1)
   }
   exit(0)
 }
