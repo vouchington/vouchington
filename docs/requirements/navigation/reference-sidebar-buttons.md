@@ -51,7 +51,6 @@ color, background, or inset ring/shadow treatments instead.
 | **Users & Friends**              | Users                                                    | `/users`                      | —      | yes  | yes   | yes      |
 |                                  | Find Friends                                             | `/my/friend-recommendations`  | —      | yes  | yes   | yes      |
 | **CMS**                          | URLs                                                     | `/urls`                       | —      | —    | yes   | —        |
-|                                  | Agents                                                   | `/agents`                     | —      | —    | yes   | —        |
 |                                  | Review Queue                                             | `/posts/review-queue`         | —      | —    | yes   | —        |
 |                                  | Moderation Analytics                                     | `/admin/moderation-analytics` | —      | —    | yes   | —        |
 |                                  | Recommend New Topics (page: "New Topic Recommendations") | `/topic-recommendations`      | —      | yes  | yes   | yes      |

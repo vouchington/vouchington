@@ -32,10 +32,6 @@ describe('getActiveIntent', () => {
   })
 
   describe('engineering intent', () => {
-    it('resolves /agents to engineering', () => {
-      expect(getActiveIntent('/agents')).toBe('engineering')
-    })
-
     it('resolves /admin/queues to engineering', () => {
       expect(getActiveIntent('/admin/queues')).toBe('engineering')
     })

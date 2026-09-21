@@ -12,7 +12,6 @@ Each row describes one admin action: its UI label, description, route, file path
 - <a id="rss_feed_item_category"></a>[`rss_feed_item_category`](reference-rssfeeditemcategory.md)
 - <a id="topic_recommendation"></a>[`topic_recommendation`](reference-topicrecommendation.md)
 - <a id="curated_aside_item"></a>[`curated_aside_item`](reference-curatedasideitem.md)
-- <a id="agent"></a>[`agent`](reference-agent.md)
 - <a id="post"></a>[`post`](reference-admin-navigation-matrix-post.md)
 - <a id="vote_integrity_flag"></a>[`vote_integrity_flag`](reference-voteintegrityflag.md)
 - <a id="crm_contact"></a>[`crm_contact`](reference-crmcontact.md)

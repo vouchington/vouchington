@@ -127,11 +127,6 @@ export const ADMIN_INTENTS: readonly NavIntent[] = [
         roles: ['administrator'] as const,
         items: [
           {
-            label: 'extracted.intents.admin.agents_279b44d2',
-            href: '/agents',
-            dataPw: 'sidebar-link-agents',
-          },
-          {
             label: 'extracted.intents.admin.queues_be77db11',
             href: '/admin/queues',
             dataPw: 'sidebar-link-queues',

@@ -32,9 +32,6 @@ Full exported helper list from `entity-href.ts`. Directory-scoped invariants: [C
 - `communityPostsHref(community)` — builds `/communities/{slug}/posts`
 - `communityPendingPostsHref(community)` — builds `/communities/{slug}/posts?post=pending`; use this for approval-required community post redirects
 - `createCommunityPathname(community, suffix?)` — builds `/communities/{slug}{suffix}` for community sub-routes
-- `agentHref(agent)` — builds `/agent/{slug ?? id}` (slug-preferred)
-- `createAgentPathname(agent, suffix?)` — builds `/agent/{slug ?? id}{suffix}` for agent sub-routes
-- `agentConversationHref(agent, conversation)` — builds `/agent/{slug ?? id}/conversation/{id}`
 - `chatSupportThreadHref(thread)` — builds `/chat/support/{id}`
 - `messagesHref(conversation)` — builds `/messages/{id}`
 - `modmailThreadHref(community, thread)` — builds `/messages/modmail/{slug}/{id}`

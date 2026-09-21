@@ -536,7 +536,6 @@ Feature specifications, rules, and policies.
 - [Admin Navigation Matrix reference](requirements/reference-admin-navigation-matrix-table-a-entity-surface-actions-navigation.md)
 - [Admin Navigation Matrix reference](requirements/reference-admin-navigation-matrix-table-b-entity-action-description.md)
 - [Admin Navigation Matrix `topic` actions](requirements/reference-admin-navigation-matrix-topic.md)
-- [Agent reference](requirements/reference-agent.md)
 - [Client Parity Matrix reference](requirements/reference-client-parity-matrix-legend.md)
 - [Client Parity Matrix reference](requirements/reference-client-parity-matrix-table-a-cross-cutting-capabilities.md)
 - [Client Parity Matrix reference](requirements/reference-client-parity-matrix-table-b-domain-surfaces.md)

@@ -62,21 +62,6 @@ export function reviewHref(review: string | OptionalSlugInput): string {
   return createPostPathname('review', review)
 }
 
-export function createAgentPathname(agent: string | OptionalSlugInput, suffix = ''): string {
-  return `/agent/${optionalSlugOrId(agent)}${suffix}`
-}
-
-export function agentHref(agent: OptionalSlugInput): string {
-  return `/agent/${optionalSlugOrId(agent)}`
-}
-
-export function agentConversationHref(
-  agent: string | OptionalSlugInput,
-  conversation: string | IdInput,
-) {
-  return createAgentPathname(agent, `/conversation/${idOrValue(conversation)}`)
-}
-
 export function chatSupportThreadHref(thread: string | IdInput): string {
   return `/chat/support/${idOrValue(thread)}`
 }

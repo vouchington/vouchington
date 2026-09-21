@@ -1,7 +1,7 @@
 // GENERATED FILE - do not edit by hand.
 // Regenerate: node static-code-analysis/i18n-extract/route-selector-map.mts
 // Verify:     node static-code-analysis/i18n-extract/route-selector-map.mts --check
-export const WEB_CHROME_SELECTOR = 'web.chrome.fa02e8f957d6eefa'
+export const WEB_CHROME_SELECTOR = 'web.chrome.bcfef08e9553de5b'
 // oxfmt-ignore
 export const ROUTE_SELECTORS = [
   { pattern: "/", selectorId: "web.route.af63a24c860189fe.50730295d8eb2790", hasMembership: true },
@@ -16,9 +16,6 @@ export const ROUTE_SELECTORS = [
   { pattern: "/admin/queues", selectorId: "web.route.810a90778cfe5da6.fd68176fd9da1fb0", hasMembership: true },
   { pattern: "/admin/topic-claims", selectorId: "web.route.139d536f5af97a41.2c0c86fb1b76cc7a", hasMembership: true },
   { pattern: "/admin/valkey", selectorId: "web.route.669a33444624b5a4.32042a38e7c4d98f", hasMembership: true },
-  { pattern: "/agent/[idOrSlug]", selectorId: "web.route.44a6af91a28ced31.1f694427004ef06e", hasMembership: true },
-  { pattern: "/agent/[idOrSlug]/conversation/[id]", selectorId: "web.route.8f1d64537c0861d1.afc2f02a7a83244a", hasMembership: true },
-  { pattern: "/agents", selectorId: "web.route.e9db6b5aa06029e8.7ee4f9af6cfb358e", hasMembership: true },
   { pattern: "/appeals", selectorId: "web.route.badce6ec57f5faca.b89ae01d968bc8cf", hasMembership: true },
   { pattern: "/article/[id]", selectorId: "web.route.1c1d846e0ef4a62a.ba67637276d87413", hasMembership: true },
   { pattern: "/article/[id]/comment/[commentId]", selectorId: "web.route.8a3dc0c7a5506775.54953231a203d0b5", hasMembership: true },

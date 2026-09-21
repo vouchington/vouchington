@@ -112,12 +112,6 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       ),
     },
     {
-      // AgentDetail is an async Server Component (calls getTranslations(), which reaches
-      // next/headers). React 19 cannot render async components client-side, so stub it.
-      find: '@/components/agents/agent-detail',
-      replacement: fileURLToPath(new URL('../storybook/mocks/agent-detail.tsx', import.meta.url)),
-    },
-    {
       // ValidationsListTable is an async Server Component (calls getTranslations(), which
       // reaches next/headers). React 19 cannot render async components client-side, so stub it.
       find: '@/components/admin/referral-link-validations/validations-list-table',

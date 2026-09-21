@@ -73,13 +73,6 @@ test.describe('Admin command palette navigation', () => {
     await expectPageHeading(page, 'URLs')
   })
 
-  test('Agents → /agents', async ({ page }) => {
-    await navigateTo(page, '/')
-    await openPaletteAndNavigate(page, 'Agents')
-    await expect(page).toHaveURL(/\/agents/)
-    await expectPageHeading(page, 'Agents')
-  })
-
   test('PostgreSQL → /admin/postgresql', async ({ page }) => {
     await navigateTo(page, '/')
     await openPaletteAndNavigate(page, 'PostgreSQL')

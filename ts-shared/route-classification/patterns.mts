@@ -21,7 +21,6 @@ import {
 
 export const PRIVATE_DISCOVERY_EXACT_PATHS: ReadonlySet<string> = new Set([
   '/admin',
-  '/agents',
   '/api',
   '/auth',
   '/crm',
@@ -57,8 +56,6 @@ export const PRIVATE_DISCOVERY_EXACT_PATHS: ReadonlySet<string> = new Set([
 export const PRIVATE_DISCOVERY_PREFIXES: readonly string[] = [
   '/_next/',
   '/admin/',
-  '/agent/',
-  '/agents/',
   '/api/',
   '/auth/',
   '/chat/',

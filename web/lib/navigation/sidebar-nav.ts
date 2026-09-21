@@ -104,9 +104,5 @@ export function isNavItemActive(
   if (href === '/users') {
     return isActivePath(pathname, '/users')
   }
-  if (href === '/agents') {
-    return isActivePath(pathname, '/agents') || pathname.startsWith('/agent/')
-  }
-
   return isActivePath(pathname, href)
 }
