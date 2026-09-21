@@ -3346,18 +3346,12 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../data-stores/psql
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../data-stores/valkey-glide-mq
       '@modules/csv':
         specifier: workspace:^
         version: link:../modules/csv
       '@modules/on-error':
         specifier: workspace:^
         version: link:../modules/on-error
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../modules/scheduled-job-manifest
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../modules/token-secrets
@@ -3445,6 +3439,9 @@ importers:
       '@services/prioritized-referral-links':
         specifier: workspace:^
         version: link:../services/prioritized-referral-links
+      '@services/queue-monitoring':
+        specifier: workspace:^
+        version: link:../services/queue-monitoring
       '@services/recently-viewed':
         specifier: workspace:^
         version: link:../services/recently-viewed
@@ -8088,6 +8085,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
       '@modules/worker-queue-inventory':
         specifier: workspace:^
         version: link:../../modules/worker-queue-inventory

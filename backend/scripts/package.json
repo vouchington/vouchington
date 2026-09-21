@@ -22,10 +22,8 @@
   "dependencies": {
     "@backend/service-registrations": "workspace:^",
     "@data-stores/psql": "workspace:^",
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/csv": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/scheduled-job-manifest": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/vote-weight": "workspace:^",
@@ -55,6 +53,7 @@
     "@services/platform-stats": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
+    "@services/queue-monitoring": "workspace:^",
     "@services/recently-viewed": "workspace:^",
     "@services/recommended-rss-feeds": "workspace:^",
     "@services/recommended-topics": "workspace:^",
