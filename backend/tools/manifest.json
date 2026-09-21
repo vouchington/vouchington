@@ -10,9 +10,7 @@
           "path": "/api/v1/topics/compare"
         }
       ],
-      "requiredScopes": [
-        "topics:read"
-      ]
+      "requiredScopes": ["topics:read"]
     },
     {
       "name": "get_my_cards",
@@ -24,9 +22,7 @@
           "path": "/api/v1/my/cards"
         }
       ],
-      "requiredScopes": [
-        "cards:read"
-      ]
+      "requiredScopes": ["cards:read"]
     },
     {
       "name": "get_my_point_valuations",
@@ -38,9 +34,7 @@
           "path": "/api/v1/my/rewards-program-point-valuations"
         }
       ],
-      "requiredScopes": [
-        "point-valuations:read"
-      ]
+      "requiredScopes": ["point-valuations:read"]
     },
     {
       "name": "get_my_profile",
@@ -52,9 +46,7 @@
           "path": "/api/v1/my/profile"
         }
       ],
-      "requiredScopes": [
-        "profile:read"
-      ]
+      "requiredScopes": ["profile:read"]
     },
     {
       "name": "get_my_rewards_statuses",
@@ -66,9 +58,7 @@
           "path": "/api/v1/my/rewards-program-statuses"
         }
       ],
-      "requiredScopes": [
-        "rewards-statuses:read"
-      ]
+      "requiredScopes": ["rewards-statuses:read"]
     },
     {
       "name": "get_my_spending",
@@ -80,9 +70,7 @@
           "path": "/api/v1/my/spending-categories"
         }
       ],
-      "requiredScopes": [
-        "spending:read"
-      ]
+      "requiredScopes": ["spending:read"]
     },
     {
       "name": "get_recommended_topics",
@@ -94,9 +82,7 @@
           "path": "/api/v1/recommended-topics"
         }
       ],
-      "requiredScopes": [
-        "recommendations:read"
-      ]
+      "requiredScopes": ["recommendations:read"]
     },
     {
       "name": "get_referral_links",
@@ -108,9 +94,7 @@
           "path": "/api/v1/topics/:id/prioritized-referral-links"
         }
       ],
-      "requiredScopes": [
-        "referral-links:read"
-      ]
+      "requiredScopes": ["referral-links:read"]
     },
     {
       "name": "get_topic_details",
@@ -122,9 +106,7 @@
           "path": "/api/v1/topics/:idOrSlug"
         }
       ],
-      "requiredScopes": [
-        "topics:read"
-      ]
+      "requiredScopes": ["topics:read"]
     },
     {
       "name": "get_topic_hierarchy",
@@ -136,9 +118,7 @@
           "path": "/api/v1/topics/:idOrSlug"
         }
       ],
-      "requiredScopes": [
-        "topics:read"
-      ]
+      "requiredScopes": ["topics:read"]
     },
     {
       "name": "get_trending_posts",
@@ -150,9 +130,7 @@
           "path": "/api/v1/trending-posts"
         }
       ],
-      "requiredScopes": [
-        "posts:read"
-      ]
+      "requiredScopes": ["posts:read"]
     },
     {
       "name": "get_trending_topics",
@@ -164,18 +142,14 @@
           "path": "/api/v1/trending-topics"
         }
       ],
-      "requiredScopes": [
-        "topics:read"
-      ]
+      "requiredScopes": ["topics:read"]
     },
     {
       "name": "get_wikipedia_summary",
       "description": "Gets detailed summary information for a Wikipedia article by title. Returns the full Wikipedia page data including description, extract, URL, and thumbnail. Use this after searching to get complete details about a specific article.",
       "parameters": null,
       "api": null,
-      "requiredScopes": [
-        "wikipedia:read"
-      ]
+      "requiredScopes": ["wikipedia:read"]
     },
     {
       "name": "manage_my_cards",
@@ -195,10 +169,7 @@
           "path": "/api/v1/my/cards/:id"
         }
       ],
-      "requiredScopes": [
-        "cards:read",
-        "cards:write"
-      ]
+      "requiredScopes": ["cards:read", "cards:write"]
     },
     {
       "name": "manage_my_point_valuations",
@@ -218,10 +189,7 @@
           "path": "/api/v1/my/rewards-program-point-valuations/:id"
         }
       ],
-      "requiredScopes": [
-        "point-valuations:read",
-        "point-valuations:write"
-      ]
+      "requiredScopes": ["point-valuations:read", "point-valuations:write"]
     },
     {
       "name": "manage_my_rewards_statuses",
@@ -241,10 +209,7 @@
           "path": "/api/v1/my/rewards-program-statuses/:id"
         }
       ],
-      "requiredScopes": [
-        "rewards-statuses:read",
-        "rewards-statuses:write"
-      ]
+      "requiredScopes": ["rewards-statuses:read", "rewards-statuses:write"]
     },
     {
       "name": "manage_my_spending",
@@ -264,10 +229,7 @@
           "path": "/api/v1/my/spending-categories/:id"
         }
       ],
-      "requiredScopes": [
-        "spending:read",
-        "spending:write"
-      ]
+      "requiredScopes": ["spending:read", "spending:write"]
     },
     {
       "name": "search_posts",
@@ -279,9 +241,7 @@
           "path": "/api/v1/posts"
         }
       ],
-      "requiredScopes": [
-        "posts:read"
-      ]
+      "requiredScopes": ["posts:read"]
     },
     {
       "name": "search_topics",
@@ -293,18 +253,14 @@
           "path": "/api/v1/topics"
         }
       ],
-      "requiredScopes": [
-        "topics:read"
-      ]
+      "requiredScopes": ["topics:read"]
     },
     {
       "name": "search_wikipedia",
       "description": "Searches Wikipedia for articles by title. Returns a list of matching Wikipedia pages with their titles and page IDs. Use this to find relevant Wikipedia articles based on keywords or topics mentioned in the content.",
       "parameters": null,
       "api": null,
-      "requiredScopes": [
-        "wikipedia:read"
-      ]
+      "requiredScopes": ["wikipedia:read"]
     },
     {
       "name": "update_my_financial_profile",
@@ -320,10 +276,7 @@
           "path": "/api/v1/my/financial-profile"
         }
       ],
-      "requiredScopes": [
-        "financial-profile:read",
-        "financial-profile:write"
-      ]
+      "requiredScopes": ["financial-profile:read", "financial-profile:write"]
     }
   ]
 }
