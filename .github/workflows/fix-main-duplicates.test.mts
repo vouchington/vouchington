@@ -44,7 +44,7 @@ describe('fix-main duplicate handling', () => {
     const dispatchJob = parsedMain.jobs?.['dispatch']
 
     expect(dispatchJob?.with?.['concurrency-id']).toBe(
-      'filaments:fix-main:${{ github.event.workflow_run.workflow_id }}:${{ github.event.workflow_run.head_sha }}',
+      'vouchington:fix-main:${{ github.event.workflow_run.workflow_id }}:${{ github.event.workflow_run.head_sha }}',
     )
     expect(dispatchJob?.if).not.toContain('.outputs.skip')
     expect(parsedMain.jobs?.['render-prompt']?.if).not.toContain('.outputs.skip')

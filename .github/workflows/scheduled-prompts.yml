@@ -127,7 +127,7 @@ jobs:
       surface-gate: HARNESS_SCHEDULED_ENABLED
       agent-ref: ${{ github.sha }}
       expected-head-sha: ${{ github.sha }}
-      concurrency-id: filaments:scheduled:${{ needs.select-prompt.outputs.prompt_name }}
+      concurrency-id: vouchington:scheduled:${{ needs.select-prompt.outputs.prompt_name }}
       publish-contract: ${{ needs.select-prompt.outputs.completion_mode == 'pr' && 'scheduled' || 'none' }}
       publish-base-ref: ${{ needs.select-prompt.outputs.completion_mode == 'pr' && 'main' || '' }}
       publish-title-prefix: "${{ needs.select-prompt.outputs.completion_mode == 'pr' && format('Automation scheduled: {0}', needs.select-prompt.outputs.prompt_name) || '' }}"

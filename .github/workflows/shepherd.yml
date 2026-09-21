@@ -236,7 +236,7 @@ jobs:
       surface-gate: HARNESS_SHEPHERD_ENABLED
       agent-ref: refs/heads/${{ needs.gate.outputs.pr_head_ref }}
       expected-head-sha: ${{ needs.gate.outputs.pr_head_sha }}
-      concurrency-id: filaments:shepherd:${{ needs.gate.outputs.pr_number }}
+      concurrency-id: vouchington:shepherd:${{ needs.gate.outputs.pr_number }}
       publish-contract: shepherd
       pr-shepherd-version: ${{ needs.render-prompt.outputs.pr_shepherd_version }}
       resume-session-id: ${{ needs.gate.outputs.resume_session_id }}

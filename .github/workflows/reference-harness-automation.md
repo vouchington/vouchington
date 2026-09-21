@@ -108,7 +108,7 @@ persistent workspace, and invokes `ci/harness-session-dispatch.mts`, which deleg
 the first-party `auto-harness-client` npm library. It sends a fixed, bounded metadata schema and an
 empty required-label list; the static `HARNESS_TARGET`/`HARNESS_FALLBACKS` route plus
 `HARNESS_REPOSITORY_ID` select the eligible Vouchington worktree. Caller concurrency IDs are
-namespaced with `filaments:`.
+namespaced with `vouchington:`.
 
 ## Live execution boundary
 
@@ -134,9 +134,9 @@ Prompts are capped at 64 KiB and metadata is a JSON object capped at 8 KiB; new 
 fixed one-hour queue TTL and the assigned-session timeout remains 6,300 seconds. The API key is
 never available to caller checkout or prompt-rendering jobs; only each caller's `dispatch` job
 forwards it, by explicit name, into the `harness-dispatch.yml` call. Caller concurrency IDs are
-namespaced with `filaments:` (`filaments:shepherd:<PR>`, `filaments:plan:<issue>`,
-`filaments:fix:<issue>`, `filaments:dependabot:<pr>:<sha>`, `filaments:fix-main-review:<pr>:<sha>` /
-`filaments:fix-main:<workflow_id>:<sha>`, `filaments:scheduled:<prompt_name>`).
+namespaced with `vouchington:` (`vouchington:shepherd:<PR>`, `vouchington:plan:<issue>`,
+`vouchington:fix:<issue>`, `vouchington:dependabot:<pr>:<sha>`, `vouchington:fix-main-review:<pr>:<sha>` /
+`vouchington:fix-main:<workflow_id>:<sha>`, `vouchington:scheduled:<prompt_name>`).
 
 The request/response contract itself — bounded request timeouts, typed `AutoHarnessError`/
 `AutoHarnessRequestTimeoutError` failures, id- vs name-based `target`/`fallbacks` resolution, and

@@ -209,7 +209,7 @@ jobs:
       surface-gate: HARNESS_FIX_MAIN_ENABLED
       agent-ref: ${{ github.event.workflow_run.head_sha }}
       expected-head-sha: ${{ github.event.workflow_run.head_sha }}
-      concurrency-id: filaments:fix-main:${{ github.event.workflow_run.workflow_id }}:${{ github.event.workflow_run.head_sha }}
+      concurrency-id: vouchington:fix-main:${{ github.event.workflow_run.workflow_id }}:${{ github.event.workflow_run.head_sha }}
       publish-contract: fix-main
       publish-base-ref: main
       publish-title-prefix: 'Automation fix: ${{ github.event.workflow_run.name }} @ ${{ github.event.workflow_run.head_sha }}'

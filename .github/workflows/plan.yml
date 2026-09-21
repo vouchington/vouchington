@@ -198,7 +198,7 @@ jobs:
       surface-gate: HARNESS_PLAN_ENABLED
       agent-ref: ${{ github.sha }}
       expected-head-sha: ${{ github.sha }}
-      concurrency-id: filaments:plan:${{ github.event.issue.number }}
+      concurrency-id: vouchington:plan:${{ github.event.issue.number }}
       completion-mode: issue-comment
       issue-number: ${{ github.event.issue.number }}
       trigger-comment-id: ${{ github.event.comment.id }}
