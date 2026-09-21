@@ -29,6 +29,10 @@ artifact-deletion permission. Credentialed tests and Storybook therefore remain 
 queue-specific backend and web image jobs use inert AWS credential-shaped values to exercise the
 local build, smoke-test, vulnerability-scan, and SBOM paths without AWS access. The stable required
 contexts remain `tests`, `build`, and `gitleaks`.
+The shared coverage, result-processing, and image-build workflows inherit permissions from their
+explicit caller jobs. They must not request PR-write, Actions-write, or OIDC permissions of their
+own: GitHub validates every called job's request even when an event condition would skip it, so a
+read-only merge-group call otherwise fails before any job starts.
 
 CI log quality is audited separately with the
 [`review-ci-logs` skill](../../.agents/skills/review-ci-logs/SKILL.md). It samples the same core

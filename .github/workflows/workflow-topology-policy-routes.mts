@@ -129,12 +129,17 @@ export const routePolicy = {
     '.github/workflows/ci.yml#test-coverage': splitIds(
       '.github/workflows/ci.yml#detect-changes .github/workflows/ci.yml#select-ci .github/workflows/ci.yml#storybook .github/workflows/ci.yml#test-backend-credentialed .github/workflows/ci.yml#test-backend-modules .github/workflows/ci.yml#test-backend-unit .github/workflows/ci.yml#test-cloudflare-worker .github/workflows/ci.yml#test-lambdas .github/workflows/ci.yml#test-portability .github/workflows/ci.yml#test-tooling .github/workflows/ci.yml#test-ts-shared .github/workflows/ci.yml#test-web .github/workflows/ci.yml#test-web-api .github/workflows/ci.yml#test-web-integration',
     ),
-    '.github/workflows/ci.yml#tests': splitIds('.github/workflows/ci.yml#tests-processing'),
+    '.github/workflows/ci.yml#tests': splitIds(
+      '.github/workflows/ci.yml#tests-processing .github/workflows/ci.yml#tests-processing-merge-group',
+    ),
     '.github/workflows/ci.yml#tests-processing': splitIds(
       '.github/workflows/ci.yml#backend-smoke .github/workflows/ci.yml#detect-changes .github/workflows/ci.yml#initialize-smoke-test .github/workflows/ci.yml#static-backend .github/workflows/ci.yml#static-cloudflare-worker .github/workflows/ci.yml#static-code-analysis .github/workflows/ci.yml#static-lambdas .github/workflows/ci.yml#static-web .github/workflows/ci.yml#storybook .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-explain-analyze .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#test-portability .github/workflows/ci.yml#test-postgres-schema .github/workflows/ci.yml#test-web-api .github/workflows/ci.yml#test-web-integration',
     ),
+    '.github/workflows/ci.yml#tests-processing-merge-group': splitIds(
+      '.github/workflows/ci.yml#backend-smoke .github/workflows/ci.yml#detect-changes .github/workflows/ci.yml#initialize-smoke-test .github/workflows/ci.yml#static-backend .github/workflows/ci.yml#static-cloudflare-worker .github/workflows/ci.yml#static-code-analysis .github/workflows/ci.yml#static-lambdas .github/workflows/ci.yml#static-web .github/workflows/ci.yml#storybook .github/workflows/ci.yml#test-coverage-merge-group .github/workflows/ci.yml#test-explain-analyze .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#test-portability .github/workflows/ci.yml#test-postgres-schema .github/workflows/ci.yml#test-web-api .github/workflows/ci.yml#test-web-integration',
+    ),
     '.github/workflows/ci.yml#build': splitIds(
-      '.github/workflows/ci.yml#build-backend .github/workflows/ci.yml#build-web .github/workflows/ci.yml#tests',
+      '.github/workflows/ci.yml#build-backend .github/workflows/ci.yml#build-backend-merge-group .github/workflows/ci.yml#build-web .github/workflows/ci.yml#build-web-merge-group .github/workflows/ci.yml#tests',
     ),
   },
   exactCallerJobs,
@@ -146,7 +151,7 @@ export const routePolicy = {
       innerDownstreamJobs: [],
       outerCallers: {
         '.github/workflows/ci.yml#test-backend-unit': splitIds(
-          '.github/workflows/ci.yml#build .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing',
+          '.github/workflows/ci.yml#build .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-coverage-merge-group .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing .github/workflows/ci.yml#tests-processing-merge-group',
         ),
         '.github/workflows/main-backend.yml#test-backend-unit': [],
       },

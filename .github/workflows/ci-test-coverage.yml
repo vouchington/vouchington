@@ -82,8 +82,6 @@ on:
       vitest-report-expectations:
         value: ${{ jobs.test-coverage.outputs.vitest-report-expectations }}
 
-permissions: {}
-
 jobs:
   test-coverage:
     name: Patch Coverage
@@ -92,11 +90,6 @@ jobs:
     if: '!cancelled()'
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    # id-token is omitted: this job checks out and runs PR-controlled code.
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: '!cancelled()'

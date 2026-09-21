@@ -137,6 +137,9 @@ export function callerCalleePermissionMismatches(topology: WorkflowTopology): st
       continue
     }
 
+    // A reusable workflow with no permissions declaration inherits this explicit caller grant.
+    if (calleePerms == null) continue
+
     if (jobPerms === 'write-all' || calleePerms === 'write-all') {
       if (jobPerms !== calleePerms) {
         mismatches.push(

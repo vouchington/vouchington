@@ -41,6 +41,7 @@ function classifyContext(reference: string): NormalizedConcurrencyScope | undefi
   if (
     reference === 'github.ref' ||
     reference === 'github.ref_name' ||
+    reference === 'github.event.merge_group.head_ref' ||
     reference === 'github.event.workflow_run.head_branch'
   )
     return 'ref'

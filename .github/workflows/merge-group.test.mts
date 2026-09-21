@@ -8,6 +8,7 @@ import { requiredNamedStep, type WorkflowJob } from './workflow-test-helpers.mts
 type Workflow = {
   concurrency?: { 'cancel-in-progress'?: string; group?: string }
   jobs?: Record<string, WorkflowJob>
+  permissions?: Record<string, string>
   on?: {
     merge_group?: { branches?: string[]; types?: string[] }
   }
@@ -21,6 +22,9 @@ const gitleaks = load(readFileSync('.github/workflows/gitleaks.yml', 'utf8')) as
 const selectCi = load(readFileSync('.github/workflows/ci-select-vitest.yml', 'utf8')) as Workflow
 const testsProcessing = load(
   readFileSync('.github/workflows/ci-tests-processing.yml', 'utf8'),
+) as Workflow
+const testCoverage = load(
+  readFileSync('.github/workflows/ci-test-coverage.yml', 'utf8'),
 ) as Workflow
 const buildBackend = load(readFileSync('.github/workflows/build-backend.yml', 'utf8')) as Workflow
 const buildWeb = load(readFileSync('.github/workflows/build-web.yml', 'utf8')) as Workflow
@@ -88,6 +92,18 @@ describe('merge-group validation', () => {
       'Delete inter-job blob artifacts',
     )
     expect(deleteStep.if).toContain("github.event_name == 'pull_request'")
+  })
+
+  it('inherits caller permissions in reusable jobs so read-only queue calls validate', () => {
+    for (const workflow of [testCoverage, testsProcessing, buildBackend, buildWeb]) {
+      expect(workflow.permissions).toBeUndefined()
+    }
+    expect(testCoverage.jobs?.['test-coverage']?.permissions).toBeUndefined()
+    expect(testsProcessing.jobs?.['tests-processing']?.permissions).toBeUndefined()
+    for (const jobName of ['test-coverage', 'tests-processing', 'build-backend', 'build-web']) {
+      const prJob = ci.jobs?.[jobName]
+      expect(prJob?.permissions).toBeDefined()
+    }
   })
 
   it('makes the required gates depend on queue-specific validation jobs', () => {

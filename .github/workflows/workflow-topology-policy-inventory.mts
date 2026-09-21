@@ -11,7 +11,7 @@ export const jobInventory = {
   ),
   '.github/workflows/checks-backend-smoke.yml': jobs('smoke'),
   '.github/workflows/ci.yml': jobs(
-    'backend-smoke build build-backend build-web detect-changes initialize-smoke-test select-ci static-backend static-cloudflare-worker static-code-analysis static-lambdas static-web storybook test-backend-credentialed test-backend-modules test-backend-unit test-cloudflare-worker test-coverage test-explain-analyze test-lambdas test-playwright test-playwright-credentialed test-portability test-postgres-schema test-tooling test-ts-shared test-web test-web-api test-web-integration tests tests-processing',
+    'backend-smoke build build-backend build-backend-merge-group build-web build-web-merge-group detect-changes initialize-smoke-test select-ci static-backend static-cloudflare-worker static-code-analysis static-lambdas static-web storybook test-backend-credentialed test-backend-modules test-backend-unit test-cloudflare-worker test-coverage test-coverage-merge-group test-explain-analyze test-lambdas test-playwright test-playwright-credentialed test-portability test-postgres-schema test-tooling test-ts-shared test-web test-web-api test-web-integration tests tests-processing tests-processing-merge-group',
   ),
   '.github/workflows/ci-detect-changes.yml': jobs('detect-changes'),
   '.github/workflows/ci-select-vitest.yml': jobs('select-ci'),

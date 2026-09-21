@@ -144,6 +144,15 @@ describe('workflow permissions audit', () => {
       expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([])
     })
 
+    it('accepts a permission-inheriting callee with explicit caller permissions', async () => {
+      const { callerPath, calleePath } = await writeCallPair({
+        callerJobBlock: 'permissions:\n      contents: read',
+        calleePermissionsBlock: '',
+      })
+
+      expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([])
+    })
+
     it('skips non-callable callees and non-local call edges', async () => {
       const { callerPath, calleePath } = await writeCallPair({
         callerJobBlock: '',

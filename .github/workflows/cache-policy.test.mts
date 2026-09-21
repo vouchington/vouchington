@@ -208,8 +208,17 @@ describe('CI cache policy', () => {
     const nextJobStart = afterTests.search(/\n {2}[a-z][a-z0-9-]*:\n/)
     const testsJob = nextJobStart === -1 ? afterTests : afterTests.slice(0, nextJobStart)
 
-    // The tests job must have actions: write to delete artifacts
-    expect(testsJob).toContain('actions: write')
+    // Only the PR caller has permission to delete artifacts; queue calls stay read-only.
+    const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+    const prProcessing = ciWorkflow
+      .split('\n  tests-processing:')[1]
+      ?.split('\n  tests-processing-merge-group:')[0]
+    const queueProcessing = ciWorkflow
+      .split('\n  tests-processing-merge-group:')[1]
+      ?.split('\n  tests:')[0]
+    expect(prProcessing).toContain('actions: write')
+    expect(queueProcessing).toContain('actions: read')
+    expect(testsJob).not.toContain('actions: write')
     // The cleanup step must exist and target the inter-job blob prefixes
     expect(testsJob).toContain('name: Delete inter-job blob artifacts')
     expect(testsJob).not.toContain('if: always()')

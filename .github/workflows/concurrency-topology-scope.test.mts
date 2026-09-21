@@ -48,6 +48,10 @@ describe('concurrency topology scope normalization', () => {
     )
   })
 
+  it('classifies a merge-group head ref as ref scope', () => {
+    expect(extractConcurrencyScopes('${{ github.event.merge_group.head_ref }}')).toEqual(['ref'])
+  })
+
   it('classifies an exact pull-request head as SHA scope', () => {
     expect(extractConcurrencyScopes('${{ github.event.pull_request.head.sha }}')).toEqual(['sha'])
     expect(concurrencyScopesMatch('${{ github.event.pull_request.head.sha }}', ['sha'])).toBe(true)

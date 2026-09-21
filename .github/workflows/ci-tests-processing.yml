@@ -13,15 +13,10 @@ concurrency:
   group: ci-tests-processing-${{ github.run_id }}
   cancel-in-progress: false
 
-permissions: {}
-
 jobs:
   tests-processing:
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions:
-      contents: read
-      actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: "!cancelled() && (github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.ref == 'refs/heads/main')"

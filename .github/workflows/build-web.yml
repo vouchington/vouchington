@@ -15,11 +15,6 @@ concurrency:
   group: build-web-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-permissions:
-  actions: read
-  contents: read
-  id-token: write
-
 jobs:
   build:
     runs-on: ubuntu-24.04-arm

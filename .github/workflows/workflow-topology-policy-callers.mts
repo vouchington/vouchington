@@ -6,15 +6,21 @@ export const exactCallerJobs = {
   ),
   '.github/workflows/ci-detect-changes.yml': splitIds('.github/workflows/ci.yml#detect-changes'),
   '.github/workflows/ci-select-vitest.yml': splitIds('.github/workflows/ci.yml#select-ci'),
-  '.github/workflows/ci-test-coverage.yml': splitIds('.github/workflows/ci.yml#test-coverage'),
-  '.github/workflows/ci-tests-processing.yml': splitIds(
-    '.github/workflows/ci.yml#tests-processing',
+  '.github/workflows/ci-test-coverage.yml': splitIds(
+    '.github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-coverage-merge-group',
   ),
-  '.github/workflows/build-backend.yml': splitIds('.github/workflows/ci.yml#build-backend'),
+  '.github/workflows/ci-tests-processing.yml': splitIds(
+    '.github/workflows/ci.yml#tests-processing .github/workflows/ci.yml#tests-processing-merge-group',
+  ),
+  '.github/workflows/build-backend.yml': splitIds(
+    '.github/workflows/ci.yml#build-backend .github/workflows/ci.yml#build-backend-merge-group',
+  ),
   '.github/workflows/publish-backend-images.yml': splitIds(
     '.github/workflows/main-backend.yml#publish-backend-images',
   ),
-  '.github/workflows/build-web.yml': splitIds('.github/workflows/ci.yml#build-web'),
+  '.github/workflows/build-web.yml': splitIds(
+    '.github/workflows/ci.yml#build-web .github/workflows/ci.yml#build-web-merge-group',
+  ),
   '.github/workflows/publish-web-images.yml': splitIds(
     '.github/workflows/main-web.yml#publish-web-images',
   ),
