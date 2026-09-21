@@ -1,4 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { parse as load } from 'yaml'
@@ -104,10 +106,58 @@ describe('PR compare revision pairs', () => {
       readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8'),
     ) as WorkflowFile
     const step = requiredNamedStep(workflow.jobs?.['detect-changes'], 'Check for docs-only changes')
-    expect(step.env).toEqual({ PR_BASE_REF: '${{ github.base_ref }}' })
+    expect(step.env).toEqual({
+      EVENT_NAME: '${{ github.event_name }}',
+      MERGE_GROUP_BASE_SHA: '${{ github.event.merge_group.base_sha }}',
+      MERGE_GROUP_HEAD_SHA: '${{ github.event.merge_group.head_sha }}',
+      PR_BASE_REF: '${{ github.base_ref }}',
+    })
+    expect(step.run).toContain(
+      'git diff --name-only "$MERGE_GROUP_BASE_SHA" "$MERGE_GROUP_HEAD_SHA"',
+    )
     expect(step.run).toContain('"origin/${PR_BASE_REF}...HEAD"')
     expect(step.run).not.toContain('github.event.pull_request.base.sha')
     expect(step.run).not.toContain('github.sha')
+  })
+
+  it('includes earlier queued commits in the docs-only decision', () => {
+    const workflow = load(
+      readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8'),
+    ) as WorkflowFile
+    const step = requiredNamedStep(workflow.jobs?.['detect-changes'], 'Check for docs-only changes')
+    const directory = mkdtempSync(join(tmpdir(), 'merge-group-docs-'))
+    const git = (...args: string[]) =>
+      execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim()
+    try {
+      git('init', '-q')
+      git('config', 'user.name', 'CI Test')
+      git('config', 'user.email', 'ci-test@example.invalid')
+      writeFileSync(join(directory, 'README.md'), 'base\n')
+      git('add', '.')
+      git('commit', '-qm', 'base')
+      const base = git('rev-parse', 'HEAD')
+      writeFileSync(join(directory, 'source.ts'), 'export const changed = true\n')
+      git('add', '.')
+      git('commit', '-qm', 'code')
+      writeFileSync(join(directory, 'README.md'), 'documentation\n')
+      git('add', '.')
+      git('commit', '-qm', 'docs')
+      const output = join(directory, 'output')
+      execFileSync('bash', ['-e', '-c', step.run ?? 'exit 1'], {
+        cwd: directory,
+        env: {
+          ...process.env,
+          EVENT_NAME: 'merge_group',
+          GITHUB_OUTPUT: output,
+          MERGE_GROUP_BASE_SHA: base,
+          MERGE_GROUP_HEAD_SHA: git('rev-parse', 'HEAD'),
+          PR_BASE_REF: '',
+        },
+      })
+      expect(readFileSync(output, 'utf8')).toContain('docs-only=false')
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
   })
 
   it('compares postgres index renames against origin/<base_ref>, not pull_request.base.sha', () => {

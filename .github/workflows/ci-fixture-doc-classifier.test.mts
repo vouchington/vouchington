@@ -147,7 +147,7 @@ describe('CI fixture documentation classifier', () => {
     }
 
     expect(readFileSync('docs/development/ci.md', 'utf8')).toContain(
-      '[Dependabot auto-merge and main push CI](reference-ci-standalone-workflow-checks.md#dependabot-auto-merge-and-main-push-ci)',
+      '[Dependency bot review and main push CI](reference-ci-standalone-workflow-checks.md#dependency-bot-review-and-main-push-ci)',
     )
   })
 

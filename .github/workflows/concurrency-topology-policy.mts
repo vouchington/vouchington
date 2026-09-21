@@ -129,7 +129,6 @@ export const concurrencyTopologyPolicy = {
     ['fixed-resource'],
     'harness-fleet-lane',
   ),
-  '.github/workflows/dependabot-pr-automerge.yml': cancelling(['pull-request', 'sha']),
   '.github/workflows/dispatch-completed-deploy.yml': retained(['event']),
   '.github/workflows/docs-publish.yml': retained(['run']),
   '.github/workflows/ghcr-cleanup.yml': retained(['fixed-resource']),

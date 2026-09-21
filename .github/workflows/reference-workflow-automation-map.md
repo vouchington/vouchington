@@ -5,12 +5,15 @@
 ```mermaid
 flowchart TD
     trigger["push / pull_request / dispatch"]
+    merge-group-trigger["merge_group checks_requested"]
     static-trigger["main push / dispatch"]
     trigger --> ci["CI"]
+    merge-group-trigger --> ci
     ci --> detect["detect-changes"]
     ci --> sca["static-code-analysis\n(cross-repo lint + policy)"]
     static-trigger --> sca
     ci --> gitleaks["gitleaks\n(secret scan)"]
+    merge-group-trigger --> gitleaks
     trigger --> sync-articles["sync-articles\n(immutable articles artifact)"]
     trigger --> docs-publish["docs-publish\n(immutable docs artifact)"]
     artifact-cleanup-sweep-trigger["0 */6 * * * / manual dispatch"] --> cleanup-artifacts["cleanup-artifacts\n(reusable producer cleanup + stale sweep)"]
@@ -18,7 +21,6 @@ flowchart TD
     trigger --> actionlint["actionlint\n(workflow lint + security audit)"]
     trigger --> lint-links["lint-links\n(repository link check)"]
     trigger --> label-pr["label-pr\n(PR labeling)"]
-    trigger --> dependabot-pr-automerge["dependabot-pr-automerge\n(Dependabot PR gate)"]
     trigger --> pnpm-dedupe["pnpm-dedupe\n(weekly lockfile PR)"]
     trigger --> main-backend["main-backend\n(main backend CI)"]
     trigger --> main-web["main-web\n(main web CI)"]
@@ -41,7 +43,7 @@ flowchart TD
     sca --> static-lambdas
     sca --> static-worker
 
-    detect --> select-ci["select-ci\n(PR-only: centralized Vitest test selection;\nfail-open skip/shard/narrow signals)"]
+    detect --> select-ci["select-ci\n(PR selection / merge-group full suite;\nfail-open skip/shard/narrow signals)"]
 
     detect --> test-cloudflare-worker["test-cloudflare-worker"]
     detect --> test-lambdas["test-lambdas"]

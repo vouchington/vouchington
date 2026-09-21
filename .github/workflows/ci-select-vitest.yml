@@ -171,7 +171,7 @@ jobs:
   select-ci:
     if: >-
       !cancelled() &&
-      github.event_name == 'pull_request'
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

@@ -4,6 +4,9 @@ import { parse as load } from 'yaml'
 
 type Workflow = {
   on?: {
+    merge_group?: {
+      types?: string[]
+    }
     pull_request?: {
       types?: string[]
       branches?: string[]

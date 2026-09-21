@@ -33,7 +33,6 @@ export const jobInventory = {
     'checkpoint-dispatch dispatch escalate gate render-prompt',
   ),
   '.github/workflows/scheduled-prompts.yml': jobs('dispatch select-prompt'),
-  '.github/workflows/dependabot-pr-automerge.yml': jobs('automerge cleanup-retargeted-automerge'),
   '.github/workflows/docs-publish.yml': jobs('publish'),
   '.github/workflows/dispatch-completed-deploy.yml': jobs('dispatch'),
   '.github/workflows/explain-analyze.yml': jobs('explain-analyze'),

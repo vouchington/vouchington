@@ -84,7 +84,6 @@ Cross-link related docs bidirectionally instead of duplicating their content, an
 - [Vitest CI Selection](development/reference-ci-vitest-ci-selection.md)
 - [Workflow Topology Contracts](development/reference-ci-workflow-topology-contracts.md)
 - [Workspace Cross-Reference](development/reference-ci-workspace-cross-reference.md)
-- [Dependabot auto-merge](development/reference-dependency-updates-dependabot-automerge.md)
 - [Adding a new pinned binary](development/reference-dependency-updates-adding-a-new-pinned-binary.md)
 - [Coverage matrix](development/reference-dependency-updates-coverage-matrix.md)
 - [First-party release-gate exemptions](development/reference-dependency-updates-first-party-release-gate-exemptions.md)

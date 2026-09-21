@@ -6,14 +6,12 @@ Standalone workflows own their event admission, permissions, concurrency, runner
 mutation boundary. Reusable workflows inherit authorization from an admitted caller and must keep
 caller-to-callee permissions exact.
 
-<a id="dependabot-auto-merge-and-main-push-ci"></a>
+<a id="dependency-bot-review-and-main-push-ci"></a>
 
 ## Security and analysis workflows
 
-- [Dependabot auto-merge](reference-dependency-updates-dependabot-automerge.md) delegates generic
-  eligibility and mutation handling to the pinned shared tooling action. It uses a separate mutation
-  token so the eventual merge still emits the `main` push workflows; its no-PR-checkout gate admits
-  only Dependabot pull requests against the default branch.
+- [Dependency updates](dependency-updates.md#review-and-merge) require a human merge decision for
+  Dependabot and Renovate PRs; no dependency-bot auto-merge workflow runs in this repository.
 - [Gitleaks](../../.github/workflows/gitleaks.yml) scans Git history with the checked-in baseline.
   The local directory helper scans isolated staged and working-tree snapshots instead.
 - [Actionlint](../../.github/workflows/actionlint.yml) and zizmor validate workflow syntax,
