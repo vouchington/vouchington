@@ -10,10 +10,22 @@ vi.mock(
 
 import { clientApi } from '../instance'
 import {
+  assessCopyrightLegalHold,
   createCopyrightAppeal,
   createCopyrightCounterNotice,
   createCopyrightNotice,
+  getCopyrightNotice,
+  getCopyrightParticipantNotice,
   listCopyrightNotices,
+  listCopyrightReviewQueue,
+  replayCopyrightActionIntent,
+  replayCopyrightDeliveryIntent,
+  replayCopyrightMediaDelivery,
+  resolveCopyrightLegalHold,
+  reviewCopyrightAppeal,
+  reviewCopyrightCounterNotice,
+  reviewCopyrightFormIntake,
+  reviewCopyrightRestriction,
 } from '../copyright-notices'
 import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 import type { CopyrightNoticesPage } from '@/types/copyright-notices'
@@ -100,4 +112,103 @@ describe('copyright notices client', () => {
       mockPost.mock.calls[3]?.[2]?.headers?.['Idempotency-Key'],
     )
   })
+
+  it('reads public, participant, and staff notice surfaces', async () => {
+    expect.hasAssertions()
+    mockGet.mockClear()
+    const notice = { copyright_notice: { id: 'notice-1' } }
+    await expectGet(notice, () => getCopyrightNotice('notice-1'), [
+      '/api/v1/copyright-notices/notice-1',
+    ])
+    await expectGet(notice, () => getCopyrightParticipantNotice('notice-1'), [
+      '/api/v1/copyright-notices/notice-1/participant',
+    ])
+    await expectGet({ copyright_notices: [] }, () => listCopyrightReviewQueue(), [
+      '/api/v1/copyright-notices/review-queue',
+    ])
+  })
+
+  it('posts staff review, legal-hold, and replay actions', async () => {
+    expect.hasAssertions()
+    await expectPost(undefined, () => reviewCopyrightFormIntake('intake-1', true, 'Accepted.'), [
+      '/api/v1/copyright-form-intakes/intake-1/reviews',
+      { accepted: true, rationale: 'Accepted.' },
+    ])
+    await expectPost(
+      undefined,
+      () => reviewCopyrightRestriction('notice-1', 'restriction-1', 'confirm', 'Keep.'),
+      [
+        '/api/v1/copyright-notices/notice-1/restrictions/restriction-1/reviews',
+        { action: 'confirm', rationale: 'Keep.' },
+      ],
+    )
+    const appeal = {
+      rationale: 'Keep the restriction.',
+      decisions: [{ restriction_id: 'restriction-1', action: 'confirm' as const }],
+    }
+    await expectPost(undefined, () => reviewCopyrightAppeal('submission-1', appeal), [
+      '/api/v1/copyright-submissions/submission-1/appeal-reviews',
+      appeal,
+    ])
+    await expectPost(
+      undefined,
+      () => reviewCopyrightCounterNotice('submission-1', false, 'Incomplete.'),
+      [
+        '/api/v1/copyright-submissions/submission-1/counter-notice-reviews',
+        { accepted: false, rationale: 'Incomplete.' },
+      ],
+    )
+    const hold = {
+      rationale: 'Verified CCB filing.',
+      from_original_claimant: true,
+      proceeding_kind: 'ccb' as const,
+      ccb_claim_kind: 'claim' as const,
+      commenced_at: '2026-07-01T12:00:00.000Z',
+      received_by_designated_agent_at: '2026-07-01T12:30:00.000Z',
+      same_material: true,
+      target_ids: ['target-1'],
+    }
+    await expectPost(undefined, () => assessCopyrightLegalHold('submission-1', hold), [
+      '/api/v1/copyright-submissions/submission-1/legal-hold-assessments',
+      hold,
+    ])
+    await expectPost(
+      undefined,
+      () => resolveCopyrightLegalHold('hold-1', 'dismissed', 'Dismissed.'),
+      [
+        '/api/v1/copyright-legal-hold-assessments/hold-1/resolutions',
+        { resolution_kind: 'dismissed', rationale: 'Dismissed.' },
+      ],
+    )
+    await expectPost({ replayed: 1 }, () => replayCopyrightMediaDelivery(), [
+      '/api/v1/copyright-media-delivery/replays',
+      {},
+    ])
+    await expectPost(undefined, () => replayCopyrightActionIntent('notice-1', 'intent-1'), [
+      '/api/v1/copyright-notices/notice-1/action-intents/intent-1/replays',
+      {},
+    ])
+    await expectPost(undefined, () => replayCopyrightDeliveryIntent('notice-1', 'intent-1'), [
+      '/api/v1/copyright-notices/notice-1/delivery-intents/intent-1/replays',
+      {},
+    ])
+  })
 })
+
+async function expectGet(
+  response: unknown,
+  call: () => Promise<unknown>,
+  expectedArgs: readonly unknown[],
+) {
+  mockGet.mockClear()
+  await expectApiWrapperCall({ mock: mockGet, response, call, expectedArgs })
+}
+
+async function expectPost(
+  response: unknown,
+  call: () => Promise<unknown>,
+  expectedArgs: readonly unknown[],
+) {
+  mockPost.mockClear()
+  await expectApiWrapperCall({ mock: mockPost, response, call, expectedArgs })
+}

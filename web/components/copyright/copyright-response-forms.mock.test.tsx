@@ -66,6 +66,21 @@ describe('copyright response forms', () => {
     })
   })
 
+  it('keeps the appeal form usable after a submission failure', async () => {
+    mockCreateAppeal.mockRejectedValueOnce(new Error('network'))
+    render(
+      <CopyrightAppealForm
+        noticeId={noticeId}
+        targetIds={targetIds}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Why should this action be changed?'), {
+      target: { value: 'This material is mine.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Submit appeal' }))
+    await waitFor(() => expect(mockCreateAppeal).toHaveBeenCalled())
+  })
+
   it('discloses counter-notice forwarding and submits only selected targets', async () => {
     render(
       <CopyrightCounterNoticeForm
@@ -99,5 +114,24 @@ describe('copyright response forms', () => {
         cf_turnstile_response: 'turnstile-token',
       })
     })
+  })
+
+  it('keeps the form usable after a counter-notice submission failure', async () => {
+    mockCreateCounterNotice.mockRejectedValueOnce(new Error('network'))
+    render(
+      <CopyrightCounterNoticeForm
+        noticeId={noticeId}
+        targetIds={targetIds}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Poster' } })
+    fireEvent.change(screen.getByLabelText('Mailing address'), { target: { value: '1 Main St' } })
+    fireEvent.change(screen.getByLabelText('Telephone'), { target: { value: '555-0100' } })
+    fireEvent.change(screen.getByLabelText('Electronic signature'), { target: { value: 'Poster' } })
+    fireEvent.click(screen.getByLabelText(/good-faith belief the material was removed/i))
+    fireEvent.click(screen.getByLabelText(/consent to the jurisdiction/i))
+    fireEvent.click(screen.getByLabelText(/accept service of process/i))
+    fireEvent.click(screen.getByRole('button', { name: 'Submit counter-notice' }))
+    await waitFor(() => expect(mockCreateCounterNotice).toHaveBeenCalled())
   })
 })

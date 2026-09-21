@@ -38,6 +38,22 @@ describe('CopyrightNoticeTargetPicker', () => {
     await waitFor(() => expect(mockResolveTargets).toHaveBeenCalledTimes(2))
     expect(screen.queryByLabelText('Hosted image 1: first')).not.toBeInTheDocument()
   })
+
+  it('clears resolved images when lookup fails', async () => {
+    mockResolveTargets.mockRejectedValue(new Error('not found'))
+    const onChange = vi.fn<(targets: CopyrightNoticeResolvedTarget[]) => void>()
+    render(
+      <CopyrightNoticeTargetPicker
+        targets={[]}
+        onChange={onChange}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Hosted use URL'), {
+      target: { value: 'https://voucha.ai/discussion/missing' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith([]))
+  })
 })
 
 function makeTarget(caption: string) {

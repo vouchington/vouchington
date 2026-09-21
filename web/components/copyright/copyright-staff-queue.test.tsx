@@ -3,6 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { CopyrightStaffQueue } from './copyright-staff-queue'
 
 describe('CopyrightStaffQueue', () => {
+  it('shows an empty review queue when no cases are waiting', () => {
+    render(<CopyrightStaffQueue notices={[]} />)
+    expect(screen.getByText('No copyright cases need review.')).toBeInTheDocument()
+  })
+
   it('renders private case facts and every pending decision', () => {
     render(
       <CopyrightStaffQueue

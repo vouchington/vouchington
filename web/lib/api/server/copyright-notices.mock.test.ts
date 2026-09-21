@@ -10,6 +10,14 @@ vi.mock(
   () => ({ serverApi: { get: mockGet } }) as unknown as typeof import('./instance'),
 )
 
+vi.mock<typeof import('react')>(import('react'), async importOriginal => {
+  const actual = await importOriginal<typeof import('react')>()
+  return {
+    ...actual,
+    cache: ((fn: (...args: never[]) => unknown) => fn) as unknown as typeof actual.cache,
+  }
+})
+
 vi.mock(
   import('../return-null-for-missing-entity'),
   () =>
@@ -18,8 +26,15 @@ vi.mock(
     }) as unknown as typeof import('../return-null-for-missing-entity'),
 )
 
-import { getCopyrightNotices, getCopyrightParticipantNoticeServer } from './copyright-notices'
+import {
+  getCopyrightEmailIntakeReviewQueue,
+  getCopyrightNoticeServer,
+  getCopyrightNotices,
+  getCopyrightParticipantNoticeServer,
+  getCopyrightReviewQueue,
+} from './copyright-notices'
 import type {
+  CopyrightNoticeDetail,
   CopyrightNoticesPage,
   CopyrightParticipantNoticeDetail,
 } from '@/types/copyright-notices'
@@ -50,5 +65,20 @@ describe('copyright notice server API helpers', () => {
 
     await expect(getCopyrightParticipantNoticeServer('notice-id')).resolves.toBeNull()
     expect(mockReturnNull).toHaveBeenCalledWith(request, { nullStatusCodes: [403, 404] })
+  })
+
+  it('unwraps public notice and staff queue payloads', async () => {
+    const notice = { id: 'notice-1' } as CopyrightNoticeDetail
+    mockReturnNull.mockImplementation(async (request: Promise<unknown>) => request)
+    mockGet
+      .mockResolvedValueOnce({ copyright_notice: notice })
+      .mockResolvedValueOnce({ copyright_notices: [{ id: 'notice-1' }] })
+      .mockResolvedValueOnce({ copyright_email_intakes: [{ id: 'intake-1' }] })
+
+    await expect(getCopyrightNoticeServer('notice-1')).resolves.toBe(notice)
+    await expect(getCopyrightReviewQueue()).resolves.toEqual([{ id: 'notice-1' }])
+    await expect(getCopyrightEmailIntakeReviewQueue()).resolves.toEqual([{ id: 'intake-1' }])
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/copyright-notices/review-queue')
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/copyright-email-intakes/review-queue')
   })
 })

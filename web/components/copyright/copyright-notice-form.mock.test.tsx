@@ -107,4 +107,39 @@ describe('CopyrightNoticeForm', () => {
       })
     })
   })
+
+  it('resets captcha after a failed notice submission', async () => {
+    mockResolveTargets.mockResolvedValue([
+      {
+        post_id: '019f0000-0000-7000-8000-000000000001',
+        image_id: '019f0000-0000-7000-8000-000000000002',
+        target_url: 'https://voucha.ai/discussion/hosted-material',
+        order_index: 0,
+        caption: 'Claimed image',
+      },
+    ])
+    mockCreateNotice.mockRejectedValue(new Error('network'))
+    render(<CopyrightNoticeForm />)
+    fireEvent.change(screen.getByLabelText('Hosted use URL'), {
+      target: { value: 'https://voucha.ai/discussion/hosted-material' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
+    expect(await screen.findByLabelText('Hosted image 1: Claimed image')).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Hosted image 1: Claimed image'))
+    fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Claimant' } })
+    fireEvent.change(screen.getByLabelText('Mailing address'), { target: { value: '1 Main St' } })
+    fireEvent.change(screen.getByLabelText('Email address'), {
+      target: { value: 'tests+51c2846f@voucha.ai' },
+    })
+    fireEvent.change(screen.getByLabelText('Copyrighted work'), {
+      target: { value: 'Claimed photograph' },
+    })
+    fireEvent.change(screen.getByLabelText('Electronic signature'), {
+      target: { value: 'Claimant' },
+    })
+    fireEvent.click(screen.getByLabelText(/good-faith belief/i))
+    fireEvent.click(screen.getByLabelText(/under penalty of perjury/i))
+    fireEvent.click(screen.getByRole('button', { name: 'Submit notice' }))
+    await waitFor(() => expect(mockCreateNotice).toHaveBeenCalled())
+  })
 })
