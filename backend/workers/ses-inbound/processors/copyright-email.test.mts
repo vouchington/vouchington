@@ -19,7 +19,7 @@ describe('processCopyrightInboundEmail', () => {
   it('records a failed parse when MIME shape is untrusted', async () => {
     const recordCopyrightEmailParse = vi.fn<
       CopyrightEmailDependencies['recordCopyrightEmailParse']
-    >(async () => undefined)
+    >(async () => null)
     const dependencies: CopyrightEmailDependencies = {
       loadSesInboundObjectAndHash: async () => ({
         rawMime: Readable.from([Buffer.from('raw')]),
@@ -34,7 +34,7 @@ describe('processCopyrightInboundEmail', () => {
         throw Object.assign(new Error('untrusted MIME'), { status: 422 })
       },
       recordCopyrightEmailParse,
-      enqueueCopyrightEmailIntakeAndWait: async () => undefined,
+      enqueueCopyrightEmailIntakeAndWait: async () => {},
     }
 
     await processCopyrightInboundEmail(
