@@ -46,6 +46,10 @@ export interface WebFixtureClientEndpointContext {
     'fetchCommunityModeratorStats'
   >
   readonly currencies: Pick<typeof import('@/lib/api/client/currencies'), 'fetchCurrencies'>
+  readonly copyrightNotices: Pick<
+    typeof import('@/lib/api/client/copyright-notices'),
+    'listCopyrightNotices'
+  >
   readonly dynamicConfig: Pick<
     typeof import('@/lib/api/client/dynamic-config'),
     | 'fetchDynamicConfigNamespace'

@@ -22499,6 +22499,22 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/copyright-notices": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 100,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/copyright-notices/:id": {
       "path": {
         "properties": {

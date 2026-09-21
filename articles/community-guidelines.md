@@ -64,6 +64,18 @@ Signed-in users can report posts, comments, user profiles, RSS feed items, and d
 
 Moderators may use automated checks, AI-assisted judgement, community moderation tools, and human review. AI recommendations are advisory. Human moderators make final enforcement decisions for escalated cases.
 
+## Copyright Reports
+
+Copyright reports follow a separate legal process. They are not ordinary moderation reports. When
+the US copyright process is active, a signed-in claimant can submit a structured notice and an
+affected poster can appeal or submit a counter-notice. CAPTCHA helps prevent abuse. It does not
+decide whether a claim is legally valid.
+
+Do not submit false, misleading, or abusive copyright notices or counter-notices. Voucha may take
+account action for repeated abuse after human review. Accepted copyright case records are visible to
+signed-in members in redacted form. They do not reveal names, contact details, raw correspondence,
+evidence, or agent analysis.
+
 ## Appeals
 
 Members may appeal eligible warnings, bans, and post removals. Verified topic representatives may file disputes about reviews they believe are legally or factually problematic.

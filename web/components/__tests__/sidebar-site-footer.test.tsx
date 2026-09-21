@@ -8,6 +8,7 @@ describe('SidebarSiteFooter', () => {
 
     const footer = screen.getByRole('contentinfo')
     expect(footer).toContainElement(screen.getByRole('link', { name: 'About' }))
+    expect(footer).toContainElement(screen.getByRole('link', { name: 'Copyright' }))
     expect(footer).toContainElement(screen.getByRole('link', { name: 'Stories' }))
   })
 })

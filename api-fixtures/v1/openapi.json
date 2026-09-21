@@ -35763,6 +35763,27 @@
     "/api/v1/copyright-notices": {
       "get": {
         "operationId": "get_api_v1_copyright-notices",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -35772,12 +35793,78 @@
                   "properties": {
                     "copyright_notices": {
                       "items": {
-                        "$ref": "#/components/schemas/CopyrightPublicNotice"
+                        "additionalProperties": false,
+                        "properties": {
+                          "accepted_at": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "jurisdiction": {
+                            "const": "us_dmca"
+                          },
+                          "provisional_withholding_at": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "received_at": {
+                            "type": "string"
+                          },
+                          "target_count": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "accepted_at",
+                          "id",
+                          "jurisdiction",
+                          "provisional_withholding_at",
+                          "received_at",
+                          "target_count"
+                        ],
+                        "type": "object"
                       },
                       "type": "array"
+                    },
+                    "page_info": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["end_cursor", "has_next_page", "start_cursor"],
+                      "type": "object"
                     }
                   },
-                  "required": ["copyright_notices"],
+                  "required": ["copyright_notices", "page_info"],
                   "type": "object"
                 }
               }

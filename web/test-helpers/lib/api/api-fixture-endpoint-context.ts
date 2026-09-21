@@ -13,6 +13,7 @@ import * as clientCommunityRestrictions from '../../../lib/api/client/community-
 import * as clientCommunitySearch from '../../../lib/api/client/community-search'
 import * as clientCommunityModeratorStats from '../../../lib/api/client/community-moderator-stats'
 import * as clientCurrencies from '../../../lib/api/client/currencies'
+import * as clientCopyrightNotices from '../../../lib/api/client/copyright-notices'
 import * as clientDynamicConfig from '../../../lib/api/client/dynamic-config'
 import * as clientEntityRelations from '../../../lib/api/client/entity-relations'
 import * as clientFeatureFlags from '../../../lib/api/client/feature-flags'
@@ -38,6 +39,7 @@ import * as clientUsers from '../../../lib/api/client/users'
 import * as clientWarnings from '../../../lib/api/client/warnings'
 import * as serverApiKeys from '../../../lib/api/server/api-keys'
 import * as serverCommunities from '../../../lib/api/server/communities'
+import * as serverCopyrightNotices from '../../../lib/api/server/copyright-notices'
 import * as serverCommunityAgentPrompts from '../../../lib/api/server/community-agent-prompts'
 import * as serverCommunityAutomod from '../../../lib/api/server/community-automod'
 import * as serverCommunityModeration from '../../../lib/api/server/community-moderation'
@@ -78,6 +80,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     communitySearch: clientCommunitySearch,
     communityModeratorStats: clientCommunityModeratorStats,
     currencies: clientCurrencies,
+    copyrightNotices: clientCopyrightNotices,
     dynamicConfig: clientDynamicConfig,
     entityRelations: clientEntityRelations,
     featureFlags: clientFeatureFlags,
@@ -105,6 +108,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
   server: {
     apiKeys: serverApiKeys,
     communities: serverCommunities,
+    copyrightNotices: serverCopyrightNotices,
     communityAgentPrompts: serverCommunityAgentPrompts,
     communityAutomod: serverCommunityAutomod,
     communityModeration: serverCommunityModeration,

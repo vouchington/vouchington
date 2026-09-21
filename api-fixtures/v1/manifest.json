@@ -11197,6 +11197,125 @@
       "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-notices": {
+      "bodyKind": "content",
+      "hash": "25d75957fe0a0c16be24b3ef14e4b5c9bd66dc4eaca857802ce29ed8c286fa1f",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_notices": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "accepted_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "jurisdiction": {
+                      "required": true,
+                      "schema": {
+                        "type": "literal",
+                        "value": "us_dmca"
+                      }
+                    },
+                    "provisional_withholding_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "received_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "target_count": {
+                      "required": true,
+                      "schema": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "end_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "has_next_page": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "start_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/index.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "bodyKind": "content",
       "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940",
@@ -80756,6 +80875,31 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-paid-crawl-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices",
+      "bodyFile": "responses/web.copyright.notices.default.json",
+      "consumers": ["web"],
+      "id": "web.copyright.notices.default",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/index.mts",
+        "web/lib/api/client/copyright-notices.ts",
+        "web/lib/api/server/copyright-notices.ts"
+      ],
+      "path": "/api/v1/copyright-notices",
+      "responseSchema": {
+        "hash": "074daf1f3dc0959dbfa83af5cbbcb598805640e6c6f0a9e1c93bcea2ae4345c5",
+        "key": "web.copyright.notices.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/copyright-notices"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
       },
       "status": 200
     },

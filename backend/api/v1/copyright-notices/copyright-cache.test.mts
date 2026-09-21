@@ -27,7 +27,7 @@ describe('copyright API cache policy', () => {
     const moderator = createRequest()
     await moderator.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
     expect(
-      (await moderator.get('/api/v1/copyright-notices/review-queue').expect(200)).headers[
+      (await moderator.get('/api/v1/copyright-email-intakes/review-queue').expect(200)).headers[
         'cache-control'
       ],
     ).toBe('private, no-store')
