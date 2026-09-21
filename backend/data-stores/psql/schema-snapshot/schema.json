@@ -675,6 +675,9 @@
     "fn_guard_image_surface_placement": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_image_surface_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-link-image'\n    AND OLD.user_profile_link_id IS NOT NULL\n    AND NEW.user_profile_link_id IS NULL\n    AND NEW.retired_user_profile_link_id = OLD.user_profile_link_id\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.user_id IS NOT DISTINCT FROM OLD.user_id\n    AND NEW.retired_user_id IS NOT DISTINCT FROM OLD.retired_user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-image'\n    AND OLD.user_id IS NOT NULL\n    AND NEW.user_id IS NULL\n    AND NEW.retired_user_id = OLD.user_id\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.retired_user_id = OLD.user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n    AND NEW.user_profile_link_id IS NOT DISTINCT FROM OLD.user_profile_link_id\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' AND EXISTS (\n    SELECT 1\n    FROM image_surface_placements existing\n    JOIN media_placements placement ON placement.id = existing.placement_id\n    WHERE placement.retired_at IS NULL\n      AND existing.surface_kind = NEW.surface_kind\n    AND existing.user_id IS NOT DISTINCT FROM NEW.user_id\n      AND existing.topic_id IS NOT DISTINCT FROM NEW.topic_id\n      AND existing.community_id IS NOT DISTINCT FROM NEW.community_id\n      AND existing.user_profile_link_id IS NOT DISTINCT FROM NEW.user_profile_link_id\n  ) THEN\n    RAISE EXCEPTION 'a public image surface has at most one current binding' USING ERRCODE = 'unique_violation';\n  END IF;\n  IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'image surface placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
+    "fn_guard_images_id_immutable": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_images_id_immutable()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id THEN\n    RAISE EXCEPTION 'image ids are immutable byte identities' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_guard_media_placement": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.placement_kind IS DISTINCT FROM OLD.placement_kind THEN\n    RAISE EXCEPTION 'media placement kind is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -707,6 +710,9 @@
     },
     "fn_guard_terminal_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_terminal_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  terminal_column TEXT;\n  old_row JSONB := to_jsonb(OLD);\n  new_row JSONB := to_jsonb(NEW);\n  was_terminal BOOLEAN := FALSE;\nBEGIN\n  FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n    IF old_row -> terminal_column <> 'null'::jsonb THEN\n      was_terminal := TRUE;\n    END IF;\n  END LOOP;\n\n  IF was_terminal THEN\n    FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n      IF old_row -> terminal_column IS DISTINCT FROM new_row -> terminal_column THEN\n        RAISE EXCEPTION '% terminal lifecycle cannot transition after completion', TG_TABLE_NAME\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END LOOP;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_handoff_deleted_user_image_surfaces": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_handoff_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);\n  UPDATE image_surface_placements\n  SET user_id = NULL, retired_user_id = OLD.id\n  WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
     },
     "fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.openai_omni_moderation_flagged = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND EXISTS (\n        SELECT 1\n        FROM media_delivery_registry_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'allow'\n          AND registry.state = 'completed'\n      )\n  );\n$function$\n"
@@ -896,6 +902,9 @@
     },
     "fn_require_verified_membership_provider_observation_evidence": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_verified_membership_provider_observation_evidence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM membership_provider_evidence_records evidence\n    WHERE evidence.id = NEW.membership_provider_evidence_id\n      AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL\n  ) THEN\n    RAISE EXCEPTION 'membership provider observations require verified evidence' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_retire_deleted_user_image_surfaces": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_retire_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, NEW.id, NULL, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reverse_hostname_labels(p_hostname text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT array_to_string(array_reverse(string_to_array(p_hostname, '.')), '.')\n$function$\n"
@@ -11300,7 +11309,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_communities_updated_at": "CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_communities_updated_at": "CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_sync_community_image_placements": "CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_sync_community_image_placements()"
       },
       "uniqueConstraints": {}
     },
@@ -18644,28 +18654,20 @@
       "comment": "Typed provenance binding for restrictions reactivated by qualifying legal holds.",
       "foreignKeys": {
         "copyright_legal_hold_restrict_copyright_notice_legal_hold__fkey": {
-          "columns": [
-            "copyright_notice_legal_hold_assessment_id"
-          ],
+          "columns": ["copyright_notice_legal_hold_assessment_id"],
           "definition": "FOREIGN KEY (copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_legal_hold_assessments",
           "validated": true
         },
         "copyright_legal_hold_restrictions_copyright_restriction_id_fkey": {
-          "columns": [
-            "copyright_restriction_id"
-          ],
+          "columns": ["copyright_restriction_id"],
           "definition": "FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_restrictions",
           "validated": true
         }
@@ -18723,19 +18725,14 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "copyright_restriction_id"
-        ],
+        "columns": ["copyright_restriction_id"],
         "definition": "PRIMARY KEY (copyright_restriction_id)"
       },
       "relationKind": "table",
       "triggers": {},
       "uniqueConstraints": {
         "copyright_legal_hold_restrict_copyright_notice_legal_hold_a_key": {
-          "columns": [
-            "copyright_notice_legal_hold_assessment_id",
-            "copyright_restriction_id"
-          ],
+          "columns": ["copyright_notice_legal_hold_assessment_id", "copyright_restriction_id"],
           "definition": "UNIQUE (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)"
         }
       }
@@ -19183,15 +19180,11 @@
       "comment": "Immutable advisory recommendations for a moderator evaluating an ordinary copyright appeal; never an authorization to alter material availability.",
       "foreignKeys": {
         "copyright_notice_appeal_recom_copyright_notice_submission__fkey": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         }
@@ -19310,9 +19303,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -19321,18 +19312,11 @@
       },
       "uniqueConstraints": {
         "copyright_appeal_recommendations_id_submission_unique": {
-          "columns": [
-            "id",
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["id", "copyright_notice_submission_id"],
           "definition": "UNIQUE (id, copyright_notice_submission_id)"
         },
         "copyright_notice_appeal_recom_copyright_notice_submission_i_key": {
-          "columns": [
-            "copyright_notice_submission_id",
-            "input_sha256",
-            "prompt_version"
-          ],
+          "columns": ["copyright_notice_submission_id", "input_sha256", "prompt_version"],
           "definition": "UNIQUE (copyright_notice_submission_id, input_sha256, prompt_version)"
         }
       }
@@ -19477,49 +19461,34 @@
           "definition": "FOREIGN KEY (copyright_notice_appeal_recommendation_id, copyright_notice_submission_id) REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id",
-            "copyright_notice_submission_id"
-          ],
+          "referencedColumns": ["id", "copyright_notice_submission_id"],
           "referencedTable": "copyright_notice_appeal_recommendations",
           "validated": true
         },
         "copyright_notice_appeal_revie_copyright_notice_submission__fkey": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_appeal_reviews_copyright_restriction_id_fkey": {
-          "columns": [
-            "copyright_restriction_id"
-          ],
+          "columns": ["copyright_restriction_id"],
           "definition": "FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_restrictions",
           "validated": true
         },
         "copyright_notice_appeal_reviews_reviewed_by_id_fkey": {
-          "columns": [
-            "reviewed_by_id"
-          ],
+          "columns": ["reviewed_by_id"],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
         }
@@ -19637,9 +19606,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -19649,10 +19616,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_appeal_revie_copyright_notice_submission_i_key": {
-          "columns": [
-            "copyright_notice_submission_id",
-            "copyright_restriction_id"
-          ],
+          "columns": ["copyright_notice_submission_id", "copyright_restriction_id"],
           "definition": "UNIQUE (copyright_notice_submission_id, copyright_restriction_id)"
         }
       }
@@ -19865,15 +19829,11 @@
           "validated": true
         },
         "fk_copyright_correspondence__email_intake": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -20048,10 +20008,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_correspondence_id_notice_unique": {
-          "columns": [
-            "id",
-            "copyright_notice_id"
-          ],
+          "columns": ["id", "copyright_notice_id"],
           "definition": "UNIQUE (id, copyright_notice_id)"
         }
       }
@@ -20315,54 +20272,38 @@
       "comment": "Immutable moderator formal-compliance decisions for statutory US counter-notices.",
       "foreignKeys": {
         "copyright_notice_counter_not_copyright_notice_submission__fkey1": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_counter_not_copyright_notice_submission__fkey2": {
-          "columns": [
-            "copyright_notice_submission_assessment_id"
-          ],
+          "columns": ["copyright_notice_submission_assessment_id"],
           "definition": "FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submission_assessments",
           "validated": true
         },
         "copyright_notice_counter_noti_copyright_notice_deadline_id_fkey": {
-          "columns": [
-            "copyright_notice_deadline_id"
-          ],
+          "columns": ["copyright_notice_deadline_id"],
           "definition": "FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_deadlines",
           "validated": true
         },
         "copyright_notice_counter_notice_reviews_reviewed_by_id_fkey": {
-          "columns": [
-            "reviewed_by_id"
-          ],
+          "columns": ["reviewed_by_id"],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
         }
@@ -20473,9 +20414,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -20485,21 +20424,15 @@
       },
       "uniqueConstraints": {
         "copyright_notice_counter_noti_copyright_notice_submission_a_key": {
-          "columns": [
-            "copyright_notice_submission_assessment_id"
-          ],
+          "columns": ["copyright_notice_submission_assessment_id"],
           "definition": "UNIQUE (copyright_notice_submission_assessment_id)"
         },
         "copyright_notice_counter_noti_copyright_notice_submission_i_key": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "UNIQUE (copyright_notice_submission_id)"
         },
         "copyright_notice_counter_notic_copyright_notice_deadline_id_key": {
-          "columns": [
-            "copyright_notice_deadline_id"
-          ],
+          "columns": ["copyright_notice_deadline_id"],
           "definition": "UNIQUE (copyright_notice_deadline_id)"
         }
       }
@@ -21024,58 +20957,38 @@
       "comment": "Durable, idempotent legal-notice delivery obligations. Transport workers claim and transition intents; they cannot alter case facts.",
       "foreignKeys": {
         "copyright_notice_delivery_int_copyright_notice_corresponde_fkey": {
-          "columns": [
-            "copyright_notice_correspondence_message_id",
-            "copyright_notice_id"
-          ],
+          "columns": ["copyright_notice_correspondence_message_id", "copyright_notice_id"],
           "definition": "FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id) REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id",
-            "copyright_notice_id"
-          ],
+          "referencedColumns": ["id", "copyright_notice_id"],
           "referencedTable": "copyright_notice_correspondence_messages",
           "validated": true
         },
         "copyright_notice_delivery_int_copyright_notice_submission__fkey": {
-          "columns": [
-            "copyright_notice_submission_id",
-            "copyright_notice_id"
-          ],
+          "columns": ["copyright_notice_submission_id", "copyright_notice_id"],
           "definition": "FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id) REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id",
-            "copyright_notice_id"
-          ],
+          "referencedColumns": ["id", "copyright_notice_id"],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_delivery_intents_copyright_notice_id_fkey": {
-          "columns": [
-            "copyright_notice_id"
-          ],
+          "columns": ["copyright_notice_id"],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
           "validated": true
         },
         "copyright_notice_delivery_intents_recipient_user_id_fkey": {
-          "columns": [
-            "recipient_user_id"
-          ],
+          "columns": ["recipient_user_id"],
           "definition": "FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
         }
@@ -21274,9 +21187,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -21286,9 +21197,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_delivery_intents_idempotency_key_key": {
-          "columns": [
-            "idempotency_key"
-          ],
+          "columns": ["idempotency_key"],
           "definition": "UNIQUE (idempotency_key)"
         }
       }
@@ -21357,15 +21266,11 @@
       "comment": "Intent-scoped encrypted email recipients for legal delivery. This avoids reusing or guessing evidence-encryption purposes.",
       "foreignKeys": {
         "copyright_notice_delivery_rec_copyright_notice_delivery_in_fkey": {
-          "columns": [
-            "copyright_notice_delivery_intent_id"
-          ],
+          "columns": ["copyright_notice_delivery_intent_id"],
           "definition": "FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_delivery_intents",
           "validated": true
         }
@@ -21416,9 +21321,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -21428,9 +21331,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_delivery_rec_copyright_notice_delivery_int_key": {
-          "columns": [
-            "copyright_notice_delivery_intent_id"
-          ],
+          "columns": ["copyright_notice_delivery_intent_id"],
           "definition": "UNIQUE (copyright_notice_delivery_intent_id)"
         }
       }
@@ -21604,80 +21505,56 @@
       "comment": "Append-only pending and moderator decisions for matched inbound copyright email; no decision is automatic.",
       "foreignKeys": {
         "copyright_notice_email_corre_copyright_notice_email_intak_fkey1": {
-          "columns": [
-            "copyright_notice_email_intake_recommendation_id"
-          ],
+          "columns": ["copyright_notice_email_intake_recommendation_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intake_recommendations",
           "validated": true
         },
         "copyright_notice_email_corres_copyright_notice_corresponde_fkey": {
-          "columns": [
-            "copyright_notice_correspondence_id"
-          ],
+          "columns": ["copyright_notice_correspondence_id"],
           "definition": "FOREIGN KEY (copyright_notice_correspondence_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_correspondence_messages",
           "validated": true
         },
         "copyright_notice_email_corres_copyright_notice_email_intak_fkey": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         },
         "copyright_notice_email_corres_copyright_notice_submission__fkey": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_email_correspondence__copyright_notice_id_fkey": {
-          "columns": [
-            "copyright_notice_id"
-          ],
+          "columns": ["copyright_notice_id"],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
           "validated": true
         },
         "copyright_notice_email_correspondence_revie_reviewed_by_id_fkey": {
-          "columns": [
-            "reviewed_by_id"
-          ],
+          "columns": ["reviewed_by_id"],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
         }
@@ -21862,9 +21739,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -21875,22 +21750,15 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_corres_copyright_notice_corresponden_key": {
-          "columns": [
-            "copyright_notice_correspondence_id"
-          ],
+          "columns": ["copyright_notice_correspondence_id"],
           "definition": "UNIQUE (copyright_notice_correspondence_id)"
         },
         "copyright_notice_email_corres_copyright_notice_email_intake_key": {
-          "columns": [
-            "copyright_notice_email_intake_id",
-            "action"
-          ],
+          "columns": ["copyright_notice_email_intake_id", "action"],
           "definition": "UNIQUE (copyright_notice_email_intake_id, action)"
         },
         "copyright_notice_email_corres_copyright_notice_submission_i_key": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "UNIQUE (copyright_notice_submission_id)"
         }
       }
@@ -22019,15 +21887,11 @@
       "comment": "Private parsed attachment metadata; attachment bytes remain preserved inside the original MIME object until a moderator admits them as case evidence.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey1": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -22112,9 +21976,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -22123,10 +21985,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake_copyright_notice_email_intak_key1": {
-          "columns": [
-            "copyright_notice_email_intake_id",
-            "ordinal"
-          ],
+          "columns": ["copyright_notice_email_intake_id", "ordinal"],
           "definition": "UNIQUE (copyright_notice_email_intake_id, ordinal)"
         }
       }
@@ -22229,41 +22088,29 @@
       "comment": "Immutable private association between an email intake and its admitted or matched copyright case.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey5": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         },
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey6": {
-          "columns": [
-            "copyright_notice_email_intake_recommendation_id"
-          ],
+          "columns": ["copyright_notice_email_intake_recommendation_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intake_recommendations",
           "validated": true
         },
         "copyright_notice_email_intake_notice_l_copyright_notice_id_fkey": {
-          "columns": [
-            "copyright_notice_id"
-          ],
+          "columns": ["copyright_notice_id"],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
           "validated": true
         }
@@ -22361,9 +22208,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -22372,9 +22217,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake_copyright_notice_email_intak_key4": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "UNIQUE (copyright_notice_email_intake_id)"
         }
       }
@@ -22527,15 +22370,11 @@
       "comment": "Append-only bounded MIME parse result. Failed parsing remains a staff-visible legal intake with the immutable original attached.",
       "foreignKeys": {
         "copyright_notice_email_intake_copyright_notice_email_intak_fkey": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -22586,9 +22425,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -22597,9 +22434,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake_copyright_notice_email_intake_key": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "UNIQUE (copyright_notice_email_intake_id)"
         }
       }
@@ -22704,15 +22539,11 @@
       "comment": "Immutable agent extraction and recommendation. It is advisory only and cannot impose a copyright restriction.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey2": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -22804,9 +22635,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -22815,11 +22644,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake_copyright_notice_email_intak_key2": {
-          "columns": [
-            "copyright_notice_email_intake_id",
-            "input_sha256",
-            "prompt_version"
-          ],
+          "columns": ["copyright_notice_email_intake_id", "input_sha256", "prompt_version"],
           "definition": "UNIQUE (copyright_notice_email_intake_id, input_sha256, prompt_version)"
         }
       }
@@ -23054,15 +22879,11 @@
       "comment": "Private, durable responses to rejected or incomplete email intakes. These rows never create a copyright case.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey7": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -23180,9 +23001,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -23192,15 +23011,11 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake_copyright_notice_email_intak_key5": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "UNIQUE (copyright_notice_email_intake_id)"
         },
         "copyright_notice_email_intake_responses_idempotency_key_key": {
-          "columns": [
-            "idempotency_key"
-          ],
+          "columns": ["idempotency_key"],
           "definition": "UNIQUE (idempotency_key)"
         }
       }
@@ -23325,54 +23140,38 @@
       "comment": "Append-only moderator approval or rejection of an email extraction. A moderator must review before an email can create or affect a copyright case.",
       "foreignKeys": {
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey3": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         },
         "copyright_notice_email_intak_copyright_notice_email_intak_fkey4": {
-          "columns": [
-            "copyright_notice_email_intake_recommendation_id"
-          ],
+          "columns": ["copyright_notice_email_intake_recommendation_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intake_recommendations",
           "validated": true
         },
         "copyright_notice_email_intake_promoted_copyright_notice_id_fkey": {
-          "columns": [
-            "promoted_copyright_notice_id"
-          ],
+          "columns": ["promoted_copyright_notice_id"],
           "definition": "FOREIGN KEY (promoted_copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
           "validated": true
         },
         "copyright_notice_email_intake_reviews_reviewed_by_id_fkey": {
-          "columns": [
-            "reviewed_by_id"
-          ],
+          "columns": ["reviewed_by_id"],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
         }
@@ -23517,9 +23316,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -23530,15 +23327,11 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intake__promoted_copyright_notice_id_key": {
-          "columns": [
-            "promoted_copyright_notice_id"
-          ],
+          "columns": ["promoted_copyright_notice_id"],
           "definition": "UNIQUE (promoted_copyright_notice_id)"
         },
         "copyright_notice_email_intake_copyright_notice_email_intak_key3": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "UNIQUE (copyright_notice_email_intake_id)"
         }
       }
@@ -23700,9 +23493,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -23711,9 +23502,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_intakes_ses_message_id_key": {
-          "columns": [
-            "ses_message_id"
-          ],
+          "columns": ["ses_message_id"],
           "definition": "UNIQUE (ses_message_id)"
         }
       }
@@ -23794,15 +23583,11 @@
       "comment": "Keyed RFC Message-ID and In-Reply-To/References values used only for private case correlation.",
       "foreignKeys": {
         "copyright_notice_email_thread_copyright_notice_email_intak_fkey": {
-          "columns": [
-            "copyright_notice_email_intake_id"
-          ],
+          "columns": ["copyright_notice_email_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         }
@@ -23894,9 +23679,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -23905,11 +23688,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_email_thread_copyright_notice_email_intake_key": {
-          "columns": [
-            "copyright_notice_email_intake_id",
-            "lookup_token",
-            "reference_kind"
-          ],
+          "columns": ["copyright_notice_email_intake_id", "lookup_token", "reference_kind"],
           "definition": "UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)"
         }
       }
@@ -24036,41 +23815,29 @@
       "comment": "Durable outbox created atomically with every compliant initial-notice assessment and completed only after every target has an active restriction.",
       "foreignKeys": {
         "copyright_notice_enforcement__copyright_notice_submission__fkey": {
-          "columns": [
-            "copyright_notice_submission_assessment_id"
-          ],
+          "columns": ["copyright_notice_submission_assessment_id"],
           "definition": "FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submission_assessments",
           "validated": true
         },
         "copyright_notice_enforcement_requests_copyright_notice_id_fkey": {
-          "columns": [
-            "copyright_notice_id"
-          ],
+          "columns": ["copyright_notice_id"],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
           "validated": true
         },
         "copyright_notice_enforcement_requests_imposed_by_id_fkey": {
-          "columns": [
-            "imposed_by_id"
-          ],
+          "columns": ["imposed_by_id"],
           "definition": "FOREIGN KEY (imposed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
         }
@@ -24168,9 +23935,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "copyright_notice_submission_assessment_id"
-        ],
+        "columns": ["copyright_notice_submission_assessment_id"],
         "definition": "PRIMARY KEY (copyright_notice_submission_assessment_id)"
       },
       "relationKind": "table",
@@ -24450,28 +24215,20 @@
       "comment": "Immutable moderator approval or rejection required for guest forms and signed-in forms flagged by anti-spam.",
       "foreignKeys": {
         "copyright_notice_form_intake__copyright_notice_form_intake_fkey": {
-          "columns": [
-            "copyright_notice_form_intake_id"
-          ],
+          "columns": ["copyright_notice_form_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_form_intakes",
           "validated": true
         },
         "copyright_notice_form_intake_reviews_reviewed_by_id_fkey": {
-          "columns": [
-            "reviewed_by_id"
-          ],
+          "columns": ["reviewed_by_id"],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
         }
@@ -24542,9 +24299,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -24554,9 +24309,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_form_intake__copyright_notice_form_intake__key": {
-          "columns": [
-            "copyright_notice_form_intake_id"
-          ],
+          "columns": ["copyright_notice_form_intake_id"],
           "definition": "UNIQUE (copyright_notice_form_intake_id)"
         }
       }
@@ -24704,41 +24457,29 @@
       "comment": "Idempotent structured web-form copyright admissions. Anonymous identities are one-way digests, not retained IP addresses.",
       "foreignKeys": {
         "copyright_notice_form_intakes_copyright_notice_id_fkey": {
-          "columns": [
-            "copyright_notice_id"
-          ],
+          "columns": ["copyright_notice_id"],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
           "validated": true
         },
         "copyright_notice_form_intakes_copyright_notice_submission__fkey": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_form_intakes_requester_user_id_fkey": {
-          "columns": [
-            "requester_user_id"
-          ],
+          "columns": ["requester_user_id"],
           "definition": "FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
         }
@@ -24863,9 +24604,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -24874,22 +24613,15 @@
       },
       "uniqueConstraints": {
         "copyright_notice_form_intakes_copyright_notice_id_key": {
-          "columns": [
-            "copyright_notice_id"
-          ],
+          "columns": ["copyright_notice_id"],
           "definition": "UNIQUE (copyright_notice_id)"
         },
         "copyright_notice_form_intakes_copyright_notice_submission_i_key": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "UNIQUE (copyright_notice_submission_id)"
         },
         "copyright_notice_form_intakes_requester_identity_sha256_ide_key": {
-          "columns": [
-            "requester_identity_sha256",
-            "idempotency_key"
-          ],
+          "columns": ["requester_identity_sha256", "idempotency_key"],
           "definition": "UNIQUE (requester_identity_sha256, idempotency_key)"
         }
       }
@@ -25006,15 +24738,11 @@
       "comment": "Immutable advisory anti-spam recommendations. Only a workflow service, never an agent, may act on a signed-in intake that is not obviously invalid.",
       "foreignKeys": {
         "copyright_notice_form_screeni_copyright_notice_form_intake_fkey": {
-          "columns": [
-            "copyright_notice_form_intake_id"
-          ],
+          "columns": ["copyright_notice_form_intake_id"],
           "definition": "FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_form_intakes",
           "validated": true
         }
@@ -25106,9 +24834,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -25117,11 +24843,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_form_screeni_copyright_notice_form_intake__key": {
-          "columns": [
-            "copyright_notice_form_intake_id",
-            "input_sha256",
-            "prompt_version"
-          ],
+          "columns": ["copyright_notice_form_intake_id", "input_sha256", "prompt_version"],
           "definition": "UNIQUE (copyright_notice_form_intake_id, input_sha256, prompt_version)"
         }
       }
@@ -26053,15 +25775,11 @@
           "validated": true
         },
         "fk_copyright_assessments__form_screening": {
-          "columns": [
-            "copyright_notice_form_screening_id"
-          ],
+          "columns": ["copyright_notice_form_screening_id"],
           "definition": "FOREIGN KEY (copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_form_screenings",
           "validated": true
         }
@@ -26282,28 +26000,20 @@
       "comment": "Idempotency records for authenticated appeal and counter-notice submissions.",
       "foreignKeys": {
         "copyright_notice_submission_r_copyright_notice_submission__fkey": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_submission_requests_requester_user_id_fkey": {
-          "columns": [
-            "requester_user_id"
-          ],
+          "columns": ["requester_user_id"],
           "definition": "FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
         }
@@ -26381,9 +26091,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -26392,16 +26100,11 @@
       },
       "uniqueConstraints": {
         "copyright_notice_submission_r_copyright_notice_submission_i_key": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "UNIQUE (copyright_notice_submission_id)"
         },
         "copyright_notice_submission_r_requester_user_id_idempotency_key": {
-          "columns": [
-            "requester_user_id",
-            "idempotency_key"
-          ],
+          "columns": ["requester_user_id", "idempotency_key"],
           "definition": "UNIQUE (requester_user_id, idempotency_key)"
         }
       }
@@ -26468,28 +26171,20 @@
       "comment": "Exact case targets selected by an appellant or statutory counter-notice sender before compliance assessment.",
       "foreignKeys": {
         "copyright_notice_submission_t_copyright_notice_submission__fkey": {
-          "columns": [
-            "copyright_notice_submission_id"
-          ],
+          "columns": ["copyright_notice_submission_id"],
           "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submissions",
           "validated": true
         },
         "copyright_notice_submission_tar_copyright_notice_target_id_fkey": {
-          "columns": [
-            "copyright_notice_target_id"
-          ],
+          "columns": ["copyright_notice_target_id"],
           "definition": "FOREIGN KEY (copyright_notice_target_id) REFERENCES copyright_notice_targets(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_targets",
           "validated": true
         }
@@ -26574,9 +26269,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -26586,10 +26279,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_submission_t_copyright_notice_submission_i_key": {
-          "columns": [
-            "copyright_notice_submission_id",
-            "copyright_notice_target_id"
-          ],
+          "columns": ["copyright_notice_submission_id", "copyright_notice_target_id"],
           "definition": "UNIQUE (copyright_notice_submission_id, copyright_notice_target_id)"
         }
       }
@@ -26838,10 +26528,7 @@
       },
       "uniqueConstraints": {
         "copyright_notice_submissions_id_notice_unique": {
-          "columns": [
-            "id",
-            "copyright_notice_id"
-          ],
+          "columns": ["id", "copyright_notice_id"],
           "definition": "UNIQUE (id, copyright_notice_id)"
         }
       }
@@ -27568,15 +27255,11 @@
           "validated": true
         },
         "fk_copyright_restrictions__authorizing_assessment": {
-          "columns": [
-            "authorizing_assessment_id"
-          ],
+          "columns": ["authorizing_assessment_id"],
           "definition": "FOREIGN KEY (authorizing_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submission_assessments",
           "validated": true
         }
@@ -34127,41 +33810,29 @@
       "comment": "Immutable image binding for a media placement. A post/image pair retains one stable placement identity across detach and reattach.",
       "foreignKeys": {
         "image_placements_image_id_fkey": {
-          "columns": [
-            "image_id"
-          ],
+          "columns": ["image_id"],
           "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "images",
           "validated": true
         },
         "image_placements_placement_id_fkey": {
-          "columns": [
-            "placement_id"
-          ],
+          "columns": ["placement_id"],
           "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "media_placements",
           "validated": true
         },
         "image_placements_post_id_fkey": {
-          "columns": [
-            "post_id"
-          ],
+          "columns": ["post_id"],
           "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "posts",
           "validated": true
         }
@@ -34239,9 +33910,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "placement_id"
-        ],
+        "columns": ["placement_id"],
         "definition": "PRIMARY KEY (placement_id)"
       },
       "relationKind": "table",
@@ -34250,10 +33919,7 @@
       },
       "uniqueConstraints": {
         "image_placements_post_id_image_id_key": {
-          "columns": [
-            "post_id",
-            "image_id"
-          ],
+          "columns": ["post_id", "image_id"],
           "definition": "UNIQUE (post_id, image_id)"
         }
       }
@@ -34378,80 +34044,56 @@
       "comment": "Immutable bindings for non-post persisted public image surfaces. Each surface has typed foreign-key columns; no polymorphic owner reference is permitted.",
       "foreignKeys": {
         "image_surface_placements_community_id_fkey": {
-          "columns": [
-            "community_id"
-          ],
+          "columns": ["community_id"],
           "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "communities",
           "validated": true
         },
         "image_surface_placements_image_id_fkey": {
-          "columns": [
-            "image_id"
-          ],
+          "columns": ["image_id"],
           "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "images",
           "validated": true
         },
         "image_surface_placements_placement_id_fkey": {
-          "columns": [
-            "placement_id"
-          ],
+          "columns": ["placement_id"],
           "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "media_placements",
           "validated": true
         },
         "image_surface_placements_topic_id_fkey": {
-          "columns": [
-            "topic_id"
-          ],
+          "columns": ["topic_id"],
           "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "topics",
           "validated": true
         },
         "image_surface_placements_user_id_fkey": {
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
         },
         "image_surface_placements_user_profile_link_id_fkey": {
-          "columns": [
-            "user_profile_link_id"
-          ],
+          "columns": ["user_profile_link_id"],
           "definition": "FOREIGN KEY (user_profile_link_id) REFERENCES user_profile_links(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "user_profile_links",
           "validated": true
         }
@@ -34744,9 +34386,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "placement_id"
-        ],
+        "columns": ["placement_id"],
         "definition": "PRIMARY KEY (placement_id)"
       },
       "relationKind": "table",
@@ -34842,7 +34482,7 @@
         },
         "id": {
           "collation": null,
-          "comment": null,
+          "comment": "Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.",
           "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
@@ -35110,9 +34750,16 @@
         "idx_images__staged_source_cleanup": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL))",
+          "definition": "CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL))",
           "includedColumns": [],
           "keys": [
+            {
+              "column": "upload_staged_at",
+              "descending": false,
+              "expression": "upload_staged_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
             {
               "column": "id",
               "descending": false,
@@ -35224,6 +34871,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_images_guard_terminal_lifecycle": "CREATE TRIGGER trigger_images_guard_terminal_lifecycle BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('upload_completed_at', 'upload_failed_at')",
+        "trigger_images_id_immutable": "CREATE TRIGGER trigger_images_id_immutable BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_guard_images_id_immutable()",
         "trigger_images_updated_at": "CREATE TRIGGER trigger_images_updated_at BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -37387,28 +37035,20 @@
       "comment": "Durable exact delivery-tuple projection to the edge DynamoDB authority. Absence is denied by the edge. New media kinds add their own foreign-key column and check branch in a later migration.",
       "foreignKeys": {
         "media_delivery_registry_records_asset_id_fkey": {
-          "columns": [
-            "asset_id"
-          ],
+          "columns": ["asset_id"],
           "definition": "FOREIGN KEY (asset_id) REFERENCES images(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "images",
           "validated": true
         },
         "media_delivery_registry_records_placement_id_fkey": {
-          "columns": [
-            "placement_id"
-          ],
+          "columns": ["placement_id"],
           "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "media_placements",
           "validated": true
         }
@@ -37506,9 +37146,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "delivery_key"
-        ],
+        "columns": ["delivery_key"],
         "definition": "PRIMARY KEY (delivery_key)"
       },
       "relationKind": "table",
@@ -37642,9 +37280,7 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": [
-          "id"
-        ],
+        "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
@@ -53229,15 +52865,11 @@
           "validated": true
         },
         "fk_notifications__copyright_notice": {
-          "columns": [
-            "copyright_notice_id"
-          ],
+          "columns": ["copyright_notice_id"],
           "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
-          "referencedColumns": [
-            "id"
-          ],
+          "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
           "validated": true
         },
@@ -96404,6 +96036,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_create_topic_metrics": "CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_topic_metrics_on_insert()",
+        "trigger_sync_topic_image_placements": "CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_sync_topic_image_placements()",
         "trigger_topics_updated_at": "CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -103397,6 +103030,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_sync_user_profile_link_image_placement": "CREATE TRIGGER trigger_sync_user_profile_link_image_placement AFTER INSERT OR UPDATE OF image_id ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_link_image_placement()",
         "trigger_user_profile_links_updated_at": "CREATE TRIGGER trigger_user_profile_links_updated_at BEFORE UPDATE ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -107306,6 +106940,9 @@
       "relationKind": "table",
       "triggers": {
         "trigger_create_user_metrics": "CREATE TRIGGER trigger_create_user_metrics AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_metrics_on_insert()",
+        "trigger_handoff_deleted_user_image_surfaces": "CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces BEFORE DELETE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_handoff_deleted_user_image_surfaces()",
+        "trigger_retire_deleted_user_image_surfaces": "CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_retire_deleted_user_image_surfaces()",
+        "trigger_sync_user_profile_image_placement": "CREATE TRIGGER trigger_sync_user_profile_image_placement AFTER INSERT OR UPDATE OF profile_image_id ON public.users FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_image_placement()",
         "trigger_users_create_individual_household": "CREATE TRIGGER trigger_users_create_individual_household AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_individual_household()",
         "trigger_users_updated_at": "CREATE TRIGGER trigger_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -110997,12 +110634,12 @@
     },
     "view_embedded_topics": {
       "comment": null,
-      "definition": " SELECT 'topic'::text AS __entity_type,\n    id,\n    name,\n    slug,\n    markdown,\n    topic_type,\n    noindex,\n    allow_reviews,\n    created_at,\n    hostname_id,\n    homepage_url_id,\n    logo_image_id,\n    hero_image_id,\n    rewards_program_id,\n    referral_program_id,\n    ( SELECT t2.slug\n           FROM topics t2\n          WHERE ((t2.id = topics.referral_program_id) AND (t2.deleted_at IS NULL) AND (t2.merged_into_topic_id IS NULL))\n         LIMIT 1) AS referral_program_slug,\n    lingua_rs_detected_language\n   FROM topics\n  WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL));",
+      "definition": " SELECT 'topic'::text AS __entity_type,\n    id,\n    name,\n    slug,\n    markdown,\n    topic_type,\n    noindex,\n    allow_reviews,\n    created_at,\n    hostname_id,\n    homepage_url_id,\n    logo_image_id,\n    hero_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'topic-logo-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS logo_image_placement,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'topic-hero-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS hero_image_placement,\n    rewards_program_id,\n    referral_program_id,\n    ( SELECT t2.slug\n           FROM topics t2\n          WHERE ((t2.id = topics.referral_program_id) AND (t2.deleted_at IS NULL) AND (t2.merged_into_topic_id IS NULL))\n         LIMIT 1) AS referral_program_slug,\n    lingua_rs_detected_language\n   FROM topics\n  WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL));",
       "materialized": false
     },
     "view_embedded_users": {
       "comment": null,
-      "definition": " SELECT 'user'::text AS __entity_type,\n    id,\n    username,\n    use_display_name_from,\n        CASE\n            WHEN (use_display_name_from = 'facebook'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (fa.facebook_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM facebook_accounts fa\n              WHERE (fa.user_id = users.id))\n            WHEN (use_display_name_from = 'apple'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (aa.apple_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM apple_accounts aa\n              WHERE (aa.user_id = users.id))\n            WHEN (use_display_name_from = 'google'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (ga.google_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM google_accounts ga\n              WHERE (ga.user_id = users.id))\n            WHEN (use_display_name_from = 'x'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (xa.x_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM x_accounts xa\n              WHERE (xa.user_id = users.id))\n            WHEN (use_display_name_from = 'linkedin'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (la.linkedin_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM linkedin_accounts la\n              WHERE (la.user_id = users.id))\n            WHEN (use_display_name_from = 'microsoft'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (ma.microsoft_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM microsoft_accounts ma\n              WHERE (ma.user_id = users.id))\n            WHEN (use_display_name_from = 'github'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (gha.github_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM github_accounts gha\n              WHERE (gha.user_id = users.id))\n            ELSE NULL::jsonb\n        END AS display_account,\n    profile_image_id,\n    ARRAY[]::text[] AS roles,\n    COALESCE(((username = ANY (ARRAY['system'::text, 'autotagger'::text, 'customer-support'::text, 'rss-feed-auto-updater'::text, 'story-teller'::text, 'voucha'::text])) OR (EXISTS ( SELECT 1\n           FROM (user_roles\n             LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))\n          WHERE ((user_roles.user_id = users.id) AND (user_roles_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text, 'customer_support'::text]))))) OR (EXISTS ( SELECT 1\n           FROM agents\n          WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL))))), false) AS is_official_account\n   FROM users\n  WHERE (deleted_at IS NULL);",
+      "definition": " SELECT 'user'::text AS __entity_type,\n    id,\n    username,\n    use_display_name_from,\n        CASE\n            WHEN (use_display_name_from = 'facebook'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (fa.facebook_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM facebook_accounts fa\n              WHERE (fa.user_id = users.id))\n            WHEN (use_display_name_from = 'apple'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (aa.apple_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM apple_accounts aa\n              WHERE (aa.user_id = users.id))\n            WHEN (use_display_name_from = 'google'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (ga.google_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM google_accounts ga\n              WHERE (ga.user_id = users.id))\n            WHEN (use_display_name_from = 'x'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (xa.x_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM x_accounts xa\n              WHERE (xa.user_id = users.id))\n            WHEN (use_display_name_from = 'linkedin'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (la.linkedin_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM linkedin_accounts la\n              WHERE (la.user_id = users.id))\n            WHEN (use_display_name_from = 'microsoft'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (ma.microsoft_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM microsoft_accounts ma\n              WHERE (ma.user_id = users.id))\n            WHEN (use_display_name_from = 'github'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (gha.github_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM github_accounts gha\n              WHERE (gha.user_id = users.id))\n            ELSE NULL::jsonb\n        END AS display_account,\n    profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'user-profile-image'::text) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    ARRAY[]::text[] AS roles,\n    COALESCE(((username = ANY (ARRAY['system'::text, 'autotagger'::text, 'customer-support'::text, 'rss-feed-auto-updater'::text, 'story-teller'::text, 'voucha'::text])) OR (EXISTS ( SELECT 1\n           FROM (user_roles\n             LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))\n          WHERE ((user_roles.user_id = users.id) AND (user_roles_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text, 'customer_support'::text]))))) OR (EXISTS ( SELECT 1\n           FROM agents\n          WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL))))), false) AS is_official_account\n   FROM users\n  WHERE (deleted_at IS NULL);",
       "materialized": false
     },
     "view_list_items": {
@@ -111022,7 +110659,7 @@
     },
     "view_posts": {
       "comment": null,
-      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_id,\n    posts.parent_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::text THEN 0\n                            WHEN 'markdown'::text THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::text))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM (post_images\n             JOIN images ON (((images.id = post_images.image_id) AND (images.deleted_at IS NULL) AND (images.upload_completed_at IS NOT NULL) AND (images.quarantine_pending_at IS NULL))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS openai_omni_moderation_flagged,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendations_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ptr.example_referral_link, 'landing_page_urls', ptr.landing_page_urls, 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
+      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_id,\n    posts.parent_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::text THEN 0\n                            WHEN 'markdown'::text THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::text))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM ((post_images\n             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))\n             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, post_images.image_id))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS openai_omni_moderation_flagged,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendations_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ptr.example_referral_link, 'landing_page_urls', ptr.landing_page_urls, 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
       "materialized": false
     },
     "view_public_post_eligibility": {
@@ -111052,7 +110689,7 @@
     },
     "view_topics": {
       "comment": null,
-      "definition": " SELECT 'topic'::text AS __entity_type,\n    topics.id,\n    topics.name,\n    topics.slug,\n    topics.markdown,\n    topics.topic_type,\n    topics.noindex,\n    topics.allow_reviews,\n    topics.created_at,\n    topics.hostname_id,\n    topics.homepage_url_id,\n    topics.logo_image_id,\n    topics.hero_image_id,\n    topics.rewards_program_id,\n    topics.referral_program_id,\n    topics.aliases,\n        CASE\n            WHEN (view_url_hostnames.id IS NULL) THEN NULL::json\n            ELSE json_build_object('__entity_type', view_url_hostnames.__entity_type, 'id', view_url_hostnames.id, 'hostname', view_url_hostnames.hostname, 'topic_id', view_url_hostnames.topic_id)\n        END AS hostname,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = topics.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = topics.updated_by_id)) AS updated_by,\n    topics.lingua_rs_detected_language\n   FROM (topics\n     LEFT JOIN view_url_hostnames ON ((view_url_hostnames.id = topics.hostname_id)))\n  WHERE ((topics.deleted_at IS NULL) AND (topics.merged_into_topic_id IS NULL));",
+      "definition": " SELECT 'topic'::text AS __entity_type,\n    topics.id,\n    topics.name,\n    topics.slug,\n    topics.markdown,\n    topics.topic_type,\n    topics.noindex,\n    topics.allow_reviews,\n    topics.created_at,\n    topics.hostname_id,\n    topics.homepage_url_id,\n    topics.logo_image_id,\n    topics.hero_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'topic-logo-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS logo_image_placement,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'topic-hero-image'::text) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS hero_image_placement,\n    topics.rewards_program_id,\n    topics.referral_program_id,\n    topics.aliases,\n        CASE\n            WHEN (view_url_hostnames.id IS NULL) THEN NULL::json\n            ELSE json_build_object('__entity_type', view_url_hostnames.__entity_type, 'id', view_url_hostnames.id, 'hostname', view_url_hostnames.hostname, 'topic_id', view_url_hostnames.topic_id)\n        END AS hostname,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = topics.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = topics.updated_by_id)) AS updated_by,\n    topics.lingua_rs_detected_language\n   FROM (topics\n     LEFT JOIN view_url_hostnames ON ((view_url_hostnames.id = topics.hostname_id)))\n  WHERE ((topics.deleted_at IS NULL) AND (topics.merged_into_topic_id IS NULL));",
       "materialized": false
     },
     "view_url_hostnames": {
@@ -111072,12 +110709,12 @@
     },
     "view_users_private": {
       "comment": null,
-      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', (fa.facebook_user_data ->> 'name'::text), 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE (fa.user_id = users.id)) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_roles_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM (user_roles\n             LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))\n          WHERE (user_roles.user_id = users.id)) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.third_party_marketing,\n    users.hn_discussions,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', (aa.apple_user_data ->> 'name'::text), 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE (aa.user_id = users.id)) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', (ga.google_user_data ->> 'name'::text), 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE (ga.user_id = users.id)) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', (xa.x_user_data ->> 'name'::text), 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE (xa.user_id = users.id)) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', (la.linkedin_user_data ->> 'name'::text), 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE (la.user_id = users.id)) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', (ma.microsoft_user_data ->> 'name'::text), 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE (ma.user_id = users.id)) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', (gha.github_user_data ->> 'name'::text), 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE (gha.user_id = users.id)) AS github_account,\n    (EXISTS ( SELECT 1\n           FROM agents\n          WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL)))) AS is_agent,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN ((users.verification_status = 'verified'::identity_verification_statuses) AND (users.verified_badge_visible = true)) THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((users.verified_first_name IS NOT NULL) AND (users.verified_last_name_initial IS NOT NULL)) THEN (((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text)\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE ((bla.user_id = users.id) AND (bla.disconnect_requested_at IS NULL))) AS bluesky_account\n   FROM ((((users\n     LEFT JOIN user_email_addresses ON (((user_email_addresses.user_id = users.id) AND (user_email_addresses.is_primary = true))))\n     LEFT JOIN user_phone_numbers ON (((user_phone_numbers.user_id = users.id) AND (user_phone_numbers.is_primary = true))))\n     LEFT JOIN view_current_paid_memberships paid_membership ON ((paid_membership.user_id = users.id)))\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE ((user_suspensions.user_id = users.id) AND (user_suspensions.lifted_at IS NULL))\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON (true))\n  WHERE (users.deleted_at IS NULL);",
+      "definition": " SELECT 'user'::text AS __entity_type,\n    users.id,\n    users.username,\n    users.use_display_name_from,\n    ( SELECT jsonb_build_object('id', fa.facebook_user_id, 'name', (fa.facebook_user_data ->> 'name'::text), 'email_address', fa.facebook_user_email_address) AS jsonb_build_object\n           FROM facebook_accounts fa\n          WHERE (fa.user_id = users.id)) AS facebook_account,\n    user_email_addresses.email_address,\n    user_phone_numbers.phone_number,\n    ( SELECT COALESCE(array_agg(user_roles_types.slug), ARRAY[]::text[]) AS \"coalesce\"\n           FROM (user_roles\n             LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))\n          WHERE (user_roles.user_id = users.id)) AS roles,\n    users.individual_id,\n    users.profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM (image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n          WHERE ((surface.surface_kind = 'user-profile-image'::text) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    users.markdown,\n    users.cards_visibility,\n    users.rewards_program_statuses_visibility,\n    users.spending_categories_visibility,\n    users.follows_visibility,\n    users.topic_follows_visibility,\n    users.rss_feed_follows_visibility,\n    users.community_memberships_visibility,\n    users.followers_visibility,\n    users.likes_visibility,\n    users.default_post_broadcast,\n    users.default_post_privacy,\n    users.processing_restricted_at,\n    users.third_party_marketing,\n    users.hn_discussions,\n    susp.suspended_at,\n    susp.suspended_reason,\n    susp.suspended_by_id,\n    ( SELECT jsonb_build_object('id', aa.apple_user_id, 'name', (aa.apple_user_data ->> 'name'::text), 'email_address', aa.apple_user_email_address) AS jsonb_build_object\n           FROM apple_accounts aa\n          WHERE (aa.user_id = users.id)) AS apple_account,\n    ( SELECT jsonb_build_object('id', ga.google_user_id, 'name', (ga.google_user_data ->> 'name'::text), 'email_address', ga.google_user_email_address) AS jsonb_build_object\n           FROM google_accounts ga\n          WHERE (ga.user_id = users.id)) AS google_account,\n    ( SELECT jsonb_build_object('id', xa.x_user_id, 'name', (xa.x_user_data ->> 'name'::text), 'email_address', xa.x_user_email_address) AS jsonb_build_object\n           FROM x_accounts xa\n          WHERE (xa.user_id = users.id)) AS x_account,\n    ( SELECT jsonb_build_object('id', la.linkedin_user_id, 'name', (la.linkedin_user_data ->> 'name'::text), 'email_address', la.linkedin_user_email_address) AS jsonb_build_object\n           FROM linkedin_accounts la\n          WHERE (la.user_id = users.id)) AS linkedin_account,\n    ( SELECT jsonb_build_object('id', ma.microsoft_user_id, 'name', (ma.microsoft_user_data ->> 'name'::text), 'email_address', ma.microsoft_user_email_address) AS jsonb_build_object\n           FROM microsoft_accounts ma\n          WHERE (ma.user_id = users.id)) AS microsoft_account,\n    ( SELECT jsonb_build_object('id', gha.github_user_id, 'name', (gha.github_user_data ->> 'name'::text), 'email_address', gha.github_user_email_address) AS jsonb_build_object\n           FROM github_accounts gha\n          WHERE (gha.user_id = users.id)) AS github_account,\n    (EXISTS ( SELECT 1\n           FROM agents\n          WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL)))) AS is_agent,\n    paid_membership.plan AS membership_plan,\n    users.verification_status,\n    users.verification_provider,\n    users.verification_completed_at,\n    users.verified_badge_visible,\n    users.public_verified_name_display,\n    users.verified_first_name,\n    users.verified_last_name_initial,\n    users.verified_full_name,\n    users.pending_verification_session_id,\n        CASE\n            WHEN ((users.verification_status = 'verified'::identity_verification_statuses) AND (users.verified_badge_visible = true)) THEN\n            CASE users.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN users.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((users.verified_first_name IS NOT NULL) AND (users.verified_last_name_initial IS NOT NULL)) THEN (((users.verified_first_name || ' '::text) || users.verified_last_name_initial) || '.'::text)\n                    ELSE users.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN users.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    users.country,\n    users.ui_locale,\n    users.lingua_rs_detected_language,\n    users.direct_messages_audience,\n    users.bad_faith_reporter_at,\n    users.engagement_emails_enabled,\n    users.news_digest_frequency,\n    users.moderation_emails_enabled,\n    users.community_digest_frequency,\n    users.moderation_email_cadence,\n    users.moderation_email_days_of_week,\n    users.moderation_email_time_of_day,\n    users.moderation_email_timezone,\n    users.fediverse_federation_enabled,\n    ( SELECT jsonb_build_object('did', bla.bluesky_did, 'handle', bla.handle) AS jsonb_build_object\n           FROM bluesky_linked_accounts bla\n          WHERE ((bla.user_id = users.id) AND (bla.disconnect_requested_at IS NULL))) AS bluesky_account\n   FROM ((((users\n     LEFT JOIN user_email_addresses ON (((user_email_addresses.user_id = users.id) AND (user_email_addresses.is_primary = true))))\n     LEFT JOIN user_phone_numbers ON (((user_phone_numbers.user_id = users.id) AND (user_phone_numbers.is_primary = true))))\n     LEFT JOIN view_current_paid_memberships paid_membership ON ((paid_membership.user_id = users.id)))\n     LEFT JOIN LATERAL ( SELECT user_suspensions.created_at AS suspended_at,\n            user_suspensions.reason AS suspended_reason,\n            user_suspensions.suspended_by_id\n           FROM user_suspensions\n          WHERE ((user_suspensions.user_id = users.id) AND (user_suspensions.lifted_at IS NULL))\n          ORDER BY user_suspensions.id DESC\n         LIMIT 1) susp ON (true))\n  WHERE (users.deleted_at IS NULL);",
       "materialized": false
     },
     "view_users_public": {
       "comment": null,
-      "definition": " SELECT e.__entity_type,\n    e.id,\n    e.username,\n    e.use_display_name_from,\n    e.display_account,\n    e.profile_image_id,\n    e.roles,\n    e.is_official_account,\n    u.markdown,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verification_status\n            ELSE NULL::identity_verification_statuses\n        END AS verification_status,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verified_badge_visible\n            ELSE NULL::boolean\n        END AS verified_badge_visible,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.public_verified_name_display\n            ELSE NULL::public_verified_name_displays\n        END AS public_verified_name_display,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN\n            CASE u.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN u.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((u.verified_first_name IS NOT NULL) AND (u.verified_last_name_initial IS NOT NULL)) THEN (((u.verified_first_name || ' '::text) || u.verified_last_name_initial) || '.'::text)\n                    ELSE u.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN u.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    u.lingua_rs_detected_language\n   FROM (view_embedded_users e\n     JOIN users u ON ((u.id = e.id)));",
+      "definition": " SELECT e.__entity_type,\n    e.id,\n    e.username,\n    e.use_display_name_from,\n    e.display_account,\n    e.profile_image_id,\n    e.profile_image_placement,\n    e.roles,\n    e.is_official_account,\n    u.markdown,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verification_status\n            ELSE NULL::identity_verification_statuses\n        END AS verification_status,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.verified_badge_visible\n            ELSE NULL::boolean\n        END AS verified_badge_visible,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN u.public_verified_name_display\n            ELSE NULL::public_verified_name_displays\n        END AS public_verified_name_display,\n        CASE\n            WHEN ((u.verification_status = 'verified'::identity_verification_statuses) AND (u.verified_badge_visible = true)) THEN\n            CASE u.public_verified_name_display\n                WHEN 'first_name'::public_verified_name_displays THEN u.verified_first_name\n                WHEN 'first_name_last_initial'::public_verified_name_displays THEN\n                CASE\n                    WHEN ((u.verified_first_name IS NOT NULL) AND (u.verified_last_name_initial IS NOT NULL)) THEN (((u.verified_first_name || ' '::text) || u.verified_last_name_initial) || '.'::text)\n                    ELSE u.verified_first_name\n                END\n                WHEN 'full_name'::public_verified_name_displays THEN u.verified_full_name\n                ELSE NULL::text\n            END\n            ELSE NULL::text\n        END AS verified_display_name,\n    u.lingua_rs_detected_language\n   FROM (view_embedded_users e\n     JOIN users u ON ((u.id = e.id)));",
       "materialized": false
     }
   }

@@ -189,13 +189,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'ap_inbox_activities',
     'Append-only replay-dedup ledger; rows are inserted once by the inbox receiver and never updated.',
   ],
-  [
-    'ap_post_likes',
-    'Mutation is limited to toggling deleted_at (Undo/resurrect) and refreshing like_ap_id on redelivery; a generic updated_at is redundant.',
-  ],
-  [
-    'bluesky_follow_records',
-    'Receipt row for "does a follow record exist on Bluesky"; the only mutation is refreshing record_uri on a redelivered createRecord, and rows are deleted outright on unfollow rather than soft-updated.',
-  ],
+  ['ap_post_likes', 'Undo/resurrect toggles deleted_at; redelivery refreshes like_ap_id.'],
+  ['bluesky_follow_records', 'Redelivery refreshes record_uri; unfollow deletes the row.'],
 ])
 /* v8 ignore stop */
