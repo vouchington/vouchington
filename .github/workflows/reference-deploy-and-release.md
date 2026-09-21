@@ -9,7 +9,7 @@
 | [Publish Backend Images](publish-backend-images.yml)       | Reusable   | `ubuntu-24.04-arm` | Yes    | Rebuilds and re-validates backend images on trusted main runs, then publishes them to GHCR.                   |
 | [Publish Web Images](publish-web-images.yml)               | Reusable   | `ubuntu-24.04-arm` | Yes    | Rebuilds and re-validates the web image on trusted main runs, then publishes it to GHCR.                      |
 | [Dispatch Completed Deploy](dispatch-completed-deploy.yml) | Standalone | `ubuntu-slim`      | No     | Dispatches trusted successful source metadata to route-specific `vouchington-infra` receivers.                |
-| [Sync Articles](sync-articles.yml)                         | Standalone | —                  | No     | Produces a source workflow completion for private infrastructure dispatch.                                    |
+| [Sync Articles](sync-articles.yml)                         | Standalone | `ubuntu-slim`      | No     | Packages an immutable article artifact for private infrastructure dispatch.                                   |
 | [Docs Publish](docs-publish.yml)                           | Standalone | `ubuntu-latest`    | No     | Builds an immutable OpenAPI and PostgreSQL-schema documentation artifact for private infrastructure dispatch. |
 
 Filaments validates source and dispatches its revision asynchronously. `vouchington-infra` owns

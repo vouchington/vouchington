@@ -115,6 +115,6 @@ topics:
 
 ## Seeding
 
-This directory is the committed source of truth for article Markdown. `.github/workflows/sync-articles.yml` dispatches the selected source revision to the private infrastructure repository, which owns destination mapping and publication.
+This directory is the committed source of truth for article Markdown. On trusted `main`, `.github/workflows/sync-articles.yml` packages the regular article Markdown files, excluding this source-only `README.md`, into one attempt-qualified Actions artifact. The private infrastructure receiver selects and validates that exact artifact, and owns destination mapping and publication.
 
 Articles are upserted to the database via [`backend/scripts/seed/articles.mts`](../backend/scripts/seed/articles.mts), which runs as part of the local/test seed process and reads this committed directory directly. The admin article sync uses [`@services/articles`](../backend/services/articles/README.md) to read the S3 objects, parse frontmatter, and create or update posts by slug.

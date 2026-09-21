@@ -143,7 +143,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `static-code-analysis.yml`          | `no-mistakes-owned`             | job    | `ubuntu-latest`                       | 55            |
 | `static-code-analysis.yml`          | `static-code-analysis`          | job    | `ubuntu-latest`                       | 50            |
 | `storybook.yml`                     | `storybook`                     | job    | `ubuntu-latest`                       | 94            |
-| `sync-articles.yml`                 | `complete`                      | job    | `ubuntu-slim`                         | 1             |
+| `sync-articles.yml`                 | `publish`                       | job    | `ubuntu-slim`                         | 5             |
 | `tests-backend-credentialed.yml`    | `backend-credentialed-tests`    | job    | `ubuntu-latest`                       | 20            |
 | `tests-backend-modules.yml`         | `backend-modules`               | job    | `ubuntu-latest`                       | 22            |
 | `tests-backend-unit.yml`            | `backend-tests`                 | matrix | `ubuntu-latest`                       | 29            |

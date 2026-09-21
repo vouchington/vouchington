@@ -9,16 +9,59 @@ on:
       - 'backend/services/articles/**'
       - '.github/workflows/sync-articles.yml'
 
-permissions: {}
+permissions:
+  contents: read
 
 concurrency:
   group: sync-articles-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:
-  complete:
+  publish:
     runs-on: ubuntu-slim
-    timeout-minutes: 1
-    permissions: {}
+    timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
-      - run: 'true'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Package and validate article delivery
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          if find articles -type l -print -quit | grep -q .; then
+            echo '::error::Article source contains a symbolic link'
+            exit 1
+          fi
+          if find articles ! -type f ! -type d -print -quit | grep -q .; then
+            echo '::error::Article source contains a non-regular entry'
+            exit 1
+          fi
+          mkdir -p delivery/articles
+          find articles -maxdepth 1 -type f -name '*.md' ! -name 'README.md' -exec cp -- {} delivery/articles/ \;
+          if ! find delivery/articles -type f -name '*.md' -print -quit | grep -q .; then
+            echo '::error::Article delivery contains no Markdown files'
+            exit 1
+          fi
+          if find delivery -type l -print -quit | grep -q .; then
+            echo '::error::Article delivery contains a symbolic link'
+            exit 1
+          fi
+          if find delivery ! -type f ! -type d -print -quit | grep -q .; then
+            echo '::error::Article delivery contains a non-regular entry'
+            exit 1
+          fi
+      - name: Upload article delivery
+        timeout-minutes: 1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: articles-${{ github.run_id }}-${{ github.run_attempt }}
+          path: delivery
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
