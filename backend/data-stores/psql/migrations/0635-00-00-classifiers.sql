@@ -935,6 +935,16 @@ COMMENT ON COLUMN topic_classifier_results.raw_response IS 'Full native structur
 COMMENT ON COLUMN topic_classifier_results.scope_category IS 'Decision scope copied from the owning batch.';
 COMMENT ON COLUMN topic_classifier_results.scope_community_id IS 'Immutable community provenance copied from the owning batch.';
 
+COMMENT ON TABLE classifier_topic_vote_applications IS 'Durable per-actor, per-topic application receipts that serialize classifier vote updates and reject stale batch replays.';
+COMMENT ON COLUMN classifier_topic_vote_applications.shared_actor_id IS 'Shared classifier system actor whose topic vote this receipt serializes.';
+COMMENT ON COLUMN classifier_topic_vote_applications.topic_id IS 'Topic whose shared-actor vote was applied.';
+COMMENT ON COLUMN classifier_topic_vote_applications.post_id IS 'Classified post subject; mutually exclusive with rss_feed_item_id.';
+COMMENT ON COLUMN classifier_topic_vote_applications.rss_feed_item_id IS 'Classified RSS item subject; mutually exclusive with post_id.';
+COMMENT ON COLUMN classifier_topic_vote_applications.classifier_id IS 'Classifier copied from the owning decision batch for relational enforcement.';
+COMMENT ON COLUMN classifier_topic_vote_applications.prompt_version_id IS 'Prompt revision copied from the owning decision batch for relational enforcement.';
+COMMENT ON COLUMN classifier_topic_vote_applications.batch_id IS 'Newest applied decision batch for this actor, topic, and subject fence.';
+COMMENT ON COLUMN classifier_topic_vote_applications.result_id IS 'Exact topic classifier result that produced the applied vote.';
+
 COMMENT ON COLUMN story_classifier_results.story_id IS 'Story candidate scored by this result and the partition key.';
 COMMENT ON COLUMN story_classifier_results.batch_id IS 'Logical decision batch that produced this result.';
 COMMENT ON COLUMN story_classifier_results.decision_call_id IS 'Specific provider call or shard that produced this result.';

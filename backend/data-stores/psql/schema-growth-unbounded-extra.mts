@@ -29,6 +29,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'classifier_decision_batches',
   'classifier_decision_calls',
   'classifier_prompt_versions',
+  'classifier_topic_vote_applications',
   'classifiers',
   'community_invites',
   'community_member_vacations',
