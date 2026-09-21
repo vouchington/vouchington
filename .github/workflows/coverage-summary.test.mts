@@ -16,6 +16,7 @@ type Workflow = {
   jobs?: Record<
     string,
     {
+      if?: string
       permissions?: Record<string, string>
       steps?: Array<{
         id?: string
@@ -93,6 +94,14 @@ describe('PR patch coverage', () => {
     expect(testsJob).not.toContain('upload-codecov')
     expect(workflow).not.toContain(`\n  ${['coverage', 'store'].join('-')}:`)
     expect(workflow).not.toContain('prepared-lcov')
+  })
+
+  it('keeps the informational Codecov uploader eligible for public fork PRs', () => {
+    const workflow = load(read('.github/workflows/ci.yml')) as Workflow
+
+    expect(workflow.jobs?.['upload-codecov']?.if).toBe(
+      "always() && !cancelled() && github.event_name == 'pull_request'",
+    )
   })
 
   it('uses exact pull request base and head SHAs for the patch', () => {
