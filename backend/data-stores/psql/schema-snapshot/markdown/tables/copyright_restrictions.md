@@ -15,10 +15,11 @@ Not partitioned — growth: unbounded.
 | `imposed_by_id`              | `uuid`                     | yes      |                              |          |           |           | Staff actor that imposed the restriction, or NULL for an authorized automatic provisional action. |
 | `lifted_by_id`               | `uuid`                     | yes      |                              |          |           |           | Staff actor that lifted the restriction; NULL denotes an authorized system restoration.           |
 | `human_reviewed_at`          | `timestamp with time zone` | yes      |                              |          |           |           | When staff completed the mandatory review of this exact provisional restriction.                  |
-| `human_review_action`        | `text`                     | yes      |                              |          |           |           | Human outcome for this restriction: confirm, modify, or reverse.                                  |
+| `human_review_action`        | `text`                     | yes      |                              |          |           |           | Human outcome for this target restriction: confirm or reverse.                                    |
 | `human_reviewed_by_id`       | `uuid`                     | yes      |                              |          |           |           | Staff reviewer; may become NULL only when the reviewer account is erased.                         |
 | `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                   |
 | `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                   |
+| `authorizing_assessment_id`  | `uuid`                     | no       |                              |          |           |           | Immutable exact compliant assessment that authorized this restriction.                            |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -30,7 +31,7 @@ _none_
 - `copyright_restrictions_check`: `CHECK (((lifted_at IS NULL) OR (lifted_at >= imposed_at)))`
 - `copyright_restrictions_check1`: `CHECK (((human_reviewed_at IS NULL) OR (human_reviewed_at >= imposed_at)))`
 - `copyright_restrictions_check2`: `CHECK ((((human_reviewed_at IS NULL) AND (human_review_action IS NULL) AND (human_reviewed_by_id IS NULL)) OR ((human_reviewed_at IS NOT NULL) AND (human_review_action IS NOT NULL))))`
-- `copyright_restrictions_human_review_action_check`: `CHECK ((human_review_action = ANY (ARRAY['confirm'::text, 'modify'::text, 'reverse'::text])))`
+- `copyright_restrictions_human_review_action_check`: `CHECK ((human_review_action = ANY (ARRAY['confirm'::text, 'reverse'::text])))`
 
 **Foreign keys:**
 
@@ -38,10 +39,12 @@ _none_
 - `copyright_restrictions_human_reviewed_by_id_fkey`: `FOREIGN KEY (human_reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `copyright_restrictions_imposed_by_id_fkey`: `FOREIGN KEY (imposed_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `copyright_restrictions_lifted_by_id_fkey`: `FOREIGN KEY (lifted_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_copyright_restrictions__authorizing_assessment`: `FOREIGN KEY (authorizing_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_restrictions_pkey`: `CREATE UNIQUE INDEX copyright_restrictions_pkey ON public.copyright_restrictions USING btree (id)`
+- `idx_copyright_restrictions__authorizing_assessment`: `CREATE INDEX idx_copyright_restrictions__authorizing_assessment ON public.copyright_restrictions USING btree (authorizing_assessment_id)`
 - `idx_copyright_restrictions__human_reviewer`: `CREATE INDEX idx_copyright_restrictions__human_reviewer ON public.copyright_restrictions USING btree (human_reviewed_by_id) WHERE (human_reviewed_by_id IS NOT NULL)`
 - `idx_copyright_restrictions__imposed_by`: `CREATE INDEX idx_copyright_restrictions__imposed_by ON public.copyright_restrictions USING btree (imposed_by_id) WHERE (imposed_by_id IS NOT NULL)`
 - `idx_copyright_restrictions__lifted_by`: `CREATE INDEX idx_copyright_restrictions__lifted_by ON public.copyright_restrictions USING btree (lifted_by_id) WHERE (lifted_by_id IS NOT NULL)`
@@ -50,5 +53,6 @@ _none_
 
 **Triggers:**
 
+- `trigger_copyright_restriction_assessment_scope`: `CREATE TRIGGER trigger_copyright_restriction_assessment_scope BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_assessment_scope()`
 - `trigger_copyright_restrictions_lifecycle_guard`: `CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_lifecycle()`
 - `trigger_copyright_restrictions_updated_at`: `CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

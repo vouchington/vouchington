@@ -44,7 +44,9 @@ export async function completeCopyrightMandatoryHumanReview(input: {
     await transaction<CopyrightRestrictionRecord>(sql`/* completeCopyrightMandatoryHumanReview */
     UPDATE copyright_restrictions
     SET human_reviewed_at = ${input.reviewedAt}, human_review_action = ${input.action},
-      human_reviewed_by_id = ${input.currentUser.id}
+      human_reviewed_by_id = ${input.currentUser.id},
+      lifted_at = CASE WHEN ${input.action} = 'reverse' THEN ${input.reviewedAt} ELSE lifted_at END,
+      lifted_by_id = CASE WHEN ${input.action} = 'reverse' THEN ${input.currentUser.id} ELSE lifted_by_id END
     WHERE id = ${input.restrictionId}
       AND lifted_at IS NULL
       AND human_reviewed_at IS NULL
@@ -54,7 +56,7 @@ export async function completeCopyrightMandatoryHumanReview(input: {
           AND accepted_at IS NOT NULL
           AND provisional_withholding_at IS NOT NULL
       )
-    RETURNING id, copyright_notice_target_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
+    RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
       human_reviewed_at, human_review_action, human_reviewed_by_id
   `)
   const restriction = rows[0]

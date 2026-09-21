@@ -1,14 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { insertTestImage } from '@voucha/test-helpers/entities/images'
-import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import {
+  createTestUserDirect,
+  insertTestImage,
+  insertTestPost,
+  insertTestPostImage,
+} from '@voucha/test-helpers'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightEvidenceArtifact,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
   appendCopyrightSubmissionAssessment,
-  completeCopyrightMandatoryHumanReview,
+  createCopyrightCounterNotice,
+  createCopyrightDeliveryIntent,
   createCopyrightNoticeAggregate,
+  createOutboundCopyrightCorrespondence,
   createCounterNoticeDeadline,
   createEligibleCopyrightRestoreIntent,
   getCopyrightNoticePrivateAggregate,
@@ -22,6 +28,13 @@ async function createTwoTargetFixture() {
   ])
   const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
   const imageIds = await Promise.all([insertTestImage(claimant.id), insertTestImage(claimant.id)])
+  const postId = await insertTestPost({
+    title: `copyright evidence ${crypto.randomUUID()}`,
+    slug: `copyright-evidence-${crypto.randomUUID()}`,
+    createdById: claimant.id,
+    markdown: 'images',
+  })
+  await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
   const notice = await createCopyrightNoticeAggregate({
     jurisdiction: 'us_dmca',
     receivedAt: new Date('2026-06-30T16:00:00.000Z'),
@@ -32,7 +45,7 @@ async function createTwoTargetFixture() {
     policyVersion: 'test-v1',
     initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'notice' },
     targets: imageIds.map((imageId, index) => ({
-      placementKey: `post-image:${crypto.randomUUID()}`,
+      placementKey: `post-image:${postId}:${imageId}`,
       placementRevision: index + 1,
       imageId,
       hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
@@ -43,15 +56,35 @@ async function createTwoTargetFixture() {
   const noticeAssessment = await appendCopyrightSubmissionAssessment({
     submissionId: aggregate.submissions[0].id,
     assessedAt: new Date('2026-07-01T11:00:00.000Z'),
-    currentUser: null,
+    currentUser: moderator,
     substantiallyCompliant: true,
   })
-  return { aggregate, moderator, notice, noticeAssessment }
+  const receipt = await createOutboundCopyrightCorrespondence({
+    noticeId: notice.id,
+    submissionId: aggregate.submissions[0].id,
+    correspondenceKind: 'receipt',
+    compositionKind: 'deterministic_template',
+    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
+    draftedById: null,
+  })
+  await createCopyrightDeliveryIntent({
+    noticeId: notice.id,
+    submissionId: aggregate.submissions[0].id,
+    correspondenceId: receipt.id,
+    recipientUserId: null,
+    recipientRole: 'claimant',
+    deliveryKind: 'claimant_receipt',
+    channel: 'email',
+    idempotencyKey: `copyright-evidence-receipt-${crypto.randomUUID()}`,
+    recipientEmail: `tests+copyright-${crypto.randomUUID()}@voucha.ai`,
+  })
+  return { aggregate, claimant, moderator, notice, noticeAssessment }
 }
 
 describe('copyright notice evidence and holds', () => {
   it('retains evidence and scopes a qualifying hold to only its identified target', async () => {
-    const { aggregate, moderator, notice, noticeAssessment } = await createTwoTargetFixture()
+    const { aggregate, claimant, moderator, notice, noticeAssessment } =
+      await createTwoTargetFixture()
     const [heldTarget, otherTarget] = aggregate.targets
     const artifact = await appendCopyrightEvidenceArtifact({
       submissionId: aggregate.submissions[0].id,
@@ -71,33 +104,30 @@ describe('copyright notice evidence and holds', () => {
         }),
       ),
     )
-    const counterNotice = await appendCopyrightNoticeSubmission({
-      noticeId: notice.id,
-      kind: 'counter_notice',
-      receivedAt: new Date('2026-06-30T16:00:00.000Z'),
-      sourceKind: 'signed_in_form',
-      submittedByUserId: null,
-      bodyCiphertext: `counter-${crypto.randomUUID()}`,
-    })
+    const counterNotice = await createCopyrightCounterNotice(
+      claimant,
+      notice.id,
+      crypto.randomUUID(),
+      {
+        name: 'Poster',
+        address: '1 Main Street',
+        telephone: '555-0100',
+        consentToFederalJurisdiction: true,
+        consentToServiceOfProcess: true,
+        goodFaithMisidentificationUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Poster',
+        targetIds: [heldTarget.id, otherTarget.id],
+      },
+    )
     const counterAssessment = await appendCopyrightSubmissionAssessment({
-      submissionId: counterNotice.id,
+      submissionId: counterNotice.submission.id,
       assessedAt: new Date('2026-07-01T12:00:00.000Z'),
       currentUser: moderator,
       substantiallyCompliant: true,
       targetIds: [heldTarget.id, otherTarget.id],
     })
     const deadline = await createCounterNoticeDeadline({ assessmentId: counterAssessment.id })
-    await Promise.all(
-      restrictions.map(restriction =>
-        completeCopyrightMandatoryHumanReview({
-          noticeId: notice.id,
-          restrictionId: restriction.id,
-          currentUser: moderator,
-          action: 'confirm',
-          reviewedAt: new Date('2026-07-02T12:00:00.000Z'),
-        }),
-      ),
-    )
+    const restorationNow = new Date(deadline.earliest_restoration_at.getTime() + 86_400_000)
     const holdSubmission = await appendCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
@@ -125,7 +155,7 @@ describe('copyright notice evidence and holds', () => {
         restrictionId: restrictions[0].id,
         deadlineId: deadline.id,
         expectedPlacementRevision: heldTarget.placement_revision,
-        now: new Date('2026-07-16T12:00:00.000Z'),
+        now: restorationNow,
         blockers: [],
       }),
     ).rejects.toThrow('Copyright restoration is not eligible')
@@ -135,13 +165,13 @@ describe('copyright notice evidence and holds', () => {
       restrictionId: restrictions[1].id,
       deadlineId: deadline.id,
       expectedPlacementRevision: otherTarget.placement_revision,
-      now: new Date('2026-07-16T12:00:00.000Z'),
+      now: restorationNow,
       blockers: [],
     })
     const resolution = await resolveCopyrightLegalHold({
       currentUser: moderator,
       assessmentId: hold.id,
-      resolvedAt: new Date('2026-07-16T12:01:00.000Z'),
+      resolvedAt: new Date(restorationNow.getTime() + 60_000),
       resolutionKind: 'dismissed',
       rationaleCiphertext: `resolution-${crypto.randomUUID()}`,
     })
@@ -151,7 +181,7 @@ describe('copyright notice evidence and holds', () => {
       restrictionId: restrictions[0].id,
       deadlineId: deadline.id,
       expectedPlacementRevision: heldTarget.placement_revision,
-      now: new Date('2026-07-16T12:02:00.000Z'),
+      now: new Date(restorationNow.getTime() + 120_000),
       blockers: [],
     })
     const refreshed = await getCopyrightNoticePrivateAggregate(notice.id)

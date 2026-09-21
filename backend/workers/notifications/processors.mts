@@ -34,6 +34,10 @@ export {
   processCommunityActivityDigestDispatch,
 } from './processors/community-activity-digest.mts'
 export { processDeliverNotificationPushIntent } from './processors/push-delivery.mts'
+export {
+  processDeliverCopyrightNotice,
+  processReconcileCopyrightDeliveryIntents,
+} from './processors/copyright-delivery.mts'
 
 async function dispatchCreatedNotificationPushes(
   createdNotifications: CreatedNotification[] | undefined,

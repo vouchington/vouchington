@@ -4,11 +4,13 @@ export const SES_INBOUND_QUEUE_NAME = 'ses_inbound'
 export const SES_INBOUND_PROCESS_JOB_NAME = 'processInboundEmail'
 export const SES_INBOUND_RECONCILE_JOB_NAME = 'reconcileInboundEmail'
 export const SES_INBOUND_INCOMING_PREFIX = 'incoming/'
+export const SES_INBOUND_COPYRIGHT_PREFIX = 'copyright-incoming/'
 export const SES_INBOUND_FAILED_PREFIX = 'failed/'
 
 export type SesInboundProcessJobData = {
   sesMessageId: string
   objectKey: string
+  intakeKind: 'support' | 'copyright'
 }
 
 export type SesInboundProcessJobOptions = {
@@ -39,15 +41,22 @@ export function decodeS3EventObjectKey(encodedKey: string): string {
 }
 
 export function getSesMessageIdFromObjectKey(objectKey: string): string {
-  if (!objectKey.startsWith(SES_INBOUND_INCOMING_PREFIX)) {
-    throw new Error(`SES inbound object key must start with ${SES_INBOUND_INCOMING_PREFIX}`)
-  }
-
-  const sesMessageId = objectKey.slice(SES_INBOUND_INCOMING_PREFIX.length)
+  const prefix = objectKey.startsWith(SES_INBOUND_COPYRIGHT_PREFIX)
+    ? SES_INBOUND_COPYRIGHT_PREFIX
+    : SES_INBOUND_INCOMING_PREFIX
+  if (!objectKey.startsWith(prefix)) throw new Error('SES inbound object key has an unknown prefix')
+  const sesMessageId = objectKey.slice(prefix.length)
   if (!sesMessageId || sesMessageId.includes('/')) {
     throw new Error('SES inbound object key must contain exactly one SES message ID')
   }
   return sesMessageId
+}
+
+export function getSesInboundKindFromObjectKey(
+  objectKey: string,
+): SesInboundProcessJobData['intakeKind'] {
+  getSesMessageIdFromObjectKey(objectKey)
+  return objectKey.startsWith(SES_INBOUND_COPYRIGHT_PREFIX) ? 'copyright' : 'support'
 }
 
 export function createSesInboundProcessJobId(objectKey: string): string {
@@ -59,6 +68,9 @@ export function assertSesInboundProcessJobData(data: SesInboundProcessJobData): 
   const expectedSesMessageId = getSesMessageIdFromObjectKey(data.objectKey)
   if (data.sesMessageId !== expectedSesMessageId) {
     throw new Error('SES inbound job message ID must match its S3 object key')
+  }
+  if (data.intakeKind !== getSesInboundKindFromObjectKey(data.objectKey)) {
+    throw new Error('SES inbound job intake kind must match its trusted S3 object prefix')
   }
 }
 

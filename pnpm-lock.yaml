@@ -451,6 +451,62 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/agents/copyright-appeal-recommendation:
+    dependencies:
+      '@agents/_shared':
+        specifier: workspace:^
+        version: link:../_shared
+      '@jongleberry/vurst-prompt':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@modules/openai-utils':
+        specifier: workspace:^
+        version: link:../../modules/openai-utils
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
+  backend/agents/copyright-email-intake:
+    dependencies:
+      '@agents/_shared':
+        specifier: workspace:^
+        version: link:../_shared
+      '@jongleberry/vurst-prompt':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@modules/openai-utils':
+        specifier: workspace:^
+        version: link:../../modules/openai-utils
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
+
+  backend/agents/copyright-form-screening:
+    dependencies:
+      '@agents/_shared':
+        specifier: workspace:^
+        version: link:../_shared
+      '@jongleberry/vurst-prompt':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@modules/openai-utils':
+        specifier: workspace:^
+        version: link:../../modules/openai-utils
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/agents/crm-outreach:
     dependencies:
       '@agents/_shared':
@@ -1090,6 +1146,9 @@ importers:
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../services/conversations-messages
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../services/copyright-notices
       '@services/countries':
         specifier: workspace:^
         version: link:../services/countries
@@ -4760,15 +4819,36 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@modules/token-secrets':
+        specifier: workspace:^
+        version: link:../../modules/token-secrets
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@services/contribution-gating':
+        specifier: workspace:^
+        version: link:../contribution-gating
+      '@services/notifications':
+        specifier: workspace:^
+        version: link:../notifications
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
+      '@voucha/config':
+        specifier: workspace:^
+        version: link:../../config
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      uuid:
+        specifier: ^14.0.2
+        version: 14.0.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -10751,6 +10831,15 @@ importers:
       '@agents/community-moderation':
         specifier: workspace:^
         version: link:../../agents/community-moderation
+      '@agents/copyright-appeal-recommendation':
+        specifier: workspace:^
+        version: link:../../agents/copyright-appeal-recommendation
+      '@agents/copyright-email-intake':
+        specifier: workspace:^
+        version: link:../../agents/copyright-email-intake
+      '@agents/copyright-form-screening':
+        specifier: workspace:^
+        version: link:../../agents/copyright-form-screening
       '@agents/customer-support':
         specifier: workspace:^
         version: link:../../agents/customer-support
@@ -10811,6 +10900,9 @@ importers:
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../../services/conversations-messages
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
       '@services/customer-support':
         specifier: workspace:^
         version: link:../../services/customer-support
@@ -11416,6 +11508,9 @@ importers:
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../../services/contribution-gating
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
       '@services/crm-contacts':
         specifier: workspace:^
         version: link:../../services/crm-contacts
@@ -11808,9 +11903,15 @@ importers:
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
+      '@queues/emails':
+        specifier: workspace:^
+        version: link:../../queues/emails
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../../services/entity-relations
@@ -12073,6 +12174,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
       '@services/ses-bounce-events':
         specifier: workspace:^
         version: link:../../services/ses-bounce-events
@@ -12113,6 +12217,9 @@ importers:
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
       '@services/customer-support':
         specifier: workspace:^
         version: link:../../services/customer-support

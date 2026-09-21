@@ -28,6 +28,7 @@ export const EMAIL_CLASSIFICATIONS: Record<EmailType, EmailClassificationEntry> 
   processSendCommunityRoleChangeEmail: { classification: 'transactional' },
   processSendCommunityOwnershipTransferEmail: { classification: 'transactional' },
   processSendRenewalPriceIncreaseEmail: { classification: 'transactional' },
+  processSendCopyrightNoticeEmail: { classification: 'transactional' },
 
   processSendFollowTopicsEmail: {
     classification: 'marketing',

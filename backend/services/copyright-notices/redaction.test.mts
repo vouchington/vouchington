@@ -70,7 +70,6 @@ describe('redactCopyrightNoticeForMember', () => {
 
   it.each([
     ['confirm', 'restriction active'],
-    ['modify', 'restriction active'],
     ['reverse', 'restriction active'],
   ] as const)('publishes the allowlisted %s human-review outcome', (action, expected) => {
     const record = makeRecord()

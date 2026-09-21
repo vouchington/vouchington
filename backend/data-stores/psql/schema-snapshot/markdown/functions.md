@@ -154,6 +154,14 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_assessment_supersession()
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_copyright_automated_assessment_screening`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_automated_assessment_screening()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_copyright_correspondence`
 
 ```sql
@@ -174,6 +182,38 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_counter_notice_assessment_t
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_guard_copyright_deadline()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_delivery_intent_transition`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_delivery_intent_transition()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_email_correspondence_recommendation_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_correspondence_recommendation_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_email_intake_response_transition`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_intake_response_transition()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_email_review_recommendation_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_review_recommendation_scope()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -226,10 +266,26 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_submission()
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_copyright_restriction_assessment_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_assessment_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_copyright_restriction_lifecycle`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_submission_target_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_submission_target_scope()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

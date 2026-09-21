@@ -2636,6 +2636,99 @@
         ],
         "type": "object"
       },
+      "CopyrightRestrictionRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "authorizing_assessment_id": {
+            "type": "string"
+          },
+          "copyright_notice_target_id": {
+            "type": "string"
+          },
+          "human_review_action": {
+            "anyOf": [
+              {
+                "const": "confirm"
+              },
+              {
+                "const": "reverse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "human_reviewed_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "human_reviewed_by_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "imposed_at": {
+            "type": "string"
+          },
+          "imposed_by_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "lifted_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "lifted_by_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "authorizing_assessment_id",
+          "copyright_notice_target_id",
+          "human_review_action",
+          "human_reviewed_at",
+          "human_reviewed_by_id",
+          "id",
+          "imposed_at",
+          "imposed_by_id",
+          "lifted_at",
+          "lifted_by_id"
+        ],
+        "type": "object"
+      },
       "Country": {
         "additionalProperties": false,
         "properties": {
@@ -8990,6 +9083,16 @@
               }
             ]
           },
+          "copyright_notice_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
           "created_at": {
             "type": "string"
           },
@@ -8999,6 +9102,7 @@
               "community_application_decision",
               "community_ownership_transfer",
               "community_role_change",
+              "copyright_notice",
               "critical_moderation_alert",
               "direct_message",
               "follow",
@@ -9153,6 +9257,7 @@
           "body",
           "community_id",
           "conversation_id",
+          "copyright_notice_id",
           "created_at",
           "entity_type",
           "event_key",
@@ -34025,6 +34130,738 @@
                     }
                   },
                   "required": ["agentic_run", "assistant_message", "user_message"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-email-intakes/{id}/approvals": {
+      "post": {
+        "operationId": "post_api_v1_copyright-email-intakes_id_approvals",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_notice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "copyright_submission": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_notice", "copyright_submission"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-email-intakes/{id}/correspondence": {
+      "post": {
+        "operationId": "post_api_v1_copyright-email-intakes_id_correspondence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_correspondence": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "copyright_notice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "copyright_submission": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "is_duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "copyright_correspondence",
+                    "copyright_notice",
+                    "copyright_submission",
+                    "is_duplicate"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_correspondence": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "copyright_notice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "copyright_submission": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "is_duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "copyright_correspondence",
+                    "copyright_notice",
+                    "copyright_submission",
+                    "is_duplicate"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-email-intakes/{id}/correspondence-rejections": {
+      "post": {
+        "operationId": "post_api_v1_copyright-email-intakes_id_correspondence-rejections",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_notice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "is_duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["copyright_notice", "is_duplicate"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_notice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "is_duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["copyright_notice", "is_duplicate"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-email-intakes/{id}/rejections": {
+      "post": {
+        "operationId": "post_api_v1_copyright-email-intakes_id_rejections",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-form-intakes/{id}/reviews": {
+      "post": {
+        "operationId": "post_api_v1_copyright-form-intakes_id_reviews",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "accepted": {
+                      "type": "boolean"
+                    },
+                    "copyright_notice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "copyright_submission": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["accepted", "copyright_notice", "copyright_submission"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_notice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "is_duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["copyright_notice", "is_duplicate"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_notice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "is_duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["copyright_notice", "is_duplicate"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/appeals": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_appeals",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_submission": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "is_duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["copyright_submission", "is_duplicate"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_submission": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "is_duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["copyright_submission", "is_duplicate"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/counter-notices": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_counter-notices",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_submission": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "is_duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["copyright_submission", "is_duplicate"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_submission": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "is_duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["copyright_submission", "is_duplicate"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/restrictions/{restrictionId}/reviews": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_restrictions_restrictionId_reviews",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "restrictionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_restriction": {
+                      "$ref": "#/components/schemas/CopyrightRestrictionRecord"
+                    }
+                  },
+                  "required": ["copyright_restriction"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-submissions/{id}/appeal-reviews": {
+      "post": {
+        "operationId": "post_api_v1_copyright-submissions_id_appeal-reviews",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_notice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "review_ids": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["copyright_notice", "review_ids"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-submissions/{id}/counter-notice-reviews": {
+      "post": {
+        "operationId": "post_api_v1_copyright-submissions_id_counter-notice-reviews",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "assessment_id": {
+                      "type": "string"
+                    },
+                    "copyright_notice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    },
+                    "deadline_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["assessment_id", "copyright_notice", "deadline_id"],
                   "type": "object"
                 }
               }

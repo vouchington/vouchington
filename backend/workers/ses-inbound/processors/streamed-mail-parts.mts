@@ -1,4 +1,5 @@
 import { MailParser, type AttachmentStream, type HeaderValue } from 'mailparser'
+import { createHash } from 'node:crypto'
 import type { Readable } from 'node:stream'
 
 export const MAX_MIME_TEXT_BYTES = 2 * 1024 * 1024
@@ -19,11 +20,23 @@ type MailParserInternals = MailParser & {
 
 type StreamedTextKind = 'plain' | 'html' | null
 
-export function streamMailParts(parser: MailParser): () => string {
+export type ParsedMimeAttachment = {
+  filename: string | null
+  contentId: string | null
+  mimeType: string
+  byteSize: number
+  sha256: Buffer
+}
+
+export function streamMailParts(parser: MailParser): {
+  getAttachments(): ParsedMimeAttachment[]
+  getBodyText(): string
+} {
   const internals = parser as MailParserInternals
   const pendingParts: StreamedTextKind[] = []
   const plainParts: string[] = []
   const htmlParts: string[] = []
+  const attachments: ParsedMimeAttachment[] = []
   let retainedTextBytes = 0
   let nodeCount = 0
 
@@ -69,11 +82,27 @@ export function streamMailParts(parser: MailParser): () => string {
       part.release()
     }
     if (!kind) {
+      const hash = createHash('sha256')
+      let byteSize = 0
+      content.on('data', (rawChunk: Buffer | string) => {
+        const chunk = typeof rawChunk === 'string' ? Buffer.from(rawChunk) : rawChunk
+        byteSize += chunk.byteLength
+        hash.update(chunk)
+      })
       content.once('error', (error: Error) => {
         release()
         parser.destroy(error)
       })
       content.once('end', release)
+      content.once('end', () => {
+        attachments.push({
+          filename: normalizeOptionalText(part.filename),
+          contentId: normalizeOptionalText(part.contentId),
+          mimeType: part.contentType || 'application/octet-stream',
+          byteSize,
+          sha256: hash.digest(),
+        })
+      })
       content.resume()
       return
     }
@@ -101,7 +130,15 @@ export function streamMailParts(parser: MailParser): () => string {
     })
   }
 
-  return () => (plainParts.length > 0 ? plainParts : htmlParts).join('\n').trim()
+  return {
+    getAttachments: () => attachments,
+    getBodyText: () => (plainParts.length > 0 ? plainParts : htmlParts).join('\n').trim(),
+  }
+}
+
+function normalizeOptionalText(value: string | undefined): string | null {
+  const normalized = value?.trim()
+  return normalized || null
 }
 
 function createTextDecoder(contentType: HeaderValue | undefined): TextDecoder {

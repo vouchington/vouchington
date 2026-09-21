@@ -7,6 +7,7 @@ import processEmail from './processors.mts'
 import type { Job } from 'glide-mq'
 import { dispatchEngagementEmails } from '@services/engagement-emails/dispatch-engagement-emails'
 import { dispatchCommunityModerationSummaryEmails } from '@services/communities/moderation-summary-emails'
+import { processSendCopyrightNoticeEmail } from './processors/copyright-notice.mts'
 
 type EmailWorkerDispatchers = {
   dispatchEngagementEmails: typeof dispatchEngagementEmails
@@ -27,10 +28,18 @@ export async function processEmailJob(
   dispatchers: EmailWorkerDispatchers = defaultDispatchers,
 ): Promise<unknown> {
   const jobName = job.name as EmailJobs
+  if (jobName === 'processSendCopyrightNoticeEmail') {
+    return await processSendCopyrightNoticeEmail(job.data)
+  }
   if (isDispatcherJob(jobName)) {
     return processEmailDispatcherJob(jobName, dispatchers)
   }
-  return processEmail(templates, jobName as EmailSendJobs, job.data.input, job.data.variables)
+  return processEmail(
+    templates,
+    jobName as Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>,
+    job.data.input,
+    job.data.variables,
+  )
 }
 
 export function isDispatcherJob(jobName: EmailJobs): jobName is EmailDispatcherJobs {

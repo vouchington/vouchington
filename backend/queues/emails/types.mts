@@ -105,6 +105,9 @@ export type ProcessSendSupportEmailVariables = {
 }
 
 export type ProcessSendWelcomeEmailVariables = WelcomeEmailProps
+export type ProcessSendCopyrightNoticeEmailVariables =
+  | { intentId: string; intakeResponseId?: never }
+  | { intakeResponseId: string; intentId?: never }
 
 export type ProcessSendCommunityApplicationDecisionEmailVariables =
   CommunityApplicationDecisionEmailProps
@@ -129,6 +132,7 @@ export type EmailSendJobs =
   | 'processSendCommunityApplicationDecisionEmail'
   | 'processSendCommunityRoleChangeEmail'
   | 'processSendCommunityOwnershipTransferEmail'
+  | 'processSendCopyrightNoticeEmail'
 
 export type EmailDispatcherJobs =
   | 'dispatchEngagementEmails'
@@ -136,4 +140,7 @@ export type EmailDispatcherJobs =
 
 export type EmailJobs = EmailSendJobs | EmailDispatcherJobs
 
-export type EmailJobsTemplates = Record<EmailSendJobs, (...args: any[]) => Promise<unknown>>
+export type EmailJobsTemplates = Record<
+  Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>,
+  (...args: any[]) => Promise<unknown>
+>

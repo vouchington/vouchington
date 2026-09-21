@@ -16,11 +16,15 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 | `processCommunityModerationDispatcher`      | `community-moderation-dispatcher`        | Dispatches community moderation prompt jobs; post-created recovery awaits queue delivery so failures retain the reconciliation checkpoint                      |
 | `processCommunityModerationPrompt`          | `community-moderation-prompt`            | Runs a community moderation prompt on a post                                                                                                                   |
 | `processCustomerSupport`                    | `customer-support`                       | Generates a customer support response                                                                                                                          |
+| `processCopyrightEmailIntake`               | `copyright-email-intake`                 | Parses a preserved copyright-inbox email into an advisory structured recommendation; moderator approval remains mandatory                                      |
+| `processCopyrightFormScreening`             | `copyright-form-screening`               | Screens a structured form only for obvious spam or invalidity; a clear signed-in result may provisionally restrict pending mandatory human review              |
+| `processCopyrightAppealRecommendation`      | `copyright-appeal-recommendation`        | Persists advisory appeal analysis for a moderator; it never changes a restriction or restores material                                                         |
 | `processStoryPost`                          | `story-post`                             | Generates or refreshes a story summary; entity recovery uses the awaited enqueue so queue failure retains the durable checkpoint for retry.                    |
 | `processStoryClustering`                    | `story-clustering`                       | Clusters an RSS feed item into stories; re-enqueues with 5 s delay (up to 10 times) when embedding is not yet visible — mirrors the autotagger retry pattern   |
 | `processReconcileBackgroundResponses`       | `reconcile-background-responses`         | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
 | `processReconcileChatRuntimeGenerations`    | `reconcile-chat-runtime-generations`     | Fails stale hosted-chat generations and releases their conversation turn after an interrupted worker                                                           |
 | `processReconcileMemberSupportAgentIntents` | `reconcile-member-support-agent-intents` | Re-enqueues member-created support drafts that committed before keyed queue delivery                                                                           |
+| `processReconcileCopyrightAgentDispatches`  | `reconcile-copyright-agent-dispatches`   | Re-enqueues or retries parsed emails, forms, and appeals missing their advisory agent result                                                                   |
 
 ## Architecture
 
@@ -49,6 +53,10 @@ registration, the source job still reaches its midnight delay fallback.
 - [`enqueues/chat.mts`](enqueues/chat.mts) — chat jobs
 - [`enqueues/community-moderation.mts`](enqueues/community-moderation.mts) — fire-and-forget community moderation jobs plus an awaited recovery variant
 - [`enqueues/customer-support.mts`](enqueues/customer-support.mts) — customer support jobs
+- [`enqueues/copyright-email-intake.mts`](enqueues/copyright-email-intake.mts) — replay-safe copyright email extraction jobs
+- [`enqueues/copyright-form-screening.mts`](enqueues/copyright-form-screening.mts) — stable-ID structured form anti-spam jobs
+- [`enqueues/copyright-appeal-recommendation.mts`](enqueues/copyright-appeal-recommendation.mts) — stable-ID advisory appeal recommendation jobs
+- [`enqueues/reconcile-copyright-agent-dispatches.mts`](enqueues/reconcile-copyright-agent-dispatches.mts) - copyright agent delivery recovery job
 - [`enqueues/moderation.mts`](enqueues/moderation.mts) — moderation jobs
 - [`enqueues/story-clustering.mts`](enqueues/story-clustering.mts) — story clustering jobs
 - [`enqueues/story-post.mts`](enqueues/story-post.mts) — fire-and-forget creation enqueue plus an awaited recovery variant that propagates delivery failure
@@ -101,6 +109,14 @@ delivery. `reconcile-member-support-agent-intents` runs every five minutes, page
 the persisted `{ threadId, supportMessageId, logicalJobId }`. The stable message-derived ID is used
 for both queue deduplication and retained-failure retry, so a crash between commit and enqueue
 cannot lose a draft or create a second run.
+
+Copyright forms, successfully parsed email intakes, and appeals are durable before queue delivery. The
+five-minute `reconcile-copyright-agent-dispatches` job selects records still missing their agent
+result and uses stable logical job IDs. It retries a matching retained failed job, leaves active
+work alone, and removes a completed job only when PostgreSQL still lacks the expected output before
+re-enqueueing it. Failed MIME parses are preserved for staff and are not sent to the extraction
+agent. Appeal recommendations are advisory evidence only; no agent processor changes material
+availability or a restriction.
 
 ### Member draft-intent recovery matrix
 

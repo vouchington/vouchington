@@ -23,6 +23,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'ai_agents/reconcileBackgroundResponses',
   'ai_agents/reconcileChatRuntimeGenerations',
   'ai_agents/reconcileMemberSupportAgentIntents',
+  'ai_agents/reconcileCopyrightAgentDispatches',
   'bedrock-embeddings-batch/backlog_dispatcher',
   'bedrock-embeddings-batch/creation_dispatcher',
   'bedrock-embeddings-batch/poll_dispatcher',
@@ -65,6 +66,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'memberships/stripeCatalogReconciliation',
   'memberships/stripeEventRecovery',
   'notifications/community-activity-digest-weekly',
+  'notifications/copyright-delivery-reconciliation',
   'notifications/notification-push-intent-recovery',
   'openai_moderation_omni_single/reconcile-image-quarantines',
   'openai_moderation_omni_single/reconcile-post-moderation',
@@ -93,7 +95,7 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 31 manifests, including the scheduler tombstone, and 74 live jobs', () => {
+  it('imports the exact 31 manifests, including the scheduler tombstone, and 75 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(31)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
@@ -143,7 +145,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(57)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(59)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

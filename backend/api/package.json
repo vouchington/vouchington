@@ -144,6 +144,7 @@
     "@services/community-member-vacations": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/conversations-messages": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/countries": "workspace:^",
     "@services/crawlers": "workspace:^",
     "@services/crawls": "workspace:^",

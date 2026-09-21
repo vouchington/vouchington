@@ -125,6 +125,7 @@ describe('notifications-page', () => {
           moderation_report_id: null,
           review_dispute_id: null,
           user_warning_id: null,
+          copyright_notice_id: null,
           conversation_id: null,
           community_id: null,
           event_key: null,

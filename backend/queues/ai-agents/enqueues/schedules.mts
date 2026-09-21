@@ -9,6 +9,7 @@ import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatc
 import { enqueueReconcileBackgroundResponses } from './reconcile-background-responses.mts'
 import { enqueueReconcileChatRuntimeGenerations } from './reconcile-chat-runtime-generations.mts'
 import { enqueueReconcileMemberSupportAgentIntents } from './reconcile-member-support-agent-intents.mts'
+import { enqueueReconcileCopyrightAgentDispatches } from './reconcile-copyright-agent-dispatches.mts'
 
 function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
   return {
@@ -21,6 +22,24 @@ function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
 }
 
 export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_NAME, [
+  {
+    schedulerId: 'reconcileCopyrightAgentDispatches',
+    repeat: { pattern: '*/5 * * * *' },
+    template: {
+      name: 'reconcile-copyright-agent-dispatches',
+      data: {},
+      opts: () => reconcilerOptions('reconcile-copyright-agent-dispatches'),
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'reconcileCopyrightAgentDispatches',
+        schedule: '*/5 * * * *',
+        description: 'Re-enqueue unassessed copyright email and form agent work',
+        trigger: enqueueReconcileCopyrightAgentDispatches,
+      },
+    ],
+  },
   {
     schedulerId: 'reconcileAutoDispatchJudgements',
     repeat: { pattern: '*/5 * * * *' },

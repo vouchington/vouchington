@@ -112,6 +112,25 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'PATCH:/api/v1/reports/:id': { category: 'write' },
   'GET:/api/v1/communities/:idOrSlug/reports/pending': { category: 'read' },
   'PATCH:/api/v1/communities/:idOrSlug/reports/:reportId': { category: 'write' },
+  // Copyright intake — sensitive: legal submissions are CAPTCHA-protected and deliberately scarce
+  'POST:/api/v1/copyright-notices': { category: 'sensitive', ttlSeconds: 3600 },
+  'POST:/api/v1/copyright-notices/:id/appeals': { category: 'sensitive', ttlSeconds: 3600 },
+  'POST:/api/v1/copyright-notices/:id/counter-notices': {
+    category: 'sensitive',
+    ttlSeconds: 3600,
+  },
+  'POST:/api/v1/copyright-email-intakes/:id/approvals': { category: 'sensitive' },
+  'POST:/api/v1/copyright-email-intakes/:id/rejections': { category: 'sensitive' },
+  'POST:/api/v1/copyright-email-intakes/:id/correspondence': { category: 'sensitive' },
+  'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-form-intakes/:id/reviews': { category: 'sensitive' },
+  'POST:/api/v1/copyright-submissions/:id/appeal-reviews': { category: 'sensitive' },
+  'POST:/api/v1/copyright-submissions/:id/counter-notice-reviews': { category: 'sensitive' },
+  'POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews': {
+    category: 'sensitive',
+  },
   'GET:/api/v1/admin/moderation-analytics': { category: 'read' },
   'GET:/api/v1/communities/:idOrSlug/moderation-analytics': { category: 'read' },
   'PATCH:/api/v1/communities/:idOrSlug/post-type-settings': { category: 'write' },

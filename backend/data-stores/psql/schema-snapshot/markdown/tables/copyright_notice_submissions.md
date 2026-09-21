@@ -21,7 +21,8 @@ Not partitioned — growth: unbounded.
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `copyright_notice_submissions_id_notice_unique`: `UNIQUE (id, copyright_notice_id)`
 
 **Check constraints:**
 
@@ -36,6 +37,7 @@ _none_
 
 **Indexes:**
 
+- `copyright_notice_submissions_id_notice_unique`: `CREATE UNIQUE INDEX copyright_notice_submissions_id_notice_unique ON public.copyright_notice_submissions USING btree (id, copyright_notice_id)`
 - `copyright_notice_submissions_pkey`: `CREATE UNIQUE INDEX copyright_notice_submissions_pkey ON public.copyright_notice_submissions USING btree (id)`
 - `idx_copyright_notice_submissions__notice_received`: `CREATE INDEX idx_copyright_notice_submissions__notice_received ON public.copyright_notice_submissions USING btree (copyright_notice_id, received_at, id)`
 - `idx_copyright_notice_submissions__submitted_by`: `CREATE INDEX idx_copyright_notice_submissions__submitted_by ON public.copyright_notice_submissions USING btree (submitted_by_user_id) WHERE (submitted_by_user_id IS NOT NULL)`

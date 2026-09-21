@@ -33,6 +33,7 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
     const data = {
       sesMessageId: 'ses-recovery-test',
       objectKey: 'incoming/ses-recovery-test',
+      intakeKind: 'support' as const,
     }
     let recoveryWorker: { close(): Promise<void> } | undefined
 

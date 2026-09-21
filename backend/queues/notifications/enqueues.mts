@@ -1,3 +1,4 @@
+/* oxlint-disable max-lines -- Notification enqueue contracts stay centralized for inventory validation. */
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
@@ -10,6 +11,7 @@ type ReferralClickData = { referrerId: string; landingUrl: string }
 type DeleteNotificationData = { userId: string; notificationId: string }
 type ReconcilePostNotificationData = { postId: string }
 type ReconcileRssFeedItemNotificationData = { rssFeedItemId: string }
+type CopyrightDeliveryIntentData = { intentId: string }
 const enqueueBulkFollowNotificationJobs = createBulkEnqueueFunction<
   FollowNotificationData,
   FollowNotificationData,
@@ -97,6 +99,20 @@ const enqueueBulkReconcileRssFeedItemNotificationJobs = createBulkEnqueueFunctio
   }),
 })
 
+const enqueueDeliverCopyrightNoticeJob = createEnqueueFunction<
+  CopyrightDeliveryIntentData,
+  'processDeliverCopyrightNotice'
+>({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processDeliverCopyrightNotice' })
+
+const enqueueReconcileCopyrightDeliveryIntentsJob = createEnqueueFunction<
+  Record<string, never>,
+  'processReconcileCopyrightDeliveryIntents'
+>({
+  queue: notifications,
+  queueName: QUEUE_NAME,
+  jobName: 'processReconcileCopyrightDeliveryIntents',
+})
+
 export function enqueueBulkFollowNotification(pairs: FollowNotificationData[]): EnqueueReturnType {
   return enqueueBulkFollowNotificationJobs(pairs, { priority: PRIORITY_DEFAULT })
 }
@@ -145,6 +161,42 @@ export function enqueueDeleteNotification(
       ttl: NOTIFICATIONS_DEDUPLICATION_TTL_MS,
     },
   } satisfies Partial<JobOptions>)
+}
+
+export function enqueueDeliverCopyrightNotice(intentId: string): EnqueueReturnType {
+  return enqueueDeliverCopyrightNoticeJob(
+    { intentId },
+    {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+      priority: PRIORITY_DEFAULT,
+      deduplication: {
+        id: `copyright-delivery:${intentId}:in-app`,
+        mode: 'throttle',
+        ttl: FIVE_MINUTES_MS,
+      },
+    },
+  )
+}
+
+export function enqueueReconcileCopyrightDeliveryIntents(): EnqueueReturnType {
+  return enqueueReconcileCopyrightDeliveryIntentsJob(
+    {},
+    {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+      priority: PRIORITY_DEFAULT,
+      deduplication: {
+        id: 'copyright-delivery-reconciliation',
+        mode: 'throttle',
+        ttl: FIVE_MINUTES_MS,
+      },
+    },
+  )
 }
 
 export function enqueueBulkReconcilePostNotifications(postIds: string[]): EnqueueReturnType {

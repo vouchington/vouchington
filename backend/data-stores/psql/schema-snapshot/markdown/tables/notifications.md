@@ -38,6 +38,7 @@ RANGE partitioned on `user_id` (children: default, no retention owner, access cl
 | `updated_at`                   | `timestamp with time zone`    | no       | `CURRENT_TIMESTAMP`                           |          |           |           |                                                                                                                                                                                                            |
 | `publication_post_id`          | `uuid`                        | yes      |                                               |          |           |           | Stable post target retained after the display FK is cleared by hard deletion, for publication reconciliation only.                                                                                         |
 | `publication_rss_feed_item_id` | `uuid`                        | yes      |                                               |          |           |           | Stable RSS item target retained after the display FK is cleared by hard deletion, for publication reconciliation only.                                                                                     |
+| `copyright_notice_id`          | `uuid`                        | yes      |                                               |          |           |           | Private copyright case associated with a member notification; the notification body contains no claimant or evidence data.                                                                                 |
 
 **Primary key:** `PRIMARY KEY (user_id, id)`
 
@@ -55,6 +56,7 @@ _none_
 - `chk_notifications__target`: `CHECK ((num_nonnulls(target_path, target_entity, target_intent) = 1))`
 - `notifications_actor_label_check`: `CHECK (((actor_label IS NULL) OR (length(actor_label) <= 100)))`
 - `notifications_body_check`: `CHECK ((length(body) <= 1000))`
+- `notifications_copyright_notice_entity_shape`: `CHECK ((((entity_type = 'copyright_notice'::notification_entity_types) AND (copyright_notice_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL) AND (conversation_id IS NULL) AND (community_id IS NULL)) OR ((entity_type <> 'copyright_notice'::notification_entity_types) AND (copyright_notice_id IS NULL))))`
 - `notifications_target_path_check`: `CHECK (((target_path IS NULL) OR (length(target_path) > 0)))`
 - `notifications_title_check`: `CHECK ((length(title) <= 300))`
 
@@ -62,6 +64,7 @@ _none_
 
 - `fk_notifications__community_ban_id`: `FOREIGN KEY (community_ban_id) REFERENCES community_bans(id) ON DELETE SET NULL`
 - `fk_notifications__community_id`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
+- `fk_notifications__copyright_notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
 - `fk_notifications__moderation_appeal_id`: `FOREIGN KEY (moderation_appeal_id) REFERENCES moderation_appeals(id) ON DELETE SET NULL`
 - `fk_notifications__moderation_report_id`: `FOREIGN KEY (moderation_report_id) REFERENCES moderation_reports(id) ON DELETE SET NULL`
 - `fk_notifications__review_dispute_id`: `FOREIGN KEY (review_dispute_id) REFERENCES review_disputes(id) ON DELETE SET NULL`
@@ -80,6 +83,7 @@ _none_
 - `idx_notifications__community_ban_id`: `CREATE INDEX idx_notifications__community_ban_id ON ONLY public.notifications USING btree (community_ban_id) WHERE (community_ban_id IS NOT NULL)`
 - `idx_notifications__community_id`: `CREATE INDEX idx_notifications__community_id ON ONLY public.notifications USING btree (community_id) WHERE (community_id IS NOT NULL)`
 - `idx_notifications__conversation_id`: `CREATE INDEX idx_notifications__conversation_id ON ONLY public.notifications USING btree (conversation_id) WHERE (conversation_id IS NOT NULL)`
+- `idx_notifications__copyright_notice`: `CREATE INDEX idx_notifications__copyright_notice ON ONLY public.notifications USING btree (copyright_notice_id) WHERE (copyright_notice_id IS NOT NULL)`
 - `idx_notifications__moderation_appeal`: `CREATE INDEX idx_notifications__moderation_appeal ON ONLY public.notifications USING btree (moderation_appeal_id) WHERE ((moderation_appeal_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_notifications__moderation_appeal_id`: `CREATE INDEX idx_notifications__moderation_appeal_id ON ONLY public.notifications USING btree (moderation_appeal_id) WHERE (moderation_appeal_id IS NOT NULL)`
 - `idx_notifications__moderation_report`: `CREATE INDEX idx_notifications__moderation_report ON ONLY public.notifications USING btree (moderation_report_id) WHERE ((moderation_report_id IS NOT NULL) AND (deleted_at IS NULL))`

@@ -1,6 +1,6 @@
 import { MailParser, type AddressObject, type HeaderValue } from 'mailparser'
 import { Readable, Transform } from 'node:stream'
-import { streamMailParts } from './streamed-mail-parts.mts'
+import { streamMailParts, type ParsedMimeAttachment } from './streamed-mail-parts.mts'
 
 const MAX_MIME_HEADER_BYTES = 1024 * 1024
 
@@ -11,6 +11,8 @@ export type ParsedSesInboundEmail = {
   bodyText: string
   emailMessageId: string | null
   replyRefs: string[]
+  attachments?: ParsedMimeAttachment[]
+  recipientEmails?: string[]
 }
 
 export class SesInboundTerminalError extends Error {}
@@ -29,7 +31,8 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
   let messageId: string | null = null
   let references = ''
   let inReplyTo = ''
-  const bodyText = streamMailParts(parser)
+  let recipientEmails: string[] = []
+  const parts = streamMailParts(parser)
   const headerLimiter = createMimeHeaderLimitStream()
   let sourceStreamError: unknown
   await new Promise<void>((resolve, reject) => {
@@ -39,6 +42,13 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
       messageId = String(headers.get('message-id') ?? '').trim() || null
       references = String(headers.get('references') ?? '')
       inReplyTo = String(headers.get('in-reply-to') ?? '')
+      recipientEmails = [
+        ...new Set(
+          ['to', 'delivered-to', 'x-original-to'].flatMap(header =>
+            getHeaderAddresses(headers.get(header)).map(address => address.toLowerCase()),
+          ),
+        ),
+      ]
     })
     parser.once('error', error => {
       rawMime.destroy()
@@ -67,9 +77,11 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
     fromEmail: from.address.trim(),
     ...(fromName ? { fromName } : {}),
     subject: normalizedSubject,
-    bodyText: bodyText() || normalizedSubject,
+    bodyText: parts.getBodyText() || normalizedSubject,
     emailMessageId: messageId,
     replyRefs: normalizeReplyReferences(inReplyTo, references),
+    attachments: parts.getAttachments(),
+    recipientEmails,
   }
 }
 
@@ -104,6 +116,11 @@ function asAddress(value: HeaderValue | undefined): AddressObject | undefined {
   return value && typeof value === 'object' && 'value' in value && Array.isArray(value.value)
     ? (value as AddressObject)
     : undefined
+}
+
+function getHeaderAddresses(value: HeaderValue | undefined): string[] {
+  const address = asAddress(value)
+  return address?.value.flatMap(item => (item.address?.trim() ? [item.address.trim()] : [])) ?? []
 }
 
 function normalizeReplyReferences(inReplyTo: string, references: string): string[] {

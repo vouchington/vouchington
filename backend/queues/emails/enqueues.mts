@@ -17,6 +17,7 @@ import type {
   ProcessSendPostReferralLinkEmailVariables,
   ProcessSendSupportEmailVariables,
   ProcessSendWelcomeEmailVariables,
+  ProcessSendCopyrightNoticeEmailVariables,
 } from './types.mts'
 import { QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
 import { emails } from './queues.mts'
@@ -78,6 +79,48 @@ export const enqueueSendCommunityOwnershipTransferEmail =
   createEnqueueFunction<ProcessSendCommunityOwnershipTransferEmailVariables>(
     'processSendCommunityOwnershipTransferEmail',
   )
+
+const enqueueSendCopyrightNoticeEmailJob = createGlideMqEnqueueFunction({
+  queue: emails,
+  queueName: QUEUE_NAME,
+  jobName: 'processSendCopyrightNoticeEmail',
+})
+
+export function enqueueSendCopyrightNoticeEmail(intentId: string): EnqueueReturnType {
+  return enqueueSendCopyrightNoticeEmailJob(
+    { intentId } satisfies ProcessSendCopyrightNoticeEmailVariables,
+    {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+      priority: PRIORITY_DEFAULT,
+      deduplication: {
+        id: `copyright-delivery:${intentId}:email`,
+        mode: 'throttle',
+        ttl: 5 * 60 * 1000,
+      },
+    },
+  )
+}
+
+export function enqueueSendCopyrightEmailIntakeResponse(responseId: string): EnqueueReturnType {
+  return enqueueSendCopyrightNoticeEmailJob(
+    { intakeResponseId: responseId } satisfies ProcessSendCopyrightNoticeEmailVariables,
+    {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+      priority: PRIORITY_DEFAULT,
+      deduplication: {
+        id: `copyright-email-intake-response:${responseId}:email`,
+        mode: 'throttle',
+        ttl: 5 * 60 * 1000,
+      },
+    },
+  )
+}
 
 const enqueueDispatchEngagementEmailsJob = createGlideMqEnqueueFunction({
   queue: emails,

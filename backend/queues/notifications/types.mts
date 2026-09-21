@@ -11,3 +11,5 @@ export type NotificationJobs =
   | 'processCommunityActivityDigestDispatch'
   | 'processCommunityActivityDigestScheduleTick'
   | 'processCommunityActivityDigestBatch'
+  | 'processDeliverCopyrightNotice'
+  | 'processReconcileCopyrightDeliveryIntents'

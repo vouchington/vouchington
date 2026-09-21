@@ -14,41 +14,42 @@ leaf for endpoint-specific details; otherwise the README's inline section is can
 
 ## Route Map
 
-| Area                    | Reference                                                                      | Notes                                          |
-| ----------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------- |
-| Admin topic imports     | [v1/admin/imports/README.md](./v1/admin/imports/README.md)                     | Admin-only bulk CSV imports                    |
-| Agents                  | [v1/agents/README.md](./v1/agents/README.md)                                   | Agent viewer endpoints and moderation actions  |
-| Attribution             | [v1/attribution/README.md](./v1/attribution/README.md)                         | Referral attribution tracking                  |
-| Auth                    | [v1/auth/README.md](./v1/auth/README.md)                                       | Login, logout, email auth, Meta auth           |
-| Captcha config          | [v1/captcha-config/README.md](./v1/captcha-config/README.md)                   | Staging Turnstile always-approve public signal |
-| Conversations           | [v1/conversations/README.md](./v1/conversations/README.md)                     | Chat conversations and SSE streaming           |
-| Crawlers                | [v1/crawlers/README.md](./v1/crawlers/README.md)                               | Crawler CRUD and refresh                       |
-| Dynamic config          | [v1/dynamic-config/README.md](./v1/dynamic-config/README.md)                   | Runtime config namespaces and audit history    |
-| Entity relations        | [v1/entity-relations/README.md](./v1/entity-relations/README.md)               | Follow, mute, block, and subscribe actions     |
-| Feeds                   | [v1/feeds/README.md](./v1/feeds/README.md)                                     | Personalized post and RSS item feeds           |
-| Hostnames               | [v1/hostnames/README.md](./v1/hostnames/README.md)                             | Hostname search and comparison                 |
-| Households              | [v1/households/README.md](./v1/households/README.md)                           | Household CRUD and memberships                 |
-| Images                  | [v1/images/README.md](./v1/images/README.md)                                   | Presigned upload flow                          |
-| Individuals             | [v1/individuals/README.md](./v1/individuals/README.md)                         | Current user's individual profile              |
-| Memberships             | [v1/memberships/README.md](./v1/memberships/README.md)                         | Plans, billing, and grants                     |
-| MQ admin                | [v1/mq/README.md](./v1/mq/README.md)                                           | Queue monitoring and management                |
-| OAuth authorization     | [oauth/README.md](./oauth/README.md)                                           | OAuth 2.1 authorization server and consent     |
-| My                      | [v1/my/README.md](./v1/my/README.md)                                           | Current-user cards, profile, rewards, spending |
-| PostgreSQL admin        | [v1/psql/README.md](./v1/psql/README.md)                                       | Migrations, partitions, materialized views     |
-| Posts                   | [v1/posts/README.md](./v1/posts/README.md)                                     | Post CRUD, ratings, search, descendants        |
-| Recommended topics      | [v1/recommended-topics/README.md](./v1/recommended-topics/README.md)           | Personalized topic suggestions                 |
-| Referral links          | [v1/referral-links/README.md](./v1/referral-links/README.md)                   | Link CRUD, validations, click attribution      |
-| RSS feed items          | [v1/rss-feed-items/README.md](./v1/rss-feed-items/README.md)                   | Search and detail                              |
-| RSS feeds               | [v1/rss-feeds/README.md](./v1/rss-feeds/README.md)                             | Feed CRUD, refresh, crawl history              |
-| Sessions authentication | [v1/sessions-authentication/README.md](./v1/sessions-authentication/README.md) | Session lifecycle, passkeys, OAuth             |
-| Topic recommendations   | [v1/topic-recommendations/README.md](./v1/topic-recommendations/README.md)     | Logged-in recommendation queue                 |
-| Topics                  | [v1/topics/README.md](./v1/topics/README.md)                                   | Topic detail, search, discovery                |
-| Trending topics         | [v1/trending-topics/README.md](./v1/trending-topics/README.md)                 | Trending discovery                             |
-| URLs                    | [v1/urls/README.md](./v1/urls/README.md)                                       | URL detail, search, crawl management           |
-| Users                   | [v1/users/README.md](./v1/users/README.md)                                     | User profiles, collections, suspension         |
-| Valkey admin            | [v1/valkey/README.md](./v1/valkey/README.md)                                   | Cache and bloom filter rebuild admin           |
-| Vote integrity          | [v1/vote-integrity/README.md](./v1/vote-integrity/README.md)                   | Review queue and flag resolution               |
-| RSS XML                 | [../rss/README.md](../rss/README.md)                                           | Mounted at `/rss/`, not `/api/v1/`             |
+| Area                    | Reference                                                                      | Notes                                           |
+| ----------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------- |
+| Admin topic imports     | [v1/admin/imports/README.md](./v1/admin/imports/README.md)                     | Admin-only bulk CSV imports                     |
+| Agents                  | [v1/agents/README.md](./v1/agents/README.md)                                   | Agent viewer endpoints and moderation actions   |
+| Attribution             | [v1/attribution/README.md](./v1/attribution/README.md)                         | Referral attribution tracking                   |
+| Auth                    | [v1/auth/README.md](./v1/auth/README.md)                                       | Login, logout, email auth, Meta auth            |
+| Captcha config          | [v1/captcha-config/README.md](./v1/captcha-config/README.md)                   | Staging Turnstile always-approve public signal  |
+| Conversations           | [v1/conversations/README.md](./v1/conversations/README.md)                     | Chat conversations and SSE streaming            |
+| Copyright notices       | [v1/copyright-notices/README.md](./v1/copyright-notices/README.md)             | Notice, appeal, counter-notice, and review flow |
+| Crawlers                | [v1/crawlers/README.md](./v1/crawlers/README.md)                               | Crawler CRUD and refresh                        |
+| Dynamic config          | [v1/dynamic-config/README.md](./v1/dynamic-config/README.md)                   | Runtime config namespaces and audit history     |
+| Entity relations        | [v1/entity-relations/README.md](./v1/entity-relations/README.md)               | Follow, mute, block, and subscribe actions      |
+| Feeds                   | [v1/feeds/README.md](./v1/feeds/README.md)                                     | Personalized post and RSS item feeds            |
+| Hostnames               | [v1/hostnames/README.md](./v1/hostnames/README.md)                             | Hostname search and comparison                  |
+| Households              | [v1/households/README.md](./v1/households/README.md)                           | Household CRUD and memberships                  |
+| Images                  | [v1/images/README.md](./v1/images/README.md)                                   | Presigned upload flow                           |
+| Individuals             | [v1/individuals/README.md](./v1/individuals/README.md)                         | Current user's individual profile               |
+| Memberships             | [v1/memberships/README.md](./v1/memberships/README.md)                         | Plans, billing, and grants                      |
+| MQ admin                | [v1/mq/README.md](./v1/mq/README.md)                                           | Queue monitoring and management                 |
+| OAuth authorization     | [oauth/README.md](./oauth/README.md)                                           | OAuth 2.1 authorization server and consent      |
+| My                      | [v1/my/README.md](./v1/my/README.md)                                           | Current-user cards, profile, rewards, spending  |
+| PostgreSQL admin        | [v1/psql/README.md](./v1/psql/README.md)                                       | Migrations, partitions, materialized views      |
+| Posts                   | [v1/posts/README.md](./v1/posts/README.md)                                     | Post CRUD, ratings, search, descendants         |
+| Recommended topics      | [v1/recommended-topics/README.md](./v1/recommended-topics/README.md)           | Personalized topic suggestions                  |
+| Referral links          | [v1/referral-links/README.md](./v1/referral-links/README.md)                   | Link CRUD, validations, click attribution       |
+| RSS feed items          | [v1/rss-feed-items/README.md](./v1/rss-feed-items/README.md)                   | Search and detail                               |
+| RSS feeds               | [v1/rss-feeds/README.md](./v1/rss-feeds/README.md)                             | Feed CRUD, refresh, crawl history               |
+| Sessions authentication | [v1/sessions-authentication/README.md](./v1/sessions-authentication/README.md) | Session lifecycle, passkeys, OAuth              |
+| Topic recommendations   | [v1/topic-recommendations/README.md](./v1/topic-recommendations/README.md)     | Logged-in recommendation queue                  |
+| Topics                  | [v1/topics/README.md](./v1/topics/README.md)                                   | Topic detail, search, discovery                 |
+| Trending topics         | [v1/trending-topics/README.md](./v1/trending-topics/README.md)                 | Trending discovery                              |
+| URLs                    | [v1/urls/README.md](./v1/urls/README.md)                                       | URL detail, search, crawl management            |
+| Users                   | [v1/users/README.md](./v1/users/README.md)                                     | User profiles, collections, suspension          |
+| Valkey admin            | [v1/valkey/README.md](./v1/valkey/README.md)                                   | Cache and bloom filter rebuild admin            |
+| Vote integrity          | [v1/vote-integrity/README.md](./v1/vote-integrity/README.md)                   | Review queue and flag resolution                |
+| RSS XML                 | [../rss/README.md](../rss/README.md)                                           | Mounted at `/rss/`, not `/api/v1/`              |
 
 ## Route Helpers
 

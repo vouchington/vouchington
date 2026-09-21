@@ -25,6 +25,8 @@ describe('SES inbound MIME parsing', () => {
       subject: 'Help with my account',
       bodyText: 'Please help.',
       emailMessageId: '<tests+incoming@voucha.ai>',
+      recipientEmails: ['support@voucha.ai'],
+      attachments: [],
       replyRefs: ['<tests+reply@voucha.ai>', '<tests+first@voucha.ai>'],
     })
   })
@@ -60,7 +62,7 @@ describe('SES inbound MIME parsing', () => {
     await expect(parseSesInboundMime(Readable.from(failingSource()))).rejects.toBe(sourceError)
   })
 
-  it('drains a large attachment without retaining it in the parsed result', async () => {
+  it('drains a large attachment while retaining only bounded evidence metadata', async () => {
     const result = await parseSesInboundMime(Readable.from(generateLargeAttachmentMime()))
 
     expect(result).toEqual({
@@ -68,9 +70,18 @@ describe('SES inbound MIME parsing', () => {
       subject: 'Large attachment',
       bodyText: 'Keep this body only.',
       emailMessageId: null,
+      recipientEmails: [],
+      attachments: [
+        {
+          filename: 'large.bin',
+          contentId: null,
+          mimeType: 'application/octet-stream',
+          byteSize: 9 * 1024 * 1024,
+          sha256: expect.any(Buffer),
+        },
+      ],
       replyRefs: [],
     })
-    expect(result).not.toHaveProperty('attachments')
   })
 
   it('rejects oversized inline text while it is streaming', async () => {

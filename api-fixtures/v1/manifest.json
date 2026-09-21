@@ -26421,7 +26421,7 @@
     },
     "GET:/api/v1/my/notifications": {
       "bodyKind": "content",
-      "hash": "4dce63fa48999d7cfa884fe0f9c68c2c44d56cfa03eba85a733a10c3cf05d10c",
+      "hash": "5013d6c0161ad17ecbec0e0e8ef539d348c5111bb291d16497fcb6638ad9f220",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -26500,6 +26500,20 @@
                   ]
                 }
               },
+              "copyright_notice_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
               "created_at": {
                 "required": true,
                 "schema": {
@@ -26526,6 +26540,10 @@
                     {
                       "type": "literal",
                       "value": "community_role_change"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "copyright_notice"
                     },
                     {
                       "type": "literal",
@@ -73936,7 +73954,7 @@
         "limit": "20"
       },
       "responseSchema": {
-        "hash": "36abb44e9b8160954d4f8c9cbf64fb9e1c5ff33a36cc19cf7798faaad9e509fd",
+        "hash": "cf930d413cfa290663c99177b9490473d3c97ac188de0599bd31ad5e680aa68e",
         "key": "swift.notifications.default"
       },
       "route": {

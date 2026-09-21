@@ -35,6 +35,12 @@ unfinished `member_thread` intents and delegates their exact `{ threadId, suppor
 idempotencyKey }` payload to `enqueueOrRetryBulkCustomerSupport`; GlideMQ deduplication and the
 run's keyed claim make recovery safe after a process crash or retained terminal failure.
 
+Copyright appeal jobs persist bounded `confirm`, `modify`, `reverse`, or `uncertain` advice using
+the immutable appeal receipt and a minimal notice/restriction summary. Their processor has no path
+that changes material availability: a moderator must review the stored recommendation and make any
+restriction decision separately. The five-minute copyright reconciler re-enqueues an appeal only
+while no recommendation exists.
+
 ## Token-limiter wiring (TPM)
 
 `createAIAgentsWorker`'s `tokenLimiter` (`workers/core.mts`) throttles on real per-minute token

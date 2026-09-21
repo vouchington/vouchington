@@ -74,7 +74,11 @@ describe('processSesInboundSqsMessage', () => {
   it('enqueues the correctly-derived job and acks (deletes) the SQS message', async () => {
     const sesMessageId = `ses-${randomUUID()}`
     const objectKey = `incoming/${sesMessageId}`
-    const jobId = getSesInboundProcessJobOptions({ sesMessageId, objectKey }).jobId
+    const jobId = getSesInboundProcessJobOptions({
+      sesMessageId,
+      objectKey,
+      intakeKind: 'support',
+    }).jobId
     createdJobIds.push(jobId)
     const message = s3EventMessage([objectCreatedRecord(objectKey)])
     const deleteCalls: string[] = []
@@ -93,13 +97,20 @@ describe('processSesInboundSqsMessage', () => {
     expect(deletedMessage).toEqual(message)
     expect(deleteCalls).toEqual([message.receiptHandle])
     const job = await sesInboundQueue.getJob(jobId)
-    expect(job).toMatchObject({ name: 'processInboundEmail', data: { sesMessageId, objectKey } })
+    expect(job).toMatchObject({
+      name: 'processInboundEmail',
+      data: { sesMessageId, objectKey, intakeKind: 'support' },
+    })
   })
 
   it('deduplicates redelivery of the same message so only one job lands', async () => {
     const sesMessageId = `ses-${randomUUID()}`
     const objectKey = `incoming/${sesMessageId}`
-    const jobId = getSesInboundProcessJobOptions({ sesMessageId, objectKey }).jobId
+    const jobId = getSesInboundProcessJobOptions({
+      sesMessageId,
+      objectKey,
+      intakeKind: 'support',
+    }).jobId
     createdJobIds.push(jobId)
     const message = s3EventMessage([objectCreatedRecord(objectKey)])
 
@@ -148,7 +159,7 @@ describe('processSesInboundSqsMessage', () => {
     ).rejects.toMatchObject({ status: 422 })
   })
 
-  it('throws when the object key is outside the incoming/ prefix, and does not delete the message', async () => {
+  it('throws when the object key is outside the recognized inbound prefixes, and does not delete the message', async () => {
     // Routed through the full consumer (not a direct processSesInboundSqsMessage call) so this also
     // proves assertSesInboundProcessJobData's own throw -- not just this processor's S3-shape
     // asserts above it -- leaves the message undeleted and DLQ-routable, matching the malformed-
@@ -170,7 +181,7 @@ describe('processSesInboundSqsMessage', () => {
     await consumer.close()
 
     expect(failedMessage).toEqual(message)
-    expect(error).toMatchObject({ message: expect.stringContaining('incoming/') })
+    expect(error).toMatchObject({ message: expect.stringContaining('unknown prefix') })
     expect(deleteCalls).toEqual([])
   })
 

@@ -1,7 +1,9 @@
+/* oxlint-disable max-lines -- The private aggregate keeps transaction-consistent selectors together. */
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
   CopyrightCorrespondenceRecord,
+  CopyrightAppealRecommendationRecord,
   CopyrightEvidenceArtifactRecord,
   CopyrightLegalHoldAssessmentRecord,
   CopyrightLegalHoldResolutionRecord,
@@ -15,6 +17,8 @@ import type {
   CopyrightRestrictionRecord,
 } from './types.mts'
 import { selectCopyrightActionIntents } from './get-action-intents.mts'
+import { selectCopyrightDeliveryIntents } from './get-delivery-intents.mts'
+import { selectCopyrightReviews } from './get-reviews.mts'
 
 export async function getCopyrightNoticePrivateAggregate(
   noticeId: string,
@@ -36,6 +40,7 @@ export async function getCopyrightNoticePrivateAggregate(
     targets,
     restrictions,
     submissions,
+    appealRecommendations,
     assessments,
     deadlines,
     holdAssessments,
@@ -44,6 +49,8 @@ export async function getCopyrightNoticePrivateAggregate(
     correspondence,
     lifecycleEvents,
     actionIntents,
+    deliveryIntents,
+    reviews,
   ] = await Promise.all([
     selectTargets(noticeId, transaction),
     selectRestrictions(noticeId, transaction),
@@ -52,6 +59,7 @@ export async function getCopyrightNoticePrivateAggregate(
       noticeId,
       transaction,
     ),
+    selectAppealRecommendations(noticeId, transaction),
     selectAssessments(noticeId, transaction),
     selectRows<CopyrightNoticeDeadlineRecord>('copyright_notice_deadlines', noticeId, transaction),
     selectHoldAssessments(noticeId, transaction),
@@ -68,6 +76,8 @@ export async function getCopyrightNoticePrivateAggregate(
       transaction,
     ),
     selectCopyrightActionIntents(noticeId, transaction),
+    selectCopyrightDeliveryIntents(noticeId, transaction),
+    selectCopyrightReviews(noticeId, transaction),
   ])
   await transaction.commit()
   return {
@@ -75,6 +85,8 @@ export async function getCopyrightNoticePrivateAggregate(
     targets,
     restrictions,
     submissions,
+    appealRecommendations,
+    ...reviews,
     assessments,
     deadlines,
     holdAssessments,
@@ -83,7 +95,25 @@ export async function getCopyrightNoticePrivateAggregate(
     correspondence,
     lifecycleEvents,
     actionIntents,
+    deliveryIntents,
   }
+}
+
+async function selectAppealRecommendations(
+  noticeId: string,
+  query: Awaited<ReturnType<typeof beginTransaction>>,
+): Promise<CopyrightAppealRecommendationRecord[]> {
+  const { rows } = await query<CopyrightAppealRecommendationRecord>(
+    sql`/* getCopyrightNoticePrivateAggregate:appealRecommendations */
+    SELECT recommendation.*
+    FROM copyright_notice_appeal_recommendations recommendation
+    JOIN copyright_notice_submissions submission
+      ON submission.id = recommendation.copyright_notice_submission_id
+    WHERE submission.copyright_notice_id = ${noticeId}
+    ORDER BY recommendation.id
+  `,
+  )
+  return rows
 }
 
 async function selectRows<T extends Record<string, unknown>>(

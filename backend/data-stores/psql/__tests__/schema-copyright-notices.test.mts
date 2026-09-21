@@ -9,6 +9,7 @@ import {
   readCopyrightErasedRestrictionActors,
   rejectCopyrightActionIntentDeletion,
   rejectCopyrightFinalReviewWithoutHuman,
+  rejectCopyrightNotificationWithAnotherEntity,
   rejectCopyrightRestrictionDeletion,
   rejectCopyrightSubmissionMutation,
   type CopyrightNoticeSchemaFixture,
@@ -28,6 +29,12 @@ describe('copyright notice schema', () => {
 
   it('requires an identified human for final review', async () => {
     await expect(rejectCopyrightFinalReviewWithoutHuman(fixture)).rejects.toMatchObject({
+      code: '23514',
+    })
+  })
+
+  it('allows copyright notifications only with their copyright case entity', async () => {
+    await expect(rejectCopyrightNotificationWithAnotherEntity(fixture)).rejects.toMatchObject({
       code: '23514',
     })
   })

@@ -30,7 +30,8 @@ export function resolveBccAddress(bccEmailEnv: string | undefined, isProduction:
 
 // Re-read per call (not cached at module scope) so tests that reload/mutate env stay isolated;
 // behavior in a deployed task is identical either way since ENVIRONMENT never changes at runtime.
-function getBccAddresses(): string[] {
+export function getBccAddresses(options: Pick<SendEmailOptions, 'allowGlobalBcc'>): string[] {
+  if (options.allowGlobalBcc === false) return []
   return [resolveBccAddress(process.env.SES_BCC_EMAIL, isProductionEnvironment())]
 }
 
@@ -53,9 +54,9 @@ export const sendEmail = (options: SendEmailOptions) => {
       RawMessage: { Data: Buffer.from(buildRawEmailMessage(options), 'utf-8') },
       Destinations: [
         ...(Array.isArray(options.to) ? options.to : [options.to]),
-        ...getBccAddresses(),
+        ...getBccAddresses(options),
       ],
-      Source: process.env.SES_SOURCE_EMAIL || 'no-reply@voucha.ai',
+      Source: options.source || process.env.SES_SOURCE_EMAIL || 'no-reply@voucha.ai',
       ...(options.configurationSetName
         ? { ConfigurationSetName: options.configurationSetName }
         : {}),
@@ -68,10 +69,10 @@ export const sendEmail = (options: SendEmailOptions) => {
 
   const input = {
     Destination: {
-      BccAddresses: getBccAddresses(),
+      BccAddresses: getBccAddresses(options),
       ToAddresses: Array.isArray(options.to) ? options.to : [options.to],
     },
-    Source: process.env.SES_SOURCE_EMAIL || 'no-reply@voucha.ai',
+    Source: options.source || process.env.SES_SOURCE_EMAIL || 'no-reply@voucha.ai',
     Message: {
       Subject: {
         Charset: 'UTF-8',
@@ -79,7 +80,7 @@ export const sendEmail = (options: SendEmailOptions) => {
       },
       Body: {} as Body,
     },
-    ReplyToAddresses: ['support@voucha.ai'],
+    ReplyToAddresses: [options.replyToAddress || 'support@voucha.ai'],
     ...(options.configurationSetName ? { ConfigurationSetName: options.configurationSetName } : {}),
   }
   if (options.text) {

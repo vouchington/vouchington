@@ -14,6 +14,9 @@ export type SendClassifiedEmailOptions = {
   userId?: string
   crmEmail?: string
   provider?: 'ses' | 'gmail_smtp'
+  source?: string
+  replyToAddress?: string
+  allowGlobalBcc?: boolean
 }
 
 export async function sendClassifiedEmail(
@@ -57,6 +60,9 @@ export async function sendClassifiedEmail(
     text: options.text,
     headers: params.headers,
     configurationSetName: params.configurationSetName,
+    source: options.source,
+    replyToAddress: options.replyToAddress,
+    allowGlobalBcc: options.allowGlobalBcc,
   })
 }
 

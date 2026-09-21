@@ -135,6 +135,39 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Re-enqueue unassessed copyright email and form agent work",
+        "id": "reconcileCopyrightAgentDispatches",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcileCopyrightAgentDispatches",
+    "template": {
+      "data": {},
+      "name": "reconcile-copyright-agent-dispatches",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Re-enqueue undispatched AI moderation judgements (crash recovery)",
         "id": "reconcileAutoDispatchJudgements",
         "kind": "scheduled-jobs",
@@ -1753,6 +1786,39 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Re-enqueue pending copyright legal delivery intents",
+        "id": "copyright-delivery-reconciliation",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "notifications",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "copyright-delivery-reconciliation",
+    "template": {
+      "data": {},
+      "name": "processReconcileCopyrightDeliveryIntents",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Re-enqueue pending browser-push intents after a worker or queue failure",
         "id": "notification-push-intent-recovery",
         "kind": "scheduled-jobs",
@@ -2680,6 +2746,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueReconcileNotificationPushIntents",
   },
   {
+    "description": "Re-enqueue pending copyright legal delivery intents",
+    "id": "copyright-delivery-reconciliation",
+    "job_name": "processReconcileCopyrightDeliveryIntents",
+    "queue_name": "notifications",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileCopyrightDeliveryIntents",
+  },
+  {
     "description": "Dispatch RSS feed fetching",
     "id": "dispatchRssFeeds",
     "job_name": "dispatchRssFeeds",
@@ -2958,6 +3032,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "ai_agents",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileMemberSupportAgentIntents",
+  },
+  {
+    "description": "Re-enqueue unassessed copyright email and form agent work",
+    "id": "reconcileCopyrightAgentDispatches",
+    "job_name": "reconcile-copyright-agent-dispatches",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcileCopyrightAgentDispatches",
   },
   {
     "description": "Cancel/retrieve/record orphaned OpenAI background responses (crash recovery)",

@@ -176,6 +176,8 @@ export const ENV_VAR_CONTRACT_GROUPS = [
     [
       'SES_CONFIGURATION_SET_TRANSACTIONAL',
       'SES_CONFIGURATION_SET_MARKETING',
+      'SES_COPYRIGHT_SOURCE_EMAIL',
+      'SES_COPYRIGHT_REPLY_TO',
       'MARKETING_POSTAL_ADDRESS',
     ],
   ),
@@ -207,6 +209,7 @@ export const ENV_VAR_CONTRACT_GROUPS = [
     ['ecs-backend-environment', 'ecs-worker-environment'],
     ['PG_QUERY_TIMING_SAMPLE', 'PG_POOL_STATS_INTERVAL_MS'],
   ),
+  group('vouchington-infra', 'internal', ['ecs-backend-environment'], ['COPYRIGHT_INTAKE_ENABLED']),
   group(
     'vouchington-infra',
     'secret',
@@ -276,6 +279,7 @@ export const ENV_VAR_CONTRACT_GROUPS = [
       'ANALYTICS_BACKEND',
       'ANALYTICS_FIREHOSE_PREFIX',
       'S3_BUCKET_SES_INBOUND',
+      'S3_BUCKET_COPYRIGHT_EVIDENCE',
       'INSTANCE_EMAIL',
       'QUEUES',
       'CF_WORKER_ROUTE',

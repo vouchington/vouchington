@@ -10,6 +10,20 @@ also scans PostgreSQL inbound receipts/messages without a completed keyed suppor
 PostgreSQL pass remains effective after the raw object is deleted: it bulk-enqueues the stable AI
 job ID and retries a matching retained failed job.
 
+Mail addressed to the configured designated copyright inbox is routed out of the support path.
+Before source cleanup, the worker copies the complete RFC 5322 object to private copyright evidence
+storage, records its SHA-256 plus parsed attachment metadata in an immutable intake, and awaits a
+replay-safe advisory extraction job. Initial messages and replies use that extraction path. A message matching an
+admitted case through encrypted threading headers is held for moderator correspondence classification after the
+agent recommendation; no restriction or outbound message runs automatically.
+
+Copyright routing is trusted only when the SQS producer supplies `intakeKind: copyright` for an
+object under `copyright-incoming/`; MIME recipient headers cannot select the legal path. The copy
+pins the source version and ETag and uses a content-addressed evidence key. Configure
+`S3_BUCKET_COPYRIGHT_EVIDENCE` with private encryption, versioning, audited least-privilege worker
+access, and an approved retention policy before enabling intake. Malformed MIME remains preserved
+as a failed parse for staff review.
+
 ## Related
 
 - Upstream SQS producer (provisioned, idle until production goes live — the S3 notification

@@ -41,6 +41,7 @@ export async function appendCopyrightSubmissionAssessment(input: {
   substantiallyCompliant: boolean
   supersedesAssessmentId?: string | null
   targetIds?: string[]
+  copyrightFormScreeningId?: string
 }): Promise<CopyrightNoticeSubmissionAssessmentRecord> {
   assert(
     input.currentUser === null || currentUserCanReviewCopyrightNotices(input.currentUser),
@@ -52,10 +53,35 @@ export async function appendCopyrightSubmissionAssessment(input: {
     copyright_notice_id: string
     kind: CopyrightSubmissionKind
     source_kind: CopyrightSubmissionSourceKind
+    automated_statutory_fields_complete: boolean
   }>(sql`/* appendCopyrightSubmissionAssessment:lockSubmission */
-    SELECT s.copyright_notice_id, s.kind, s.source_kind
+    SELECT s.copyright_notice_id, s.kind, s.source_kind,
+      intake.requester_user_id IS NOT NULL
+        AND n.jurisdiction = 'us_dmca'
+        AND char_length(n.claimant_contact_ciphertext) > 0
+        AND char_length(btrim(n.work_description)) > 0
+        AND intake.good_faith_belief
+        AND intake.accuracy_authority_under_penalty_of_perjury
+        AND char_length(intake.electronic_signature_ciphertext) > 0
+        AND EXISTS (
+          SELECT 1 FROM copyright_notice_targets target
+          JOIN copyright_notice_target_images target_image
+            ON target_image.copyright_notice_target_id = target.id
+          WHERE target.copyright_notice_id = n.id
+            AND char_length(btrim(target.hosted_use_url)) > 0
+        )
+        AND EXISTS (
+          SELECT 1
+          FROM copyright_notice_delivery_intents receipt
+          JOIN copyright_notice_delivery_recipients recipient
+            ON recipient.copyright_notice_delivery_intent_id = receipt.id
+          WHERE receipt.copyright_notice_id = n.id
+            AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
+            AND receipt.delivery_kind = 'claimant_receipt'
+        ) AS automated_statutory_fields_complete
     FROM copyright_notice_submissions s
     JOIN copyright_notices n ON n.id = s.copyright_notice_id
+    LEFT JOIN copyright_notice_form_intakes intake ON intake.copyright_notice_submission_id = s.id
     WHERE s.id = ${input.submissionId}
     FOR UPDATE OF n, s
   `)
@@ -64,6 +90,23 @@ export async function appendCopyrightSubmissionAssessment(input: {
     submissionRows[0].source_kind === 'signed_in_form' || input.currentUser !== null,
     403,
     'Email and guest-form assessments require a copyright reviewer',
+  )
+  assert(
+    input.currentUser !== null || submissionRows[0].kind === 'notice',
+    403,
+    'Only an initial signed-in notice may be assessed automatically',
+  )
+  assert(
+    input.currentUser === null || input.copyrightFormScreeningId === undefined,
+    422,
+    'Human assessments cannot claim an automated screening',
+  )
+  assert(
+    input.currentUser !== null ||
+      !input.substantiallyCompliant ||
+      submissionRows[0].automated_statutory_fields_complete,
+    422,
+    'Automated assessment requires all structured US DMCA notice fields',
   )
   assert(
     submissionRows[0].kind !== 'counter_notice' ||
@@ -103,13 +146,13 @@ export async function appendCopyrightSubmissionAssessment(input: {
   const { rows } = await transaction(sql`/* appendCopyrightSubmissionAssessment */
     INSERT INTO copyright_notice_submission_assessments (
       copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant,
-      supersedes_assessment_id
+      supersedes_assessment_id, copyright_notice_form_screening_id
     ) VALUES (
       ${input.submissionId}, ${input.assessedAt}, ${input.currentUser?.id ?? null}, ${input.substantiallyCompliant},
-      ${input.supersedesAssessmentId ?? null}
+      ${input.supersedesAssessmentId ?? null}, ${input.copyrightFormScreeningId ?? null}
     )
     RETURNING id, copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant,
-      supersedes_assessment_id
+      supersedes_assessment_id, copyright_notice_form_screening_id
   `)
   const assessment = rows[0] as CopyrightNoticeSubmissionAssessmentRecord | undefined
   assert(assessment, 500, 'Failed to append copyright submission assessment')

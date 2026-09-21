@@ -15,6 +15,10 @@ Glide Queue system for reconciling notifications and delivering browser push mes
   - Recomputes recipients for a single RSS feed item
 - `deliver-push-intent` claims a durable intent, rechecks live notification/content eligibility, and records endpoint completion.
 - `reconcile-push-intents` runs every five minutes to re-enqueue pending or expired-lease intents.
+- `processDeliverCopyrightNotice` claims one durable in-app copyright intent and writes an
+  idempotent, non-sensitive member notification.
+- `processReconcileCopyrightDeliveryIntents` runs every five minutes and routes recoverable
+  copyright intents to the in-app or transactional-email worker with stable intent keys.
 - `delete-notification`
   - Performs asynchronous soft deletion for user-initiated deletes
 - `follow-notification`

@@ -20,12 +20,32 @@ These are product response targets, not representations of safe-harbor eligibili
 1. Confirm the original submission and evidence digest exist. Never reconstruct a missing email from
    agent output.
 2. For email, compare the structured extraction with the inert original and correct it before
-   accepting the case.
+   accepting the case. Verify each extracted declaration against its recorded source excerpt. If no
+   recommendation exists, use the explicit manual-fallback reason; never silently bypass the agent.
 3. Confirm the target is an exact Voucha-hosted placement and preserve its captured revision.
 4. Record missing elements as an assessment and request information. Do not silently reject a
    substantially compliant notice for failing to match Voucha's form wording.
 5. If a signed-in case was provisionally restricted automatically, record a human `confirm`,
    `modify`, or `reverse` decision even when nobody appeals.
+
+## Intake activation
+
+Keep `COPYRIGHT_INTAKE_ENABLED=false` until all of the following are verified in the target
+environment:
+
+- the published address belongs to the registered US designated agent and production inbox routing
+  assigns `copyright` only to the trusted `copyright-incoming/` S3 prefix;
+- `S3_BUCKET_COPYRIGHT_EVIDENCE` is private, encrypted, versioned, access-logged, retention-reviewed,
+  and writable/readable only by the required workers and authorized evidence tooling;
+- form Turnstile secrets, route rate limits, scheduled agent reconciliation, moderator queues, and
+  urgent review alerts are live;
+- reversible placement withholding and origin/CDN denial have passed end-to-end testing;
+- receipts, poster notices, approved correspondence, retry/bounce handling, appeal and counter-notice
+  workflows are live; and
+- the repeat-infringer policy, retention schedule, templates, staffing, and legal review are approved.
+
+Do not advertise EU or UK statutory intake until their distinct schemas, review rules, notices, and
+any required representatives are deployed. The current public API accepts only `us_dmca`.
 
 ## Counter-notice and hold handling
 
@@ -43,6 +63,7 @@ These are product response targets, not representations of safe-harbor eligibili
 
 Continuously surface:
 
+- form intakes without a screening and successfully parsed email intakes without a recommendation;
 - provisional restrictions without a final human review, ordered by oldest restriction;
 - open deadlines at or past `escalation_at`;
 - open deadlines at or past `restoration_deadline_at` as incidents;
