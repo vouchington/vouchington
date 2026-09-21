@@ -139,8 +139,4 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_09 = [
   { key: 'native.dotnet.settings.uiLocale', consumers: ['dotnet'] },
   { key: 'native.dotnet.settings.verifyEmail', consumers: ['dotnet'] },
   { key: 'native.dotnet.settings.vouchesDisavows', consumers: ['dotnet'] },
-  { key: 'native.dotnet.support.close', consumers: ['dotnet'] },
-  { key: 'native.dotnet.support.createDescription', consumers: ['dotnet'] },
-  { key: 'native.dotnet.support.listDescription', consumers: ['dotnet'] },
-  { key: 'native.dotnet.support.listEmpty', consumers: ['dotnet'] },
 ] as const satisfies readonly NativeConsumerManifestEntry[]

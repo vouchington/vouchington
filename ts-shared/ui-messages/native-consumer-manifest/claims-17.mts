@@ -112,7 +112,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_17 = [
   { key: 'native.swift.navigationTitles.applications', consumers: ['swift'] },
   { key: 'native.swift.navigationTitles.bans', consumers: ['swift'] },
   { key: 'native.swift.navigationTitles.communities', consumers: ['swift'] },
-  { key: 'native.swift.navigationTitles.crm', consumers: ['swift'] },
   { key: 'native.swift.navigationTitles.discover', consumers: ['swift'] },
   { key: 'native.swift.navigationTitles.discussions', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.navigationTitles.engineering', consumers: ['dotnet', 'swift'] },

@@ -2,6 +2,12 @@ import type { NativeConsumerManifestEntry } from './types.mts'
 
 /** Canonical native consumer claims, kept in code-point key order. */
 export const NATIVE_CONSUMER_MANIFEST_CLAIMS_19 = [
+  { key: 'native.swift.routeFamilyDirectory.patterns', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.peopleSummary', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.peopleTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.plansSummary', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.plansTitle', consumers: ['swift'] },
+  { key: 'native.swift.routeFamilyDirectory.profileSummary', consumers: ['swift'] },
   { key: 'native.swift.routeFamilyDirectory.profileTitle', consumers: ['swift'] },
   { key: 'native.swift.routeFamilyDirectory.recommendationsSummary', consumers: ['swift'] },
   { key: 'native.swift.routeFamilyDirectory.recommendationsTitle', consumers: ['swift'] },

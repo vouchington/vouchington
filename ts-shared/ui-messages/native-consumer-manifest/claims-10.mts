@@ -2,12 +2,6 @@ import type { NativeConsumerManifestEntry } from './types.mts'
 
 /** Canonical native consumer claims, kept in code-point key order. */
 export const NATIVE_CONSUMER_MANIFEST_CLAIMS_10 = [
-  { key: 'native.dotnet.support.newThread', consumers: ['dotnet'] },
-  { key: 'native.dotnet.support.optionalConversationId', consumers: ['dotnet'] },
-  { key: 'native.dotnet.support.optionalMessage', consumers: ['dotnet'] },
-  { key: 'native.dotnet.support.thread', consumers: ['dotnet'] },
-  { key: 'native.dotnet.support.threadEmpty', consumers: ['dotnet'] },
-  { key: 'native.dotnet.support.title', consumers: ['dotnet'] },
   { key: 'native.dotnet.tagManagement.categories', consumers: ['dotnet'] },
   { key: 'native.dotnet.tagManagement.categoryTopics', consumers: ['dotnet'] },
   { key: 'native.dotnet.tagManagement.faqPosts', consumers: ['dotnet'] },

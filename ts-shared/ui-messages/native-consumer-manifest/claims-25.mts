@@ -38,8 +38,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_25 = [
   { key: 'native.taxonomy.settings.username', consumers: ['dotnet'] },
   { key: 'native.taxonomy.settings.x', consumers: ['dotnet'] },
   { key: 'native.taxonomy.settings.youtube', consumers: ['dotnet'] },
-  { key: 'native.taxonomy.support.closed', consumers: ['dotnet'] },
-  { key: 'native.taxonomy.support.open', consumers: ['dotnet'] },
   { key: 'native.taxonomy.topics.rssFeed', consumers: ['dotnet'] },
   { key: 'native.taxonomy.topics.topic', consumers: ['dotnet'] },
   { key: 'nav.messages', consumers: ['dotnet'] },
