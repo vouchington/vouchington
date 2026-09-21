@@ -16,26 +16,34 @@ export async function analyzeRouteDependencies(
   globalFiles: readonly string[],
   budget: AnalysisBudgetOptions,
 ): Promise<{ reports: { id?: string; type: string; result: unknown }[] }> {
+  const dependencyReports = discovered
+    .map((route, index) => ({
+      id: String(index),
+      type: 'dependencies' as const,
+      files: route.files,
+      relationships: DEPENDENCY_RELATIONSHIPS,
+    }))
+    .concat(
+      globalFiles.map((file, index) => ({
+        id: `global:${index}`,
+        type: 'dependencies' as const,
+        files: [file],
+        relationships: DEPENDENCY_RELATIONSHIPS,
+      })),
+    )
   return await withI18nAnalysisBudget(
     'analyzeProject',
     analyzeProject({
       root: repoRoot,
       jobs: 0,
-      reports: discovered
-        .map((route, index) => ({
-          id: String(index),
-          type: 'dependencies' as const,
-          files: route.files,
-          relationships: DEPENDENCY_RELATIONSHIPS,
-        }))
-        .concat(
-          globalFiles.map((file, index) => ({
-            id: `global:${index}`,
-            type: 'dependencies' as const,
-            files: [file],
-            relationships: DEPENDENCY_RELATIONSHIPS,
-          })),
-        ),
+      reports: [
+        ...dependencyReports,
+        {
+          id: 'resolve-check',
+          type: 'resolveCheckDependencies' as const,
+          dependencyReportIds: dependencyReports.map(report => report.id),
+        },
+      ],
     }),
     budget,
   )
@@ -43,8 +51,8 @@ export async function analyzeRouteDependencies(
 
 export function reportsById(analysis: {
   reports: { id?: string; result: unknown }[]
-}): Map<string, unknown> {
-  const reports = new Map<string, unknown>()
+}): Map<string, { id?: string; result: unknown }> {
+  const reports = new Map<string, { id?: string; result: unknown }>()
   for (const report of analysis.reports) {
     if (!report.id) throw new Error('Missing route dependency report id')
     reports.set(report.id, report)
@@ -73,29 +81,4 @@ export function initialClosureFiles(
         ]),
       ),
   )
-}
-
-export function uniqueClosureFiles(initialFiles: Map<string, string[]>): string[] {
-  return [
-    ...new Set([...initialFiles.values()].flat().filter(file => /\.[cm]?[jt]sx?$/.test(file))),
-  ]
-}
-
-export async function analyzeUnresolvedImports(
-  repoRoot: string,
-  files: readonly string[],
-  budget: AnalysisBudgetOptions,
-): Promise<unknown> {
-  if (files.length === 0) return undefined
-  const [first, ...rest] = files
-  const analysis = await withI18nAnalysisBudget(
-    'resolveCheck',
-    analyzeProject({
-      root: repoRoot,
-      jobs: 0,
-      reports: [{ id: 'resolve-check', type: 'resolveCheck', files: [first, ...rest] }],
-    }),
-    budget,
-  )
-  return analysis.reports.find(report => report.id === 'resolve-check')?.result
 }

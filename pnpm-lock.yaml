@@ -116,8 +116,8 @@ importers:
         specifier: ^6
         version: 6.34.0
       no-mistakes:
-        specifier: ^0.63.0
-        version: 0.63.0
+        specifier: ^0.64.1
+        version: 0.64.1
       oxfmt:
         specifier: ^0.67.0
         version: 0.67.0
@@ -12656,8 +12656,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.63.0
-        version: 0.63.0
+        specifier: ^0.64.1
+        version: 0.64.1
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -12771,7 +12771,7 @@ importers:
         version: 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@react-email/ui':
         specifier: ^6.9.5
-        version: 6.9.5(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 6.9.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ts-shared/languages':
         specifier: workspace:^
         version: link:../ts-shared/languages
@@ -12913,8 +12913,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.63.0
-        version: 0.63.0
+        specifier: ^0.64.1
+        version: 0.64.1
       oxfmt:
         specifier: ^0.67.0
         version: 0.67.0
@@ -20558,30 +20558,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.63.0:
-    resolution: {integrity: sha512-+bK9LA5nPZcV+8uFvgfm5iLTcDHPzJNYaSutdbm2t2VOzdK3OiVp50CeEndrxBXgGk4ko8/F7trkHXEf/2EDXw==}
+  no-mistakes-darwin-arm64@0.64.1:
+    resolution: {integrity: sha512-aH/hrESRXM6SEI4bF7FZs39++KnvFsc+BDPdYiMhuhKbfP+vAvnymZ3nQNw0Peo1y3nSBjx+S0p5hEeIngtPqg==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.63.0:
-    resolution: {integrity: sha512-Mogfc2f2AOPDlBrh5MbhzHrd+MpKWPw/QX9kEW+oMv3p0rz4CX6ujwcByZ7wTO60CJ21/muENfkUP7a2vYU6Hg==}
+  no-mistakes-linux-arm64-gnu@0.64.1:
+    resolution: {integrity: sha512-e+u6dLW2IvEzrhip4XWGaUfo60Qn20Ug+vXl69SeO0YQtLvNvW2YJlh3qsyFNI0Ooskzkf2PkqoSsvSnstWISA==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.63.0:
-    resolution: {integrity: sha512-617GuSubcbPuzrK8VqqkX7neN3VsZ1MqCNGkrmfQuOs3W7/qUUm9MeL+nsSZSgwENKEtWs3d0h6bsZuCvocBSw==}
+  no-mistakes-linux-x64-gnu@0.64.1:
+    resolution: {integrity: sha512-l+qp/GIYSDno6EzO9FSMulXdjnoBse3XmOq+l1JhRqipw5bAVR5jQAoj+b2aRR0+/jvG65xANxWwe2HZKFyAxQ==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.63.0:
-    resolution: {integrity: sha512-MRd91KuTNc82qQynvShfpTaFPTSJaV+Ai6j+g4E7VGrGuki5H1f/I7VssLnIhve+XvC8SeSr2M52f53bW8zwhw==}
+  no-mistakes-win32-x64-msvc@0.64.1:
+    resolution: {integrity: sha512-Ta7y0BuImiFlmn36c4VsdfXNieRGQ4ufngc2O5Rb06NyIf3Di6E0PstVijEkfV2phDiGym9R/ELiAPYYaFPpow==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.63.0:
-    resolution: {integrity: sha512-2BZYjT84H2q+Fajwrg4Epvu7iDbVitHf4uGPoSBuJ8Gko2ie73joN/6FmMXsaFBN6LmVLe2onMVLrxMIDSpazw==}
+  no-mistakes@0.64.1:
+    resolution: {integrity: sha512-CMoEtvQQZ3ItgyBRx5/K2MWAB/Rlwjcgaq8KYVyu7tptLR/C5oW6Myb3DAYjVVGefAmbyF+UE+PveZnPX817dA==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -25843,10 +25843,10 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@react-email/ui@6.9.5(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@react-email/ui@6.9.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       esbuild: 0.28.1
-      next: 16.3.3(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      next: 16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     transitivePeerDependencies:
       - '@babel/core'
       - '@opentelemetry/api'
@@ -29671,7 +29671,7 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  next@16.3.3(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@next/env': 16.3.3
       '@swc/helpers': 0.5.23
@@ -29723,24 +29723,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.63.0:
+  no-mistakes-darwin-arm64@0.64.1:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.63.0:
+  no-mistakes-linux-arm64-gnu@0.64.1:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.63.0:
+  no-mistakes-linux-x64-gnu@0.64.1:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.63.0:
+  no-mistakes-win32-x64-msvc@0.64.1:
     optional: true
 
-  no-mistakes@0.63.0:
+  no-mistakes@0.64.1:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.63.0
-      no-mistakes-linux-arm64-gnu: 0.63.0
-      no-mistakes-linux-x64-gnu: 0.63.0
-      no-mistakes-win32-x64-msvc: 0.63.0
+      no-mistakes-darwin-arm64: 0.64.1
+      no-mistakes-linux-arm64-gnu: 0.64.1
+      no-mistakes-linux-x64-gnu: 0.64.1
+      no-mistakes-win32-x64-msvc: 0.64.1
 
   node-app-attest@1.0.1:
     dependencies:

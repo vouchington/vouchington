@@ -39,9 +39,7 @@ const CLOSURE_EXTRAS: Readonly<Record<string, readonly string[]>> = {
   'web/app/login/page.tsx': ['web/components/mfa.tsx', 'web/components/recovery.tsx'],
   'web/components/navbar.tsx': ['web/components/keyboard-shortcuts-dialog.tsx'],
 }
-
 const DEPENDENCY_RELATIONSHIPS = ['import-static', 'import-dynamic', 'import-type', 'workspace']
-
 const GRAPH_FILES: Readonly<Record<string, string>> = {
   'web/app/layout.ts': "export const shell = t('nav.home')\n",
   'web/app/registry/page.tsx':
@@ -66,7 +64,6 @@ const GRAPH_FILES: Readonly<Record<string, string>> = {
   'web/lib/labels.ts': "export const item = { label: 'extracted.registry.item.title' }\n",
   'web/lib/dynamic.ts': "export const label = 'extracted.dynamic.item.title'\n",
 }
-
 const KNOWN_ALIASES = new Set([
   'nav.home',
   'extracted.registry.item.title',
@@ -106,16 +103,26 @@ function emptyResolveCheck(files: readonly string[]): ResolveCheckBatchResult {
 }
 
 function installGraphMocks(resolveCheck?: ResolveCheckBatchResult): void {
-  noMistakes.analyzeProject.mockImplementation(async options => ({
-    reports: options.reports.map(report => ({
-      id: report.id,
-      type: report.type,
-      result:
-        report.type === 'resolveCheck'
-          ? (resolveCheck ?? emptyResolveCheck(requestedFiles(report)))
-          : dependencyResult(requestedFiles(report).flatMap(file => CLOSURE_EXTRAS[file] ?? [])),
-    })),
-  }))
+  noMistakes.analyzeProject.mockImplementation(async options => {
+    const dependencyReports = new Map(
+      options.reports
+        .filter(report => report.type === 'dependencies')
+        .map(report => [
+          report.id,
+          dependencyResult(requestedFiles(report).flatMap(file => CLOSURE_EXTRAS[file] ?? [])),
+        ]),
+    )
+    return {
+      reports: options.reports.map(report => ({
+        id: report.id,
+        type: report.type,
+        result:
+          report.type === 'resolveCheckDependencies'
+            ? (resolveCheck ?? emptyResolveCheck([]))
+            : dependencyReports.get(report.id)!,
+      })),
+    }
+  })
 }
 
 async function withRoutes(
@@ -145,31 +152,27 @@ async function withRoutes(
   }
 }
 
-function expectGraphRequests(): void {
-  const reports = noMistakes.analyzeProject.mock.calls.flatMap(([options]) => options.reports)
-  expect(reports.some(report => report.type === 'resolveCheck')).toBe(true)
-  for (const report of reports) {
-    if (report.type !== 'dependencies') continue
-    expect(report.relationships).toEqual(DEPENDENCY_RELATIONSHIPS)
+function expectGraphRequests(expectedCalls = 1): void {
+  expect(noMistakes.analyzeProject).toHaveBeenCalledTimes(expectedCalls)
+  for (const [options] of noMistakes.analyzeProject.mock.calls) {
+    const dependencyReports = options.reports.filter(report => report.type === 'dependencies')
+    for (const report of dependencyReports)
+      expect(report.relationships).toEqual(DEPENDENCY_RELATIONSHIPS)
+    const requestedRoots = new Set(dependencyReports.flatMap(report => requestedFiles(report)))
+    for (const file of [
+      'web/app/registry/page.tsx',
+      'web/app/login/page.tsx',
+      'web/components/navbar.tsx',
+    ])
+      expect(requestedRoots.has(file)).toBe(true)
+    expect(options.reports.filter(report => report.type === 'resolveCheckDependencies')).toEqual([
+      {
+        id: 'resolve-check',
+        type: 'resolveCheckDependencies',
+        dependencyReportIds: dependencyReports.map(report => report.id),
+      },
+    ])
   }
-  const requestedRoots = new Set(
-    reports
-      .filter(report => report.type === 'dependencies')
-      .flatMap(report => requestedFiles(report)),
-  )
-  const resolveFiles = new Set(
-    reports
-      .filter(report => report.type === 'resolveCheck')
-      .flatMap(report => requestedFiles(report)),
-  )
-  for (const file of [
-    'web/app/registry/page.tsx',
-    'web/app/login/page.tsx',
-    'web/components/navbar.tsx',
-  ])
-    expect(requestedRoots.has(file)).toBe(true)
-  for (const file of ['web/lib/dynamic.ts', 'web/lib/labels.ts'])
-    expect(resolveFiles.has(file)).toBe(true)
 }
 
 async function expectGraphMembership(root: string): Promise<void> {
@@ -196,7 +199,7 @@ describe('mocked web route graph closures', () => {
     installGraphMocks()
   })
 
-  it('follows graph-only export-star and nested dynamic imports, plus root status and Navbar chrome', async () => {
+  it('follows graph-only exports and nested dynamic imports, plus Navbar chrome', async () => {
     expect.hasAssertions()
     await withRoutes({ ...GRAPH_FILES }, async root => {
       await expectGraphMembership(root)
@@ -210,7 +213,7 @@ describe('mocked web route graph closures', () => {
       withRoutes({ ...GRAPH_FILES }, expectGraphMembership),
     ])
     expect(noMistakes.analyzeProject).toHaveBeenCalled()
-    expectGraphRequests()
+    expectGraphRequests(2)
   })
 
   it('fails when a quoted registry alias is not a web catalog alias', async () => {
