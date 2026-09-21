@@ -108,8 +108,9 @@ async function failMediaDeliveryRegistryRecord(
     UPDATE media_delivery_registry_records
     SET state = CASE WHEN delivery_attempt_count >= ${MAX_ATTEMPTS} THEN 'failed' ELSE 'pending' END,
       claimed_at = CASE WHEN delivery_attempt_count >= ${MAX_ATTEMPTS} THEN claimed_at ELSE NULL END,
-      completed_at = CASE WHEN delivery_attempt_count >= ${MAX_ATTEMPTS} THEN ${now} ELSE NULL END,
-      next_attempt_at = CASE WHEN delivery_attempt_count >= ${MAX_ATTEMPTS} THEN NULL
+      completed_at = CASE WHEN delivery_attempt_count >= ${MAX_ATTEMPTS}
+        THEN ${now} ELSE NULL::timestamptz END,
+      next_attempt_at = CASE WHEN delivery_attempt_count >= ${MAX_ATTEMPTS} THEN NULL::timestamptz
         ELSE ${new Date(now.getTime() + RETRY_BASE_MS)} END,
       failure_message = ${failureMessage.slice(0, 4096)}
     WHERE delivery_key = ${deliveryKey} AND state = 'claimed' AND generation = ${generation}
