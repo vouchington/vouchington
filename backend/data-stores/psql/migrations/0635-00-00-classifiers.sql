@@ -699,6 +699,12 @@ CREATE TABLE IF NOT EXISTS classifier_topic_vote_applications (
 
 CREATE INDEX IF NOT EXISTS idx_classifier_topic_vote_applications__batch
   ON classifier_topic_vote_applications (batch_id);
+CREATE INDEX IF NOT EXISTS idx_classifier_topic_vote_applications__topic
+  ON classifier_topic_vote_applications (topic_id);
+CREATE INDEX IF NOT EXISTS idx_classifier_topic_vote_applications__post
+  ON classifier_topic_vote_applications (post_id) WHERE post_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_classifier_topic_vote_applications__rss_feed_item
+  ON classifier_topic_vote_applications (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
 
 CREATE OR REPLACE TRIGGER trigger_classifier_topic_vote_applications_updated_at
   BEFORE UPDATE ON classifier_topic_vote_applications
