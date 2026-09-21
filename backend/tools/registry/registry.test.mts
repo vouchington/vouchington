@@ -2,12 +2,15 @@ import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS, getRegisteredToolByName } from './index.mts'
-import { isToolMcpEligible, listToolsForSurface } from './select.mts'
+import { getToolRequiredScopes, isToolMcpEligible, listToolsForSurface } from './select.mts'
+import type { Tool } from '../types.mts'
+import { SCOPE_DEFINITIONS } from '@modules/scopes'
 
 const TOOLS_DIR = path.join(import.meta.dirname, '..')
 
 // Files in tools/ that are NOT tool definitions (factories, helpers, types, barrel)
 const NON_TOOL_FILES = new Set([
+  'create-get-my-entity-list-tool.mts',
   'create-manage-entity-tool.mts',
   'get-domain-ratings-helpers.mts',
   'index.mts',
@@ -77,6 +80,58 @@ describe('tool registry', () => {
       return tool.meta == null || !('api' in tool.meta)
     })
     expect(missing.map(t => t.schema.name)).toEqual([])
+  })
+
+  it('every MCP surface tool declares canonical, surface-correct scopes', () => {
+    const missing = ALL_TOOLS.flatMap(tool => {
+      const surfaces = tool.meta?.surfaces ?? ['internal']
+      return surfaces
+        .filter(
+          (surface): surface is 'mcp' | 'admin_mcp' => surface === 'mcp' || surface === 'admin_mcp',
+        )
+        .filter(surface => getToolRequiredScopes(tool, surface) == null)
+        .map(surface => `${tool.schema.name}:${surface}`)
+    })
+    expect(missing).toEqual([])
+  })
+
+  it('declares prerequisites for each MCP write scope', () => {
+    const missing = ALL_TOOLS.flatMap(tool =>
+      (tool.meta?.surfaces ?? ['internal'])
+        .filter(
+          (surface): surface is 'mcp' | 'admin_mcp' => surface === 'mcp' || surface === 'admin_mcp',
+        )
+        .flatMap(surface => {
+          const scopes = getToolRequiredScopes(tool, surface) ?? []
+          return scopes.flatMap(scope => {
+            const prerequisite = SCOPE_DEFINITIONS[scope].requires
+            return prerequisite != null && !scopes.includes(prerequisite as typeof scope)
+              ? [`${tool.schema.name}:${scope}:${prerequisite}`]
+              : []
+          })
+        }),
+    )
+
+    expect(missing).toEqual([])
+  })
+
+  it('rejects scopes declared for the opposite MCP audience', () => {
+    const tool: Tool = {
+      schema: {
+        name: 'admin_scope_on_user_surface',
+        type: 'function',
+        parameters: null,
+        strict: null,
+      },
+      function: () => () => Promise.resolve({}),
+      meta: {
+        surfaces: ['mcp'],
+        requiredScopes: { mcp: ['support-messages:read'] },
+        api: null,
+      },
+    }
+
+    expect(getToolRequiredScopes(tool, 'mcp')).toBeNull()
   })
 
   it('curried tools are internal-only', () => {

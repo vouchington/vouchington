@@ -29,18 +29,20 @@ API keys use a permission-based access control system. Each key has a `permissio
 
 ### Available Permissions
 
-| Permission        | Description                                             |
-| ----------------- | ------------------------------------------------------- |
-| `rss:read`        | Access RSS feed endpoints (`/rss/posts`, `/rss/news`)   |
-| `mcp.user:read`   | List and call read-only user MCP tools                  |
-| `mcp.user:write`  | Call non-read-only user MCP tools; requires user read   |
-| `mcp.admin:read`  | List and call read-only admin MCP tools                 |
-| `mcp.admin:write` | Call non-read-only admin MCP tools; requires admin read |
+| Permission              | Description                                           |
+| ----------------------- | ----------------------------------------------------- |
+| `rss:read`              | Access RSS feed endpoints (`/rss/posts`, `/rss/news`) |
+| `topics:read`           | Read topic and recommendation MCP tools               |
+| `posts:read`            | Read post MCP tools                                   |
+| `cards:read/write`      | Read or manage cards; write requires read             |
+| `support-messages:read` | Read the administrator-only support-search tool       |
+| `mcp.user:read/write`   | Compatibility grants for existing user MCP keys       |
+| `mcp.admin:read/write`  | Compatibility grants for existing admin MCP keys      |
 
 Scopes use the strict lowercase `<resource>:<action>` grammar. Dot-delimited resources compose the
 surface and audience, such as `mcp.user` and `mcp.admin`. Unknown, whitespace-padded, case-normalized,
 duplicate, or write-without-read scope sets are rejected. RSS keys accept only `rss:read`; MCP keys
-accept either user or admin MCP scopes, never both, and admin scopes require an administrator owner.
+accept scopes for exactly one user or admin audience, never both, and admin scopes require an administrator owner.
 OAuth grants may compose scopes from multiple resource audiences when the authorization server is
 added, while API keys remain bound to one audience.
 

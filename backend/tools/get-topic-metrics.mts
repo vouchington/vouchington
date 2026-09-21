@@ -46,7 +46,12 @@ const tool: Tool<ToolArgs, ToolResult> = {
     },
     strict: null,
   },
-  meta: { surfaces: ['internal', 'mcp'], annotations: { readOnlyHint: true }, api: null },
+  meta: {
+    surfaces: ['internal', 'mcp'],
+    requiredScopes: { mcp: ['topics:read'] },
+    annotations: { readOnlyHint: true },
+    api: null,
+  },
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {

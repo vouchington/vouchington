@@ -1,4 +1,5 @@
 import type { Tool, ToolSurface } from '../types.mts'
+import { parseApiScope, SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 
 type UserForPlanCheck = {
   membership_plan: 'plus' | 'pro' | null
@@ -23,4 +24,22 @@ export function isToolAllowedForPlan(tool: Tool, user: UserForPlanCheck): boolea
   if (tool.meta.plan === 'plus') return plan === 'plus' || plan === 'pro'
   if (tool.meta.plan === 'pro') return plan === 'pro'
   return false
+}
+
+export function getToolRequiredScopes(
+  tool: Tool,
+  surface: Extract<ToolSurface, 'mcp' | 'admin_mcp'>,
+): ApiScope[] | null {
+  const declared = tool.meta?.requiredScopes?.[surface]
+  if (declared == null || declared.length === 0) return null
+
+  const expectedAudience = surface === 'mcp' ? 'user' : 'admin'
+  const scopes = declared.map(parseApiScope)
+  if (
+    scopes.some(scope => scope == null) ||
+    scopes.some(scope => scope != null && SCOPE_DEFINITIONS[scope].audience !== expectedAudience)
+  ) {
+    return null
+  }
+  return scopes as ApiScope[]
 }

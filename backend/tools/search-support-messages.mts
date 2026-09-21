@@ -48,7 +48,12 @@ const tool: Tool<ToolArgs, ToolResult> = {
     customer_support: true,
     user: false,
   },
-  meta: { surfaces: ['internal', 'admin_mcp'], annotations: { readOnlyHint: true }, api: null },
+  meta: {
+    surfaces: ['internal', 'admin_mcp'],
+    requiredScopes: { admin_mcp: ['support-messages:read'] },
+    annotations: { readOnlyHint: true },
+    api: null,
+  },
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {

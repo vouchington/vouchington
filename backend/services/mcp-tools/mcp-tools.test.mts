@@ -22,15 +22,28 @@ describe('listMcpToolsForUser', () => {
     user = { ...(await createTestUser()), membership_plan: null }
   })
 
-  it('returns only read-only tools when permissions has no write', () => {
-    const tools = listMcpToolsForUser(user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG)
-    for (const tool of tools) {
-      expect(tool.annotations?.readOnlyHint).toBe(true)
-    }
-    expect(tools.length).toBeGreaterThan(0)
+  it('hides tools whose explicit resource scope is absent', () => {
+    const tools = listMcpToolsForUser(user, ['topics:read'], USER_MCP_SERVER_CONFIG)
+    expect(tools.map(tool => tool.name)).toContain('search_topics_text')
+    expect(tools.map(tool => tool.name)).not.toContain('search_posts')
   })
 
-  it('includes write tools when permissions includes mcp.user:write', () => {
+  it('separates resource read and write tools by scope', () => {
+    const readOnlyNames = listMcpToolsForUser(user, ['cards:read'], USER_MCP_SERVER_CONFIG).map(
+      tool => tool.name,
+    )
+    const writeNames = listMcpToolsForUser(
+      user,
+      ['cards:read', 'cards:write'],
+      USER_MCP_SERVER_CONFIG,
+    ).map(tool => tool.name)
+
+    expect(readOnlyNames).toContain('get_my_cards')
+    expect(readOnlyNames).not.toContain('manage_my_cards')
+    expect(writeNames).toContain('manage_my_cards')
+  })
+
+  it('keeps legacy broad grants compatible', () => {
     const readOnly = listMcpToolsForUser(user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG)
     const withWrite = listMcpToolsForUser(
       user,
@@ -151,7 +164,7 @@ describe('callMcpTool', () => {
     })
   })
 
-  it('throws McpError when tool requires write permission but only read is granted', async () => {
+  it('throws McpError when tool scope is absent', async () => {
     // find a write-only tool (readOnlyHint !== true)
     const { listToolsForSurface, isToolMcpEligible } = await import('@voucha/tools/registry/select')
     const { ALL_TOOLS } = await import('@voucha/tools/registry/index')
@@ -164,7 +177,7 @@ describe('callMcpTool', () => {
     await expect(
       callMcpTool(writeTool.schema.name, {}, user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
     ).rejects.toMatchObject({
-      message: expect.stringContaining('mcp.user:write'),
+      message: expect.stringContaining('requires scopes'),
     })
   })
 

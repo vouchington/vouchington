@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import { Readable } from 'node:stream'
 import type { Context } from '@jongleberry/api-server'
-import { validateApiKey } from '@services/api-keys/validate'
+import { validateApiKeyForMcpAudience } from '@services/api-keys/validate'
 import { getPrivateUserByAny, isAdminUser } from '@services/users'
 import { checkRouteRateLimit } from '@services/route-rate-limits'
 import {
@@ -20,7 +20,7 @@ app.route('/api/v1/admin/mcp').post(async (ctx: Context) => {
   const rawKey = authHeader.slice(0, 7).toLowerCase() === 'bearer ' ? authHeader.slice(7) : ''
   ctx.assert(rawKey, 401, 'Authorization: Bearer <mcp-api-key> required')
 
-  const { valid, apiKey } = await validateApiKey(rawKey, ADMIN_MCP_SERVER_CONFIG.readPermission)
+  const { valid, apiKey } = await validateApiKeyForMcpAudience(rawKey, 'admin')
   if (!valid || !apiKey) throw createHttpError(401, 'Invalid or revoked API key')
 
   const owner = await getPrivateUserByAny(apiKey.user_id)

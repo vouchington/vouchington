@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import manageMyRewardsStatusesTool from './manage-my-rewards-statuses.mts'
+import getMyRewardsStatusesTool from './get-my-rewards-statuses.mts'
 import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers'
 import { insertTestRewardsProgramStatus } from '@voucha/test-helpers/entities/rewards-program-statuses'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
@@ -21,8 +22,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
 
   it('list returns empty initially', async () => {
     const freshUser = await createTestUser()
-    const execute = manageMyRewardsStatusesTool.function(freshUser)
-    const result = await execute({ action: 'list' })
+    const result = await getMyRewardsStatusesTool.function(freshUser)({})
     expect(result.success).toBe(true)
     expect(result.result).toMatchObject({ results: [], page_info: { has_next_page: false } })
   })
@@ -41,8 +41,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
   })
 
   it('list after add returns the status', async () => {
-    const execute = manageMyRewardsStatusesTool.function(user)
-    const result = await execute({ action: 'list' })
+    const result = await getMyRewardsStatusesTool.function(user)({})
     expect(result.success).toBe(true)
     const statuses = result.result as { results: Array<{ rewards_program_status: { id: string } }> }
     expect(statuses.results.some(s => s.rewards_program_status.id === rewardsProgramStatusId)).toBe(
@@ -51,8 +50,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
   })
 
   it('forwards cursor pagination options', async () => {
-    const execute = manageMyRewardsStatusesTool.function(user)
-    const result = await execute({ action: 'list', limit: 1 })
+    const result = await getMyRewardsStatusesTool.function(user)({ limit: 1 })
     expect((result.result as { results: unknown[] }).results).toHaveLength(1)
   })
 
@@ -92,7 +90,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
     const suspendedUser = await createTestUser()
     await suspendForTest(suspendedUser.id)
 
-    const result = await manageMyRewardsStatusesTool.function(suspendedUser)({ action: 'list' })
+    const result = await getMyRewardsStatusesTool.function(suspendedUser)({})
 
     expect(result).toMatchObject({ success: true, result: { results: [] } })
   })
@@ -118,7 +116,7 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
             : execute({ action, id: existing.id })
 
       await expect(mutation).rejects.toMatchObject({ status: 403, code: ACCOUNT_SUSPENDED })
-      const statuses = await execute({ action: 'list' })
+      const statuses = await getMyRewardsStatusesTool.function(suspendedUser)({})
       expect(
         (statuses.result as { results: Array<{ id: string }> }).results.some(
           status => status.id === existing.id,

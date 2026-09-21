@@ -4,6 +4,10 @@ import {
   CHAT_SUBAGENT_RETRY_POLICY,
 } from '@agents/_shared'
 import getMyProfileTool from '@voucha/tools/get-my-profile'
+import getMyCardsTool from '@voucha/tools/get-my-cards'
+import getMyPointValuationsTool from '@voucha/tools/get-my-point-valuations'
+import getMyRewardsStatusesTool from '@voucha/tools/get-my-rewards-statuses'
+import getMySpendingTool from '@voucha/tools/get-my-spending'
 import updateMyFinancialProfileTool from '@voucha/tools/update-my-financial-profile'
 import manageMyCardsTool from '@voucha/tools/manage-my-cards'
 import manageMyPointValuationsTool from '@voucha/tools/manage-my-point-valuations'
@@ -41,6 +45,10 @@ const profileAgentTool = createSubagentTool<ProfileAgentArgs>({
   maxRetries: CHAT_SUBAGENT_RETRY_POLICY.maxRetries,
   toolEntries: [
     getMyProfileTool,
+    getMyCardsTool,
+    getMyPointValuationsTool,
+    getMyRewardsStatusesTool,
+    getMySpendingTool,
     updateMyFinancialProfileTool,
     manageMyCardsTool,
     manageMyPointValuationsTool,

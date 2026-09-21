@@ -3,7 +3,6 @@ import type { Tool, ToolMeta } from './types.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import createHttpError from 'http-errors'
 
-type ListArgs<TList extends Record<string, unknown>> = { action: 'list' } & TList
 type AddArgs<TAdd extends Record<string, unknown>> = { action: 'add' } & TAdd
 type UpdateArgs<TUpdate extends Record<string, unknown>> = {
   action: 'update'
@@ -13,22 +12,18 @@ type RemoveArgs = { action: 'remove'; id: string }
 type ManageEntityArgs<
   TAdd extends Record<string, unknown>,
   TUpdate extends Record<string, unknown>,
-  TList extends Record<string, unknown>,
-> = ListArgs<TList> | AddArgs<TAdd> | UpdateArgs<TUpdate> | RemoveArgs
+> = AddArgs<TAdd> | UpdateArgs<TUpdate> | RemoveArgs
 
 type ManageEntityResult = { success: true; result: unknown }
 
 type ManageEntityToolConfig<
   TAdd extends Record<string, unknown>,
   TUpdate extends Record<string, unknown>,
-  TList extends Record<string, unknown>,
 > = {
   toolName: string
   description: string
   addProperties: Record<string, unknown>
   updateProperties: Record<string, unknown>
-  listProperties?: Record<string, unknown>
-  listFn: (user: PrivateUser, args: ListArgs<TList>) => Promise<unknown>
   addFn: (user: PrivateUser, args: AddArgs<TAdd>) => Promise<unknown>
   updateFn: (user: PrivateUser, args: UpdateArgs<TUpdate>) => Promise<unknown>
   removeFn: (user: PrivateUser, id: string) => Promise<unknown>
@@ -42,10 +37,9 @@ type ManageEntityToolConfig<
 export function createManageEntityTool<
   TAdd extends Record<string, unknown>,
   TUpdate extends Record<string, unknown>,
-  TList extends Record<string, unknown> = Record<never, never>,
 >(
-  config: ManageEntityToolConfig<TAdd, TUpdate, TList>,
-): Tool<ManageEntityArgs<TAdd, TUpdate, TList>, ManageEntityResult> {
+  config: ManageEntityToolConfig<TAdd, TUpdate>,
+): Tool<ManageEntityArgs<TAdd, TUpdate>, ManageEntityResult> {
   return {
     schema: {
       name: config.toolName,
@@ -56,7 +50,7 @@ export function createManageEntityTool<
         properties: {
           action: {
             type: 'string',
-            enum: ['list', 'add', 'update', 'remove'],
+            enum: ['add', 'update', 'remove'],
             description: 'The operation to perform.',
           },
           id: {
@@ -65,7 +59,6 @@ export function createManageEntityTool<
           },
           ...config.addProperties,
           ...config.updateProperties,
-          ...config.listProperties,
         },
         required: ['action'],
       },
@@ -74,14 +67,10 @@ export function createManageEntityTool<
     ...(config.meta ? { meta: config.meta } : {}),
     function:
       (currentUser: BasicUser) =>
-      async (args: ManageEntityArgs<TAdd, TUpdate, TList>): Promise<ManageEntityResult> => {
+      async (args: ManageEntityArgs<TAdd, TUpdate>): Promise<ManageEntityResult> => {
         const user = await requirePrivateToolUser(currentUser)
 
         switch (args.action) {
-          case 'list': {
-            const result = await config.listFn(user, args)
-            return { success: true, result }
-          }
           case 'add': {
             const result = await config.addFn(user, args)
             return { success: true, result }

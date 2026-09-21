@@ -21,6 +21,7 @@ function makeToolWithAnnotations(
     function: (_user: unknown) => () => Promise.resolve({}),
     meta: {
       surfaces: ['mcp'],
+      requiredScopes: { mcp: ['topics:read'] },
       annotations: annotations as NonNullable<Tool['meta']>['annotations'],
       api: null,
     },
@@ -49,6 +50,11 @@ describe('toolToMcpTool', () => {
       idempotentHint: true,
       openWorldHint: false,
     })
+  })
+
+  it('includes canonical required scopes in MCP metadata', () => {
+    const result = toolToMcpTool(makeToolWithAnnotations({ readOnlyHint: true }))
+    expect(result['_meta']).toEqual({ 'voucha/requiredScopes': ['topics:read'] })
   })
 
   it('omits annotations key when meta has no annotations', () => {

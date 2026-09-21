@@ -1,7 +1,6 @@
 import {
   createIndividualRewardsProgramPointValuation,
   deleteIndividualRewardsProgramPointValuationById,
-  getIndividualRewardsProgramPointValuations,
   updateIndividualRewardsProgramPointValuationById,
 } from '@services/individuals-households'
 import { createManageEntityTool } from './create-manage-entity-tool.mts'
@@ -14,7 +13,6 @@ type AddPointValuationArgs = {
   note?: string
 }
 type UpdatePointValuationArgs = { value_per_point?: ScaledMoney; note?: string | null }
-type ListPointValuationsArgs = { after?: string; limit?: number }
 
 const pointValueSchema = {
   ...moneySchema,
@@ -29,11 +27,7 @@ const pointValueSchema = {
   required: ['amount', 'currency', 'scale'],
 }
 
-export default createManageEntityTool<
-  AddPointValuationArgs,
-  UpdatePointValuationArgs,
-  ListPointValuationsArgs
->({
+export default createManageEntityTool<AddPointValuationArgs, UpdatePointValuationArgs>({
   toolName: 'manage_my_point_valuations',
   description:
     "Manage the current user's rewards program point valuations — how much the user values each rewards program's points.",
@@ -57,15 +51,6 @@ export default createManageEntityTool<
       description: 'A note about the valuation',
     },
   },
-  listProperties: {
-    after: { type: 'string', description: 'Opaque cursor from the previous page' },
-    limit: { type: 'number', description: 'Number of valuations to return, from 1 to 100' },
-  },
-  listFn: (user, args) =>
-    getIndividualRewardsProgramPointValuations(user, user, {
-      after: args.after,
-      limit: args.limit,
-    }),
   addFn: (user, args) =>
     createIndividualRewardsProgramPointValuation(user, user, args.rewards_program_id as string, {
       value_per_point: args.value_per_point as ScaledMoney,
@@ -79,9 +64,9 @@ export default createManageEntityTool<
   removeFn: (user, id) => deleteIndividualRewardsProgramPointValuationById(user, user, id),
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    requiredScopes: { mcp: ['point-valuations:read', 'point-valuations:write'] },
     annotations: { destructiveHint: true },
     api: [
-      { method: 'GET', path: '/api/v1/my/rewards-program-point-valuations' },
       { method: 'POST', path: '/api/v1/my/rewards-program-point-valuations' },
       { method: 'PATCH', path: '/api/v1/my/rewards-program-point-valuations/:id' },
       { method: 'DELETE', path: '/api/v1/my/rewards-program-point-valuations/:id' },

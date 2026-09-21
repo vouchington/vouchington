@@ -1,4 +1,5 @@
-import type { Tool } from '../types.mts'
+import type { Tool, ToolSurface } from '../types.mts'
+import { getToolRequiredScopes } from './select.mts'
 
 // MCP Tool shape (mirrors @modelcontextprotocol/sdk Tool type)
 export type McpToolShape = {
@@ -11,10 +12,17 @@ export type McpToolShape = {
     idempotentHint?: boolean
     openWorldHint?: boolean
   }
+  _meta?: {
+    'voucha/requiredScopes': string[]
+  }
 }
 
-export function toolToMcpTool(tool: Tool): McpToolShape {
+export function toolToMcpTool(
+  tool: Tool,
+  surface: Extract<ToolSurface, 'mcp' | 'admin_mcp'> = 'mcp',
+): McpToolShape {
   const annotations = tool.meta?.annotations
+  const mcpScopes = getToolRequiredScopes(tool, surface)
   return {
     name: tool.schema.name,
     description: tool.schema.description ?? undefined,
@@ -32,5 +40,6 @@ export function toolToMcpTool(tool: Tool): McpToolShape {
           },
         }
       : {}),
+    ...(mcpScopes ? { _meta: { 'voucha/requiredScopes': mcpScopes } } : {}),
   }
 }

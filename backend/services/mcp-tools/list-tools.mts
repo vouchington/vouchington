@@ -2,12 +2,13 @@ import {
   listToolsForSurface,
   isToolMcpEligible,
   isToolAllowedForPlan,
+  getToolRequiredScopes,
 } from '@voucha/tools/registry/select'
 import { isToolAllowedForUser } from './authorization.mts'
 import { toolToMcpTool, type McpToolShape } from '@voucha/tools/registry/adapters'
 import { ALL_TOOLS } from '@voucha/tools/registry/index'
 import type { McpServerConfig } from './config.mts'
-import { hasScope, type ApiScope } from '@modules/scopes'
+import { hasEveryScope, type ApiScope } from '@modules/scopes'
 
 type UserForListing = {
   id: string
@@ -49,15 +50,13 @@ export function listMcpToolsForUser(
   const mcpTools = listToolsForSurface(config.surface, ALL_TOOLS).filter(tool =>
     isToolMcpEligible(tool),
   )
-  const hasWrite = hasScope(permissions, config.writePermission)
-
   const result: McpToolShape[] = []
   for (const tool of mcpTools) {
     if (!isToolAllowedForUser(tool, user)) continue
     if (!isToolAllowedForPlan(tool, user)) continue
-    const isReadOnly = tool.meta?.annotations?.readOnlyHint === true
-    if (!isReadOnly && !hasWrite) continue
-    result.push(toolToMcpTool(tool))
+    const requiredScopes = getToolRequiredScopes(tool, config.surface)
+    if (requiredScopes == null || !hasEveryScope(permissions, requiredScopes)) continue
+    result.push(toolToMcpTool(tool, config.surface))
   }
   return result
 }

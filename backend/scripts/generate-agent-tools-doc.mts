@@ -1,10 +1,3 @@
-/**
- * Generates docs/overview/architecture/agent-tools/catalog.md and backend/tools/manifest.json
- * from the tool registry. Uses static source parsing to avoid importing tool
- * implementations (which transitively pull in data-store connections).
- *
- * Usage: node backend/scripts/generate-agent-tools-doc.mts
- */
 import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -21,13 +14,13 @@ type ToolEntry = {
   name: string
   description: string | null
   surfaces: string[]
+  requiredScopes: string[]
   readOnlyHint: boolean
   destructiveHint: boolean
   api: ApiEndpoint[] | null
   parameters: unknown
 }
 
-/** Extract the list of tool source file paths from the registry index. */
 function getToolFilePaths(): string[] {
   const src = readFileSync(REGISTRY_FILE, 'utf8')
   const importRe = /^import\s+\w+\s+from\s+'(\.\.\/[^']+)'/gm
@@ -40,29 +33,12 @@ function getToolFilePaths(): string[] {
   return paths
 }
 
-/**
- * Extract a single-quoted string value for a key like `name: 'foo'`.
- * Only used for `name`/`toolName` which never contain embedded quotes.
- */
 function extractNameField(src: string, key: string): string | null {
   const re = new RegExp(`${key}:\\s*'([^']+)'`)
   const m = re.exec(src)
   return m ? m[1] : null
 }
 
-/**
- * Extract the first (earliest) description value in the file, handling inline
- * or next-line placement and both single- and double-quoted strings.
- *
- * Patterns handled:
- *   description: 'text with "quotes" inside'
- *   description: "text with 'quotes' inside"
- *   description:\n      'text ...'
- *   description:\n      "text ..."
- *
- * We collect all candidate matches and return the one with the smallest index,
- * so the tool-level description wins over nested property descriptions.
- */
 function extractDescription(src: string): string | null {
   type Candidate = { index: number; value: string }
   const candidates: Candidate[] = []
@@ -95,6 +71,11 @@ function extractSurfaces(src: string): string[] {
   const m = re.exec(src)
   if (!m) return ['internal']
   return [...m[1].matchAll(/'(\w+)'/g)].map(x => x[1])
+}
+
+function extractRequiredScopes(src: string): string[] {
+  const block = /requiredScopes:\s*\{([\s\S]*?)\}/.exec(src)?.[1]
+  return block == null ? [] : [...block.matchAll(/'([^']+:[^']+)'/g)].map(match => match[1])
 }
 
 /** Parse api field: either null or an array of {method, path} objects. */
@@ -137,7 +118,16 @@ function parseToolFile(filePath: string): ToolEntry | null {
   const readOnlyHint = /readOnlyHint:\s*true/.test(src)
   const destructiveHint = /destructiveHint:\s*true/.test(src)
 
-  return { name, description, surfaces, readOnlyHint, destructiveHint, api, parameters: null }
+  return {
+    name,
+    description,
+    surfaces,
+    requiredScopes: extractRequiredScopes(src),
+    readOnlyHint,
+    destructiveHint,
+    api,
+    parameters: null,
+  }
 }
 
 function generateToolTable(tools: ToolEntry[]): string {
@@ -146,12 +136,12 @@ function generateToolTable(tools: ToolEntry[]): string {
     const hintStr = tool.readOnlyHint ? 'read-only' : tool.destructiveHint ? 'mutating' : '—'
     const apiStr =
       tool.api == null ? '—' : tool.api.map(e => `\`${e.method} ${e.path}\``).join(', ')
-    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${hintStr} | ${apiStr} |`
+    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${tool.requiredScopes.join(', ') || '—'} | ${hintStr} | ${apiStr} |`
   })
 
   return [
-    '| Tool | Description | Surfaces | Hint | REST Equivalent |',
-    '| ---- | ----------- | -------- | ---- | --------------- |',
+    '| Tool | Description | Surfaces | Required scopes | Hint | REST Equivalent |',
+    '| ---- | ----------- | -------- | --------------- | ---- | --------------- |',
     ...rows,
   ].join('\n')
 }
@@ -184,6 +174,7 @@ function main() {
       description: t.description,
       parameters: t.parameters,
       api: t.api,
+      requiredScopes: t.requiredScopes,
     })),
   }
   writeFileSync(
