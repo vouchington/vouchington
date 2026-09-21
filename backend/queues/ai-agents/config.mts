@@ -23,17 +23,15 @@ export type AIAgentJobName =
   | 'story-clustering'
   | 'wikipedia-recommender'
   | 'story-post'
-  | 'agent-response'
   | 'backfill_report_judgements'
   | 'auto-dispatch-judgement'
   | 'reconcile-auto-dispatch-judgements'
-  | 'reconcile-runtime-generations'
   | 'reconcile-background-responses'
+  | 'reconcile-chat-runtime-generations'
   | 'reconcile-member-support-agent-intents'
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   chat: 1,
-  'agent-response': 2,
   'moderation-prompt': 3,
   'community-moderation-prompt': 3,
   'customer-support': 5,
@@ -50,13 +48,13 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   backfill_report_judgements: 100,
   'auto-dispatch-judgement': 10,
   'reconcile-auto-dispatch-judgements': 100,
-  'reconcile-runtime-generations': 100,
   'reconcile-background-responses': 100,
+  'reconcile-chat-runtime-generations': 100,
   'reconcile-member-support-agent-intents': 100,
 }
 
 // Which job types can incur billed OpenAI generation spend, and are therefore subject to the
-// daily spend-ceiling check (#8773, `backend/workers/ai-agents/workers/core.mts`). The four
+// daily spend-ceiling check (#8773, `backend/workers/ai-agents/workers/core.mts`). The three
 // `reconcile-*` job types only sweep/cancel/re-enqueue existing work -- none call OpenAI to
 // generate new content -- so they must keep running through a cap breach. In particular,
 // `reconcile-background-responses` cancels orphaned leases that are still billing OpenAI;
@@ -88,7 +86,6 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // it, same as the autotagger case.
 export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   chat: true,
-  'agent-response': true,
   'moderation-prompt': true,
   'community-moderation-prompt': true,
   'customer-support': true,
@@ -105,7 +102,7 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   backfill_report_judgements: true,
   'auto-dispatch-judgement': false,
   'reconcile-auto-dispatch-judgements': false,
-  'reconcile-runtime-generations': false,
   'reconcile-background-responses': false,
+  'reconcile-chat-runtime-generations': false,
   'reconcile-member-support-agent-intents': false,
 }

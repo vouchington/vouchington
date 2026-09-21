@@ -3,8 +3,8 @@ import sql from 'sql-template-strings'
 
 // Leaves failed_at NULL so reserveSupportDraftGeneration's active_automatic_inbound_run predicate
 // (draft-generation-reservation.mts) keeps treating this run as active until the redelivered job
-// finishes. Unlike releaseAgentResponseClaim's shape, started_at is NOT NULL DEFAULT
-// CURRENT_TIMESTAMP on this table and stays untouched -- claimKeyedSupportAgentRun's reclaim
+// finishes. This table's started_at is NOT NULL DEFAULT CURRENT_TIMESTAMP and stays untouched --
+// claimKeyedSupportAgentRun's reclaim
 // predicate already treats claim_token IS NULL as immediately reclaimable.
 export async function releaseClaimedSupportAgentRun(
   id: string,

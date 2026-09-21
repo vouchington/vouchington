@@ -3,16 +3,6 @@ import sql from 'sql-template-strings'
 
 type PostgreSQLTimestamp = Date | string
 
-export async function setAgentResponseStartedAt(
-  agentResponseId: string,
-  startedAt: PostgreSQLTimestamp,
-): Promise<void> {
-  await write(sql`/* setAgentResponseStartedAt */
-    UPDATE agent_responses SET started_at = ${startedAt}
-    WHERE id = ${agentResponseId}::uuid
-  `)
-}
-
 export async function setChatAgenticRunStartedAt(
   agenticRunId: string,
   startedAt: PostgreSQLTimestamp,

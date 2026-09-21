@@ -50,7 +50,6 @@ export const LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS = new Set<string>([
   'backend/data-stores/psql/migrations/0420-00-00-moderator-actions.sql',
   'backend/data-stores/psql/migrations/0420-00-00-report-integrity.sql',
   'backend/data-stores/psql/migrations/0450-00-00-moderation-appeals.sql',
-  'backend/data-stores/psql/migrations/0460-00-00-agent-responses.sql',
   'backend/data-stores/psql/migrations/0460-00-00-moderation-media-reveals.sql',
   'backend/data-stores/psql/migrations/0470-00-00-user-suspensions.sql',
   'backend/data-stores/psql/migrations/0470-00-01-post-locks.sql',

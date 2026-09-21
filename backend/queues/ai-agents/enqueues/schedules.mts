@@ -7,7 +7,7 @@ import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../con
 import { ai_agents } from '../queues.mts'
 import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatch.mts'
 import { enqueueReconcileBackgroundResponses } from './reconcile-background-responses.mts'
-import { enqueueReconcileRuntimeGenerations } from './reconcile-runtime-generations.mts'
+import { enqueueReconcileChatRuntimeGenerations } from './reconcile-chat-runtime-generations.mts'
 import { enqueueReconcileMemberSupportAgentIntents } from './reconcile-member-support-agent-intents.mts'
 
 function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
@@ -39,20 +39,20 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
     ],
   },
   {
-    schedulerId: 'reconcileRuntimeGenerations',
+    schedulerId: 'reconcileChatRuntimeGenerations',
     repeat: { pattern: '*/5 * * * *' },
     template: {
-      name: 'reconcile-runtime-generations',
+      name: 'reconcile-chat-runtime-generations',
       data: {},
-      opts: () => reconcilerOptions('reconcile-runtime-generations'),
+      opts: () => reconcilerOptions('reconcile-chat-runtime-generations'),
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'reconcileRuntimeGenerations',
+        id: 'reconcileChatRuntimeGenerations',
         schedule: '*/5 * * * *',
-        description: 'Fail stale AI runtime generations after an interrupted worker',
-        trigger: enqueueReconcileRuntimeGenerations,
+        description: 'Fail stale hosted-chat generations after an interrupted worker',
+        trigger: enqueueReconcileChatRuntimeGenerations,
       },
     ],
   },

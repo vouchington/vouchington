@@ -102,19 +102,4 @@ describe('checkApiMessageSafety', () => {
     expect(moderation).toHaveBeenCalledTimes(2)
     expect(response.body).toMatchObject({ code: 'MODERATION_VIOLATION' })
   })
-
-  it('checks agent-response tasks', async () => {
-    moderation.mockResolvedValue(createOpenAIModerationResponse(true, { hate: true }))
-    const user = await createTestUser()
-    const request = createRequest()
-    await request.authenticateAs(user)
-
-    const response = await request
-      .post('/api/v1/agent-responses')
-      .send({ agent: 'research', task: 'unsafe research task' })
-      .expect(400)
-
-    expect(response.body).toMatchObject({ code: 'MODERATION_VIOLATION' })
-    expect(moderation).toHaveBeenCalledOnce()
-  })
 })

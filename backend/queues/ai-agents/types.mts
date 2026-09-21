@@ -87,10 +87,6 @@ export type AppealResolutionJobData = {
   rerun_by_id?: string | null
 }
 
-export type AgentResponseJobData = {
-  agentResponseId: string
-}
-
 export type BackfillReportJudgementsJobData = Record<string, never>
 
 export type AutoDispatchJudgementJobData = {
@@ -125,7 +121,6 @@ export type AIAgentJobData = (
   | StoryClusteringJobData
   | WikipediaRecommenderJobData
   | StoryPostJobData
-  | AgentResponseJobData
   | BackfillReportJudgementsJobData
   | AutoDispatchJudgementJobData
 ) &

@@ -167,8 +167,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Fail stale AI runtime generations after an interrupted worker",
-        "id": "reconcileRuntimeGenerations",
+        "description": "Fail stale hosted-chat generations after an interrupted worker",
+        "id": "reconcileChatRuntimeGenerations",
         "kind": "scheduled-jobs",
         "schedule": "*/5 * * * *",
         "trigger": "[function]",
@@ -179,10 +179,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "repeat": {
       "pattern": "*/5 * * * *",
     },
-    "schedulerId": "reconcileRuntimeGenerations",
+    "schedulerId": "reconcileChatRuntimeGenerations",
     "template": {
       "data": {},
-      "name": "reconcile-runtime-generations",
+      "name": "reconcile-chat-runtime-generations",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -2676,7 +2676,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
 ]
 `;
 
-exports[`scheduled job manifest catalog > projects every scheduled API surface, including runtime generation recovery 1`] = `
+exports[`scheduled job manifest catalog > projects every scheduled API surface 1`] = `
 [
   {
     "description": "Recover abandoned durable ActivityPub inbox envelopes",
@@ -2991,12 +2991,12 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface, 
     "triggerName": "enqueueReconcileAutoDispatchJudgements",
   },
   {
-    "description": "Fail stale AI runtime generations after an interrupted worker",
-    "id": "reconcileRuntimeGenerations",
-    "job_name": "reconcile-runtime-generations",
+    "description": "Fail stale hosted-chat generations after an interrupted worker",
+    "id": "reconcileChatRuntimeGenerations",
+    "job_name": "reconcile-chat-runtime-generations",
     "queue_name": "ai_agents",
     "schedule": "*/5 * * * *",
-    "triggerName": "enqueueReconcileRuntimeGenerations",
+    "triggerName": "enqueueReconcileChatRuntimeGenerations",
   },
   {
     "description": "Re-enqueue member-created support drafts after post-commit enqueue failures",

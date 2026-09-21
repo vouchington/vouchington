@@ -6,7 +6,6 @@ import {
   getRemovedTablePresence,
   getSupportHistoryRelations,
   getUnvalidatedPublicConstraints,
-  hasAgentResponseExclusiveTerminalStates,
   hasCuratedAsideSingleTargetConstraint,
 } from '../../../test-helpers/data-stores/psql/schema-integrity.mts'
 import { onGracefulShutdown } from '../index.mts'
@@ -69,10 +68,6 @@ describe('PostgreSQL schema integrity', () => {
       'moderation_reports:SET NULL',
       'review_disputes:SET NULL',
     ])
-  })
-
-  it('prevents agent responses from completing and failing simultaneously', async () => {
-    await expect(hasAgentResponseExclusiveTerminalStates()).resolves.toBe(true)
   })
 
   it('ties administrator receipts to their durable operation and request', async () => {

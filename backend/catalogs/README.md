@@ -121,7 +121,6 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/account-data-requests/README.md`](../services/account-data-requests/README.md)
 - [`../services/activitypub-delivery/README.md`](../services/activitypub-delivery/README.md)
 - [`../services/admin-imports/README.md`](../services/admin-imports/README.md)
-- [`../services/agent-responses/README.md`](../services/agent-responses/README.md)
 - [`../services/agents/README.md`](../services/agents/README.md)
 - [`../services/ai-usage/README.md`](../services/ai-usage/README.md)
 - [`../services/ap-actor-keys/README.md`](../services/ap-actor-keys/README.md)

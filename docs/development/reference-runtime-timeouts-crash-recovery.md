@@ -25,8 +25,3 @@ worker renews that lock every 15,000ms, so the lock can remain held for jobs of 
 it is unrelated to the job's total runtime and independent of the centrally owned 60-second SSE
 connection cycle. Size the lock from worker heartbeat and crash-recovery behavior, not the client
 connection lifetime.
-
-**Worker deadline vs. lock duration vs. SSE cycle:** `process-agent-response.mts` bounds a
-single agent-response job at `WORKER_DEADLINE_MS = 8 * 60 * 1000` (8 minutes) via
-`AbortSignal.timeout`, independent of any `lockDuration`. A 60-second SSE cycle only detaches its
-subscriber. It does not cancel or shorten the worker job; clients may reattach.

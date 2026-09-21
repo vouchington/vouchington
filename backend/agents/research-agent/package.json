@@ -22,10 +22,7 @@
   "scripts": {},
   "dependencies": {
     "@agents/_shared": "workspace:^",
-    "@jongleberry/vurst-markdown": "^0.4.3",
     "@jongleberry/vurst-prompt": "^0.4.3",
-    "@modules/on-error": "workspace:^",
-    "@services/agent-responses": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/tools": "workspace:^"
   },
