@@ -18,7 +18,6 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@email-templates/core": "workspace:^",
     "@modules/aws": "workspace:^",
-    "@modules/gmail-smtp": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",

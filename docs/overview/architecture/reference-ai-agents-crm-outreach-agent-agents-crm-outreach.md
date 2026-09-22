@@ -11,8 +11,6 @@ Drafts personalized outreach emails for influencers/contacts in the CRM. Called 
 - Output: JSON `{ subject, body_html, body_text }` parsed from model response
 - Contact data is sanitized and wrapped with `wrapExternalContent()` before injection
 
-Full reference: [backend/agents/crm-outreach/README.md](../../../backend/agents/crm-outreach/README.md)
-
 ## Customer Support Agent (`@agents/customer-support`)
 
 Generates draft replies for customer support threads. Enqueued asynchronously when a new thread or inbound message is created.
