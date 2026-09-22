@@ -84,14 +84,4 @@ export const crmEndpointRegistry: Record<string, ManifestEndpoint> = {
     path: `/api/v1/crm/contacts/${contactId}/email-drafts`,
     requestBody: { prompt: 'Focus on travel content', tone: 'friendly' },
   },
-  'native.crm.import.success.default': {
-    method: 'POST',
-    path: '/api/v1/imports/crm-contacts',
-    requestBody: { csv: 'name,email\nAlice Creator,alice@example.test' },
-  },
-  'native.crm.import.validation.default': {
-    method: 'POST',
-    path: '/api/v1/imports/crm-contacts',
-    requestBody: { csv: 'name,email,follower_count\nAlice Creator,alice@example.test,-1' },
-  },
 }
