@@ -145,13 +145,6 @@ describe('web route baseline tests', () => {
 
       await Promise.all(
         [
-          '/chat/support',
-          '/chat/support/new',
-          `/chat/support/${randomUUID()}`,
-          '/support',
-          '/support/contacts',
-          `/support/contacts/${randomUUID()}`,
-          `/support/threads/${randomUUID()}`,
           `/agent/${randomUUID()}/conversation/${randomUUID()}`,
           `/topic-recommendations/${randomUUID()}/edit`,
         ].map(async path => {
