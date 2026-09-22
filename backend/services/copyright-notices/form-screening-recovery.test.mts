@@ -10,6 +10,7 @@ import {
   readCopyrightNoticeTargetIds,
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
+  ageTestCopyrightEnforcementRequest,
   createTestCopyrightFormIntakeReview,
   liftTestCopyrightRestriction,
   readTestLatestCopyrightFormScreeningRecommendation,
@@ -187,6 +188,23 @@ describe('copyright form-screening recovery', () => {
       expect.arrayContaining([expect.objectContaining({ human_review_action: 'reverse' })]),
     )
     await expectNoFormEffect(notice.intake.copyright_notice_submission_id)
+  })
+
+  it('processes an owned pending enforcement request during reconciliation', async () => {
+    const { notice, screeningId } = await createClearScreenedForm()
+    const assessment = await appendCopyrightSubmissionAssessment({
+      submissionId: notice.intake.copyright_notice_submission_id,
+      assessedAt: new Date(),
+      currentUser: null,
+      substantiallyCompliant: true,
+      copyrightFormScreeningId: screeningId,
+    })
+    await ageTestCopyrightEnforcementRequest(assessment.id)
+
+    await expect(reconcileCopyrightEnforcementRequests(1)).resolves.toBe(1)
+    await expect(
+      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+    ).resolves.toBe(1)
   })
 
   it('recovers a rejection committed before any assessment', async () => {
