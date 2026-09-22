@@ -119,10 +119,6 @@ const expectedParameters = {
     'topics',
   ],
   'GET:/api/v1/rss-feeds/:id/crawls': ['after', 'limit'],
-  'GET:/api/v1/support/contacts': ['after', 'limit', 'q'],
-  'GET:/api/v1/support/contacts/:contactId': ['after', 'limit'],
-  'GET:/api/v1/support/threads': ['after', 'limit', 'q', 'status'],
-  'GET:/api/v1/support/threads/:threadId/messages': ['after', 'limit'],
   'GET:/api/v1/topic-recommendations/top-hashtags': ['after', 'limit', 'mapping', 'q'],
   'GET:/api/v1/topics': [
     'after',

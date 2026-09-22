@@ -680,26 +680,6 @@
       "fixtureIds": ["shared.scopes.catalog"],
       "hash": "724e3ca8c762bc413c108c4df41e5256be0c1faab2862992a980f01d58487917"
     },
-    "GET:/api/v1/support/contacts": {
-      "fixtureIds": ["native.staff-support.contacts.default"],
-      "hash": "619a0bae2213716436c76cec3beb880b1c523c47ed461cd6ab32ca98b44d35cd"
-    },
-    "GET:/api/v1/support/contacts/:contactId": {
-      "fixtureIds": ["native.staff-support.contact-detail.default"],
-      "hash": "95270c90163c6282340e2f0e532c2d4712d887cd47ce6b05b377d08b63c18933"
-    },
-    "GET:/api/v1/support/threads": {
-      "fixtureIds": ["native.staff-support.threads.default"],
-      "hash": "163c2a86eea6b90e9f54d5341f9a2e0a2ed02f43ab884aa275c1b740680569a1"
-    },
-    "GET:/api/v1/support/threads/:threadId": {
-      "fixtureIds": ["native.staff-support.thread-detail.default"],
-      "hash": "322aa97eec6f6a9cbef548441bd93a45cba7c59626836353e06318e794c588c9"
-    },
-    "GET:/api/v1/support/threads/:threadId/messages": {
-      "fixtureIds": ["native.staff-support.messages.default"],
-      "hash": "12285e099d74a7ad0548cf35246afdcfd9e6d79c62fa88861e715ba1cf2866be"
-    },
     "GET:/api/v1/topic-recommendations/:id": {
       "fixtureIds": ["native.topic-recommendation.detail.default"],
       "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
@@ -919,22 +899,6 @@
     "PATCH:/api/v1/reports/:id": {
       "fixtureIds": ["native.moderation.report-resolution.reviewed"],
       "hash": "1bacfeaddeea85f745d47dbfc060ca6d2fa7f30d8bcd0205ee71ca749246c316"
-    },
-    "PATCH:/api/v1/support/contacts/:contactId": {
-      "fixtureIds": ["native.staff-support.contact-update.default"],
-      "hash": "e0010a185a65aad57e212fd73fd53d1c3c5d063ba3e0c51a39c32975f0f6eb2b"
-    },
-    "PATCH:/api/v1/support/threads/:threadId": {
-      "fixtureIds": [
-        "native.staff-support.thread-assign.default",
-        "native.staff-support.thread-reopen.default",
-        "native.staff-support.thread-resolve.default"
-      ],
-      "hash": "eda75a384c90f0679e62dfa4e9f350568cc564a72fe563f91eae0f9d8a6ba34a"
-    },
-    "PATCH:/api/v1/support/threads/:threadId/messages/:messageId": {
-      "fixtureIds": ["native.staff-support.message-edit.default"],
-      "hash": "9eb2c6423d5bae14904555ef5bf06a18b5f666c6cce392968281346dbcba27bc"
     },
     "PATCH:/api/v1/vote-integrity/flags/:id": {
       "fixtureIds": [
@@ -1199,22 +1163,6 @@
     "POST:/api/v1/rss-feed-items/:rssFeedItemId/shares": {
       "fixtureIds": ["native.rss-feed-items.followers.share"],
       "hash": "4e08b0299f6aaa051f39f3ac907f5f863849bb7bf99269b46429ad539b12504b"
-    },
-    "POST:/api/v1/support/threads/:threadId/drafts": {
-      "fixtureIds": ["native.staff-support.draft-create.default"],
-      "hash": "dcefa9533486909453960f63c0e0334c3ff2efeba0f93205c3da8afac8e8d62b"
-    },
-    "POST:/api/v1/support/threads/:threadId/messages": {
-      "fixtureIds": ["native.staff-support.message-create.default"],
-      "hash": "9eb2c6423d5bae14904555ef5bf06a18b5f666c6cce392968281346dbcba27bc"
-    },
-    "POST:/api/v1/support/threads/:threadId/messages/:messageId/approvals": {
-      "fixtureIds": ["native.staff-support.message-approve.default"],
-      "hash": "45b706437836d7a17d511574a27277d7d7dc6d7b298dc049068965094ecb70d2"
-    },
-    "POST:/api/v1/support/threads/:threadId/messages/:messageId/sends": {
-      "fixtureIds": ["native.staff-support.message-send.default"],
-      "hash": "45b706437836d7a17d511574a27277d7d7dc6d7b298dc049068965094ecb70d2"
     },
     "POST:/api/v1/topics": {
       "fixtureIds": ["web.topics.mutation.default"],
@@ -2245,62 +2193,6 @@
     "native.spending-category-topics.search.default": {
       "fixtureIds": ["native.spending-category-topics.search.default"],
       "hash": "a4c895cbbde9c92724889e116c191ce69f099ef57d1075fc158468beae71eda7"
-    },
-    "native.staff-support.contact-detail.default": {
-      "fixtureIds": ["native.staff-support.contact-detail.default"],
-      "hash": "59c435a6c0f8ce22549315cb6b850a1e552debef3af7f49e6d634fa9f5a87347"
-    },
-    "native.staff-support.contact-update.default": {
-      "fixtureIds": ["native.staff-support.contact-update.default"],
-      "hash": "7740a089328497b39855ec09e9de3c009d1e781d7cec306acb13ee479e4c808f"
-    },
-    "native.staff-support.contacts.default": {
-      "fixtureIds": ["native.staff-support.contacts.default"],
-      "hash": "5a6941d2d3c288af735babfcb632076dd85457821c012712f531fae85605d1d5"
-    },
-    "native.staff-support.draft-create.default": {
-      "fixtureIds": ["native.staff-support.draft-create.default"],
-      "hash": "fa7692a06a5fbc8acca1ad48ac96d86b3b17cf2203dd99a883c5d90bd91081b3"
-    },
-    "native.staff-support.message-approve.default": {
-      "fixtureIds": ["native.staff-support.message-approve.default"],
-      "hash": "b3a1f2682f0710b948b741c1d1952525e2e1ae35f3b65aa9b94053f93f5ad2fd"
-    },
-    "native.staff-support.message-create.default": {
-      "fixtureIds": ["native.staff-support.message-create.default"],
-      "hash": "796d9d656152fc5c3678d435bef2a2c95295c3f54c2a0bb4092933b4814652e6"
-    },
-    "native.staff-support.message-edit.default": {
-      "fixtureIds": ["native.staff-support.message-edit.default"],
-      "hash": "11e6f1a68e019fae2c3ff211f7e1d08b6a994734f3deffa3b94267a2a4ea7029"
-    },
-    "native.staff-support.message-send.default": {
-      "fixtureIds": ["native.staff-support.message-send.default"],
-      "hash": "57d1893f34419b278c448fdfff3afc9a9911742b364508ded7973b884f5db1c0"
-    },
-    "native.staff-support.messages.default": {
-      "fixtureIds": ["native.staff-support.messages.default"],
-      "hash": "dd5ac92d2f64760fa64e2e879673f9da1e654ef3a40ddc2a0ecccf42f72d49cc"
-    },
-    "native.staff-support.thread-assign.default": {
-      "fixtureIds": ["native.staff-support.thread-assign.default"],
-      "hash": "c61a278038010a61726e0b81d95da7ce421ba7ee2dd88f5c60c4096a38902fef"
-    },
-    "native.staff-support.thread-detail.default": {
-      "fixtureIds": ["native.staff-support.thread-detail.default"],
-      "hash": "0a4768ea6eff4c39749a1b67050373768ca722cced5c5cacdcf69fce03e0dc6b"
-    },
-    "native.staff-support.thread-reopen.default": {
-      "fixtureIds": ["native.staff-support.thread-reopen.default"],
-      "hash": "0a4768ea6eff4c39749a1b67050373768ca722cced5c5cacdcf69fce03e0dc6b"
-    },
-    "native.staff-support.thread-resolve.default": {
-      "fixtureIds": ["native.staff-support.thread-resolve.default"],
-      "hash": "7bf92433ee68d75698bcd878c2815baee255b5dea1a36ec7f00875c1b30e0f24"
-    },
-    "native.staff-support.threads.default": {
-      "fixtureIds": ["native.staff-support.threads.default"],
-      "hash": "16d7ddd42101fa6279ecf346ba8a2b28a8bed6ad6613452480d7aa38fe0eba8a"
     },
     "native.topic-recommendation.detail.default": {
       "fixtureIds": ["native.topic-recommendation.detail.default"],
