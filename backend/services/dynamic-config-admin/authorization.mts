@@ -4,12 +4,7 @@ import type {
   DynamicConfigUser,
 } from './types.mts'
 
-export const DYNAMIC_CONFIG_VIEWER_ROLES = [
-  'moderator',
-  'developer',
-  'customer_support',
-  'investor',
-] as const
+export const DYNAMIC_CONFIG_VIEWER_ROLES = ['moderator', 'developer', 'investor'] as const
 
 export function currentUserCanAccessDynamicConfigNamespace(
   currentUser: DynamicConfigUser | null,

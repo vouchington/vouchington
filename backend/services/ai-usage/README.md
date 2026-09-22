@@ -14,7 +14,7 @@ statement of what this ledger does and doesn't cover live in the private
 ## Data Model
 
 `ai_usage_records` — append-only ledger, one row per Responses-API call. `community_id` and
-`post_id` are both nullable: most agents (chat, autotagger, customer-support, research, ...) run
+`post_id` are both nullable: most agents (chat, autotagger, research, ...) run
 outside any community or post. `agent_slug` identifies any agent workload, not only a moderator.
 `model` and `service_tier` record what OpenAI **actually served** (`response.model`,
 `response.service_tier`), not the requested alias/tier — see the cost-model doc's "Verified: flex

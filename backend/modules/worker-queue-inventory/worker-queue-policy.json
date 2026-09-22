@@ -50,7 +50,6 @@
     "user-rss-feed-imports",
     "article-sync",
     "kagi-smallweb",
-    "customer_support",
     "ses_inbound",
     "report_integrity",
     "bluesky-follow-propagation",

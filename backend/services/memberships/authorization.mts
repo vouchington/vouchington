@@ -34,7 +34,5 @@ export function currentUserCanViewMembershipHistory(
 
 export function currentUserCanRefundMembership(currentUser: PrivateUser | null): boolean {
   if (!currentUser) return false
-  return (
-    currentUser.roles.includes('administrator') || currentUser.roles.includes('customer_support')
-  )
+  return currentUser.roles.includes('administrator')
 }
