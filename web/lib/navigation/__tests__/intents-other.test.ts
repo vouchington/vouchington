@@ -7,7 +7,6 @@ describe('getActiveIntent', () => {
     it('resolves /memberships/grants to settings', () => {
       expect(getActiveIntent('/memberships/grants')).toBe('settings')
     })
-
   })
 
   describe('engineering intent', () => {
