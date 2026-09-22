@@ -18630,7 +18630,7 @@
         },
         "copyright_restriction_id": {
           "collation": null,
-          "comment": "Restriction reactivated because a qualifying legal hold requires it to remain active.",
+          "comment": "Restriction with immutable provenance from a qualifying legal-hold assessment.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -18651,7 +18651,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Typed provenance binding for restrictions reactivated by qualifying legal holds.",
+      "comment": "Typed provenance bindings between restriction records and qualifying legal-hold assessments.",
       "foreignKeys": {
         "copyright_legal_hold_restrict_copyright_notice_legal_hold__fkey": {
           "columns": ["copyright_notice_legal_hold_assessment_id"],
@@ -18704,13 +18704,20 @@
         "copyright_legal_hold_restrictions_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_legal_hold_restrictions_pkey ON public.copyright_legal_hold_restrictions USING btree (copyright_restriction_id)",
+          "definition": "CREATE UNIQUE INDEX copyright_legal_hold_restrictions_pkey ON public.copyright_legal_hold_restrictions USING btree (copyright_restriction_id, copyright_notice_legal_hold_assessment_id)",
           "includedColumns": [],
           "keys": [
             {
               "column": "copyright_restriction_id",
               "descending": false,
               "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_legal_hold_assessment_id",
+              "descending": false,
+              "expression": "copyright_notice_legal_hold_assessment_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -18725,8 +18732,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["copyright_restriction_id"],
-        "definition": "PRIMARY KEY (copyright_restriction_id)"
+        "columns": ["copyright_restriction_id", "copyright_notice_legal_hold_assessment_id"],
+        "definition": "PRIMARY KEY (copyright_restriction_id, copyright_notice_legal_hold_assessment_id)"
       },
       "relationKind": "table",
       "triggers": {},
