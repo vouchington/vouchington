@@ -40,7 +40,9 @@ export async function claimCopyrightEnforcementRequest(
       SET state = 'completed', claimed_at = NULL, completed_at = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP
       WHERE request.copyright_notice_submission_assessment_id = ${assessmentId}
-        AND request.state IN ('pending', 'claimed')
+        AND (request.state = 'pending'
+          OR (request.state = 'claimed'
+            AND request.claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))
         AND NOT EXISTS (
           SELECT 1
           FROM enforceable
