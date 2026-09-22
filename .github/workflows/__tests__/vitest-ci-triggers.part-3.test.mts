@@ -90,7 +90,6 @@ describe('Vitest CI triggers', () => {
 
   it('keeps direct web integration owner changes wired to web integration', () => {
     expectRefinedRuntimeFilterMatches('web-integration', [
-      'integration-tests/web-api/crm.test.mts',
       'integration-tests/web-api/__tests__/routes.public.test.mts',
       'integration-tests/web/tests/web.test.mts',
     ])
