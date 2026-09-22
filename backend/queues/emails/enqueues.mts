@@ -54,7 +54,6 @@ export const enqueueSendCommunityModerationSummaryEmail =
     'processSendCommunityModerationSummaryEmail',
   )
 
-
 export const enqueueSendWelcomeEmail =
   createEnqueueFunction<ProcessSendWelcomeEmailVariables>('processSendWelcomeEmail')
 
