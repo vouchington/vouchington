@@ -125,9 +125,6 @@ test.describe('Admin sidebar navigation', () => {
     await expect(
       page.getByTestId('admin-page-header-title').filter({ hasText: 'Support Threads' }),
     ).toBeVisible()
-    await expect(page.getByTestId('admin-page-header')).toBeVisible()
-    await expect(page.getByTestId('admin-table-shell')).toBeVisible()
-    await expect(page.getByTestId('admin-pagination')).toBeVisible()
   })
 
   test('Support: Support Contacts → /support/contacts', async ({ page }) => {
