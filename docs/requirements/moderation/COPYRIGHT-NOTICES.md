@@ -124,6 +124,9 @@ its original MIME evidence, still receives the same advisory structured extracti
 for moderator classification; it cannot trigger a restriction or outbound message automatically. An approval normally names
 the recommendation reviewed. If the agent is unavailable or fails, staff must instead record an
 explicit manual-fallback reason while reviewing the preserved original.
+For email approvals, staff resolve each recommended hosted URL to live image placements and select
+verified targets. If a URL cannot be resolved, the review surface explains the failure and allows
+manual target identification; approval still validates the chosen target against the live placement.
 
 The signed-in form is already structured. Its agent is only an anti-spam and obvious-invalidity
 screen, not a legal merits decision. The recommendation remains a separate immutable record; it
