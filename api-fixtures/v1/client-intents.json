@@ -76,15 +76,6 @@
       "roles": []
     },
     {
-      "id": "chat",
-      "label": "Chat",
-      "nativePlacement": "bottom-nav",
-      "swiftSection": "messages",
-      "dotnetSection": "messages",
-      "requiresAuth": true,
-      "roles": []
-    },
-    {
       "id": "messages",
       "label": "Messages & Notifications",
       "nativePlacement": "bottom-nav",
@@ -163,7 +154,7 @@
       "swiftSection": "engineering",
       "dotnetSection": "engineering",
       "requiresAuth": false,
-      "roles": ["administrator", "moderator", "developer", "customer_support", "investor"]
+      "roles": ["administrator", "moderator", "developer", "investor"]
     },
     {
       "id": "growth",
