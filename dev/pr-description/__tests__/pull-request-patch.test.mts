@@ -35,7 +35,16 @@ describe('readPullRequestPatch', () => {
 
     expect(calls).toEqual([
       ['pr', 'diff', '386'],
-      ['api', 'repos/vouchington/vouchington/pulls/386/files?per_page=20&page=1'],
+      [
+        'api',
+        'repos/vouchington/vouchington/pulls/386/files',
+        '-X',
+        'GET',
+        '-F',
+        'per_page=20',
+        '-F',
+        'page=1',
+      ],
     ])
     expect(result.source).toBe('files-api')
     expect(result.patch).toContain('deleted file mode 100644')

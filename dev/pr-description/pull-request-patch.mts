@@ -48,7 +48,13 @@ async function readPullRequestFiles(
     // oxlint-disable-next-line no-await-in-loop -- the next page exists only after this page fills.
     const json = await runGh([
       'api',
-      `repos/${target.owner}/${target.repo}/pulls/${target.number}/files?per_page=${PULL_REQUEST_FILES_PAGE_SIZE}&page=${page}`,
+      `repos/${target.owner}/${target.repo}/pulls/${target.number}/files`,
+      '-X',
+      'GET',
+      '-F',
+      `per_page=${PULL_REQUEST_FILES_PAGE_SIZE}`,
+      '-F',
+      `page=${page}`,
     ])
     const batch = JSON.parse(json) as PullRequestFile[]
     files.push(...batch)
