@@ -39,8 +39,7 @@ Owner analytics are available to landing page owners with an active or past-due 
 membership. Free, paused, cancelled, and expired memberships do not receive analytics. The
 administrator route remains a separate staff-only cross-user capability.
 
-Administrators can view analytics for any user's landing pages. Customer support and other staff
-roles do not get this cross-client analytics access.
+Administrators can view analytics for any user's landing pages. Other staff roles do not get this cross-client analytics access.
 
 ## Data Sources
 

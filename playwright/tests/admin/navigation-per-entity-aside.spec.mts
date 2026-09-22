@@ -3,8 +3,6 @@ import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { insertTestSupportContact } from '../../../backend/test-helpers/entities/support-contacts.mts'
-import { insertTestSupportThread } from '../../../backend/test-helpers/entities/support-threads.mts'
 
 const DESKTOP_VIEWPORT = { width: 1280, height: 720 }
 const SEEDED_TOPIC_ID = '019c64e6-f710-74cb-b36d-130af8ff1067'
@@ -98,66 +96,7 @@ test.describe('DomainAdminDetails crawler links', () => {
   })
 })
 
-// ── Section C: Support thread ───────────────────────────────────────────────
-
-test.describe('Admin support — per-thread navigation', () => {
-  test.use({ storageState: AUTH_STATE })
-
-  test.beforeEach(async ({ page }) => {
-    await page.setViewportSize(DESKTOP_VIEWPORT)
-  })
-
-  test('first thread link navigates to /support/threads/:id', async ({ page }) => {
-    const suffix = randomSuffix()
-    const subject = `Playwright navigation support thread ${suffix}`
-    const contact = await insertTestSupportContact({
-      emailAddress: `playwright-navigation-${suffix}@voucha.ai`,
-    })
-    const thread = await insertTestSupportThread({ supportContactId: contact.id, subject })
-
-    await navigateTo(page, '/support')
-    await expect(
-      page.getByTestId('admin-page-header-title').filter({ hasText: 'Support Threads' }),
-    ).toBeVisible()
-
-    const threadLink = page.getByTestId(`support-thread-link-${thread.id}`)
-    await expect(threadLink).toBeVisible()
-    await threadLink.click()
-
-    await expect(page).toHaveURL(/\/support\/threads\/[^/]+$/)
-    await expect(page.getByTestId('support-thread-page-heading')).toContainText(subject)
-  })
-})
-
-// ── Section E: Support contact detail ──────────────────────────────────────
-
-test.describe('Admin support contacts — per-contact navigation', () => {
-  test.use({ storageState: AUTH_STATE })
-
-  test.beforeEach(async ({ page }) => {
-    await page.setViewportSize(DESKTOP_VIEWPORT)
-  })
-
-  test('first contact link navigates to /support/contacts/:id', async ({ page }) => {
-    await navigateTo(page, '/support/contacts?q=agent-test%40playwright.seed')
-    await expect(
-      page.getByTestId('admin-page-header-title').filter({ hasText: 'Support Contacts' }),
-    ).toBeVisible()
-
-    const firstContactLink = page.getByTestId(
-      'support-contact-link-019d0000-0000-7000-8000-000000000006',
-    )
-    await expect(firstContactLink).toBeVisible()
-
-    await firstContactLink.click()
-    await expect(page).toHaveURL(/\/support\/contacts\/[^/]+$/)
-    await expect(page.getByTestId('support-contact-page-heading')).toContainText(
-      'agent-test@playwright.seed',
-    )
-  })
-})
-
-// ── Section F: Topic Aliases → per-topic aliases ────────────────────────────
+// ── Topic Aliases → per-topic aliases ───────────────────────────────────────
 
 test.describe('Admin topic aliases search — Edit Aliases navigation', () => {
   test.use({ storageState: AUTH_STATE })

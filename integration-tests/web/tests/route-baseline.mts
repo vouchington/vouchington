@@ -121,16 +121,6 @@ describe('web route baseline tests', () => {
         'Valkey',
       )
 
-      const supportContacts = await client.loadPage(
-        '/support/contacts',
-        'route-admin-support-contacts',
-        { userAgent: PLAYWRIGHT_CHROME_UA },
-      )
-      expect(supportContacts.response.status).toBe(200)
-      expect(
-        parseHtml(supportContacts.html, supportContacts.response.url).body.textContent,
-      ).toContain('Support Contacts')
-
       const newsImportExport = await client.loadPage(
         '/my/news-sources/import-export',
         'route-my-news-sources-import-export',
@@ -155,7 +145,13 @@ describe('web route baseline tests', () => {
 
       await Promise.all(
         [
+          '/chat/support',
+          '/chat/support/new',
+          `/chat/support/${randomUUID()}`,
+          '/support',
+          '/support/contacts',
           `/support/contacts/${randomUUID()}`,
+          `/support/threads/${randomUUID()}`,
           `/agent/${randomUUID()}/conversation/${randomUUID()}`,
           `/topic-recommendations/${randomUUID()}/edit`,
         ].map(async path => {

@@ -237,23 +237,6 @@ Before moving, renaming, or removing an app route or admin surface:
 
 Internal links to topic detail pages and topic subpages must prefer slug over id. Use `topicHref` and `topicManagementHref` from `web/lib/links/entity-href.ts` when a full `Topic` object is available — these helpers resolve `slug ?? id` automatically. In components that receive only `topicId` and `topicSlug` as separate props (not a full Topic object), use `${topicSlug ?? topicId}` in template literals to build the `/:topic-type/:idOrSlug/…` segment.
 
-## Customer Support
-
-All support routes are `noindex, nofollow`.
-
-### User-facing (authenticated)
-
-- `/chat/support` - list of the authenticated user's own support threads
-- `/chat/support/new` - new support request form
-- `/chat/support/new?conversation_id=<id>` - new request pre-linked to a specific chat conversation
-- `/chat/support/:threadId` - view thread messages and status
-
-### Admin (administrator role)
-
-- `/support` (admin layout) - list all support threads with status filter (`?status=open|assigned|resolved`)
-- `/support/threads/:threadId` (admin layout) - thread detail with messages, assign/resolve actions, AI draft generation, and manual reply
-- `/support/contacts` - list all support contacts
-- `/support/contacts/:contactId` - contact detail: metadata and list of their threads
 
 ## Crawlers
 

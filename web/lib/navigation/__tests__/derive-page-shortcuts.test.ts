@@ -62,13 +62,6 @@ describe('DERIVED_PAGE_SHORTCUTS parity', () => {
     expect(shortcut && t(shortcut.label)).toBe('Recommend New Topics')
   })
 
-  it('keeps support discoverable without exposing a hosted chat shortcut', () => {
-    expect(DERIVED_PAGE_SHORTCUTS.some(s => s.href === '/chat')).toBe(false)
-    const supportChat = DERIVED_PAGE_SHORTCUTS.find(s => s.href === '/chat/support')
-    expect(supportChat?.bucket).toBe('authenticated')
-    expect(supportChat?.featureFlag).toBe('chat')
-  })
-
   it('derives dataPw from href correctly', () => {
     expect(hrefToDataPw('/urls')).toBe('search-page-shortcut-urls')
     expect(hrefToDataPw('/posts/review-queue')).toBe('search-page-shortcut-posts-review-queue')

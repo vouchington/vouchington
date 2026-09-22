@@ -40,20 +40,20 @@ export function makeIntent(overrides?: Partial<NavIntent>): NavIntent {
 
 export function makeAuthOnlyIntent(): NavIntent {
   return {
-    id: 'chat',
-    label: 'Chat' as MessageKey,
+    id: 'messages',
+    label: 'Notifications' as MessageKey,
     icon: (() => null) as NavIntent['icon'],
     requiresAuth: true,
     groups: [
       {
-        label: 'Chat' as MessageKey,
-        dataPw: 'sidebar-group-chat',
+        label: 'Notifications' as MessageKey,
+        dataPw: 'sidebar-group-notifications',
         requiresAuth: true,
         items: [
           {
-            label: 'Support' as MessageKey,
-            href: '/chat/support',
-            dataPw: 'sidebar-nav-chat-support',
+            label: 'Notifications' as MessageKey,
+            href: '/my/notifications',
+            dataPw: 'sidebar-nav-notifications',
           },
         ],
       },

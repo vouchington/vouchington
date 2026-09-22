@@ -5,7 +5,6 @@ import { TEST_USER_USERNAME } from '../../helpers/auth.mts'
 import { setFeatureFlags } from '../../helpers/feature-flags.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 
-const CONTACT_ID = randomUUID()
 const TOPIC_RECOMMENDATION_ID = randomUUID()
 const NON_EXISTENT_ID = randomUUID()
 const NON_EXISTENT_SLUG = randomUUID()
@@ -52,18 +51,6 @@ test.describe('Route coverage baseline', () => {
 
     await expect(page).toHaveURL('/instances')
     await expect(page.getByRole('heading', { name: 'Fediverse Instances' })).toBeVisible()
-  })
-
-  test('covers /support/contacts', async ({ page }) => {
-    await navigateTo(page, '/support/contacts')
-
-    await expect(page.getByTestId('admin-page-header-title')).toContainText('Support Contacts')
-  })
-
-  test('covers /support/contacts/[contactId]', async ({ page }) => {
-    const response = await page.goto(`/support/contacts/${CONTACT_ID}`)
-
-    expect(response?.status()).toBe(404)
   })
 
   test('covers /notification-redirect without a notification id', async ({ page }) => {

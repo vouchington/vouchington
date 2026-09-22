@@ -1,8 +1,6 @@
-/* oxlint-disable max-lines -- established state renderer; email recovery adds one error branch */
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useLoadingIds } from '@/hooks/use-loading-ids'
@@ -185,14 +183,11 @@ export function IdentityVerificationContent({
           variant='outline'
           asChild
         >
-          <Link
-            href='/chat/support'
-            prefetch={false}
-          >
+          <a href='mailto:support@voucha.ai'>
             {t(
               'extracted.identityVerification.identityVerificationContent.contactSupport_f8d47b82',
             )}
-          </Link>
+          </a>
         </Button>
       </Card>
     )

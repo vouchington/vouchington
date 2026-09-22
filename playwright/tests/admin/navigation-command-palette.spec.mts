@@ -32,7 +32,6 @@ async function openPaletteAndNavigate(
   // Wait for the matching item inside the "Pages" group.
   // Each option renders two spans: the label (font-medium) and the href (text-xs).
   // getByRole accessible name includes both spans, so use an anchored regex on the
-  // label span to avoid 'Support' matching 'Support Contacts'.
   const pagesGroup = page.locator('[cmdk-group]').filter({
     has: page.locator('[cmdk-group-heading]').filter({ hasText: 'Pages' }),
   })
@@ -115,13 +114,6 @@ test.describe('Admin command palette navigation', () => {
     await expectPageHeading(page, 'Topic Aliases')
   })
 
-  test('Support → /support', async ({ page }) => {
-    await navigateTo(page, '/')
-    await openPaletteAndNavigate(page, 'Support')
-    await expect(page).toHaveURL(/\/support/)
-    await expectPageHeading(page, 'Support Threads')
-  })
-
   test('Review Queue → /posts/review-queue', async ({ page }) => {
     await navigateTo(page, '/')
     await openPaletteAndNavigate(page, 'Review Queue')
@@ -167,13 +159,6 @@ test.describe('Admin command palette navigation', () => {
     await popup.close()
     // Current tab stays on the original page (not redirected by the Cmd+click)
     expect(page.url()).toBe(originalUrl)
-  })
-
-  test('Support Contacts → /support/contacts', async ({ page }) => {
-    await navigateTo(page, '/')
-    await openPaletteAndNavigate(page, 'Support Contacts')
-    await expect(page).toHaveURL(/\/support\/contacts/)
-    await expectPageHeading(page, 'Support Contacts')
   })
 
   test('Reports → /reports', async ({ page }) => {
