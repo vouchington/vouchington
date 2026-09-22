@@ -8,38 +8,7 @@ export async function recoverMissingDecisionAssessments(): Promise<void> {
         submission_id, copyright_notice_id, assessed_by_id, screening_id
       FROM (
         SELECT submission.id AS submission_id, submission.copyright_notice_id,
-          NULL::uuid AS assessed_by_id, screening.id AS screening_id, 1 AS priority
-        FROM copyright_notice_form_intakes intake
-        JOIN copyright_notice_submissions submission
-          ON submission.id = intake.copyright_notice_submission_id
-        JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
-        JOIN LATERAL (
-          SELECT id, recommendation FROM copyright_notice_form_screenings
-          WHERE copyright_notice_form_intake_id = intake.id ORDER BY id DESC LIMIT 1
-        ) screening ON screening.recommendation = 'not_obviously_invalid'
-        WHERE submission.source_kind = 'signed_in_form'
-          AND notice.jurisdiction = 'us_dmca'
-          AND char_length(notice.claimant_contact_ciphertext) > 0
-          AND char_length(btrim(notice.work_description)) > 0
-          AND intake.good_faith_belief
-          AND intake.accuracy_authority_under_penalty_of_perjury
-          AND char_length(intake.electronic_signature_ciphertext) > 0
-          AND EXISTS (
-            SELECT 1 FROM copyright_notice_targets target
-            WHERE target.copyright_notice_id = notice.id
-              AND char_length(btrim(target.hosted_use_url)) > 0
-          )
-          AND EXISTS (
-            SELECT 1 FROM copyright_notice_delivery_intents receipt
-            JOIN copyright_notice_delivery_recipients recipient
-              ON recipient.copyright_notice_delivery_intent_id = receipt.id
-            WHERE receipt.copyright_notice_id = notice.id
-              AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
-              AND receipt.delivery_kind = 'claimant_receipt'
-          )
-        UNION ALL
-        SELECT submission.id, submission.copyright_notice_id, review.reviewed_by_id,
-          NULL::uuid, 2
+          review.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 1 AS priority
         FROM copyright_notice_form_intake_reviews review
         JOIN copyright_notice_form_intakes intake
           ON intake.id = review.copyright_notice_form_intake_id
@@ -47,8 +16,8 @@ export async function recoverMissingDecisionAssessments(): Promise<void> {
           ON submission.id = intake.copyright_notice_submission_id
         WHERE review.accepted
         UNION ALL
-        SELECT submission.id, submission.copyright_notice_id, review.reviewed_by_id,
-          NULL::uuid, 3
+        SELECT submission.id AS submission_id, submission.copyright_notice_id,
+          review.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 2 AS priority
         FROM copyright_notice_email_intake_reviews review
         JOIN copyright_notice_submissions submission
           ON submission.copyright_notice_id = review.promoted_copyright_notice_id

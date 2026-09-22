@@ -5,21 +5,14 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
-  countCopyrightActiveRestrictionsForNotice,
-  readCopyrightNoticeTargetId,
-  readCopyrightNoticeTargetIds,
-} from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
   copyrightAppealRecommendations,
-  appendCopyrightSubmissionAssessment,
   createCopyrightAppeal,
   createCopyrightCounterNotice,
   createCopyrightFormIntake,
   getCopyrightNoticePrivateAggregate,
   getPendingCopyrightAgentDispatches,
-  reconcileCopyrightEnforcementRequests,
 } from './index.mts'
 import {
   appendCopyrightFormScreening,
@@ -27,49 +20,6 @@ import {
 } from './form-screenings.mts'
 
 describe('copyright form intakes', () => {
-  it('recovers enforcement when a clear screening persisted before its effect ran', async () => {
-    const user = await createTestUser()
-    const postId = await insertTestPost({
-      title: `copyright screening recovery ${crypto.randomUUID()}`,
-      slug: `copyright-screening-recovery-${crypto.randomUUID()}`,
-      createdById: user.id,
-      markdown: 'image',
-    })
-    const imageId = await insertTestImage(user.id)
-    await insertTestPostImage({ postId, imageId })
-    const notice = await createCopyrightFormIntake({
-      requesterUserId: user.id,
-      requesterIdentity: `user:${user.id}`,
-      idempotencyKey: crypto.randomUUID(),
-      request: {
-        jurisdiction: 'us_dmca',
-        claimantDisplayName: 'Claimant',
-        claimantContact: 'claimant@example.test',
-        claimantEmail: 'claimant@example.test',
-        workDescription: 'Original photograph',
-        goodFaithBelief: true,
-        accuracyAuthorityUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
-      },
-    })
-    await appendCopyrightFormScreening({
-      intakeId: notice.intake.id,
-      inputSha256: Buffer.alloc(32, 13),
-      recommendation: 'not_obviously_invalid',
-      rationale: 'No obvious invalidity.',
-      promptVersion: 'copyright-form-screening-v2',
-      model: 'test-model',
-    })
-    await expect(
-      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
-    ).resolves.toBe(0)
-    await expect(reconcileCopyrightEnforcementRequests()).resolves.toBeGreaterThanOrEqual(1)
-    await expect(
-      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
-    ).resolves.toBe(1)
-  })
-
   it('atomically replays an unchanged idempotency key without another legal case', async () => {
     const user = await createTestUser()
     const postId = await insertTestPost({
@@ -209,80 +159,6 @@ describe('copyright form intakes', () => {
         recommendation: 'uncertain',
       }),
     ])
-  })
-
-  it('resumes any missing target restrictions after a partial automated run', async () => {
-    const claimant = await createTestUser()
-    const postId = await insertTestPost({
-      title: `copyright recovery ${crypto.randomUUID()}`,
-      slug: `copyright-recovery-${crypto.randomUUID()}`,
-      createdById: claimant.id,
-      markdown: 'images',
-    })
-    const imageIds = await Promise.all([insertTestImage(claimant.id), insertTestImage(claimant.id)])
-    await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
-    const notice = await createCopyrightFormIntake({
-      requesterUserId: claimant.id,
-      requesterIdentity: `user:${claimant.id}`,
-      idempotencyKey: crypto.randomUUID(),
-      request: {
-        jurisdiction: 'us_dmca',
-        claimantDisplayName: 'Claimant',
-        claimantContact: 'claimant@example.test',
-        claimantEmail: 'claimant@example.test',
-        workDescription: 'Two photographs',
-        goodFaithBelief: true,
-        accuracyAuthorityUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Claimant',
-        claimantTargets: imageIds.map(imageId => ({
-          postId,
-          imageId,
-          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-        })),
-      },
-    })
-    const screeningId = await appendCopyrightFormScreening({
-      intakeId: notice.intake.id,
-      inputSha256: Buffer.alloc(32, 9),
-      recommendation: 'not_obviously_invalid',
-      rationale: 'No obvious spam markers.',
-      promptVersion: 'copyright-form-screening-v2',
-      model: 'test-model',
-    })
-    const assessment = await appendCopyrightSubmissionAssessment({
-      submissionId: notice.intake.copyright_notice_submission_id,
-      assessedAt: new Date(),
-      currentUser: null,
-      substantiallyCompliant: true,
-      copyrightFormScreeningId: screeningId,
-    })
-    const targetIds = await readCopyrightNoticeTargetIds(notice.intake.copyright_notice_id)
-    await acceptCopyrightNoticeAndImposeRestriction({
-      noticeId: notice.intake.copyright_notice_id,
-      targetId: targetIds[0]!,
-      assessmentId: assessment.id,
-      imposedAt: new Date(),
-      imposedById: null,
-    })
-
-    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-
-    await expect(
-      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
-    ).resolves.toBe(2)
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
-    expect(aggregate?.assessments).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          copyright_notice_form_screening_id: screeningId,
-          assessed_by_id: null,
-          substantially_compliant: true,
-        }),
-      ]),
-    )
-    expect(aggregate?.restrictions).toEqual(
-      expect.arrayContaining([expect.objectContaining({ human_reviewed_at: null })]),
-    )
   })
 })
 

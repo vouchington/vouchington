@@ -6,6 +6,7 @@ import {
   completeNonEnforceableCopyrightEnforcementRequest,
   type EnforcementRequest,
 } from './enforcement-request-claim.mts'
+import { recoverRejectedCopyrightFormReviewEffects } from './form-reviews-recovery.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 
 export async function processCopyrightEnforcementRequest(
@@ -30,6 +31,19 @@ export async function processCopyrightEnforcementRequest(
           WHERE restriction.copyright_notice_target_id = target.id
             AND restriction.lifted_at IS NULL
         )
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_restrictions restriction
+          JOIN copyright_notice_submission_assessments authority
+            ON authority.id = restriction.authorizing_assessment_id
+          WHERE restriction.copyright_notice_target_id = target.id
+            AND authority.copyright_notice_submission_id = (
+              SELECT copyright_notice_submission_id
+              FROM copyright_notice_submission_assessments
+              WHERE id = ${request.assessment_id}
+            )
+            AND authority.assessed_by_id IS NULL
+            AND restriction.lifted_at IS NOT NULL
+        )
       ORDER BY target.id
     `)
     await imposeRestrictionsSequentially(targets, request, imposeRestriction)
@@ -46,6 +60,19 @@ export async function processCopyrightEnforcementRequest(
               SELECT 1 FROM copyright_restrictions restriction
               WHERE restriction.copyright_notice_target_id = target.id
                 AND restriction.lifted_at IS NULL
+            )
+            AND NOT EXISTS (
+              SELECT 1 FROM copyright_restrictions restriction
+              JOIN copyright_notice_submission_assessments authority
+                ON authority.id = restriction.authorizing_assessment_id
+              WHERE restriction.copyright_notice_target_id = target.id
+                AND authority.copyright_notice_submission_id = (
+                  SELECT copyright_notice_submission_id
+                  FROM copyright_notice_submission_assessments
+                  WHERE id = ${request.assessment_id}
+                )
+                AND authority.assessed_by_id IS NULL
+                AND restriction.lifted_at IS NOT NULL
             )
         )
       RETURNING copyright_notice_submission_assessment_id
@@ -67,6 +94,7 @@ export async function processCopyrightEnforcementRequest(
 }
 
 export async function reconcileCopyrightEnforcementRequests(limit = 100): Promise<number> {
+  await recoverRejectedCopyrightFormReviewEffects()
   await recoverMissingDecisionAssessments()
   await write(sql`/* reconcileCopyrightEnforcementRequests:backfill */
     INSERT INTO copyright_notice_enforcement_requests (
