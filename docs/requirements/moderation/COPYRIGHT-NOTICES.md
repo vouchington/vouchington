@@ -218,6 +218,8 @@ staff recorded all applicable facts:
 
 Assess every received filing separately and bind its material scope to the exact notice targets it
 covers. Restoration remains blocked while any qualifying assessment for that target is unresolved.
+When staff record that no qualifying proceeding exists, the assessment carries no proceeding dates
+or CCB claim kind, even if staff previously entered those fields while reviewing the filing.
 Dismissal, the end of a proceeding, or a superseding assessment is an immutable hold resolution,
 never an edit or deletion of the original filing. Assessments that reactivate a lifted restriction
 or extend an existing legal-hold restriction carry immutable restriction bindings, so resolving the
