@@ -95,6 +95,23 @@ export async function processCopyrightEnforcementRequest(
 
 export async function reconcileCopyrightEnforcementRequests(limit = 100): Promise<number> {
   await recoverRejectedCopyrightFormReviewEffects()
+  await recoverMissingDecisionAssessmentsAndBackfill()
+  const { rows } = await write<{ assessment_id: string }>(sql`
+    /* reconcileCopyrightEnforcementRequests:list */
+    SELECT copyright_notice_submission_assessment_id AS assessment_id
+    FROM copyright_notice_enforcement_requests
+    WHERE state = 'pending'
+      OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes')
+    ORDER BY updated_at, copyright_notice_submission_assessment_id
+    LIMIT ${limit}
+  `)
+  const outcomes = await Promise.all(
+    rows.map(row => processCopyrightEnforcementRequest(row.assessment_id)),
+  )
+  return outcomes.filter(outcome => outcome === 'completed').length
+}
+
+async function recoverMissingDecisionAssessmentsAndBackfill(): Promise<void> {
   await recoverMissingDecisionAssessments()
   await write(sql`/* reconcileCopyrightEnforcementRequests:backfill */
     INSERT INTO copyright_notice_enforcement_requests (
@@ -112,19 +129,6 @@ export async function reconcileCopyrightEnforcementRequests(limit = 100): Promis
     ORDER BY assessment.id ASC NULLS LAST
     ON CONFLICT (copyright_notice_submission_assessment_id) DO NOTHING
   `)
-  const { rows } = await write<{ assessment_id: string }>(sql`
-    /* reconcileCopyrightEnforcementRequests:list */
-    SELECT copyright_notice_submission_assessment_id AS assessment_id
-    FROM copyright_notice_enforcement_requests
-    WHERE state = 'pending'
-      OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes')
-    ORDER BY updated_at, copyright_notice_submission_assessment_id
-    LIMIT ${limit}
-  `)
-  const outcomes = await Promise.all(
-    rows.map(row => processCopyrightEnforcementRequest(row.assessment_id)),
-  )
-  return outcomes.filter(outcome => outcome === 'completed').length
 }
 
 async function imposeRestrictionsSequentially(
