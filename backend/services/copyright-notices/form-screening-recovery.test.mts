@@ -20,6 +20,7 @@ import {
   createCopyrightFormIntake,
   getCopyrightNoticePrivateAggregate,
   getPendingCopyrightAgentDispatches,
+  reconcileCopyrightEnforcementRequests,
 } from './index.mts'
 import {
   appendCopyrightFormScreening,
@@ -175,7 +176,7 @@ describe('copyright form-screening recovery', () => {
       accepted: false,
     })
 
-    await recoverRejectedCopyrightFormReviewEffects()
+    await reconcileCopyrightEnforcementRequests(0)
 
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     expect(aggregate?.assessments.at(-1)).toMatchObject({
@@ -206,5 +207,25 @@ describe('copyright form-screening recovery', () => {
       }),
     ])
     await expectNoFormEffect(notice.intake.copyright_notice_submission_id)
+  })
+
+  it('does not overwrite a current human rejection with automated screening', async () => {
+    const [{ notice }, moderatorRecord] = await Promise.all([
+      createClearScreenedForm(),
+      createTestUser(),
+    ])
+    const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
+    await appendCopyrightSubmissionAssessment({
+      submissionId: notice.intake.copyright_notice_submission_id,
+      assessedAt: new Date(),
+      currentUser: moderator,
+      substantiallyCompliant: false,
+    })
+
+    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
+
+    await expect(
+      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+    ).resolves.toBe(0)
   })
 })
