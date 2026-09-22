@@ -74,7 +74,11 @@ export async function claimCopyrightEnforcementRequest(
   if (!claim) return null
   if (claim.terminalized) return 'completed'
   if (!claim.notice_id) throw new Error('Claimed copyright enforcement request has no notice')
-  return claim
+  return {
+    assessment_id: claim.assessment_id,
+    notice_id: claim.notice_id,
+    imposed_by_id: claim.imposed_by_id,
+  }
 }
 
 export async function completeNonEnforceableCopyrightEnforcementRequest(
