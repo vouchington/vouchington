@@ -139,15 +139,6 @@
       "roles": []
     },
     {
-      "id": "support",
-      "label": "Support",
-      "nativePlacement": "staff-directory",
-      "swiftSection": "support",
-      "dotnetSection": "support",
-      "requiresAuth": false,
-      "roles": ["administrator"]
-    },
-    {
       "id": "engineering",
       "label": "Engineering",
       "nativePlacement": "staff-directory",
