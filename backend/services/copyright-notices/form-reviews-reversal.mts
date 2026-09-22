@@ -20,6 +20,7 @@ export async function reverseAutomatedCopyrightRestrictions(
       ON target.id = restriction.copyright_notice_target_id
     WHERE assessment.copyright_notice_submission_id = ${submissionId}
       AND assessment.assessed_by_id IS NULL AND target.copyright_notice_id = ${noticeId}
+      AND assessment.copyright_notice_form_screening_id IS NOT NULL
       AND restriction.lifted_at IS NULL AND restriction.human_review_action IS NULL
     ORDER BY target.placement_key
   `)
@@ -42,6 +43,7 @@ export async function reverseAutomatedCopyrightRestrictions(
       AND target.id = restriction.copyright_notice_target_id
       AND assessment.copyright_notice_submission_id = ${submissionId}
       AND assessment.assessed_by_id IS NULL AND target.copyright_notice_id = ${noticeId}
+      AND assessment.copyright_notice_form_screening_id IS NOT NULL
       AND restriction.lifted_at IS NULL
       AND restriction.human_review_action IS NULL
     RETURNING restriction.id

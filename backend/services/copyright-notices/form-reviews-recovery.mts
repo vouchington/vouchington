@@ -28,6 +28,7 @@ export async function recoverRejectedCopyrightFormReviewEffects(): Promise<void>
               ON assessment.id = restriction.authorizing_assessment_id
             WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
               AND assessment.assessed_by_id IS NULL
+              AND assessment.copyright_notice_form_screening_id IS NOT NULL
               AND restriction.lifted_at IS NULL
               AND restriction.human_review_action IS NULL
           )
@@ -38,6 +39,7 @@ export async function recoverRejectedCopyrightFormReviewEffects(): Promise<void>
               ON restriction.authorizing_assessment_id = assessment.id
             WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
               AND assessment.assessed_by_id IS NULL
+              AND assessment.copyright_notice_form_screening_id IS NOT NULL
               AND restriction.lifted_at IS NULL
               AND restriction.human_review_action IS NULL
           ) OR EXISTS (
@@ -107,7 +109,7 @@ async function recoverRejectedCopyrightFormReviewEffect(intakeId: string): Promi
         copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant,
         supersedes_assessment_id
       ) VALUES (
-        ${state.submission_id}, CURRENT_TIMESTAMP, ${state.reviewed_by_id}, false,
+        ${state.submission_id}, ${state.reviewed_at}, ${state.reviewed_by_id}, false,
         ${state.assessment_id}
       )
     `)
