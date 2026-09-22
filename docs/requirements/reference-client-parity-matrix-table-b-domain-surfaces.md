@@ -43,7 +43,3 @@ below web even when the domain also contains substantial complete native UI.
 | 32  | User administration (staff)          | 🟢        | 🟢           | 🟢           | Identity-verification retry is rendered on `/user/:id/admin`. Suspend, warnings, refunds, and landing analytics remain web-only and are not part of this capability.                                                                                                       |
 | 33  | User search (staff)                  | 🟢        | 🟢           | 🟢           | Administrators can search `/users` and reach `/user/:idOrUsername/admin` from a result row on every client. Administrator rows also show email when available and Active/Suspended derived from `suspended_at`.                                                            |
 
-[#6582]: https://github.com/jonathanong/filaments/issues/6582
-[#7889]: https://github.com/jonathanong/filaments/issues/7889
-[#7890]: https://github.com/jonathanong/filaments/issues/7890
-[#8625]: https://github.com/jonathanong/filaments/issues/8625
