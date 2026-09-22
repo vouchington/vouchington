@@ -65,21 +65,20 @@ describe('listMcpToolsForUser', () => {
     }
   })
 
-  it('excludes staff-only tools for regular users', () => {
+  it('does not list retired support tools for regular users', () => {
     const tools = listMcpToolsForUser(
       user,
       ['mcp.user:read', 'mcp.user:write'],
       USER_MCP_SERVER_CONFIG,
     )
     const names = tools.map(t => t.name)
-    // Staff-restricted tools like search_support_messages should not appear
     expect(names).not.toContain('search_support_messages')
   })
 
-  it('lists admin MCP tools for administrators on the admin surface', async () => {
+  it('does not list retired support tools for administrators on the admin surface', async () => {
     const admin = { ...(await createTestUser({ administrator: true })), membership_plan: null }
     const tools = listMcpToolsForUser(admin, ['mcp.admin:read'], ADMIN_MCP_SERVER_CONFIG)
-    expect(tools.map(t => t.name)).toContain('search_support_messages')
+    expect(tools.map(t => t.name)).not.toContain('search_support_messages')
   })
 
   it('does not list admin MCP tools for regular users on the admin surface', () => {
@@ -161,12 +160,11 @@ describe('callMcpTool', () => {
     })
   })
 
-  it('throws McpError when user does not have the required role for the tool', async () => {
-    // search_support_messages is admin-MCP eligible but restricted to administrator/customer_support
+  it('throws McpError when a retired support tool is called', async () => {
     await expect(
       callMcpTool('search_support_messages', {}, user, ['mcp.admin:read'], ADMIN_MCP_SERVER_CONFIG),
     ).rejects.toMatchObject({
-      message: expect.stringContaining('Tool not allowed for your role'),
+      message: expect.stringContaining('Tool not found'),
     })
   })
 

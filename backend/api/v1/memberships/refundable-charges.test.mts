@@ -40,12 +40,12 @@ async function seedRefundableMembership() {
 
 describe('GET /api/v1/memberships/refundable-charges', () => {
   let admin: PrivateUser
-  let customerSupport: PrivateUser
+  let formerSupport: PrivateUser
   let regularUser: PrivateUser
 
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
-    customerSupport = await createTestUser({ extraRoles: ['customer_support'] })
+    formerSupport = await createTestUser({ extraRoles: ['customer_support'] })
     regularUser = await createTestUser()
   })
 
@@ -58,9 +58,15 @@ describe('GET /api/v1/memberships/refundable-charges', () => {
     await request.get('/api/v1/memberships/refundable-charges').expect(401)
   })
 
-  it('returns 403 when user is not admin or customer_support', async () => {
+  it('returns 403 when user is not an administrator', async () => {
     const request = createRequest()
     await request.authenticateAs(regularUser)
+    await request.get('/api/v1/memberships/refundable-charges').expect(403)
+  })
+
+  it('returns 403 for a former support role', async () => {
+    const request = createRequest()
+    await request.authenticateAs(formerSupport)
     await request.get('/api/v1/memberships/refundable-charges').expect(403)
   })
 
@@ -105,24 +111,6 @@ describe('GET /api/v1/memberships/refundable-charges', () => {
       .get(`/api/v1/memberships/refundable-charges?user_id=${target.id}`)
       .expect(200)
     expect(response.body.charges).toEqual([])
-  })
-
-  it('returns 200 with real refundable charges for customer_support', async () => {
-    const { target } = await seedRefundableMembership()
-    const invoiceId = `in_cs_${Math.random().toString(36).slice(2, 8)}`
-    const chargeId = `ch_cs_${Math.random().toString(36).slice(2, 8)}`
-    vi.spyOn(stripeInvoices, 'listStripeSubscriptionInvoices').mockResolvedValue(
-      fakeInvoiceList(invoiceId, chargeId),
-    )
-
-    const request = createRequest()
-    await request.authenticateAs(customerSupport)
-    const response = await request
-      .get(`/api/v1/memberships/refundable-charges?user_id=${target.id}`)
-      .expect(200)
-
-    expect(response.body.charges).toHaveLength(1)
-    expect(response.body.charges[0]).toMatchObject({ charge_id: chargeId, invoice_id: invoiceId })
   })
 
   it('reflects a prior real refund in amount_refunded', async () => {

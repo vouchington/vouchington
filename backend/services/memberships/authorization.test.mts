@@ -89,12 +89,6 @@ describe('authorization', () => {
   })
 
   describe('currentUserCanRefundMembership', () => {
-    let customerSupport: PrivateUser
-
-    beforeAll(async () => {
-      customerSupport = await createTestUser({ extraRoles: ['customer_support'] })
-    })
-
     it('returns false when user is null', () => {
       expect(currentUserCanRefundMembership(null)).toBe(false)
     })
@@ -107,8 +101,8 @@ describe('authorization', () => {
       expect(currentUserCanRefundMembership(admin)).toBe(true)
     })
 
-    it('returns true for customer_support', () => {
-      expect(currentUserCanRefundMembership(customerSupport)).toBe(true)
+    it('does not grant refund access to a former support role', () => {
+      expect(currentUserCanRefundMembership({ ...user, roles: ['customer_support'] })).toBe(false)
     })
   })
 })
