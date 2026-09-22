@@ -62,6 +62,9 @@ member projection.
   must separately determine whether the viewer may see the target reference.
 - Legal receipts, evidence, assessments, targets, and lifecycle events are immutable. Restriction
   lifts and action-intent completions are one-way transitions.
+- Enforcement requests recheck that their authorizing notice assessment remains compliant and current
+  when claimed and after a stale-authority race. Superseded or non-compliant requests complete as
+  no-ops; transport or persistence failures remain retryable.
 - `precheckCopyrightRestoration` is a non-authoritative pure helper.
   `createEligibleCopyrightRestoreIntent` locks the legal ledger and creates a preliminary fenced
   intent; it cannot authorize a media delivery change by itself.

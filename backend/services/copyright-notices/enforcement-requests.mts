@@ -1,13 +1,12 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
+import {
+  claimCopyrightEnforcementRequest,
+  completeNonEnforceableCopyrightEnforcementRequest,
+  type EnforcementRequest,
+} from './enforcement-request-claim.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
-
-type EnforcementRequest = {
-  assessment_id: string
-  notice_id: string
-  imposed_by_id: string | null
-}
 
 export async function processCopyrightEnforcementRequest(
   assessmentId: string,
@@ -17,8 +16,9 @@ export async function processCopyrightEnforcementRequest(
 ): Promise<'completed' | 'not_claimed'> {
   const imposeRestriction =
     dependencies.imposeRestriction ?? acceptCopyrightNoticeAndImposeRestriction
-  const request = await claimEnforcementRequest(assessmentId)
+  const request = await claimCopyrightEnforcementRequest(assessmentId)
   if (!request) return 'not_claimed'
+  if (request === 'completed') return 'completed'
   try {
     const { rows: targets } = await write<{ id: string }>(sql`
       /* processCopyrightEnforcementRequest:missingTargets */
@@ -53,6 +53,9 @@ export async function processCopyrightEnforcementRequest(
     if (!rows[0]) throw new Error('Copyright enforcement request still has unrestricted targets')
     return 'completed'
   } catch (error) {
+    if (await completeNonEnforceableCopyrightEnforcementRequest(request.assessment_id)) {
+      return 'completed'
+    }
     await write(sql`/* processCopyrightEnforcementRequest:release */
       UPDATE copyright_notice_enforcement_requests
       SET state = 'pending', claimed_at = NULL, updated_at = CURRENT_TIMESTAMP
@@ -94,21 +97,6 @@ export async function reconcileCopyrightEnforcementRequests(limit = 100): Promis
     rows.map(row => processCopyrightEnforcementRequest(row.assessment_id)),
   )
   return outcomes.filter(outcome => outcome === 'completed').length
-}
-
-async function claimEnforcementRequest(assessmentId: string): Promise<EnforcementRequest | null> {
-  const { rows } = await write<EnforcementRequest>(sql`/* claimCopyrightEnforcementRequest */
-    UPDATE copyright_notice_enforcement_requests
-    SET state = 'claimed', claimed_at = CURRENT_TIMESTAMP,
-      last_attempt_at = CURRENT_TIMESTAMP, attempt_count = attempt_count + 1,
-      updated_at = CURRENT_TIMESTAMP
-    WHERE copyright_notice_submission_assessment_id = ${assessmentId}
-      AND (state = 'pending'
-        OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))
-    RETURNING copyright_notice_submission_assessment_id AS assessment_id,
-      copyright_notice_id AS notice_id, imposed_by_id
-  `)
-  return rows[0] ?? null
 }
 
 async function imposeRestrictionsSequentially(
