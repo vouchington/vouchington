@@ -163,7 +163,7 @@ const postTypeToSlug = Object.fromEntries(
 ) as Record<PostType, string>
 
 export function getPostTypeFromSlug(slug: string): PostType | undefined {
-  return postSlugToType[slug]
+  return Object.hasOwn(postSlugToType, slug) ? postSlugToType[slug] : undefined
 }
 
 export function getPostSlugFromType(postType: PostType): string {

@@ -35,6 +35,25 @@ describe('resolveCopyrightNoticeTargets', () => {
     expect(mockGet).toHaveBeenCalledWith('/api/v1/posts/hosted-material/images')
   })
 
+  it('resolves a canonical Voucha story URL into hosted image choices', async () => {
+    mockGet.mockResolvedValueOnce({ post: { id: 'story-1' } }).mockResolvedValueOnce({
+      images: [{ image_id: 'image-1', order_index: 0, caption: 'Photo' }],
+    })
+    await expect(
+      resolveCopyrightNoticeTargets('https://voucha.ai/story/hosted-material'),
+    ).resolves.toEqual([
+      {
+        post_id: 'story-1',
+        image_id: 'image-1',
+        target_url: 'https://voucha.ai/story/hosted-material',
+        order_index: 0,
+        caption: 'Photo',
+      },
+    ])
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/posts/hosted-material')
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/posts/hosted-material/images')
+  })
+
   it('rejects incomplete, foreign, and empty hosted-use URLs', async () => {
     await expect(resolveCopyrightNoticeTargets('not a url')).rejects.toThrow(
       'Enter the full URL of the Voucha post containing the material.',
@@ -47,6 +66,9 @@ describe('resolveCopyrightNoticeTargets', () => {
     ).rejects.toThrow('Enter a canonical Voucha post URL without a query or fragment.')
     await expect(
       resolveCopyrightNoticeTargets('https://voucha.ai/communities/slug'),
+    ).rejects.toThrow('Enter the URL of a supported Voucha post.')
+    await expect(
+      resolveCopyrightNoticeTargets('https://voucha.ai/toString/hosted-material'),
     ).rejects.toThrow('Enter the URL of a supported Voucha post.')
     await expect(
       resolveCopyrightNoticeTargets('https://voucha.ai/discussion/foo%5Cbar'),

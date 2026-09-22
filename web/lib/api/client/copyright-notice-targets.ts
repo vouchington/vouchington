@@ -2,15 +2,7 @@
 
 import { clientApi } from './instance'
 import { assertPathIdentifier } from './path-identifiers'
-
-const POST_ROUTE_SEGMENTS = new Set([
-  'article',
-  'blog-post',
-  'data-point',
-  'discussion',
-  'link',
-  'review',
-])
+import { getPostTypeFromSlug } from '@/lib/route-configs'
 
 export type CopyrightNoticeResolvedTarget = {
   post_id: string
@@ -60,7 +52,7 @@ function parseCopyrightHostedUseUrl(value: string): { identifier: string; hosted
   )
     throw new Error('Enter a canonical Voucha post URL without a query or fragment.')
   const segments = url.pathname.split('/').filter(Boolean)
-  if (segments.length !== 2 || !POST_ROUTE_SEGMENTS.has(segments[0]!))
+  if (segments.length !== 2 || !getPostTypeFromSlug(segments[0]!))
     throw new Error('Enter the URL of a supported Voucha post.')
   let identifier: string
   try {

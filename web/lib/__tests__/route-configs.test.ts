@@ -13,5 +13,8 @@ describe('getPostTypeFromSlug', () => {
 
   it('returns undefined for invalid slugs', () => {
     expect(getPostTypeFromSlug('invalid')).toBeUndefined()
+    expect(getPostTypeFromSlug('toString')).toBeUndefined()
+    expect(getPostTypeFromSlug('constructor')).toBeUndefined()
+    expect(getPostTypeFromSlug('__proto__')).toBeUndefined()
   })
 })
