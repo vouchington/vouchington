@@ -11446,9 +11446,6 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
-      '@modules/gmail-smtp':
-        specifier: workspace:^
-        version: link:../../modules/gmail-smtp
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
