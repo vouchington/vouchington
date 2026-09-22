@@ -16,3 +16,7 @@ localized `Deleted` fallback for those creators.
 - <a id="llm-agent-conversations"></a>[LLM Agent Conversations](reference-ai-agents-llm-agent-conversations.md)
 - [Shared Tool-Call Loop (`@agents/_shared`)](../../../backend/agents/_shared/README.md)
 - [Prompt Injection Protection](../../../backend/CLAUDE.md#rules)
+
+## Prompt Injection Protection
+
+Sanitize external content before passing it to an agent. Use `sanitizePromptInjection()` and `wrapExternalContent()` from `@jongleberry/vurst-prompt` as described in the [backend rules](../../../backend/CLAUDE.md#rules).
