@@ -1,5 +1,4 @@
 export * from './types.mts'
 export * from './create.mts'
 export * from './get.mts'
-export * from './get-by-any.mts'
 export * from './prompts.mts'
