@@ -14,8 +14,6 @@ import {
 import { SesInboundTerminalError } from './mime.mts'
 import { boundedBodyStream, rejectOversizedRawEmail } from './s3-streams.mts'
 
-export { MAX_SES_INBOUND_BYTES } from './s3-streams.mts'
-
 export type SesInboundObjectPage = {
   objectKeys: string[]
   nextContinuationToken?: string
