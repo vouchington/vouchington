@@ -17,10 +17,7 @@ export function AdminTableShell({
   isEmpty = false,
 }: AdminTableShellProps) {
   return (
-    <div
-      data-pw='admin-table-shell'
-      className={cn('overflow-hidden rounded-lg bg-card shadow-sm dark:shadow-none', className)}
-    >
+    <div className={cn('overflow-hidden rounded-lg bg-card shadow-sm dark:shadow-none', className)}>
       <section
         aria-label={ariaLabel}
         className='overflow-x-auto focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring'
