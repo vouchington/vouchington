@@ -95,6 +95,8 @@ staff user. It cannot become final merely because no appeal arrived. Each restri
 Reversing or lifting one does not override another copyright case, a safety restriction, deletion,
 replacement, or a court order affecting the same placement. Erasing a staff account may null its
 foreign key, but cannot erase the decision timestamp, outcome, or lifecycle record.
+If erasure happens after a form rejection but before its effects finish, recovery uses the durable
+rejection to reverse provisional restrictions and close pending automated enforcement requests.
 
 ## Submission and evidence integrity
 

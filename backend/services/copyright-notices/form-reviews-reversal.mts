@@ -6,9 +6,9 @@ import { createCopyrightRestoreIntentForReversalInTransaction } from './restorat
 export async function reverseAutomatedCopyrightRestrictions(
   noticeId: string,
   submissionId: string,
-  moderatorId: string,
+  moderatorId: string | null,
+  reviewedAt = new Date(),
 ): Promise<void> {
-  const reviewedAt = new Date()
   await using transaction = await beginTransaction()
   const { rows: placements } = await transaction<{ placement_key: string }>(sql`
     /* reviewCopyrightFormIntake:reverseAutomatedRestrictions:placements */

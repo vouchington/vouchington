@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 
@@ -16,6 +16,38 @@ export async function createTestCopyrightFormIntakeReview(input: {
       ${encryptSecret('test rejection', `copyright-form-review:${input.intakeId}`)}
     )
   `)
+}
+
+/** Erases a review actor while retaining the immutable moderator decision. */
+export async function eraseTestCopyrightFormReviewModerator(moderatorId: string): Promise<void> {
+  const { rowCount } = await write(sql`/* eraseTestCopyrightFormReviewModerator */
+    DELETE FROM users WHERE id = ${moderatorId}
+  `)
+  if (rowCount !== 1)
+    throw new Error(`Copyright form review moderator was not erased: ${moderatorId}`)
+}
+
+/** Reads the actor-erasure result for one immutable form review. */
+export async function readTestCopyrightFormReviewActor(intakeId: string): Promise<string | null> {
+  const { rows } = await read<{ reviewed_by_id: string | null }>(sql`
+    /* readTestCopyrightFormReviewActor */
+    SELECT reviewed_by_id FROM copyright_notice_form_intake_reviews
+    WHERE copyright_notice_form_intake_id = ${intakeId}
+  `)
+  if (!rows[0]) throw new Error(`Copyright form review was not found: ${intakeId}`)
+  return rows[0].reviewed_by_id
+}
+
+/** Reads an owned automated enforcement request after reconciliation. */
+export async function readTestCopyrightEnforcementRequestState(
+  assessmentId: string,
+): Promise<string | null> {
+  const { rows } = await write<{ state: string }>(sql`
+    /* readTestCopyrightEnforcementRequestState */
+    SELECT state FROM copyright_notice_enforcement_requests
+    WHERE copyright_notice_submission_assessment_id = ${assessmentId}
+  `)
+  return rows[0]?.state ?? null
 }
 
 /** Marks an already-authorized restriction lifted to exercise durable reconciliation guards. */

@@ -10,25 +10,45 @@ export async function recoverRejectedCopyrightFormReviewEffects(): Promise<void>
     FROM copyright_notice_form_intake_reviews review
     JOIN copyright_notice_form_intakes intake
       ON intake.id = review.copyright_notice_form_intake_id
-    WHERE NOT review.accepted AND review.reviewed_by_id IS NOT NULL
+    WHERE NOT review.accepted
       AND (
-        NOT EXISTS (
-          SELECT 1 FROM copyright_notice_submission_assessments assessment
-          WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
-            AND NOT assessment.substantially_compliant
-            AND assessment.assessed_by_id IS NOT NULL
-            AND NOT EXISTS (
-              SELECT 1 FROM copyright_notice_submission_assessments newer
-              WHERE newer.supersedes_assessment_id = assessment.id
-            )
-        ) OR EXISTS (
-          SELECT 1 FROM copyright_restrictions restriction
-          JOIN copyright_notice_submission_assessments assessment
-            ON assessment.id = restriction.authorizing_assessment_id
-          WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
-            AND assessment.assessed_by_id IS NULL
-            AND restriction.lifted_at IS NULL
-            AND restriction.human_review_action IS NULL
+        review.reviewed_by_id IS NOT NULL AND (
+          NOT EXISTS (
+            SELECT 1 FROM copyright_notice_submission_assessments assessment
+            WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
+              AND NOT assessment.substantially_compliant
+              AND assessment.assessed_by_id IS NOT NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM copyright_notice_submission_assessments newer
+                WHERE newer.supersedes_assessment_id = assessment.id
+              )
+          ) OR EXISTS (
+            SELECT 1 FROM copyright_restrictions restriction
+            JOIN copyright_notice_submission_assessments assessment
+              ON assessment.id = restriction.authorizing_assessment_id
+            WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
+              AND assessment.assessed_by_id IS NULL
+              AND restriction.lifted_at IS NULL
+              AND restriction.human_review_action IS NULL
+          )
+        ) OR review.reviewed_by_id IS NULL AND (
+          EXISTS (
+            SELECT 1 FROM copyright_notice_submission_assessments assessment
+            JOIN copyright_restrictions restriction
+              ON restriction.authorizing_assessment_id = assessment.id
+            WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
+              AND assessment.assessed_by_id IS NULL
+              AND restriction.lifted_at IS NULL
+              AND restriction.human_review_action IS NULL
+          ) OR EXISTS (
+            SELECT 1 FROM copyright_notice_submission_assessments assessment
+            JOIN copyright_notice_enforcement_requests request
+              ON request.copyright_notice_submission_assessment_id = assessment.id
+            WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
+              AND assessment.assessed_by_id IS NULL
+              AND assessment.copyright_notice_form_screening_id IS NOT NULL
+              AND request.state IN ('pending', 'claimed')
+          )
         )
       )
     ORDER BY review.copyright_notice_form_intake_id
@@ -48,13 +68,14 @@ async function recoverRejectedCopyrightFormReviewEffect(intakeId: string): Promi
   const { rows } = await transaction<{
     notice_id: string
     submission_id: string
-    reviewed_by_id: string
+    reviewed_at: Date
+    reviewed_by_id: string | null
     assessment_id: string | null
     assessed_by_id: string | null
     substantially_compliant: boolean | null
   }>(sql`/* recoverRejectedCopyrightFormReviewEffect:state */
     SELECT intake.copyright_notice_id AS notice_id,
-      intake.copyright_notice_submission_id AS submission_id, review.reviewed_by_id,
+      intake.copyright_notice_submission_id AS submission_id, review.reviewed_at, review.reviewed_by_id,
       assessment.id AS assessment_id, assessment.assessed_by_id, assessment.substantially_compliant
     FROM copyright_notice_form_intakes intake
     JOIN copyright_notice_submissions submission
@@ -62,7 +83,7 @@ async function recoverRejectedCopyrightFormReviewEffect(intakeId: string): Promi
     JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
     JOIN copyright_notice_form_intake_reviews review
       ON review.copyright_notice_form_intake_id = intake.id
-      AND NOT review.accepted AND review.reviewed_by_id IS NOT NULL
+      AND NOT review.accepted
     LEFT JOIN copyright_notice_submission_assessments assessment
       ON assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
       AND NOT EXISTS (
@@ -77,7 +98,10 @@ async function recoverRejectedCopyrightFormReviewEffect(intakeId: string): Promi
     await transaction.commit()
     return
   }
-  if (state.substantially_compliant !== false || state.assessed_by_id === null) {
+  if (
+    state.reviewed_by_id !== null &&
+    (state.substantially_compliant !== false || state.assessed_by_id === null)
+  ) {
     await transaction(sql`/* recoverRejectedCopyrightFormReviewEffect:assessment */
       INSERT INTO copyright_notice_submission_assessments (
         copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant,
@@ -101,5 +125,21 @@ async function recoverRejectedCopyrightFormReviewEffect(intakeId: string): Promi
     state.notice_id,
     state.submission_id,
     state.reviewed_by_id,
+    state.reviewed_at,
   )
+  await completeAutomatedCopyrightEnforcementRequests(state.submission_id)
+}
+
+async function completeAutomatedCopyrightEnforcementRequests(submissionId: string): Promise<void> {
+  await write(sql`/* completeAutomatedCopyrightEnforcementRequests */
+    UPDATE copyright_notice_enforcement_requests request
+    SET state = 'completed', claimed_at = NULL, completed_at = CURRENT_TIMESTAMP,
+      updated_at = CURRENT_TIMESTAMP
+    FROM copyright_notice_submission_assessments assessment
+    WHERE request.copyright_notice_submission_assessment_id = assessment.id
+      AND assessment.copyright_notice_submission_id = ${submissionId}
+      AND assessment.assessed_by_id IS NULL
+      AND assessment.copyright_notice_form_screening_id IS NOT NULL
+      AND request.state IN ('pending', 'claimed')
+  `)
 }
