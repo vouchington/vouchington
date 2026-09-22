@@ -55,6 +55,8 @@ describe('web route baseline tests', () => {
           '/compare/not-a-topic-vs-other-topic',
           `/card/${randomUUID()}/latest`,
           `/communities/${communitySlug}/news`,
+          '/crm',
+          '/crm/unsubscribe',
           '/trending',
           '/this-page-definitely-does-not-exist-abc123',
         ].map(async path => {
