@@ -10,4 +10,3 @@ export type * from './user.mts'
 // topic.mts exports both types and runtime values (topicTypes, getTopicTypeSlugPlural)
 export * from './topic.mts'
 export type * from './referral-click-log.mts'
-export type * from './crm-contact.mts'

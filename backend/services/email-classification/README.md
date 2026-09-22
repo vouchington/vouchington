@@ -3,8 +3,7 @@
 Single choke point for outbound email sends. Classifies every `EmailType` as `transactional` or
 `marketing`, then applies the deliverability and compliance rules that classification implies:
 SES configuration set selection, `List-Unsubscribe`/`List-Unsubscribe-Post` headers, and
-marketing-only suppression checks (user preference opt-out, CRM contact opt-out, SES bounce
-history).
+marketing-only suppression checks (user preference opt-out and SES bounce history).
 
 Processors must call `sendClassifiedEmail` instead of importing `@modules/aws/ses` or
 `@modules/gmail-smtp` directly — enforced by `no-direct-send.test.mts`, a grep-based test that

@@ -39,7 +39,7 @@ describe('PostgreSQL schema integrity', () => {
       'wikipedia_topic_recommendations',
     ]
     await expect(getRemovedTablePresence(removedTables)).resolves.toEqual(
-      removedTables.toSorted().map(table_name => ({ table_name, relation: null })),
+      removedTables.map(table_name => ({ table_name, relation: null })),
     )
     await expect(
       getSupportHistoryRelations(['support_agent_runs', 'support_messages']),

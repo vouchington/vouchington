@@ -27,10 +27,7 @@ export type OpenAiSpendCapBreach =
  * Thrown by a tool loop (backend/agents/_shared/run-tool-loop*.mts) when a per-iteration cap
  * recheck finds a breach mid-loop, after the job-level pre-dispatch check
  * (processAIAgentWorkerJob, backend/workers/ai-agents/workers/core.mts) already passed. Caught
- * there and converted into the same job.moveToDelayed() defer as the pre-dispatch path; for a
- * synchronous, non-queued caller (e.g. the CRM outreach route) it propagates uncaught to
- * `@jongleberry/api-server`'s fallback error handler, which reads `status`/`expose` below to
- * report the same 429 the pre-dispatch check returns instead of a 500.
+ * there and converted into the same job.moveToDelayed() defer as the pre-dispatch path.
  */
 export class OpenAiSpendCapBreachError extends Error {
   readonly breach: OpenAiSpendCapBreach

@@ -30,12 +30,6 @@ export async function cleanupSoftDeletedUser(
   }
   await recordAuthorDeletionBeforePostReassignment(query, targetId)
   await Promise.all([
-    query(sql`/* cleanupSoftDeletedUserBatch: reassign crm contacts */
-        UPDATE crm_contacts SET created_by_id = ${DELETED_USER_ID}
-        WHERE created_by_id = ${targetId}`),
-    query(sql`/* cleanupSoftDeletedUserBatch: reassign crm note authors */
-        UPDATE conversation_messages SET created_by_id = ${DELETED_USER_ID}
-        WHERE kind = 'note' AND created_by_id = ${targetId}`),
     query(sql`/* cleanupSoftDeletedUserBatch: reassign hashtag contributors */
         UPDATE post_topic_alias_sources SET contributor_id = ${DELETED_USER_ID}
         WHERE contributor_id = ${targetId}`),
