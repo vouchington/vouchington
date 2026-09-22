@@ -5,7 +5,7 @@ import type {
   CopyrightNoticeDetail,
   CopyrightNoticesPage,
   CopyrightParticipantNoticeDetail,
-  CopyrightStaffQueueItem,
+  CopyrightStaffQueuePage,
 } from '@/types/copyright-notices'
 
 export const getCopyrightNotices = cache(
@@ -37,11 +37,8 @@ export const getCopyrightParticipantNoticeServer = cache(
   },
 )
 
-export const getCopyrightReviewQueue = cache(async (): Promise<CopyrightStaffQueueItem[]> => {
-  const response = await serverApi.get<{ copyright_notices: CopyrightStaffQueueItem[] }>(
-    '/api/v1/copyright-notices/review-queue',
-  )
-  return response.copyright_notices
+export const getCopyrightReviewQueue = cache(async (): Promise<CopyrightStaffQueuePage> => {
+  return serverApi.get<CopyrightStaffQueuePage>('/api/v1/copyright-notices/review-queue')
 })
 
 export const getCopyrightEmailIntakeReviewQueue = cache(async () => {

@@ -12,7 +12,7 @@ export default async function CopyrightReviewQueuePage() {
   if (!currentUser.roles.includes('administrator') && !currentUser.roles.includes('moderator')) {
     notFound()
   }
-  const notices = await getCopyrightReviewQueue()
+  const data = await getCopyrightReviewQueue()
   return (
     <main className='mx-auto max-w-3xl space-y-5 py-8'>
       <div>
@@ -21,7 +21,7 @@ export default async function CopyrightReviewQueuePage() {
           Review each provisional action and intake with the private staff tools.
         </p>
       </div>
-      <CopyrightStaffQueue notices={notices} />
+      <CopyrightStaffQueue data={data} />
     </main>
   )
 }

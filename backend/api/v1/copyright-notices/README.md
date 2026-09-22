@@ -25,6 +25,10 @@ The public projection excludes participant details. It uses the canonical opaque
 bounded `limit` (1–100; default 100), returning `page_info` so the member-visible index can continue
 beyond its first page.
 
+The staff review queue uses the same bounded `after` and `limit` contract. Its cursor is scoped to
+the actionable queue and orders by immutable `(received_at, id)`, so every actionable case,
+including pending statutory deadlines, remains reachable after the first page.
+
 ## Performance
 
 Mutation routes are uncached. Notice creation resolves at most 20 image placements before one legal

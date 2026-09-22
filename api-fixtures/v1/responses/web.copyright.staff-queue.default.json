@@ -1,0 +1,33 @@
+{
+  "copyright_notices": [
+    {
+      "action_intents": [],
+      "appeals": [],
+      "claimant": {
+        "contact": "claimant@example.test",
+        "display_name": "Claimant"
+      },
+      "counter_notices": [],
+      "delivery_intents": [],
+      "email_correspondence": [],
+      "evidence": [],
+      "form_review": {
+        "intake_id": "00000000-0000-7000-8000-000000000806",
+        "screening": null,
+        "source_kind": "guest_form"
+      },
+      "id": "00000000-0000-7000-8000-000000000804",
+      "jurisdiction": "us_dmca",
+      "legal_holds": [],
+      "received_at": "2026-07-01T12:00:00.000Z",
+      "restrictions": [],
+      "targets": [],
+      "work_description": "Original photograph."
+    }
+  ],
+  "page_info": {
+    "end_cursor": "copyright-staff-next",
+    "has_next_page": true,
+    "start_cursor": "copyright-staff-first"
+  }
+}

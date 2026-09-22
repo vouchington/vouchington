@@ -67,16 +67,20 @@ describe('copyright notice server API helpers', () => {
     expect(mockReturnNull).toHaveBeenCalledWith(request, { nullStatusCodes: [403, 404] })
   })
 
-  it('unwraps public notice and staff queue payloads', async () => {
+  it('unwraps public notice and preserves staff queue pagination', async () => {
     const notice = { id: 'notice-1' } as CopyrightNoticeDetail
     mockReturnNull.mockImplementation(async (request: Promise<unknown>) => request)
+    const staffPage = {
+      copyright_notices: [{ id: 'notice-1' }],
+      page_info: { has_next_page: true, start_cursor: 'first', end_cursor: 'next' },
+    }
     mockGet
       .mockResolvedValueOnce({ copyright_notice: notice })
-      .mockResolvedValueOnce({ copyright_notices: [{ id: 'notice-1' }] })
+      .mockResolvedValueOnce(staffPage)
       .mockResolvedValueOnce({ copyright_email_intakes: [{ id: 'intake-1' }] })
 
     await expect(getCopyrightNoticeServer('notice-1')).resolves.toBe(notice)
-    await expect(getCopyrightReviewQueue()).resolves.toEqual([{ id: 'notice-1' }])
+    await expect(getCopyrightReviewQueue()).resolves.toBe(staffPage)
     await expect(getCopyrightEmailIntakeReviewQueue()).resolves.toEqual([{ id: 'intake-1' }])
     expect(mockGet).toHaveBeenCalledWith('/api/v1/copyright-notices/review-queue')
     expect(mockGet).toHaveBeenCalledWith('/api/v1/copyright-email-intakes/review-queue')

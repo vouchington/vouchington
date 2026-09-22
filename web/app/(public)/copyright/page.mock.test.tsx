@@ -106,7 +106,10 @@ describe('copyright pages', () => {
       ],
       page_info: { has_next_page: true, start_cursor: 'a', end_cursor: 'b' },
     })
-    mockReviewQueue.mockResolvedValue([])
+    mockReviewQueue.mockResolvedValue({
+      copyright_notices: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    })
     mockEmailQueue.mockResolvedValue([])
     render(await CopyrightNoticesPage({ searchParams: Promise.resolve({ after: 'cursor' }) }))
     expect(screen.getByText('Case notice-1')).toBeInTheDocument()

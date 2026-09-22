@@ -11,8 +11,6 @@ import {
   getCopyrightParticipantNoticeDetail,
   getCopyrightPublicNoticeDetail,
   listAcceptedCopyrightNotices,
-  listCopyrightStaffQueue,
-  currentUserCanReviewCopyrightNotices,
 } from '@services/copyright-notices'
 import {
   boundedString,
@@ -35,6 +33,7 @@ import {
   encodeScopedPreciseTimestampCursor,
 } from '@modules/pagination'
 import './moderator-routes.mts'
+import './staff-queue-route.mts'
 
 const acceptedCopyrightNoticesParser = createPaginationParser({
   cursor: { type: 'precise_timestamp' },
@@ -74,18 +73,6 @@ app.route('/api/v1/copyright-notices').get(async (ctx: Context) => {
       },
     }),
   )
-})
-
-app.route('/api/v1/copyright-notices/review-queue').get(async (ctx: Context) => {
-  setPrivateNoStoreCacheHeaders(ctx)
-  const currentUser = await requireAuth(ctx, 'GET:/api/v1/copyright-notices/review-queue')
-  assertNotSuspended(currentUser)
-  ctx.assert(
-    currentUserCanReviewCopyrightNotices(currentUser),
-    403,
-    'Copyright review staff required',
-  )
-  ctx.json({ copyright_notices: await listCopyrightStaffQueue(currentUser) })
 })
 
 app.route('/api/v1/copyright-notices/:id').get(async (ctx: Context) => {

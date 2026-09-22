@@ -42,6 +42,7 @@ _none_
 
 - `copyright_notices_pkey`: `CREATE UNIQUE INDEX copyright_notices_pkey ON public.copyright_notices USING btree (id)`
 - `idx_copyright_notices__claimant_user`: `CREATE INDEX idx_copyright_notices__claimant_user ON public.copyright_notices USING btree (claimant_user_id) WHERE (claimant_user_id IS NOT NULL)`
+- `idx_copyright_notices__received_id`: `CREATE INDEX idx_copyright_notices__received_id ON public.copyright_notices USING btree (received_at, id)`
 
 **Triggers:**
 

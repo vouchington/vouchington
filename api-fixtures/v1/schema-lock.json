@@ -270,6 +270,10 @@
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
       "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940"
     },
+    "GET:/api/v1/copyright-notices/review-queue": {
+      "fixtureIds": ["web.copyright.staff-queue.default"],
+      "hash": "cf6778b83a2cca1f3cac21da8be7d3ca573ddc61a9fc9204031365b4358414f8"
+    },
     "GET:/api/v1/crm/contacts": {
       "fixtureIds": ["native.crm.contacts.default"],
       "hash": "f5166fcdbc44ec3cccbb6339f96a2261b5fd1b8a79d3fcdab5be863a4fbbacc8"
@@ -2765,6 +2769,10 @@
     "web.copyright.notices.default": {
       "fixtureIds": ["web.copyright.notices.default"],
       "hash": "074daf1f3dc0959dbfa83af5cbbcb598805640e6c6f0a9e1c93bcea2ae4345c5"
+    },
+    "web.copyright.staff-queue.default": {
+      "fixtureIds": ["web.copyright.staff-queue.default"],
+      "hash": "49e36db7544c9f572de666304e92b1a31d88d4eaa275d06c34031c6d57e2ea6f"
     },
     "web.growth-metrics.default": {
       "fixtureIds": ["web.growth-metrics.default"],

@@ -4,97 +4,107 @@ import { CopyrightStaffQueue } from './copyright-staff-queue'
 
 describe('CopyrightStaffQueue', () => {
   it('shows an empty review queue when no cases are waiting', () => {
-    render(<CopyrightStaffQueue notices={[]} />)
+    render(
+      <CopyrightStaffQueue
+        data={{
+          copyright_notices: [],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }}
+      />,
+    )
     expect(screen.getByText('No copyright cases need review.')).toBeInTheDocument()
   })
 
   it('renders private case facts and every pending decision', () => {
     render(
       <CopyrightStaffQueue
-        notices={[
-          {
-            id: 'case-123',
-            jurisdiction: 'us_dmca',
-            received_at: '2026-01-01T00:00:00.000Z',
-            claimant: { display_name: 'Claimant', contact: 'claimant@example.test' },
-            work_description: 'Original photograph.',
-            targets: [
-              {
-                id: 'target-123',
-                placement_key: 'image-placement:placement-123',
-                placement_revision: 1,
-                image_id: 'image-123',
-                hosted_use_url: 'https://voucha.ai/posts/post-123',
-              },
-              {
-                id: 'target-456',
-                placement_key: 'image-placement:placement-456',
-                placement_revision: 1,
-                image_id: 'image-456',
-                hosted_use_url: 'https://voucha.ai/posts/post-456',
-              },
-            ],
-            evidence: [
-              {
-                id: 'evidence-123',
-                submission_id: 'submission-123',
-                mime_type: 'image/jpeg',
-                byte_size: 123,
-                sha256: 'a'.repeat(64),
-              },
-            ],
-            form_review: {
-              intake_id: 'intake-123',
-              source_kind: 'guest_form',
-              screening: { recommendation: 'invalid_or_spam', rationale: 'Needs review.' },
-            },
-            restrictions: [
-              {
-                id: 'restriction-123',
-                target_id: 'target-123',
-                imposed_at: '2026-01-02T00:00:00.000Z',
-                status: 'pending_review',
-              },
-              {
-                id: 'restriction-456',
-                target_id: 'target-456',
-                imposed_at: '2026-01-02T00:00:00.000Z',
-                status: 'confirmed',
-              },
-            ],
-            appeals: [
-              {
-                submission_id: 'appeal-123',
-                reason: 'I own this image.',
-                target_ids: ['target-123', 'target-456'],
-                recommendation: {
-                  id: 'recommendation-123',
-                  recommendation: 'uncertain',
-                  rationale: 'Needs a person.',
+        data={{
+          copyright_notices: [
+            {
+              id: 'case-123',
+              jurisdiction: 'us_dmca',
+              received_at: '2026-01-01T00:00:00.000Z',
+              claimant: { display_name: 'Claimant', contact: 'claimant@example.test' },
+              work_description: 'Original photograph.',
+              targets: [
+                {
+                  id: 'target-123',
+                  placement_key: 'image-placement:placement-123',
+                  placement_revision: 1,
+                  image_id: 'image-123',
+                  hosted_use_url: 'https://voucha.ai/posts/post-123',
                 },
+                {
+                  id: 'target-456',
+                  placement_key: 'image-placement:placement-456',
+                  placement_revision: 1,
+                  image_id: 'image-456',
+                  hosted_use_url: 'https://voucha.ai/posts/post-456',
+                },
+              ],
+              evidence: [
+                {
+                  id: 'evidence-123',
+                  submission_id: 'submission-123',
+                  mime_type: 'image/jpeg',
+                  byte_size: 123,
+                  sha256: 'a'.repeat(64),
+                },
+              ],
+              form_review: {
+                intake_id: 'intake-123',
+                source_kind: 'guest_form',
+                screening: { recommendation: 'invalid_or_spam', rationale: 'Needs review.' },
               },
-            ],
-            counter_notices: [
-              {
-                submission_id: 'counter-123',
-                received_at: '2026-01-03T00:00:00.000Z',
-                target_ids: ['target-123'],
-                statement: { name: 'Poster' },
-              },
-            ],
-            legal_holds: [
-              {
-                submission_id: 'hold-123',
-                received_at: '2026-01-03T00:00:00.000Z',
-                statement: { case: 'example' },
-                assessment: null,
-              },
-            ],
-            action_intents: [],
-            delivery_intents: [],
-            email_correspondence: [],
-          },
-        ]}
+              restrictions: [
+                {
+                  id: 'restriction-123',
+                  target_id: 'target-123',
+                  imposed_at: '2026-01-02T00:00:00.000Z',
+                  status: 'pending_review',
+                },
+                {
+                  id: 'restriction-456',
+                  target_id: 'target-456',
+                  imposed_at: '2026-01-02T00:00:00.000Z',
+                  status: 'confirmed',
+                },
+              ],
+              appeals: [
+                {
+                  submission_id: 'appeal-123',
+                  reason: 'I own this image.',
+                  target_ids: ['target-123', 'target-456'],
+                  recommendation: {
+                    id: 'recommendation-123',
+                    recommendation: 'uncertain',
+                    rationale: 'Needs a person.',
+                  },
+                },
+              ],
+              counter_notices: [
+                {
+                  submission_id: 'counter-123',
+                  received_at: '2026-01-03T00:00:00.000Z',
+                  target_ids: ['target-123'],
+                  statement: { name: 'Poster' },
+                },
+              ],
+              legal_holds: [
+                {
+                  submission_id: 'hold-123',
+                  received_at: '2026-01-03T00:00:00.000Z',
+                  statement: { case: 'example' },
+                  assessment: null,
+                },
+              ],
+              action_intents: [],
+              delivery_intents: [],
+              email_correspondence: [],
+            },
+          ],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }}
       />,
     )
     expect(screen.getByText('Original photograph.')).toBeInTheDocument()

@@ -3506,6 +3506,49 @@
         ],
         "type": "object"
       },
+      "CopyrightStaffQueueResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "copyright_notices": {
+            "items": {
+              "$ref": "#/components/schemas/CopyrightStaffCase"
+            },
+            "type": "array"
+          },
+          "page_info": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "has_next_page": {
+                "type": "boolean"
+              },
+              "start_cursor": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "required": ["end_cursor", "has_next_page", "start_cursor"],
+            "type": "object"
+          }
+        },
+        "required": ["copyright_notices", "page_info"],
+        "type": "object"
+      },
       "Country": {
         "additionalProperties": false,
         "properties": {
@@ -35916,22 +35959,33 @@
     "/api/v1/copyright-notices/review-queue": {
       "get": {
         "operationId": "get_api_v1_copyright-notices_review-queue",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "copyright_notices": {
-                      "items": {
-                        "$ref": "#/components/schemas/CopyrightStaffCase"
-                      },
-                      "type": "array"
-                    }
-                  },
-                  "required": ["copyright_notices"],
-                  "type": "object"
+                  "$ref": "#/components/schemas/CopyrightStaffQueueResponse"
                 }
               }
             },
