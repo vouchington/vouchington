@@ -79,7 +79,6 @@ const expectedParameters = {
   'GET:/api/v1/posts/:id/votes': ['after', 'limit'],
   'GET:/api/v1/posts/:idOrSlug/ancestors': ['after', 'limit'],
   'GET:/api/v1/posts/:idOrSlug/descendants': ['after', 'limit'],
-  'GET:/api/v1/posts/:postId/agents/:agentId/responses': ['after', 'limit'],
   'GET:/api/v1/rss-feed-items': [
     'after',
     'category_topic',
