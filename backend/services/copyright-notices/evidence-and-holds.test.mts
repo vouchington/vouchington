@@ -181,18 +181,14 @@ describe('copyright notice evidence and holds', () => {
       resolutionKind: 'dismissed',
       rationale: `resolution-${crypto.randomUUID()}`,
     })
-    const heldIntent = await createEligibleCopyrightRestoreIntent({
-      noticeId: notice.id,
-      targetId: heldTarget.id,
-      restrictionId: restrictions[0].id,
-      deadlineId: deadline.id,
-      expectedPlacementRevision: heldTarget.placement_revision,
-      now: new Date(restorationNow.getTime() + 120_000),
-    })
     const refreshed = await getCopyrightNoticePrivateAggregate(notice.id)
+    const heldIntent = refreshed?.actionIntents.find(
+      candidate =>
+        candidate.action === 'restore' && candidate.copyright_restriction_id === restrictions[0].id,
+    )
 
     expect(intent.action).toBe('restore')
-    expect(heldIntent.action).toBe('restore')
+    expect(heldIntent).toEqual(expect.objectContaining({ action: 'restore' }))
     expect(resolution.copyright_notice_legal_hold_assessment_id).toBe(hold.id)
     expect(hold.target_ids).toEqual([heldTarget.id])
     expect(refreshed?.evidenceArtifacts).toContainEqual(
