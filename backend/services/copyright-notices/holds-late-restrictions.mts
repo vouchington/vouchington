@@ -49,6 +49,10 @@ export async function activateLateCopyrightLegalHoldRestrictions(
       FROM copyright_restrictions restriction
       WHERE restriction.copyright_notice_target_id = ANY(${targetIds}::uuid[])
         AND restriction.lifted_at IS NULL
+        AND EXISTS (
+          SELECT 1 FROM copyright_legal_hold_restrictions hold_binding
+          WHERE hold_binding.copyright_restriction_id = restriction.id
+        )
     ), bound AS (
       INSERT INTO copyright_legal_hold_restrictions (
         copyright_restriction_id, copyright_notice_legal_hold_assessment_id

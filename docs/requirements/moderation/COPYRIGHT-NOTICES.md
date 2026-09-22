@@ -219,9 +219,11 @@ staff recorded all applicable facts:
 Assess every received filing separately and bind its material scope to the exact notice targets it
 covers. Restoration remains blocked while any qualifying assessment for that target is unresolved.
 Dismissal, the end of a proceeding, or a superseding assessment is an immutable hold resolution,
-never an edit or deletion of the original filing. Each qualifying assessment is durably bound to the
-active restriction for its target, so resolving the final overlapping hold replays a previously
-blocked restoration.
+never an edit or deletion of the original filing. Assessments that reactivate a lifted restriction
+or extend an existing legal-hold restriction carry immutable restriction bindings, so resolving the
+final overlapping hold replays a previously blocked restoration. A hold on an ordinary active DMCA
+restriction blocks restoration while unresolved; resolving that hold does not bypass the ordinary
+counter-notice deadline or human reversal requirement.
 
 ## Jurisdiction and public meaning
 
