@@ -45,6 +45,5 @@ diagnostic.
 - <a id="views"></a>[Views](reference-views.md)
 - <a id="embeddings-and-external-metadata"></a>[Embeddings And External Metadata](reference-embeddings-and-external-metadata.md)
 - <a id="topic-additional-hostnames"></a>[Topic Additional Hostnames](reference-topic-additional-hostnames.md)
-- <a id="crm-tables"></a>[CRM Tables](reference-crm-tables.md)
 - <a id="when-to-read-which-file"></a>[When To Read Which File](reference-when-to-read-which-file.md)
 - <a id="related"></a>[Related](reference-related.md)

@@ -27,9 +27,12 @@ describe('PostgreSQL schema integrity', () => {
     expect(indexes.map(row => `${row.table_name}: ${row.index_names}`)).toEqual([])
   })
 
-  it('keeps removed tables absent and support history unpartitioned', async () => {
+  it('keeps retired tables absent and support history unpartitioned', async () => {
     const removedTables = [
       'conversation_message_rag',
+      'crm_contact_lifecycle_changes',
+      'crm_contact_social_accounts',
+      'crm_contacts',
       'membership_refund_intents',
       'recently_viewed_landing_pages',
       'topics__bank_accounts',

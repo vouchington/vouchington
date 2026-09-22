@@ -1,7 +1,7 @@
 {
   "enums": {
     "admin_import_types": {
-      "values": ["topic", "rss_feed", "crm_contact"]
+      "values": ["topic", "rss_feed"]
     },
     "agent_model_providers": {
       "values": [
@@ -85,7 +85,7 @@
       "values": ["privacy_policy", "terms_of_service", "cookie_analytics"]
     },
     "conversation_channel_types": {
-      "values": ["chat", "customer_support", "crm", "direct_message", "modmail", "mod_internal"]
+      "values": ["chat", "customer_support", "direct_message", "modmail", "mod_internal"]
     },
     "conversation_message_agentic_runs_events_types": {
       "values": ["function_call", "model_response"]
@@ -110,42 +110,6 @@
     },
     "crawler_types": {
       "values": ["fetch", "automation"]
-    },
-    "crm_contact_lifecycle_change_types": {
-      "values": [
-        "manual_update",
-        "mark_contacted",
-        "mark_responded",
-        "mark_converted",
-        "clear_converted",
-        "mark_opted_out",
-        "clear_opted_out",
-        "archive"
-      ]
-    },
-    "crm_contact_sources": {
-      "values": ["csv_import", "manual", "inbound_email", "referral"]
-    },
-    "crm_contact_types": {
-      "values": ["influencer", "customer", "partner"]
-    },
-    "crm_contact_verticals": {
-      "values": [
-        "credit_cards",
-        "travel",
-        "cars",
-        "ai",
-        "technology",
-        "finance",
-        "lifestyle",
-        "other"
-      ]
-    },
-    "crm_email_providers": {
-      "values": ["ses", "gmail_smtp"]
-    },
-    "crm_social_platforms": {
-      "values": ["instagram", "tiktok", "youtube", "x", "linkedin"]
     },
     "domain_blacklist_types": {
       "values": ["url", "email"]
@@ -979,7 +943,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_user_deletion_has_remaining_owned_data(target_user_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  ownership RECORD;\n  has_rows BOOLEAN;\nBEGIN\n  FOR ownership IN\n    SELECT * FROM (VALUES\n      ('posts', 'created_by_id'),\n      ('post_topic_alias_sources', 'contributor_id'),\n      ('user_email_addresses', 'user_id'),\n      ('user_phone_numbers', 'user_id'),\n      ('user_passkeys', 'user_id'),\n      ('user_totp_authenticators', 'user_id'),\n      ('api_keys', 'user_id'),\n      ('user_sessions', 'user_id'),\n      ('facebook_accounts', 'user_id'),\n      ('apple_accounts', 'user_id'),\n      ('google_accounts', 'user_id'),\n      ('x_accounts', 'user_id'),\n      ('linkedin_accounts', 'user_id'),\n      ('microsoft_accounts', 'user_id'),\n      ('github_accounts', 'user_id'),\n      ('bluesky_link_completions', 'user_id'),\n      ('bluesky_linked_accounts', 'user_id'),\n      ('session_referral_attributions', 'user_id')\n    ) AS configured(table_name, column_name)\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE %I = $1)',\n      ownership.table_name,\n      ownership.column_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'user_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'user_id'\n      AND table_name LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE user_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  FOR ownership IN\n    SELECT DISTINCT table_name, 'subject_id' AS column_name\n    FROM information_schema.columns\n    WHERE table_schema = 'public'\n      AND column_name = 'subject_id'\n      AND table_name LIKE 'relation\\_\\_user\\_\\_%' ESCAPE '\\'\n      AND table_name NOT LIKE '%\\_votes' ESCAPE '\\'\n  LOOP\n    EXECUTE format(\n      'SELECT EXISTS (SELECT 1 FROM %I WHERE subject_id = $1)',\n      ownership.table_name\n    ) INTO has_rows USING target_user_id;\n    IF has_rows THEN RETURN TRUE; END IF;\n  END LOOP;\n\n  IF EXISTS (\n    SELECT 1 FROM lists WHERE owner_user_id = target_user_id AND removed_at IS NULL\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_link_authorizations\n    WHERE user_id = target_user_id\n      AND status IN ('pending', 'callback_claimed', 'handoff_ready', 'attached')\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM bluesky_follow_records\n    WHERE follower_user_id = target_user_id OR followee_user_id = target_user_id\n  ) THEN RETURN TRUE; END IF;\n  IF EXISTS (\n    SELECT 1 FROM user_data_requests\n    WHERE user_id = target_user_id\n      AND (\n        (completed_at IS NULL AND failed_at IS NULL)\n        OR (completed_at IS NOT NULL AND failed_at IS NULL AND s3_key IS NOT NULL)\n      )\n  ) THEN RETURN TRUE; END IF;\n  RETURN FALSE;\nEND;\n$function$\n"
     },
     "fn_validate_admin_import_row_target": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_validate_admin_import_row_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch_import_type admin_import_types;\nBEGIN\n  SELECT import_type\n  INTO STRICT batch_import_type\n  FROM admin_import_batches\n  WHERE id = NEW.batch_id;\n\n  IF NOT (\n    (batch_import_type = 'topic' AND NEW.topic_id IS NOT NULL)\n    OR (batch_import_type = 'crm_contact' AND NEW.crm_contact_id IS NOT NULL)\n    OR (batch_import_type = 'rss_feed' AND NEW.rss_feed_id IS NOT NULL)\n  ) THEN\n    RAISE EXCEPTION 'admin import row target does not match batch import type %', batch_import_type\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_validate_admin_import_row_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch_import_type admin_import_types;\nBEGIN\n  SELECT import_type\n  INTO STRICT batch_import_type\n  FROM admin_import_batches\n  WHERE id = NEW.batch_id;\n\n  IF NOT (\n    (batch_import_type = 'topic' AND NEW.topic_id IS NOT NULL)\n    OR (batch_import_type = 'rss_feed' AND NEW.rss_feed_id IS NOT NULL)\n  ) THEN\n    RAISE EXCEPTION 'admin import row target does not match batch import type %', batch_import_type\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_validate_user_landing_page_group_member_item_type": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_validate_user_landing_page_group_member_item_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM user_landing_page_items\n    WHERE id = NEW.landing_page_item_id\n      AND item_type = 'topic_group'\n  ) THEN\n    RAISE EXCEPTION 'landing_page_item_id must reference a topic_group item';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1209,7 +1173,7 @@
         },
         "import_type": {
           "collation": null,
-          "comment": "The type of entities being imported: topic, CRM contact, or RSS feed.",
+          "comment": "The type of entities being imported: topic or RSS feed.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1325,7 +1289,7 @@
       "checkConstraints": {
         "admin_import_rows_error_message_check": "CHECK ((TRIM(BOTH FROM error_message) = error_message))",
         "admin_import_rows_row_index_check": "CHECK ((row_index >= 0))",
-        "chk_admin_import_rows__created_entity_lifecycle": "CHECK ((((completed_at IS NULL) AND (num_nonnulls(topic_id, crm_contact_id, rss_feed_id) = 0)) OR ((completed_at IS NOT NULL) AND (num_nonnulls(topic_id, crm_contact_id, rss_feed_id) = 1))))",
+        "chk_admin_import_rows__created_entity_lifecycle": "CHECK ((((completed_at IS NULL) AND (num_nonnulls(topic_id, rss_feed_id) = 0)) OR ((completed_at IS NOT NULL) AND (num_nonnulls(topic_id, rss_feed_id) = 1))))",
         "chk_admin_import_rows__lifecycle": "CHECK ((((completed_at IS NULL) OR (failed_at IS NULL)) AND ((failed_at IS NULL) OR (error_message IS NOT NULL))))"
       },
       "columns": {
@@ -1361,17 +1325,6 @@
           "nullable": true,
           "ordinalPosition": 2,
           "type": "timestamp with time zone"
-        },
-        "crm_contact_id": {
-          "collation": null,
-          "comment": "CRM contact created or updated by this import row.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "uuid"
         },
         "error_message": {
           "collation": null,
@@ -1473,15 +1426,6 @@
           "referencedTable": "admin_import_batches",
           "validated": true
         },
-        "admin_import_rows_crm_contact_id_fkey": {
-          "columns": ["crm_contact_id"],
-          "definition": "FOREIGN KEY (crm_contact_id) REFERENCES crm_contacts(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "crm_contacts",
-          "validated": true
-        },
         "admin_import_rows_rss_feed_id_fkey": {
           "columns": ["rss_feed_id"],
           "definition": "FOREIGN KEY (rss_feed_id) REFERENCES rss_feeds(id) ON DELETE RESTRICT",
@@ -1570,26 +1514,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_admin_import_rows__crm_contact_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_admin_import_rows__crm_contact_id ON public.admin_import_rows USING btree (crm_contact_id) WHERE (crm_contact_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "crm_contact_id",
-              "descending": false,
-              "expression": "crm_contact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(crm_contact_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_admin_import_rows__rss_feed_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -1641,7 +1565,7 @@
       "triggers": {
         "trigger_admin_import_rows_guard_terminal_lifecycle": "CREATE TRIGGER trigger_admin_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.admin_import_rows FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at', 'failed_at')",
         "trigger_admin_import_rows_updated_at": "CREATE TRIGGER trigger_admin_import_rows_updated_at BEFORE UPDATE ON public.admin_import_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
-        "trigger_admin_import_rows_validate_target": "CREATE TRIGGER trigger_admin_import_rows_validate_target BEFORE INSERT OR UPDATE OF batch_id, completed_at, topic_id, crm_contact_id, rss_feed_id ON public.admin_import_rows FOR EACH ROW WHEN ((new.completed_at IS NOT NULL)) EXECUTE FUNCTION fn_validate_admin_import_row_target()"
+        "trigger_admin_import_rows_validate_target": "CREATE TRIGGER trigger_admin_import_rows_validate_target BEFORE INSERT OR UPDATE OF batch_id, completed_at, topic_id, rss_feed_id ON public.admin_import_rows FOR EACH ROW WHEN ((new.completed_at IS NOT NULL)) EXECUTE FUNCTION fn_validate_admin_import_row_target()"
       },
       "uniqueConstraints": {
         "admin_import_rows__batch_row_index": {
@@ -16911,7 +16835,7 @@
         "chk_conversation_messages__discarded": "CHECK (((sent_at IS NULL) OR (discarded_at IS NULL)))",
         "chk_conversation_messages__edited": "CHECK ((((edited_at IS NULL) AND (edited_by_id IS NULL)) OR ((edited_at IS NOT NULL) AND (edited_by_id IS NOT NULL))))",
         "chk_conversation_messages__kind_content": "CHECK ((((kind = 'chat'::conversation_message_kinds) AND (content IS NOT NULL)) OR ((kind = ANY (ARRAY['email'::conversation_message_kinds, 'note'::conversation_message_kinds])) AND ((body_text IS NOT NULL) OR (body_html IS NOT NULL))) OR ((kind = 'message'::conversation_message_kinds) AND (body_text IS NOT NULL))))",
-        "chk_conversation_messages__sender": "CHECK ((num_nonnulls(created_by_id, support_contact_id, crm_contact_id) <= 1))"
+        "chk_conversation_messages__sender": "CHECK ((num_nonnulls(created_by_id, support_contact_id) <= 1))"
       },
       "columns": {
         "ai_generated_at": {
@@ -17035,17 +16959,6 @@
           "ordinalPosition": 4,
           "type": "uuid"
         },
-        "crm_contact_id": {
-          "collation": null,
-          "comment": "The CRM contact who sent this message. Mutually exclusive with created_by_id and support_contact_id.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "uuid"
-        },
         "deleted_at": {
           "collation": null,
           "comment": null,
@@ -17155,17 +17068,6 @@
           "nullable": true,
           "ordinalPosition": 17,
           "type": "text"
-        },
-        "email_provider": {
-          "collation": null,
-          "comment": "Email provider used for email-channel messages.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 16,
-          "type": "crm_email_providers"
         },
         "email_subject": {
           "collation": null,
@@ -17296,15 +17198,6 @@
           "referencedTable": "users",
           "validated": true
         },
-        "conversation_messages_crm_contact_id_fkey": {
-          "columns": ["crm_contact_id"],
-          "definition": "FOREIGN KEY (crm_contact_id) REFERENCES crm_contacts(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "crm_contacts",
-          "validated": true
-        },
         "conversation_messages_deleted_by_id_fkey": {
           "columns": ["deleted_by_id"],
           "definition": "FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -17391,26 +17284,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_conv_messages__crm_contact_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conv_messages__crm_contact_id ON ONLY public.conversation_messages USING btree (crm_contact_id) WHERE (crm_contact_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "crm_contact_id",
-              "descending": false,
-              "expression": "crm_contact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(crm_contact_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_conv_messages__email_message_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -17475,7 +17348,7 @@
     },
     "conversation_participants": {
       "checkConstraints": {
-        "chk_conversation_participants__identity": "CHECK ((num_nonnulls(user_id, support_contact_id, crm_contact_id) = 1))",
+        "chk_conversation_participants__identity": "CHECK ((num_nonnulls(user_id, support_contact_id) = 1))",
         "chk_conversation_participants__removed": "CHECK (((removed_at IS NOT NULL) OR (removed_by_id IS NULL)))"
       },
       "columns": {
@@ -17500,17 +17373,6 @@
           "nullable": true,
           "ordinalPosition": 7,
           "type": "timestamp with time zone"
-        },
-        "crm_contact_id": {
-          "collation": null,
-          "comment": "CRM contact participant. Mutually exclusive with user_id and support_contact_id.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "uuid"
         },
         "id": {
           "collation": null,
@@ -17558,7 +17420,7 @@
         },
         "support_contact_id": {
           "collation": null,
-          "comment": "Email-identified support contact. Mutually exclusive with user_id and crm_contact_id.",
+          "comment": "Email-identified support contact. Mutually exclusive with user_id.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -17580,7 +17442,7 @@
         },
         "user_id": {
           "collation": null,
-          "comment": "Registered user participant. Mutually exclusive with contact identities.",
+          "comment": "Registered user participant. Mutually exclusive with support_contact_id.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -17590,7 +17452,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Participants in a conversation. Each participant is a registered user, support contact, or CRM contact. Enables multi-party threads.",
+      "comment": "Participants in a conversation. Each participant is a registered user or support contact. Enables multi-party threads.",
       "foreignKeys": {
         "conversation_participants_conversation_id_fkey": {
           "columns": ["conversation_id"],
@@ -17599,15 +17461,6 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "conversations",
-          "validated": true
-        },
-        "conversation_participants_crm_contact_id_fkey": {
-          "columns": ["crm_contact_id"],
-          "definition": "FOREIGN KEY (crm_contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "crm_contacts",
           "validated": true
         },
         "conversation_participants_removed_by_id_fkey": {
@@ -17694,33 +17547,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_conv_participants__conversation_crm_contact": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_conv_participants__conversation_crm_contact ON public.conversation_participants USING btree (conversation_id, crm_contact_id) WHERE ((crm_contact_id IS NOT NULL) AND (removed_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "conversation_id",
-              "descending": false,
-              "expression": "conversation_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "crm_contact_id",
-              "descending": false,
-              "expression": "crm_contact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((crm_contact_id IS NOT NULL) AND (removed_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "idx_conv_participants__conversation_user": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -17746,53 +17572,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_conv_participants__crm_contact_active": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_conv_participants__crm_contact_active ON public.conversation_participants USING btree (crm_contact_id) WHERE ((crm_contact_id IS NOT NULL) AND (removed_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "crm_contact_id",
-              "descending": false,
-              "expression": "crm_contact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((crm_contact_id IS NOT NULL) AND (removed_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_conv_participants__crm_contact_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conv_participants__crm_contact_id ON public.conversation_participants USING btree (crm_contact_id, conversation_id DESC) WHERE (crm_contact_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "crm_contact_id",
-              "descending": false,
-              "expression": "crm_contact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "conversation_id",
-              "descending": true,
-              "expression": "conversation_id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(crm_contact_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_conv_participants__support_contact_id": {
@@ -17893,7 +17672,7 @@
         },
         "channel_type": {
           "collation": null,
-          "comment": "Conversation channel: chat for user/agent chat, customer_support for support email threads, crm for outreach timelines.",
+          "comment": "Conversation channel: chat for user/agent chat and customer_support for support email threads.",
           "defaultExpression": "'chat'::conversation_channel_types",
           "generated": null,
           "generatedExpression": null,
@@ -28756,918 +28535,6 @@
       },
       "relationKind": "partitioned table",
       "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "crm_contact_lifecycle_changes": {
-      "checkConstraints": {
-        "crm_contact_lifecycle_changes_metadata_check": "CHECK ((jsonb_typeof(metadata) = 'object'::text))",
-        "crm_contact_lifecycle_changes_note_check": "CHECK (((note IS NULL) OR (char_length(note) <= 1000)))"
-      },
-      "columns": {
-        "archived_at": {
-          "collation": null,
-          "comment": "Snapshot of archived_at after this lifecycle transition.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11,
-          "type": "timestamp with time zone"
-        },
-        "change_type": {
-          "collation": null,
-          "comment": "Type of lifecycle transition.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "crm_contact_lifecycle_change_types"
-        },
-        "changed_by_id": {
-          "collation": null,
-          "comment": "User or admin who initiated the change (no FK for audit persistence).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
-        "contacted_at": {
-          "collation": null,
-          "comment": "Snapshot of contacted_at after this lifecycle transition.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        },
-        "converted_at": {
-          "collation": null,
-          "comment": "Snapshot of converted_at after this lifecycle transition.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "timestamp with time zone"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12,
-          "type": "timestamp with time zone"
-        },
-        "crm_contact_id": {
-          "collation": null,
-          "comment": "The CRM contact whose lifecycle changed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "metadata": {
-          "collation": null,
-          "comment": "Structured metadata about the lifecycle transition.",
-          "defaultExpression": "'{}'::jsonb",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "jsonb"
-        },
-        "note": {
-          "collation": null,
-          "comment": "Optional free-text note about the lifecycle transition.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "text"
-        },
-        "opted_out_at": {
-          "collation": null,
-          "comment": "Snapshot of opted_out_at after this lifecycle transition.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "timestamp with time zone"
-        },
-        "responded_at": {
-          "collation": null,
-          "comment": "Snapshot of responded_at after this lifecycle transition.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Append-only audit log of CRM contact lifecycle transitions. Current lifecycle timestamps on crm_contacts are denormalized from the latest change.",
-      "foreignKeys": {
-        "crm_contact_lifecycle_changes_crm_contact_id_fkey": {
-          "columns": ["crm_contact_id"],
-          "definition": "FOREIGN KEY (crm_contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "crm_contacts",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "crm_contact_lifecycle_changes_crm_contact_id_id_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX crm_contact_lifecycle_changes_crm_contact_id_id_key ON public.crm_contact_lifecycle_changes USING btree (crm_contact_id, id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "crm_contact_id",
-              "descending": false,
-              "expression": "crm_contact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "crm_contact_lifecycle_changes_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX crm_contact_lifecycle_changes_pkey ON public.crm_contact_lifecycle_changes USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_crm_contact_lifecycle_changes__contact_id__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crm_contact_lifecycle_changes__contact_id__id ON public.crm_contact_lifecycle_changes USING btree (crm_contact_id, id DESC)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "crm_contact_id",
-              "descending": false,
-              "expression": "crm_contact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {
-        "crm_contact_lifecycle_changes_crm_contact_id_id_key": {
-          "columns": ["crm_contact_id", "id"],
-          "definition": "UNIQUE (crm_contact_id, id)"
-        }
-      }
-    },
-    "crm_contact_social_accounts": {
-      "checkConstraints": {
-        "crm_contact_social_accounts_follower_count_check": "CHECK ((follower_count >= 0))",
-        "crm_contact_social_accounts_handle_check": "CHECK ((handle = TRIM(BOTH FROM handle)))",
-        "crm_contact_social_accounts_handle_check1": "CHECK (((char_length(handle) >= 1) AND (char_length(handle) <= 200)))"
-      },
-      "columns": {
-        "contact_id": {
-          "collation": null,
-          "comment": "The contact this social account belongs to.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": "Timestamp derived from the UUIDv7 id.",
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
-        },
-        "follower_count": {
-          "collation": null,
-          "comment": "Follower count on this platform at last check.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "integer"
-        },
-        "follower_count_updated_at": {
-          "collation": null,
-          "comment": "When follower_count was last updated.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        },
-        "handle": {
-          "collation": null,
-          "comment": "Username or handle on the platform (without @ prefix).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "text"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "platform": {
-          "collation": null,
-          "comment": "Social media platform.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "crm_social_platforms"
-        },
-        "profile_url": {
-          "collation": null,
-          "comment": "Full URL to the profile page.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "text"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": "Last modification timestamp, maintained by trigger.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Social media handles for CRM contacts, one row per platform.",
-      "foreignKeys": {
-        "crm_contact_social_accounts_contact_id_fkey": {
-          "columns": ["contact_id"],
-          "definition": "FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "crm_contacts",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "crm_contact_social_accounts_contact_id_platform_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX crm_contact_social_accounts_contact_id_platform_key ON public.crm_contact_social_accounts USING btree (contact_id, platform)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "contact_id",
-              "descending": false,
-              "expression": "contact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "platform",
-              "descending": false,
-              "expression": "platform",
-              "nullsFirst": false,
-              "opclass": "enum_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "crm_contact_social_accounts_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX crm_contact_social_accounts_pkey ON public.crm_contact_social_accounts USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_crm_contact_social_accounts_updated_at": "CREATE TRIGGER trigger_crm_contact_social_accounts_updated_at BEFORE UPDATE ON public.crm_contact_social_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {
-        "crm_contact_social_accounts_contact_id_platform_key": {
-          "columns": ["contact_id", "platform"],
-          "definition": "UNIQUE (contact_id, platform)"
-        }
-      }
-    },
-    "crm_contacts": {
-      "checkConstraints": {
-        "chk_crm_contacts__email_not_empty": "CHECK ((TRIM(BOTH FROM email) <> ''::text))",
-        "crm_contacts_email_check": "CHECK ((email = lower(TRIM(BOTH FROM email))))",
-        "crm_contacts_email_check1": "CHECK ((char_length(email) <= 320))",
-        "crm_contacts_follower_count_check": "CHECK ((follower_count >= 0))",
-        "crm_contacts_name_check": "CHECK ((name = TRIM(BOTH FROM name)))",
-        "crm_contacts_name_check1": "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 500)))"
-      },
-      "columns": {
-        "archived_at": {
-          "collation": null,
-          "comment": "When the contact was archived and removed from active lists.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 18,
-          "type": "timestamp with time zone"
-        },
-        "assigned_to_id": {
-          "collation": null,
-          "comment": "Admin user responsible for this contact.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12,
-          "type": "uuid"
-        },
-        "contact_type": {
-          "collation": null,
-          "comment": "Classification of the contact: influencer, customer, or partner.",
-          "defaultExpression": "'influencer'::crm_contact_types",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "crm_contact_types"
-        },
-        "contacted_at": {
-          "collation": null,
-          "comment": "When the first outbound message was sent to this contact.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 14,
-          "type": "timestamp with time zone"
-        },
-        "converted_at": {
-          "collation": null,
-          "comment": "When the contact signed up / converted.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 16,
-          "type": "timestamp with time zone"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": "Timestamp derived from the UUIDv7 id.",
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 20,
-          "type": "timestamp with time zone"
-        },
-        "created_by_id": {
-          "collation": null,
-          "comment": "Admin user who created this contact record.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 13,
-          "type": "uuid"
-        },
-        "email": {
-          "collation": null,
-          "comment": "Primary email address, unique among non-archived contacts.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "text"
-        },
-        "follower_count": {
-          "collation": null,
-          "comment": "Approximate total social media follower count.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "integer"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "latest_lifecycle_change_id": {
-          "collation": null,
-          "comment": "Latest append-only lifecycle transition for this CRM contact.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 19,
-          "type": "uuid"
-        },
-        "metadata": {
-          "collation": null,
-          "comment": "Additional structured metadata (e.g. from CSV import).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "jsonb"
-        },
-        "name": {
-          "collation": null,
-          "comment": "Full display name of the contact.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "text"
-        },
-        "notes": {
-          "collation": null,
-          "comment": "Free-form internal notes about the contact.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "text"
-        },
-        "opted_out_at": {
-          "collation": null,
-          "comment": "When the contact opted out of further communication.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 17,
-          "type": "timestamp with time zone"
-        },
-        "phone": {
-          "collation": null,
-          "comment": "Optional phone number.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "text"
-        },
-        "responded_at": {
-          "collation": null,
-          "comment": "When the contact first replied.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 15,
-          "type": "timestamp with time zone"
-        },
-        "source": {
-          "collation": null,
-          "comment": "How the contact was added to the CRM.",
-          "defaultExpression": "'manual'::crm_contact_sources",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "crm_contact_sources"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": "Last modification timestamp, maintained by trigger.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 21,
-          "type": "timestamp with time zone"
-        },
-        "user_id": {
-          "collation": null,
-          "comment": "Linked Voucha user account, set when contact converts.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11,
-          "type": "uuid"
-        },
-        "vertical": {
-          "collation": null,
-          "comment": "Industry vertical the contact operates in.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "crm_contact_verticals"
-        }
-      },
-      "comment": "CRM contact records for influencers, customers, and partners.",
-      "foreignKeys": {
-        "crm_contacts_assigned_to_id_fkey": {
-          "columns": ["assigned_to_id"],
-          "definition": "FOREIGN KEY (assigned_to_id) REFERENCES users(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
-        "crm_contacts_created_by_id_fkey": {
-          "columns": ["created_by_id"],
-          "definition": "FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
-        "crm_contacts_user_id_fkey": {
-          "columns": ["user_id"],
-          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
-        "fk_crm_contacts_latest_lifecycle_change_id": {
-          "columns": ["id", "latest_lifecycle_change_id"],
-          "definition": "FOREIGN KEY (id, latest_lifecycle_change_id) REFERENCES crm_contact_lifecycle_changes(crm_contact_id, id) ON DELETE SET NULL (latest_lifecycle_change_id)",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["crm_contact_id", "id"],
-          "referencedTable": "crm_contact_lifecycle_changes",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "crm_contacts_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX crm_contacts_pkey ON public.crm_contacts USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_crm_contacts__assigned_to_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crm_contacts__assigned_to_id ON public.crm_contacts USING btree (assigned_to_id) WHERE (assigned_to_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "assigned_to_id",
-              "descending": false,
-              "expression": "assigned_to_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(assigned_to_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_crm_contacts__created_by_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crm_contacts__created_by_id ON public.crm_contacts USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "created_by_id",
-              "descending": false,
-              "expression": "created_by_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(created_by_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_crm_contacts__email": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_crm_contacts__email ON public.crm_contacts USING btree (email) WHERE (archived_at IS NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "email",
-              "descending": false,
-              "expression": "email",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": "(archived_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_crm_contacts__email_trgm": {
-          "accessMethod": "gin",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crm_contacts__email_trgm ON public.crm_contacts USING gin (email gin_trgm_ops)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "email",
-              "descending": false,
-              "expression": "email",
-              "nullsFirst": false,
-              "opclass": "gin_trgm_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_crm_contacts__name__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crm_contacts__name__id ON public.crm_contacts USING btree (name, id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "name",
-              "descending": false,
-              "expression": "name",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_crm_contacts__name_trgm": {
-          "accessMethod": "gin",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crm_contacts__name_trgm ON public.crm_contacts USING gin (name gin_trgm_ops)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "name",
-              "descending": false,
-              "expression": "name",
-              "nullsFirst": false,
-              "opclass": "gin_trgm_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_crm_contacts__user_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crm_contacts__user_id ON public.crm_contacts USING btree (user_id) WHERE (user_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(user_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_crm_contacts__vertical": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_crm_contacts__vertical ON public.crm_contacts USING btree (vertical) WHERE (vertical IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "vertical",
-              "descending": false,
-              "expression": "vertical",
-              "nullsFirst": false,
-              "opclass": "enum_ops"
-            }
-          ],
-          "predicate": "(vertical IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_crm_contacts_updated_at": "CREATE TRIGGER trigger_crm_contacts_updated_at BEFORE UPDATE ON public.crm_contacts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
       "uniqueConstraints": {}
     },
     "curated_aside_items": {

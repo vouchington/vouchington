@@ -73,8 +73,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'copyright_notices',
   'copyright_restrictions',
   'crawlers',
-  'crm_contact_social_accounts',
-  'crm_contacts',
   'curated_aside_items',
   'domain_blacklists',
   'email_address_login_tokens',
