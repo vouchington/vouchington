@@ -60,7 +60,16 @@ async function readPullRequestFiles(
     files.push(...batch)
     if (batch.length < PULL_REQUEST_FILES_PAGE_SIZE) return files
   }
-  throw new Error(`PR files API exceeded ${MAX_PULL_REQUEST_FILES_PAGES} pages`)
+  const changedFiles = Number(
+    await runGh([
+      'api',
+      `repos/${target.owner}/${target.repo}/pulls/${target.number}`,
+      '--jq',
+      '.changed_files',
+    ]),
+  )
+  if (Number.isSafeInteger(changedFiles) && changedFiles === files.length) return files
+  throw new Error(`PR files API returned only ${files.length} of ${changedFiles} changed files`)
 }
 
 export async function readPullRequestPatch(

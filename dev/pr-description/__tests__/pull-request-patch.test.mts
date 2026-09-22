@@ -10,6 +10,20 @@ const TARGET = {
   state: 'OPEN',
 }
 
+function runGhAtFileLimit(changedFiles: number) {
+  return async (args: string[]) => {
+    if (args[0] === 'pr') throw new Error('HTTP 406: PullRequest.diff is too_large')
+    if (args.includes('--jq')) return String(changedFiles)
+    const page = Number(args.at(-1)?.slice('page='.length))
+    return JSON.stringify(
+      Array.from({ length: 20 }, (_, offset) => ({
+        filename: `retired/file-${(page - 1) * 20 + offset}.ts`,
+        status: 'removed',
+      })),
+    )
+  }
+}
+
 describe('readPullRequestPatch', () => {
   it('uses the files API when GitHub refuses an oversized unified PR diff', async () => {
     const calls: string[][] = []
@@ -56,6 +70,18 @@ describe('readPullRequestPatch', () => {
     await expect(
       readPullRequestPatch(async () => 'diff --git a/a b/a', '386', TARGET),
     ).resolves.toEqual({ patch: 'diff --git a/a b/a', source: 'unified-diff' })
+  })
+
+  it('accepts a complete 3000-file API response', async () => {
+    const result = await readPullRequestPatch(runGhAtFileLimit(3000), '386', TARGET)
+    expect(result.source).toBe('files-api')
+    expect(result.patch).toContain('retired/file-2999.ts')
+  })
+
+  it('rejects a truncated 3000-file API response', async () => {
+    await expect(readPullRequestPatch(runGhAtFileLimit(3001), '386', TARGET)).rejects.toThrow(
+      'HTTP 406: PullRequest.diff is too_large',
+    )
   })
 
   it('preserves the original diff failure when the files API cannot recover it', async () => {
