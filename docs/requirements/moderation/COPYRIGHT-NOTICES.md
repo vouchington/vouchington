@@ -137,6 +137,9 @@ agent outage cannot strand a legal notice. Form routes require Turnstile, enforc
 authenticated route boundary, apply route-scoped rate limits, and store only a purpose-separated
 HMAC-derived guest network digest rather than the source address.
 
+Hosted-use selection accepts canonical post URLs, including `/story/:id`, and verifies their images
+through the post API. Query strings, fragments, and foreign hosts are rejected.
+
 Email admission trusts the SES receipt-rule classification and the configured
 `copyright-incoming/` object prefix, never recipient headers inside untrusted MIME. The original S3
 version and ETag are pinned and copied into the private evidence bucket before parsing. Parse
