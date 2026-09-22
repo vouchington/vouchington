@@ -8166,10 +8166,6 @@
       "properties": {},
       "type": "object"
     },
-    "MessageDirection": {
-      "enum": ["inbound", "outbound"],
-      "type": "string"
-    },
     "MfaVerificationResponseBody": {
       "additionalProperties": false,
       "properties": {
