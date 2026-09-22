@@ -8,18 +8,6 @@
       "fixtureIds": ["native.moderation.ban-evasion.dismiss"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
     },
-    "DELETE:/api/v1/crm/contacts/:contactId": {
-      "fixtureIds": ["native.crm.contact-archive.default"],
-      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
-    },
-    "DELETE:/api/v1/crm/contacts/:contactId/notes/:noteId": {
-      "fixtureIds": ["native.crm.contact-note-delete.default"],
-      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
-    },
-    "DELETE:/api/v1/crm/contacts/:contactId/user-link": {
-      "fixtureIds": ["native.crm.contact-unlink-user.default"],
-      "hash": "810a0326a4505b632bf72d79e124ce04ea648fa24fedc79de90663fcdfdb5a1a"
-    },
     "DELETE:/api/v1/households/:id/memberships/:membershipId": {
       "fixtureIds": ["native.household-memberships.delete.default"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
@@ -269,22 +257,6 @@
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
       "hash": "4f2b4f1e0ba9ef6e1a49c55b6ab3a9c1855c9414e7cb74daf10e665b2d889940"
-    },
-    "GET:/api/v1/crm/contacts": {
-      "fixtureIds": ["native.crm.contacts.default"],
-      "hash": "f5166fcdbc44ec3cccbb6339f96a2261b5fd1b8a79d3fcdab5be863a4fbbacc8"
-    },
-    "GET:/api/v1/crm/contacts/:contactId": {
-      "fixtureIds": ["native.crm.contact-detail.default"],
-      "hash": "e6f9fb775e65c66d7d028b55a774694e46289300930131b4f4bade0790c5fa30"
-    },
-    "GET:/api/v1/crm/contacts/:contactId/emails": {
-      "fixtureIds": ["native.crm.contact-emails.default"],
-      "hash": "27d97b570ab4f80c25f8959c2525886f1ff010938f85706e4eb23aa051d6d521"
-    },
-    "GET:/api/v1/crm/contacts/:contactId/notes": {
-      "fixtureIds": ["native.crm.contact-notes.default"],
-      "hash": "72bf172b91d5a4db58fe2c34ec1b3afcaa3ed0c7409bc8222dd0970544a5fd05"
     },
     "GET:/api/v1/currencies": {
       "fixtureIds": ["shared.currencies.list.default"],
@@ -882,10 +854,6 @@
       "fixtureIds": ["web.communities.post-type-settings.update.default"],
       "hash": "6d218c219f37f28f861d520865f8c5997aed4c80a8cf798d7634ab1c2bdfdf72"
     },
-    "PATCH:/api/v1/crm/contacts/:contactId": {
-      "fixtureIds": ["native.crm.contact-update.default"],
-      "hash": "810a0326a4505b632bf72d79e124ce04ea648fa24fedc79de90663fcdfdb5a1a"
-    },
     "PATCH:/api/v1/disputes/:id#staff": {
       "fixtureIds": ["native.moderation.disputes.update.default"],
       "hash": "ff3e92da79d3ba5049858e4848887465bf5ec57d4935194321555698f764643e"
@@ -1039,22 +1007,6 @@
     "POST:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
       "fixtureIds": ["native.moderation.ban-evasion.confirm"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
-    },
-    "POST:/api/v1/crm/contacts": {
-      "fixtureIds": ["native.crm.contact-create.default"],
-      "hash": "810a0326a4505b632bf72d79e124ce04ea648fa24fedc79de90663fcdfdb5a1a"
-    },
-    "POST:/api/v1/crm/contacts/:contactId/email-drafts": {
-      "fixtureIds": ["native.crm.contact-email-draft.default"],
-      "hash": "1cc31280e863ca9f757ea286f2689bfbde80cf436475a45c77cc1929ae72161e"
-    },
-    "POST:/api/v1/crm/contacts/:contactId/emails": {
-      "fixtureIds": ["native.crm.contact-email-send.default"],
-      "hash": "474e1f1274bef58a32b2f7b14b5440dc3f5dbc4aa1f845b227af0676a1ab262e"
-    },
-    "POST:/api/v1/crm/contacts/:contactId/notes": {
-      "fixtureIds": ["native.crm.contact-note-create.default"],
-      "hash": "2993166ccaf7199b37dd3fc4265937ed02896febfd303b1abebd561b06b517bf"
     },
     "POST:/api/v1/disputes/:id/approval#staff": {
       "fixtureIds": ["native.moderation.disputes.approval.default"],
@@ -1276,10 +1228,6 @@
       "fixtureIds": ["web.communities.ai-agent.default"],
       "hash": "508e0dc9da176d75b71aebcf12dd0ae2285beeede8f42145ef6ad01a139af6b4"
     },
-    "PUT:/api/v1/crm/contacts/:contactId/user-link": {
-      "fixtureIds": ["native.crm.contact-link-user.default"],
-      "hash": "810a0326a4505b632bf72d79e124ce04ea648fa24fedc79de90663fcdfdb5a1a"
-    },
     "PUT:/api/v1/entity-relations/:id/vote": {
       "fixtureIds": ["native.entity-relations.post.category.topic.vote.default"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
@@ -1481,58 +1429,6 @@
     "native.community.pending-reports.paginated": {
       "fixtureIds": ["native.community.pending-reports.paginated"],
       "hash": "719aeb07d437561056048c7ccd2aa328393169c437cfa0f6114aa82171ebc50b"
-    },
-    "native.crm.contact-archive.default": {
-      "fixtureIds": ["native.crm.contact-archive.default"],
-      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
-    },
-    "native.crm.contact-create.default": {
-      "fixtureIds": ["native.crm.contact-create.default"],
-      "hash": "3dd9b64bb145de6b0d59548e0d3269d2ebe6d98379685c70693eb85f657a8090"
-    },
-    "native.crm.contact-detail.default": {
-      "fixtureIds": ["native.crm.contact-detail.default"],
-      "hash": "b362486a6c1ddafac8ae2a522f0b6eb8859c70f838ad5336872e4b8ce4cfc683"
-    },
-    "native.crm.contact-email-draft.default": {
-      "fixtureIds": ["native.crm.contact-email-draft.default"],
-      "hash": "cd075cd911a18a1129189d47f7c801730a0dc62df93bcb6f448858a94e7732c0"
-    },
-    "native.crm.contact-email-send.default": {
-      "fixtureIds": ["native.crm.contact-email-send.default"],
-      "hash": "69439b4a370687df0327d332560613113b7702ce325762a17be37e1a4136d818"
-    },
-    "native.crm.contact-emails.default": {
-      "fixtureIds": ["native.crm.contact-emails.default"],
-      "hash": "b09ab5580b6d9a752858ff283cea036f5a83a61a4526a10174ad98a8962f52dd"
-    },
-    "native.crm.contact-link-user.default": {
-      "fixtureIds": ["native.crm.contact-link-user.default"],
-      "hash": "e25e47fd81fcb25af1992be14f349b4e492f47299251ac841f6a350875dc378a"
-    },
-    "native.crm.contact-note-create.default": {
-      "fixtureIds": ["native.crm.contact-note-create.default"],
-      "hash": "52f46c7b6087dfebf943b3e7e5c000a38a4f360d07446ddf8c2d70ef95817254"
-    },
-    "native.crm.contact-note-delete.default": {
-      "fixtureIds": ["native.crm.contact-note-delete.default"],
-      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
-    },
-    "native.crm.contact-notes.default": {
-      "fixtureIds": ["native.crm.contact-notes.default"],
-      "hash": "0a49aed27781abeeb8ef0ae599f9d6143978b4e564ba54a504b26d48ce779c01"
-    },
-    "native.crm.contact-unlink-user.default": {
-      "fixtureIds": ["native.crm.contact-unlink-user.default"],
-      "hash": "3dd9b64bb145de6b0d59548e0d3269d2ebe6d98379685c70693eb85f657a8090"
-    },
-    "native.crm.contact-update.default": {
-      "fixtureIds": ["native.crm.contact-update.default"],
-      "hash": "0527fda5f104d31d5c26f0f56444bd738d5eb19584c12ab6e471229a64cc9027"
-    },
-    "native.crm.contacts.default": {
-      "fixtureIds": ["native.crm.contacts.default"],
-      "hash": "3767e6f384cd1f55e1ffd93b74db1991f287c3e8d0b1d433bd6b0be0acbf290f"
     },
     "native.dynamic-config.history.default": {
       "fixtureIds": ["native.dynamic-config.history.default"],
