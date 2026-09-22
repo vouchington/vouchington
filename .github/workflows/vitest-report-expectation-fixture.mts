@@ -48,7 +48,7 @@ export function writeAttemptFixtures(
     if (result.result !== 'success') continue
     for (const suite of suitesByJob[job] ?? []) {
       writeVitestReportAttempt(join(directory, `${VITEST_REPORT_ATTEMPT_PREFIX}${suite}`), suite, {
-        repository: 'jonathanong/filaments',
+        repository: 'vouchington/vouchington',
         revision: 'a'.repeat(40),
         runId: '9131',
         attempt: Number(result.attempt ?? 2),
@@ -63,7 +63,7 @@ export function writeExplicitAttemptFixtures(
 ): void {
   for (const [suite, attempt] of Object.entries(attempts)) {
     writeVitestReportAttempt(join(directory, `${VITEST_REPORT_ATTEMPT_PREFIX}${suite}`), suite, {
-      repository: 'jonathanong/filaments',
+      repository: 'vouchington/vouchington',
       revision: 'a'.repeat(40),
       runId: '9131',
       attempt,

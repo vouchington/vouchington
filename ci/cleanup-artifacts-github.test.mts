@@ -7,7 +7,7 @@ import {
   listRunArtifacts,
 } from './cleanup-artifacts-github.mts'
 
-const REPO = 'voucha/filaments'
+const REPO = 'vouchington/vouchington'
 const TOKEN = 'test-token'
 const noopSleep = async () => {}
 

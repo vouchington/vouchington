@@ -14,15 +14,12 @@ import {
   localCoverageSuiteDescriptor,
 } from './coverage-local-suite-catalog.mts'
 import { normalizeForwardedVitestArgs } from './run-vitest-project-group.mts'
+import { coverageRepository } from './coverage-repository.mts'
 
 const require = createRequire(import.meta.url)
 export const LOCAL_VITEST_COLLECTOR_VERSION = (
   require('@vitest/coverage-v8/package.json') as { version: string }
 ).version
-
-function repositoryIdentity(env: NodeJS.ProcessEnv): string {
-  return env.GITHUB_REPOSITORY || 'jonathanong/filaments'
-}
 
 function revisionIdentity(root: string): string {
   return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim()
@@ -41,7 +38,7 @@ export function stampLocalCoverageSuite(
     lcovPath: join(pairDir, 'lcov.info'),
     manifestPath: join(pairDir, COVERAGE_MANIFEST_FILENAME),
     descriptor: localCoverageSuiteDescriptor(suite),
-    repository: repositoryIdentity(env),
+    repository: coverageRepository(env),
     revision: revisionIdentity(root),
     run: null,
     collectorVersion: LOCAL_VITEST_COLLECTOR_VERSION,
@@ -96,7 +93,7 @@ export function validateLocalCoverageArtifacts(
       lcovPath: join(pairDir, 'lcov.info'),
       manifestPath: join(pairDir, COVERAGE_MANIFEST_FILENAME),
       descriptor: localCoverageSuiteDescriptor(suite),
-      repository: repositoryIdentity(env),
+      repository: coverageRepository(env),
       revision,
       expectedRun: null,
       expectedCollectorVersion: LOCAL_VITEST_COLLECTOR_VERSION,

@@ -51,7 +51,7 @@ describe('coverage provenance manifest CLI adapter', () => {
       {
         cwd: fixture.root,
         env: {
-          GITHUB_REPOSITORY: 'jonathanong/filaments',
+          GITHUB_REPOSITORY: 'vouchington/vouchington',
           GITHUB_RUN_ID: '456',
           GITHUB_RUN_ATTEMPT: '3',
         },
@@ -66,7 +66,7 @@ describe('coverage provenance manifest CLI adapter', () => {
         ['stamp', 'ts-shared', '4.1.10', local.lcovPath, local.manifestPath],
         { cwd: local.root, env: {}, revision: '2'.repeat(40) },
       ),
-    ).toMatchObject({ repository: 'jonathanong/filaments', run: null })
+    ).toMatchObject({ repository: 'vouchington/vouchington', run: null })
   })
 
   it('creates a self-describing sparse patch contribution', async () => {
@@ -76,7 +76,7 @@ describe('coverage provenance manifest CLI adapter', () => {
       {
         cwd: fixture.root,
         env: {
-          GITHUB_REPOSITORY: 'jonathanong/filaments',
+          GITHUB_REPOSITORY: 'vouchington/vouchington',
           GITHUB_RUN_ID: '456',
           GITHUB_RUN_ATTEMPT: '3',
           PR_BASE_SHA: fixture.base,

@@ -55,7 +55,7 @@ describe('coverage-artifacts whitespace-only patch coverage ignores', () => {
         COVERAGE_BASE: 'origin/main',
         COVERAGE_HEAD: 'HEAD',
         COVERAGE_PR: '5019',
-        COVERAGE_REPO: 'jonathanong/filaments',
+        COVERAGE_REPO: 'vouchington/vouchington',
         COVERAGE_CHECK_BIN: `${binDir}/pnpm`,
         PATH: `${binDir}:${process.env.PATH ?? ''}`,
         PNPM_ARGS_PATH: argsPath,

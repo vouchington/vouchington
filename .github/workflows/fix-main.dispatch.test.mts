@@ -136,7 +136,7 @@ describe('fix-main workflow', () => {
         labels: ['automation'],
         number: 201,
         title: 'Automation fix: CI @ oldsha',
-        url: 'https://github.com/jonathanong/filaments/pull/201',
+        url: 'https://github.com/vouchington/vouchington/pull/201',
       },
       {
         headRefName: 'patch-1',
@@ -146,7 +146,7 @@ describe('fix-main workflow', () => {
         labels: ['automation', 'needs-human'],
         number: 202,
         title: 'Automation fix: CI @ forksha',
-        url: 'https://github.com/jonathanong/filaments/pull/202',
+        url: 'https://github.com/vouchington/vouchington/pull/202',
       },
       {
         headRefName: null,

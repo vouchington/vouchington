@@ -55,21 +55,21 @@ describe('cleanupRunArtifacts', () => {
     await expect(
       cleanupRunArtifacts({
         github: stub.github,
-        repo: { owner: 'voucha', repo: 'filaments' },
+        repo: { owner: 'vouchington', repo: 'vouchington' },
         runId: '42',
         log,
       }),
     ).resolves.toEqual({ deletedCount: 2, bytesFreed: 200 })
 
     expect(stub.paginate).toHaveBeenCalledWith(stub.listWorkflowRunArtifacts, {
-      owner: 'voucha',
-      repo: 'filaments',
+      owner: 'vouchington',
+      repo: 'vouchington',
       run_id: 42,
       per_page: 100,
     })
     expect(stub.deleteArtifact).toHaveBeenNthCalledWith(1, {
-      owner: 'voucha',
-      repo: 'filaments',
+      owner: 'vouchington',
+      repo: 'vouchington',
       artifact_id: 1,
     })
     expect(stub.deleteArtifact).toHaveBeenCalledTimes(2)
@@ -86,7 +86,7 @@ describe('cleanupRunArtifacts', () => {
     await expect(
       cleanupRunArtifacts({
         github: stub.github,
-        repo: { owner: 'voucha', repo: 'filaments' },
+        repo: { owner: 'vouchington', repo: 'vouchington' },
         runId: '42',
         log,
       }),
@@ -107,7 +107,7 @@ describe('cleanupRunArtifacts', () => {
     await expect(
       cleanupRunArtifacts({
         github: stub.github,
-        repo: { owner: 'voucha', repo: 'filaments' },
+        repo: { owner: 'vouchington', repo: 'vouchington' },
         runId: '42',
         log,
       }),
@@ -122,7 +122,7 @@ describe('cleanupRunArtifacts', () => {
     await expect(
       cleanupRunArtifacts({
         github: stub.github,
-        repo: { owner: 'voucha', repo: 'filaments' },
+        repo: { owner: 'vouchington', repo: 'vouchington' },
         runId: 'not-a-run-id',
         log: {
           info: vi.fn<(message: string) => void>(),

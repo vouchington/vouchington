@@ -28,7 +28,7 @@ describe('web route localization bounds', () => {
   let scratch: string
 
   beforeAll(async () => {
-    scratch = await mkdtemp(join(tmpdir(), 'filaments-web-route-bounds-'))
+    scratch = await mkdtemp(join(tmpdir(), 'vouchington-web-route-bounds-'))
     const source = join(import.meta.dirname, '../../localization/catalog')
     const { catalog } = await loadCatalogDirectory(source)
     const sqlitePath = join(scratch, 'catalog.sqlite')

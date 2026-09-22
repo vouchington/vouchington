@@ -17,6 +17,7 @@ import {
   type ValidateCoverageManifestOptions,
 } from 'coverage-check'
 import { coverageProducerPartition, coverageSuiteDescriptor } from './coverage-suites.mts'
+import { coverageRepository } from './coverage-repository.mts'
 
 export type AnyCoverageManifest = CoverageManifest | PatchCoverageManifest
 
@@ -72,7 +73,7 @@ export async function runCoverageManifestCli(
     lcovPath: resolve(cwd, rawLcovPath ?? 'coverage/lcov.info'),
     manifestPath: resolve(cwd, rawManifestPath ?? `coverage/${COVERAGE_MANIFEST_FILENAME}`),
     descriptor: coverageSuiteDescriptor(suite),
-    repository: env.GITHUB_REPOSITORY || 'jonathanong/filaments',
+    repository: coverageRepository(env),
     revision,
     collectorVersion,
   }

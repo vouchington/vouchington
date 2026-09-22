@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { runDependabotRerun } from './revalidate-dependabot-rerun.mts'
 import type { GhApiExecFile } from './transient-retry/gh-api.mts'
 
-const REPOSITORY = 'jonathanong/filaments'
+const REPOSITORY = 'vouchington/vouchington'
 const RUN_ID = 33_307_398_209
 const PR_NUMBER = 10_485
 const HEAD_BRANCH = 'dependabot/npm_and_yarn/pnpm-10.17.1'

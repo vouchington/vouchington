@@ -52,7 +52,7 @@ describe('coverage-artifacts.sh', () => {
         COVERAGE_BASE: 'origin/main',
         COVERAGE_HEAD: 'HEAD',
         COVERAGE_PR: '5019',
-        COVERAGE_REPO: 'jonathanong/filaments',
+        COVERAGE_REPO: 'vouchington/vouchington',
         COVERAGE_CHECK_BIN: `${binDir}/pnpm`,
         PNPM_ARGS_PATH: argsPath,
       },
@@ -67,7 +67,7 @@ describe('coverage-artifacts.sh', () => {
     expect(args).toContain('--head\nHEAD\n')
     expect(args).toContain(`--artifacts\n${mergedDir}\n`)
     expect(args).toContain('--pr\n5019\n')
-    expect(args).toContain('--repo\njonathanong/filaments\n')
+    expect(args).toContain('--repo\nvouchington/vouchington\n')
     expect(args.match(/^check$/gm)).toHaveLength(1)
     expect(args).not.toContain('--store-s3\n')
     expect(args).not.toContain('--drop-only\n')
@@ -89,7 +89,7 @@ describe('coverage-artifacts.sh', () => {
         COVERAGE_BASE: 'origin/main',
         COVERAGE_HEAD: 'HEAD',
         COVERAGE_PR: '5019',
-        COVERAGE_REPO: 'jonathanong/filaments',
+        COVERAGE_REPO: 'vouchington/vouchington',
         COVERAGE_CHECK_BIN: `${binDir}/pnpm`,
         PATH: `${binDir}:${process.env.PATH ?? ''}`,
         PNPM_ARGS_PATH: argsPath,
@@ -114,7 +114,7 @@ describe('coverage-artifacts.sh', () => {
           COVERAGE_BASE: 'base-sha',
           COVERAGE_HEAD: 'head-sha',
           COVERAGE_PR: '5019',
-          COVERAGE_REPO: 'jonathanong/filaments',
+          COVERAGE_REPO: 'vouchington/vouchington',
           COVERAGE_CHECK_BIN: `${binDir}/pnpm`,
           PNPM_ARGS_PATH: argsPath,
         },

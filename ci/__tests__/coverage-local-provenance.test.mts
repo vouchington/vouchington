@@ -26,10 +26,11 @@ describe('local coverage provenance', () => {
       `TN:\nSF:${resolve('ci/coverage-local-utils.mts')}\nDA:1,1\nend_of_record\n`,
     )
 
-    stampLocalCoverageSuite('tooling', artifacts)
+    stampLocalCoverageSuite('tooling', artifacts, process.cwd(), {})
 
-    expect(validateLocalCoverageArtifacts(artifacts)).toEqual([pair])
+    expect(validateLocalCoverageArtifacts(artifacts, process.cwd(), {})).toEqual([pair])
     expect(JSON.parse(readFileSync(join(pair, 'coverage-manifest.json'), 'utf8'))).toMatchObject({
+      repository: 'vouchington/vouchington',
       run: null,
       suite: 'tooling',
     })

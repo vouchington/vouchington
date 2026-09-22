@@ -17,7 +17,7 @@ the original run did not have a confirmed human escalation, the source was not c
 superseded, and no rerun request was confirmed accepted.
 
 **Fix Main run:** https://github.test/fix-main/1234
-**Watcher run (logs/artifact):** https://github.test/jonathanong/filaments/actions/runs/777
+**Watcher run (logs/artifact):** https://github.test/vouchington/vouchington/actions/runs/777
 
 Please inspect the Fix Main run above and apply a fix manually.`
 
@@ -28,7 +28,7 @@ describe('Fix Main self-retry fallback shell', () => {
       command: 'issue create',
       expectedArgs: [
         '--repo',
-        'jonathanong/filaments',
+        'vouchington/vouchington',
         '--title',
         'Fix Main self-retry incomplete: run 1234 — needs human',
         '--body',
@@ -42,7 +42,7 @@ describe('Fix Main self-retry fallback shell', () => {
     {
       existingIssue: '88',
       command: 'issue comment',
-      expectedArgs: ['88', '--repo', 'jonathanong/filaments', '--body', expectedBody],
+      expectedArgs: ['88', '--repo', 'vouchington/vouchington', '--body', expectedBody],
     },
   ])('uses a factual body for $command', ({ existingIssue, command, expectedArgs }) => {
     const invocation = runEscalation(existingIssue)
@@ -75,7 +75,7 @@ printf '%s\\0' "$@" > "$FAKE_GH_ARGUMENTS_FILE"
 
   const script = (escalationScript ?? 'exit 99')
     .replaceAll('${{ github.server_url }}', 'https://github.test')
-    .replaceAll('${{ github.repository }}', 'jonathanong/filaments')
+    .replaceAll('${{ github.repository }}', 'vouchington/vouchington')
     .replaceAll('${{ github.run_id }}', '777')
   try {
     const result = spawnSync('/bin/bash', ['-c', script], {
@@ -83,7 +83,7 @@ printf '%s\\0' "$@" > "$FAKE_GH_ARGUMENTS_FILE"
       env: {
         ...process.env,
         PATH: `${directory}:${process.env.PATH ?? ''}`,
-        GITHUB_REPOSITORY: 'jonathanong/filaments',
+        GITHUB_REPOSITORY: 'vouchington/vouchington',
         FIX_MAIN_RUN_ID: '1234',
         FIX_MAIN_RUN_URL: 'https://github.test/fix-main/1234',
         FIX_MAIN_RUN_ATTEMPT: '2',
