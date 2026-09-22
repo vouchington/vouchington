@@ -42,7 +42,7 @@ processor without a registry entry fails CI.
 2. The recipient address has a permanent SES bounce or complaint on file
    (`isEmailSuppressed`, `@services/ses-bounce-events`).
 
-Transactional email skips all three checks — it is never suppressed by marketing preferences.
+Transactional email skips both checks — it is never suppressed by marketing preferences.
 
 ## Unsubscribe Headers
 
