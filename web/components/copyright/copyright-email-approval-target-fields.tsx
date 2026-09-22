@@ -141,12 +141,14 @@ export function CopyrightEmailApprovalTargetFields({
           <Input
             aria-label={`Post ID ${index + 1}`}
             onChange={event => updateTarget(target.id, 'post_id', event.target.value)}
+            // ast-grep-ignore: web-no-id-text-input -- staff-only fallback after URL resolution fails; the backend verifies the live placement before approval.
             placeholder='Resolved post ID'
             value={target.post_id}
           />
           <Input
             aria-label={`Image ID ${index + 1}`}
             onChange={event => updateTarget(target.id, 'image_id', event.target.value)}
+            // ast-grep-ignore: web-no-id-text-input -- staff-only fallback after URL resolution fails; the backend verifies the live placement before approval.
             placeholder='Resolved image ID'
             value={target.image_id}
           />
