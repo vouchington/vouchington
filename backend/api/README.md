@@ -17,7 +17,7 @@ leaf for endpoint-specific details; otherwise the README's inline section is can
 | Area                    | Reference                                                                      | Notes                                           |
 | ----------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------- |
 | Admin topic imports     | [v1/admin/imports/README.md](./v1/admin/imports/README.md)                     | Admin-only bulk CSV imports                     |
-| Agents                  | [v1/agents/README.md](./v1/agents/README.md)                                   | Agent viewer endpoints and moderation actions   |
+| Agent moderation        | [v1/agents/README.md](./v1/agents/README.md)                                   | Agent moderation actions                        |
 | Attribution             | [v1/attribution/README.md](./v1/attribution/README.md)                         | Referral attribution tracking                   |
 | Auth                    | [v1/auth/README.md](./v1/auth/README.md)                                       | Login, logout, email auth, Meta auth            |
 | Captcha config          | [v1/captcha-config/README.md](./v1/captcha-config/README.md)                   | Staging Turnstile always-approve public signal  |

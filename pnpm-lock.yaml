@@ -2177,8 +2177,6 @@ importers:
         specifier: workspace:^
         version: link:../utils
 
-  backend/modules/agents: {}
-
   backend/modules/api-egress-proxy:
     dependencies:
       '@data-stores/graceful-shutdown':
@@ -3720,27 +3718,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@modules/agents':
-        specifier: workspace:^
-        version: link:../../modules/agents
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../posts
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -5189,9 +5169,6 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
     devDependencies:
-      '@modules/agents':
-        specifier: workspace:^
-        version: link:../../modules/agents
       '@services/user-referral-program-links':
         specifier: workspace:^
         version: link:../user-referral-program-links
@@ -10318,9 +10295,6 @@ importers:
       '@libpg-query/parser':
         specifier: ^18.0.0
         version: 18.0.0
-      '@modules/agents':
-        specifier: workspace:^
-        version: link:../modules/agents
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../modules/openai-utils

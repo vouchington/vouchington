@@ -36,7 +36,6 @@
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@jongleberry/vurst-markdown": "^0.4.3",
     "@libpg-query/parser": "^18.0.0",
-    "@modules/agents": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/scopes": "workspace:^",

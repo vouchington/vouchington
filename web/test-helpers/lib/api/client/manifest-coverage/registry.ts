@@ -6,7 +6,6 @@ import { engineeringEndpointRegistry } from './engineering-registry'
 import { nonWebClientEndpointRegistry } from './non-web-registry'
 import { moderationEndpointRegistry } from './moderation-registry'
 import { resourceEndpointRegistry } from './resource-registry'
-import { agentEndpointRegistry } from './agent-registry'
 import { mergeEndpointRegistries } from './endpoint-registry'
 
 export const nonWebEndpointRegistry = mergeEndpointRegistries(
@@ -18,5 +17,4 @@ export const nonWebEndpointRegistry = mergeEndpointRegistries(
   engineeringEndpointRegistry,
   moderationEndpointRegistry,
   resourceEndpointRegistry,
-  agentEndpointRegistry,
 )

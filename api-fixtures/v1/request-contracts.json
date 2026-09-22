@@ -1,66 +1,5 @@
 {
   "components": {
-    "Agent": {
-      "additionalProperties": false,
-      "properties": {
-        "activated_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "agent_type": {
-          "$ref": "#/components/schemas/AgentType"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "deactivated_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "deleted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "system_user_id": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "activated_at",
-        "agent_type",
-        "created_at",
-        "deactivated_at",
-        "deleted_at",
-        "id",
-        "system_user_id",
-        "updated_at"
-      ],
-      "type": "object"
-    },
     "AgentModelProvider": {
       "enum": [
         "android_aicore",
@@ -181,26 +120,6 @@
       },
       "required": ["flagged", "reason"],
       "type": "object"
-    },
-    "AgentModerator": {
-      "additionalProperties": false,
-      "properties": {
-        "agent_id": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
-        }
-      },
-      "required": ["agent_id", "created_at", "updated_at"],
-      "type": "object"
-    },
-    "AgentType": {
-      "enum": ["autotagger", "moderator", "storyteller"],
-      "type": "string"
     },
     "AggregatedQueueStats": {
       "additionalProperties": false,
@@ -21372,42 +21291,6 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/agents/:idOrSlug": {
-      "path": {
-        "properties": {
-          "idOrSlug": {
-            "type": "string"
-          }
-        },
-        "required": ["idOrSlug"],
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/agents/:idOrSlug/conversations": {
-      "path": {
-        "properties": {
-          "idOrSlug": {
-            "type": "string"
-          }
-        },
-        "required": ["idOrSlug"],
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/agents/:idOrSlug/conversations/:conversationId": {
-      "path": {
-        "properties": {
-          "conversationId": {
-            "type": "string"
-          },
-          "idOrSlug": {
-            "type": "string"
-          }
-        },
-        "required": ["idOrSlug", "conversationId"],
-        "type": "object"
-      }
-    },
     "GET:/api/v1/appeals/:id": {
       "path": {
         "properties": {
@@ -22967,34 +22850,6 @@
           }
         },
         "required": ["idOrSlug"],
-        "type": "object"
-      }
-    },
-    "GET:/api/v1/posts/:postId/agents/:agentId/responses": {
-      "path": {
-        "properties": {
-          "agentId": {
-            "type": "string"
-          },
-          "postId": {
-            "type": "string"
-          }
-        },
-        "required": ["postId", "agentId"],
-        "type": "object"
-      },
-      "query": {
-        "properties": {
-          "after": {
-            "type": "string"
-          },
-          "limit": {
-            "default": 10,
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          }
-        },
         "type": "object"
       }
     },
