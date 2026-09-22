@@ -14,7 +14,6 @@ import type {
   ProcessSendFollowNewsSourcesEmailVariables,
   ProcessSendFollowTopicsEmailVariables,
   ProcessSendPostReferralLinkEmailVariables,
-  ProcessSendSupportEmailVariables,
   ProcessSendWelcomeEmailVariables,
   ProcessSendCopyrightNoticeEmailVariables,
 } from './types.mts'
@@ -55,8 +54,6 @@ export const enqueueSendCommunityModerationSummaryEmail =
     'processSendCommunityModerationSummaryEmail',
   )
 
-export const enqueueSendSupportEmail =
-  createEnqueueFunction<ProcessSendSupportEmailVariables>('processSendSupportEmail')
 
 export const enqueueSendWelcomeEmail =
   createEnqueueFunction<ProcessSendWelcomeEmailVariables>('processSendWelcomeEmail')

@@ -11,7 +11,6 @@ const AGENT_SYSTEM_USERS = [
   'autotagger',
   MODERATION_SYSTEM_USERNAME,
   BAN_EVASION_SYSTEM_USERNAME,
-  'customer-support',
   'rss-feed-auto-updater',
   'story-teller',
   // Official Voucha account — owns platform-level referral links.
@@ -34,16 +33,7 @@ export default function generateSeedAgentsSQL(): string {
     parts.push(buildSystemUserUpsertSQL(username))
   }
 
-  // 3. Grant least-privilege support role to the customer support agent user.
-  parts.push(`
-INSERT INTO user_roles (user_id, role_type_id)
-SELECT u.id, urt.id
-FROM users u
-JOIN user_roles_types urt ON urt.slug = 'customer_support'
-WHERE u.username = 'customer-support' AND u.is_system = TRUE
-ON CONFLICT (user_id, role_type_id) DO NOTHING;`)
-
-  // 4. Upsert moderator agent rows.
+  // 3. Upsert moderator agent rows.
   for (const config of MODERATOR_CONFIGS) {
     parts.push(`
 INSERT INTO agents (system_user_id, agent_type, activated_at, created_by_id)
@@ -60,7 +50,7 @@ ON CONFLICT (system_user_id) DO UPDATE SET
   deleted_at = NULL;`)
   }
 
-  // 5. Upsert the autotagger agent row (agent_type: 'autotagger').
+  // 4. Upsert the autotagger agent row (agent_type: 'autotagger').
   parts.push(`
 INSERT INTO agents (system_user_id, agent_type, activated_at, created_by_id)
 SELECT
@@ -93,7 +83,7 @@ ON CONFLICT (system_user_id) DO UPDATE SET
   ADD COLUMN IF NOT EXISTS is_baseline BOOLEAN NOT NULL DEFAULT FALSE;
 COMMENT ON COLUMN agents__moderators.is_baseline IS 'When true, this moderator runs on every approved post regardless of community opt-in (baseline safety net).';`)
 
-  // 6. Upsert agents__moderators rows.
+  // 5. Upsert agents__moderators rows.
   for (const config of MODERATOR_CONFIGS) {
     parts.push(`
 INSERT INTO agents__moderators (agent_id, slug, on_flag_action, is_baseline)
@@ -111,7 +101,7 @@ ON CONFLICT (agent_id) DO UPDATE SET
   is_baseline = EXCLUDED.is_baseline;`)
   }
 
-  // 7. Manage prompts: for each moderator, deactivate stale prompts and insert
+  // 6. Manage prompts: for each moderator, deactivate stale prompts and insert
   // the current one if it doesn't already exist as the active prompt.
   for (const config of MODERATOR_CONFIGS) {
     parts.push(buildModeratorPromptSyncSQL(config))

@@ -79,7 +79,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['user-rss-feed-imports', 'user-rss-feed-imports', 'userRssFeedImports'],
       ['article-sync', 'article-sync', 'articleSyncWorker'],
       ['kagi-smallweb', 'kagi-smallweb', 'kagiSmallWeb'],
-      ['customer_support', 'customer-support', 'customer_support'],
       ['ses_inbound', 'ses-inbound', 'sesInboundWorker'],
       ['report_integrity', 'report-integrity', 'reportIntegrity'],
       [

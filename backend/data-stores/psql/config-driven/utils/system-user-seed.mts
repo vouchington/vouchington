@@ -1,5 +1,5 @@
 /**
- * Reserved system usernames (e.g. 'jong', 'customer-support', 'system') are upserted by these
+ * Reserved system usernames (e.g. 'jong', 'autotagger', 'system') are upserted by these
  * generators on every deploy, and role grants elsewhere key off that same username. Any
  * authenticated user can rename themselves via PATCH /api/v1/my/identity, so an attacker can
  * squat a reserved username before a deploy runs and land the privileged role meant for the

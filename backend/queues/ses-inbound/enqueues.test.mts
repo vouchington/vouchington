@@ -15,8 +15,8 @@ describe('SES inbound enqueues', () => {
     const sesMessageId = `ses-${crypto.randomUUID()}`
     const data: SesInboundProcessJobData = {
       sesMessageId,
-      objectKey: `incoming/${sesMessageId}`,
-      intakeKind: 'support',
+      objectKey: `copyright-incoming/${sesMessageId}`,
+      intakeKind: 'copyright',
     }
 
     const job = await enqueueSesInboundProcess(data)
@@ -44,11 +44,11 @@ describe('SES inbound enqueues', () => {
     })
   })
 
-  it('retries only failed process jobs that still have incoming objects', async () => {
+  it('retries only failed process jobs that still have copyright objects', async () => {
     const current = {
       sesMessageId: 'ses-current',
-      objectKey: 'incoming/ses-current',
-      intakeKind: 'support' as const,
+      objectKey: 'copyright-incoming/ses-current',
+      intakeKind: 'copyright' as const,
     }
     const currentId = getSesInboundProcessJobOptions(current).jobId
     const retryCurrent = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
@@ -74,8 +74,8 @@ describe('SES inbound enqueues', () => {
     const sesMessageId = `ses-${crypto.randomUUID()}`
     const data: SesInboundProcessJobData = {
       sesMessageId,
-      objectKey: `incoming/${sesMessageId}`,
-      intakeKind: 'support',
+      objectKey: `copyright-incoming/${sesMessageId}`,
+      intakeKind: 'copyright',
     }
 
     await expect(enqueueOrRetryBulkSesInboundProcess([data])).resolves.toBe(0)

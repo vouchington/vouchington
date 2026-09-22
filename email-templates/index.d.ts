@@ -13,7 +13,6 @@ import type {
   LoginTokenEmailProps,
   PostReferralLinkEmailProps,
   RenewalPriceIncreaseEmailProps,
-  SupportReplyEmailProps,
   WelcomeEmailProps,
 } from './types.mts'
 
@@ -32,7 +31,6 @@ export type {
   LoginTokenEmailProps,
   PostReferralLinkEmailProps,
   RenewalPriceIncreaseEmailProps,
-  SupportReplyEmailProps,
   WelcomeEmailProps,
 }
 
@@ -71,6 +69,3 @@ export declare function renderRenewalPriceIncreaseEmail(
   props: RenewalPriceIncreaseEmailProps,
 ): EmailRenderResultPromise
 export declare function renderWelcomeEmail(props: WelcomeEmailProps): EmailRenderResultPromise
-export declare function renderSupportReplyEmail(
-  props: SupportReplyEmailProps,
-): EmailRenderResultPromise

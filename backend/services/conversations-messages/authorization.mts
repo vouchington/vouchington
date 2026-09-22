@@ -1,5 +1,4 @@
 import type { PrivateUser } from '@services/users/types'
-import { isConversationLinkedToSupportThread } from '@services/customer-support/conversation-consent'
 import type { Conversation } from './types.mts'
 
 export async function currentUserCanViewConversation(
@@ -10,7 +9,7 @@ export async function currentUserCanViewConversation(
   if (conversation.channel_type !== 'chat') return false
   if (conversation.created_by_id === currentUser.id) return true
   if (!currentUser.roles.includes('administrator')) return false
-  return await isConversationLinkedToSupportThread(conversation.id, conversation.created_by_id)
+  return true
 }
 
 export async function currentUserCanUpdateConversation(
@@ -21,7 +20,7 @@ export async function currentUserCanUpdateConversation(
   if (conversation.channel_type !== 'chat') return false
   if (conversation.created_by_id === currentUser.id) return true
   if (!currentUser.roles.includes('administrator')) return false
-  return await isConversationLinkedToSupportThread(conversation.id, conversation.created_by_id)
+  return true
 }
 
 export async function currentUserCanDeleteConversation(
@@ -32,5 +31,5 @@ export async function currentUserCanDeleteConversation(
   if (conversation.channel_type !== 'chat') return false
   if (conversation.created_by_id === currentUser.id) return true
   if (!currentUser.roles.includes('administrator')) return false
-  return await isConversationLinkedToSupportThread(conversation.id, conversation.created_by_id)
+  return true
 }

@@ -9,7 +9,7 @@ app.route('/api/v1/memberships/refundable-charges').get(async (ctx: Context) => 
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/memberships/refundable-charges')
 
   if (!currentUserCanRefundMembership(currentUser)) {
-    ctx.throw(403, 'Admin or customer support access required')
+    ctx.throw(403, 'Administrator access required')
   }
 
   const userId = ctx.query.user_id

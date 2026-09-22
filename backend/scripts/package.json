@@ -35,7 +35,6 @@
     "@services/contribution-gating": "workspace:^",
     "@services/conversations-messages": "workspace:^",
     "@services/crawls": "workspace:^",
-    "@services/customer-support": "workspace:^",
     "@services/data-points": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",

@@ -173,10 +173,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/kagi-smallweb/workers').then(module => module.kagiSmallWeb),
   },
   {
-    queueName: 'customer_support',
-    load: () => import('@workers/customer-support/workers').then(module => module.customer_support),
-  },
-  {
     queueName: 'ses_inbound',
     load: () => import('@workers/ses-inbound/workers').then(module => module.sesInboundWorker),
   },

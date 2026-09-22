@@ -32,18 +32,11 @@ export const EMBEDDING_DIMENSION = 1024
 export const BEDROCK_NOVA_MULTIMODAL_MODEL_ID = 'amazon.nova-2-multimodal-embeddings-v1:0'
 export const BEDROCK_NOVA_MULTIMODAL_MODEL_NAME = 'nova-2-multimodal-embeddings-v1'
 
-export const EMBEDDING_TABLES = [
-  'topics',
-  'posts',
-  'rss_feed_items',
-  'crawl_chunks',
-  'support_messages',
-] as const
+export const EMBEDDING_TABLES = ['topics', 'posts', 'rss_feed_items', 'crawl_chunks'] as const
 
 export const TABLE_MAP = {
   post: 'posts',
   topic: 'topics',
   rss_feed_item: 'rss_feed_items',
   crawl_chunk: 'crawl_chunks',
-  support_message: 'support_messages',
 } as const

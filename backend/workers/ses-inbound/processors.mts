@@ -1,6 +1,5 @@
 import { UnrecoverableError } from '@modules/queue-errors'
 import { enqueueOrRetryBulkSesInboundProcess } from '@queues/ses-inbound/enqueues'
-import { enqueueOrRetryBulkCustomerSupport } from '@queues/ai-agents/enqueues/customer-support'
 import { enqueueCopyrightEmailIntakeAndWait } from '@queues/ai-agents/enqueues/copyright-email-intake'
 import {
   createCopyrightEmailIntake,
@@ -8,18 +7,12 @@ import {
   recordCopyrightEmailParse,
 } from '@services/copyright-notices'
 import {
-  createInboundSupportEmailMessage,
-  isInboundSupportEmailComplete,
-  listInboundCustomerSupportRecoveryCandidates,
-} from '@services/customer-support'
-import {
   assertSesInboundProcessJobData,
   getSesInboundKindFromObjectKey,
   getSesMessageIdFromObjectKey,
   type SesInboundProcessJobData,
 } from '@ts-shared/ses-inbound-contract'
 import { parseSesInboundMime, SesInboundTerminalError } from './processors/mime.mts'
-import { persistSesInboundEmail } from './processors/support.mts'
 import {
   processCopyrightInboundEmail,
   type CopyrightEmailDependencies,
@@ -28,7 +21,6 @@ import {
   deleteSesInboundObject,
   copySesInboundObjectToCopyrightEvidence,
   listCopyrightSesInboundObjects,
-  listSesInboundObjects,
   loadSesInboundObjectAndHash,
   loadSesInboundObjectVersion,
   loadSesInboundObject,
@@ -37,9 +29,7 @@ import {
 } from './processors/s3.mts'
 
 type ProcessDependencies = CopyrightEmailDependencies & {
-  createInboundSupportEmailMessage: typeof createInboundSupportEmailMessage
   deleteSesInboundObject: typeof deleteSesInboundObject
-  isInboundSupportEmailComplete: typeof isInboundSupportEmailComplete
   isCopyrightIntakeEnabled: typeof isCopyrightIntakeEnabled
   loadSesInboundObject: typeof loadSesInboundObject
   moveSesInboundObjectToFailed: typeof moveSesInboundObjectToFailed
@@ -47,12 +37,9 @@ type ProcessDependencies = CopyrightEmailDependencies & {
 }
 
 type ReconcileDependencies = {
-  enqueueOrRetryBulkCustomerSupport: typeof enqueueOrRetryBulkCustomerSupport
   enqueueOrRetryBulkSesInboundProcess: typeof enqueueOrRetryBulkSesInboundProcess
   isCopyrightIntakeEnabled: typeof isCopyrightIntakeEnabled
-  listInboundCustomerSupportRecoveryCandidates: typeof listInboundCustomerSupportRecoveryCandidates
   listCopyrightSesInboundObjects: (continuationToken?: string) => Promise<SesInboundObjectPage>
-  listSesInboundObjects: (continuationToken?: string) => Promise<SesInboundObjectPage>
 }
 
 export async function processSesInboundEmail(
@@ -63,10 +50,8 @@ export async function processSesInboundEmail(
   const deps = {
     copySesInboundObjectToCopyrightEvidence,
     createCopyrightEmailIntake,
-    createInboundSupportEmailMessage,
     deleteSesInboundObject,
     enqueueCopyrightEmailIntakeAndWait,
-    isInboundSupportEmailComplete,
     isCopyrightIntakeEnabled,
     loadSesInboundObject,
     loadSesInboundObjectAndHash,
@@ -77,22 +62,10 @@ export async function processSesInboundEmail(
     ...dependencies,
   }
 
-  if (
-    data.intakeKind === 'support' &&
-    (await deps.isInboundSupportEmailComplete(data.sesMessageId))
-  ) {
-    await deps.deleteSesInboundObject(data.objectKey)
-    return
-  }
-
   try {
-    if (data.intakeKind === 'copyright') {
-      if (!deps.isCopyrightIntakeEnabled()) return
-      await processCopyrightInboundEmail(data, deps)
-      await deps.deleteSesInboundObject(data.objectKey)
-      return
-    }
-    await processSupportInboundEmail(data, deps)
+    if (!deps.isCopyrightIntakeEnabled()) return
+    await processCopyrightInboundEmail(data, deps)
+    await deps.deleteSesInboundObject(data.objectKey)
   } catch (error) {
     if (!(error instanceof SesInboundTerminalError)) throw error
     await deps.moveSesInboundObjectToFailed(data.objectKey, data.sesMessageId)
@@ -100,56 +73,18 @@ export async function processSesInboundEmail(
   }
 }
 
-async function processSupportInboundEmail(
-  data: SesInboundProcessJobData,
-  dependencies: ProcessDependencies,
-): Promise<void> {
-  await loadAndPersistSupportInboundEmail(data, dependencies)
-  await dependencies.deleteSesInboundObject(data.objectKey)
-}
-
-async function loadAndPersistSupportInboundEmail(
-  data: SesInboundProcessJobData,
-  dependencies: ProcessDependencies,
-): Promise<void> {
-  const email = await loadAndParseSesInboundEmail(data.objectKey, dependencies)
-  await persistSesInboundEmail(data, email, dependencies.createInboundSupportEmailMessage)
-}
-
 export async function reconcileSesInboundEmails(
   dependencies?: Partial<ReconcileDependencies>,
-): Promise<{ enqueued: number; customerSupportEnqueued: number }> {
-  const listObjects = dependencies?.listSesInboundObjects ?? listSesInboundObjects
+): Promise<{ enqueued: number }> {
   const listCopyrightObjects =
     dependencies?.listCopyrightSesInboundObjects ?? listCopyrightSesInboundObjects
   const enqueueOrRetry =
     dependencies?.enqueueOrRetryBulkSesInboundProcess ?? enqueueOrRetryBulkSesInboundProcess
-  const listCustomerSupportCandidates =
-    dependencies?.listInboundCustomerSupportRecoveryCandidates ??
-    listInboundCustomerSupportRecoveryCandidates
-  const enqueueOrRetryCustomerSupport =
-    dependencies?.enqueueOrRetryBulkCustomerSupport ?? enqueueOrRetryBulkCustomerSupport
   const copyrightIntakeEnabled = dependencies?.isCopyrightIntakeEnabled ?? isCopyrightIntakeEnabled
-  const [supportEnqueued, copyrightEnqueued] = await Promise.all([
-    enqueueAllInboundPages(listObjects, enqueueOrRetry),
-    copyrightIntakeEnabled() ? enqueueAllInboundPages(listCopyrightObjects, enqueueOrRetry) : 0,
-  ])
-  const enqueued = supportEnqueued + copyrightEnqueued
-
-  let customerSupportCursor: string | undefined
-  let customerSupportEnqueued = 0
-  do {
-    // oxlint-disable-next-line no-await-in-loop -- each PostgreSQL page supplies the next cursor.
-    const page = await listCustomerSupportCandidates({
-      ...(customerSupportCursor ? { after: customerSupportCursor } : {}),
-    })
-    // oxlint-disable-next-line no-await-in-loop -- advance the scan cursor only after awaited fan-out.
-    await enqueueOrRetryCustomerSupport(page.results)
-    customerSupportEnqueued += page.results.length
-    customerSupportCursor = page.page_info.end_cursor ?? undefined
-  } while (customerSupportCursor)
-
-  return { enqueued, customerSupportEnqueued }
+  const enqueued = copyrightIntakeEnabled()
+    ? await enqueueAllInboundPages(listCopyrightObjects, enqueueOrRetry)
+    : 0
+  return { enqueued }
 }
 
 async function enqueueAllInboundPages(
@@ -174,11 +109,4 @@ async function enqueueAllInboundPages(
     continuationToken = page.nextContinuationToken
   } while (continuationToken)
   return enqueued
-}
-
-async function loadAndParseSesInboundEmail(
-  objectKey: string,
-  dependencies: ProcessDependencies,
-): ReturnType<ProcessDependencies['parseSesInboundMime']> {
-  return dependencies.parseSesInboundMime(await dependencies.loadSesInboundObject(objectKey))
 }

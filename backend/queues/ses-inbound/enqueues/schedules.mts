@@ -34,7 +34,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(SES_INBOUND_QUEUE
         kind: 'scheduled-jobs',
         id: 'ses-inbound-reconciliation',
         schedule: 'every 5m',
-        description: 'Recover raw inbound support emails still present in S3',
+        description: 'Recover copyright intake emails still present in S3',
         trigger: enqueueSesInboundReconcile,
       },
       { kind: 'backfill', backfillId: 'ses-inbound-reconciliation' },

@@ -66,21 +66,6 @@ deployed clients, `include_platform=true` accepts a legacy-scoped continuation b
 traversal to the community-only query and continuing to emit legacy cursors. A fresh request without
 a cursor uses the expanded contract.
 
-### Support Threads
-
-| Method | Route                                  | Authentication | Description                                  |
-| ------ | -------------------------------------- | -------------- | -------------------------------------------- |
-| GET    | `/api/v1/my/support-threads/:threadId` | Required       | Get a support thread with paginated messages |
-
-Query parameters:
-
-- `after` - opaque older-message cursor from `page_info.end_cursor`; when absent, the latest page is returned even if `limit` is provided
-- `limit` - number of messages to return
-
-Messages are returned oldest-to-newest within each page. Initial detail loads return the newest page;
-when `page_info.has_next_page` is true, request `after=page_info.end_cursor` and prepend the returned
-older page before the existing messages.
-
 ### Notifications
 
 | Method | Route                                             | Authentication | Description                                      |

@@ -20,7 +20,6 @@ describe('0010-00-01-seed-agents idempotent', () => {
   it('generates SQL for all agent system users', () => {
     const sql = generateSeedAgentsSQL()
     expect(sql).toContain("'autotagger'")
-    expect(sql).toContain("'customer-support'")
     expect(sql).toContain("'story-teller'")
     expect(sql).toContain("'voucha'")
     expect(sql).toContain("'click-bait'")
@@ -85,15 +84,6 @@ describe('0010-00-01-seed-agents idempotent', () => {
     expect(sql).toContain('UPDATE agent_prompts')
     expect(sql).toContain('deactivated_at = CURRENT_TIMESTAMP')
     expect(sql).toContain('MD5(prompt)')
-  })
-
-  it('grants only the customer_support role to the system-owned customer support agent', () => {
-    const sql = generateSeedAgentsSQL()
-    expect(sql).toContain('INSERT INTO user_roles')
-    expect(sql).toContain("urt.slug = 'customer_support'")
-    expect(sql).toContain("u.username = 'customer-support' AND u.is_system = TRUE")
-    expect(sql).not.toContain("urt.slug = 'administrator'")
-    expect(sql).not.toContain('administrator')
   })
 
   it('uses dollar-quoting for prompt text', () => {

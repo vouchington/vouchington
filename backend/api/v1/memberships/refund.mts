@@ -42,7 +42,7 @@ app.route('/api/v1/memberships/refunds').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/memberships/refunds')
 
   if (!currentUserCanRefundMembership(currentUser)) {
-    ctx.throw(403, 'Admin or customer support access required')
+    ctx.throw(403, 'Administrator access required')
   }
 
   const rawBody = await parseJsonBody<Record<string, unknown>>(ctx)

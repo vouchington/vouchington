@@ -6,25 +6,23 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 
 ## Summary
 
-| Processor                                   | Job Name                                 | Description                                                                                                                                                    |
-| ------------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `processChat`                               | `chat`                                   | Runs hosted chat responses and publishes token chunks through Valkey pub/sub                                                                                   |
-| `processAutotaggerPost`                     | `autotagger-post`                        | Runs the autotagger agent on a post                                                                                                                            |
-| `processAutotaggerRssFeedItem`              | `autotagger-rss-feed-item`               | Runs the autotagger agent on an RSS feed item                                                                                                                  |
-| `processModerationDispatcher`               | `moderation-dispatcher`                  | Dispatches enabled built-in community AI agent jobs for a post                                                                                                 |
-| `processModerationPrompt`                   | `moderation-prompt`                      | Runs a single built-in moderation prompt on a post after rechecking community enablement                                                                       |
-| `processCommunityModerationDispatcher`      | `community-moderation-dispatcher`        | Dispatches community moderation prompt jobs; post-created recovery awaits queue delivery so failures retain the reconciliation checkpoint                      |
-| `processCommunityModerationPrompt`          | `community-moderation-prompt`            | Runs a community moderation prompt on a post                                                                                                                   |
-| `processCustomerSupport`                    | `customer-support`                       | Generates a customer support response                                                                                                                          |
-| `processCopyrightEmailIntake`               | `copyright-email-intake`                 | Parses a preserved copyright-inbox email into an advisory structured recommendation; moderator approval remains mandatory                                      |
-| `processCopyrightFormScreening`             | `copyright-form-screening`               | Screens a structured form only for obvious spam or invalidity; a clear signed-in result may provisionally restrict pending mandatory human review              |
-| `processCopyrightAppealRecommendation`      | `copyright-appeal-recommendation`        | Persists advisory appeal analysis for a moderator; it never changes a restriction or restores material                                                         |
-| `processStoryPost`                          | `story-post`                             | Generates or refreshes a story summary; entity recovery uses the awaited enqueue so queue failure retains the durable checkpoint for retry.                    |
-| `processStoryClustering`                    | `story-clustering`                       | Clusters an RSS feed item into stories; re-enqueues with 5 s delay (up to 10 times) when embedding is not yet visible — mirrors the autotagger retry pattern   |
-| `processReconcileBackgroundResponses`       | `reconcile-background-responses`         | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
-| `processReconcileChatRuntimeGenerations`    | `reconcile-chat-runtime-generations`     | Fails stale hosted-chat generations and releases their conversation turn after an interrupted worker                                                           |
-| `processReconcileMemberSupportAgentIntents` | `reconcile-member-support-agent-intents` | Re-enqueues member-created support drafts that committed before keyed queue delivery                                                                           |
-| `processReconcileCopyrightAgentDispatches`  | `reconcile-copyright-agent-dispatches`   | Re-enqueues advisory email, form-screening, and appeal gaps; applies saved clear form screens without another model run                                        |
+| Processor                                  | Job Name                               | Description                                                                                                                                                    |
+| ------------------------------------------ | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `processChat`                              | `chat`                                 | Runs hosted chat responses and publishes token chunks through Valkey pub/sub                                                                                   |
+| `processAutotaggerPost`                    | `autotagger-post`                      | Runs the autotagger agent on a post                                                                                                                            |
+| `processAutotaggerRssFeedItem`             | `autotagger-rss-feed-item`             | Runs the autotagger agent on an RSS feed item                                                                                                                  |
+| `processModerationDispatcher`              | `moderation-dispatcher`                | Dispatches enabled built-in community AI agent jobs for a post                                                                                                 |
+| `processModerationPrompt`                  | `moderation-prompt`                    | Runs a single built-in moderation prompt on a post after rechecking community enablement                                                                       |
+| `processCommunityModerationDispatcher`     | `community-moderation-dispatcher`      | Dispatches community moderation prompt jobs; post-created recovery awaits queue delivery so failures retain the reconciliation checkpoint                      |
+| `processCommunityModerationPrompt`         | `community-moderation-prompt`          | Runs a community moderation prompt on a post                                                                                                                   |
+| `processCopyrightEmailIntake`              | `copyright-email-intake`               | Parses a preserved copyright-inbox email into an advisory structured recommendation; moderator approval remains mandatory                                      |
+| `processCopyrightFormScreening`            | `copyright-form-screening`             | Screens a structured form only for obvious spam or invalidity; a clear signed-in result may provisionally restrict pending mandatory human review              |
+| `processCopyrightAppealRecommendation`     | `copyright-appeal-recommendation`      | Persists advisory appeal analysis for a moderator; it never changes a restriction or restores material                                                         |
+| `processStoryPost`                         | `story-post`                           | Generates or refreshes a story summary; entity recovery uses the awaited enqueue so queue failure retains the durable checkpoint for retry.                    |
+| `processStoryClustering`                   | `story-clustering`                     | Clusters an RSS feed item into stories; re-enqueues with 5 s delay (up to 10 times) when embedding is not yet visible — mirrors the autotagger retry pattern   |
+| `processReconcileBackgroundResponses`      | `reconcile-background-responses`       | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
+| `processReconcileChatRuntimeGenerations`   | `reconcile-chat-runtime-generations`   | Fails stale hosted-chat generations and releases their conversation turn after an interrupted worker                                                           |
+| `processReconcileCopyrightAgentDispatches` | `reconcile-copyright-agent-dispatches` | Re-enqueues advisory email, form-screening, and appeal gaps; applies saved clear form screens without another model run                                        |
 
 ## Architecture
 
@@ -52,7 +50,6 @@ registration, the source job still reaches its midnight delay fallback.
 - [`enqueues/autotagger.mts`](enqueues/autotagger.mts) — autotagger jobs
 - [`enqueues/chat.mts`](enqueues/chat.mts) — chat jobs
 - [`enqueues/community-moderation.mts`](enqueues/community-moderation.mts) — fire-and-forget community moderation jobs plus an awaited recovery variant
-- [`enqueues/customer-support.mts`](enqueues/customer-support.mts) — customer support jobs
 - [`enqueues/copyright-email-intake.mts`](enqueues/copyright-email-intake.mts) — replay-safe copyright email extraction jobs
 - [`enqueues/copyright-form-screening.mts`](enqueues/copyright-form-screening.mts) — stable-ID structured form anti-spam jobs
 - [`enqueues/copyright-appeal-recommendation.mts`](enqueues/copyright-appeal-recommendation.mts) — stable-ID advisory appeal recommendation jobs
@@ -62,7 +59,6 @@ registration, the source job still reaches its midnight delay fallback.
 - [`enqueues/story-post.mts`](enqueues/story-post.mts) — fire-and-forget creation enqueue plus an awaited recovery variant that propagates delivery failure
 - [`enqueues/reconcile-background-responses.mts`](enqueues/reconcile-background-responses.mts) — background-response sweeper job
 - [`enqueues/reconcile-chat-runtime-generations.mts`](enqueues/reconcile-chat-runtime-generations.mts) — hosted-chat runtime recovery job
-- [`enqueues/reconcile-member-support-agent-intents.mts`](enqueues/reconcile-member-support-agent-intents.mts) - member support draft-intent recovery job
 
 ## Chat Streaming
 
@@ -95,21 +91,6 @@ bridge:
    `sse-cycle-expired`. The worker preserves ordinary disconnect behavior, while expiry aborts the
    generator and persists partial output with a retryable assistant error
 
-Inbound SES support messages supply a per-message logical ID and triggering support-message ID to
-`enqueueCustomerSupportAwaited`. The logical ID is used for both the GlideMQ job and simple
-deduplication, and the message ID anchors agent context. Ordinary support updates retain the
-one-minute thread-level debounce and unkeyed consumer path. The five-minute SES reconciliation job
-pages PostgreSQL for inbound messages without a completed keyed run, bulk-enqueues missing jobs,
-and retries retained failed jobs with the same logical ID. An exact matching completed job retained
-by GlideMQ is removed before its stable ID is re-added; other jobs are never scanned or removed.
-
-Member-created support drafts persist the same keyed run intent before their post-commit queue
-delivery. `reconcile-member-support-agent-intents` runs every five minutes, pages unfinished
-`member_thread` run intents from PostgreSQL, and calls `enqueueOrRetryBulkCustomerSupport` with
-the persisted `{ threadId, supportMessageId, logicalJobId }`. The stable message-derived ID is used
-for both queue deduplication and retained-failure retry, so a crash between commit and enqueue
-cannot lose a draft or create a second run.
-
 Copyright forms, successfully parsed email intakes, and appeals are durable before queue delivery. The
 five-minute `reconcile-copyright-agent-dispatches` job pages the whole pending backlog from
 PostgreSQL by dispatched intake or submission ID and re-enqueues records still missing their agent
@@ -121,11 +102,6 @@ unrestricted targets without calling a model. Reviewed forms and targets already
 automated assessment never re-enter automated enforcement. Failed MIME parses are preserved for
 staff and are not sent to the extraction agent. Appeal recommendations are advisory evidence only;
 no agent processor changes material availability or a restriction.
-
-### Member draft-intent recovery matrix
-
-The required eight-mode durability contract and exact test evidence live in the
-[member draft-intent recovery matrix](reference-member-draft-intent-recovery.md).
 
 ## Background Response Sweeper
 

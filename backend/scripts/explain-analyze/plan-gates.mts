@@ -9,7 +9,6 @@ import { assertTrendingCommunitiesIsCandidateBounded } from './plan-trending-com
 import { assertUserRemovedPostsUsesIndex } from './plan-user-removed-posts-gate.mts'
 import { assertCommittedAdmissionResponsePlanShapeIfApplicable } from './plan-admission-response-gate.mts'
 import { assertTopicImportAttemptPlanShapeIfApplicable } from './plan-topic-import-attempts-gate.mts'
-import { assertSupportMessagesUseIndexOrder } from './plan-support-messages-gate.mts'
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-remote-followers-gate.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-review-succession-gate.mts'
 
@@ -62,7 +61,6 @@ export function assertRequiredPlanShape(result: ExplainResult): void {
   assertTopicMetricsBatchIsCandidateBounded(result)
   assertTopicViewerCountsDiscussionsUsesCandidateBind(result)
   assertPaginationPlanShape(result)
-  assertSupportMessagesUseIndexOrder(result)
 }
 
 function assertMembershipRefundUsesIndexes(

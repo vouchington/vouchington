@@ -1,16 +1,10 @@
 # SES Inbound Worker
 
-The IO worker reads raw MIME from the private SES inbound S3 bucket, parses sender and threading
-headers, and calls the customer-support service. It never accepts raw MIME in the queue payload.
+The IO worker reads copyright MIME from `copyright-incoming/` in the private SES inbound S3 bucket.
+It never accepts raw MIME in the queue payload. Permanent MIME and size failures move to `failed/`;
+transient S3, PostgreSQL, and queue failures retry. When copyright intake is enabled, the reconciler
+scans `copyright-incoming/` every five minutes and enqueues retained raw objects.
 
-Successful processing awaits embedding and customer-support agent fan-out before deleting the
-`incoming/` object. Permanent MIME and size failures move to `failed/`; transient S3, PostgreSQL,
-and queue failures retry. The reconciler scans `incoming/` every five minutes for raw messages and
-also scans PostgreSQL inbound receipts/messages without a completed keyed support-agent run. The
-PostgreSQL pass remains effective after the raw object is deleted: it bulk-enqueues the stable AI
-job ID and retries a matching retained failed job.
-
-Mail addressed to the configured designated copyright inbox is routed out of the support path.
 Before source cleanup, the worker copies the complete RFC 5322 object to private copyright evidence
 storage, records its SHA-256 plus parsed attachment metadata in an immutable intake, and awaits a
 replay-safe advisory extraction job. Initial messages and replies use that extraction path. A message matching an

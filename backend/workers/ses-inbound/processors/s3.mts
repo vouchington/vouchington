@@ -10,7 +10,6 @@ import { createHash } from 'node:crypto'
 import {
   SES_INBOUND_FAILED_PREFIX,
   SES_INBOUND_COPYRIGHT_PREFIX,
-  SES_INBOUND_INCOMING_PREFIX,
 } from '@ts-shared/ses-inbound-contract'
 import { SesInboundTerminalError } from './mime.mts'
 import { boundedBodyStream, rejectOversizedRawEmail } from './s3-streams.mts'
@@ -153,12 +152,6 @@ export async function moveSesInboundObjectToFailed(
 }
 
 /* no-mistakes: integration=aws */
-export async function listSesInboundObjects(
-  continuationToken?: string,
-): Promise<SesInboundObjectPage> {
-  return listSesInboundObjectsWithPrefix(SES_INBOUND_INCOMING_PREFIX, continuationToken)
-}
-
 export async function listCopyrightSesInboundObjects(
   continuationToken?: string,
 ): Promise<SesInboundObjectPage> {

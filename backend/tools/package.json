@@ -25,7 +25,6 @@
     "@modules/wikipedia-api": "workspace:^",
     "@services/crawl-chunks": "workspace:^",
     "@services/crawls": "workspace:^",
-    "@services/customer-support": "workspace:^",
     "@services/data-points": "workspace:^",
     "@services/entity-fetch": "workspace:^",
     "@services/entity-relations": "workspace:^",

@@ -20,7 +20,6 @@
     "@queues/ai-agents": "workspace:^",
     "@queues/ses-inbound": "workspace:^",
     "@services/copyright-notices": "workspace:^",
-    "@services/customer-support": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
     "glide-mq": "^0.15.5",
     "mailparser": "^3.9.28"

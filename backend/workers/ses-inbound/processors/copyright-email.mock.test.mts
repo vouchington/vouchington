@@ -43,7 +43,6 @@ describe('SES copyright inbound routing', () => {
     })
     const enqueue = vi.fn<(intakeId: string) => Promise<void>>().mockResolvedValue(undefined)
     const recordParse = vi.fn<typeof recordCopyrightEmailParse>().mockResolvedValue(null)
-    const createSupport = vi.fn<() => Promise<{ is_new: false }>>()
     const parsed: ParsedSesInboundEmail = {
       fromEmail: 'claimant@example.test',
       fromName: 'Copyright claimant',
@@ -64,7 +63,6 @@ describe('SES copyright inbound routing', () => {
     }
 
     await processSesInboundEmail(data, {
-      isInboundSupportEmailComplete: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
       parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>().mockResolvedValue(parsed),
       loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
         rawMime: Readable.from([Buffer.from('raw')]),
@@ -83,7 +81,6 @@ describe('SES copyright inbound routing', () => {
       createCopyrightEmailIntake: createIntake,
       recordCopyrightEmailParse: recordParse,
       enqueueCopyrightEmailIntakeAndWait: enqueue,
-      createInboundSupportEmailMessage: createSupport,
       deleteSesInboundObject: deleteObject,
     })
 
@@ -107,7 +104,6 @@ describe('SES copyright inbound routing', () => {
         attachments: [expect.objectContaining({ filename: 'evidence.pdf' })],
       }),
     )
-    expect(createSupport).not.toHaveBeenCalled()
     expect(deleteObject).toHaveBeenCalledWith(data.objectKey)
     recordParse.mockResolvedValue({
       noticeId: 'notice-id',
@@ -115,7 +111,6 @@ describe('SES copyright inbound routing', () => {
       matchedReference: '<prior@example.test>',
     })
     await processSesInboundEmail(data, {
-      isInboundSupportEmailComplete: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
       parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>().mockResolvedValue(parsed),
       loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
         rawMime: Readable.from([Buffer.from('raw')]),
@@ -132,7 +127,6 @@ describe('SES copyright inbound routing', () => {
       createCopyrightEmailIntake: createIntake,
       recordCopyrightEmailParse: recordParse,
       enqueueCopyrightEmailIntakeAndWait: enqueue,
-      createInboundSupportEmailMessage: createSupport,
       deleteSesInboundObject: deleteObject,
     })
     expect(enqueue).toHaveBeenCalledTimes(2)

@@ -95,9 +95,5 @@ describe('validateScopeSet', () => {
       action: 'write',
       requires: 'cards:read',
     })
-    expect(SCOPE_DEFINITIONS['support-messages:read']).toMatchObject({
-      audience: 'admin',
-      action: 'read',
-    })
   })
 })
