@@ -3,7 +3,6 @@ import { authAndFediverseEndpointRegistry } from './non-web-auth-and-fediverse-r
 import { contentAndProfilesEndpointRegistry } from './non-web-content-and-profiles-registry'
 import { communityEndpointRegistry } from './community-registry'
 import { engineeringEndpointRegistry } from './engineering-registry'
-import { crmEndpointRegistry } from './crm-registry'
 import { nonWebClientEndpointRegistry } from './non-web-registry'
 import { moderationEndpointRegistry } from './moderation-registry'
 import { nativeSupportEndpointRegistry } from './native-support-registry'
@@ -18,7 +17,6 @@ export const nonWebEndpointRegistry = mergeEndpointRegistries(
   nonWebClientEndpointRegistry,
   communityEndpointRegistry,
   engineeringEndpointRegistry,
-  crmEndpointRegistry,
   moderationEndpointRegistry,
   nativeSupportEndpointRegistry,
   resourceEndpointRegistry,
