@@ -35,6 +35,14 @@ export function CopyrightStaffLegalHoldReview({
   const [receivedAt, setReceivedAt] = useState('')
   const [selectedTargetIds, setSelectedTargetIds] = useState(() => targets.map(target => target.id))
   const assessment = hold.assessment
+  function selectProceedingKind(value: LegalHoldProceedingKind) {
+    setProceedingKind(value)
+    if (value === 'none') {
+      setCcbClaimKind('claim')
+      setCommencedAt('')
+      setReceivedAt('')
+    }
+  }
   return (
     <section className='space-y-2'>
       <h3 className='font-medium'>Court or Copyright Claims Board filing</h3>
@@ -56,7 +64,7 @@ export function CopyrightStaffLegalHoldReview({
           setCcbClaimKind={setCcbClaimKind}
           setCommencedAt={setCommencedAt}
           setFromOriginalClaimant={setFromOriginalClaimant}
-          setProceedingKind={setProceedingKind}
+          setProceedingKind={selectProceedingKind}
           setReceivedAt={setReceivedAt}
           setSameMaterial={setSameMaterial}
           setSelectedTargetIds={setSelectedTargetIds}
@@ -166,10 +174,14 @@ function LegalHoldAssessmentFields({
                 from_original_claimant: fromOriginalClaimant,
                 proceeding_kind: proceedingKind === 'none' ? null : proceedingKind,
                 ccb_claim_kind: proceedingKind === 'ccb' ? ccbClaimKind : null,
-                commenced_at: commencedAt ? new Date(commencedAt).toISOString() : null,
-                received_by_designated_agent_at: receivedAt
-                  ? new Date(receivedAt).toISOString()
-                  : null,
+                commenced_at:
+                  proceedingKind === 'none' || !commencedAt
+                    ? null
+                    : new Date(commencedAt).toISOString(),
+                received_by_designated_agent_at:
+                  proceedingKind === 'none' || !receivedAt
+                    ? null
+                    : new Date(receivedAt).toISOString(),
                 same_material: sameMaterial,
                 target_ids: selectedTargetIds,
               }),
