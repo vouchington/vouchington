@@ -3,11 +3,6 @@ import { read } from '@data-stores/psql'
 export type NamedConstraint = { table_name: string; constraint_name: string }
 export type DuplicateIndex = { table_name: string; index_names: string }
 export type RelationPresence = { table_name: string; relation: string | null }
-export type SupportHistoryRelation = {
-  table_name: string
-  relation_kind: string
-  is_partitioned: boolean
-}
 export type ForeignKey = { column_name: string; target_table: string; delete_rule: string }
 export type ResolverForeignKey = { table_name: string; delete_rule: string }
 
@@ -50,22 +45,6 @@ export async function getRemovedTablePresence(tableNames: string[]): Promise<Rel
       SELECT table_name, to_regclass('public.' || table_name)::text AS relation
       FROM unnest($1::text[]) AS table_name
       ORDER BY array_position($1::text[], table_name)`,
-    [tableNames],
-  )
-  return rows
-}
-
-export async function getSupportHistoryRelations(
-  tableNames: string[],
-): Promise<SupportHistoryRelation[]> {
-  const { rows } = await read<SupportHistoryRelation>(
-    `/* getSupportHistoryTableKinds */
-      SELECT relation.relname AS table_name, relation.relkind AS relation_kind,
-        EXISTS (SELECT 1 FROM pg_partitioned_table WHERE partrelid = relation.oid) AS is_partitioned
-      FROM pg_class relation
-      JOIN pg_namespace namespace ON namespace.oid = relation.relnamespace
-      WHERE namespace.nspname = 'public' AND relation.relname = ANY($1)
-      ORDER BY table_name`,
     [tableNames],
   )
   return rows

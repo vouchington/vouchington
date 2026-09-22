@@ -325,10 +325,10 @@ UNION ALL
           ORDER BY placement.id DESC
          LIMIT 1) AS profile_image_placement,
     ARRAY[]::text[] AS roles,
-    COALESCE(((username = ANY (ARRAY['system'::text, 'autotagger'::text, 'customer-support'::text, 'rss-feed-auto-updater'::text, 'story-teller'::text, 'voucha'::text])) OR (EXISTS ( SELECT 1
+    COALESCE(((username = ANY (ARRAY['system'::text, 'autotagger'::text, 'rss-feed-auto-updater'::text, 'story-teller'::text, 'voucha'::text])) OR (EXISTS ( SELECT 1
            FROM (user_roles
              LEFT JOIN user_roles_types ON ((user_roles_types.id = user_roles.role_type_id)))
-          WHERE ((user_roles.user_id = users.id) AND (user_roles_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text, 'customer_support'::text]))))) OR (EXISTS ( SELECT 1
+          WHERE ((user_roles.user_id = users.id) AND (user_roles_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text]))))) OR (EXISTS ( SELECT 1
            FROM agents
           WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL))))), false) AS is_official_account
    FROM users

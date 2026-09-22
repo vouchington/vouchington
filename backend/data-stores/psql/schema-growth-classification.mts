@@ -101,8 +101,6 @@ const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'review_disputes',
   'ses_bounce_events',
   'stripe_events',
-  'support_message_lifecycle_changes',
-  'support_thread_lifecycle_changes',
   'user_data_requests',
   'user_deletion_audit_logs',
   'user_engagement_email_sends',
@@ -188,11 +186,5 @@ export function buildUnboundedUnpartitionedTables(
       'Generation receipts retained with pending push intents; terminal intents expire after 90 days.',
     ],
     ['web_push_endpoint_owners', 'Global claim key preserves cross-user endpoint uniqueness.'],
-    ['support_agent_runs', 'Support automation history is retained for its thread lifetime.'],
-    [
-      'support_inbound_email_receipts',
-      'One durable receipt is retained for every inbound support email; provider and support-message indexes keep replay checks selective.',
-    ],
-    ['support_messages', 'Support correspondence is retained for the lifetime of its thread.'],
   ])
 }

@@ -4,7 +4,6 @@ import {
   getCuratedAsideForeignKeys,
   getModerationResolverForeignKeys,
   getRemovedTablePresence,
-  getSupportHistoryRelations,
   getUnvalidatedPublicConstraints,
   hasCuratedAsideSingleTargetConstraint,
 } from '../../../test-helpers/data-stores/psql/schema-integrity.mts'
@@ -27,7 +26,7 @@ describe('PostgreSQL schema integrity', () => {
     expect(indexes.map(row => `${row.table_name}: ${row.index_names}`)).toEqual([])
   })
 
-  it('keeps retired tables absent and support history unpartitioned', async () => {
+  it('keeps retired tables absent', async () => {
     const removedTables = [
       'conversation_message_rag',
       'crm_contact_lifecycle_changes',
@@ -35,18 +34,20 @@ describe('PostgreSQL schema integrity', () => {
       'crm_contacts',
       'membership_refund_intents',
       'recently_viewed_landing_pages',
+      'support_agent_runs',
+      'support_contacts',
+      'support_inbound_email_message_ids',
+      'support_inbound_email_receipts',
+      'support_message_lifecycle_changes',
+      'support_messages',
+      'support_thread_lifecycle_changes',
+      'support_threads',
       'topics__bank_accounts',
       'wikipedia_topic_recommendations',
     ]
     await expect(getRemovedTablePresence(removedTables)).resolves.toEqual(
       removedTables.map(table_name => ({ table_name, relation: null })),
     )
-    await expect(
-      getSupportHistoryRelations(['support_agent_runs', 'support_messages']),
-    ).resolves.toEqual([
-      { table_name: 'support_agent_runs', relation_kind: 'r', is_partitioned: false },
-      { table_name: 'support_messages', relation_kind: 'r', is_partitioned: false },
-    ])
   })
 
   it('uses concrete curated-aside foreign keys with intentional deletion rules', async () => {
