@@ -1,12 +1,19 @@
 /**
- * ~5k changed lines is the trigger to split a PR rather than ship it whole — see
+ * Large additions are the trigger to split a PR rather than ship it whole — see
  * `.agents/skills/agent-workflow/git-and-prs.md`. Dependency, not size, decides whether that
  * split is a native GitHub stack or independent PRs against `main`; this only forces the split
- * decision to be made consciously instead of skipped by default. Deliberately no exclusion list
- * for lockfiles or generated files — filtering the count would make the threshold unfalsifiable.
- * The `--acknowledge-large-diff` escape hatch covers a genuinely atomic large diff instead.
+ * decision to be made consciously instead of skipped by default. Deletion-heavy retirement work
+ * can remain coherent at a larger limit. Deliberately no exclusion list for lockfiles or generated
+ * files — filtering the count would make the thresholds unfalsifiable. The
+ * `--acknowledge-large-diff` escape hatch covers a genuinely atomic large diff instead.
  */
-export const LARGE_DIFF_LINE_THRESHOLD = 5000
+export const LARGE_DIFF_ADDED_LINE_THRESHOLD = 5000
+export const LARGE_DIFF_DELETED_LINE_THRESHOLD = 20_000
+
+export type DiffLineChanges = {
+  added: number
+  deleted: number
+}
 
 /**
  * Added + removed lines in a unified diff (`git diff <base>...HEAD` output), excluding the
@@ -19,20 +26,29 @@ export const LARGE_DIFF_LINE_THRESHOLD = 5000
  * "probably needs a split" heuristic with a `--acknowledge-large-diff` override, that undercount is
  * acceptable; this is not a full hunk parser and is not meant to become one.
  */
-export function countChangedDiffLines(diffText: string): number {
-  let count = 0
+export function countDiffLineChanges(diffText: string): DiffLineChanges {
+  const changes: DiffLineChanges = { added: 0, deleted: 0 }
   for (const line of diffText.split('\n')) {
     if (line.startsWith('+++') || line.startsWith('---')) continue
-    if (line.startsWith('+') || line.startsWith('-')) count++
+    if (line.startsWith('+')) changes.added++
+    else if (line.startsWith('-')) changes.deleted++
   }
-  return count
+  return changes
 }
 
-export function formatLargeDiffRefusal(changedLines: number): string {
+export function exceedsLargeDiffThreshold(changes: DiffLineChanges): boolean {
   return (
-    `PR create refused: this diff changes ${changedLines} lines against origin/main, over the ` +
-    `~${LARGE_DIFF_LINE_THRESHOLD}-line threshold where a single PR should usually be split ` +
-    'rather than shipped whole (see .agents/skills/agent-workflow/git-and-prs.md).\n' +
+    changes.added > LARGE_DIFF_ADDED_LINE_THRESHOLD ||
+    changes.deleted > LARGE_DIFF_DELETED_LINE_THRESHOLD
+  )
+}
+
+export function formatLargeDiffRefusal(changes: DiffLineChanges): string {
+  return (
+    `PR create refused: this diff adds ${changes.added} and deletes ${changes.deleted} lines ` +
+    `against origin/main. PRs may add at most ~${LARGE_DIFF_ADDED_LINE_THRESHOLD} lines and ` +
+    `delete at most ~${LARGE_DIFF_DELETED_LINE_THRESHOLD} lines before the split decision is ` +
+    'required (see .agents/skills/agent-workflow/git-and-prs.md).\n' +
     'Decide the split before opening this PR: if the parts cannot compile, test, or land ' +
     'independently, split it into a native GitHub stack (.agents/skills/stacked-prs/SKILL.md); ' +
     'if they can land in any order, open separate PRs targeting main instead.\n' +
