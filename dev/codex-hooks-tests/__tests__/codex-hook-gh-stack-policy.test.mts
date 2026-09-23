@@ -109,17 +109,14 @@ describe('Codex hook gh stack submit and link policy', () => {
     },
   )
 
-  it.each([
-    'gh stack modify',
-    'gh stack checkout',
-    'gh stack switch',
-    'gh stack trunk',
-    'gh-stack modify',
-  ])('blocks interactive or non-allowlisted stack commands: %s', command => {
-    expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain(
-      'gh stack allowlist is closed',
-    )
-  })
+  it.each(['gh stack modify', 'gh stack switch', 'gh stack trunk', 'gh-stack modify'])(
+    'blocks interactive or non-allowlisted stack commands: %s',
+    command => {
+      expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain(
+        'gh stack allowlist is closed',
+      )
+    },
+  )
 })
 
 describe('Codex hook hand-rolled stack base policy', () => {

@@ -16,7 +16,7 @@ function gitEnvForCwd(): NodeJS.ProcessEnv {
   )
 }
 
-function gitText(cwd: string, args: string[]): string | undefined {
+export function gitText(cwd: string, args: string[]): string | undefined {
   try {
     const text = execFileSync('git', args, {
       cwd,
@@ -35,7 +35,11 @@ function gitText(cwd: string, args: string[]): string | undefined {
 // (128 for an unknown ref, a timeout, git missing) is indeterminate. gitText can't distinguish "1"
 // from "128" — both throw and both come back undefined — so this fails open on genuine errors
 // while still resolving the true/false case the caller needs to block on.
-function gitIsAncestor(cwd: string, ancestor: string, descendant: string): boolean | undefined {
+export function gitIsAncestor(
+  cwd: string,
+  ancestor: string,
+  descendant: string,
+): boolean | undefined {
   try {
     execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], {
       cwd,

@@ -13,6 +13,7 @@ import {
   validateFixMainRootCauseRef,
 } from '../../pr-description/scheduled-no-source.mts'
 import type { BlockDecision } from './core.mts'
+import type { StackCheckoutResolver } from './github-stack-checkout.mts'
 
 export type GitHubCommandContext = {
   env?: Record<string, string | undefined>
@@ -32,6 +33,12 @@ export type GitHubWorkflowPolicyOptions = {
    * call. Returns the parsed JSON response, or undefined to simulate a failed/unresolvable call.
    */
   resolveStackTopology?: (cwd: string, env: Record<string, string | undefined>) => unknown
+  /**
+   * Injectable in place of the real stack lookup behind the `gh stack checkout <n>` guard
+   * (github-stack-checkout.mts): `stacks/<n>` first, then `pulls/<n>`'s stack. Returns the parsed
+   * single-stack response, or undefined to simulate an unreadable stack.
+   */
+  resolveStackForCheckout?: StackCheckoutResolver
   validateClosingIssueReferences?: boolean
   /**
    * Whether this tool call is running inside GitHub Actions automation (GITHUB_ACTIONS/CI set).

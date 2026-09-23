@@ -3,11 +3,13 @@ import type { GitHubWorkflowPolicyOptions } from './github-closing-refs.mts'
 import { findStackInitBaseBlock } from './github-configured-base.mts'
 import type { GhInvocation } from './github-invocation.mts'
 import { hasNamedFlag, hasNumericPrSelector } from './github-option-flags.mts'
+import { findStackCheckoutBlock } from './github-stack-checkout.mts'
 import { findStackAbandonmentBlock } from './github-stack-topology.mts'
 
 const STACK_AGENT_ACTIONS = new Set([
   'add',
   'bottom',
+  'checkout',
   'delete',
   'down',
   'init',
@@ -46,7 +48,7 @@ export function findGitHubStackWorkflowBlock(
   if (!STACK_AGENT_ACTIONS.has(action)) {
     return {
       reason:
-        'gh stack allowlist is closed. Use only the non-interactive commands in .agents/skills/stacked-prs/SKILL.md. Interactive TUIs (modify, switch, checkout) and trunk are banned.',
+        'gh stack allowlist is closed. Use only the non-interactive commands in .agents/skills/stacked-prs/SKILL.md. Interactive TUIs (modify, switch) and trunk are banned.',
     }
   }
 
@@ -66,6 +68,15 @@ export function findGitHubStackWorkflowBlock(
     if (baseBlock !== null) {
       return baseBlock
     }
+  }
+
+  if (action === 'checkout') {
+    return findStackCheckoutBlock(
+      stack.optionTokens,
+      context.cwd,
+      context.env,
+      options.resolveStackForCheckout,
+    )
   }
 
   if (action === 'submit') {

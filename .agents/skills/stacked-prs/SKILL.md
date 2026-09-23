@@ -50,6 +50,10 @@ Use only these non-interactive forms:
   the new stack is genuinely deliberate and separate, reconcile first, then re-run with
   `AGENT_STACK_INIT_CONFIRM_SEPARATE=1` prefixed to acknowledge it.
 - `gh stack add <branch>`
+- `gh stack checkout <stack-number>` — imports an existing remote stack into this worktree; a PR
+  number or PR URL also works. Hook-enforced: it is blocked while any existing local layer branch
+  differs from its PR head, and the block prints the fix for each branch. See
+  [Import a stack before acting on it](#import-a-stack-before-acting-on-it).
 - `gh stack submit --auto` — creates drafts. Immediately `node dev/pr-description.mts update` each
   new PR; auto titles and bodies are not sufficient. The hook gates `--auto` / no `--open` only; it
   does not check that the body update ran.
@@ -64,14 +68,16 @@ Use only these non-interactive forms:
   remove tracking only; pull requests and local branches are preserved, and a merged, merging, or
   queued PR cannot be removed. `unstack` is `delete`'s default-form alias.
 
-The hook allowlist is closed at the subcommand level: only `add`, `bottom`, `delete`, `down`, `init`,
-`link`, `merge`, `push`, `rebase`, `submit`, `sync`, `top`, `unstack`, `up`, and `view` are permitted
-`gh stack` actions, and for `merge` specifically a numeric PR-number selector is required. It does not
-further enforce the exact flag combination shown above — `gh stack merge <pr>` and
-`gh stack merge <pr> --yes` also pass the hook even though neither is the form this page requires. Do
-not run interactive TUIs: `gh stack submit` without `--auto`, `gh stack modify`, `gh stack checkout`,
-`gh stack switch`, or bare `gh stack merge` (no PR-number selector — it is a TUI and lands the whole
-stack). Do not run `gh stack trunk` — the main worktree already has `main` checked out, and agents
+The hook allowlist is closed at the subcommand level: only `add`, `bottom`, `checkout`, `delete`,
+`down`, `init`, `link`, `merge`, `push`, `rebase`, `submit`, `sync`, `top`, `unstack`, `up`, and
+`view` are permitted `gh stack` actions. `merge` requires a numeric PR-number selector, and
+`checkout` requires exactly one stack number, PR number, or PR URL. The hook does not further enforce
+the exact flag combination shown above — `gh stack merge <pr>` and `gh stack merge <pr> --yes` also
+pass the hook even though neither is the form this page requires. Do not run interactive TUIs:
+`gh stack submit` without `--auto`, `gh stack modify`, bare `gh stack checkout`, `gh stack switch`, or
+bare `gh stack merge` (no PR-number selector — it is a TUI and lands the whole stack). The hook also
+blocks `gh stack checkout <branch>`: a branch name resolves only against stacks this worktree already
+tracks. Do not run `gh stack trunk` — the main worktree already has `main` checked out, and agents
 stay in a non-main worktree.
 
 ### Worktree and scope
@@ -82,6 +88,21 @@ out in another worktree.
 
 - `git diff --name-only origin/main...HEAD` — what lands if this layer and every layer below merge
 - `git diff --name-only <parent>...HEAD` — this layer's review scope; it must match the one source issue
+
+### Import a stack before acting on it
+
+`gh stack rebase`, `sync`, `push`, and movement act only on stacks this worktree's local gh-stack
+record tracks. A stack created from another worktree, session, or machine is not tracked here.
+Before rebasing or pushing a stack layer, including when a pr-shepherd instruction says to, import
+the stack into its one worktree:
+
+1. `gh stack checkout <stack-number>`, with the number from `pulls/<N>.stack.number`. It fetches,
+   records the stack, and checks out the top-most unmerged layer.
+2. If the hook blocks it, an existing local layer branch differs from its PR head. gh-stack keeps
+   existing local branches as they are, so the next rebase would start from stale commits. Apply the
+   printed fix for each branch, then rerun the checkout. A branch that is only behind gets a
+   fast-forward command. A branch with local-only commits must be reconciled by hand: push commits
+   that belong on the PR, or move the branch once you have confirmed they are superseded.
 
 ### Lower-layer review fix
 
