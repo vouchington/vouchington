@@ -42,7 +42,7 @@
     "@modules/search-utils": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@sentry/node": "10.74.0",
+    "@sentry/node": "10.75.0",
     "@ts-shared/money": "workspace:^",
     "@valkey/valkey-glide": "^2.5.2",
     "@voucha/api-fixtures": "workspace:^",
