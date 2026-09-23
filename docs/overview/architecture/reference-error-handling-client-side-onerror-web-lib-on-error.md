@@ -79,6 +79,12 @@ return edgeErrorResponse(429, 'Too Many Requests', 'RATE_LIMIT', { 'retry-after'
 ```
 
 The CF Worker does not have access to backend error codes. Use string literals that mirror the backend registry.
+[`fetchOriginResponse()`](../../../cloudflare-worker/src/origin-request.mts) retries an idempotent
+origin fetch (`GET` or `HEAD`) when `fetch` throws a dropped-socket error such as
+`Network connection lost.` or a connection reset. workerd marks that exception `retryable: true`.
+Mutating methods are not retried, because a lost response may already have been applied by the
+origin. When the retry is exhausted or the error is not a dropped socket, the worker returns
+`edgeErrorResponse(502, 'Bad Gateway', 'BAD_GATEWAY')` and captures the exception.
 Edge-generated failures and forwarded origin failures with status 4xx/5xx are stamped with
 `Cache-Control: no-store, max-age=0, must-revalidate`, `CDN-Cache-Control: no-store`, and
 `Cloudflare-CDN-Cache-Control: no-store`. The Worker cache still only writes successful 2xx
