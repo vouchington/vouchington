@@ -31,7 +31,7 @@
     "@vouchington/memberships": "0.2.0",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",
-    "stripe": "^22.6.1"
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
     "@services/users": "workspace:^",
