@@ -32,7 +32,7 @@
     "@services/users": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@voucha/config": "workspace:^",
-    "feedsmith": "^2.9.6",
+    "feedsmith": "^3.0.0",
     "http-errors": "^2.0.1"
   },
   "devDependencies": {
