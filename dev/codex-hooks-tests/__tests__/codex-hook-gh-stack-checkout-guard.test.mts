@@ -94,7 +94,7 @@ describe('Codex hook gh stack checkout guard', () => {
       git(dir, ['branch', 'layer-1', local])
       const stack = stackOf({ pr: 101, ref: 'layer-1', sha: commitOn(dir, local, 'layer 1 fix') })
       expect(checkoutBlock(dir, 'gh stack checkout 7', stack)?.reason).toContain(
-        '`git fetch origin layer-1:layer-1`',
+        '`git fetch origin refs/heads/layer-1:refs/heads/layer-1`',
       )
     })
   })
@@ -112,7 +112,7 @@ describe('Codex hook gh stack checkout guard', () => {
           stackOf({ pr: 101, ref, sha: prHead }),
         )?.reason
         expect(reason).toContain(prHead)
-        expect(reason).not.toContain('git fetch origin layer-')
+        expect(reason).not.toContain('git fetch origin refs/heads/')
       })
     },
   )
@@ -129,7 +129,7 @@ describe('Codex hook gh stack checkout guard', () => {
       )?.reason
       expect(reason).toContain(`\`git merge --ff-only ${prHead}\``)
       expect(reason).toContain(realpathSync(dir))
-      expect(reason).not.toContain('layer-1:layer-1')
+      expect(reason).not.toContain('git fetch origin refs/heads/')
     })
   })
 
@@ -148,7 +148,7 @@ describe('Codex hook gh stack checkout guard', () => {
         )?.reason
         expect(reason).toContain(local)
         expect(reason).not.toContain('--ff-only')
-        expect(reason).not.toContain('layer-1:layer-1')
+        expect(reason).not.toContain('git fetch origin refs/heads/')
       })
     },
   )
@@ -178,32 +178,37 @@ describe('Codex hook gh stack checkout guard', () => {
     })
   })
 
-  it.each([
-    ['gh stack checkout 7', 7],
-    ['gh-stack checkout 7', 7],
-    ['gh stack checkout https://github.com/other-owner/other-repo/pull/101', 101],
-    ['gh stack checkout https://github.com/other-owner/other-repo/pull/101/files', 101],
-  ])('resolves %s against the current checkout, like gh-stack', (command, number) => {
-    withRepo(({ dir, base }) => {
-      const resolveStackForCheckout = vi.fn<StackCheckoutResolver>(() =>
-        stackOf({ pr: 101, ref: 'layer-1', sha: base }),
-      )
-      expect(
-        findPreToolUseBlock({ tool_input: { command, cwd: dir } }, { resolveStackForCheckout }),
-      ).toBeNull()
-      expect(resolveStackForCheckout).toHaveBeenCalledWith(dir, expect.any(Object), number)
-    })
-  })
+  it.each(['gh stack checkout 7', 'gh-stack checkout 7'])(
+    'resolves %s against the current checkout, like gh-stack',
+    command => {
+      withRepo(({ dir, base }) => {
+        const resolveStackForCheckout = vi.fn<StackCheckoutResolver>(() =>
+          stackOf({ pr: 101, ref: 'layer-1', sha: base }),
+        )
+        expect(
+          findPreToolUseBlock({ tool_input: { command, cwd: dir } }, { resolveStackForCheckout }),
+        ).toBeNull()
+        expect(resolveStackForCheckout).toHaveBeenCalledWith(
+          dir,
+          expect.any(Object),
+          7,
+          expect.any(Number),
+        )
+      })
+    },
+  )
 
   it.each([
     'gh stack checkout',
     'gh stack checkout layer-1',
     'gh stack checkout 7 8',
     'gh stack checkout 0',
+    'gh stack checkout 07',
+    'gh stack checkout 99999999999999999999',
     'gh stack checkout --repo other-owner/other-repo 7',
-    'gh stack checkout https://github.com/other-owner/other-repo/issues/7',
+    'gh stack checkout https://github.com/other-owner/other-repo/pull/7',
     'gh extension exec stack checkout',
-  ])('blocks a target other than one stack number, PR number, or PR URL: %s', command => {
+  ])('blocks a target other than one stack number or PR number: %s', command => {
     withRepo(({ dir }) => {
       const resolveStackForCheckout = vi.fn<StackCheckoutResolver>()
       const block = findPreToolUseBlock(
@@ -230,21 +235,54 @@ describe('Codex hook gh stack checkout guard', () => {
       'a layer without merge state',
       { pull_requests: [{ head: { ref: 'l', sha: MISSING_SHA }, number: 1 }] },
     ],
+    [
+      'an empty merge time',
+      { pull_requests: [{ head: { ref: 'l', sha: MISSING_SHA }, merged_at: '', number: 1 }] },
+    ],
+    [
+      'a fractional PR number',
+      { pull_requests: [{ head: { ref: 'l', sha: MISSING_SHA }, merged_at: null, number: 1.5 }] },
+    ],
+    [
+      'an empty head ref',
+      { pull_requests: [{ head: { ref: '', sha: MISSING_SHA }, merged_at: null, number: 1 }] },
+    ],
   ])('fails closed on %s, since checkout itself needs the same stack read', (_label, stack) => {
     withRepo(({ dir }) => {
       expect(checkoutBlock(dir, 'gh stack checkout 7', stack)).not.toBeNull()
     })
   })
 
-  it('fails closed without consulting the API when the command cwd is unresolvable', () => {
-    withRepo(({ dir }) => {
-      const resolveStackForCheckout = vi.fn<StackCheckoutResolver>()
-      const block = findPreToolUseBlock(
-        { tool_input: { command: 'cd "$STACK_DIR" && gh stack checkout 7', cwd: dir } },
-        { resolveStackForCheckout },
+  it('fails closed when git cannot read the local branches in the command cwd', () => {
+    const dir = makeTestTempDirSync('stack-checkout-not-a-repo-')
+    try {
+      const stack = stackOf({ pr: 101, ref: 'layer-1', sha: MISSING_SHA })
+      expect(checkoutBlock(dir, 'gh stack checkout 7', stack)?.reason).toContain(
+        'could not read the local layer branches',
       )
-      expect(block).not.toBeNull()
-      expect(resolveStackForCheckout).not.toHaveBeenCalled()
+    } finally {
+      rmSync(dir, { force: true, recursive: true })
+    }
+  })
+
+  it('fails closed once the deadline passes before the local branches are read', () => {
+    withRepo(({ dir, base }) => {
+      git(dir, ['branch', 'layer-1', base])
+      const now = vi.spyOn(Date, 'now')
+      try {
+        const reason = findPreToolUseBlock(
+          { tool_input: { command: 'gh stack checkout 7', cwd: dir } },
+          {
+            resolveStackForCheckout: (_cwd, _env, _number, deadline) => {
+              now.mockReturnValue(deadline)
+              return stackOf({ pr: 101, ref: 'layer-1', sha: base })
+            },
+          },
+        )?.reason
+        expect(reason).toContain('could not read the local layer branches')
+      } finally {
+        now.mockRestore()
+      }
     })
   })
 })

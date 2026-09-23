@@ -10,13 +10,13 @@ const GIT_WORKTREE_OVERRIDE_ENV = new Set([
   'GIT_PREFIX',
 ])
 
-function gitEnvForCwd(): NodeJS.ProcessEnv {
+export function gitEnvForCwd(): NodeJS.ProcessEnv {
   return Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !GIT_WORKTREE_OVERRIDE_ENV.has(key)),
   )
 }
 
-export function gitText(cwd: string, args: string[]): string | undefined {
+function gitText(cwd: string, args: string[]): string | undefined {
   try {
     const text = execFileSync('git', args, {
       cwd,
@@ -35,11 +35,7 @@ export function gitText(cwd: string, args: string[]): string | undefined {
 // (128 for an unknown ref, a timeout, git missing) is indeterminate. gitText can't distinguish "1"
 // from "128" — both throw and both come back undefined — so this fails open on genuine errors
 // while still resolving the true/false case the caller needs to block on.
-export function gitIsAncestor(
-  cwd: string,
-  ancestor: string,
-  descendant: string,
-): boolean | undefined {
+function gitIsAncestor(cwd: string, ancestor: string, descendant: string): boolean | undefined {
   try {
     execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], {
       cwd,

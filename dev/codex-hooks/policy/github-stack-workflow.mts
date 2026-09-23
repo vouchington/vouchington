@@ -26,6 +26,8 @@ const STACK_AGENT_ACTIONS = new Set([
 ])
 
 export type GitHubStackWorkflowContext = {
+  // The complete tool command, which the checkout guard requires to be the checkout alone.
+  command: string
   // The invocation's working directory, or undefined when it could not be determined (an
   // unresolved `cd` target, no cwd threaded through) — matches commandCwd's own return type, so
   // callers never normalize between null and undefined. The init guards below fail open in that
@@ -37,7 +39,7 @@ export type GitHubStackWorkflowContext = {
 export function findGitHubStackWorkflowBlock(
   invocation: GhInvocation,
   options: GitHubWorkflowPolicyOptions,
-  context: GitHubStackWorkflowContext = { cwd: undefined, env: {} },
+  context: GitHubStackWorkflowContext = { command: '', cwd: undefined, env: {} },
 ): BlockDecision | null {
   const stack = stackInvocation(invocation)
   if (stack === null) {
@@ -72,6 +74,7 @@ export function findGitHubStackWorkflowBlock(
 
   if (action === 'checkout') {
     return findStackCheckoutBlock(
+      context.command,
       stack.optionTokens,
       context.cwd,
       context.env,

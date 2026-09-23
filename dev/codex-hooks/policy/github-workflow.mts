@@ -145,6 +145,7 @@ export function findGitHubWorkflowBlock(
       }
 
       const stackBlock = findGitHubStackWorkflowBlock(invocation, options, {
+        command,
         cwd: invocationCwd,
         env: commandEnvironment(tokens, index),
       })

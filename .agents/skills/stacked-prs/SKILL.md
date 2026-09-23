@@ -51,8 +51,10 @@ Use only these non-interactive forms:
   `AGENT_STACK_INIT_CONFIRM_SEPARATE=1` prefixed to acknowledge it.
 - `gh stack add <branch>`
 - `gh stack checkout <stack-number>` — imports an existing remote stack into this worktree; a PR
-  number or PR URL also works. Hook-enforced: it is blocked while any existing local layer branch
-  differs from its PR head, and the block prints the fix for each branch. See
+  number also works. Run it as the whole command, or as
+  `cd <absolute-worktree-path> && gh stack checkout <stack-number>`. Hook-enforced: it is blocked
+  while any existing local layer branch differs from its PR head, and the block prints the fix for
+  each branch. See
   [Import a stack before acting on it](#import-a-stack-before-acting-on-it).
 - `gh stack submit --auto` — creates drafts. Immediately `node dev/pr-description.mts update` each
   new PR; auto titles and bodies are not sufficient. The hook gates `--auto` / no `--open` only; it
@@ -71,7 +73,7 @@ Use only these non-interactive forms:
 The hook allowlist is closed at the subcommand level: only `add`, `bottom`, `checkout`, `delete`,
 `down`, `init`, `link`, `merge`, `push`, `rebase`, `submit`, `sync`, `top`, `unstack`, `up`, and
 `view` are permitted `gh stack` actions. `merge` requires a numeric PR-number selector, and
-`checkout` requires exactly one stack number, PR number, or PR URL. The hook does not further enforce
+`checkout` requires exactly one stack number or PR number and nothing else in the command. The hook does not further enforce
 the exact flag combination shown above — `gh stack merge <pr>` and `gh stack merge <pr> --yes` also
 pass the hook even though neither is the form this page requires. Do not run interactive TUIs:
 `gh stack submit` without `--auto`, `gh stack modify`, bare `gh stack checkout`, `gh stack switch`, or
