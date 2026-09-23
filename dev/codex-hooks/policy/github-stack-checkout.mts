@@ -152,9 +152,10 @@ export function findStackCheckoutBlock(
   if (stack === undefined) {
     return {
       reason:
-        `gh stack checkout ${target}: the hook could not read that stack's layers and PR heads from ` +
-        'the GitHub API, so it cannot verify the local layer branches. gh stack checkout needs ' +
-        'the same API; retry once it is reachable.',
+        `gh stack checkout ${target}: the hook could not resolve ${target} to a stack whose layers ` +
+        'and PR heads it can read, so it cannot verify the local layer branches. Check that ' +
+        `${target} is a stack number or a stacked PR (\`gh api "repos/{owner}/{repo}/pulls/${target}" ` +
+        "--jq '.stack.number'`); if the GitHub API was unreachable, retry once it is.",
     }
   }
   const stale = staleLayerBranches(cwd, stack.layers)
