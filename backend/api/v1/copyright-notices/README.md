@@ -1,9 +1,10 @@
 # Copyright Notices API
 
 Structured copyright notices use CAPTCHA or App Attest, rate limiting, UUID idempotency, and
-server-resolved hosted image placements. Signed-in and guest claimants may submit a notice, but only
-a deterministically complete signed-in notice with a durable `not_obviously_invalid` anti-spam
-recommendation is eligible for provisional restriction. The recommendation is not a legal merits
+server-resolved hosted image placements. Duplicate post and image pairs receive a validation error
+before persistence. Signed-in and guest claimants may submit a notice, but only a deterministically
+complete signed-in notice with a durable `not_obviously_invalid` anti-spam recommendation is
+eligible for provisional restriction. The recommendation is not a legal merits
 assessment and cannot fill a statutory field. A moderator must subsequently review every
 provisional restriction.
 

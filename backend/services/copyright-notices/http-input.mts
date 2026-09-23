@@ -58,6 +58,10 @@ export function parseCopyrightNoticeForm(body: Record<string, unknown>) {
       hostedUseUrl: item.target_url,
     }
   })
+  const targetKeys = targets.map(
+    target => `${target.postId.toLowerCase()}:${target.imageId.toLowerCase()}`,
+  )
+  assert(new Set(targetKeys).size === targets.length, 422, 'targets must be unique')
   return {
     jurisdiction: jurisdiction as CopyrightJurisdiction,
     claimantDisplayName: claimantDisplayName as string | null,
