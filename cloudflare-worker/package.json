@@ -52,7 +52,7 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "esbuild": "^0.28.2",
     "vitest": "^5.0.1",
-    "wrangler": "^4.136.0"
+    "wrangler": "^4.136.1"
   },
   "engines": {
     "node": ">=24.16.0"
