@@ -103,27 +103,57 @@ export function buildWorkerOriginRequest({
   return originRequest
 }
 
+type OriginFetchMetadata = {
+  botTier: BotTier | null
+  countryCode: string | null
+  requestId: string
+  target: OriginRequestOptions['target']
+}
+
+// workerd throws `Network connection lost.` with `retryable: true` when the origin socket
+// resets. A second GET/HEAD uses a new connection. Mutating methods stay single-attempt
+// because a lost response may already have been applied by the origin.
+const IDEMPOTENT_ORIGIN_METHODS = new Set(['GET', 'HEAD'])
+const DROPPED_ORIGIN_SOCKET =
+  /network connection lost|connection reset by peer|ECONNRESET|ECONNREFUSED|EPIPE|UND_ERR_SOCKET/i
+
+function isRetryableOriginConnectionLoss(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  return DROPPED_ORIGIN_SOCKET.test(error.message)
+}
+
+function originFetchFailure(error: unknown, metadata: OriginFetchMetadata): { error: Response } {
+  captureWorkerException(error, {
+    routeTarget: metadata.target,
+    botTier: metadata.botTier,
+    countryCode: metadata.countryCode,
+    requestId: metadata.requestId,
+  })
+  console.error('Origin fetch failed:', error)
+  return { error: edgeErrorResponse(502, 'Bad Gateway', 'BAD_GATEWAY') }
+}
+
 export async function fetchOriginResponse(
   originRequest: Request,
-  metadata: {
-    botTier: BotTier | null
-    countryCode: string | null
-    requestId: string
-    target: OriginRequestOptions['target']
-  },
+  metadata: OriginFetchMetadata,
 ): Promise<{ duration: number; response: Response } | { error: Response }> {
   const fetchStart = Date.now()
+  const canRetry = IDEMPOTENT_ORIGIN_METHODS.has(originRequest.method.toUpperCase())
+  // Clone before the first attempt so a retry still has an unread request.
+  const firstRequest = canRetry ? originRequest.clone() : originRequest
+  try {
+    const response = await fetch(firstRequest)
+    return { duration: Date.now() - fetchStart, response }
+  } catch (error) {
+    if (!canRetry || !isRetryableOriginConnectionLoss(error)) {
+      return originFetchFailure(error, metadata)
+    }
+  }
+
   try {
     const response = await fetch(originRequest)
     return { duration: Date.now() - fetchStart, response }
   } catch (error) {
-    captureWorkerException(error, {
-      routeTarget: metadata.target,
-      botTier: metadata.botTier,
-      countryCode: metadata.countryCode,
-      requestId: metadata.requestId,
-    })
-    console.error('Origin fetch failed:', error)
-    return { error: edgeErrorResponse(502, 'Bad Gateway', 'BAD_GATEWAY') }
+    return originFetchFailure(error, metadata)
   }
 }
