@@ -108,13 +108,42 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
     await transaction.commit()
     return
   }
-  const { rows: existingAssessments } = await write<{
+  const { rows: existingAssessments } = await transaction<{
     id: string
   }>(sql`/* applyNonSpamSignedInCopyrightFormScreening:existingAssessment */
-    SELECT id FROM copyright_notice_submission_assessments
-    WHERE copyright_notice_submission_id = ${submissionId}
-      AND NOT EXISTS (SELECT 1 FROM copyright_notice_submission_assessments newer WHERE newer.supersedes_assessment_id = copyright_notice_submission_assessments.id)
+    SELECT assessment.id FROM copyright_notice_submission_assessments assessment
+    WHERE assessment.copyright_notice_submission_id = ${submissionId}
+      AND assessment.assessed_by_id IS NULL
+      AND assessment.substantially_compliant
+      AND assessment.copyright_notice_form_screening_id = ${intake.screening_id}
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_submission_assessments newer
+        WHERE newer.supersedes_assessment_id = assessment.id
+      )
   `)
+  const { rows: currentAssessments } = await transaction<{
+    id: string
+    assessed_by_id: string | null
+    substantially_compliant: boolean
+  }>(
+    sql`/* applyNonSpamSignedInCopyrightFormScreening:currentAssessment */
+      SELECT assessment.id, assessment.assessed_by_id, assessment.substantially_compliant
+      FROM copyright_notice_submission_assessments assessment
+      WHERE assessment.copyright_notice_submission_id = ${submissionId}
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_notice_submission_assessments newer
+          WHERE newer.supersedes_assessment_id = assessment.id
+        )`,
+  )
+  const currentAssessment = currentAssessments[0]
+  if (
+    !existingAssessments[0] &&
+    currentAssessment &&
+    (currentAssessment.assessed_by_id !== null || !currentAssessment.substantially_compliant)
+  ) {
+    await transaction.commit()
+    return
+  }
   const assessment =
     existingAssessments[0] ??
     (await appendCopyrightSubmissionAssessment({
@@ -123,6 +152,7 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
       currentUser: null,
       substantiallyCompliant: true,
       copyrightFormScreeningId: intake.screening_id,
+      supersedesAssessmentId: currentAssessment?.id,
     }))
   await transaction.commit()
   await processCopyrightEnforcementRequest(assessment.id)

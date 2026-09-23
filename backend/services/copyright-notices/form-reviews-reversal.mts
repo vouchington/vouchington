@@ -6,10 +6,30 @@ import { createCopyrightRestoreIntentForReversalInTransaction } from './restorat
 export async function reverseAutomatedCopyrightRestrictions(
   noticeId: string,
   submissionId: string,
-  moderatorId: string,
+  moderatorId: string | null,
+  reviewedAt = new Date(),
 ): Promise<void> {
-  const reviewedAt = new Date()
   await using transaction = await beginTransaction()
+  const { rows: placements } = await transaction<{ placement_key: string }>(sql`
+    /* reviewCopyrightFormIntake:reverseAutomatedRestrictions:placements */
+    SELECT DISTINCT target.placement_key
+    FROM copyright_restrictions restriction
+    JOIN copyright_notice_submission_assessments assessment
+      ON assessment.id = restriction.authorizing_assessment_id
+    JOIN copyright_notice_targets target
+      ON target.id = restriction.copyright_notice_target_id
+    WHERE assessment.copyright_notice_submission_id = ${submissionId}
+      AND assessment.assessed_by_id IS NULL AND target.copyright_notice_id = ${noticeId}
+      AND assessment.copyright_notice_form_screening_id IS NOT NULL
+      AND restriction.lifted_at IS NULL AND restriction.human_review_action IS NULL
+    ORDER BY target.placement_key
+  `)
+  for (const placement of placements) {
+    // oxlint-disable-next-line no-await-in-loop -- placement locks must use canonical order.
+    await transaction(sql`/* reviewCopyrightFormIntake:reverseAutomatedRestrictions:lock */
+      SELECT pg_advisory_xact_lock(hashtextextended(${placement.placement_key}, 0))
+    `)
+  }
   const { rows } = await transaction<{ id: string }>(sql`
     /* reviewCopyrightFormIntake:reverseAutomatedRestrictions */
     UPDATE copyright_restrictions restriction
@@ -23,7 +43,9 @@ export async function reverseAutomatedCopyrightRestrictions(
       AND target.id = restriction.copyright_notice_target_id
       AND assessment.copyright_notice_submission_id = ${submissionId}
       AND assessment.assessed_by_id IS NULL AND target.copyright_notice_id = ${noticeId}
+      AND assessment.copyright_notice_form_screening_id IS NOT NULL
       AND restriction.lifted_at IS NULL
+      AND restriction.human_review_action IS NULL
     RETURNING restriction.id
   `)
   const intentIds: string[] = []

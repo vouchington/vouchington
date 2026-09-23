@@ -24,7 +24,7 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 | `processReconcileBackgroundResponses`       | `reconcile-background-responses`         | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
 | `processReconcileChatRuntimeGenerations`    | `reconcile-chat-runtime-generations`     | Fails stale hosted-chat generations and releases their conversation turn after an interrupted worker                                                           |
 | `processReconcileMemberSupportAgentIntents` | `reconcile-member-support-agent-intents` | Re-enqueues member-created support drafts that committed before keyed queue delivery                                                                           |
-| `processReconcileCopyrightAgentDispatches`  | `reconcile-copyright-agent-dispatches`   | Re-enqueues or retries parsed emails, forms, and appeals missing their advisory agent result                                                                   |
+| `processReconcileCopyrightAgentDispatches`  | `reconcile-copyright-agent-dispatches`   | Re-enqueues advisory email, form-screening, and appeal gaps; applies saved clear form screens without another model run                                        |
 
 ## Architecture
 
@@ -111,12 +111,13 @@ for both queue deduplication and retained-failure retry, so a crash between comm
 cannot lose a draft or create a second run.
 
 Copyright forms, successfully parsed email intakes, and appeals are durable before queue delivery. The
-five-minute `reconcile-copyright-agent-dispatches` job selects records still missing their agent
-result and uses stable logical job IDs. It retries a matching retained failed job, leaves active
-work alone, and removes a completed job only when PostgreSQL still lacks the expected output before
-re-enqueueing it. Failed MIME parses are preserved for staff and are not sent to the extraction
-agent. Appeal recommendations are advisory evidence only; no agent processor changes material
-availability or a restriction.
+five-minute `reconcile-copyright-agent-dispatches` job re-enqueues records still missing their agent
+result with stable logical job IDs. A saved latest clear signed-in form screen with no moderator
+review instead invokes the durable form-effect service directly, which resumes its assessment and
+unrestricted targets without calling a model. Reviewed forms and targets already lifted under an
+automated assessment never re-enter automated enforcement. Failed MIME parses are preserved for
+staff and are not sent to the extraction agent. Appeal recommendations are advisory evidence only;
+no agent processor changes material availability or a restriction.
 
 ### Member draft-intent recovery matrix
 

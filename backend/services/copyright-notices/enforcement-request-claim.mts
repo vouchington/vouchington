@@ -32,6 +32,14 @@ export async function claimCopyrightEnforcementRequest(
         AND (submission.source_kind = 'signed_in_form' OR assessment.assessed_by_id IS NOT NULL)
         AND NOT EXISTS (
           SELECT 1
+          FROM copyright_notice_form_intakes intake
+          JOIN copyright_notice_form_intake_reviews review
+            ON review.copyright_notice_form_intake_id = intake.id
+          WHERE intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id
+            AND NOT review.accepted
+        )
+        AND NOT EXISTS (
+          SELECT 1
           FROM copyright_notice_submission_assessments newer
           WHERE newer.supersedes_assessment_id = assessment.id
         )
@@ -102,6 +110,14 @@ export async function completeNonEnforceableCopyrightEnforcementRequest(
           AND submission.kind = 'notice'
           AND assessment.substantially_compliant
           AND (submission.source_kind = 'signed_in_form' OR assessment.assessed_by_id IS NOT NULL)
+          AND NOT EXISTS (
+            SELECT 1
+            FROM copyright_notice_form_intakes intake
+            JOIN copyright_notice_form_intake_reviews review
+              ON review.copyright_notice_form_intake_id = intake.id
+            WHERE intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id
+              AND NOT review.accepted
+          )
           AND NOT EXISTS (
             SELECT 1
             FROM copyright_notice_submission_assessments newer

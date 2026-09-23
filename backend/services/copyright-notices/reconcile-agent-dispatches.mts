@@ -3,7 +3,8 @@ import sql from 'sql-template-strings'
 
 export type CopyrightAgentDispatch =
   | { kind: 'email'; intakeId: string }
-  | { kind: 'form'; submissionId: string }
+  | { kind: 'form-screening'; submissionId: string }
+  | { kind: 'form-effect'; submissionId: string }
   | { kind: 'appeal'; submissionId: string }
 
 /** Durable source-of-truth sweep for post-commit enqueue failures and exhausted queue retries. */
@@ -11,7 +12,7 @@ export async function getPendingCopyrightAgentDispatches(
   limit = 100,
 ): Promise<CopyrightAgentDispatch[]> {
   const { rows } = await read<{
-    kind: 'email' | 'form' | 'appeal'
+    kind: 'email' | 'form-screening' | 'form-effect' | 'appeal'
     id: string
   }>(sql`/* getPendingCopyrightAgentDispatches */
     SELECT kind, id FROM (
@@ -24,12 +25,94 @@ export async function getPendingCopyrightAgentDispatches(
         WHERE recommendation.copyright_notice_email_intake_id = intake.id
       )
       UNION ALL
-      SELECT 'form'::text AS kind, intake.copyright_notice_submission_id AS id
+      SELECT 'form-screening'::text AS kind, intake.copyright_notice_submission_id AS id
       FROM copyright_notice_form_intakes intake
       WHERE NOT EXISTS (
         SELECT 1 FROM copyright_notice_form_screenings screening
         WHERE screening.copyright_notice_form_intake_id = intake.id
       )
+      UNION ALL
+      SELECT 'form-effect'::text AS kind, intake.copyright_notice_submission_id AS id
+      FROM copyright_notice_form_intakes intake
+      JOIN copyright_notice_submissions submission
+        ON submission.id = intake.copyright_notice_submission_id
+      JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
+      JOIN LATERAL (
+        SELECT id, recommendation FROM copyright_notice_form_screenings
+        WHERE copyright_notice_form_intake_id = intake.id
+        ORDER BY id DESC LIMIT 1
+      ) screening ON screening.recommendation = 'not_obviously_invalid'
+      LEFT JOIN LATERAL (
+        SELECT assessment.id
+        FROM copyright_notice_submission_assessments assessment
+        WHERE assessment.copyright_notice_submission_id = submission.id
+          AND assessment.assessed_by_id IS NULL
+          AND assessment.substantially_compliant
+          AND assessment.copyright_notice_form_screening_id = screening.id
+          AND NOT EXISTS (
+            SELECT 1 FROM copyright_notice_submission_assessments newer
+            WHERE newer.supersedes_assessment_id = assessment.id
+          )
+      ) assessment ON true
+      LEFT JOIN LATERAL (
+        SELECT assessment.id, assessment.assessed_by_id, assessment.substantially_compliant
+        FROM copyright_notice_submission_assessments assessment
+        WHERE assessment.copyright_notice_submission_id = submission.id
+          AND NOT EXISTS (
+            SELECT 1 FROM copyright_notice_submission_assessments newer
+            WHERE newer.supersedes_assessment_id = assessment.id
+          )
+      ) current_assessment ON true
+      WHERE submission.source_kind = 'signed_in_form'
+        AND notice.jurisdiction = 'us_dmca'
+        AND char_length(notice.claimant_contact_ciphertext) > 0
+        AND char_length(btrim(notice.work_description)) > 0
+        AND intake.good_faith_belief
+        AND intake.accuracy_authority_under_penalty_of_perjury
+        AND char_length(intake.electronic_signature_ciphertext) > 0
+        AND EXISTS (
+          SELECT 1 FROM copyright_notice_targets target
+          JOIN copyright_notice_target_images target_image
+            ON target_image.copyright_notice_target_id = target.id
+          WHERE target.copyright_notice_id = intake.copyright_notice_id
+            AND char_length(btrim(target.hosted_use_url)) > 0
+        )
+        AND EXISTS (
+          SELECT 1 FROM copyright_notice_delivery_intents receipt
+          JOIN copyright_notice_delivery_recipients recipient
+            ON recipient.copyright_notice_delivery_intent_id = receipt.id
+          WHERE receipt.copyright_notice_id = intake.copyright_notice_id
+            AND receipt.recipient_role = 'claimant' AND receipt.channel = 'email'
+            AND receipt.delivery_kind = 'claimant_receipt'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_notice_form_intake_reviews review
+          WHERE review.copyright_notice_form_intake_id = intake.id
+        )
+        AND (current_assessment.id IS NULL OR (
+          current_assessment.assessed_by_id IS NULL
+          AND current_assessment.substantially_compliant
+        ))
+        AND (
+          assessment.id IS NULL OR EXISTS (
+            SELECT 1 FROM copyright_notice_targets target
+            WHERE target.copyright_notice_id = intake.copyright_notice_id
+              AND NOT EXISTS (
+                SELECT 1 FROM copyright_restrictions restriction
+                WHERE restriction.copyright_notice_target_id = target.id
+                  AND restriction.lifted_at IS NULL
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM copyright_restrictions restriction
+                JOIN copyright_notice_submission_assessments authority
+                  ON authority.id = restriction.authorizing_assessment_id
+                WHERE restriction.copyright_notice_target_id = target.id
+                  AND authority.copyright_notice_submission_id = submission.id
+                  AND authority.assessed_by_id IS NULL
+                  AND restriction.lifted_at IS NOT NULL
+              )
+          )
+        )
       UNION ALL
       SELECT 'appeal'::text AS kind, submission.id
       FROM copyright_notice_submissions submission
@@ -45,8 +128,10 @@ export async function getPendingCopyrightAgentDispatches(
   return rows.map(row =>
     row.kind === 'email'
       ? { kind: 'email', intakeId: row.id }
-      : row.kind === 'form'
-        ? { kind: 'form', submissionId: row.id }
-        : { kind: 'appeal', submissionId: row.id },
+      : row.kind === 'form-screening'
+        ? { kind: 'form-screening', submissionId: row.id }
+        : row.kind === 'form-effect'
+          ? { kind: 'form-effect', submissionId: row.id }
+          : { kind: 'appeal', submissionId: row.id },
   )
 }

@@ -33,7 +33,10 @@ Signed-in forms may create a provisional restriction only after the exact curren
 intake is deterministically complete (contact, work, declarations, signature, and hosted target)
 and receives a `not_obviously_invalid` anti-spam screen; PostgreSQL binds the assessment and
 restriction to that screening record. The screening is not a legal assessment and cannot fill
-missing statutory fields. Guest forms and every email intake remain moderator-gated. Email admission uses
+missing statutory fields. The reconciliation sweep applies a saved latest clear screen directly to
+repair its matching automated assessment and only targets that remain unrestricted; it does not run
+the screening model again. A moderator review or a target lifted under automated authority prevents
+automated reimposition. Guest forms and every email intake remain moderator-gated. Email admission uses
 the trusted SES `intakeKind`/S3-prefix contract, preserves the exact raw object version before
 parsing, retains encrypted threading headers, and retains malformed messages for manual review.
 The extraction records all statutory fields plus bounded source excerpts without inventing missing

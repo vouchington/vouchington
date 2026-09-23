@@ -47,8 +47,17 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     source_kind: 'signed_in_form' | 'guest_form' | 'email' | 'staff'
     assessed_by_id: string | null
     substantially_compliant: boolean
+    has_rejected_form_review: boolean
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:lockAssessment */
-    SELECT submission.source_kind, assessment.assessed_by_id, assessment.substantially_compliant
+    SELECT submission.source_kind, assessment.assessed_by_id, assessment.substantially_compliant,
+      EXISTS (
+        SELECT 1
+        FROM copyright_notice_form_intakes intake
+        JOIN copyright_notice_form_intake_reviews review
+          ON review.copyright_notice_form_intake_id = intake.id
+        WHERE intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id
+          AND NOT review.accepted
+      ) AS has_rejected_form_review
     FROM copyright_notice_submission_assessments assessment
     JOIN copyright_notice_submissions submission
       ON submission.id = assessment.copyright_notice_submission_id
@@ -65,6 +74,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const assessment = assessmentRows[0]
   assert(assessment, 422, 'A current notice assessment is required before restriction')
   assert(assessment.substantially_compliant, 422, 'Copyright notice assessment is not compliant')
+  assert(!assessment.has_rejected_form_review, 422, 'Copyright notice form review was rejected')
   assert(
     assessment.source_kind === 'signed_in_form' || assessment.assessed_by_id !== null,
     422,
