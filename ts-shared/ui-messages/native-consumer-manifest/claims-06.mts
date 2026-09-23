@@ -67,7 +67,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_06 = [
   { key: 'native.dotnet.dynamic.signOutDeviceQuestion', consumers: ['dotnet'] },
   { key: 'native.dotnet.dynamic.signOutSessionQuestion', consumers: ['dotnet'] },
   { key: 'native.dotnet.dynamic.signedOut', consumers: ['dotnet'] },
-  { key: 'native.dotnet.dynamic.supportThread', consumers: ['dotnet'] },
   { key: 'native.dotnet.dynamic.unfollow', consumers: ['dotnet'] },
   { key: 'native.dotnet.dynamic.unfollowSource', consumers: ['dotnet'] },
   { key: 'native.dotnet.dynamic.unfollowTopic', consumers: ['dotnet'] },

@@ -93,13 +93,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_20 = [
   },
   { key: 'native.swift.routeMetadata.mainStoriesBrowseStoryDetailsTitle', consumers: ['swift'] },
   {
-    key: 'native.swift.routeMetadata.mainSupportNewSupportThreadDescription',
-    consumers: ['swift'],
-  },
-  { key: 'native.swift.routeMetadata.mainSupportNewSupportThreadTitle', consumers: ['swift'] },
-  { key: 'native.swift.routeMetadata.mainSupportSupportChatDescription', consumers: ['swift'] },
-  { key: 'native.swift.routeMetadata.mainSupportSupportChatTitle', consumers: ['swift'] },
-  {
     key: 'native.swift.routeMetadata.mainTopicDetailRecommendationsDescription',
     consumers: ['swift'],
   },

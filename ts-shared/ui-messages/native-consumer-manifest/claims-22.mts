@@ -29,38 +29,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_22 = [
     consumers: ['swift'],
   },
   {
-    key: 'native.swift.routeMetadata.staffSupportStaffContactsContactDetailDescription',
-    consumers: ['swift'],
-  },
-  {
-    key: 'native.swift.routeMetadata.staffSupportStaffContactsContactDetailTitle',
-    consumers: ['swift'],
-  },
-  {
-    key: 'native.swift.routeMetadata.staffSupportStaffContactsSupportContactsDescription',
-    consumers: ['swift'],
-  },
-  {
-    key: 'native.swift.routeMetadata.staffSupportStaffContactsSupportContactsTitle',
-    consumers: ['swift'],
-  },
-  {
-    key: 'native.swift.routeMetadata.staffSupportStaffThreadsSupportThreadsDescription',
-    consumers: ['swift'],
-  },
-  {
-    key: 'native.swift.routeMetadata.staffSupportStaffThreadsSupportThreadsTitle',
-    consumers: ['swift'],
-  },
-  {
-    key: 'native.swift.routeMetadata.staffSupportStaffThreadsThreadDetailDescription',
-    consumers: ['swift'],
-  },
-  {
-    key: 'native.swift.routeMetadata.staffSupportStaffThreadsThreadDetailTitle',
-    consumers: ['swift'],
-  },
-  {
     key: 'native.swift.routeMetadata.staffUserAdminIdentityVerificationDescription',
     consumers: ['swift'],
   },
