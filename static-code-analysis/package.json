@@ -9,7 +9,7 @@
   "scripts": {},
   "dependencies": {
     "@libpg-query/parser": "^18.0.0",
-    "@typescript-eslint/parser": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.1",
     "@vouchington/localization": "0.2.0",
     "@vouchington/localization-compiler": "0.2.1",
     "@vouchington/postgres": "0.0.9",
