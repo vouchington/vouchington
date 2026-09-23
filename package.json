@@ -142,7 +142,7 @@
     "@vouchington/localization-compiler": "0.2.1",
     "agent-blackboard": "0.5.0",
     "csv-parse": "7.0.2",
-    "dependency-cruiser": "^18.2.0",
+    "dependency-cruiser": "^18.4.0",
     "eslint-plugin-no-mistakes": "^0.63.0",
     "eslint-plugin-playwright": "^2.11.0",
     "eslint-plugin-react-you-might-not-need-an-effect": "^1.0.2",
