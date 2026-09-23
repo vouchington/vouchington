@@ -65,15 +65,16 @@ checks guard that request-selection contract instead of catalog content:
   never rewrites catalog source. It runs as "Check localization catalog format" in static-analysis
   CI; use `pnpm run localization:catalog -- format` when an agent must rewrite rows through the
   authoring CLI.
-- `static-code-analysis/i18n-extract/route-selector-map.test.mts` — unit-tests `assembleRouteAliasMap` and route discovery on tiny fake-git fixtures in the `i18n-extract-codemod` Vitest project. Graph closures live in `route-selector-map.mock.test.mts`, which mocks `analyzeProject` dependency reports plus a batched `resolveCheck` over the closure-file union so tooling Vitest never waits on the user-global no-mistakes lock (formerly filed as jonathanong/filaments#11696). Negative fixtures in that file prove generate fails on an unknown quoted registry alias, a mocked unresolved import, an unbounded `t()` key, and a computed `import()`. The 25s analysis budget remains on `analysis-budget.mts` for genuine lock diagnostics and is not applied to production `--check`.
+- `static-code-analysis/i18n-extract/route-selector-map.test.mts` — unit-tests `assembleRouteAliasMap` and route discovery on tiny fake-git fixtures in the `i18n-extract-codemod` Vitest project. Graph closures live in `route-selector-map.mock.test.mts`, which mocks dependency reports and their derived `resolveCheckDependencies` report in one `analyzeProject` call so tooling Vitest never waits on the user-global no-mistakes lock (formerly filed as jonathanong/filaments#11696). Negative fixtures in that file prove generate fails on an unknown quoted registry alias, a mocked unresolved import, an unbounded `t()` key, and a computed `import()`. The 25s analysis budget remains on `analysis-budget.mts` for genuine lock diagnostics and is not applied to production `--check`.
 - `static-code-analysis/i18n-extract/route-selector-map.mts --check` — regenerates
   `web/lib/i18n/route-selectors.generated.mts` and `localization/catalog/routes.json` (stable
   selectors and pattern-keyed alias membership for every real `web/app` route) and fails if either committed
   artifact is stale. It makes one no-mistakes `analyzeProject` call with a dependency report per
-  route/global-chrome file, requesting `import-static`, `import-dynamic`, `import-type`, and
-  `workspace` relationships; no-mistakes follows dynamic import targets (including `next/dynamic`)
-  recursively within that same closure. A second `analyzeProject` call then batches `resolveCheck`
-  over the union of those closure files and fails on unresolved **local** specifiers (relative,
+  route/global-chrome file and one combined-root dependency report, requesting `import-static`,
+  `import-dynamic`, `import-type`, and `workspace` relationships; no-mistakes follows dynamic import
+  targets (including `next/dynamic`) recursively within that same closure. A
+  `resolveCheckDependencies` report in the same call checks the combined report's closure files and
+  fails on unresolved **local** specifiers (relative,
   root, or `@/` aliases) and on computed `import()`/`require()` rows, except an explicit reviewed
   exclusion list (empty until an entry is justified). Package specifiers stay external. The
   generator also fails computed `import()` lexically, along with unbounded `t()` assembly and

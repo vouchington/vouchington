@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  analyzeUnresolvedImports,
-  initialClosureFiles,
-  reportsById,
-  uniqueClosureFiles,
-} from './route-graph-analysis.mts'
+import { initialClosureFiles, reportsById } from './route-graph-analysis.mts'
 
 describe('reportsById', () => {
   it('indexes reports by id', () => {
@@ -52,15 +47,5 @@ describe('closure file union', () => {
       'web/components/navbar.tsx',
       'web/components/extra.tsx',
     ])
-    expect(uniqueClosureFiles(initial)).toEqual([
-      'web/app/one/page.ts',
-      'web/lib/a.ts',
-      'web/components/navbar.tsx',
-      'web/components/extra.tsx',
-    ])
-  })
-
-  it('skips resolveCheck when the closure has no source files', async () => {
-    await expect(analyzeUnresolvedImports('/unused', [], {})).resolves.toBeUndefined()
   })
 })

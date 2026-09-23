@@ -153,7 +153,7 @@
     "jose": "^6.2.12",
     "jsdom": "^30.0.1",
     "knip": "^6",
-    "no-mistakes": "^0.63.0",
+    "no-mistakes": "^0.64.2",
     "oxfmt": "^0.67.0",
     "oxlint": "1.82.0",
     "oxlint-plugin-react-doctor": "^0.9.13",

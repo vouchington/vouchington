@@ -19,10 +19,8 @@ import {
 } from './route-alias-map-assembly.mts'
 import {
   analyzeRouteDependencies,
-  analyzeUnresolvedImports,
   initialClosureFiles,
   reportsById,
-  uniqueClosureFiles,
 } from './route-graph-analysis.mts'
 import { renderSource } from './route-selector-output.mts'
 import {
@@ -67,11 +65,7 @@ export async function computeRouteAliasMap(
   diagnostics?.phase('analyze-project', performance.now() - analysisStart)
   const reports = reportsById(analysis)
   const initialFiles = initialClosureFiles(discovered, globalFiles, reports)
-  const resolveStart = performance.now()
-  assertResolvedImports(
-    await analyzeUnresolvedImports(repoRoot, uniqueClosureFiles(initialFiles), budget),
-  )
-  diagnostics?.phase('resolve-check', performance.now() - resolveStart)
+  assertResolvedImports(reports.get('resolve-check')?.result)
   const textCache = new Map<string, Promise<string>>()
   const quotedAliases = new Set<string>()
   const issues: ClosureScanIssue[] = []
