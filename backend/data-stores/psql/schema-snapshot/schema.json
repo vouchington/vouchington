@@ -23732,7 +23732,7 @@
         },
         "completed_at": {
           "collation": null,
-          "comment": "Time all required target restrictions became active.",
+          "comment": "Time every required target restriction became active or the authorizing assessment became non-enforceable.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -23743,7 +23743,7 @@
         },
         "copyright_notice_id": {
           "collation": null,
-          "comment": "Initial notice whose compliant assessment requires every target restriction to be active.",
+          "comment": "Copyright case whose current compliant initial-notice assessment authorizes target restrictions.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -23754,7 +23754,7 @@
         },
         "copyright_notice_submission_assessment_id": {
           "collation": null,
-          "comment": "One-to-one assessment that authorized this enforcement request and supplies its idempotency identity.",
+          "comment": "One-to-one initial-notice assessment that authorizes this enforcement request and supplies its idempotency identity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -23798,7 +23798,7 @@
         },
         "state": {
           "collation": null,
-          "comment": "Outbox lifecycle state: pending, worker-claimed, or completed after every target restriction is active.",
+          "comment": "Outbox lifecycle state: pending, worker-claimed, or completed after target restrictions succeed or the authorizing assessment becomes non-enforceable.",
           "defaultExpression": "'pending'::text",
           "generated": null,
           "generatedExpression": null,
@@ -23819,7 +23819,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Durable outbox created atomically with every compliant initial-notice assessment and completed only after every target has an active restriction.",
+      "comment": "Durable outbox created atomically with every compliant initial-notice assessment; completes after every target is restricted or when its authorizing assessment is no longer enforceable.",
       "foreignKeys": {
         "copyright_notice_enforcement__copyright_notice_submission__fkey": {
           "columns": ["copyright_notice_submission_assessment_id"],

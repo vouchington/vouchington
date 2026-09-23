@@ -24,6 +24,20 @@ export async function countCopyrightActiveRestrictionsForNotice(noticeId: string
   return rows[0]!.count
 }
 
+export async function readCopyrightEnforcementRequest(assessmentId: string): Promise<{
+  state: 'pending' | 'claimed' | 'completed'
+  completed_at: Date | null
+} | null> {
+  const { rows } = await write<{
+    state: 'pending' | 'claimed' | 'completed'
+    completed_at: Date | null
+  }>(sql`/* readCopyrightEnforcementRequest */
+    SELECT state, completed_at
+    FROM copyright_notice_enforcement_requests
+    WHERE copyright_notice_submission_assessment_id = ${assessmentId}`)
+  return rows[0] ?? null
+}
+
 export async function failTestCopyrightDeliveryIntent(intentId: string): Promise<void> {
   const { rowCount } = await write(sql`/* failTestCopyrightDeliveryIntent */
     UPDATE copyright_notice_delivery_intents
