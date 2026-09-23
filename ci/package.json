@@ -23,10 +23,10 @@
   "devDependencies": {
     "@ts-shared/utils": "workspace:^",
     "@types/picomatch": "^4.0.3",
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.1",
     "oxfmt": "^0.68.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vitest": "^5.0.0",
+    "vitest": "^5.0.1",
     "yaml": "^2.9.0"
   }
 }
