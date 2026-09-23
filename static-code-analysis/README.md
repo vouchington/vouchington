@@ -531,10 +531,9 @@ under [`../.oxlintrc.json`](../.oxlintrc.json). Its four test-helper/test-file e
 test-only rejection swallowing out of the production inventory. The authoritative 2026-09-10 scan
 found 116 diagnostics in 70 production files (41 backend, 75 web); #11566 introduced the consumer
 contract and inventory, #11567 remediated and promoted backend, and #11568 remediated web and
-expanded the final error-level scope. The fixture runs the installed package rule directly,
-rejects
-empty/bare-return/`undefined`/`void` callbacks and `.then()` rejection handlers, and accepts named,
-logging, and rethrow handlers without a callee allowlist.
+expanded the final error-level scope. The fixture runs oxlint with the repository
+`.oxlintrc.json` and asserts the rule reports only production `backend/**` and `web/**` files;
+which callback shapes the rule rejects is the package's own contract.
 
 **PR 2 — remediation (after PR 1 merges):**
 

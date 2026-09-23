@@ -1,12 +1,9 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
 
 import {
   coverageDisposition,
-  executableLineNumbers,
   findMissingCoverage,
   loadCoverageConfig,
-  type CoverageRule,
   type DiffLines,
   type LcovData,
 } from 'coverage-check'
@@ -32,25 +29,6 @@ function reachableFiles(): string[] {
 }
 
 describe('.coverage-rules.yml scope', () => {
-  // Scans every reachable file in the repo, so it inherently scales with repo size and CPU
-  // headroom rather than the 30s tooling-project default. Observed on GitHub-hosted ubuntu-latest
-  // (2 vCPUs): 63.6s single slowest case. 120s (~2x) stays well under the "Run tooling tests"
-  // step's 16-minute (960s) ceiling. A project-wide budget bump is the wrong mechanism here — see
-  // the comment on toolingTestBudget in test-helpers/vitest-config/tooling-projects.mts.
-  it('never throws executableLineNumbers on a real file reachable by a positive-threshold rule', () => {
-    const files = reachableFiles()
-    expect(files.length).toBeGreaterThan(0)
-    const failures: string[] = []
-    for (const file of files) {
-      try {
-        executableLineNumbers(readFileSync(file, 'utf8'), file)
-      } catch (error) {
-        failures.push(`${file}: ${String(error)}`)
-      }
-    }
-    expect(failures).toEqual([])
-  }, 120_000)
-
   it('ignores generated, declaration, test, and fixture files that no suite ever instruments', () => {
     const files = repoFiles()
     const { scope } = loadCoverageConfig(RULES_PATH)
@@ -67,32 +45,6 @@ describe('.coverage-rules.yml scope', () => {
     for (const file of [declarationFile, testFile, testHelperFile, fixtureFile]) {
       expect(coverageDisposition(file, scope)).toBe('ignored')
     }
-  })
-
-  it('reports a changed file with no LCOV record as missing coverage under a positive-threshold rule', () => {
-    const rules: CoverageRule[] = [{ paths: 'backend/**', patch_coverage_min: 95 }]
-    const scope = { version: 1 as const, analyzer: 'javascript' as const, include: ['**/*.mts'] }
-    const lcov: LcovData = new Map()
-    const diff: DiffLines = new Map([['backend/modules/example.mts', new Set([1])]])
-    const readSource = () => 'export const example = 1\n'
-
-    const missing = findMissingCoverage(diff, lcov, rules, scope, readSource)
-
-    expect(missing).toEqual([
-      { file: 'backend/modules/example.mts', lines: [1], rule: 'backend/**' },
-    ])
-  })
-
-  it('does not report a changed file already present in the merged LCOV', () => {
-    const rules: CoverageRule[] = [{ paths: 'backend/**', patch_coverage_min: 95 }]
-    const scope = { version: 1 as const, analyzer: 'javascript' as const, include: ['**/*.mts'] }
-    const lcov: LcovData = new Map([['backend/modules/example.mts', new Map([[1, 1]])]])
-    const diff: DiffLines = new Map([['backend/modules/example.mts', new Set([1])]])
-    const readSource = () => 'export const example = 1\n'
-
-    const missing = findMissingCoverage(diff, lcov, rules, scope, readSource)
-
-    expect(missing).toEqual([])
   })
 
   it('reports an untested file under the real ts-shared 100%-threshold rule as missing coverage', () => {
@@ -114,8 +66,9 @@ describe('.coverage-rules.yml scope', () => {
     expect(missing).toEqual([{ file, lines: [1], rule: 'ts-shared/**' }])
   })
 
-  // Scans every reachable file in the repo (see reachableFiles' single-slowest-case rationale
-  // above); shares the same 120s per-test override for the same reason.
+  // Scans every reachable file in the repo, so it scales with repo size rather than the 30s
+  // tooling-project default. A project-wide budget bump is the wrong mechanism here — see the
+  // comment on toolingTestBudget in test-helpers/vitest-config/tooling-projects.mts.
   it('never marks a file ignored that the default Vitest coverage config would still instrument', () => {
     // Every positive-threshold rule below is backed by a suite running under
     // coverageConfigForScope(undefined) (see the file-level comment in .coverage-rules.yml). If

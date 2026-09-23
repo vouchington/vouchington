@@ -7,9 +7,7 @@ const workflowText = readFileSync('.github/workflows/shepherd.yml', 'utf8')
 
 // pr-shepherd's own --help prose (usage lines, flag descriptions) is third-party output with
 // independent versioning; asserting it verbatim breaks CI whenever upstream rewords help text
-// with no behavior change on our side. `dev/pr-shepherd-cli-contract.test.mts` already proves
-// `pnpm exec pr-shepherd --version` resolves to the workspace-installed binary, which is the
-// only "does the CLI still run" signal worth keeping.
+// with no behavior change on our side. Assert only what this repository renders and requires.
 
 describe('shepherd prompt contract', () => {
   it('renders the trusted binary version and forbids replacing the existing PR', () => {

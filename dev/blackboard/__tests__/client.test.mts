@@ -4,25 +4,24 @@ import { resolveBlackboardConnection } from '../client.mts'
 import { HOSTED_ENV } from '../../test-helpers/blackboard/client-fixtures.mts'
 
 describe('resolveBlackboardConnection', () => {
-  it('throws when AGENT_BLACKBOARD_URL is not set', async () => {
+  it('points a missing AGENT_BLACKBOARD_URL at the setup docs', async () => {
     await expect(
       resolveBlackboardConnection({ env: { AGENT_BLACKBOARD_TOKEN: 'test-token' } }),
-    ).rejects.toThrow(/AGENT_BLACKBOARD_URL is not set/)
+    ).rejects.toThrow(/AGENT_BLACKBOARD_URL.*docs\/development\/agent-blackboard\.md/)
   })
 
-  it('throws when AGENT_BLACKBOARD_TOKEN is not set', async () => {
+  it('points a missing AGENT_BLACKBOARD_TOKEN at the setup docs', async () => {
     await expect(
       resolveBlackboardConnection({
         env: { AGENT_BLACKBOARD_URL: HOSTED_ENV.AGENT_BLACKBOARD_URL },
       }),
-    ).rejects.toThrow(/AGENT_BLACKBOARD_TOKEN is not set/)
+    ).rejects.toThrow(/AGENT_BLACKBOARD_TOKEN.*docs\/development\/agent-blackboard\.md/)
   })
 
   it('returns the public client configuration', async () => {
-    await expect(resolveBlackboardConnection({ env: HOSTED_ENV })).resolves.toEqual({
+    await expect(resolveBlackboardConnection({ env: HOSTED_ENV })).resolves.toMatchObject({
       baseUrl: HOSTED_ENV.AGENT_BLACKBOARD_URL,
       token: HOSTED_ENV.AGENT_BLACKBOARD_TOKEN,
-      readRetry: {},
     })
   })
 })

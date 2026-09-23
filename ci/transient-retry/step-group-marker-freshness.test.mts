@@ -1,11 +1,8 @@
-import { createRequire } from 'node:module'
 import { readdirSync, readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
 
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { aptLockWaitTimeoutMarker } from './playwright-log-fingerprints.mts'
 import {
   cloudflareWorkerTscStepMarker,
   oxlintTypeAwareStepMarker,
@@ -19,10 +16,7 @@ import { buildWebTargetsStepMarker } from './runner-shutdown-consumer-registry.m
 // a prefix of a sibling step's header would silently slice the wrong step.
 //
 // Table A covers markers whose source of truth is a `run:` or local `uses:` step in this repo's own
-// YAML. Table B covers markers emitted by a script packaged in an external dependency, where a
-// version bump can break the marker with no diff in this repo at all.
-
-const require = createRequire(import.meta.url)
+// YAML.
 
 interface YamlStep {
   run?: unknown
@@ -133,21 +127,6 @@ describe('step-group-marker-freshness', () => {
 
       const exactMatches = headers.filter(header => header === marker)
       expect(exactMatches).not.toHaveLength(1)
-    })
-  })
-
-  describe('script-emitted markers (Table B)', () => {
-    it('apt-lock timeout marker matches the packaged vouchington-tooling script', () => {
-      const scriptPath = join(
-        dirname(require.resolve('vouchington-tooling/package.json')),
-        'scripts/gha/wait-for-apt-locks.sh',
-      )
-      const script = readFileSync(scriptPath, 'utf8')
-
-      // Imports the real constant hasPlaywrightSetupAptLockFailure matches against, rather than a
-      // literal only this test owns — otherwise the marker could drift in
-      // playwright-log-fingerprints.mts with this row staying green (see PR #10604).
-      expect(script).toContain(aptLockWaitTimeoutMarker)
     })
   })
 

@@ -16,7 +16,7 @@ export type GetEntriesInput = {
 
 // The public client streams entries as an AsyncIterable. Vouchington consumes the complete
 // session history for journal/retrospective operations, so collect it into the array those
-// callers already use. A nonexistent session preserves the client's "-> 404" message.
+// callers already use. The client error stays the cause, so callers can read its HTTP status.
 export async function getEntries(input: GetEntriesInput): Promise<SessionEntry[]> {
   const entriesClient = input.entries ?? createEntriesClient(input.connection)
   try {

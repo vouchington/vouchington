@@ -31,8 +31,8 @@ committed snapshot against PostgreSQL 18 (matching CI), not an arbitrary local P
 - `catalog-query.mts` / `catalog-queries.mts` — wrap platform catalog SQL with `@data-stores/psql`
   `read()`. `readSchemaCatalog()` is the live adapter; individual readers stay in
   `@vouchington/postgres/pg-schema-snapshot`. Queries still exclude partition children and
-  extension-owned objects, and never select table data. `readConstraints` has direct PostgreSQL
-  regression coverage; the remaining catalog output is covered by `db:snapshot:check`.
+  extension-owned objects, and never select table data. Catalog output is covered by
+  `db:snapshot:check`.
 - `types.mts` — re-exports `SchemaCatalog` and the versioned (`formatVersion: 2`)
   `SchemaSnapshot` type tree from the platform runtime.
 - `build-snapshot.mts` — `buildSchemaSnapshot(catalog)` injects this repo's growth maps into the

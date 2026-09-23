@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { BlackboardConnection, BlackboardEntriesClient } from '../client.mts'
 import { appendEntry, getEntries } from '../entries.mts'
 import {
+  blackboardStatusError,
   entriesClientFixture,
   entriesIterable,
   entryFixture,
@@ -74,15 +75,11 @@ describe('getEntries', () => {
     ).resolves.toEqual([])
   })
 
-  it('preserves the "-> 404" substring for callers that match on it', async () => {
-    const entries = entriesClientFixture({
-      get: () =>
-        failingEntriesIterable(
-          'agent-blackboard request failed: GET /sessions/sess-1/entries -> 404',
-        ),
-    })
+  it('keeps the client error as the cause for status-aware callers', async () => {
+    const failure = blackboardStatusError(404)
+    const entries = entriesClientFixture({ get: () => failingEntriesIterable(failure) })
     await expect(
       getEntries({ sessionId: 'sess-1', connection: fakeConnection(), entries }),
-    ).rejects.toThrow(/get failed.*-> 404/s)
+    ).rejects.toHaveProperty('cause', failure)
   })
 })

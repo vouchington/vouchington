@@ -1,6 +1,10 @@
 import { formatJournalEntries, readJournal } from 'vouchington-tooling/agent-blackboard'
 
-import { clientDependencies, type BlackboardEntriesClient } from '../blackboard/client.mts'
+import {
+  clientDependencies,
+  isBlackboardNotFound,
+  type BlackboardEntriesClient,
+} from '../blackboard/client.mts'
 import { parseFlagArgs, type FlagKey } from '../blackboard/parse-flag-args.mts'
 import { requireSessionId } from '../agent-session-id/resolve.mts'
 
@@ -23,9 +27,8 @@ function parseArgs(argv: string[]): ParsedArgs {
 }
 
 // Server-read-only: does not ensureSession, so a session with zero journal entries
-// (never created) is expected, not an error — the "-> 404" GET failure that
-// getEntries surfaces for a nonexistent session is caught and reported as
-// empty. Any other failure (unreachable server, auth) propagates, since that
+// (never created) is expected, not an error — the client's 404 for a
+// nonexistent session is caught and reported as empty. Any other failure (unreachable server, auth) propagates, since that
 // is exactly the blackboard-unavailable condition the retrospective skill's
 // sourcing order must stop on rather than silently fall through past. Root-Codex resolution may
 // still persist and read back its local identity before this server read.
@@ -49,9 +52,7 @@ export async function runEntries(
     })
     return formatJournalEntries(sessionId, entries)
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const notFound = new RegExp(`GET /sessions/${RegExp.escape(sessionId)}/entries -> 404`)
-    if (notFound.test(message)) return `No journal entries found for session ${sessionId}.`
+    if (isBlackboardNotFound(error)) return `No journal entries found for session ${sessionId}.`
     throw error
   }
 }

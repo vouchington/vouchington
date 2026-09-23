@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
-import { DEFAULT_LOCALIZATION_BOUNDS, etagMatches } from '@vouchington/localization'
+import { DEFAULT_LOCALIZATION_BOUNDS, type CatalogMessage } from '@vouchington/localization'
 import {
   getLocalizationDatabase,
   headerValue,
@@ -30,20 +30,17 @@ describe('localization service', () => {
       selectors: ['nav.*'],
     })
     expect(JSON.parse(payload.body).messages['nav.home']).toBe('Home')
-    expect(payload.etag).toBe(`"${payload.revision}"`)
-    expect(etagMatches(payload.etag, payload.revision)).toBe(true)
-    expect(etagMatches(undefined, payload.revision)).toBe(false)
-    expect(() =>
+    const emailError = thrownBy(() =>
       localizationBatchPayload({
         consumer: 'email',
         locales: ['en-US'],
         selectors: ['email.welcome.preview'],
       }),
-    ).toThrow(/not public/)
+    )
+    expect(isLocalizationClientError(emailError)).toBe(true)
     expect(isLocalizationClientError(new TypeError('bad'))).toBe(true)
     expect(isLocalizationClientError(new Error('nope'))).toBe(false)
-    let overLimitError: unknown
-    try {
+    const overLimitError = thrownBy(() =>
       localizationBatchPayload({
         consumer: 'web',
         locales: ['en'],
@@ -51,10 +48,8 @@ describe('localization service', () => {
           { length: DEFAULT_LOCALIZATION_BOUNDS.maxSelectors + 1 },
           () => 'nav.*',
         ),
-      })
-    } catch (error) {
-      overLimitError = error
-    }
+      }),
+    )
     expect(isLocalizationClientError(overLimitError)).toBe(true)
     expect(
       localizationBatchPayload({
@@ -77,12 +72,26 @@ describe('localization service', () => {
     expect(resolveEmailLocalizationBatch(['en-US'], ['email.welcome.preview']).messages).toEqual({
       'email.welcome.preview': 'Welcome to Voucha',
     })
+    installSampleLocalizationDatabase(boundMessages(1))
     setLocalizationDatabaseForTests(undefined)
     process.env.LOCALIZATION_SQLITE_PATH = path
     expect(getLocalizationDatabase().revision).toBe(payload.revision)
-    setLocalizationDatabaseForTests(undefined)
-    delete process.env.LOCALIZATION_SQLITE_PATH
-    expect(() => getLocalizationDatabase()).toThrow(/unable to open|ENOENT|no such file/i)
+  })
+
+  it('resolves a public batch at the message bound and rejects one more message', () => {
+    const { maxMessages } = DEFAULT_LOCALIZATION_BOUNDS
+    installSampleLocalizationDatabase(boundMessages(maxMessages))
+    const body = JSON.parse(
+      localizationBatchPayload({ consumer: 'web', locales: ['en'], selectors: ['bound.*'] }).body,
+    ) as { messages: Record<string, string> }
+    expect(Object.keys(body.messages)).toHaveLength(maxMessages)
+    expect(body.messages['bound.0000']).toBe('Message 0')
+
+    installSampleLocalizationDatabase(boundMessages(maxMessages + 1))
+    const overLimitError = thrownBy(() =>
+      localizationBatchPayload({ consumer: 'web', locales: ['en'], selectors: ['bound.*'] }),
+    )
+    expect(isLocalizationClientError(overLimitError)).toBe(true)
   })
 
   it('parses query lists and header values', () => {
@@ -98,9 +107,22 @@ describe('localization service', () => {
     expect(headerValue(['a', 'b'])).toBe('a,b')
     expect(localizationSqlitePath()).toBe(DEFAULT_LOCALIZATION_SQLITE_PATH)
   })
-
-  it('uses package default public bounds', () => {
-    expect(DEFAULT_LOCALIZATION_BOUNDS.maxMessages).toBe(2000)
-    expect(DEFAULT_LOCALIZATION_BOUNDS.maxSelectors).toBe(32)
-  })
 })
+
+function boundMessages(count: number): CatalogMessage[] {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `bound.${String(index).padStart(4, '0')}`,
+    descriptor: null,
+    consumers: ['web'],
+    translations: { 'en-US': `Message ${index}` },
+  }))
+}
+
+function thrownBy(action: () => unknown): unknown {
+  try {
+    action()
+  } catch (error) {
+    return error
+  }
+  throw new Error('expected the action to throw')
+}

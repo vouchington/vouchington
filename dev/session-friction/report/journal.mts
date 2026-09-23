@@ -2,14 +2,10 @@ import type { JournalEntry, JournalLoadResult } from 'vouchington-tooling/sessio
 
 import {
   createEntriesClient,
+  isBlackboardNotFound,
   resolveBlackboardConnection,
   type BlackboardEntriesClient,
 } from '../../blackboard/client.mts'
-
-function isNotFound(error: unknown, sessionId: string): boolean {
-  const message = error instanceof Error ? error.message : String(error)
-  return new RegExp(`GET /sessions/${RegExp.escape(sessionId)}/entries -> 404`).test(message)
-}
 
 export async function loadJournalEntries(
   sessionId: string,
@@ -23,7 +19,7 @@ export async function loadJournalEntries(
   try {
     first = await iterator.next()
   } catch (error) {
-    if (isNotFound(error, sessionId)) return { status: 'not-found' }
+    if (isBlackboardNotFound(error)) return { status: 'not-found' }
     throw error
   }
   if (first.done) return { status: 'ok', entries: [] }

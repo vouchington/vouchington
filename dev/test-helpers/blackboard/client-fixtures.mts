@@ -1,4 +1,4 @@
-import type { Session, SessionEntry } from 'agent-blackboard'
+import { AgentBlackboardError, type Session, type SessionEntry } from 'agent-blackboard'
 
 import type { BlackboardEntriesClient, BlackboardSessionsClient } from '../../blackboard/client.mts'
 
@@ -58,11 +58,15 @@ export function entriesIterable(entries: SessionEntry[]): AsyncIterable<SessionE
   }
 }
 
-export function failingEntriesIterable(message: string): AsyncIterable<SessionEntry> {
+export function blackboardStatusError(status: number): AgentBlackboardError {
+  return new AgentBlackboardError(`HTTP ${status}`, status, undefined)
+}
+
+export function failingEntriesIterable(error: Error): AsyncIterable<SessionEntry> {
   return {
     async *[Symbol.asyncIterator]() {
       yield* []
-      throw new Error(message)
+      throw error
     },
   }
 }

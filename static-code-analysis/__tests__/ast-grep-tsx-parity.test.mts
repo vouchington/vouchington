@@ -46,15 +46,14 @@ describe('ast-grep Tsx languageGlobs contract', () => {
     expect(packFiles.filter(file => local.has(file))).toEqual([])
   })
 
-  it.each([
-    ['local', LOCAL_RULES],
-    ['pack', PACK_RULES],
-  ] as const)('%s rules are Tsx YAML without -tsx companions', (_label, dir) => {
-    const files = yamlFiles(dir)
+  it('local rules are Tsx YAML without -tsx companions', () => {
+    const files = yamlFiles(LOCAL_RULES)
     expect(files.length).toBeGreaterThan(0)
     expect(files.filter(file => /-tsx\.ya?ml$/u.test(file))).toEqual([])
     for (const file of files) {
-      const rule = yamlLoad(readFileSync(resolve(dir, file), 'utf8')) as { language?: string }
+      const rule = yamlLoad(readFileSync(resolve(LOCAL_RULES, file), 'utf8')) as {
+        language?: string
+      }
       expect({ file, language: rule.language }).toEqual({ file, language: 'Tsx' })
     }
   })

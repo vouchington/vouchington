@@ -64,7 +64,7 @@ policy; this skill is the checklist, not a restatement.
    surrounding prose either way. A markdown link `[text](target)` embedded in a longer sentence is
    narrowed to the bracket expression itself, not deleted — the link text/href pair is the load-bearing
    part, even when line-wrapped in the source. See
-   [`shepherd-guidance.test.mts`](../../../.github/workflows/shepherd-guidance.test.mts) and
+   [`shepherd-prompt.test.mts`](../../../.github/workflows/shepherd-prompt.test.mts) and
    [`ci/transient-retry/repo-owned-literal-freshness.test.mts`](../../../ci/transient-retry/repo-owned-literal-freshness.test.mts)
    for load-bearing contracts written this way. This is a per-assertion judgment call — do not encode
    it as an AST/lint guard.

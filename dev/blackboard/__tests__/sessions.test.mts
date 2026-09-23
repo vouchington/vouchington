@@ -28,10 +28,9 @@ describe('connectAndEnsureSession', () => {
       sessions: sessionsClientFixture({ ensure }),
     })
 
-    expect(connection).toEqual({
+    expect(connection).toMatchObject({
       baseUrl: HOSTED_ENV.AGENT_BLACKBOARD_URL,
       token: HOSTED_ENV.AGENT_BLACKBOARD_TOKEN,
-      readRetry: {},
     })
     expect(ensure).toHaveBeenCalledWith({
       id: 'sess-1',

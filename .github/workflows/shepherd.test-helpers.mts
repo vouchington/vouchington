@@ -21,23 +21,32 @@ const MALICIOUS_PR_TITLE = [
 
 export function executeTrustedVersionStep(stepRun: string) {
   const temporaryDirectory = mkdtempSync(join(tmpdir(), 'shepherd-version-'))
+  const fakeBinDirectory = join(temporaryDirectory, 'bin')
   const githubOutputPath = join(temporaryDirectory, 'github-output')
-  const installedVersion = (
-    JSON.parse(readFileSync('node_modules/pr-shepherd/package.json', 'utf8')) as {
-      version: string
-    }
-  ).version
+  const version = '0.0.0-test'
 
   try {
+    mkdirSync(fakeBinDirectory)
+    writeFileSync(
+      join(fakeBinDirectory, 'pnpm'),
+      [
+        '#!/bin/sh',
+        '[ "$*" = "exec pr-shepherd --version" ] || exit 1',
+        'printf "%s\\n" "$FAKE_PR_SHEPHERD_VERSION"',
+        '',
+      ].join('\n'),
+    )
+    chmodSync(join(fakeBinDirectory, 'pnpm'), 0o755)
     const stdout = execFileSync('bash', ['-c', stepRun], {
       encoding: 'utf8',
-      env: { ...process.env, GITHUB_OUTPUT: githubOutputPath },
+      env: {
+        ...process.env,
+        FAKE_PR_SHEPHERD_VERSION: version,
+        GITHUB_OUTPUT: githubOutputPath,
+        PATH: `${fakeBinDirectory}:${process.env['PATH'] ?? ''}`,
+      },
     })
-    return {
-      githubOutput: readFileSync(githubOutputPath, 'utf8'),
-      installedVersion,
-      stdout,
-    }
+    return { githubOutput: readFileSync(githubOutputPath, 'utf8'), stdout, version }
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true })
   }

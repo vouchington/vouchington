@@ -14,11 +14,11 @@ examples, shared vocabulary, and validation commands.
   importing its shared Go `net/http` transport subset instead of copying marker lists.
 - Reuse `hasUndiciConnectTimeout(text)` for undici/fetch connect-timeout failures instead of
   copying its marker list into a new consumer file.
-- Every literal `##[group]Run` step-header marker must be an exported constant covered by
-  `step-group-marker-freshness.test.mts`'s YAML table (Table A) when its source is a repo-owned
-  `run:` or local `uses:` step, or by its script-emitted-marker table (Table B) when the source of
-  truth lives in an external package — a stale marker fails closed and silently stops a rule from
-  ever matching (see PR #10604).
+- Every literal `##[group]Run` step-header marker whose source is a repo-owned `run:` or local
+  `uses:` step must be an exported constant covered by `step-group-marker-freshness.test.mts`'s
+  YAML table (Table A) — a stale marker fails closed and silently stops a rule from ever matching
+  (see PR #10604). A marker emitted by an external package is that package's output: cover the
+  matcher with fixture logs, never by reading the package's installed files.
 - Never fingerprint a repo-owned application spec path or test title (`playwright/tests/**`). A
   failure that matches your own diff is a real bug, not infrastructure noise — file an issue and fix
   it instead. `playwright/credentialed/**` (credentialed external-dependency probes) and

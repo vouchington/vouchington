@@ -5,16 +5,6 @@ import { HARNESS_SESSION_ID, validateCheckpoint } from './shepherd-checkpoint.mt
 
 const valid = 'sess-0123abcd'
 
-const baseEnvironment = {
-  HARNESS_API_KEY: 'token',
-  HARNESS_CONCURRENCY_ID: 'shepherd-9319',
-  HARNESS_DISPATCH_ENABLED: 'true',
-  HARNESS_PROMPT: 'continue',
-  HARNESS_REPOSITORY_ID: 'repo-filaments',
-  HARNESS_RESUME_SESSION_ID: valid,
-  HARNESS_URL: 'https://harness.example.com',
-}
-
 describe('Auto Harness session id contract', () => {
   it('matches the production sess-plus-four-random-bytes grammar', () => {
     expect(HARNESS_SESSION_ID.test(valid)).toBe(true)
@@ -29,33 +19,41 @@ describe('Auto Harness session id contract', () => {
     }
   })
 
-  it('shares the same grammar across resume dispatch and shepherd checkpoints', async () => {
-    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(
+  it('resumes a grammar-valid session with the default priority and no timeout', async () => {
+    const bodies = new Map<string, unknown>()
+    const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
+      const route = `${init?.method ?? 'GET'} ${new URL(String(input)).pathname}`
+      if (init?.body !== undefined) bodies.set(route, JSON.parse(String(init.body)))
+      return new Response(
         JSON.stringify({
-          concurrencyId: 'shepherd-9319',
+          created: false,
           id: valid,
-          repositoryId: 'repo-filaments',
-          status: 'running',
           url: `https://harness.example.com/sessions/${valid}`,
         }),
-        { status: 200 },
-      ),
-    )
-
-    await expect(
-      dispatchHarnessSession(baseEnvironment, fetchImplementation),
-    ).resolves.toMatchObject({ id: valid })
-    expect(fetchImplementation).toHaveBeenCalledTimes(1)
+        { headers: { 'content-type': 'application/json' }, status: 200 },
+      )
+    })
 
     await expect(
       dispatchHarnessSession(
-        { ...baseEnvironment, HARNESS_RESUME_SESSION_ID: 'sess-123' },
+        {
+          HARNESS_API_KEY: 'token',
+          HARNESS_CONCURRENCY_ID: 'shepherd-9319',
+          HARNESS_DISPATCH_ENABLED: 'true',
+          HARNESS_PROMPT: 'continue',
+          HARNESS_REPOSITORY_ID: 'repo-filaments',
+          HARNESS_RESUME_SESSION_ID: valid,
+          HARNESS_URL: 'https://harness.example.com',
+        },
         fetchImplementation,
       ),
-    ).rejects.toMatchObject({ code: 'INVALID_RESUME_SESSION_ID' })
-    expect(fetchImplementation).toHaveBeenCalledTimes(1)
+    ).resolves.toMatchObject({ id: valid })
+    const resumeBody = bodies.get(`POST /api/v1/sessions/${valid}/resume`)
+    expect(resumeBody).toMatchObject({ priority: 0 })
+    expect(resumeBody).not.toHaveProperty('timeout')
+  })
 
+  it('rejects shepherd checkpoints whose session id breaks the grammar', () => {
     const checkpoint = {
       marker: 'shepherd-checkpoint:v1',
       repository: 'jonathanong/filaments',
