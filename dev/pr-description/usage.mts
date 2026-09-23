@@ -4,8 +4,8 @@ const usage = `Usage:
   node dev/pr-description.mts update <pr> [--body-file <path>]
 
 Body source: --body-file > piped stdin > gh pr view (validate/update only)
-create refuses over ~5000 changed lines against origin/main; pass --acknowledge-large-diff to
-proceed anyway once the split-vs-stack decision has been made (see
+create refuses over ~5000 added lines or ~20000 deleted lines against origin/main; pass
+--acknowledge-large-diff to proceed anyway once the split-vs-stack decision has been made (see
 .agents/skills/agent-workflow/git-and-prs.md).
 `
 

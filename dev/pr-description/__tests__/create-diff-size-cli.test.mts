@@ -11,7 +11,10 @@ import {
   writeFakeGh,
 } from '../../test-helpers/pr-description/fake-cli.mts'
 import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
-import { LARGE_DIFF_LINE_THRESHOLD } from '../diff-size.mts'
+import {
+  LARGE_DIFF_ADDED_LINE_THRESHOLD,
+  LARGE_DIFF_DELETED_LINE_THRESHOLD,
+} from '../diff-size.mts'
 
 /**
  * `writeFakeGit` (test-helpers/fake-cli.mts) does not stub `git diff` at all — every existing CLI
@@ -38,9 +41,15 @@ async function writeFakeGitWithDiff(gitPath: string, diffText: string): Promise<
   await chmod(gitPath, 0o755)
 }
 
-function largeDiff(changedLines: number): string {
+function addedDiff(changedLines: number): string {
   const lines = ['--- a/big.txt', '+++ b/big.txt']
   for (let i = 0; i < changedLines; i++) lines.push(`+line ${i}`)
+  return lines.join('\n')
+}
+
+function deletedDiff(changedLines: number): string {
+  const lines = ['--- a/big.txt', '+++ /dev/null']
+  for (let i = 0; i < changedLines; i++) lines.push(`-line ${i}`)
   return lines.join('\n')
 }
 
@@ -83,8 +92,8 @@ describe('dev/pr-description.mts create — large-diff size gate', () => {
   }
 
   it('refuses create over the threshold without --acknowledge-large-diff', async () => {
-    const changedLines = LARGE_DIFF_LINE_THRESHOLD + 1
-    const { bodyPath, callsPath, env } = await setUp(largeDiff(changedLines))
+    const changedLines = LARGE_DIFF_ADDED_LINE_THRESHOLD + 1
+    const { bodyPath, callsPath, env } = await setUp(addedDiff(changedLines))
 
     await expect(
       execFileAsync(
@@ -102,8 +111,8 @@ describe('dev/pr-description.mts create — large-diff size gate', () => {
   })
 
   it('proceeds over the threshold when --acknowledge-large-diff is passed', async () => {
-    const changedLines = LARGE_DIFF_LINE_THRESHOLD + 1
-    const { bodyPath, callsPath, env } = await setUp(largeDiff(changedLines))
+    const changedLines = LARGE_DIFF_ADDED_LINE_THRESHOLD + 1
+    const { bodyPath, callsPath, env } = await setUp(addedDiff(changedLines))
 
     const result = await execFileAsync(
       process.execPath,
@@ -125,6 +134,42 @@ describe('dev/pr-description.mts create — large-diff size gate', () => {
       .split('\n')
       .map(line => JSON.parse(line) as string[])
     expect(calls.some(call => call[0] === 'pr' && call[1] === 'create')).toBe(true)
+  })
+
+  it('permits deletion-heavy retirements below the larger deletion limit', async () => {
+    const { bodyPath, callsPath, env } = await setUp(
+      deletedDiff(LARGE_DIFF_ADDED_LINE_THRESHOLD + 1),
+    )
+
+    const result = await execFileAsync(
+      process.execPath,
+      [scriptPath, 'create', '--title', 'Retire a surface', '--body-file', bodyPath],
+      { env },
+    )
+
+    expect(result.stdout).toContain('https://github.com/owner/repo/pull/3')
+    const calls = await readFile(callsPath, 'utf8')
+    expect(calls).toContain('"pr","create"')
+  })
+
+  it('still requires acknowledgement above the deletion limit', async () => {
+    const { bodyPath, callsPath, env } = await setUp(
+      deletedDiff(LARGE_DIFF_DELETED_LINE_THRESHOLD + 1),
+    )
+
+    await expect(
+      execFileAsync(
+        process.execPath,
+        [scriptPath, 'create', '--title', 'Too many deletions', '--body-file', bodyPath],
+        { env },
+      ),
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: expect.stringContaining('--acknowledge-large-diff'),
+    })
+
+    const calls = await readFile(callsPath, 'utf8').catch(() => '')
+    expect(calls).not.toContain('"pr","create"')
   })
 
   it('is unaffected under the threshold', async () => {

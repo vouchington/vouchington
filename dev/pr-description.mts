@@ -1,17 +1,15 @@
 #!/usr/bin/env node
-
 import { fileURLToPath } from 'node:url'
 import { createPullRequest, getDiffAgainstBase, runGh, runGit } from 'vouchington-tooling/gh-cli'
 import { formatProjectAdvisoryReport } from 'vouchington-tooling/github-projects'
-
 import { failValidation } from './pr-description/fail-validation.mts'
 import { resolveBody } from './pr-description/body-source.mts'
 import { formatReferencedIssueSummary } from './pr-description/referenced-issue-summary.mts'
 import { parseBodyFileArg, parseCreateArgs } from './pr-description/argv.mts'
 import {
-  countChangedDiffLines,
+  countDiffLineChanges,
+  exceedsLargeDiffThreshold,
   formatLargeDiffRefusal,
-  LARGE_DIFF_LINE_THRESHOLD,
 } from './pr-description/diff-size.mts'
 import { createMilestoneAuditor } from './pr-description/milestone-audit.mts'
 import {
@@ -27,6 +25,7 @@ import {
 } from './pr-description/related-issues.mts'
 import { injectResolvedProvenance, resolveValidationBody } from './pr-description/provenance.mts'
 import { resolveReconciledUpdateBody } from './pr-description/reconciled-update-body.mts'
+import { readPullRequestPatch } from './pr-description/pull-request-patch.mts'
 import { createSupersessionAuditor } from './pr-description/supersession.mts'
 import {
   parsePullRequestRefOids,
@@ -39,7 +38,6 @@ import {
   type IssueReferenceValidationOptions,
   validatePrBodyWithIssueReferences,
 } from './pr-description/validate.mts'
-
 async function runValidate(argv: string[]): Promise<void> {
   const { bodyFile, remaining } = parseBodyFileArg(argv)
   if (remaining.some(arg => arg.startsWith('-')))
@@ -58,14 +56,24 @@ async function runValidate(argv: string[]): Promise<void> {
     ])
     const target = parsePullRequestIdentity(prJson)
     const { baseRefOid, headRefOid } = parsePullRequestRefOids(prJson)
-    const patch = await runGh(['pr', 'diff', pr])
+    const patchResult = await readPullRequestPatch(runGh, pr, target)
+    if (patchResult.source === 'files-api') {
+      process.stderr.write(
+        'GitHub refused the oversized unified PR diff; supersession validation is using files API metadata and available per-file patches. Files whose patches GitHub omits receive deleted-file, route, rename, and package-manifest checks, but not removed-export content checks.\n',
+      )
+    }
     const repo = `${target.owner}/${target.repo}`
     const readPackageJson = createGhPackageJsonReader(runGh, repo, baseRefOid, headRefOid)
     validationOptions = {
       closureResolver: createIssueClosureResolver(runGh, target),
       milestoneAuditor: createMilestoneAuditor(runGh, repo),
       projectAuditor: createProjectAuditor(runGh, repo),
-      supersessionAuditor: createSupersessionAuditor(runGh, repo, patch, readPackageJson),
+      supersessionAuditor: createSupersessionAuditor(
+        runGh,
+        repo,
+        patchResult.patch,
+        readPackageJson,
+      ),
       targetPullRequest: target,
     }
   }
@@ -79,7 +87,6 @@ async function runValidate(argv: string[]): Promise<void> {
   }
   failValidation(result.errors)
 }
-
 async function runCreate(argv: string[]): Promise<void> {
   const { bodyFile, remaining } = parseBodyFileArg(argv)
   const { acknowledgeLargeDiff, positionals, title } = parseCreateArgs(remaining)
@@ -90,31 +97,27 @@ async function runCreate(argv: string[]): Promise<void> {
     )
     process.exit(1)
   }
-
   const body = await injectResolvedProvenance((await resolveBody({ bodyFile })).body)
   // Validate first so a bad body fails fast without an extra network round-trip.
   const result = await validateBody(body)
   if (!result.ok) failValidation(result.errors)
   const issueSummary = formatReferencedIssueSummary(result.referencedIssues)
   if (issueSummary) process.stderr.write(issueSummary)
-
   // Reused for both the size gate below and writeSupersessionHints — one `git diff` call.
   const diffAgainstMain = getDiffAgainstBase(runGit, 'origin/main')
   if (!acknowledgeLargeDiff) {
-    const changedLines = countChangedDiffLines(await diffAgainstMain)
-    if (changedLines > LARGE_DIFF_LINE_THRESHOLD) {
-      process.stderr.write(formatLargeDiffRefusal(changedLines))
+    const changes = countDiffLineChanges(await diffAgainstMain)
+    if (exceedsLargeDiffThreshold(changes)) {
+      process.stderr.write(formatLargeDiffRefusal(changes))
       process.exit(1)
     }
   }
-
   await writeSupersessionHints(
     runGh,
     currentRepo(runGh),
     diffAgainstMain,
     Promise.resolve(createLocalPackageJsonReader(runGit)),
   )
-
   const url = await withTempBodyFile(body, filePath =>
     createPullRequest(
       { runGh, runGit },
@@ -123,7 +126,6 @@ async function runCreate(argv: string[]): Promise<void> {
   )
   process.stdout.write(`${url}\n`)
 }
-
 async function runUpdate(argv: string[]): Promise<void> {
   const { bodyFile, remaining } = parseBodyFileArg(argv)
   if (remaining.some(arg => arg.startsWith('-')))
