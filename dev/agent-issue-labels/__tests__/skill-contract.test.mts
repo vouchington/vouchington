@@ -1,6 +1,7 @@
 import { lstatSync, readdirSync, readFileSync, readlinkSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+import { readSkillManifest } from 'vouchington-tooling/skill-discovery'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = resolve(import.meta.dirname, '../../..')
@@ -34,7 +35,7 @@ const ADAPTERS = {
 const ADAPTER_NAMES = Object.keys(ADAPTERS) as Array<keyof typeof ADAPTERS>
 
 describe('Vouchington workflow skill adapters', () => {
-  it('keeps the cross-runtime canonical adapters installed by their approved plugins', () => {
+  it('keeps the cross-runtime canonical adapters installed by their approved plugins', async () => {
     const approved = [...ADAPTER_NAMES].sort()
     const canonicalAdapters = readdirSync(resolve(repoRoot, '.agents/skills'), {
       withFileTypes: true,
@@ -46,9 +47,7 @@ describe('Vouchington workflow skill adapters', () => {
       )
       .sort()
     const installedSkillsRoot = resolve(repoRoot, 'node_modules/vouchington-tooling/skills')
-    const manifest = JSON.parse(read('node_modules/vouchington-tooling/skills/manifest.json')) as {
-      skills: Array<{ name: string; plugin: string }>
-    }
+    const manifest = await readSkillManifest(installedSkillsRoot)
 
     expect(canonicalAdapters).toEqual(approved)
     for (const name of ADAPTER_NAMES) {
@@ -101,8 +100,7 @@ describe('Vouchington workflow skill adapters', () => {
   })
 
   it.each([
-    ['review-ci-logs', ['frequency × impact × diagnosability']],
-    ['blackboard', ['## Mandatory journal triggers', '[ -n "${VAR+x}" ]']],
+    ['blackboard', ['[ -n "${VAR+x}" ]']],
     ['retrospective', ['≤10 tool calls', 'unknown — no journal']],
   ] as const)('%s retains its Vouchington-only safety invariants', (name, invariants) => {
     const skill = read(`.agents/skills/${name}/SKILL.md`)

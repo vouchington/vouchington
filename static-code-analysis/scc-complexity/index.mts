@@ -4,16 +4,10 @@ import {
   buildSccArgs,
   checkSccComplexity as checkPublished,
   parseSccComplexityBaseline,
-  parseSccComplexityViolations,
-  SCC_COMPLEXITY_LIMIT,
   type SccComplexityBaseline,
   type SccComplexityScope,
-  type SccComplexityViolation,
 } from 'vouchington-tooling/scc-complexity'
 import type { SharedContext } from 'vouchington-tooling/shared-context'
-
-export { parseSccComplexityViolations, SCC_COMPLEXITY_LIMIT }
-export type { SccComplexityViolation }
 
 export const VOUCHINGTON_PRODUCT_SCC_EXCLUDE_DIR =
   '.git,fixtures,__tests__,test-helpers,static-code-analysis,ci,.github,dev'

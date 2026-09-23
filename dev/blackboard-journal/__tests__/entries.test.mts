@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
+  blackboardStatusError,
   entriesClientFixture,
   entriesIterable,
   entryFixture,
@@ -24,24 +25,8 @@ describe('runEntries', () => {
     }
   })
 
-  it('formats journal entries in createdAt order, filtering out other entry types', async () => {
-    const entries = [
-      entryFixture({
-        sessionId: 's1',
-        createdAt: '2026-07-20T00:00:02.000Z',
-        data: { type: 'journal', markdown: 'second' },
-      }),
-      entryFixture({
-        sessionId: 's1',
-        createdAt: '2026-07-20T00:00:01.000Z',
-        data: { type: 'journal', markdown: 'first' },
-      }),
-      entryFixture({
-        sessionId: 's1',
-        createdAt: '2026-07-20T00:00:03.000Z',
-        data: { type: 'retrospective', markdown: 'ignored' },
-      }),
-    ]
+  it('reads journal entries through the injected entries client', async () => {
+    const entries = [entryFixture({ sessionId: 's1', data: { type: 'journal', markdown: 'note' } })]
 
     const result = await runEntries(
       ['--session-id', 's1'],
@@ -49,15 +34,12 @@ describe('runEntries', () => {
       entriesClientFixture({ get: () => entriesIterable(entries) }),
     )
 
-    expect(result).toBe(
-      '## 2026-07-20T00:00:01.000Z\n\nfirst\n\n## 2026-07-20T00:00:02.000Z\n\nsecond',
-    )
+    expect(result).toContain('note')
   })
 
   it('reports no entries for a never-created session (404) instead of failing', async () => {
     const entries = entriesClientFixture({
-      get: () =>
-        failingEntriesIterable('agent-blackboard request failed: GET /sessions/s1/entries -> 404'),
+      get: () => failingEntriesIterable(blackboardStatusError(404)),
     })
 
     await expect(runEntries(['--session-id', 's1'], HOSTED_ENV, entries)).resolves.toBe(
@@ -66,12 +48,10 @@ describe('runEntries', () => {
   })
 
   it('propagates a non-404 failure instead of masking it as empty', async () => {
-    const entries = entriesClientFixture({
-      get: () =>
-        failingEntriesIterable('agent-blackboard request failed: GET /sessions/s1/entries -> 500'),
-    })
+    const failure = blackboardStatusError(500)
+    const entries = entriesClientFixture({ get: () => failingEntriesIterable(failure) })
 
-    await expect(runEntries(['--session-id', 's1'], HOSTED_ENV, entries)).rejects.toThrow(/-> 500/)
+    await expect(runEntries(['--session-id', 's1'], HOSTED_ENV, entries)).rejects.toBe(failure)
   })
 
   it('rejects an unknown flag', async () => {

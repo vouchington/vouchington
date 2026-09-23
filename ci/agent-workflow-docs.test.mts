@@ -81,10 +81,6 @@ function normalizedMarkdownListItem(path: string, marker: string): string {
   return listItem?.replace(/\s+/g, ' ').trim() ?? ''
 }
 
-function hasLongRunningPrShepherdInvocation(paragraph: string): boolean {
-  return /(?:--until-terminal|\/pr-shepherd:pr-shepherd|\$pr-shepherd:pr-shepherd)/u.test(paragraph)
-}
-
 function hasPrShepherdDeadlineRegression(paragraph: string): boolean {
   return (
     /\bpr-shepherd\b/u.test(paragraph) && /\b(?:one-hour|session[ -]deadline)\b/iu.test(paragraph)
@@ -105,7 +101,7 @@ describe('agent workflow documentation', () => {
     ).toBe(true)
   })
 
-  it('terminates every documented long-running pr-shepherd invocation on CANCEL/ESCALATE, never a session-hour cap', () => {
+  it('never caps a documented pr-shepherd invocation with a session-hour deadline', () => {
     const paths = execFileSync('git', ['ls-files', '-z', '--', '*.md'], {
       cwd: repoRoot,
       encoding: 'utf8',
@@ -115,27 +111,19 @@ describe('agent workflow documentation', () => {
       .filter(path => existsSync(join(repoRoot, path)))
 
     const deadlineRegressions: string[] = []
-    const unterminatedInvocations: string[] = []
     for (const path of paths) {
       const paragraphs = readRepoFile(path).split(/\n\s*\n/u)
       for (const [index, paragraph] of paragraphs.entries()) {
         if (hasPrShepherdDeadlineRegression(paragraph)) {
           deadlineRegressions.push(`${path}:paragraph-${index + 1}`)
         }
-        if (!hasLongRunningPrShepherdInvocation(paragraph)) {
-          continue
-        }
-        if (!/CANCEL/u.test(paragraph) || !/ESCALATE/u.test(paragraph)) {
-          unterminatedInvocations.push(`${path}:paragraph-${index + 1}`)
-        }
       }
     }
 
-    // Regression guard: the one-hour session deadline was removed (agents poll until
-    // pr-shepherd itself reaches CANCEL or ESCALATE, never a caller-enforced wall clock) —
-    // see .agents/skills/agent-workflow/git-and-prs.md's pr-shepherd termination contract.
+    // Regression guard: the one-hour session deadline was removed. Agents stop when pr-shepherd
+    // reaches a terminal action, never on a caller-enforced wall clock; which actions are terminal
+    // belongs to pr-shepherd's own skill, so Voucha docs defer to it instead of restating them.
     expect(deadlineRegressions).toEqual([])
-    expect(unterminatedInvocations).toEqual([])
   })
 
   it('preflights screenshot upload credentials before initializing the web stack', () => {

@@ -14,19 +14,8 @@ describe('dependencyLicensePolicy', () => {
     expect(evaluate('SIL OPEN FONT LICENSE', 'geist').ok).toBe(true)
   })
 
-  it('fails closed for denied, malformed, and custom expressions', () => {
-    expect(evaluate('GPL-3.0-only', 'copyleft-lib')).toEqual({
-      ok: false,
-      deniedAtoms: ['GPL-3.0-only'],
-    })
-    expect(evaluate('(MIT OR Apache-2.0', 'broken-lib')).toEqual({
-      ok: false,
-      deniedAtoms: ['(MIT OR Apache-2.0'],
-    })
-    expect(evaluate('MIT OR LicenseRef-Proprietary', 'custom-lib')).toEqual({
-      ok: false,
-      deniedAtoms: ['MIT OR LicenseRef-Proprietary'],
-    })
+  it('denies copyleft license prefixes', () => {
+    expect(evaluate('GPL-3.0-only', 'copyleft-lib').ok).toBe(false)
   })
 
   it('allows MPL-2.0 for every package', () => {

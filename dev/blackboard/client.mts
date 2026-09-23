@@ -1,4 +1,4 @@
-import { Entries, Sessions, type ClientConfig } from 'agent-blackboard'
+import { AgentBlackboardError, Entries, Sessions, type ClientConfig } from 'agent-blackboard'
 import {
   resolveBlackboardConnection as resolvePortableBlackboardConnection,
   type BlackboardClientDependencies,
@@ -16,6 +16,14 @@ export function createSessionsClient(connection: BlackboardConnection): Blackboa
 
 export function createEntriesClient(connection: BlackboardConnection): BlackboardEntriesClient {
   return new Entries(connection)
+}
+
+// A never-created session reads as a 404 from the public client, possibly wrapped by a caller.
+export function isBlackboardNotFound(error: unknown): boolean {
+  for (let current = error; current instanceof Error; current = current.cause) {
+    if (current instanceof AgentBlackboardError) return current.status === 404
+  }
+  return false
 }
 
 // The portable helpers accept a lazy client loader so their optional peer remains optional.

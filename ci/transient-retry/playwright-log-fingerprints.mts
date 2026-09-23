@@ -9,10 +9,8 @@ export function hasEmittedLogLine(log: string, text: string): boolean {
   })
 }
 
-// Exported so the marker-freshness guard (step-group-marker-freshness.test.mts) can assert this
-// stays in sync with vouchington-tooling's packaged wait-for-apt-locks.sh, rather than the guard
-// duplicating a literal that could drift independently of this matcher (see PR #10604).
-export const aptLockWaitTimeoutMarker = 'Timed out waiting for apt/dpkg locks after '
+// The timeout prefix emitted by vouchington-tooling's packaged wait-for-apt-locks.sh.
+const aptLockWaitTimeoutMarker = 'Timed out waiting for apt/dpkg locks after '
 
 export function hasPlaywrightSetupAptLockFailure(log: string): boolean {
   const isPlaywrightSetup = log.includes('Run ./.github/actions/setup-playwright')

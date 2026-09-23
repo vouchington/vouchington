@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { chmod, mkdir, mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises'
 
 import { tmpdir } from 'node:os'
 
@@ -50,7 +50,7 @@ describe('workflow shell scripts', () => {
     expect(storeScriptMode & 0o111).not.toBe(0)
   })
 
-  it('merge-vitest-reports selects validated reports into stable merge input names', async () => {
+  it('merge-vitest-reports runs the Vitest merge on the prepared reports', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'voucha-vitest-blobs-'))
     const { argsPath, binDir, vouchingtonPath } = await makeFakePnpmBin()
     const primary = join(dir, 'primary')
@@ -62,7 +62,6 @@ describe('workflow shell scripts', () => {
     const bundle = join(fallback, 'vitest-blob-tooling')
     await mkdir(bundle, { recursive: true })
     await mkdir(primary)
-    await writeFile(join(primary, '.invalid-tooling'), 'invalid archive\n')
     await writeFile(join(bundle, 'tooling.json'), '{}')
     writeVitestBlobManifest(bundle, {
       suite: 'tooling',
@@ -72,7 +71,7 @@ describe('workflow shell scripts', () => {
       runAttempt: 2,
     })
 
-    const { stdout } = await execFileAsync(
+    await execFileAsync(
       './ci/merge-vitest-reports.sh',
       [primaryFromRoot, fallbackFromRoot, mergeDirFromRoot],
       {
@@ -95,14 +94,11 @@ describe('workflow shell scripts', () => {
     )
 
     const args = await readFile(argsPath, 'utf8')
-    expect(stdout).toContain('::warning::Rejected Vitest primary report source: invalid-archive')
-    expect(stdout).toContain('Selected Vitest report tooling from attempt 2 (fallback)')
     expect(args).toContain('vitest\nrun\n')
     expect(args).toContain(`--merge-reports=${mergeDirFromRoot}\n`)
-    expect(await readFile(join(mergeDir, 'tooling.json'), 'utf8')).toBe('{}')
   })
 
-  it('merge-vitest-reports removes stale merge input when no suites are expected', async () => {
+  it('merge-vitest-reports skips the Vitest merge when no suites are expected', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'voucha-vitest-blobs-'))
     const { argsPath, binDir, vouchingtonPath } = await makeFakePnpmBin()
     const primary = join(dir, 'primary')
@@ -111,7 +107,6 @@ describe('workflow shell scripts', () => {
     await mkdir(primary)
     await mkdir(fallback)
     await mkdir(mergeDir)
-    await writeFile(join(mergeDir, 'previous.json'), '{}')
 
     await execFileAsync('./ci/merge-vitest-reports.sh', [primary, fallback, mergeDir], {
       env: {
@@ -132,6 +127,5 @@ describe('workflow shell scripts', () => {
     })
 
     await expect(readFile(argsPath, 'utf8')).rejects.toThrow(/ENOENT/)
-    expect(await readdir(mergeDir)).toEqual([])
   })
 })

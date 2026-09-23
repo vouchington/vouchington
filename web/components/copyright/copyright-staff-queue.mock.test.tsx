@@ -33,24 +33,26 @@ describe('CopyrightStaffQueue recovery actions', () => {
       Object.defineProperty(window, 'location', originalLocationDescriptor)
   })
 
-  it('retries failed action and delivery intents without a decision rationale', async () => {
-    render(<CopyrightStaffQueue notices={[makeNotice()]} />)
+  // Each retry renders its own queue: a retry keeps every Retry button disabled until its transition
+  // settles, so a second click in the same render races that pending state.
+  it.each([
+    { index: 0, intentId: 'action-intent-123', replay: () => mockReplayAction },
+    { index: 1, intentId: 'delivery-intent-123', replay: () => mockReplayDelivery },
+  ])(
+    'retries failed intent $intentId without a decision rationale',
+    async ({ index, intentId, replay }) => {
+      render(<CopyrightStaffQueue notices={[makeNotice()]} />)
 
-    const retries = screen.getAllByRole('button', { name: 'Retry' })
-    expect(retries).toHaveLength(2)
-    expect(retries[0]).toBeEnabled()
-    expect(retries[1]).toBeEnabled()
+      const retries = screen.getAllByRole('button', { name: 'Retry' })
+      expect(retries).toHaveLength(2)
+      expect(retries[index]).toBeEnabled()
 
-    fireEvent.click(retries[0]!)
-    await waitFor(() => {
-      expect(mockReplayAction).toHaveBeenCalledWith('case-123', 'action-intent-123')
-    })
-
-    fireEvent.click(retries[1]!)
-    await waitFor(() => {
-      expect(mockReplayDelivery).toHaveBeenCalledWith('case-123', 'delivery-intent-123')
-    })
-  })
+      fireEvent.click(retries[index]!)
+      await waitFor(() => {
+        expect(replay()).toHaveBeenCalledWith('case-123', intentId)
+      })
+    },
+  )
 })
 
 function makeNotice(): CopyrightStaffQueueItem {

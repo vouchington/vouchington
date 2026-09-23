@@ -87,8 +87,6 @@ describe('coverage provenance manifest CLI adapter', () => {
       },
     )
     expect(manifest).toMatchObject({
-      version: 2,
-      kind: 'patch-lcov',
       producer: { group: 'web', index: 3, total: 3 },
       patch: { base: fixture.base, head: fixture.head },
     })

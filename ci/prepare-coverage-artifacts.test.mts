@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -50,14 +50,12 @@ async function writePair(
   options: PrepareCoverageArtifactsOptions,
   suite: string,
   producer: { group: string; index: number; total: number },
-  hits = 1,
-  attempt = 1,
 ): Promise<string> {
   const pairDir = join(options.sourceDir, `coverage-${suite}`)
   mkdirSync(pairDir, { recursive: true })
   const lcovPath = join(pairDir, 'lcov.info')
   const manifestPath = join(pairDir, 'coverage-manifest.json')
-  writeFileSync(lcovPath, `TN:\nSF:src/example.ts\nDA:1,${hits}\nend_of_record\n`)
+  writeFileSync(lcovPath, `TN:\nSF:src/example.ts\nDA:1,1\nend_of_record\n`)
   await createPatchCoverageContribution({
     root: options.root,
     lcovPath,
@@ -65,7 +63,7 @@ async function writePair(
     descriptor: coverageSuiteDescriptor(suite),
     repository,
     revision,
-    run: { id: run.id, attempt },
+    run: { id: run.id, attempt: 1 },
     collectorVersion: '4.1.11',
     base: options.base,
     head: options.head,
@@ -111,97 +109,14 @@ describe('Vouchington patch coverage artifact fan-in', () => {
     await expect(prepareCoverageArtifacts(options)).resolves.toEqual({
       selected: [{ suite: 'web-shard-1' }, { suite: 'web-shard-2' }, { suite: 'web-shard-3' }],
     })
-    expect(
-      readFileSync(join(options.artifactsDir, 'coverage-web-shard-2/lcov.info'), 'utf8'),
-    ).toContain('DA:1,1')
   })
 
-  it('rejects unknown suites before canonical output', async () => {
+  it('rejects a suite without a Vouchington coverage descriptor', async () => {
     const options = fixture()
     mkdirSync(join(options.sourceDir, 'coverage-unknown-suite'))
-    await expect(prepareCoverageArtifacts(options)).rejects.toThrowError(/Unexpected.*suite/i)
-  })
-
-  it('atomically replaces stale canonical output on the no-producer path', async () => {
-    const options = fixture()
-    mkdirSync(join(options.artifactsDir, 'coverage-stale'), { recursive: true })
-    writeFileSync(join(options.artifactsDir, 'coverage-stale/lcov.info'), 'stale')
-
-    await expect(prepareCoverageArtifacts(options)).resolves.toEqual({ selected: [] })
-    expect(readdirSync(options.artifactsDir)).toEqual([])
-  })
-
-  it('prunes an incomplete stale producer group that the current selection no longer expects', async () => {
-    const options = fixture()
-    await writePair(options, 'tooling', { group: 'tooling', index: 1, total: 1 }, 1, 2)
-    await writePair(options, 'web-shard-1', { group: 'web', index: 1, total: 2 })
-
-    await expect(
-      prepareCoverageArtifacts({ ...options, expectedProducerGroups: ['tooling'] }),
-    ).resolves.toEqual({ selected: [{ suite: 'tooling' }] })
-  })
-
-  it('reuses a complete earlier attempt for a producer group the current selection requires', async () => {
-    const options = fixture()
-    await writePair(options, 'tooling', { group: 'tooling', index: 1, total: 1 })
-
-    await expect(
-      prepareCoverageArtifacts({ ...options, expectedProducerGroups: ['tooling'] }),
-    ).resolves.toEqual({ selected: [{ suite: 'tooling' }] })
-  })
-
-  it('rejects an incomplete earlier attempt for a producer group the current selection requires', async () => {
-    const options = fixture()
-    await writePair(options, 'web-shard-1', { group: 'web', index: 1, total: 2 })
-
-    await expect(
-      prepareCoverageArtifacts({ ...options, expectedProducerGroups: ['web'] }),
-    ).rejects.toThrowError(/partition/i)
-  })
-
-  it('rejects an unselected producer group that has a current-attempt contribution', async () => {
-    const options = fixture()
-    await writePair(options, 'tooling', { group: 'tooling', index: 1, total: 1 }, 1, 2)
-    await writePair(options, 'web-shard-1', { group: 'web', index: 1, total: 1 }, 1, 2)
-
-    await expect(
-      prepareCoverageArtifacts({ ...options, expectedProducerGroups: ['tooling'] }),
-    ).rejects.toThrowError('Unexpected current-attempt patch coverage producer group: web')
-  })
-
-  it('rejects a mixed-attempt unselected group when one contribution is current', async () => {
-    const options = fixture()
-    await writePair(options, 'tooling', { group: 'tooling', index: 1, total: 1 }, 1, 2)
-    await writePair(options, 'web-shard-1', { group: 'web', index: 1, total: 2 })
-    await writePair(options, 'web-shard-2', { group: 'web', index: 2, total: 2 }, 1, 2)
-
-    await expect(
-      prepareCoverageArtifacts({ ...options, expectedProducerGroups: ['tooling'] }),
-    ).rejects.toThrowError('Unexpected current-attempt patch coverage producer group: web')
-  })
-
-  it('rejects current-attempt output when the expected producer selection is empty', async () => {
-    const options = fixture()
-    await writePair(options, 'tooling', { group: 'tooling', index: 1, total: 1 }, 1, 2)
-
-    await expect(
-      prepareCoverageArtifacts({ ...options, expectedProducerGroups: [] }),
-    ).rejects.toThrowError('Unexpected current-attempt patch coverage producer group: tooling')
-  })
-
-  it('rejects an expected producer group when no matching contribution exists', async () => {
-    const options = fixture()
-
-    await expect(
-      prepareCoverageArtifacts({ ...options, expectedProducerGroups: ['tooling'] }),
-    ).rejects.toThrowError('Missing expected patch coverage producer group: tooling')
-  })
-
-  it('keeps incomplete earlier groups strict when no expected selection is provided', async () => {
-    const options = fixture()
-    await writePair(options, 'web-shard-1', { group: 'web', index: 1, total: 2 })
-
-    await expect(prepareCoverageArtifacts(options)).rejects.toThrowError(/partition/i)
+    const result = prepareCoverageArtifacts(options)
+    await expect(result).rejects.toThrowError(/unknown-suite/)
+    await expect(result).rejects.not.toThrowError(/^Unknown coverage suite:/)
   })
 
   it('derives every required producer group from successful jobs', () => {

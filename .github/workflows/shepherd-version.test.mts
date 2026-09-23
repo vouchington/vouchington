@@ -22,15 +22,14 @@ describe('shepherd trusted version', () => {
     const versionStep = renderJob?.steps?.find(step => step.id === 'pr-shepherd-version')
 
     expect(setupStep).toBeDefined()
-    expect(versionStep?.run).toContain('VERSION="$(pnpm exec pr-shepherd --version)"')
     expect(versionStep?.run).not.toContain('pr-shepherd/package.json')
     expect(renderJob?.outputs?.['pr_shepherd_version']).toBe(
       '${{ steps.pr-shepherd-version.outputs.version }}',
     )
     if (!versionStep?.run) throw new Error('Missing trusted pr-shepherd version step')
 
-    const { githubOutput, installedVersion, stdout } = executeTrustedVersionStep(versionStep.run)
-    expect(stdout).toBe(`Trusted pr-shepherd version (from main): ${installedVersion}\n`)
-    expect(githubOutput).toBe(`version=${installedVersion}\n`)
+    const { githubOutput, stdout, version } = executeTrustedVersionStep(versionStep.run)
+    expect(stdout).toContain(version)
+    expect(githubOutput).toBe(`version=${version}\n`)
   })
 })

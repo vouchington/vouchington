@@ -4,8 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 // The ownership partition in .agents/skills/stacked-prs/SKILL.md §A3 ("shepherd only PRs this agent
 // owns") is a documented `grep -E` one-liner, not a Vouchington function — there is nothing to
-// deep-import, and no upstream package to drift under it (see dev/pr-shepherd-cli-contract.test.mts
-// for that kind of guard). But the pattern is easy to get subtly wrong in a doc edit — an unescaped
+// import. But the pattern is easy to get subtly wrong in a doc edit — an unescaped
 // session id, a dropped anchor, a nonexistent capture group — so it is pinned here against realistic
 // fixture bodies (shaped like the skill's own cited real examples, #11481 and #11479) instead of only
 // being read by eye. A failure means: re-verify the ownership-partition contract in

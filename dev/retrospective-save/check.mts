@@ -1,4 +1,8 @@
-import { resolveBlackboardConnection, type BlackboardEntriesClient } from '../blackboard/client.mts'
+import {
+  isBlackboardNotFound,
+  resolveBlackboardConnection,
+  type BlackboardEntriesClient,
+} from '../blackboard/client.mts'
 import { getEntries, type SessionEntry } from '../blackboard/entries.mts'
 import { parseFlagArgs, type FlagKey } from '../blackboard/parse-flag-args.mts'
 import { requireSessionId } from '../agent-session-id/resolve.mts'
@@ -42,8 +46,8 @@ function formatCheckResult(sessionId: string, entries: SessionEntry[]): string {
 }
 
 // Read-only mirror of dev/blackboard-journal/entries.mts: does not ensureSession,
-// so a session that was never created (the "-> 404" GET failure getEntries
-// surfaces) is not an error — it just means no retrospective exists yet. Any
+// so a session that was never created (the client's 404, which getEntries
+// keeps as the cause) is not an error — it just means no retrospective exists yet. Any
 // other failure (missing token, unreachable server, bad session id format)
 // propagates so the caller can tell "no retrospective" apart from "the
 // blackboard is unavailable and this answer can't be trusted."
@@ -66,9 +70,7 @@ export async function runCheck(
     const entries = await getEntries({ sessionId, connection, entries: entriesClient })
     return formatCheckResult(sessionId, entries)
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    const notFound = new RegExp(`GET /sessions/${RegExp.escape(sessionId)}/entries -> 404`)
-    if (notFound.test(message))
+    if (isBlackboardNotFound(error))
       return `No retrospective saved yet for agent-blackboard session ${sessionId} (session not created).`
     throw error
   }

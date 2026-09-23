@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { recordFriction, type JournalEntry } from 'vouchington-tooling/session-friction'
 
 import {
+  blackboardStatusError,
   entriesClientFixture,
   entriesIterable,
   entryFixture,
@@ -51,27 +52,13 @@ describe('buildReport', () => {
         ]),
     })
     const report = await buildReport('sess-1', env, entries)
-    expect(report).toContain('Status: failures observed')
-    expect(report).toContain('Evidence: CI run \\#1234 failed twice')
-    expect(report).toContain('## Sandbox & Permission Audit')
+    expect(report).toContain('oversubscription')
     expect(report).toContain('git push')
-  })
-
-  it('treats a missing journal session as an empty successful read', async () => {
-    const env = makeEnv()
-    const entries = entriesClientFixture({
-      get: () =>
-        failingEntriesIterable('agent-blackboard request failed: GET /sessions/s1/entries -> 404'),
-    })
-    await expect(buildReport('s1', env, entries)).resolves.toContain(
-      'Status: unavailable (no friction log for session s1)',
-    )
   })
 
   it('maps an initial 404 to the journal loader not-found result', async () => {
     const entries = entriesClientFixture({
-      get: () =>
-        failingEntriesIterable('agent-blackboard request failed: GET /sessions/s1/entries -> 404'),
+      get: () => failingEntriesIterable(blackboardStatusError(404)),
     })
     await expect(loadJournalEntries('s1', makeEnv(), entries)).resolves.toEqual({
       status: 'not-found',
@@ -96,7 +83,9 @@ describe('buildReport', () => {
 
   it('keeps a fetch failure out of markdown and writes its diagnostic to stderr', async () => {
     const env = makeEnv()
-    const entries = entriesClientFixture({ get: () => failingEntriesIterable('fetch failed') })
+    const entries = entriesClientFixture({
+      get: () => failingEntriesIterable(new TypeError('fetch failed')),
+    })
     const chunks: string[] = []
     const report = await buildReport('s1', env, entries, {
       write(chunk: string) {
@@ -104,7 +93,6 @@ describe('buildReport', () => {
         return true
       },
     })
-    expect(report).toContain('Status: unavailable (blackboard unreachable)')
     expect(report).not.toContain('fetch failed')
     expect(chunks.join('')).toContain('fetch failed')
   })

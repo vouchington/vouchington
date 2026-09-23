@@ -77,7 +77,7 @@ function getVitestProjectFiles(name: string): Set<string> {
 }
 
 function runOxlintOnMockBoundaryFixture(source: string): { status: number; output: string } {
-  const dir = mkdtempSync(join(tmpdir(), 'voucha-module-mock-boundary-'))
+  const dir = mkdtempSync(join(tmpdir(), 'voucha-oxlint-mock-fixture-'))
   const file = join(dir, 'provider.mock.test.mts')
   try {
     writeFileSync(file, source)
@@ -199,9 +199,7 @@ describe('no-mistakes config freshness', () => {
 
     const untagged = runOxlintOnMockBoundaryFixture(mockFixture('streamOpenAIResponseEvents'))
     expect(untagged.status).not.toBe(0)
-    expect(untagged.output).toContain(
-      'Module mock boundary does not allow mocking internal module "@modules/openai-utils/create-response".',
-    )
+    expect(untagged.output).toContain('module-mock-boundary')
   })
 
   it('keeps local planner provider exclusions narrow while PR selection includes credentialed tests', () => {

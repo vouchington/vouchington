@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
+  blackboardStatusError,
   entriesClientFixture,
   entriesIterable,
   entryFixture,
@@ -56,8 +57,7 @@ describe('runCheck', () => {
 
   it('reports no retrospective for a never-created session (404) instead of failing', async () => {
     const entries = entriesClientFixture({
-      get: () =>
-        failingEntriesIterable('agent-blackboard request failed: GET /sessions/s1/entries -> 404'),
+      get: () => failingEntriesIterable(blackboardStatusError(404)),
     })
     const result = await runCheck(['--session-id', 's1'], HOSTED_ENV, entries)
     expect(result).toBe(
@@ -66,11 +66,12 @@ describe('runCheck', () => {
   })
 
   it('propagates a non-404 failure instead of masking it as no retrospective', async () => {
-    const entries = entriesClientFixture({
-      get: () =>
-        failingEntriesIterable('agent-blackboard request failed: GET /sessions/s1/entries -> 500'),
-    })
-    await expect(runCheck(['--session-id', 's1'], HOSTED_ENV, entries)).rejects.toThrow(/-> 500/)
+    const failure = blackboardStatusError(500)
+    const entries = entriesClientFixture({ get: () => failingEntriesIterable(failure) })
+    await expect(runCheck(['--session-id', 's1'], HOSTED_ENV, entries)).rejects.toHaveProperty(
+      'cause',
+      failure,
+    )
   })
 
   it('rejects when no session id is available', async () => {
