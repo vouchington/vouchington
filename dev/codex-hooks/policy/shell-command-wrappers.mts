@@ -94,7 +94,8 @@ export function readCommandPrefix(
     }
     let next = parsed.next
     if (wrapper.subcommand !== undefined) {
-      if (words[next] !== wrapper.subcommand) return null
+      const subcommandWord = words[next]
+      if (subcommandWord === undefined || !wrapper.subcommand.includes(subcommandWord)) return null
       next += 1
       if (wrapper.subcommandGrammar !== undefined) {
         const subParsed = parseOptions(words, next, wrapper.subcommandGrammar)

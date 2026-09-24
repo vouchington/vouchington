@@ -7,8 +7,9 @@ export type Wrapper = {
   grammar: OptionGrammar
   /** Operands between the options and the wrapped command (`timeout DURATION`). */
   operands?: number
-  /** A literal subcommand word required before the wrapped command (`pnpm exec`, `mise exec`). */
-  subcommand?: string
+  /** A literal subcommand word required before the wrapped command (`pnpm exec`), or any one of
+   * several accepted spellings (`mise exec`/`mise x`). */
+  subcommand?: readonly string[]
   /** The subcommand's own options, parsed after `subcommand` and before its operands. */
   subcommandGrammar?: OptionGrammar
   /** The wrapped command starts only after a `--` (`mise exec node@20 -- gh …`). */

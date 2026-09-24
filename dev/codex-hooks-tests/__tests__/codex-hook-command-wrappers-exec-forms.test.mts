@@ -5,6 +5,7 @@ import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
 const MERGE_BLOCK = 'never delegated to an agent'
 const FIND_EXEC_BLOCK = '-exec/-execdir/-ok/-okdir clause can run a gh command'
 const PARALLEL_BLOCK = '`parallel` can run a gh command'
+const EXEC_MENTION_BLOCK = 'can run a gh command the hook cannot check against'
 
 function reasonFor(command: string): string | undefined {
   return findPreToolUseBlock({ tool_input: { command } })?.reason
@@ -37,6 +38,28 @@ describe('Codex hook gh policies behind exec-style wrappers', () => {
     'watch gh pr merge 1',
     'watch -n 2 gh pr merge 1',
     'watch --interval=2 gh pr merge 1',
+    'sudo -u root gh pr merge 1',
+    'sudo --user root gh pr merge 1',
+    'sudo -r role gh pr merge 1',
+    'sudo -t type gh pr merge 1',
+    'sudo --chdir /tmp gh pr merge 1',
+    'nice sudo -u root gh pr merge 1',
+    'timeout 5 sudo -u root gh pr merge 1',
+    'npx -c "gh pr merge 1"',
+    'npx --call "gh pr merge 1"',
+    'npx -p gh gh pr merge 1',
+    'pnpm --dir x exec gh pr merge 1',
+    'pnpm exec -- gh pr merge 1',
+    'pnpm -C x exec gh pr merge 1',
+    'mise x -- gh pr merge 1',
+    'mise -C dir exec -- gh pr merge 1',
+    'mise exec -c "gh pr merge 1"',
+    'mise exec --command "gh pr merge 1"',
+    'script -q -c "gh pr merge 1" /dev/null',
+    'script -qc "gh pr merge 1" /dev/null',
+    'script -t -c "gh pr merge 1" /dev/null',
+    'script -qt -c "gh pr merge 1" /dev/null',
+    'script -t --command="gh pr merge 1" /dev/null',
   ])('blocks a merge behind an exec-style wrapper: %s', command => {
     expect(reasonFor(command)).toContain(MERGE_BLOCK)
   })
@@ -47,16 +70,28 @@ describe('Codex hook gh policies behind exec-style wrappers', () => {
     "find . -exec sh -c 'gh pr merge 1' \\;",
     'find . -exec gh pr merge 1 +',
     'find . -ok gh pr merge 1 \\;',
+    'find . -exec sudo $GH pr merge 1 \\;',
   ])('fails closed on a find -exec/-execdir/-ok clause that mentions gh: %s', command => {
     expect(reasonFor(command)).toContain(FIND_EXEC_BLOCK)
   })
 
-  it.each(["parallel 'gh pr merge {}' ::: 1", 'parallel gh pr merge ::: 1'])(
-    'fails closed on a parallel template that mentions gh: %s',
-    command => {
-      expect(reasonFor(command)).toContain(PARALLEL_BLOCK)
-    },
-  )
+  it.each([
+    "parallel 'gh pr merge {}' ::: 1",
+    'parallel gh pr merge ::: 1',
+    'parallel -j4 $GH pr merge ::: 1',
+  ])('fails closed on a parallel template that mentions gh: %s', command => {
+    expect(reasonFor(command)).toContain(PARALLEL_BLOCK)
+  })
+
+  // #436 item 6: the safety net. pnpm's and mise's own global-option grammars do not model every
+  // flag (e.g. `--registry`, `--env`), so their own chain never resolves — but a literal `gh` still
+  // sits right before a policy-gated area, so the backstop blocks anyway.
+  it.each([
+    'pnpm --registry https://example.com exec gh pr merge 1',
+    'mise --env prod x -- gh pr merge 1',
+  ])('fails closed when an exec-style wrapper chain does not fully parse: %s', command => {
+    expect(reasonFor(command)).toContain(EXEC_MENTION_BLOCK)
+  })
 
   it.each([
     'find . -exec grep x {} \\;',
@@ -71,6 +106,14 @@ describe('Codex hook gh policies behind exec-style wrappers', () => {
     'find . -exec sh -c \'echo "$1"\' _ {} \\;',
     'find . -exec grep -l "$PAT" {} +',
     'parallel echo "$HOME/{}" ::: a b',
+    'sudo apt install gh',
+    'sudo -u postgres psql',
+    'pnpm --filter web exec tsc',
+    'mise x -- node app.js',
+    'npx -c "echo hi"',
+    'script -q -c "ls" /dev/null',
+    'sudo -u root gh pr create --draft',
+    'sudo -u root gh pr view 1',
   ])('does not gate an ordinary exec-style command: %s', command => {
     expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
   })

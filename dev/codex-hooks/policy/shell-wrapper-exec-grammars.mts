@@ -1,13 +1,12 @@
 import type { OptionGrammar } from './shell-option-grammar.mts'
+import {
+  MISE_GRAMMAR,
+  NO_OPTIONS,
+  NPX_GRAMMAR,
+  PNPM_GRAMMAR,
+} from './shell-wrapper-package-runner-grammars.mts'
 import type { Wrapper } from './shell-wrapper-grammars.mts'
-
-const NO_OPTIONS: OptionGrammar = {}
-
-// sudo(8) getopt string: Aa:bC:c:D:Eeg:Hh::iKklnPp:R:r:SsT:t:U:u:Vv
-const SUDO_GRAMMAR: OptionGrammar = {
-  shortOptionalArgument: 'h',
-  shortRequiredArgument: 'aCcDgpRTU',
-}
+import { SUDO_GRAMMAR } from './shell-wrapper-sudo-grammar.mts'
 
 // stdbuf(1): -i/-o/-e (or --input/--output/--error) FILE, each required.
 const STDBUF_GRAMMAR: OptionGrammar = {
@@ -37,9 +36,44 @@ const ARCH_GRAMMAR: OptionGrammar = {
   },
 }
 
-// script(1) BSD record mode: -aeFkqr are flags, -t time and -T fmt are required; the script's own
-// FILE is the one operand before the wrapped command (`script -q /dev/null gh …`).
-const SCRIPT_GRAMMAR: OptionGrammar = { shortRequiredArgument: 'tT' }
+/**
+ * script(1): BSD record mode has -aeFkqr as flags and one trailing FILE operand before the wrapped
+ * command (`script -q /dev/null gh …`). The GitHub Actions runner this hook protects is Linux,
+ * whose util-linux script(1) additionally has `-c/--command <string>` (a shell-string payload like
+ * eval's, re-scanned by github-wrapper-payloads.mts instead of resolved here) and its own
+ * required-argument options (-T/--log-timing, -O/--log-out, -I/--log-in, -B/--log-io,
+ * -m/--logging-format, -E/--echo, -o/--output-limit). `-t` is modeled as util-linux's deprecated,
+ * optional, attached-only `-t[file]` (never the next word) rather than BSD's required,
+ * space-separated `-t time`: the two are genuinely incompatible under one letter, and getting this
+ * one wrong the other way round is what let `-t -c "gh …"` swallow `-c`'s value as `-t`'s, stranding
+ * the disguised gh command where the resolved wrapper chain no longer scans it. A bare BSD `-t
+ * TIME` (unattached) therefore does not resolve through this grammar either, but still fails
+ * closed — the wrapper chain simply does not parse, so the exec-wrapper safety net
+ * (github-exec-wrapper-mention-policy.mts) scans the whole remaining command instead.
+ */
+export const SCRIPT_GRAMMAR: OptionGrammar = {
+  aliases: {
+    B: 'log-io',
+    c: 'command',
+    E: 'echo',
+    I: 'log-in',
+    m: 'logging-format',
+    O: 'log-out',
+    o: 'output-limit',
+  },
+  long: {
+    command: 'required',
+    echo: 'required',
+    'log-in': 'required',
+    'log-io': 'required',
+    'log-out': 'required',
+    'log-timing': 'required',
+    'logging-format': 'required',
+    'output-limit': 'required',
+  },
+  shortOptionalArgument: 't',
+  shortRequiredArgument: 'TcIOBmEo',
+}
 
 // GNU watch: -n/--interval SECONDS is required, -d/--differences is optionally attached; the rest
 // are flags. Shared with the `watch` payload re-parser (github-wrapper-payloads.mts).
@@ -77,10 +111,16 @@ export const WATCH_GRAMMAR: OptionGrammar = {
  * shell-wrapper-grammars.mts to stay under the file's line cap. `unbuffer` and `setsid` take no
  * argument-bearing option this hook needs to model (every option either program defines is a
  * flag), so they use `NO_OPTIONS`: an unrecognized option still parses safely as a flag.
- * `pnpm exec` and `mise exec --` deliberately do not model pnpm's or mise's own argument-taking
- * global flags before `exec` (`pnpm --filter X exec`, `pnpm -C dir exec`, `mise -C dir exec`): the
- * subcommand check below only matches `words[next]`, so these are safely missed, never falsely
- * blocked — a real invocation is just not yet recognized as one.
+ *
+ * `pnpm exec` and `mise exec`/`mise x` model their own argument-taking global options
+ * (`PNPM_GRAMMAR`, `MISE_GRAMMAR`) so a space-separated `--dir x`/`-C x` before the subcommand does
+ * not strand the subcommand word as an unrecognized one; `pnpm`'s `subcommandGrammar` is
+ * `NO_OPTIONS` only so a bare `--` right after `exec` is consumed the same way any other wrapper's
+ * options consume it (shell-option-grammar.mts's `--` handling applies before any grammar-specific
+ * table lookup, so an empty grammar still recognizes it). `mise exec -c/--command STRING` — which
+ * has no `--` at all — is not resolvable through this table's `operandsUntilDoubleDash`, and is
+ * instead handled as a separate payload (`miseExecCommandValue`,
+ * shell-wrapper-package-runner-grammars.mts).
  */
 export const EXEC_WRAPPER_ENTRIES: readonly (readonly [string, Wrapper])[] = [
   ['sudo', { grammar: SUDO_GRAMMAR }],
@@ -90,7 +130,7 @@ export const EXEC_WRAPPER_ENTRIES: readonly (readonly [string, Wrapper])[] = [
   ['setsid', { grammar: NO_OPTIONS }],
   ['arch', { grammar: ARCH_GRAMMAR }],
   ['script', { grammar: SCRIPT_GRAMMAR, operands: 1 }],
-  ['npx', { grammar: NO_OPTIONS }],
-  ['pnpm', { grammar: NO_OPTIONS, subcommand: 'exec' }],
-  ['mise', { grammar: NO_OPTIONS, operandsUntilDoubleDash: true, subcommand: 'exec' }],
+  ['npx', { grammar: NPX_GRAMMAR }],
+  ['pnpm', { grammar: PNPM_GRAMMAR, subcommand: ['exec'], subcommandGrammar: NO_OPTIONS }],
+  ['mise', { grammar: MISE_GRAMMAR, operandsUntilDoubleDash: true, subcommand: ['exec', 'x'] }],
 ]

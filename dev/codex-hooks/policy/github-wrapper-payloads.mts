@@ -1,5 +1,10 @@
 import { isCommandPositionInvocation } from './github-command-position.mts'
 import { isGhCommandSeparator } from './github-options.mts'
+import {
+  miseCommandPayload,
+  npxCallPayload,
+  scriptCommandPayload,
+} from './github-wrapper-payloads-exec-forms.mts'
 import { parseOptions } from './shell-option-grammar.mts'
 import { type ShellWord, tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
 import {
@@ -16,7 +21,7 @@ const GH_LOOKUP_SUBSTITUTION = new RegExp(
   String.raw`(")?(?:\$\(\s*${GH_LOOKUP}\s*\)|\x60\s*${GH_LOOKUP}\s*\x60)\1`,
   'g',
 )
-const PAYLOAD_COMMANDS = new Set(['alias', 'env', 'eval', 'gh', 'watch'])
+const PAYLOAD_COMMANDS = new Set(['alias', 'env', 'eval', 'gh', 'mise', 'npx', 'script', 'watch'])
 
 /**
  * Commands a wrapper or definition runs that the token-level policy scan cannot see as words:
@@ -49,6 +54,9 @@ export function extractWrapperPayloads(command: string): string[] {
     if (name === 'env') payloads.push(...envSplitStringPayloads(args))
     if (name === 'gh') payloads.push(...ghAliasPayloads(args))
     if (name === 'watch') payloads.push(watchPayload(args))
+    if (name === 'npx') payloads.push(...npxCallPayload(args))
+    if (name === 'script') payloads.push(...scriptCommandPayload(args))
+    if (name === 'mise') payloads.push(...miseCommandPayload(args))
     if (variable) {
       const variableExecutable = resolvedVariableExecutablePayload(args, values, index)
       if (variableExecutable !== null) payloads.push(variableExecutable)

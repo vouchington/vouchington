@@ -37,6 +37,12 @@ describe('Codex hook gh policies behind variable executables, eval and unknown g
   it('fails closed on a variable executable it cannot resolve, next to a gh area word', () => {
     expect(reasonFor('$CMD pr merge 1')).toContain(UNRESOLVED_VARIABLE_BLOCK)
     expect(reasonFor('$GH issue close 1')).toContain(UNRESOLVED_VARIABLE_BLOCK)
+    expect(reasonFor('${GH:-gh} pr merge 1')).toContain(UNRESOLVED_VARIABLE_BLOCK)
+    expect(reasonFor('"${GH}" pr merge 1')).toContain(UNRESOLVED_VARIABLE_BLOCK)
+  })
+
+  it('still resolves a braced same-command assignment before a variable executable', () => {
+    expect(reasonFor('GH=gh; ${GH} pr merge 1')).toContain(MERGE_BLOCK)
   })
 
   it("fails closed past gh's own -R/--repo flag before the area word", () => {
