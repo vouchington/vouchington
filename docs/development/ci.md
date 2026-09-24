@@ -1,8 +1,9 @@
 # CI Reference
 
 Full map of every CI check: workflow file, config, scope, and coverage rules. The hand-maintained
-Mermaid DAG is the [Workflow automation map](../../.github/workflows/reference-workflow-automation-map.md);
-generate an exact workflow-only graph with `pnpm run ci:topology --format mermaid --workflow
+Mermaid diagrams (Always run, Pull requests, and Main) are linked from the
+[Workflow automation map](../../.github/workflows/reference-workflow-automation-map.md); generate
+an exact workflow-only graph with `pnpm run ci:topology --format mermaid --workflow
 .github/workflows/ci.yml`. For local commands see [tests.md](tests.md).
 
 AST-grep scans honor the severity declared in each rule: errors block CI and warnings report staged
