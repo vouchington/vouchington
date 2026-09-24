@@ -43,14 +43,14 @@ function normalize(value: string): string {
     .replace(/^-|-$/g, '')
 }
 
-function getMermaidDiagram(reference: string): string {
-  return reference.match(/```mermaid\n([\s\S]*?)\n```/)?.[1] ?? ''
+function getMermaidDiagrams(reference: string): string[] {
+  return [...reference.matchAll(/```mermaid\n([\s\S]*?)\n```/g)].map(match => match[1]!)
 }
 
 function getMermaidNodeIds(reference: string): Set<string> {
   return new Set(
-    [...getMermaidDiagram(reference).matchAll(/(?:^|\s)([a-z][a-z0-9-]*)\[/g)].map(
-      match => match[1]!,
+    getMermaidDiagrams(reference).flatMap(diagram =>
+      [...diagram.matchAll(/(?:^|\s)([a-z][a-z0-9-]*)\[/g)].map(match => match[1]!),
     ),
   )
 }
@@ -183,7 +183,7 @@ describe('workflow automation safety', () => {
     assertNoWorkflowViolations(violations)
   })
 
-  it('keeps every workflow in a grouped inventory reference and standalone workflows in the canonical automation-map Mermaid diagram', () => {
+  it('keeps every workflow in a grouped inventory reference and standalone workflows in the canonical automation-map Mermaid diagrams', () => {
     const readme = readFileSync('.github/workflows/README.md', 'utf8')
     const workflowReference = readFileSync('.github/workflows/WORKFLOWS.md', 'utf8')
     const automationMap = readFileSync(
@@ -214,11 +214,11 @@ describe('workflow automation safety', () => {
     expect(workflowReference).toContain(
       '[Workflow automation map](reference-workflow-automation-map.md)',
     )
-    expect(getMermaidDiagram(readme)).toBe('')
-    expect(getMermaidDiagram(workflowReference)).toBe('')
+    expect(getMermaidDiagrams(readme)).toEqual([])
+    expect(getMermaidDiagrams(workflowReference)).toEqual([])
     expect(automationMap).toContain('[Back to Workflow Reference](README.md)')
     expect(automationMap).toContain('[Back to Workflow inventory](WORKFLOWS.md)')
-    expect(getMermaidDiagram(automationMap)).not.toBe('')
+    expect(getMermaidDiagrams(automationMap)).not.toEqual([])
     expect(workflowInstructions).toContain(
       '[Workflow automation map](reference-workflow-automation-map.md)',
     )
