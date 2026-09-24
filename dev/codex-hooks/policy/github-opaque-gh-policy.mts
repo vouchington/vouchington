@@ -65,9 +65,10 @@ function isExpansion(word: string | undefined): boolean {
  * and `parallel` (their opaque clause/template checks), an exec-style wrapper name (the backstop),
  * `eval`, or a parameter expansion (the unresolved-variable-executable check). The other checks
  * above key on a literal `gh`/`gh-stack` word instead, already covered by the caller's own filter.
- * Cheap enough to call at every token position before the more expensive wrapper-chain parse —
- * kept in sync with the chain above by construction: a finder that starts scanning from a new kind
- * of word needs that word added here too, or the caller's loop never reaches it.
+ * Cheap enough to call at every token position before the more expensive wrapper-chain parse. If a
+ * finder above starts scanning from a new kind of word and this list is not updated to match, the
+ * caller's loop will never reach it — nothing here enforces that by construction; the
+ * `codex-hook-command-wrappers-*.test.mts` finder tests are what catch the mismatch.
  */
 export function mayStartOpaqueGhCheck(word: string): boolean {
   const name = word.slice(word.lastIndexOf('/') + 1)
