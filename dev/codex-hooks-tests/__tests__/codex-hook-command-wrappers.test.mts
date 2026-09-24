@@ -97,6 +97,21 @@ describe('Codex hook gh policies behind command wrappers', () => {
     expect(reasonFor(command)).toContain(MERGE_BLOCK)
   })
 
+  // Shell options before the script, including ones that take the next word, used to hide it.
+  it.each([
+    "bash -e -c 'gh pr merge 1'",
+    "bash -euo pipefail -c 'gh pr merge 1'",
+    "sh -o pipefail -c 'gh pr merge 1'",
+    "bash -O extglob -c 'gh pr merge 1'",
+    "bash +o posix -c 'gh pr merge 1'",
+    "bash --norc -c 'gh pr merge 1'",
+    "bash --rcfile x -c 'gh pr merge 1'",
+    "bash -c -- 'gh pr merge 1'",
+    "zsh -f -c $'gh pr merge 1'",
+  ])('blocks a merge in a shell script after shell options: %s', command => {
+    expect(reasonFor(command)).toContain(MERGE_BLOCK)
+  })
+
   // A definition's later use (`m 1`, `gh m 1`) cannot be tied back to it, so the definition
   // itself is gated as if it ran.
   it.each([
@@ -117,6 +132,8 @@ describe('Codex hook gh policies behind command wrappers', () => {
     'echo 1 | xargs gh-stack',
     "echo merge | xargs -I{} sh -c 'gh pr {} 1'",
     "echo merge | xargs -I% bash -e -lc 'gh pr % 1'",
+    "echo merge | xargs -I{} bash -euo pipefail -c 'gh pr {} 1'",
+    "echo merge | xargs -I{} bash +O extglob --rcfile x --norc -c -- 'gh pr {} 1'",
   ])('fails closed when xargs supplies the gh subcommand: %s', command => {
     expect(reasonFor(command)).toContain(XARGS_BLOCK)
   })
@@ -200,6 +217,10 @@ describe('Codex hook gh policies behind command wrappers', () => {
     "echo 1 | xargs -I{} sh -c 'echo {}'",
     'echo 1 | xargs -I{} sh ./script.sh {}',
     'echo 1 | xargs -I{} sh -c',
+    // Without `-c` the quoted word is an argument, and `--rcfile` consumes the word after it.
+    "bash -e ./deploy.sh 'gh pr merge 1'",
+    "bash --rcfile 'gh pr merge 1'",
+    'bash --version',
   ])('does not gate a command that runs no gh merge: %s', command => {
     expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
   })

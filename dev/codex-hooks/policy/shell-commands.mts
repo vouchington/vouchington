@@ -1,5 +1,5 @@
-import { readAnsiCString } from './ansi-c-string.mts'
 import { stripNonShellHeredocBodies } from './shell-heredoc.mts'
+import { findShellScriptArguments } from './shell-script-operand.mts'
 import { stripUnquotedShellComments } from './shell-tokenizer.mts'
 
 const GIT_GLOBAL_OPTIONS_RE = new RegExp(
@@ -43,30 +43,10 @@ export type ShellCommandArgument = {
 
 export function extractShellCommandArguments(command: string): ShellCommandArgument[] {
   const commandWithoutComments = stripUnquotedShellComments(command)
-  const commands: ShellCommandArgument[] = []
-  const shellCommandPattern =
-    /(?:^|[\s;&|()])(?:\S*\/)?(?:bash|sh|zsh)\s+-[A-Za-z]*c[A-Za-z]*\s+(["'])((?:\\.|(?!\1)[\s\S])*)\1/g
-  for (const match of commandWithoutComments.matchAll(shellCommandPattern)) {
-    commands.push({
-      command: match[2].replace(/\\(["'\\])/g, '$1'),
-      inheritsEditor: shellCommandInheritsEditor(commandWithoutComments, match.index ?? 0),
-    })
-  }
-
-  const ansiShellCommandPattern =
-    /(?:^|[\s;&|()])(?:\S*\/)?(?:bash|sh|zsh)\s+-[A-Za-z]*c[A-Za-z]*\s+\$'/g
-  for (const match of commandWithoutComments.matchAll(ansiShellCommandPattern)) {
-    const valueStart = (match.index ?? 0) + match[0].length
-    const ansiString = readAnsiCString(commandWithoutComments, valueStart)
-    if (ansiString !== null) {
-      commands.push({
-        command: ansiString.value,
-        inheritsEditor: shellCommandInheritsEditor(commandWithoutComments, match.index ?? 0),
-      })
-    }
-  }
-
-  return commands
+  return findShellScriptArguments(commandWithoutComments).map(({ script, shellIndex }) => ({
+    command: script,
+    inheritsEditor: shellCommandInheritsEditor(commandWithoutComments, shellIndex),
+  }))
 }
 
 export function shellCommandInheritsEditor(command: string, shellCommandIndex: number): boolean {

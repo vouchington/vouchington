@@ -45,3 +45,20 @@ describe('Codex hook git -C global-option policy', () => {
     ).toContain('core.hooksPath')
   })
 })
+
+describe('Codex hook git policy in a shell script after shell options', () => {
+  it.each([
+    ['bash -e -c "git push --force origin main"', 'Force pushes'],
+    ['bash -euo pipefail -c "git commit --amend --no-edit"', 'Commit amend'],
+    ["zsh -f -c 'git push --no-verify'", '--no-verify'],
+    ["bash -e -c $'git push --force origin main'", 'Force pushes'],
+    ['bash -e -c "git rebase --continue"', 'GIT_EDITOR=true git rebase --continue'],
+  ])('blocks a banned git command: %s', (command, reasonText) => {
+    expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain(reasonText)
+  })
+
+  it('applies GIT_EDITOR=true from before the shell', () => {
+    const command = 'GIT_EDITOR=true bash -e -c "git rebase --continue"'
+    expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
+  })
+})
