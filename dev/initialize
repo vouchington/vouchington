@@ -1466,8 +1466,7 @@ main() {
     local lockfile_arg=""
     [ -n "${CI:-}" ] && lockfile_arg="--frozen-lockfile"
     retry_command 3 5 "pnpm install${CI:+ --frozen-lockfile} --config.confirmModulesPurge=false" \
-        pnpm install ${lockfile_arg:+"$lockfile_arg"} \
-            --config.disallow-workspace-cycles=false --config.confirmModulesPurge=false
+        pnpm install ${lockfile_arg:+"$lockfile_arg"} --config.confirmModulesPurge=false
     echo ""
 
     # shellcheck source=dev/lib/git-worktrees.sh

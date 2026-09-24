@@ -32,9 +32,10 @@ describe('pnpm-dedupe workflow', () => {
     const checkoutStep = dedupeJob?.steps?.find(s => s.uses?.includes('actions/checkout'))
     const pushStep = dedupeJob?.steps?.find(s => s.name === 'Commit and push')
 
-    // PAT must not be persisted in .git/config so pnpm install/dedupe lifecycle scripts
-    // cannot read it.
+    // Checkout uses the read-only GITHUB_TOKEN without persisting it, so pnpm install/dedupe
+    // lifecycle scripts never see a credential; only the push step receives the PAT.
     expect(checkoutStep?.with?.['persist-credentials']).toBe(false)
+    expect(checkoutStep?.with).not.toHaveProperty('token')
 
     expect(pushStep?.run).toContain('-c core.hooksPath=/dev/null commit')
 

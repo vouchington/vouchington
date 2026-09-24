@@ -1,10 +1,15 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { assertNoWorkflowViolations, type WorkflowStep } from './workflow-test-helpers.mts'
-
-type CacheStep = WorkflowStep & { with?: Record<string, unknown> }
+import {
+  actionStepBlocks,
+  inlineLocalComposites,
+  runsPnpmInstall,
+  workflowYamlPaths as yamlPaths,
+  type PolicyStep as CacheStep,
+} from './pnpm-policy.test-helpers.mts'
+import { assertNoWorkflowViolations } from './workflow-test-helpers.mts'
 
 type CacheWorkflow = {
   jobs?: Record<
@@ -16,25 +21,9 @@ type CacheWorkflow = {
   >
 }
 
-type CompositeAction = {
-  runs?: {
-    using?: string
-    steps?: CacheStep[]
-  }
-}
-
 const workflowFileNames = readdirSync('.github/workflows').filter(
   file => file.endsWith('.yml') || file.endsWith('.yaml'),
 )
-
-const yamlPaths = [
-  ...readdirSync('.github/workflows').map(file => join('.github/workflows', file)),
-  ...readdirSync('.github/actions', { withFileTypes: true }).flatMap(entry => {
-    if (!entry.isDirectory()) return []
-    const dir = join('.github/actions', entry.name)
-    return readdirSync(dir).flatMap(file => (/^action\.ya?ml$/.test(file) ? [join(dir, file)] : []))
-  }),
-].filter(path => /\.ya?ml$/.test(path))
 
 function cachePathBlocks(source: string): string[] {
   return actionStepBlocks(source, /uses:\s+actions\/cache(?:\/restore|\/save)?@/)
@@ -44,56 +33,8 @@ function setupNodeBlocks(source: string): string[] {
   return actionStepBlocks(source, /uses:\s+actions\/setup-node@/)
 }
 
-function actionStepBlocks(source: string, pattern: RegExp): string[] {
-  const blocks: string[] = []
-  const lines = source.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    if (!pattern.test(lines[i]!)) continue
-    const inlineStepIndent = lines[i]!.match(/^(\s*)-\s+uses:/)?.[1].length
-    const standaloneUsesIndent = lines[i]!.match(/^(\s*)uses:/)?.[1].length
-    const stepIndent =
-      inlineStepIndent ?? (standaloneUsesIndent != null ? standaloneUsesIndent - 2 : undefined)
-    if (stepIndent == null || stepIndent < 0) continue
-    const stepStartPattern = new RegExp(`^ {${stepIndent}}- `)
-    let start = i
-    while (start > 0 && !stepStartPattern.test(lines[start]!)) start--
-    let end = i + 1
-    while (end < lines.length && !stepStartPattern.test(lines[end]!)) end++
-    blocks.push(lines.slice(start, end).join('\n'))
-  }
-  return blocks
-}
-
-// One-level resolution of a local composite action's own steps, so a job
-// that delegates its real install work to `./.github/actions/<name>` is
-// checked as if those steps were inlined. Only local composites are
-// resolved (remote `uses:` refs are left as opaque steps); none of the
-// composites this policy cares about nest a second local composite inside
-// themselves, so one level is sufficient.
-function resolveLocalCompositeSteps(usesRef: string): CacheStep[] {
-  const match = usesRef.match(/^\.\/(\.github\/actions\/[^/@]+)/)
-  if (!match) return []
-  const dir = match[1]!
-  for (const filename of ['action.yml', 'action.yaml']) {
-    const path = join(dir, filename)
-    if (!existsSync(path)) continue
-    const action = load(readFileSync(path, 'utf8')) as CompositeAction
-    if (action.runs?.using !== 'composite') return []
-    return action.runs.steps ?? []
-  }
-  return []
-}
-
-function flattenSteps(steps: CacheStep[]): CacheStep[] {
-  return steps.flatMap(step => {
-    if (!step.uses?.startsWith('./.github/actions/')) return [step]
-    return [step, ...resolveLocalCompositeSteps(step.uses)]
-  })
-}
-
 function isPnpmInstallStep(step: CacheStep): boolean {
-  const run = step.run ?? ''
-  return run.includes('ci/pnpm-install.sh') || run.includes('ci/setup-backend-install.sh')
+  return runsPnpmInstall(step.run)
 }
 
 function isPlaywrightInstallStep(step: CacheStep): boolean {
@@ -147,9 +88,9 @@ describe('CI cache policy', () => {
   it('caches the pnpm store and Playwright browsers at every real install site', () => {
     // No runner persists a warm pnpm store or ~/.cache/ms-playwright across runs
     // anymore, so every real install site needs a preceding actions/cache step or
-    // it pays a full cold install every run. Resolves one level of local composite
-    // steps so setup-node-pnpm/setup-backend/setup-playwright call sites are
-    // checked like standalone/manual install steps.
+    // it pays a full cold install every run. Local composite steps are inlined
+    // (recursively) so setup-node-pnpm/setup-backend/setup-playwright call sites
+    // are checked like standalone/manual install steps.
     const violations: string[] = []
 
     for (const file of workflowFileNames) {
@@ -157,7 +98,7 @@ describe('CI cache policy', () => {
       const workflow = load(readFileSync(path, 'utf8')) as CacheWorkflow
 
       for (const [jobId, job] of Object.entries(workflow.jobs ?? {})) {
-        const steps = flattenSteps(job.steps ?? [])
+        const steps = inlineLocalComposites(job.steps ?? [])
 
         steps.forEach((step, index) => {
           const priorSteps = steps.slice(0, index)

@@ -1,8 +1,7 @@
 name: Setup Node.js and pnpm
 description: >
-  Sets up Node.js from .nvmrc and pnpm, then installs the full workspace.
-  Every job runs on a fresh, ephemeral runner, so install is always an
-  unconditional full install with no reconciliation.
+  Sets up Node.js from .nvmrc and pnpm from package.json#packageManager, then
+  installs the full workspace against a restored pnpm store cache.
   The caller must run actions/checkout before invoking this action.
   Set timeout-minutes on the calling step to cap the combined operations.
 inputs:
@@ -12,13 +11,13 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+    # setup-node must precede pnpm/action-setup: the action picks its pnpm 11
+    # bootstrap from the Node on PATH, and pnpm's shims run that Node.
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version-file: '.nvmrc'
         package-manager-cache: false
-    - name: Activate pnpm via corepack
-      shell: bash
-      run: bash "$GITHUB_WORKSPACE/ci/activate-pnpm.sh"
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
     - name: Resolve pnpm store path
       id: pnpm-store
       shell: bash
@@ -37,11 +36,10 @@ runs:
         restore-keys: |
           pnpm-store-${{ runner.os }}-${{ runner.arch }}-
     - name: pnpm install
+      if: inputs.install-scripts != 'false'
       shell: bash
-      env:
-        INSTALL_SCRIPTS: ${{ inputs.install-scripts }}
-      run: |
-        set -euo pipefail
-        bash "$GITHUB_WORKSPACE/ci/pnpm-install.sh" \
-          --runner-lifecycle ephemeral-full \
-          --install-scripts "$INSTALL_SCRIPTS"
+      run: pnpm install --frozen-lockfile
+    - name: pnpm install without lifecycle scripts
+      if: inputs.install-scripts == 'false'
+      shell: bash
+      run: pnpm install --frozen-lockfile --ignore-scripts

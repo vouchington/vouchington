@@ -66,25 +66,21 @@ patterns synchronized. Eligible temporary removal timestamps are audit signals, 
 `structured-config-policy` rule separately requires a positive `minimumReleaseAge` and strict
 boolean `allowBuilds` values.
 
-### Fail-fast install on a release-age violation
+### Release-age violations fail the install
 
-`ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION` is permanent until the flagged release ages past its
-`minimumReleaseAge` cutoff — retrying the install cannot make it pass sooner. The shared install
-entrypoint (`ci/pnpm-install.sh`, used by every workflow and
-`.github/actions/setup-node-pnpm`) classifies this failure via `vouchington-tooling/pnpm-install`
-and bails out on the first attempt instead of burning its retry budget:
+`setup-node-pnpm` runs one `pnpm install --frozen-lockfile`. A lockfile entry newer than
+`minimumReleaseAge` fails it immediately with pnpm's own error:
 
 ```
-<label> failed: the lockfile has entries that violate pnpm's minimumReleaseAge supply-chain policy. This is not transient and will not pass until the flagged release ages past the cutoff:
-  undici@8.10.0 published 2026-08-03T15:06:33.000Z, eligible at 2026-08-05T15:06:33.000Z
-See docs/development/reference-dependency-updates-supply-chain-policy.md for the temporary-exemption procedure.
+[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] 1 lockfile entries failed verification:
+  undici@8.10.0 was published at 2026-08-03T15:06:33.000Z, within the minimumReleaseAge cutoff (2026-08-02T04:48:10.357Z)
 ```
 
-`eligible at <ISO>` is `publishedAt` plus the repo's current `minimumReleaseAge` (from
-`pnpm-workspace.yaml`), computed at classification time. A PR blocked this way needs no action other
-than waiting past that timestamp (or `@dependabot rebase` once it has passed) — see the temporary
-exemption procedure above only if the delay is itself the problem. All other install failures
-(network errors, registry timeouts, etc.) are unaffected and keep retrying as before.
+The failure is permanent until the flagged release ages past the cutoff: it becomes installable at
+its publish time plus `minimumReleaseAge` (from `pnpm-workspace.yaml`), and re-running the job
+before then fails the same way. A PR blocked this way needs no action other than waiting past that
+time (or `@dependabot rebase` once it has passed) — see the temporary exemption procedure above only
+if the delay is itself the problem.
 
 ### Contents
 

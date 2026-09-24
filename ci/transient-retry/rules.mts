@@ -21,7 +21,6 @@ import {
   lintLinksGithub5xxRule,
   lintLinksSetupLycheeDownloadFlakeRule,
 } from './lint-links-rules.mts'
-import { playwrightSetupBackendPnpmActivationTimeoutRule } from './package-install-rules.mts'
 import {
   mainWebPlaywrightSetupAptLockRule,
   mainWebPlaywrightWorkerNavigationTimeoutRule,
@@ -56,7 +55,6 @@ export const RULES: TransientRetryRule[] = [
   backendCredentialedProviderSmokeTestTransientRule,
   backendUnitValkeyGlideTimeoutRule,
   backendUnitVitestWorkerExitAfterPassRule,
-  playwrightSetupBackendPnpmActivationTimeoutRule,
   mainWebPlaywrightSetupAptLockRule,
   mainWebPlaywrightWorkerNavigationTimeoutRule,
   mainWebIntegrationBackendSilentStartupExitRule,

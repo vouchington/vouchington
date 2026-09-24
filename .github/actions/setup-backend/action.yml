@@ -1,38 +1,12 @@
 name: Setup Backend
 description: >
-  Sets up Node.js from .nvmrc, installs the full workspace, and builds email
+  Sets up Node.js and pnpm, installs the full workspace, and builds email
   templates. The caller must run actions/checkout before invoking this action.
 
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-      with:
-        node-version-file: '.nvmrc'
-        package-manager-cache: false
-    - name: Activate pnpm via corepack
-      shell: bash
-      run: bash "$GITHUB_WORKSPACE/ci/activate-pnpm.sh"
-    - name: Resolve pnpm store path
-      id: pnpm-store
-      shell: bash
-      run: |
-        echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-        if command -v sha256sum >/dev/null 2>&1; then
-          echo "lockfile-hash=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-        else
-          echo "lockfile-hash=$(shasum -a 256 pnpm-lock.yaml | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-        fi
-    - name: Cache pnpm store
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-      with:
-        path: ${{ steps.pnpm-store.outputs.path }}
-        key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ steps.pnpm-store.outputs.lockfile-hash }}
-        restore-keys: |
-          pnpm-store-${{ runner.os }}-${{ runner.arch }}-
-    - name: Install dependencies
-      shell: bash
-      run: bash "$GITHUB_WORKSPACE/ci/setup-backend-install.sh"
+    - uses: ./.github/actions/setup-node-pnpm
     - name: Build email-templates
       # Build explicitly so the backend can resolve @email-templates/core even
       # when generated output was absent before install.

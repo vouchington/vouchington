@@ -85,7 +85,7 @@ async function runInstallDependencies(fake: {
     'sleep() { :; }',
     // Mirror the conditional logic from dev/initialize: bare locally, --frozen-lockfile in CI.
     'lockfile_arg=""; [ -n "${CI:-}" ] && lockfile_arg="--frozen-lockfile"',
-    'retry_command 3 5 "pnpm install${CI:+ --frozen-lockfile}" pnpm install ${lockfile_arg:+"$lockfile_arg"} --config.disallow-workspace-cycles=false --config.confirmModulesPurge=false',
+    'retry_command 3 5 "pnpm install${CI:+ --frozen-lockfile}" pnpm install ${lockfile_arg:+"$lockfile_arg"} --config.confirmModulesPurge=false',
   ].join('; ')
 
   const env: Record<string, string | undefined> = {
@@ -234,9 +234,7 @@ describe('initialize dependency install', () => {
     const result = await runInstallDependencies({ ...fake, failUntilAttempt: 0, ci: false })
 
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toContain(
-      'PNPM_ARGS=install --config.disallow-workspace-cycles=false --config.confirmModulesPurge=false',
-    )
+    expect(result.stdout).toContain('PNPM_ARGS=install --config.confirmModulesPurge=false')
     expect(result.stdout).not.toContain('--frozen-lockfile')
   })
 
@@ -246,7 +244,7 @@ describe('initialize dependency install', () => {
 
     expect(result.exitCode).toBe(0)
     expect(result.stdout).toContain(
-      'PNPM_ARGS=install --frozen-lockfile --config.disallow-workspace-cycles=false --config.confirmModulesPurge=false',
+      'PNPM_ARGS=install --frozen-lockfile --config.confirmModulesPurge=false',
     )
   })
 

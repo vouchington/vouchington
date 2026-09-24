@@ -53,10 +53,6 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
     'Local runtime cache path; keep environment-scoped for developer machines.',
   ],
   ['OUTPUT_PATH', 'Tool output path; keep environment-scoped for command invocation.'],
-  [
-    'PNPM_INSTALL_DOCS_URL',
-    'Published installer docs-link override; keep environment-scoped for CI/tool invocation.',
-  ],
   ['PROD_DIR', 'Build artifact path; keep environment-scoped for command invocation.'],
   ['PUBLIC_URL', 'Public deployment URL; keep environment-scoped with deployment wiring.'],
   [

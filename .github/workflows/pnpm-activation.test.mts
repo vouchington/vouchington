@@ -1,54 +1,60 @@
 import { describe, expect, it } from 'vitest'
-import { workflowYamlPaths, yamlSource } from './pnpm-policy.test-helpers.mts'
+import { inlineLocalComposites, stepLists, type PolicyStep } from './pnpm-policy.test-helpers.mts'
 
-describe('pnpm activation via corepack (not pnpm/action-setup)', () => {
-  const allFiles = workflowYamlPaths
+const isNodeSetup = (step: PolicyStep) => step.uses?.startsWith('actions/setup-node@') === true
+const isPnpmSetup = (step: PolicyStep) => step.uses?.startsWith('pnpm/action-setup@') === true
+const manualActivationPattern = /\bcorepack\b|\bnpm\s+(?:install|i|add)\b[^\n]*\bpnpm(?:@|\s|$)/m
 
-  it('no file uses pnpm/action-setup — corepack replaces it everywhere', () => {
-    const offenders = allFiles.filter(path => yamlSource(path).includes('pnpm/action-setup'))
-    expect(offenders).toEqual([])
-  })
-
-  // Files with the pnpm activation block (uses node_bin path for corepack or npm fallback).
-  const filesWithPnpmActivation = allFiles.filter(path =>
-    yamlSource(path).includes('node_bin="$(dirname'),
+const pnpmSetups = stepLists.flatMap(({ owner, steps }) => {
+  const inlined = inlineLocalComposites(steps)
+  return inlined.flatMap((step, index) =>
+    isPnpmSetup(step) ? [{ owner, step, prior: inlined.slice(0, index) }] : [],
   )
+})
 
-  it('has at least one file with pnpm activation', () => {
-    expect(filesWithPnpmActivation.length).toBeGreaterThan(0)
+describe('pnpm activation via pnpm/action-setup', () => {
+  it('has pnpm/action-setup call sites to validate', () => {
+    expect(pnpmSetups.length).toBeGreaterThan(0)
   })
 
-  for (const file of filesWithPnpmActivation) {
-    it(`${file}: pnpm activation follows actions/setup-node`, () => {
-      const content = yamlSource(file)
-      const nodeIdx = content.indexOf('actions/setup-node@')
-      const activationIdx = content.indexOf('node_bin="$(dirname')
-      expect(nodeIdx).toBeGreaterThan(-1)
-      expect(activationIdx).toBeGreaterThan(-1)
-      expect(nodeIdx).toBeLessThan(activationIdx)
-    })
+  it('runs actions/setup-node before every pnpm/action-setup', () => {
+    // pnpm/action-setup picks its pnpm bootstrap from the Node on PATH, and the pnpm shims it
+    // writes run that Node, so the .nvmrc Node must already be active.
+    const offenders = pnpmSetups.filter(setup => !setup.prior.some(isNodeSetup))
+    expect(offenders.map(setup => setup.owner)).toEqual([])
+  })
 
-    it(`${file}: uses corepack or npm to install the pinned pnpm version`, () => {
-      const content = yamlSource(file)
-      expect(content).toContain('pnpm_version=')
-      expect(content).toContain('GITHUB_PATH')
-    })
+  it('passes no inputs, so the version comes from package.json#packageManager', () => {
+    // `version` would duplicate the packageManager pin, `standalone` swaps in a bundled Node,
+    // and `run_install` bypasses the setup-node-pnpm install step.
+    const offenders = pnpmSetups.filter(setup => setup.step.with !== undefined)
+    expect(offenders.map(setup => setup.owner)).toEqual([])
+  })
 
-    it(`${file}: Node version is asserted to be v26.x before pnpm activation`, () => {
-      const content = yamlSource(file)
-      expect(content).toContain('node --version')
-      expect(content).toContain('v26.*)')
-    })
+  it('sets up pnpm at most once per job or composite action', () => {
+    // setup-backend wraps setup-node-pnpm, so calling both in one job repeats the whole Node,
+    // pnpm, store-cache, and install setup; one setup owner per job must cover every later step.
+    const counts = Map.groupBy(pnpmSetups, setup => setup.owner)
+    const repeated = [...counts].flatMap(([owner, setups]) =>
+      setups.length > 1 ? [`${owner}: ${setups.length}`] : [],
+    )
+    expect(repeated).toEqual([])
+  })
 
-    it(`${file}: includes manual nodejs.org download fallback before the version guard`, () => {
-      const content = yamlSource(file)
-      expect(content).toContain('nodejs.org/dist/latest-v')
-      expect(content).toMatch(/sha256sum -c|shasum -a 256 -c/)
-      const fallbackIdx = content.indexOf('nodejs.org/dist/latest-v')
-      const guardIdx = content.indexOf('v26.*)')
-      expect(fallbackIdx).toBeGreaterThan(-1)
-      expect(fallbackIdx).toBeLessThan(guardIdx)
-      expect(content).not.toContain('RUNNER_TOOL_CACHE')
-    })
-  }
+  it('never activates pnpm through corepack or npm', () => {
+    const offenders = stepLists.filter(({ steps }) =>
+      steps.some(step => manualActivationPattern.test(step.run ?? '')),
+    )
+    expect(offenders.map(list => list.owner)).toEqual([])
+  })
+
+  it.each([
+    ['corepack enable pnpm', true],
+    ['npm install --prefix "$dir" pnpm@11.13.1', true],
+    ['npm i -g pnpm', true],
+    ['pnpm install --frozen-lockfile', false],
+    ['npm install --no-save left-pad', false],
+  ])('classifies manual activation example %s', (run, expected) => {
+    expect(manualActivationPattern.test(run)).toBe(expected)
+  })
 })

@@ -191,7 +191,6 @@ describe('dependency update configuration', () => {
     }
 
     expect(readRepoFile('.nvmrc').trim()).toBe('26')
-    expect(readRepoFile('ci/activate-pnpm.sh')).toContain('Node 26 is required')
     expect(readRepoFile('backend/Dockerfile')).toContain(
       'FROM mirror.gcr.io/library/node:26-trixie-slim AS base-node',
     )
