@@ -117,7 +117,7 @@ Check out the layer that owns the change, commit there, then `gh stack rebase --
 
 Every fact this procedure branches on — topology, layer state, ownership, head SHA — comes from the
 REST/GraphQL API, never from local `gh-stack` metadata. A local base ref can go stale after a remote
-relink or rebase and silently replay already-landed commits ([#11426](https://github.com/vouchington/vouchington/issues/11426)).
+relink or rebase and silently replay already-landed commits.
 `gh stack view --json` and `gh stack bottom` are used only to **act**, never to **decide**, and the
 former errors from a worktree whose current branch is not in the stack — the normal state right after
 a merge retargets the stack.
@@ -125,9 +125,9 @@ a merge retargets the stack.
 ```bash
 gh api "repos/{owner}/{repo}/pulls/<N>" --jq '.stack'   # {base:{ref,sha}, id, number, position, size}
 gh api "repos/{owner}/{repo}/stacks/<n>"                # layers bottom→top, with head.sha and author
-gh api "repos/{owner}/{repo}/stacks" --jq '[.[] | select(.state == "open")]'   # every open stack;
-                                                                               # ?state=open is
-                                                                               # ignored server-side
+gh api "repos/{owner}/{repo}/stacks" --jq '[.[] | select(.open)]'   # every open stack; `state`
+                                                                   # is null, and ?state=open
+                                                                   # is ignored server-side
 ```
 
 Use the **single-stack** endpoint for one stack's layers — the list form returns per-PR `base.ref` as
@@ -220,8 +220,9 @@ layer**:
 4. `gh stack merge <bottom> --yes --squash`. Because `<bottom>` is the bottom-most open layer,
    "everything up to and including it" is exactly one PR.
 5. Do **not** run `gh stack sync` here — return to A2 and re-read topology remotely instead.
-   Unconditional local rebasing right after a merge is the blast radius #11426 already demonstrated;
-   sync belongs to a layer fix in B. If no unmerged owned layers remain, the drain is complete.
+   Unconditional local rebasing right after a merge can replay already-landed commits from a stale
+   local base ref; sync belongs to a layer fix in B. If no unmerged owned layers remain, the drain
+   is complete.
 
 **Residual TOCTOU, stated honestly:** the window between `S1` and the merge cannot be closed —
 `gh stack merge` has no head-SHA pin. The backstop is server-side: branch protection and repository
@@ -249,7 +250,7 @@ session-filtered (what this session may touch):
 ```bash
 # RECONCILE — unfiltered. Must not filter by session, so it still finds a stack this session did
 # not create, including right after a compaction or in a brand-new session.
-gh api repos/{o}/{r}/stacks --jq '[.[] | select(.state == "open")]'
+gh api repos/{o}/{r}/stacks --jq '[.[] | select(.open)]'
 gh pr list --state open --limit 100 --json number,title,author,body   # explicit --limit: the
                                                                       # default is 30, and Dependabot
                                                                       # noise can push owned PRs off
