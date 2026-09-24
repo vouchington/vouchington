@@ -28,7 +28,7 @@
     "@services/entity-cache": "workspace:^",
     "@voucha/config": "workspace:^",
     "http-assert": "^1.5.0",
-    "undici": "^8.10.2"
+    "undici": "^8.11.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

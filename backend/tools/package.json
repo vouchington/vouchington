@@ -45,7 +45,7 @@
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "http-errors": "^2.0.1",
-    "undici": "^8.10.2"
+    "undici": "^8.11.0"
   },
   "devDependencies": {
     "@services/urls": "workspace:^",
