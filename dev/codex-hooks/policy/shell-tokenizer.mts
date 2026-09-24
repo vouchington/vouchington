@@ -1,5 +1,5 @@
 import { readAnsiCString } from './ansi-c-string.mts'
-import { shellRedirectionOperatorAt } from './shell-redirections.mts'
+import { isRedirectionFd, shellRedirectionOperatorAt } from './shell-redirections.mts'
 
 const DOUBLE_QUOTE_ESCAPE_CHARS = new Set(['$', '`', '"', '\\', '\n'])
 
@@ -86,7 +86,7 @@ export function tokenizeShellWordsDetailed(
         ? shellRedirectionOperatorAt(commandWithoutComments, index)
         : null
     if (redirectionOperator !== null) {
-      if (/^\d+$/.test(token)) {
+      if (isRedirectionFd(token)) {
         tokens.push({ expandable, value: `${token}${redirectionOperator}` })
         token = ''
         expandable = false

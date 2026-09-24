@@ -1,6 +1,6 @@
-import { readAnsiCString } from './ansi-c-string.mts'
 import { stripNonShellHeredocBodies } from './shell-heredoc.mts'
-import { stripUnquotedShellComments } from './shell-tokenizer.mts'
+import { findShellScriptArguments, shellScriptOperandIndex } from './shell-script-operand.mts'
+import { stripUnquotedShellComments, tokenizeShellWords } from './shell-tokenizer.mts'
 
 const GIT_GLOBAL_OPTIONS_RE = new RegExp(
   String.raw`\bgit(?:\s+(?:` +
@@ -43,30 +43,24 @@ export type ShellCommandArgument = {
 
 export function extractShellCommandArguments(command: string): ShellCommandArgument[] {
   const commandWithoutComments = stripUnquotedShellComments(command)
-  const commands: ShellCommandArgument[] = []
-  const shellCommandPattern =
-    /(?:^|[\s;&|()])(?:\S*\/)?(?:bash|sh|zsh)\s+-[A-Za-z]*c[A-Za-z]*\s+(["'])((?:\\.|(?!\1)[\s\S])*)\1/g
-  for (const match of commandWithoutComments.matchAll(shellCommandPattern)) {
-    commands.push({
-      command: match[2].replace(/\\(["'\\])/g, '$1'),
-      inheritsEditor: shellCommandInheritsEditor(commandWithoutComments, match.index ?? 0),
-    })
-  }
-
-  const ansiShellCommandPattern =
-    /(?:^|[\s;&|()])(?:\S*\/)?(?:bash|sh|zsh)\s+-[A-Za-z]*c[A-Za-z]*\s+\$'/g
-  for (const match of commandWithoutComments.matchAll(ansiShellCommandPattern)) {
-    const valueStart = (match.index ?? 0) + match[0].length
-    const ansiString = readAnsiCString(commandWithoutComments, valueStart)
-    if (ansiString !== null) {
-      commands.push({
-        command: ansiString.value,
-        inheritsEditor: shellCommandInheritsEditor(commandWithoutComments, match.index ?? 0),
-      })
-    }
-  }
-
-  return commands
+  const quotedScripts = findShellScriptArguments(commandWithoutComments).map(
+    ({ script, shellIndex }) => ({
+      command: script,
+      inheritsEditor: shellCommandInheritsEditor(commandWithoutComments, shellIndex),
+    }),
+  )
+  // The quoted scan also reads a `bash -c '…'` nested inside another command's argument. A script
+  // built from several quoted pieces or escapes (`bash -c gh\ pr\ merge`, `"gh pr "merge`) is one
+  // shell word only the tokenizer reads, and it never inherits an exported editor.
+  const seen = new Set(quotedScripts.map(script => script.command))
+  const words = tokenizeShellWords(commandWithoutComments, { splitRedirections: true })
+  const wordScripts = words.flatMap((_word, index) => {
+    const operand = shellScriptOperandIndex(words, index)
+    if (operand === undefined || seen.has(words[operand])) return []
+    seen.add(words[operand])
+    return [{ command: words[operand], inheritsEditor: false }]
+  })
+  return [...quotedScripts, ...wordScripts]
 }
 
 export function shellCommandInheritsEditor(command: string, shellCommandIndex: number): boolean {

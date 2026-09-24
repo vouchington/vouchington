@@ -84,6 +84,22 @@ describe('Codex hook gh stack init root guard (#11376, #11352)', () => {
     }
   })
 
+  // An explicit base needs no checkout, so a directory the hook cannot read still gets checked.
+  it.each([
+    'env -C"$PWD" gh stack init --base feature-auth',
+    'cd "$STACK_DIR" && gh stack init -b feature-auth',
+  ])('blocks a non-main base when the directory is unknown: %s', command => {
+    expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain(
+      'gh stack init must root on main',
+    )
+  })
+
+  it('allows a main base when the directory is unknown', () => {
+    expect(
+      findPreToolUseBlock({ tool_input: { command: 'env -C"$PWD" gh stack init --base main' } }),
+    ).toBeNull()
+  })
+
   it('blocks initializing from a branch ahead of origin/main', () => {
     const dir = makeTestTempDirSync('stack-init-off-trunk-')
     try {

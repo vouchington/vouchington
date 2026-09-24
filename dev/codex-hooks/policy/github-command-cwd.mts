@@ -1,26 +1,47 @@
 import { isAbsolute, resolve } from 'node:path'
 
-import { commandSegmentStart } from './github-command-context.mts'
-import { isCommandPositionInvocation } from './github-command-position.mts'
+import { commandPrefixAt, commandSegmentStart } from './github-command-position.mts'
+import type { CommandPrefix } from './shell-command-wrappers.mts'
 import { isShellCommandSeparator, nextShellCommandSeparatorIndex } from './shell-token-utils.mts'
 
 const CD_JOINERS = new Set(['&&', ';', '\n', '('])
 const CONDITIONAL_PREFIXES = new Set(['then', 'else', 'elif', 'do'])
 const UNRESOLVED_DIRECTORY = /[$`~*?[{]/
+// Wrappers that still run the shell's own `cd` builtin; the rest exec a separate `cd` process
+// whose directory change dies with it.
+const BUILTIN_CD_WRAPPERS = new Set(['-', 'builtin', 'command', 'nocorrect', 'noglob', 'time'])
 
 /**
  * Working directory the `gh` token at `index` would see after sequential
- * command-local `cd`. `baseCwd` is session `hookCwd`. Returns `undefined`
- * when cwd is unknown so callers fail open instead of using the session
- * checkout. Absolute `cd` after `&&`/`;` recovers a known directory.
+ * command-local `cd` and its own `env -C` wrappers. `baseCwd` is session
+ * `hookCwd`. Returns `undefined` when cwd is unknown so callers fail open
+ * instead of using the session checkout. Absolute `cd` after `&&`/`;` and an
+ * absolute `env -C` recover a known directory.
  */
 export function commandCwd(tokens: string[], index: number, baseCwd: string): string | undefined {
+  const shellCwd = sequentialShellCwd(tokens, index, baseCwd)
+  const prefix = commandPrefixAt(tokens, index)
+  return prefix === null ? shellCwd : applyEnvChdir(prefix, shellCwd)
+}
+
+function applyEnvChdir(prefix: CommandPrefix, shellCwd: string | undefined): string | undefined {
+  if (prefix.splitString) return undefined
+  let current = shellCwd
+  for (const directory of prefix.chdir) {
+    if (UNRESOLVED_DIRECTORY.test(directory)) return undefined
+    if (isAbsolute(directory)) current = resolve(directory)
+    else current = current === undefined ? undefined : resolve(current, directory)
+  }
+  return current
+}
+
+function sequentialShellCwd(tokens: string[], index: number, baseCwd: string): string | undefined {
   const stack: Array<string | undefined> = [baseCwd]
   let functionDepth = 0
   for (let cursor = 0; cursor < index; cursor += 1) {
     const token = tokens[cursor]
     if (token === '{') {
-      if (tokens[cursor - 1] === ')') functionDepth += 1
+      if (tokens[cursor - 1] === ')' || tokens[cursor - 2] === 'function') functionDepth += 1
       continue
     }
     if (token === '}') {
@@ -36,7 +57,7 @@ export function commandCwd(tokens: string[], index: number, baseCwd: string): st
       continue
     }
     if (functionDepth > 0) continue
-    if (token !== 'cd' || !isCommandPositionInvocation(tokens, cursor)) continue
+    if (token !== 'cd' || !runsBuiltinCd(tokens, cursor)) continue
     const joinerIndex = nextShellCommandSeparatorIndex(tokens, cursor)
     const joiner = joinerIndex < tokens.length ? tokens[joinerIndex] : undefined
     if (joiner === undefined || joinerIndex >= index) continue
@@ -65,6 +86,11 @@ export function commandCwd(tokens: string[], index: number, baseCwd: string): st
   }
 
   return stack.at(-1)
+}
+
+function runsBuiltinCd(tokens: string[], cdIndex: number): boolean {
+  const prefix = commandPrefixAt(tokens, cdIndex)
+  return prefix !== null && prefix.wrappers.every(wrapper => BUILTIN_CD_WRAPPERS.has(wrapper))
 }
 
 function cdIsConditional(tokens: string[], cdIndex: number): boolean {

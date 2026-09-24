@@ -10,20 +10,18 @@ import {
   isFixMainInterimClassifierNoClosingRefBody,
   isScheduledPromptNoSourceBody,
 } from '../../pr-description/scheduled-no-source.mts'
-import {
-  commandEnvironment,
-  commandsToInspectForGitHubPolicy,
-  effectiveGhRepo,
-} from './github-command-context.mts'
+import { commandsToInspectForGitHubPolicy, effectiveGhRepo } from './github-command-context.mts'
 import { commandCwd } from './github-command-cwd.mts'
-import { isCommandPositionInvocation } from './github-command-position.mts'
+import { commandPrefixAt } from './github-command-position.mts'
 import { findGhApiMergeBlock } from './github-api-merge-options.mts'
 import { findHandRolledStackBaseBlock } from './github-configured-base.mts'
 import { contentRuleExemption } from './github-content-rule-scope.mts'
 import { findGhPrMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { findRawIssueCreateBlock } from './github-issue-create-policy.mts'
+import { findOpaqueGhBlock } from './github-opaque-gh-policy.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
+import { isShellWord } from './shell-script-operand.mts'
 import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
 import { ghBodyFromOptions, ghBodyIsOpaqueToHook, parseGhOptions } from './github-options.mts'
 
@@ -42,10 +40,18 @@ export function findGitHubWorkflowBlock(
     const exemptFromContentRules = contentRuleExemption(detailedTokens, options, inspectIndex === 0)
 
     for (let index = 0; index < tokens.length; index += 1) {
-      if (!isCommandPositionInvocation(tokens, index)) {
+      if (!mayRunGh(tokens[index])) {
+        continue
+      }
+      const prefix = commandPrefixAt(tokens, index)
+      if (prefix === null) {
         continue
       }
       const invocation = parseGhOrGhStackInvocation(tokens, index)
+      const opaqueBlock = findOpaqueGhBlock(prefix, tokens, index, invocation)
+      if (opaqueBlock !== null) {
+        return opaqueBlock
+      }
       if (invocation === null) {
         continue
       }
@@ -65,11 +71,12 @@ export function findGitHubWorkflowBlock(
               'New PRs must be opened as draft first. Use --draft or `node dev/pr-description.mts create ...`.',
           }
         }
-        const repo = effectiveGhRepo(ghOptions.repo.at(-1), tokens, index)
-        const baseBlock =
-          invocationCwd === undefined
-            ? null
-            : findHandRolledStackBaseBlock(action, invocation.optionTokens, invocationCwd)
+        const repo = effectiveGhRepo(ghOptions.repo.at(-1), prefix.env)
+        const baseBlock = findHandRolledStackBaseBlock(
+          action,
+          invocation.optionTokens,
+          invocationCwd,
+        )
         if (baseBlock !== null) {
           return baseBlock
         }
@@ -128,10 +135,7 @@ export function findGitHubWorkflowBlock(
             body,
             invocationCwd ?? cwd,
             options,
-            {
-              env: commandEnvironment(tokens, index),
-              repo,
-            },
+            { env: prefix.env, repo },
           )
           if (issueRefBlock !== null) {
             return issueRefBlock
@@ -142,7 +146,7 @@ export function findGitHubWorkflowBlock(
       const stackBlock = findGitHubStackWorkflowBlock(invocation, options, {
         command,
         cwd: invocationCwd,
-        env: commandEnvironment(tokens, index),
+        env: prefix.env,
       })
       if (stackBlock !== null) {
         return stackBlock
@@ -178,4 +182,12 @@ export function findGitHubWorkflowBlock(
   }
 
   return null
+}
+
+// Every policy above reads a gh or gh-stack command, or a shell whose `-c` script xargs fills in.
+// Skipping other words before commandPrefixAt keeps a long command from rescanning its segment
+// at every word.
+function mayRunGh(word: string): boolean {
+  const name = word.slice(word.lastIndexOf('/') + 1)
+  return name === 'gh' || name === 'gh-stack' || isShellWord(word)
 }

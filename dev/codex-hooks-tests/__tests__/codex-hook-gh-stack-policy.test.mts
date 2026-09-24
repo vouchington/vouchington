@@ -135,6 +135,9 @@ describe('Codex hook hand-rolled stack base policy', () => {
     'gh pr edit 12 --base feature-auth',
     'gh pr edit 12 --base=feature-auth',
     'gh pr edit 12 -B feature-auth',
+    // An explicit base needs no checkout, so a directory the hook cannot read still gets checked.
+    'env -C"$PWD" gh pr create --draft --base feature-auth --fill',
+    'env --chdir="$DIR" gh pr edit 12 -B feature-auth',
   ])('blocks targeting an unmerged branch: %s', command => {
     expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain(
       'PRs must target main',
@@ -148,6 +151,7 @@ describe('Codex hook hand-rolled stack base policy', () => {
     'gh pr edit 12 --add-label plan',
     'gh pr edit 12 --base main',
     'gh pr edit 12 -B main',
+    'env -C"$PWD" gh pr create --draft --base main --fill',
   ])('allows targeting main or omitting --base: %s', command => {
     expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
   })
