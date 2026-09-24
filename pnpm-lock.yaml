@@ -74,11 +74,11 @@ importers:
         specifier: 0.2.0
         version: 0.2.0
       '@vouchington/localization-compiler':
-        specifier: 0.2.1
-        version: 0.2.1
+        specifier: 0.2.2
+        version: 0.2.2
       agent-blackboard:
-        specifier: 0.5.0
-        version: 0.5.0(zod@4.6.2)
+        specifier: 0.6.0
+        version: 0.6.0(zod@4.6.5)
       csv-parse:
         specifier: 7.0.2
         version: 7.0.2
@@ -167,8 +167,8 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@26.5.0)(@vitest/browser-playwright@5.0.1)(@vitest/coverage-v8@5.0.1)(@vitest/ui@5.0.1)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
       vouchington-tooling:
-        specifier: ^0.18.1
-        version: 0.18.1(typescript@7.0.2)
+        specifier: ^0.19.0
+        version: 0.19.0(typescript@7.0.2)
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
@@ -231,7 +231,7 @@ importers:
         version: link:../../tools
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -268,7 +268,7 @@ importers:
         version: link:../../services/users
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -320,7 +320,7 @@ importers:
         version: link:../../tools
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@modules/openrouter-utils':
         specifier: workspace:^
@@ -442,7 +442,7 @@ importers:
         version: link:../../services/posts
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -600,7 +600,7 @@ importers:
         version: link:../../services/topic-claims
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -646,7 +646,7 @@ importers:
         version: link:../../services/users
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
@@ -730,7 +730,7 @@ importers:
         version: link:../../services/moderation-reports
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -792,7 +792,7 @@ importers:
         version: link:../../types
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
       p-map:
         specifier: 7.0.7
         version: 7.0.7
@@ -829,7 +829,7 @@ importers:
         version: link:../../services/stories
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -1635,8 +1635,8 @@ importers:
         version: 2.2.2
     devDependencies:
       vouchington-tooling:
-        specifier: ^0.18.1
-        version: 0.18.1(typescript@7.0.2)
+        specifier: ^0.19.0
+        version: 0.19.0(typescript@7.0.2)
 
   backend/data-stores/valkey:
     dependencies:
@@ -2438,7 +2438,7 @@ importers:
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
 
   backend/modules/openrouter-utils:
     dependencies:
@@ -2450,7 +2450,7 @@ importers:
         version: link:../utils
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
 
   backend/modules/pagination:
     dependencies:
@@ -6709,8 +6709,8 @@ importers:
         specifier: 0.2.0
         version: 0.2.0
       '@vouchington/localization-compiler':
-        specifier: 0.2.1
-        version: 0.2.1
+        specifier: 0.2.2
+        version: 0.2.2
 
   backend/services/markdown:
     dependencies:
@@ -7841,7 +7841,7 @@ importers:
         version: link:../../../ts-shared/utils
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -10562,7 +10562,7 @@ importers:
         version: 6.2.12
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
       otpauth:
         specifier: ^9.5.2
         version: 9.5.2
@@ -10579,8 +10579,8 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
       vouchington-tooling:
-        specifier: ^0.18.1
-        version: 0.18.1(typescript@7.0.2)
+        specifier: ^0.19.0
+        version: 0.19.0(typescript@7.0.2)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -11050,7 +11050,7 @@ importers:
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
       p-map:
         specifier: 7.0.7
         version: 7.0.7
@@ -12674,8 +12674,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       vouchington-tooling:
-        specifier: ^0.18.1
-        version: 0.18.1(typescript@7.0.2)
+        specifier: ^0.19.0
+        version: 0.19.0(typescript@7.0.2)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -12760,8 +12760,8 @@ importers:
         specifier: 0.2.0
         version: 0.2.0
       '@vouchington/localization-compiler':
-        specifier: 0.2.1
-        version: 0.2.1
+        specifier: 0.2.2
+        version: 0.2.2
     devDependencies:
       '@react-email/render':
         specifier: ^2.1.0
@@ -12901,8 +12901,8 @@ importers:
         specifier: 0.2.0
         version: 0.2.0
       '@vouchington/localization-compiler':
-        specifier: 0.2.1
-        version: 0.2.1
+        specifier: 0.2.2
+        version: 0.2.2
       '@vouchington/postgres':
         specifier: 0.0.9
         version: 0.0.9
@@ -12919,8 +12919,8 @@ importers:
         specifier: ^1.8.0
         version: 1.8.0
       vouchington-tooling:
-        specifier: ^0.18.1
-        version: 0.18.1(typescript@7.0.2)
+        specifier: ^0.19.0
+        version: 0.19.0(typescript@7.0.2)
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
@@ -18279,8 +18279,8 @@ packages:
     resolution: {integrity: sha512-akO1l2wuHAPkQ3KnbJ9x2b9g1XzVUeGCY0HfkLeDxjp1zjunFsphBWEVvOvNBmddTS8XRcnh7sxq5CT0lGWWJg==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/localization-compiler@0.2.1':
-    resolution: {integrity: sha512-cpB8SlPYcbo1PBLzzoLXWojVmjPQg2A+QlCANuLtVKJ+eNbQQux3sFCdg7dSTgql9d1s3e7b535x19I/dJ88Og==}
+  '@vouchington/localization-compiler@0.2.2':
+    resolution: {integrity: sha512-naqIgPDpfGavjwdiYOxNDvZLRQQusfOBklHevCPbA0wxayUmDDuHvRcRSHftQ/A9ii7ov8Rw9uW+/UwX4FOI+g==}
     engines: {node: '>=24.0.0'}
     hasBin: true
 
@@ -18460,8 +18460,8 @@ packages:
     resolution: {integrity: sha512-TQf59BsZnytt8GdJKLPfUZ54g/iaUL2OWDSFCCvMOhsHduDQxO8xC4PNeyIkVcA5KwL2phPSv0douC0fgWzmnA==}
     engines: {node: '>= 20'}
 
-  agent-blackboard@0.5.0:
-    resolution: {integrity: sha512-iTKOojtxLXnsnt5kc4Zx+JG4IwcIM1YPe4uXHcC+RQ6oxX6GR/zAWlkiGeRwP0WSdwccfiz8DHnDkwTtRerpDg==}
+  agent-blackboard@0.6.0:
+    resolution: {integrity: sha512-WhwgBJVLHjwS4K4T3FZGbAS90pXNy/tQqep86q1WrLlzMseGGfI90n0Jb3ukd7ovsAhkSXQ2rJhAB5Xsn1HSDw==}
     engines: {node: '>=24.0.0'}
     hasBin: true
 
@@ -21882,10 +21882,6 @@ packages:
     resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
     engines: {node: '>=20.18.1'}
 
-  undici@8.10.2:
-    resolution: {integrity: sha512-/y4/bH9YNU5hi9NIrpOuvGXFcxrj3CMrV+/AYpowAYTpHn8gX/XPFjNy766FPoYY0miQhdW977JFWKGNhBdwyQ==}
-    engines: {node: '>=22.19.0'}
-
   undici@8.11.0:
     resolution: {integrity: sha512-AdzuGcAkzhbha3GgCSoUBx2P0quwym6qdFNCQz/fDGZc8w9XJ741wHUbt2kTmfPz+ZIOMkySFkiY7RXmiDDC8w==}
     engines: {node: '>=22.19.0'}
@@ -22123,8 +22119,8 @@ packages:
       jsdom:
         optional: true
 
-  vouchington-tooling@0.18.1:
-    resolution: {integrity: sha512-cd7uf4zWrvznr0sMhZXYyVU3O127ur6ESholjLzltwbKts9psqgVllMlFoXa02sADIDoKbMdZrNh7ghrNSZcYg==}
+  vouchington-tooling@0.19.0:
+    resolution: {integrity: sha512-pUgViQvDKzn52JL/lSTiEliep42UpS+VrsF1wRdMPBJkyDDt3h50ml8NPWZfU5KrgTtwWXBJgFtgdO6xs9ImnA==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -27366,7 +27362,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@vouchington/localization-compiler@0.2.1':
+  '@vouchington/localization-compiler@0.2.2':
     dependencies:
       '@vouchington/csv': 0.0.1
       '@vouchington/localization': 0.2.0
@@ -27567,9 +27563,9 @@ snapshots:
 
   agent-base@9.0.0: {}
 
-  agent-blackboard@0.5.0(zod@4.6.2):
+  agent-blackboard@0.6.0(zod@4.6.5):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(zod@4.6.2)
+      '@modelcontextprotocol/sdk': 1.30.0(zod@4.6.5)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - supports-color
@@ -29875,14 +29871,6 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2):
-    optionalDependencies:
-      '@aws-sdk/credential-provider-node': 3.972.83
-      '@smithy/signature-v4': 5.7.3
-      undici: 8.10.2
-      ws: 8.21.3
-      zod: 4.6.2
-
   openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.83
@@ -31297,8 +31285,6 @@ snapshots:
 
   undici@7.29.1: {}
 
-  undici@8.10.2: {}
-
   undici@8.11.0: {}
 
   unenv@2.0.0-rc.24:
@@ -31560,7 +31546,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.18.1(typescript@7.0.2):
+  vouchington-tooling@0.19.0(typescript@7.0.2):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -31572,7 +31558,7 @@ snapshots:
       remark-gfm: 4.0.1
       smol-toml: 1.8.0
       spdx-expression-parse: 5.0.0
-      yaml: 2.9.0
+      yaml: 2.9.1
     optionalDependencies:
       '@libpg-query/parser': 18.0.0
       '@typescript/typescript6': 6.0.2
