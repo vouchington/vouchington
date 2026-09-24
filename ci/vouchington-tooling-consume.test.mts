@@ -24,41 +24,6 @@ function legacyPidPath(workspace: string) {
   return join('/tmp', `voucha-port-hold-${digest}`, 'pid')
 }
 
-// pnpm 12 writes a leading document that locks pnpm itself under its own root importer.
-const lockfileFixture = `---
-lockfileVersion: '9.0'
-
-importers:
-
-  .:
-    configDependencies: {}
-    packageManagerDependencies:
-      pnpm:
-        specifier: 12.6.0
-        version: 12.6.0
-
-packages:
-
-  pnpm@12.6.0:
-    resolution: {integrity: sha512-pnpm-placeholder}
-
----
-lockfileVersion: '9.0'
-
-importers:
-
-  .:
-    devDependencies:
-      vouchington-tooling:
-        specifier: ^9.9.9
-        version: 9.9.9
-
-packages:
-
-  vouchington-tooling@9.9.9:
-    resolution: {integrity: sha512-placeholder}
-`
-
 describe('vouchington-tooling consume wrappers', () => {
   it('uses the lockfile integrity download before any cached GitHub Actions script', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'gha-trust-'))
@@ -76,7 +41,22 @@ describe('vouchington-tooling consume wrappers', () => {
       join(dir, 'package.json'),
       JSON.stringify({ devDependencies: { 'vouchington-tooling': '^9.9.9' } }),
     )
-    await writeFile(join(dir, 'pnpm-lock.yaml'), lockfileFixture)
+    await writeFile(
+      join(dir, 'pnpm-lock.yaml'),
+      `lockfileVersion: '9.0'
+
+importers:
+  .:
+    devDependencies:
+      vouchington-tooling:
+        specifier: ^9.9.9
+        version: 9.9.9
+
+packages:
+  vouchington-tooling@9.9.9:
+    resolution: {integrity: sha512-placeholder}
+`,
+    )
     await writeFile(
       join(ciDir, 'exec-vouchington-gha.sh'),
       readFileSync(resolve('ci/exec-vouchington-gha.sh')),
@@ -137,7 +117,22 @@ describe('vouchington-tooling consume wrappers', () => {
       packageJson,
       JSON.stringify({ devDependencies: { 'vouchington-tooling': '^9.9.9' } }),
     )
-    await writeFile(join(dir, 'pnpm-lock.yaml'), lockfileFixture)
+    await writeFile(
+      join(dir, 'pnpm-lock.yaml'),
+      `lockfileVersion: '9.0'
+
+importers:
+  .:
+    devDependencies:
+      vouchington-tooling:
+        specifier: ^9.9.9
+        version: 9.9.9
+
+packages:
+  vouchington-tooling@9.9.9:
+    resolution: {integrity: sha512-placeholder}
+`,
+    )
     await writeFile(
       join(ciDir, 'install-vouchington-tooling.sh'),
       readFileSync(resolve('ci/install-vouchington-tooling.sh')),

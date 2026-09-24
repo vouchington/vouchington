@@ -34,9 +34,8 @@ esac
 
 read_locked_field() {
   awk -v field="$1" '
-    # pnpm 12 prepends a lockfile document with its own root importer; skip past it.
     $0 == "  .:" { in_root = 1; next }
-    in_root && /^  [^ ]/ { in_root = 0 }
+    in_root && /^  [^ ]/ { exit }
     in_root && $0 == "      vouchington-tooling:" { in_dependency = 1; next }
     in_dependency && $1 == field ":" { print $2; exit }
     in_dependency && /^      [^ ]/ { exit }

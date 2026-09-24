@@ -41,7 +41,7 @@ describe('normalizeDeployedLayer', () => {
       `${JSON.stringify(
         {
           hoistedDependencies: { 'left-pad@1.0.0': { 'left-pad': 'private' } },
-          packageManager: 'pnpm@12.6.0',
+          packageManager: 'pnpm@11.13.1',
           prunedAt: 'Mon, 17 Aug 2026 04:16:02 GMT',
           storeDir: '/root/.local/share/pnpm/store/v11',
         },
@@ -55,7 +55,7 @@ describe('normalizeDeployedLayer', () => {
     expect(result).toMatchObject({ prunedAtPinned: true })
     expect(JSON.parse(readFileSync(modulesPath, 'utf8'))).toEqual({
       hoistedDependencies: { 'left-pad@1.0.0': { 'left-pad': 'private' } },
-      packageManager: 'pnpm@12.6.0',
+      packageManager: 'pnpm@11.13.1',
       prunedAt: EPOCH_PRUNED_AT,
       storeDir: '/root/.local/share/pnpm/store/v11',
     })

@@ -6,18 +6,16 @@ FROM node:26-slim AS builder
 # Install web dependencies first (separate layer for caching)
 WORKDIR /app
 
-# Install Corepack explicitly before enabling it so the build does not depend on
-# what the base Node image bundles.
-# renovate: datasource=npm depName=corepack
-ARG COREPACK_VERSION=0.34.5
-RUN npm install -g corepack@${COREPACK_VERSION} --force && corepack enable
+# Install pnpm with npm so the build does not depend on what the base Node image
+# bundles. pnpm-activation.test.mts keeps this major equal to CI's pnpm/action-setup.
+ARG PNPM_VERSION=12
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 # Skip git hooks (husky) in Docker where .git is absent.
 ENV HUSKY=0
 
 # Copy dependency metadata before source so source-only changes reuse the
-# filtered install/rebuild layer. Root package.json also gives Corepack the
-# pinned pnpm version before the first pnpm invocation.
+# filtered install/rebuild layer.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY --parents web/package.json backend/types/package.json ts-shared/*/package.json ./
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharing=locked \
@@ -116,9 +114,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Remove package-manager CLIs, native-build headers, and local docs not needed at runtime.
 # apk upgrade and its cache cleanup ran in base-alpine.
-RUN if command -v corepack >/dev/null 2>&1; then corepack disable; fi && \
-    rm -rf /usr/local/lib/node_modules/corepack /usr/local/bin/corepack \
-           /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
            /usr/local/bin/pnpm /usr/local/bin/pnpx \
            /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg \
            /usr/local/include/node /usr/local/share/doc /usr/local/share/man \

@@ -3,7 +3,7 @@
 Two bots keep this repo's dependencies fresh:
 
 - **Dependabot** — owns configured Vouchington package managers (npm, Docker, GitHub Actions). Config: [`.github/dependabot.yml`](../../.github/dependabot.yml).
-- **Renovate** (Mend-hosted GitHub App) — owns the residual gaps Dependabot has no native manager for: the pnpm toolchain pin in the root `package.json`, the Node version in `.nvmrc`, plus version literals embedded in workflow YAML and shell scripts via regex `customManagers`. Config: [`renovate.json`](../../renovate.json).
+- **Renovate** (Mend-hosted GitHub App) — owns the residual gaps Dependabot has no native manager for: the Node version in `.nvmrc`, plus version literals embedded in workflow YAML and shell scripts via regex `customManagers`. Config: [`renovate.json`](../../renovate.json).
 
 ## Review and merge
 
@@ -12,8 +12,16 @@ and Renovate sets `automerge: false`; neither bot arms GitHub auto-merge. This d
 CI trust boundary: a human who queues a same-repository dependency-bot PR still causes a merge-group
 run with the existing CI credential policy. Review the PR before placing it in the merge queue.
 
-All configured release delays are two days: Renovate does not create a pnpm toolchain branch or PR
-until that delay elapses.
+All configured release delays are two days: Dependabot's cooldown and pnpm's `minimumReleaseAge`.
+
+pnpm itself is not pinned. The root `package.json` has no `packageManager` field, so local installs
+run whatever pnpm is installed. CI (`pnpm/action-setup` `version`) and the Docker builds
+(`PNPM_VERSION`) name only a pnpm major. `pnpm/action-setup` runs its bundled release when that
+release is in the major (12.3.4 in v6.1.0), so CI's exact pnpm moves with Dependabot's
+`pnpm/action-setup` updates; Docker builds install the newest release of the major. Moving to the
+next major is a manual edit that `.github/workflows/pnpm-activation.test.mts` keeps consistent. An enforced pin would make pnpm
+12 write `pnpm-lock.yaml` as two YAML documents, which single-document lockfile readers and GitHub's
+dependency graph (dependabot/dependabot-core#15904) do not fully read.
 
 Dependabot checks all configured ecosystems every day at 04:00 America/Los_Angeles. Renovate runs before 6am Monday in the same timezone.
 
@@ -36,25 +44,6 @@ Native dependency policy and automation are owned by the
 
 - <a id="coverage-matrix"></a>[Coverage matrix](reference-dependency-updates-coverage-matrix.md)
 - <a id="frozen-install-policy"></a>[Frozen-install policy](reference-dependency-updates-frozen-install-policy.md)
-
-### Security alert coverage
-
-pnpm 12 writes `pnpm-lock.yaml` as two YAML documents: first the pinned pnpm under
-`packageManagerDependencies`, then the workspace graph. GitHub's dependency graph reads only the
-first document ([dependabot/dependabot-core#15904](https://github.com/dependabot/dependabot-core/issues/15904)).
-Dependabot security alerts and security updates therefore cover the direct dependencies declared in
-`package.json` manifests, but no transitive package. Dependabot version updates are unaffected. The
-Trivy CRITICAL/HIGH gate in the web and backend image builds still scans each image's full runtime
-tree, but only when an image builds.
-
-Coverage is back once `gh api repos/vouchington/vouchington/dependency-graph/sbom` lists transitive
-packages from the second document. The comparison script is in
-[#456](https://github.com/vouchington/vouchington/issues/456#issuecomment-5819103722).
-
-A `packageManager` bump must also regenerate `pnpm-lock.yaml`, because the first document records
-the pinned pnpm. Without that, `pnpm install --frozen-lockfile` fails with
-`ERR_PNPM_FROZEN_LOCKFILE_WITH_OUTDATED_LOCKFILE`. Renovate's regex manager edits only
-`package.json`, so run `pnpm install` on its branch before merging.
 
 ### Sentry 10.72/10.73 compatibility hold
 

@@ -7,9 +7,9 @@ Vouchington package ecosystem against this policy. A dependency change is comple
 manifest or toolchain pin and every derived lock agree, a frozen resolution succeeds, and the PR
 records the candidate source and command output used as evidence.
 
-| Ecosystem | Authoritative state                                                                                                        | Update ownership                                                                                                                                 | Frozen verification              |
-| --------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| pnpm      | Workspace `package.json` manifests, root `package.json` `packageManager`, `pnpm-workspace.yaml`, and root `pnpm-lock.yaml` | Dependabot for registry dependencies and the lockfile; Renovate for the pnpm toolchain pin; manual for reviewed temporary release-age exemptions | `pnpm install --frozen-lockfile` |
+| Ecosystem | Authoritative state                                                                  | Update ownership                                                                                            | Frozen verification              |
+| --------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| pnpm      | Workspace `package.json` manifests, `pnpm-workspace.yaml`, and root `pnpm-lock.yaml` | Dependabot for registry dependencies and the lockfile; manual for reviewed temporary release-age exemptions | `pnpm install --frozen-lockfile` |
 
 SwiftPM and NuGet dependency policy is owned by
 [`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients); Vouchington

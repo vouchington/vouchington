@@ -8,24 +8,7 @@
   "timezone": "America/Los_Angeles",
   "prHourlyLimit": 4,
   "prConcurrentLimit": 8,
-  "packageRules": [
-    {
-      "description": "Require aged, manually reviewed pnpm toolchain updates",
-      "matchManagers": ["custom.regex"],
-      "matchDepNames": ["pnpm"],
-      "minimumReleaseAge": "2 days",
-      "internalChecksFilter": "strict"
-    }
-  ],
   "customManagers": [
-    {
-      "customType": "regex",
-      "description": "pnpm toolchain pin in the root package.json packageManager field",
-      "managerFilePatterns": ["/^package\\.json$/"],
-      "matchStrings": ["\"packageManager\"\\s*:\\s*\"pnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
-      "datasourceTemplate": "npm",
-      "depNameTemplate": "pnpm"
-    },
     {
       "customType": "regex",
       "description": "Workflow env vars annotated with `# renovate: datasource=… depName=…`",
