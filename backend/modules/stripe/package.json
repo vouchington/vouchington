@@ -24,7 +24,7 @@
     "@modules/api-egress-proxy": "workspace:^",
     "@voucha/config": "workspace:^",
     "@vouchington/utils": "0.5.1",
-    "stripe": "^22.6.1"
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
     "@types/node": "^26.4.0"
