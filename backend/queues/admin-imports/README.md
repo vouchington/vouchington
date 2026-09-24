@@ -1,12 +1,12 @@
 # Admin Imports System
 
-Processes bulk admin import jobs for topics and CRM contacts via CSV upload.
+Processes bulk admin import jobs for topics via CSV upload.
 
 ## Architecture
 
 Each bulk import API call creates an `admin_import_batches` record and individual `admin_import_rows` records, then enqueues one job per row via `enqueueBulkImportRows()`. The processor reads the row, dispatches to the correct processing function based on `batch.import_type`, and updates the row status on completion or failure.
 
-Service-specific row semantics, including CRM contact present-column update behavior, are documented in [Admin Imports Service](../../services/admin-imports/reference-upsert-semantics.md#crm-contacts).
+Service-specific row semantics are documented in [Admin Imports Service](../../services/admin-imports/reference-upsert-semantics.md).
 
 ## Queue Reference
 

@@ -5,50 +5,6 @@ import type { BackendResponseContract } from './response-contract-types.mts'
 import type { ResolvedApiFixtureCase } from './types.mts'
 
 describe('API fixture backend contract validation', () => {
-  it('validates fixture statuses against exact backend response variants', () => {
-    const contracts = {
-      'POST:/api/v1/imports/crm-contacts#success': contract(
-        'POST',
-        '/api/v1/imports/crm-contacts',
-        [201],
-      ),
-      'POST:/api/v1/imports/crm-contacts#validation': contract(
-        'POST',
-        '/api/v1/imports/crm-contacts',
-        [422],
-      ),
-    }
-    const success = fixture(
-      'crm.success',
-      'POST:/api/v1/imports/crm-contacts#success',
-      '/api/v1/imports/crm-contacts',
-      201,
-    )
-    const validation = fixture(
-      'crm.validation',
-      'POST:/api/v1/imports/crm-contacts#validation',
-      '/api/v1/imports/crm-contacts',
-      422,
-    )
-
-    expect(() => validateFixtureContracts([success, validation], contracts)).not.toThrow()
-    expect(() =>
-      validateFixtureContracts(
-        [
-          { ...success, status: 422 },
-          { ...validation, status: 201 },
-        ],
-        contracts,
-      ),
-    ).toThrowError(
-      [
-        'Fixture contract validation failed:',
-        'crm.success: status 422 is not declared by response contract "POST:/api/v1/imports/crm-contacts#success" (POST:/api/v1/imports/crm-contacts); available statuses: 201',
-        'crm.validation: status 201 is not declared by response contract "POST:/api/v1/imports/crm-contacts#validation" (POST:/api/v1/imports/crm-contacts); available statuses: 422',
-      ].join('\n'),
-    )
-  })
-
   it('aggregates create and delete status mismatches deterministically', () => {
     const create = fixture('widgets.create', 'POST:/api/v1/widgets', '/api/v1/widgets', 200)
     const remove = {

@@ -1,4 +1,4 @@
-export type ImportType = 'topic' | 'crm_contact' | 'rss_feed'
+export type ImportType = 'topic' | 'rss_feed'
 
 export type ImportBatch = {
   id: string

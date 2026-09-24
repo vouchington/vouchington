@@ -695,22 +695,6 @@
       "required": ["completed", "failed", "pending", "total"],
       "type": "object"
     },
-    "BatchValidationResult": {
-      "additionalProperties": false,
-      "properties": {
-        "rows": {
-          "items": {
-            "$ref": "#/components/schemas/RowValidationResult"
-          },
-          "type": "array"
-        },
-        "valid": {
-          "type": "boolean"
-        }
-      },
-      "required": ["rows", "valid"],
-      "type": "object"
-    },
     "BeginBlueskyLinkRequest": {
       "additionalProperties": false,
       "properties": {
@@ -6915,7 +6899,7 @@
       "type": "object"
     },
     "ImportType": {
-      "enum": ["crm_contact", "rss_feed", "topic"],
+      "enum": ["rss_feed", "topic"],
       "type": "string"
     },
     "IndividualCard": {
@@ -16148,25 +16132,6 @@
         }
       },
       "required": ["id", "name", "slug"],
-      "type": "object"
-    },
-    "RowValidationResult": {
-      "additionalProperties": false,
-      "properties": {
-        "errors": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "row_index": {
-          "type": "number"
-        },
-        "valid": {
-          "type": "boolean"
-        }
-      },
-      "required": ["errors", "row_index", "valid"],
       "type": "object"
     },
     "RssFeedCategory": {
@@ -27018,15 +26983,6 @@
     "POST:/api/v1/images/upload-url": {
       "body": {
         "$ref": "#/components/schemas/Record_string_unknown"
-      }
-    },
-    "POST:/api/v1/imports/crm-contacts": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "csv": {}
-        },
-        "type": "object"
       }
     },
     "POST:/api/v1/imports/topics": {

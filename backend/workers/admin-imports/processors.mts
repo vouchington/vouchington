@@ -1,6 +1,5 @@
 import {
   getImportRowWithBatch,
-  processCrmContactRow,
   processRssFeedRow,
   processTopicRow,
   updateRowCompleted,
@@ -15,7 +14,6 @@ import createHttpError from 'http-errors'
 type AdminImportProcessorDependencies = {
   getImportRowWithBatch: typeof getImportRowWithBatch
   getPrivateUserByAny: typeof getPrivateUserByAny
-  processCrmContactRow: typeof processCrmContactRow
   processRssFeedRow: typeof processRssFeedRow
   processTopicRow: typeof processTopicRow
   publishImportProgress: typeof publishImportProgress
@@ -33,7 +31,6 @@ export async function processImportRow(
   const deps = {
     getImportRowWithBatch,
     getPrivateUserByAny,
-    processCrmContactRow,
     processRssFeedRow,
     processTopicRow,
     publishImportProgress,
@@ -87,9 +84,6 @@ export async function processImportRow(
     switch (batch.import_type) {
       case 'topic':
         createdEntityId = await deps.processTopicRow(admin, row)
-        break
-      case 'crm_contact':
-        createdEntityId = await deps.processCrmContactRow(admin, row)
         break
       case 'rss_feed':
         createdEntityId = await deps.processRssFeedRow(admin, row)

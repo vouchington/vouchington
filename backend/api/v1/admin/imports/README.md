@@ -1,6 +1,6 @@
 # Admin Imports API
 
-Batch import endpoints for creating and updating topics and CRM contacts via CSV. Uses a validate-then-enqueue pattern: rows are validated first, and the batch is only created if all rows pass validation.
+Batch import endpoints for creating and updating topics via CSV. Uses a validate-then-enqueue pattern: rows are validated first, and the batch is only created if all rows pass validation.
 
 ## Endpoints
 
@@ -55,11 +55,6 @@ Unknown columns cause a 422 error (prevents silent typos).
   }
   ```
 
----
-
-CRM contact imports use the service-level present-column semantics documented in
-[Admin Imports Service § CRM Contacts](../../../../services/admin-imports/reference-upsert-semantics.md#crm-contacts).
-
 ### GET /api/v1/imports/:batchId
 
 Get status, rows, and progress for an import batch.
@@ -89,11 +84,10 @@ Get status, rows, and progress for an import batch.
 
 ## Performance
 
-| Endpoint                          | Round Trips | Caching      | Notes                                                         |
-| --------------------------------- | ----------- | ------------ | ------------------------------------------------------------- |
-| POST /api/v1/imports/topics       | 3           | None (write) | Auth, validate (sync), create batch + enqueue jobs            |
-| POST /api/v1/imports/crm-contacts | 3           | None (write) | Auth, validate (sync), create batch + enqueue jobs            |
-| GET /api/v1/imports/:batchId      | 2           | None         | Auth + batch lookup, then parallel streaming (rows, progress) |
+| Endpoint                     | Round Trips | Caching      | Notes                                                         |
+| ---------------------------- | ----------- | ------------ | ------------------------------------------------------------- |
+| POST /api/v1/imports/topics  | 3           | None (write) | Auth, validate (sync), create batch + enqueue jobs            |
+| GET /api/v1/imports/:batchId | 2           | None         | Auth + batch lookup, then parallel streaming (rows, progress) |
 
 ## Related
 

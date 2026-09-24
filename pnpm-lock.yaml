@@ -3744,9 +3744,6 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../crm-contacts
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations

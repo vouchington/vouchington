@@ -2,7 +2,7 @@
 
 Worker package for processing rows from admin import batches.
 
-Worker processors dispatch to the service layer; audit row semantics in [Admin Imports Service](../../services/admin-imports/reference-upsert-semantics.md#crm-contacts) before changing dispatcher behavior.
+Worker processors dispatch to the service layer; audit row semantics in [Admin Imports Service](../../services/admin-imports/reference-upsert-semantics.md) before changing dispatcher behavior.
 GlideMQ dead-letter queue support was removed; terminal row failures are database-guarded on
 `admin_import_rows` instead — see [queue README](../../queues/admin-imports/README.md).
 
