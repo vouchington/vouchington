@@ -27,6 +27,12 @@ demonstrated failure, documented with a one-line comment (see `toolingTestBudget
 slower test takes a per-test `{ timeout: ... }` override instead of raising its whole project's
 budget, so one slow test doesn't mask a regression in every other test in that project.
 
+The same headroom rule applies one layer down: a test that spawns a child process with its own
+timeout must keep that timeout strictly below its project's `testTimeout`, and must report the
+child's signal/timeout state on the result instead of coercing a kill into a generic failure code —
+see `RUN_TMUX_TIMEOUT_MS` and `RunTmuxResult` in
+[`dev/test-helpers/run-tmux.mts`](../../dev/test-helpers/run-tmux.mts) for the pattern.
+
 Run any single project directly: `pnpm exec vitest run --project <name>`.
 
 Reusable root scripts call [`ci/run-vitest-project-group.mts`](../../ci/run-vitest-project-group.mts), whose typed catalog is also used by local coverage. The runner starts one Vitest process for the selected projects and removes exactly one leading separator inserted by `pnpm run`, so both `pnpm run test:backend:default -- <files>` and forwarded Vitest flags work. Keep durable scripts project-based; filename lists are appropriate only for one-off local commands.

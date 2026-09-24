@@ -24,7 +24,7 @@ describe('dev/tmux --no-attach', () => {
       args: ['--no-attach'],
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(createdWindowNames(result.log)).toEqual([
       'nextjs',
       'backend',
@@ -47,7 +47,7 @@ describe('dev/tmux --no-attach', () => {
       extraEnv: { FAKE_TMUX_EXECUTE_COMMANDS: '1' },
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     const paths = result.nodeArgLog
       .split('\n')
       .filter(line => line.startsWith('node-env\tLOCALIZATION_SQLITE_PATH='))
@@ -70,7 +70,7 @@ describe('dev/tmux --no-attach', () => {
       extraEnv: { FAKE_TMUX_HAS_SESSION_EXIT: '0' },
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.stdout).toContain('Services already running in tmux session')
     expect(createdWindowNames(result.log)).toEqual([])
     expect(result.nodeLog).not.toContain('worker-queue-policy-cli.mts')
@@ -88,7 +88,7 @@ describe('dev/tmux --no-attach', () => {
       extraEnv: { FAKE_TMUX_DEAD_WINDOWS: 'backend', FAKE_TMUX_HAS_SESSION_EXIT: '0' },
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     const respawns = result.log.split('\n').filter(line => line.startsWith('respawn-pane'))
     expect(respawns).toHaveLength(1)
     expect(respawns[0]).toContain('respawn-pane -k')
@@ -109,7 +109,7 @@ describe('dev/tmux --no-attach', () => {
       extraEnv: { FAKE_TMUX_DEAD_WINDOWS: 'lambdas', FAKE_TMUX_HAS_SESSION_EXIT: '0' },
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.log).toMatch(/respawn-pane -k .*:lambdas/)
     expect(result.nodeLog).not.toContain('worker-queue-policy-cli.mts')
     expect(result.nodeLog).not.toContain('local-catalog.mts')
@@ -128,7 +128,7 @@ describe('dev/tmux --no-attach', () => {
       },
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(createdWindowNames(result.log)).toEqual(['worker'])
     expect(result.log).not.toContain('respawn-pane')
     expect(result.nodeLog).toContain('worker-queue-policy-cli.mts')
@@ -148,7 +148,7 @@ describe('dev/tmux --no-attach', () => {
       },
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.stdout).toContain('Services already running')
     expect(result.log).not.toContain('respawn-pane')
     expect(createdWindowNames(result.log)).toEqual([])
@@ -164,7 +164,7 @@ describe('dev/tmux --no-attach', () => {
       extraEnv: { FAKE_TMUX_HAS_SESSION_EXIT: '0', VALKEY_CONTAINER: 'voucha-test-valkey' },
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.log).toContain('docker start voucha-test-valkey')
     expect(createdWindowNames(result.log)).toEqual([])
   })
