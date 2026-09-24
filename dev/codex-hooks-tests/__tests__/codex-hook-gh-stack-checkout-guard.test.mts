@@ -1,11 +1,11 @@
-import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { realpathSync, rmSync } from 'node:fs'
 
 import { describe, expect, it, vi } from 'vitest'
 
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
-import type { StackCheckoutResolver } from '../../codex-hooks/policy/github-stack-checkout.mts'
+import type { StackCheckoutResolver } from '../../codex-hooks/policy/github-stack-checkout-resolve.mts'
+import { commitOn, git, withRepo } from '../../test-helpers/stack-checkout-repo.mts'
 import { makeTestTempDirSync } from '../test-temp-root.mts'
 
 const MISSING_SHA = createHash('sha1')
@@ -13,48 +13,9 @@ const MISSING_SHA = createHash('sha1')
   .digest('hex')
 const MERGED_AT = '2026-01-01T00:00:00Z'
 
-function isolatedGitEnv(): NodeJS.ProcessEnv {
-  return {
-    ...Object.fromEntries(
-      Object.entries(process.env).filter(
-        ([key]) =>
-          key !== 'GIT_DIR' &&
-          key !== 'GIT_WORK_TREE' &&
-          key !== 'GIT_INDEX_FILE' &&
-          key !== 'GIT_PREFIX',
-      ),
-    ),
-    GIT_AUTHOR_NAME: 'Codex Hooks Test',
-    GIT_AUTHOR_EMAIL: 'codex-hooks-test@example.test',
-    GIT_COMMITTER_NAME: 'Codex Hooks Test',
-    GIT_COMMITTER_EMAIL: 'codex-hooks-test@example.test',
-  }
-}
-
-function git(dir: string, args: string[]): string {
-  return execFileSync('git', args, { cwd: dir, encoding: 'utf8', env: isolatedGitEnv() }).trim()
-}
-
-function commitOn(dir: string, parent: string, message: string): string {
-  return git(dir, ['commit-tree', `${parent}^{tree}`, '-p', parent, '-m', message])
-}
-
-type Repo = { dir: string; base: string }
-
-function withRepo(test: (repo: Repo) => void): void {
-  const dir = makeTestTempDirSync('stack-checkout-')
-  try {
-    git(dir, ['init', '-q', '-b', 'main'])
-    git(dir, ['commit', '-q', '--allow-empty', '-m', 'base'])
-    test({ dir, base: git(dir, ['rev-parse', 'HEAD']) })
-  } finally {
-    rmSync(dir, { force: true, recursive: true })
-  }
-}
-
 type Layer = { pr: number; ref: string; sha: string; state?: string; mergedAt?: string | null }
 
-function stackOf(...layers: Layer[]): unknown {
+function stackOf(...layers: Layer[]): Record<string, unknown> {
   return {
     number: 7,
     open: true,
@@ -67,10 +28,10 @@ function stackOf(...layers: Layer[]): unknown {
   }
 }
 
-function checkoutBlock(dir: string, command: string, stack: unknown) {
+function checkoutBlock(dir: string, command: string, ...stacks: unknown[]) {
   return findPreToolUseBlock(
     { tool_input: { command, cwd: dir } },
-    { resolveStackForCheckout: () => stack },
+    { resolveStackForCheckout: () => stacks },
   )
 }
 
@@ -182,9 +143,9 @@ describe('Codex hook gh stack checkout guard', () => {
     'resolves %s against the current checkout, like gh-stack',
     command => {
       withRepo(({ dir, base }) => {
-        const resolveStackForCheckout = vi.fn<StackCheckoutResolver>(() =>
+        const resolveStackForCheckout = vi.fn<StackCheckoutResolver>(() => [
           stackOf({ pr: 101, ref: 'layer-1', sha: base }),
-        )
+        ])
         expect(
           findPreToolUseBlock({ tool_input: { command, cwd: dir } }, { resolveStackForCheckout }),
         ).toBeNull()
@@ -220,36 +181,49 @@ describe('Codex hook gh stack checkout guard', () => {
     })
   })
 
+  const layerWith = (layer: Record<string, unknown>) => ({
+    head: { ref: 'l', sha: MISSING_SHA },
+    merged_at: null,
+    number: 1,
+    ...layer,
+  })
+  const stackWith = (layer: Record<string, unknown>) => [
+    { number: 7, pull_requests: [layerWith(layer)] },
+  ]
   it.each([
-    ['an API failure', undefined],
-    ['a stack with no layers', { number: 7, pull_requests: [] }],
-    [
-      'a layer without a head SHA',
-      { pull_requests: [{ head: { ref: 'l' }, merged_at: null, number: 1 }] },
-    ],
-    [
-      'a malformed head SHA',
-      { pull_requests: [{ head: { ref: 'l', sha: 'abc' }, merged_at: null, number: 1 }] },
-    ],
-    [
-      'a layer without merge state',
-      { pull_requests: [{ head: { ref: 'l', sha: MISSING_SHA }, number: 1 }] },
-    ],
-    [
-      'an empty merge time',
-      { pull_requests: [{ head: { ref: 'l', sha: MISSING_SHA }, merged_at: '', number: 1 }] },
-    ],
-    [
-      'a fractional PR number',
-      { pull_requests: [{ head: { ref: 'l', sha: MISSING_SHA }, merged_at: null, number: 1.5 }] },
-    ],
-    [
-      'an empty head ref',
-      { pull_requests: [{ head: { ref: '', sha: MISSING_SHA }, merged_at: null, number: 1 }] },
-    ],
-  ])('fails closed on %s, since checkout itself needs the same stack read', (_label, stack) => {
+    ['an unresolved target', undefined],
+    ['no candidate stack', []],
+    ['a stack with no layers', [{ number: 7, pull_requests: [] }]],
+    ['a stack without a number', [{ pull_requests: [layerWith({})] }]],
+    ['a layer without a head SHA', stackWith({ head: { ref: 'l' } })],
+    ['a malformed head SHA', stackWith({ head: { ref: 'l', sha: 'abc' } })],
+    ['a layer without merge state', stackWith({ merged_at: undefined })],
+    ['an empty merge time', stackWith({ merged_at: '' })],
+    ['a fractional PR number', stackWith({ number: 1.5 })],
+    ['an empty head ref', stackWith({ head: { ref: '', sha: MISSING_SHA } })],
+    ['one unreadable candidate', [...stackWith({}), { number: 9, pull_requests: [{}] }]],
+  ])('fails closed on %s, since checkout itself needs the same stack read', (_label, stacks) => {
     withRepo(({ dir }) => {
-      expect(checkoutBlock(dir, 'gh stack checkout 7', stack)).not.toBeNull()
+      const block = findPreToolUseBlock(
+        { tool_input: { command: 'gh stack checkout 7', cwd: dir } },
+        { resolveStackForCheckout: () => stacks },
+      )
+      expect(block?.reason).toContain('could not resolve 7 to a stack')
+    })
+  })
+
+  it('checks the layers of every stack the checkout could import', () => {
+    withRepo(({ dir, base }) => {
+      const local = commitOn(dir, base, 'layer 2')
+      git(dir, ['branch', 'layer-2', local])
+      const inSync = stackOf({ pr: 101, ref: 'layer-1', sha: MISSING_SHA })
+      const fallback = {
+        ...stackOf({ pr: 7, ref: 'layer-2', sha: commitOn(dir, local, 'layer 2 fix') }),
+        number: 9,
+      }
+      const reason = checkoutBlock(dir, 'gh stack checkout 7', inSync, fallback)?.reason
+      expect(reason).toContain('can import stack #7 or stack #9.')
+      expect(reason).toContain('"layer-2" (PR #7)')
     })
   })
 
@@ -275,7 +249,7 @@ describe('Codex hook gh stack checkout guard', () => {
           {
             resolveStackForCheckout: (_cwd, _env, _number, deadline) => {
               now.mockReturnValue(deadline)
-              return stackOf({ pr: 101, ref: 'layer-1', sha: base })
+              return [stackOf({ pr: 101, ref: 'layer-1', sha: base })]
             },
           },
         )?.reason

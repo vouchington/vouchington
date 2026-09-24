@@ -3,7 +3,7 @@ import { rmSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
-import type { StackCheckoutResolver } from '../../codex-hooks/policy/github-stack-checkout.mts'
+import type { StackCheckoutResolver } from '../../codex-hooks/policy/github-stack-checkout-resolve.mts'
 import { makeTestTempDirSync } from '../test-temp-root.mts'
 
 const IN_SYNC_STACK = {
@@ -30,7 +30,7 @@ function withDirs(test: (dirs: { session: string; target: string }) => void): vo
 }
 
 function checkout(command: string, cwd: string) {
-  const resolveStackForCheckout = vi.fn<StackCheckoutResolver>(() => IN_SYNC_STACK)
+  const resolveStackForCheckout = vi.fn<StackCheckoutResolver>(() => [IN_SYNC_STACK])
   const block = findPreToolUseBlock({ tool_input: { command, cwd } }, { resolveStackForCheckout })
   return { block, resolveStackForCheckout }
 }

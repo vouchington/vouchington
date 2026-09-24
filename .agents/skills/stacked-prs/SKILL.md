@@ -54,7 +54,9 @@ Use only these non-interactive forms:
   number also works. Run it as the whole command, or as
   `cd <absolute-worktree-path> && gh stack checkout <stack-number>`. Hook-enforced: it is blocked
   while any existing local layer branch differs from its PR head, and the block prints the fix for
-  each branch. See
+  each branch. It is also blocked when the hook cannot read the stack: gh-stack falls back from a
+  failed stack read to PR `<n>`'s stack, so the hook checks every stack the number could import and
+  treats any GitHub API answer other than 200 or 404 as unreadable. See
   [Import a stack before acting on it](#import-a-stack-before-acting-on-it).
 - `gh stack submit --auto` — creates drafts. Immediately `node dev/pr-description.mts update` each
   new PR; auto titles and bodies are not sufficient. The hook gates `--auto` / no `--open` only; it

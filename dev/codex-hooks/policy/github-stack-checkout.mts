@@ -1,11 +1,13 @@
-import { execFileSync } from 'node:child_process'
-
 import { type BlockDecision, isRecord } from './core.mts'
 import { type CheckoutLayer, staleLayerBranches } from './github-stack-checkout-branches.mts'
 import {
   isStandaloneStackCheckout,
   STANDALONE_CHECKOUT_REASON,
 } from './github-stack-checkout-shape.mts'
+import {
+  defaultResolveStackForCheckout,
+  type StackCheckoutResolver,
+} from './github-stack-checkout-resolve.mts'
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 
@@ -20,13 +22,6 @@ const TARGET_REASON =
 // command measures well under a second, so 20s leaves margin on a loaded machine.
 const CHECKOUT_BUDGET_MS = 20_000
 
-export type StackCheckoutResolver = (
-  cwd: string,
-  env: Record<string, string | undefined>,
-  number: number,
-  deadline: number,
-) => unknown
-
 function isPositiveSafeInteger(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) > 0
 }
@@ -40,61 +35,17 @@ function stackCheckoutTargetNumber(optionTokens: string[]): number | undefined {
   return isPositiveSafeInteger(number) ? number : undefined
 }
 
-function ghApiJson(
-  cwd: string,
-  env: Record<string, string | undefined>,
-  path: string,
-  deadline: number,
-): unknown {
-  const timeout = deadline - Date.now()
-  if (timeout <= 0) {
-    return undefined
-  }
-  try {
-    const text = execFileSync('gh', ['api', path], {
-      cwd,
-      encoding: 'utf8',
-      env: { ...process.env, ...env },
-      killSignal: 'SIGKILL',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout,
-    })
-    return JSON.parse(text)
-  } catch {
-    return undefined
-  }
-}
-
-function hasLayers(stack: unknown): boolean {
-  return isRecord(stack) && Array.isArray(stack.pull_requests) && stack.pull_requests.length > 0
-}
-
-// Same order as gh-stack's resolveNumericTarget: the number as a stack number first, then as a PR
-// number whose stack GitHub reports.
-function defaultResolveStackForCheckout(
-  cwd: string,
-  env: Record<string, string | undefined>,
-  number: number,
-  deadline: number,
-): unknown {
-  const stack = ghApiJson(cwd, env, `repos/{owner}/{repo}/stacks/${number}`, deadline)
-  if (hasLayers(stack)) {
-    return stack
-  }
-  const pull = ghApiJson(cwd, env, `repos/{owner}/{repo}/pulls/${number}`, deadline)
-  const stackNumber = isRecord(pull) && isRecord(pull.stack) ? pull.stack.number : undefined
-  if (!isPositiveSafeInteger(stackNumber)) {
-    return undefined
-  }
-  return ghApiJson(cwd, env, `repos/{owner}/{repo}/stacks/${stackNumber}`, deadline)
-}
-
-type ResolvedStack = { number: number | undefined; layers: CheckoutLayer[] }
+type ResolvedStack = { number: number; layers: CheckoutLayer[] }
 
 // Unmerged layers only: gh-stack skips merged branches when it rebases. A layer whose merge state or
 // head cannot be read makes the whole stack unreadable, so the guard never approves a partial read.
 function unmergedLayers(stack: unknown): ResolvedStack | undefined {
-  if (!hasLayers(stack) || !isRecord(stack)) {
+  if (
+    !isRecord(stack) ||
+    !isPositiveSafeInteger(stack.number) ||
+    !Array.isArray(stack.pull_requests) ||
+    stack.pull_requests.length === 0
+  ) {
     return undefined
   }
   const layers: CheckoutLayer[] = []
@@ -116,7 +67,13 @@ function unmergedLayers(stack: unknown): ResolvedStack | undefined {
     }
     layers.push({ pr: layer.number, ref: head.ref, sha: head.sha })
   }
-  return { number: isPositiveSafeInteger(stack.number) ? stack.number : undefined, layers }
+  return { number: stack.number, layers }
+}
+
+// Every stack the checkout could import must read cleanly, or none of them counts as verified.
+function readableStacks(candidates: unknown[] | undefined): ResolvedStack[] | undefined {
+  const stacks = (candidates ?? []).map(unmergedLayers)
+  return stacks.length > 0 && stacks.every(stack => stack !== undefined) ? stacks : undefined
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -146,8 +103,8 @@ export function findStackCheckoutBlock(
   if (!isStandaloneStackCheckout(command) || cwd === undefined) {
     return { reason: STANDALONE_CHECKOUT_REASON }
   }
-  const stack = unmergedLayers(resolveStack(cwd, env, target, deadline))
-  if (stack === undefined) {
+  const stacks = readableStacks(resolveStack(cwd, env, target, deadline))
+  if (stacks === undefined) {
     return {
       reason:
         `gh stack checkout ${target}: the hook could not resolve ${target} to a stack whose layers ` +
@@ -156,7 +113,11 @@ export function findStackCheckoutBlock(
         "--jq '.stack.number'`); if the GitHub API was unreachable, retry once it is.",
     }
   }
-  const stale = staleLayerBranches(cwd, stack.layers, deadline)
+  const stale = staleLayerBranches(
+    cwd,
+    stacks.flatMap(stack => stack.layers),
+    deadline,
+  )
   if (stale === undefined) {
     return {
       reason:
@@ -168,9 +129,10 @@ export function findStackCheckoutBlock(
   if (stale.length === 0) {
     return null
   }
+  const imported = stacks.map(stack => `stack #${stack.number}`).join(' or ')
   const summary =
-    `gh stack checkout ${target} would import stack #${stack.number ?? '?'} with stale local ` +
-    'layer branches. gh-stack keeps existing local branches as they are, so the next ' +
+    `gh stack checkout ${target} can import ${imported}. These local layer branches differ from ` +
+    'their PR heads, and gh-stack keeps existing local branches as they are, so the next ' +
     '`gh stack rebase` would start from stale commits. Fix each branch, then rerun the checkout:'
   return { reason: `${summary}\n${stale.join('\n')}` }
 }
