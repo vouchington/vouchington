@@ -47,6 +47,10 @@ export function findGitHubStackWorkflowBlock(
   }
   const { action } = stack
 
+  if (isStackHelp(stack)) {
+    return null
+  }
+
   if (!STACK_AGENT_ACTIONS.has(action)) {
     return {
       reason:
@@ -128,6 +132,24 @@ export function findGitHubStackWorkflowBlock(
     reason:
       'Merging is a human decision — confirm you want this exact merge before it proceeds. See docs/development/merge-authority.md.',
   }
+}
+
+const HELP_FLAGS = new Set(['--help', '-h'])
+
+// gh-stack is a cobra CLI. Its root command only prints help, `help [command]` only prints help, and
+// `--help` or `-h` prints a command's help and exits before the command runs: no gh-stack v0.1.0
+// command disables flag parsing or reuses -h. Only the bare forms count, since a `--` or any other
+// argument beside the flag can change what runs.
+function isStackHelp({ action, optionTokens }: GhInvocation): boolean {
+  if (HELP_FLAGS.has(action) || action === 'help') {
+    return (
+      optionTokens.length === 0 ||
+      (action === 'help' && optionTokens.length === 1 && STACK_AGENT_ACTIONS.has(optionTokens[0]))
+    )
+  }
+  return (
+    STACK_AGENT_ACTIONS.has(action) && optionTokens.length === 1 && HELP_FLAGS.has(optionTokens[0])
+  )
 }
 
 function stackInvocation(invocation: GhInvocation): GhInvocation | null {

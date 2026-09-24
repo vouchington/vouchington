@@ -75,7 +75,9 @@ Use only these non-interactive forms:
 The hook allowlist is closed at the subcommand level: only `add`, `bottom`, `checkout`, `delete`,
 `down`, `init`, `link`, `merge`, `push`, `rebase`, `submit`, `sync`, `top`, `unstack`, `up`, and
 `view` are permitted `gh stack` actions. `merge` requires a numeric PR-number selector, and
-`checkout` requires exactly one stack number or PR number and nothing else in the command. The hook does not further enforce
+`checkout` requires exactly one stack number or PR number and nothing else in the command. Help
+runs no command, so `gh stack --help`, `gh stack help [<action>]`, and `gh stack <action> --help`
+(or `-h`) for a permitted action pass with nothing else beside them. The hook does not further enforce
 the exact flag combination shown above — `gh stack merge <pr>` and `gh stack merge <pr> --yes` also
 pass the hook even though neither is the form this page requires. Do not run interactive TUIs:
 `gh stack submit` without `--auto`, `gh stack modify`, bare `gh stack checkout`, `gh stack switch`, or
