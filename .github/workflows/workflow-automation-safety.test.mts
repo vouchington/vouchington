@@ -47,13 +47,21 @@ function getMermaidDiagrams(reference: string): string[] {
   return [...reference.matchAll(/```mermaid\n([\s\S]*?)\n```/g)].map(match => match[1]!)
 }
 
-function getMermaidNodeIds(reference: string): Set<string> {
+function getMermaidNodeIds(references: string[]): Set<string> {
   return new Set(
-    getMermaidDiagrams(reference).flatMap(diagram =>
-      [...diagram.matchAll(/(?:^|\s)([a-z][a-z0-9-]*)\[/g)].map(match => match[1]!),
+    references.flatMap(reference =>
+      getMermaidDiagrams(reference).flatMap(diagram =>
+        [...diagram.matchAll(/(?:^|\s)([a-z][a-z0-9-]*)\[/g)].map(match => match[1]!),
+      ),
     ),
   )
 }
+
+const automationMapLeaves = [
+  'reference-workflow-automation-always-run.md',
+  'reference-workflow-automation-pull-requests.md',
+  'reference-workflow-automation-main.md',
+]
 
 function getInventoryWorkflowNames(reference: string): string[] {
   return reference
@@ -183,7 +191,7 @@ describe('workflow automation safety', () => {
     assertNoWorkflowViolations(violations)
   })
 
-  it('keeps every workflow in a grouped inventory reference and standalone workflows in the canonical automation-map Mermaid diagrams', () => {
+  it('keeps every workflow in a grouped inventory reference and standalone workflows in the automation-map leaf Mermaid diagrams', () => {
     const readme = readFileSync('.github/workflows/README.md', 'utf8')
     const workflowReference = readFileSync('.github/workflows/WORKFLOWS.md', 'utf8')
     const automationMap = readFileSync(
@@ -207,7 +215,10 @@ describe('workflow automation safety', () => {
     const inventoryWorkflowNames = getInventoryWorkflowNames(
       inventoryReferences.map(path => readFileSync(`.github/workflows/${path}`, 'utf8')).join('\n'),
     )
-    const mermaidNodeIds = getMermaidNodeIds(automationMap)
+    const leaves = automationMapLeaves.map(leaf =>
+      readFileSync(`.github/workflows/${leaf}`, 'utf8'),
+    )
+    const mermaidNodeIds = getMermaidNodeIds(leaves)
     const inventoryMissing: string[] = []
     const mermaidMissing: string[] = []
     expect(readme).toContain('[Workflow automation map](reference-workflow-automation-map.md)')
@@ -218,7 +229,14 @@ describe('workflow automation safety', () => {
     expect(getMermaidDiagrams(workflowReference)).toEqual([])
     expect(automationMap).toContain('[Back to Workflow Reference](README.md)')
     expect(automationMap).toContain('[Back to Workflow inventory](WORKFLOWS.md)')
-    expect(getMermaidDiagrams(automationMap)).not.toEqual([])
+    expect(getMermaidDiagrams(automationMap)).toEqual([])
+    for (const [index, leaf] of automationMapLeaves.entries()) {
+      expect(automationMap).toContain(`](${leaf})`)
+      expect(leaves[index]).toContain(
+        '[Back to Workflow automation map](reference-workflow-automation-map.md)',
+      )
+      expect(getMermaidDiagrams(leaves[index]!)).toHaveLength(1)
+    }
     expect(workflowInstructions).toContain(
       '[Workflow automation map](reference-workflow-automation-map.md)',
     )

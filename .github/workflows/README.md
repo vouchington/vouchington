@@ -1,7 +1,8 @@
 # GitHub Actions workflow reference
 
 This is the direct workflow documentation index linked from the repository CI docs. Start with the
-[Mermaid workflow automation map](reference-workflow-automation-map.md) for the cross-workflow DAG.
+[Mermaid workflow automation map](reference-workflow-automation-map.md) for the cross-workflow
+diagrams.
 Use the guide that matches the workflow work at hand; the focused sections below
 keep each topic within one further link hop.
 
@@ -36,6 +37,6 @@ keep each topic within one further link hop.
 - [Sharding](reference-sharding.md)
 - [Step timeouts](reference-step-timeouts.md)
 - [Vitest](reference-vitest.md)
-- [Workflow automation map](reference-workflow-automation-map.md)
+- [Workflow automation map](reference-workflow-automation-map.md): [Always run](reference-workflow-automation-always-run.md), [Pull requests](reference-workflow-automation-pull-requests.md), [Main](reference-workflow-automation-main.md)
 - [Workflow change preflight](reference-workflow-change-preflight.md)
 - [Workflow classifiers](reference-workflow-classifiers.md)

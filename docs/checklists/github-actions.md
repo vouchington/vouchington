@@ -30,7 +30,7 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
 - **Workflow policy tests** — run
   `pnpm exec vitest run --project github-actions` for every workflow or composite action change.
 - **Keep docs in sync** — update the relevant grouped inventory reference and the matching
-  Always run, Pull requests, or Main diagram in the canonical
+  Always run, Pull requests, or Main diagram linked from the canonical
   [Workflow automation map](../../.github/workflows/reference-workflow-automation-map.md) when
   adding or removing workflows. Update [README.md](../../.github/workflows/README.md) and
   [WORKFLOWS.md](../../.github/workflows/WORKFLOWS.md) navigation only when adding or removing a

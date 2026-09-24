@@ -21,7 +21,7 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   labels); macOS-specific jobs use `macos-latest`. See [Job & runner inventory](JOBS.md) for the
   exact `runs-on` resolved for every job.
 - When adding, removing, or changing a workflow, keep the relevant grouped inventory reference and
-  the matching Always run, Pull requests, or Main diagram in the canonical
+  the matching Always run, Pull requests, or Main diagram linked from the canonical
   [Workflow automation map](reference-workflow-automation-map.md) synchronized. Update [README.md](README.md) and [WORKFLOWS.md](WORKFLOWS.md) navigation when
   adding or removing a focused reference leaf or group.
 - When a workflow gains, loses, or renames an unrestricted `push` trigger or a direct `push` trigger
