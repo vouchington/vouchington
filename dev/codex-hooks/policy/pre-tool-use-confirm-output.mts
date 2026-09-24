@@ -12,6 +12,8 @@ export type PreToolUseOptions = {
   runtime?: PreToolUseRuntime
   /** See GitHubWorkflowPolicyOptions.automationContext in policy/github-closing-refs.mts. */
   automationContext?: boolean
+  /** See GitHubWorkflowPolicyOptions.sessionOwners in policy/github-closing-refs.mts. */
+  sessionOwners?: () => ReadonlySet<string> | undefined
 }
 
 /**

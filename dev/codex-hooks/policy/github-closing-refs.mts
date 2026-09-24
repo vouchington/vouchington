@@ -49,6 +49,15 @@ export type GitHubWorkflowPolicyOptions = {
    * pure function. See docs/development/merge-authority.md.
    */
   automationContext?: boolean
+  /**
+   * The GitHub owners the session's own checkout belongs to (lazily read; undefined when
+   * unprovable) — see sessionHomeOwners in github-checkout-owners.mts. When set, the Vouchington PR
+   * and issue content rules skip a gh command that provably targets a repository outside them — see
+   * github-content-rule-scope.mts. Merge authority and the gh stack policy never read it. Omitted —
+   * tests, direct invocations — keeps every rule; only the wired pre-tool-use.mts entry point
+   * supplies it, from its own checkout.
+   */
+  sessionOwners?: () => ReadonlySet<string> | undefined
 }
 
 export function findClosingIssueReferenceBlock(
