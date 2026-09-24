@@ -34,12 +34,17 @@ export function findGitHubWorkflowBlock(
 ): BlockDecision | null {
   const commandsToInspect = commandsToInspectForGitHubPolicy(command)
 
-  for (const commandToInspect of commandsToInspect) {
+  for (const [inspectIndex, commandToInspect] of commandsToInspect.entries()) {
     const detailedTokens = tokenizeShellWordsDetailed(commandToInspect, {
       splitRedirections: true,
     })
     const tokens = detailedTokens.map(token => token.value)
-    const exemptFromContentRules = contentRuleExemption(command, detailedTokens, options)
+    const exemptFromContentRules = contentRuleExemption(
+      command,
+      detailedTokens,
+      options,
+      inspectIndex === 0,
+    )
 
     for (let index = 0; index < tokens.length; index += 1) {
       if (!isCommandPositionInvocation(tokens, index)) {
@@ -51,11 +56,13 @@ export function findGitHubWorkflowBlock(
       }
       const { action, area } = invocation
       const invocationCwd = commandCwd(tokens, index, cwd)
-      if (exemptFromContentRules(invocation, index, invocationCwd)) {
-        continue
-      }
+      const contentRulesApply = !exemptFromContentRules(invocation, index, invocationCwd)
 
-      if (area === 'pr' && (action === 'create' || action === 'new' || action === 'edit')) {
+      if (
+        contentRulesApply &&
+        area === 'pr' &&
+        (action === 'create' || action === 'new' || action === 'edit')
+      ) {
         const ghOptions = parseGhOptions(invocation.optionTokens)
         if ((action === 'create' || action === 'new') && !ghOptions.draft) {
           return {
@@ -165,7 +172,7 @@ export function findGitHubWorkflowBlock(
         }
       }
 
-      if (area === 'issue' && action === 'create') {
+      if (contentRulesApply && area === 'issue' && action === 'create') {
         const issueCreateBlock = findRawIssueCreateBlock(invocation, detailedTokens)
         if (issueCreateBlock !== null) {
           return issueCreateBlock

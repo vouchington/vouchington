@@ -14,6 +14,7 @@ const UNREAD_CWD = '/owner-scope-session'
 const DRAFT_FIRST = 'New PRs must be opened as draft first'
 const CLOSING_KEYWORD = 'PR bodies must include at least one GitHub closing keyword'
 const PLAN_TITLE = 'Raw issue creation requires a literal non-Plan title'
+const TARGET_MAIN = 'PRs must target main'
 
 const nonDraftPr = (flags: string, prefix = '') =>
   `${prefix}gh pr create ${flags} --title t --body "no refs"`
@@ -62,6 +63,20 @@ describe('gh content-rule owner scope', () => {
 
     it('reads -R before the subcommand', () => {
       expect(reasonOf('gh -R widgets-inc/tool pr create --title t --body x')).toBeUndefined()
+    })
+
+    it('covers the --base rule and the pr new alias', () => {
+      const base = (repo: string) => `gh pr edit 5 --repo ${repo} --base develop`
+      expect(reasonOf(base('widgets-inc/tool'))).toBeUndefined()
+      expect(reasonOf(base('acme/app'))).toContain(TARGET_MAIN)
+      const alias = (repo: string) => `gh pr new --repo ${repo} --title t --body x`
+      expect(reasonOf(alias('widgets-inc/tool'))).toBeUndefined()
+      expect(reasonOf(alias('acme/app'))).toContain(DRAFT_FIRST)
+    })
+
+    it('reads a literal target inside a nested shell command', () => {
+      expect(reasonOf(`bash -c '${nonDraftPr('--repo widgets-inc/tool')}'`)).toBeUndefined()
+      expect(reasonOf(`bash -c '${nonDraftPr('--repo acme/app')}'`)).toContain(DRAFT_FIRST)
     })
 
     it('reads the invocation cwd remotes, including after a literal cd', async () => {
@@ -122,6 +137,11 @@ describe('gh content-rule owner scope', () => {
 
     it.each([
       ['a second owner', { upstream: 'https://github.com/acme/tool.git' }, {}],
+      [
+        'a partial-clone second owner',
+        { upstream: 'https://github.com/acme/tool.git' },
+        { 'remote.upstream.partialclonefilter': 'blob:none' },
+      ],
       ['a set-default on the session owner', {}, { 'remote.origin.gh-resolved': 'acme/tool' }],
       ['an unparseable hosted remote', { lab: 'https://gitlab.example/group/sub/tool.git' }, {}],
     ])('for cwd remotes with %s', async (_name, extraRemotes, config) => {
@@ -139,6 +159,17 @@ describe('gh content-rule owner scope', () => {
       })
       await withRepo(WIDGETS_REMOTE, dir => {
         expect(reasonOf(nonDraftPr('', 'cd "$DIR" && '), dir)).toContain(DRAFT_FIRST)
+      })
+    })
+
+    it('for a cwd a nested command, pushd, or a git environment prefix can change', async () => {
+      await withRepo(WIDGETS_REMOTE, dir => {
+        expect(reasonOf(`cd /srv/home && bash -c '${nonDraftPr('')}'`, dir)).toContain(DRAFT_FIRST)
+        expect(reasonOf(nonDraftPr('', 'pushd /srv/home && '), dir)).toContain(DRAFT_FIRST)
+        expect(reasonOf(nonDraftPr('', 'GIT_DIR=/srv/home/.git '), dir)).toContain(DRAFT_FIRST)
+        expect(reasonOf(nonDraftPr('', 'export GIT_WORK_TREE=/srv/home; '), dir)).toContain(
+          DRAFT_FIRST,
+        )
       })
     })
 

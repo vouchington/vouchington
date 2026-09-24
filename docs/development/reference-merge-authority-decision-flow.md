@@ -18,7 +18,11 @@ The three merge shapes (`gh pr merge ...`, `gh stack merge ...`, and the `gh api
 `automationContext`/`runtime` decision — an interactive human can merge or arm auto-merge via
 those paths, and an unchanged automation hook blocks all three. Every other hook policy (force-push,
 `--amend`, dev-server launches, hook-bypass flags, PR draft-first, closing-ref validation) is
-unrelated to merge authority and keeps blocking unconditionally in every context.
+unrelated to merge authority and blocks the same way in automation and interactive sessions. The
+PR and issue content rules (draft-first, closing-ref validation, `--base`, raw `Plan:` issues) are
+also scoped to the session checkout's home GitHub owners: they skip a `gh` command that provably
+targets another owner's repository, while the merge shapes stay global. See the
+[Codex hook policy](../../.agents/skills/agent-workflow/git-and-prs.md) and #434.
 
 **Confirm strength differs by runtime.** Claude's `permissionDecision: "allow"` proceeds silently no
 matter what auto-mode is active — there is no forced prompt to inherit. Codex's confirm relies on

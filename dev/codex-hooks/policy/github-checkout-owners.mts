@@ -8,12 +8,16 @@ import { gitEnvForCwd } from './github-configured-base.mts'
 // owner the hook can't read literally is never mistaken for a different one.
 const GITHUB_OWNER = /^[a-z\d_][a-z\d_-]*$/i
 const REPO_SELECTOR_CHARACTERS = /^[\w.:@/-]+$/
+// One `git remote -v` line: `<name>\t<url> (fetch|push)`, which a partial clone suffixes with its
+// ` [<filter>]`.
+const REMOTE_LINE = /^[^\t]+\t(.+) \((fetch|push)\)(?: \[[^\]]*\])?$/
 
 /**
  * Every lowercased owner of a checkout's GitHub repositories, read the way gh reads them: the fetch
  * URLs of `git remote -v` plus any `gh repo set-default` (`remote.<name>.gh-resolved`). Hostless
- * (local-path) remotes are ignored, like gh does; undefined when the checkout can't be read or has
- * a hosted remote or set-default that isn't OWNER/REPO.
+ * (local-path) remotes are ignored, like gh does; undefined when the checkout can't be read, prints
+ * a remote line the hook doesn't recognize, or has a hosted remote or set-default that isn't
+ * OWNER/REPO.
  */
 export function checkoutOwners(cwd: string): ReadonlySet<string> | undefined {
   const remotes = gitOutput(cwd, ['remote', '-v'])
@@ -22,9 +26,8 @@ export function checkoutOwners(cwd: string): ReadonlySet<string> | undefined {
     return undefined
   }
   const owners = new Set<string>()
-  for (const line of remotes.split('\n')) {
-    const fetchUrl = /^[^\t]+\t(.+) \(fetch\)$/.exec(line)?.[1]
-    const owner = fetchUrl === undefined ? null : ownerOfRemoteUrl(fetchUrl)
+  for (const line of remotes.split('\n').filter(Boolean)) {
+    const owner = remoteLineOwner(line)
     if (owner === undefined) {
       return undefined
     }
@@ -46,7 +49,10 @@ export function checkoutOwners(cwd: string): ReadonlySet<string> | undefined {
   return owners
 }
 
-/** The single owner gh resolves from a checkout; undefined when there are none or several. */
+/**
+ * A checkout's owner when {@link checkoutOwners} finds exactly one, so whichever remote gh picks is
+ * that owner's; undefined when there are none or several.
+ */
 export function checkoutOwner(cwd: string): string | undefined {
   const owners = checkoutOwners(cwd)
   return owners?.size === 1 ? [...owners][0] : undefined
@@ -97,6 +103,15 @@ function declaredRepositoryOwner(root: string): string | null | undefined {
   }
   const url = typeof repository === 'string' ? repository : (repository as { url?: unknown })?.url
   return typeof url === 'string' ? (ownerOfRemoteUrl(url) ?? undefined) : undefined
+}
+
+// null for a push line or a hostless fetch URL; undefined for a line the hook doesn't recognize.
+function remoteLineOwner(line: string): string | null | undefined {
+  const match = REMOTE_LINE.exec(line)
+  if (match === null) {
+    return undefined
+  }
+  return match[2] === 'push' ? null : ownerOfRemoteUrl(match[1])
 }
 
 // null for a hostless remote gh ignores (a local path or file://); undefined for a hosted URL that

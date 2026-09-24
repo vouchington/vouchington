@@ -85,6 +85,16 @@ describe('github checkout owners', () => {
       await withRepo(remotes, dir => expect(checkoutOwners(dir)?.size).toBe(2), base)
     })
 
+    it('reads a partial-clone fetch line, which git suffixes with its filter', async () => {
+      const remotes = { ...FORK_REMOTE, upstream: 'https://github.com/acme/tool.git' }
+      const partial = { 'remote.upstream.partialclonefilter': 'blob:none' }
+      await withRepo(
+        remotes,
+        dir => expect(checkoutOwners(dir)).toEqual(new Set(['forker', 'acme'])),
+        partial,
+      )
+    })
+
     it.each([
       ['a hosted remote', { lab: 'https://gitlab.example/group/sub/tool.git' }, {}],
       ['a set-default', {}, { 'remote.origin.gh-resolved': 'not a repo' }],
