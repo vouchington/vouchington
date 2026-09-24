@@ -30,8 +30,8 @@ export type GitHubStackWorkflowContext = {
   command: string
   // The invocation's working directory, or undefined when it could not be determined (an
   // unresolved `cd` target, no cwd threaded through) — matches commandCwd's own return type, so
-  // callers never normalize between null and undefined. The init guards below fail open in that
-  // case rather than substitute the session cwd.
+  // callers never normalize between null and undefined. The init guards that read the checkout
+  // (abandonment, HEAD ancestry) fail open in that case rather than substitute the session cwd.
   cwd: string | undefined
   env: Record<string, string | undefined>
 }
@@ -58,15 +58,14 @@ export function findGitHubStackWorkflowBlock(
     }
   }
 
-  if (action === 'init' && context.cwd !== undefined) {
+  if (action === 'init') {
     // Abandonment before root: a branch that is already a layer of an open stack has unmerged
     // commits, so the root guard below would fire first and mask the more specific "you forgot
     // this stack — use `gh stack add`" diagnosis with a generic "not merged into origin/main" one.
-    const abandonmentBlock = findStackAbandonmentBlock(
-      context.cwd,
-      context.env,
-      options.resolveStackTopology,
-    )
+    const abandonmentBlock =
+      context.cwd === undefined
+        ? null
+        : findStackAbandonmentBlock(context.cwd, context.env, options.resolveStackTopology)
     if (abandonmentBlock !== null) {
       return abandonmentBlock
     }

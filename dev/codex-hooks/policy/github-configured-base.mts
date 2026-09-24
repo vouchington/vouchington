@@ -68,9 +68,13 @@ export function currentBranchName(cwd: string): string | undefined {
 /**
  * Root guard for `gh stack init` (plan #11426/#11439): a stack rooted off trunk cannot drain if
  * its base branch is ever abandoned (#11376, #11352 both rooted this way). Scoped to `init` only —
- * `gh stack add` only appends to an existing, already-validated stack.
+ * `gh stack add` only appends to an existing, already-validated stack. An explicit `--base` needs
+ * no checkout; only the HEAD ancestry check reads `cwd`, so an unknown `cwd` skips just that.
  */
-export function findStackInitBaseBlock(optionTokens: string[], cwd: string): BlockDecision | null {
+export function findStackInitBaseBlock(
+  optionTokens: string[],
+  cwd: string | undefined,
+): BlockDecision | null {
   const base = lastNamedOption(optionTokens, 'base', 'b')
   if (base !== undefined && base !== 'main') {
     return {
@@ -79,7 +83,7 @@ export function findStackInitBaseBlock(optionTokens: string[], cwd: string): Blo
         'to the repo default branch) or pass --base main. See .agents/skills/stacked-prs/SKILL.md.',
     }
   }
-  if (gitIsAncestor(cwd, 'HEAD', 'origin/main') === false) {
+  if (cwd !== undefined && gitIsAncestor(cwd, 'HEAD', 'origin/main') === false) {
     return {
       reason:
         'gh stack init must run from a commit already merged into origin/main (HEAD is not an ' +
