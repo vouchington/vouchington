@@ -1,5 +1,9 @@
 import type { BlockDecision } from './core.mts'
+import { findUnresolvedEvalBlock } from './github-eval-resolution-policy.mts'
+import { findFindExecOpaqueBlock, findParallelOpaqueBlock } from './github-exec-runner-policy.mts'
+import { findUnknownGhAreaBlock } from './github-gh-areas.mts'
 import { type GhInvocation, ghSubcommandWords } from './github-invocation.mts'
+import { findUnresolvedVariableExecutableBlock } from './github-variable-executable-policy.mts'
 import { findXargsGhSubcommandBlock } from './github-xargs-policy.mts'
 import type { CommandPrefix } from './shell-command-wrappers.mts'
 
@@ -21,7 +25,12 @@ export function findOpaqueGhBlock(
   return (
     findXargsGhSubcommandBlock(prefix, tokens, index) ??
     findExpandedGhSubcommandBlock(tokens, index) ??
-    findUnreadableGhAliasBlock(invocation)
+    findUnreadableGhAliasBlock(invocation) ??
+    findFindExecOpaqueBlock(tokens, index) ??
+    findParallelOpaqueBlock(tokens, index) ??
+    findUnresolvedEvalBlock(tokens, index) ??
+    findUnresolvedVariableExecutableBlock(tokens, index) ??
+    findUnknownGhAreaBlock(tokens, invocation)
   )
 }
 

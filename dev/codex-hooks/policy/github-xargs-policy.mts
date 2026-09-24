@@ -2,6 +2,7 @@ import type { BlockDecision } from './core.mts'
 import { commandPrefixAt } from './github-command-position.mts'
 import { ghSubcommandWords } from './github-invocation.mts'
 import type { CommandPrefix } from './shell-command-wrappers.mts'
+import { isGhWord } from './shell-gh-word.mts'
 import { shellScriptOperandIndex } from './shell-script-operand.mts'
 import { tokenizeShellWords } from './shell-tokenizer.mts'
 
@@ -39,7 +40,7 @@ export function findXargsGhSubcommandBlock(
   const words = tokenizeShellWords(tokens[scriptIndex], { splitRedirections: true })
   const scriptFillsSubcommand = words.some(
     (word, wordIndex) =>
-      isGh(word) &&
+      isGhWord(word) &&
       commandPrefixAt(words, wordIndex) !== null &&
       fillsGatedWord(ghSubcommandWords(words, wordIndex), filledIn),
   )

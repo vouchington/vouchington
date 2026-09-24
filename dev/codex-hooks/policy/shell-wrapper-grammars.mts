@@ -1,4 +1,5 @@
 import type { OptionGrammar } from './shell-option-grammar.mts'
+import { EXEC_WRAPPER_ENTRIES } from './shell-wrapper-exec-grammars.mts'
 
 export type Wrapper = {
   /** Options that make the wrapper describe the command instead of running it (`command -v`). */
@@ -6,6 +7,12 @@ export type Wrapper = {
   grammar: OptionGrammar
   /** Operands between the options and the wrapped command (`timeout DURATION`). */
   operands?: number
+  /** A literal subcommand word required before the wrapped command (`pnpm exec`, `mise exec`). */
+  subcommand?: string
+  /** The subcommand's own options, parsed after `subcommand` and before its operands. */
+  subcommandGrammar?: OptionGrammar
+  /** The wrapped command starts only after a `--` (`mise exec node@20 -- gh …`). */
+  operandsUntilDoubleDash?: boolean
 }
 
 const NO_OPTIONS: OptionGrammar = {}
@@ -122,4 +129,5 @@ export const WRAPPERS: ReadonlyMap<string, Wrapper> = new Map<string, Wrapper>([
     },
   ],
   ['xargs', { grammar: XARGS_GRAMMAR }],
+  ...EXEC_WRAPPER_ENTRIES,
 ])

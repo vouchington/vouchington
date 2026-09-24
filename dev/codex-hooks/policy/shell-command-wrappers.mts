@@ -92,7 +92,22 @@ export function readCommandPrefix(
     if (parsed === null || parsed.options.some(option => wrapper.describeOnly?.has(option.name))) {
       return null
     }
-    cursor = parsed.next + (wrapper.operands ?? 0)
+    let next = parsed.next
+    if (wrapper.subcommand !== undefined) {
+      if (words[next] !== wrapper.subcommand) return null
+      next += 1
+      if (wrapper.subcommandGrammar !== undefined) {
+        const subParsed = parseOptions(words, next, wrapper.subcommandGrammar)
+        if (subParsed === null) return null
+        next = subParsed.next
+      }
+    }
+    if (wrapper.operandsUntilDoubleDash === true) {
+      const dashIndex = words.indexOf('--', next)
+      if (dashIndex === -1) return null
+      next = dashIndex + 1
+    }
+    cursor = next + (wrapper.operands ?? 0)
     if (cursor > words.length) return null
     applyWrapperOptions(prefix, name, parsed.options)
     prefix.wrappers.push(name)
