@@ -175,13 +175,13 @@ flowchart TD
     main-storybook -. "workflow_run success" .-> dispatch-completed-deploy
     main-web -. "workflow_run success" .-> dispatch-completed-deploy
     sync-articles -. "workflow_run success" .-> dispatch-completed-deploy
-    dispatch-completed-deploy --> infra-backend["infra backend receiver\nfilaments-deploy-backend-v2"]
-    dispatch-completed-deploy --> infra-web["infra web receiver\nfilaments-deploy-web-v2"]
-    dispatch-completed-deploy --> infra-lambdas["infra lambdas receiver\nfilaments-deploy-lambdas-v2"]
-    dispatch-completed-deploy --> infra-worker["infra Worker receiver\nfilaments-deploy-cloudflare-worker-v2"]
-    dispatch-completed-deploy --> infra-articles["infra articles publisher\nfilaments-publish-articles-v2"]
-    dispatch-completed-deploy --> infra-storybook["infra Storybook publisher\nfilaments-publish-storybook-v2"]
-    dispatch-completed-deploy --> infra-docs["infra docs publisher\nfilaments-publish-docs-v2"]
+    dispatch-completed-deploy --> infra-backend["infra backend receiver\nvouchington-deploy-backend-v2"]
+    dispatch-completed-deploy --> infra-web["infra web receiver\nvouchington-deploy-web-v2"]
+    dispatch-completed-deploy --> infra-lambdas["infra lambdas receiver\nvouchington-deploy-lambdas-v2"]
+    dispatch-completed-deploy --> infra-worker["infra Worker receiver\nvouchington-deploy-cloudflare-worker-v2"]
+    dispatch-completed-deploy --> infra-articles["infra articles publisher\nvouchington-publish-articles-v2"]
+    dispatch-completed-deploy --> infra-storybook["infra Storybook publisher\nvouchington-publish-storybook-v2"]
+    dispatch-completed-deploy --> infra-docs["infra docs publisher\nvouchington-publish-docs-v2"]
     dispatch-completed-deploy -. "workflow_run failure" .-> fix-main
 
     main-backend --> main-backend-static["backend static"]

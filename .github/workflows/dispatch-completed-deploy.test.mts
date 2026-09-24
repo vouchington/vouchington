@@ -57,33 +57,33 @@ describe('completed deploy dispatch', () => {
       {
         path: 'docs-publish',
         sourceWorkflow: 'docs-publish',
-        eventType: 'filaments-publish-docs-v2',
+        eventType: 'vouchington-publish-docs-v2',
       },
       {
         path: 'main-backend',
         sourceWorkflow: 'main-backend',
-        eventType: 'filaments-deploy-backend-v2',
+        eventType: 'vouchington-deploy-backend-v2',
       },
       {
         path: 'main-cloudflare-worker',
         sourceWorkflow: 'main-cloudflare-worker',
-        eventType: 'filaments-deploy-cloudflare-worker-v2',
+        eventType: 'vouchington-deploy-cloudflare-worker-v2',
       },
       {
         path: 'main-lambdas',
         sourceWorkflow: 'main-lambdas',
-        eventType: 'filaments-deploy-lambdas-v2',
+        eventType: 'vouchington-deploy-lambdas-v2',
       },
       {
         path: 'main-storybook',
         sourceWorkflow: 'main-storybook',
-        eventType: 'filaments-publish-storybook-v2',
+        eventType: 'vouchington-publish-storybook-v2',
       },
-      { path: 'main-web', sourceWorkflow: 'main-web', eventType: 'filaments-deploy-web-v2' },
+      { path: 'main-web', sourceWorkflow: 'main-web', eventType: 'vouchington-deploy-web-v2' },
       {
         path: 'sync-articles',
         sourceWorkflow: 'sync-articles',
-        eventType: 'filaments-publish-articles-v2',
+        eventType: 'vouchington-publish-articles-v2',
       },
     ]
 
@@ -128,7 +128,7 @@ describe('completed deploy dispatch', () => {
       SOURCE_WORKFLOW: '${{ steps.source.outputs.source_workflow }}',
     })
     expect(serialized).not.toMatch(/artifact|manifest|s3|aws|poll|retry|mask|workflow_dispatch/iu)
-    expect(serialized).not.toContain('filaments-deploy-v1')
+    expect(serialized).not.toMatch(/filaments-(?:deploy|publish)-/u)
   })
 
   it('keeps broad web validation triggers while marking only web deploy changes', () => {

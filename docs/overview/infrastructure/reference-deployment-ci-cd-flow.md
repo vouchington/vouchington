@@ -21,15 +21,15 @@ The completed source-run receiver emits exactly one route-specific event for eac
 default-branch source workflow. A successful `main-web` run triggered only to validate Lambda or
 Cloudflare Worker changes is the exception: `web-deploy-intent` is skipped and no web event is sent.
 
-| Source workflow          | Event type                              |
-| ------------------------ | --------------------------------------- |
-| `main-backend`           | `filaments-deploy-backend-v2`           |
-| `main-web`               | `filaments-deploy-web-v2`               |
-| `main-lambdas`           | `filaments-deploy-lambdas-v2`           |
-| `main-cloudflare-worker` | `filaments-deploy-cloudflare-worker-v2` |
-| `sync-articles`          | `filaments-publish-articles-v2`         |
-| `main-storybook`         | `filaments-publish-storybook-v2`        |
-| `docs-publish`           | `filaments-publish-docs-v2`             |
+| Source workflow          | Event type                                |
+| ------------------------ | ----------------------------------------- |
+| `main-backend`           | `vouchington-deploy-backend-v2`           |
+| `main-web`               | `vouchington-deploy-web-v2`               |
+| `main-lambdas`           | `vouchington-deploy-lambdas-v2`           |
+| `main-cloudflare-worker` | `vouchington-deploy-cloudflare-worker-v2` |
+| `sync-articles`          | `vouchington-publish-articles-v2`         |
+| `main-storybook`         | `vouchington-publish-storybook-v2`        |
+| `docs-publish`           | `vouchington-publish-docs-v2`             |
 
 ### Ownership boundary
 
