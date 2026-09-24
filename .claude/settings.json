@@ -6,6 +6,7 @@
   "enabledMcpjsonServers": ["agent-blackboard"],
   "permissions": {
     "allow": [
+      "Bash(pnpm exec *)",
       "Bash(pnpm exec pr-shepherd *)",
       "Bash(pnpm exec tsc *)",
       "Bash(pnpm exec vitest *)",
