@@ -178,6 +178,27 @@
       "Bash(aws ec2 describe-vpc-endpoints *)",
       "Bash(aws sqs get-queue-url *)",
       "Bash(aws sqs get-queue-attributes *)",
+      "Bash(aws dynamodb describe-table *)",
+      "Bash(aws dynamodb list-tables *)",
+      "Bash(aws dynamodb get-item *)",
+      "Bash(aws dynamodb scan *)",
+      "Bash(aws cloudformation describe-stacks *)",
+      "Bash(aws logs describe-log-groups *)",
+      "Bash(aws iam get-role *)",
+      "Bash(aws iam list-role-policies *)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm run lint)",
+      "Bash(pnpm lint:links)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm run typecheck)",
+      "Bash(pnpm knip)",
+      "Bash(./node_modules/.bin/vitest run *)",
+      "Bash(gh variable list *)",
+      "Bash(gh secret list *)",
+      "Bash(gh label list *)",
+      "Bash(gh search code *)",
+      "Bash(npm view *)",
+      "Bash(tmux list-panes *)",
       "Bash(unzip -l *)",
       "Bash(unzip -p *)",
       "Bash(docker info *)",
@@ -187,7 +208,8 @@
       "mcp__plugin_sentry_sentry__find_projects",
       "mcp__claude-in-chrome__read_console_messages",
       "mcp__claude-in-chrome__read_page",
-      "mcp__claude-in-chrome__get_page_text"
+      "mcp__claude-in-chrome__get_page_text",
+      "mcp__claude-in-chrome__tabs_context_mcp"
     ],
     "deny": [
       "Bash(chmod 777 *)",
@@ -510,8 +532,12 @@
         "~/.pnpm-state",
         "~/.cache/no-mistakes",
         "~/.cache/pnpm",
-        "~/.local/state/pnpm"
+        "~/.local/state/pnpm",
+        "~/.local/state/mise"
       ]
+    },
+    "network": {
+      "allowedDomains": ["registry.npmjs.org", "github.com"]
     },
     "failIfUnavailable": true,
     "credentials": {
