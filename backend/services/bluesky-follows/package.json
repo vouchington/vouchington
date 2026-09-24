@@ -21,7 +21,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@atproto/api": "^0.20.42",
+    "@atproto/api": "^0.20.44",
     "@data-stores/psql": "workspace:^",
     "@modules/bluesky-oauth": "workspace:^",
     "@modules/on-error": "workspace:^",
