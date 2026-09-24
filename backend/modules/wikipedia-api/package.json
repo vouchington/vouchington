@@ -25,7 +25,7 @@
     "@modules/utils": "workspace:^",
     "@vouchington/wikimedia": "0.1.0",
     "http-errors": "^2.0.1",
-    "undici": "^8.10.2"
+    "undici": "^8.11.0"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5"
