@@ -73,15 +73,15 @@ describe('initialize-smoke-test workflow', () => {
     expect(run).toContain('git -C "$smoke_worktree" read-tree --empty')
   })
 
-  it('activates pnpm in a per-job bin directory before initialize runs nvm', () => {
-    const run = stepRun('Activate pnpm via corepack')
+  it('activates the .nvmrc Node and then pnpm before initialize runs', () => {
+    const steps = readWorkflow().jobs?.['initialize-smoke-test']?.steps ?? []
+    const node = steps.findIndex(step => step.uses?.startsWith('actions/setup-node@'))
+    const pnpm = steps.findIndex(step => step.uses?.startsWith('pnpm/action-setup@'))
+    const initialize = steps.findIndex(step => step.name === 'Initialize monorepo')
 
-    expect(run).toContain('pnpm_prefix="${RUNNER_TEMP:-$HOME/.local}/pnpm"')
-    expect(run).toContain('"${node_bin}/corepack" enable --install-directory "$pnpm_bin"')
-    expect(run).toContain('npm install --global --prefix "$pnpm_prefix" "pnpm@${pnpm_version}"')
-    expect(run).toContain('pnpm --version')
-    expect(run).not.toContain('nvm install')
-    expect(run).not.toContain('nvm use')
+    expect(node).toBeGreaterThan(-1)
+    expect(pnpm).toBeGreaterThan(node)
+    expect(initialize).toBeGreaterThan(pnpm)
   })
 
   it.each([

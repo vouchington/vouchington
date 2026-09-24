@@ -4,68 +4,65 @@ import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 const source = readFileSync('.github/actions/setup-node-pnpm/action.yml', 'utf8')
-const activationHelper = readFileSync('ci/activate-pnpm.sh', 'utf8')
+type Step = {
+  name?: string
+  run?: string
+  uses?: string
+  with?: Record<string, unknown>
+  env?: Record<string, string>
+}
 const action = load(source) as {
   inputs?: Record<string, { default?: string; required?: boolean }>
-  runs?: { steps?: Array<{ name?: string; run?: string }> }
+  runs?: { steps?: Step[] }
 }
+const steps = action.runs?.steps ?? []
 
 function step(name: string) {
-  const found = action.runs?.steps?.find(candidate => candidate.name === name)
+  const found = steps.find(candidate => candidate.name === name)
   if (!found) throw new Error(`Missing setup-node-pnpm step: ${name}`)
   return found
 }
 
 describe('setup-node-pnpm composite action', () => {
-  it('exposes only structured install inputs', () => {
+  it('exposes only the install-scripts input', () => {
     expect(action.inputs).toEqual({
       'install-scripts': {
         description: 'Set false when dependency lifecycle scripts are intentionally deferred',
         default: 'true',
       },
     })
-    for (const removed of [
-      'force-install',
-      'install-dependencies',
-      'install-extra-args',
-      'install-filters',
-      'runner-lifecycle',
-      'ephemeral-workspaces',
-    ])
-      expect(source).not.toContain(`${removed}:`)
   })
 
-  it('activates the repository Node and pnpm versions without setup-node package caching', () => {
-    expect(source).toContain("node-version-file: '.nvmrc'")
-    expect(source).toContain('package-manager-cache: false')
-    expect(step('Activate pnpm via corepack').run).toBe(
-      'bash "$GITHUB_WORKSPACE/ci/activate-pnpm.sh"',
-    )
-    expect(activationHelper).toContain('pnpm_version=')
-    expect(activationHelper).toContain('v26.*)')
-    expect(activationHelper).toContain('GITHUB_PATH')
-    expect(source).not.toContain('pnpm/action-setup')
+  it('activates the .nvmrc Node and then pnpm from package.json#packageManager', () => {
+    const [node, pnpm] = steps
+    expect(node?.uses).toMatch(/^actions\/setup-node@/)
+    expect(node?.with).toEqual({ 'node-version-file': '.nvmrc', 'package-manager-cache': false })
+    expect(pnpm?.uses).toMatch(/^pnpm\/action-setup@/)
+    expect(pnpm?.with).toBeUndefined()
   })
 
-  it('installs pnpm into a per-job bin directory with an isolated npm fallback', () => {
-    expect(activationHelper).toContain('pnpm_prefix="${RUNNER_TEMP:-$HOME/.local}/pnpm"')
-    expect(activationHelper).toContain(
-      '"${node_bin}/corepack" enable --install-directory "$pnpm_bin"',
-    )
-    expect(activationHelper).toContain(
-      'cd "${RUNNER_TEMP:-/tmp}" && npm_config_userconfig=/dev/null npm install',
-    )
-    expect(activationHelper).toContain('echo "$pnpm_bin" >> "$GITHUB_PATH"')
+  it('restores the pnpm store cache before installing', () => {
+    const names = steps.map(candidate => candidate.name)
+    const cache = names.indexOf('Cache pnpm store')
+    expect(cache).toBeGreaterThan(-1)
+    expect(cache).toBeLessThan(names.indexOf('pnpm install'))
+    expect(cache).toBeLessThan(names.indexOf('pnpm install without lifecycle scripts'))
   })
 
-  it('delegates installation to the shared helper as an unconditional full install', () => {
-    const install = step('pnpm install').run
-    expect(install).toContain('bash "$GITHUB_WORKSPACE/ci/pnpm-install.sh"')
-    expect(install).toContain('--runner-lifecycle ephemeral-full')
-    expect(install).toContain('--install-scripts "$INSTALL_SCRIPTS"')
-    expect(install).not.toContain('pnpm install')
-    expect(install).not.toContain('--force')
-    expect(install).not.toContain('--filter')
-    expect(install).not.toContain('--ephemeral-workspaces')
+  it('runs exactly one frozen full install per input value', () => {
+    // Complementary static conditions: every install-scripts value selects exactly one install,
+    // and no-mistakes can model the steps (it cannot model a shell `case` with an `exit 1` arm).
+    expect(step('pnpm install')).toEqual({
+      name: 'pnpm install',
+      if: "inputs.install-scripts != 'false'",
+      shell: 'bash',
+      run: 'pnpm install --frozen-lockfile',
+    })
+    expect(step('pnpm install without lifecycle scripts')).toEqual({
+      name: 'pnpm install without lifecycle scripts',
+      if: "inputs.install-scripts == 'false'",
+      shell: 'bash',
+      run: 'pnpm install --frozen-lockfile --ignore-scripts',
+    })
   })
 })

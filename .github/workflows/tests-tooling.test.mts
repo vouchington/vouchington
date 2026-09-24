@@ -9,9 +9,7 @@ type WorkflowStep = {
   'timeout-minutes'?: number
   run?: string
   uses?: string
-  with?: {
-    'runner-lifecycle'?: string
-  }
+  with?: Record<string, unknown>
 }
 
 type WorkflowJob = {

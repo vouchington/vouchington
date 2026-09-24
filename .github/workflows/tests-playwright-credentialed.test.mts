@@ -120,16 +120,10 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
   })
 
   it('installs JavaScript dependencies before allocating ports', () => {
-    const activate = credentialedWorkflowText.indexOf('- name: Activate pnpm via corepack')
-    const install = credentialedWorkflowText.indexOf('- name: pnpm install')
+    const install = credentialedWorkflowText.indexOf('- uses: ./.github/actions/setup-node-pnpm')
     const allocate = credentialedWorkflowText.indexOf('- name: Allocate ports')
-    expect(activate).toBeGreaterThan(-1)
-    expect(install).toBeGreaterThan(activate)
+    expect(install).toBeGreaterThan(-1)
     expect(allocate).toBeGreaterThan(install)
-    const installStep = credentialedWorkflowText.slice(install, allocate)
-    expect(installStep).toContain('ci/pnpm-install.sh')
-    expect(installStep).toContain('--runner-lifecycle ephemeral-full')
-    expect(installStep).toContain('--command-timeout-seconds 0')
   })
 
   it('holds credentialed Playwright ports until each consumer binds', () => {

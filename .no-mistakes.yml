@@ -2379,7 +2379,7 @@ rules:
         # The credential-free validator includes one bounded 8m immutable-runtime install plus cheap local checks inside bubblewrap; 35m leaves checkout, exact-patch rebase, and diagnostics headroom without expanding publisher write authority.
         - job: '.github/workflows/codex-dispatch.yml#trusted-completion-validator'
           maxMinutes: 35
-        # Step budgets across worktree prep (1) + three ./dev/initialize passes (5 each, monorepo/backend/web) + Postgres provisioning (5) + always() cleanup (5) sum 26m; cap adds buffer for the unbounded checkout/setup-node/corepack steps ahead of them. See #10850.
+        # Step budgets across worktree prep (1) + three ./dev/initialize passes (5 each, monorepo/backend/web) + Postgres provisioning (5) + always() cleanup (5) sum 26m; cap adds buffer for the unbounded checkout/setup-node/pnpm-setup steps ahead of them. See #10850.
         - job: '.github/workflows/initialize-smoke-test.yml#initialize-smoke-test'
           maxMinutes: 30
         # Remaining lint/typecheck/knip/depcruise step budgets plus setup-node-pnpm; the 25m

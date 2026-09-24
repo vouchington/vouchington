@@ -618,9 +618,8 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
   **module import graph** instead — a different graph, since a workspace-package cycle can exist
   without a module-import cycle (e.g. two packages that both list each other as `workspace:^` but only
   one imports the other) — so migrating to `no-circular` was never an option. `pnpm-workspace.yaml` sets
-  `disallowWorkspaceCycles: true`, but CI's `pnpm install` passes
-  `--config.disallow-workspace-cycles=false` (`vouchington-tooling/pnpm-install`), so this lint-level rule
-  remains the only CI-enforced guard against workspace-package cycles. Verified against the pinned
+  `disallowWorkspaceCycles: true`, which CI's `pnpm install` enforces; this lint-level rule also runs
+  without an install and reports every cycle rather than pnpm's first failure. Verified against the pinned
   `no-mistakes` Rust source that the rule is a strict superset of the removed check: same graph model,
   an SCC-based all-cycles scan (vs. the removed check's first-cycle-found DFS), and the rule's default
   `dependencyTypes` used as-is (adds `peerDependencies`; verified zero workspace-name peer deps exist

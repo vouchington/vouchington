@@ -1,5 +1,18 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+
+import { parse as load } from 'yaml'
+
+export type PolicyStep = {
+  name?: string
+  run?: string
+  uses?: string
+  with?: Record<string, unknown>
+}
+type StepHost = {
+  jobs?: Record<string, { steps?: PolicyStep[] }>
+  runs?: { using?: string; steps?: PolicyStep[] }
+}
 
 export const workflowYamlPaths = [
   ...readdirSync('.github/workflows').map(file => join('.github/workflows', file)),
@@ -12,6 +25,57 @@ export const workflowYamlPaths = [
 
 export function yamlSource(path: string): string {
   return readFileSync(path, 'utf8')
+}
+
+function stepHost(path: string): StepHost {
+  return load(yamlSource(path)) as StepHost
+}
+
+/** Every workflow job's steps and every composite action's steps, keyed by owner. */
+export const stepLists: Array<{ owner: string; steps: PolicyStep[] }> = workflowYamlPaths.flatMap(
+  path => {
+    const host = stepHost(path)
+    if (host.runs)
+      return host.runs.using === 'composite' ? [{ owner: path, steps: host.runs.steps ?? [] }] : []
+    return Object.entries(host.jobs ?? {}).map(([jobId, job]) => ({
+      owner: `${path}#${jobId}`,
+      steps: job.steps ?? [],
+    }))
+  },
+)
+
+function localCompositeSteps(uses: string): PolicyStep[] {
+  const dir = uses.slice('./'.length)
+  const path = ['action.yml', 'action.yaml'].map(file => join(dir, file)).find(existsSync)
+  if (!path) throw new Error(`Local action ${uses} has no action.yml`)
+  const host = stepHost(path)
+  return host.runs?.using === 'composite' ? (host.runs.steps ?? []) : []
+}
+
+/**
+ * Inlines each local composite action's steps (recursively) right after the step that calls it,
+ * so a caller is checked against the steps that actually run.
+ */
+export function inlineLocalComposites(steps: readonly PolicyStep[]): PolicyStep[] {
+  return steps.flatMap(step =>
+    step.uses?.startsWith('./.github/actions/')
+      ? [step, ...inlineLocalComposites(localCompositeSteps(step.uses))]
+      : [step],
+  )
+}
+
+/**
+ * True when a shell body runs `pnpm install` (or `pnpm i`), allowing global options such as
+ * `--dir <path>` between them. Comments and `pnpm exec <tool> install` do not count.
+ */
+export function runsPnpmInstall(body: string | undefined): boolean {
+  if (!body) return false
+  return body
+    .replace(/\\\r?\n\s*/g, ' ')
+    .split('\n')
+    .some(line =>
+      /\bpnpm(?:\s+-\S+(?:\s+[^-\s]\S*)?)*\s+(?:install|i)\b/.test(line.replace(/#.*$/, '')),
+    )
 }
 
 export function actionStepBlocks(source: string, usesPattern: RegExp): string[] {

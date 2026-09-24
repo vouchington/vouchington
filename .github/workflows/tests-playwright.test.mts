@@ -130,16 +130,11 @@ describe('tests-playwright.yml', () => {
   })
 
   it('installs JavaScript dependencies before allocating ports', () => {
-    const activate = workflow.indexOf('- name: Activate pnpm via corepack')
-    const install = workflow.indexOf('- name: pnpm install')
-    const allocate = workflow.indexOf('- name: Allocate ports')
-    expect(activate).toBeGreaterThan(-1)
-    expect(install).toBeGreaterThan(activate)
+    const shardJob = workflowJobSection(workflow, 'playwright-tests')
+    const install = shardJob.indexOf('- uses: ./.github/actions/setup-node-pnpm')
+    const allocate = shardJob.indexOf('- name: Allocate ports')
+    expect(install).toBeGreaterThan(-1)
     expect(allocate).toBeGreaterThan(install)
-    const installStep = workflow.slice(install, allocate)
-    expect(installStep).toContain('ci/pnpm-install.sh')
-    expect(installStep).toContain('--runner-lifecycle ephemeral-full')
-    expect(installStep).toContain('--command-timeout-seconds 0')
   })
 
   it('holds Playwright ports until each consumer binds', () => {

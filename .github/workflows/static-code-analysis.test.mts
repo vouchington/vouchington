@@ -21,7 +21,6 @@ describe('static-code-analysis workflow', () => {
 
   it('delegates Node and pnpm installation to the shared setup-node-pnpm action', () => {
     expect(workflow).toContain('      - uses: ./.github/actions/setup-node-pnpm')
-    expect(workflow).not.toContain('      - name: Activate pnpm via corepack')
     expect(workflow).not.toContain('      - name: Install workspace dependencies')
     expect(workflow).not.toContain('nick-fields/retry')
     expect(workflow).not.toContain('ci/static-analysis-pnpm-install.sh')
