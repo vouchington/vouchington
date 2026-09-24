@@ -123,6 +123,9 @@ describe('Codex hook gh policies behind exec-style wrappers', () => {
     'script -q -c "ls" /dev/null',
     'sudo -u root gh pr create --draft',
     'sudo -u root gh pr view 1',
+    'grep -r "gh pr merge" .',
+    'rg "gh pr merge" dev',
+    'git commit -m "fix: block gh pr merge"',
   ])('does not gate an ordinary exec-style command: %s', command => {
     expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
   })
