@@ -16,10 +16,23 @@ describe('classifySession', () => {
     const session = sessionFixture({ id: 's1', agent: 'claude', version: '1', lastEntryAt: FRESH })
     const entries = [
       entryFixture({ sessionId: 's1', createdAt: STALE, data: { type: 'retrospective' } }),
-      entryFixture({ sessionId: 's1', createdAt: FRESH, data: { type: 'note' } }),
+      entryFixture({ sessionId: 's1', createdAt: FRESH, data: { type: 'journal' } }),
     ]
     const result = classifySession(session, entries, CUTOFFS)
     expect(result.shape).toBe('retrospective')
+  })
+
+  it('classifies a stale retrospective session holding an unresolved entry as ineligible entry-type-unresolved', () => {
+    const session = sessionFixture({ id: 's1', agent: 'claude', version: '1', lastEntryAt: STALE })
+    const entries = [
+      entryFixture({ sessionId: 's1', createdAt: STALE, data: { type: 'retrospective' } }),
+      entryFixture({ sessionId: 's1', createdAt: STALE, data: { type: 'note' } }),
+    ]
+    expect(classifySession(session, entries, CUTOFFS)).toEqual({
+      sessionId: 's1',
+      shape: 'entry-type-unresolved',
+      eligible: false,
+    })
   })
 
   it('is eligible when the newest retrospective entry is older than retroCutoff', () => {

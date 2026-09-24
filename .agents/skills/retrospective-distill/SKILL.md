@@ -63,11 +63,12 @@ marks a retrospective entry), `dev/journal-checkpoint/checkpoint-entry.mts` (`is
 marks a mechanically auto-appended journal entry via a structural `data.checkpoint` field, never the
 rendered `## Auto-append: ` heading), and
 [agent-blackboard.md](../../../docs/development/agent-blackboard.md) (the CLI's `--file` convenience
-omits `type` entirely). A session is a **retrospective** session when it has a retrospective entry;
-an **entry-type-unresolved** session when it has at least one entry whose `type` is missing or is
-anything other than `"journal"`/`"retrospective"` — report it separately and give it no issue-filing
-pass or archival this run, regardless of its age, rather than treating an untyped entry as journal
-evidence; a **checkpoint-only** session when it has at least one entry, no retrospective entry, and
+omits `type` entirely). A session is an **entry-type-unresolved** session when it has at least one
+entry whose `type` is missing or is anything other than `"journal"`/`"retrospective"` — even if it
+also has a retrospective entry — report it separately and give it no issue-filing pass or archival
+this run, regardless of its age, rather than treating an untyped entry as journal evidence; a
+**retrospective** session when it has a retrospective entry and no unresolved entry; a
+**checkpoint-only** session when it has at least one entry, no retrospective entry, and
 every entry satisfies `isCheckpointEntry` (journal auto-append noise, #9337); a **journal-only**
 session when it has at least one entry, no retrospective entry, and at least one entry is not a
 checkpoint; a **zero-entry-child** session when it has no entries and a non-null `parentSessionId`;
