@@ -1,14 +1,11 @@
 import type { TestModule } from 'vitest/node'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ciReporters } from '../../test-helpers/vitest-ci-reporters.mts'
 import {
   createVitestStorybookProgressReporter,
   formatStorybookProgressMarker,
 } from '../../test-helpers/vitest-storybook-progress-reporter.mts'
-
-const originalReporters = process.env.VITEST_CI_REPORTERS
-const originalStorybookBrowser = process.env.VITEST_STORYBOOK_BROWSER
 
 function testModule(moduleId: string): TestModule {
   return { moduleId, relativeModuleId: moduleId } as TestModule
@@ -25,17 +22,14 @@ function storybookProgressReporters(reporters: ReturnType<typeof ciReporters>): 
 }
 
 describe('Vitest Storybook progress reporter', () => {
-  afterEach(() => {
-    process.env.VITEST_CI_REPORTERS = originalReporters
-    process.env.VITEST_STORYBOOK_BROWSER = originalStorybookBrowser
-  })
+  afterEach(() => vi.unstubAllEnvs())
 
   it('registers exactly once only for Storybook browser CI runs', () => {
-    process.env.VITEST_CI_REPORTERS = 'run'
-    delete process.env.VITEST_STORYBOOK_BROWSER
+    vi.stubEnv('VITEST_CI_REPORTERS', 'run')
+    vi.stubEnv('VITEST_STORYBOOK_BROWSER', undefined)
     expect(storybookProgressReporters(ciReporters())).toHaveLength(0)
 
-    process.env.VITEST_STORYBOOK_BROWSER = '1'
+    vi.stubEnv('VITEST_STORYBOOK_BROWSER', '1')
     expect(storybookProgressReporters(ciReporters())).toHaveLength(1)
   })
 

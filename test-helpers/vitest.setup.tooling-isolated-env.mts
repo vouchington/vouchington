@@ -1,3 +1,3 @@
-import { envWithoutWorktreeResources } from '../ci/coverage-suite-env.mts'
+import { envWithoutWorktreeResources, replaceEnvInPlace } from '../ci/coverage-suite-env.mts'
 
-process.env = envWithoutWorktreeResources()
+replaceEnvInPlace(envWithoutWorktreeResources())

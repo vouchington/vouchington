@@ -1,3 +1,3 @@
-import { envForDbBackedToolingProject } from '../ci/coverage-suite-env.mts'
+import { envForDbBackedToolingProject, replaceEnvInPlace } from '../ci/coverage-suite-env.mts'
 
-process.env = envForDbBackedToolingProject(process.cwd())
+replaceEnvInPlace(envForDbBackedToolingProject(process.cwd()))

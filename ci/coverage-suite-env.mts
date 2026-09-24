@@ -105,6 +105,22 @@ export function envForDbBackedToolingProject(
   return validatedCurrentWorktreeEnv(cwd, baseEnv, 'tooling test')
 }
 
+// Mutates `targetEnv` (default `process.env`) instead of replacing it: Vitest's `vi.stubEnv` and
+// `vi.unstubAllEnvs` unset variables with `delete` on the original `process.env` object, so a
+// reassigned `process.env` silently leaks stubbed variables between tests. An `undefined` value in
+// `nextEnv` means unset, because the real `process.env` would store it as the string "undefined".
+export function replaceEnvInPlace(
+  nextEnv: NodeJS.ProcessEnv,
+  targetEnv: NodeJS.ProcessEnv = process.env,
+): void {
+  for (const name of Object.keys(targetEnv)) {
+    if (nextEnv[name] === undefined) Reflect.deleteProperty(targetEnv, name)
+  }
+  for (const [name, value] of Object.entries(nextEnv)) {
+    if (value !== undefined) targetEnv[name] = value
+  }
+}
+
 export function loadCurrentWorktreeEnv(cwd: string, baseEnv: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const envFile = join(cwd, '.env')
   if (!existsSync(envFile)) {

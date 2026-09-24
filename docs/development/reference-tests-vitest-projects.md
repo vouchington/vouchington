@@ -94,7 +94,7 @@ flowchart TD
   forks --> freshFork{Needs a fresh module graph per file?}
   freshFork -->|yes: mocks, analytics env, schema, real glide-mq| isoOn[isolate true]
   freshFork -->|no: shared-fork tests already police leaks| isoOff[isolate false]
-  threads --> jsdom{jsdom, process.env replacement, or per-file vi.mock?}
+  threads --> jsdom{jsdom, per-file process.env mutation, or per-file vi.mock?}
   jsdom -->|yes: web, tooling, mock lambdas/CF| isoOn
   jsdom -->|no: non-mock lambdas/CF| isoOff
   start --> vm[vmThreads / vmForks]
@@ -103,6 +103,11 @@ flowchart TD
 
 The per-configuration matrix lives in
 [Vitest 5 Pool and Isolate Matrix](reference-tests-vitest-5-pool-matrix.md).
+
+Tooling setup files apply their environment to `process.env` in place with `replaceEnvInPlace`
+([`ci/coverage-suite-env.mts`](../../ci/coverage-suite-env.mts)). Never reassign `process.env` in a
+setup file: `vi.stubEnv` and `vi.unstubAllEnvs` unset variables with `delete` on the original
+object, so a replacement object silently leaks stubbed variables between tests.
 
 Shared-fork leak rules for `isolate: false` backend files live in
 [Parallel-Safety and Test-Root Hygiene](reference-tests-parallel-safety-and-test-root-hygiene.md#live-glidemq-workers-must-not-leak-across-isolatefalse-files).
