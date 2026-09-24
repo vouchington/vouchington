@@ -15,11 +15,12 @@ run with the existing CI credential policy. Review the PR before placing it in t
 All configured release delays are two days: Dependabot's cooldown and pnpm's `minimumReleaseAge`.
 
 pnpm itself is not pinned. The root `package.json` has no `packageManager` field, so local installs
-run whatever pnpm is installed. CI (`pnpm/action-setup` `version`) and the Docker builds
-(`PNPM_VERSION`) name only a pnpm major. `pnpm/action-setup` runs its bundled release when that
-release is in the major (12.3.4 in v6.1.0), so CI's exact pnpm moves with Dependabot's
-`pnpm/action-setup` updates; Docker builds install the newest release of the major. Moving to the
-next major is a manual edit that `.github/workflows/pnpm-activation.test.mts` keeps consistent. An enforced pin would make pnpm
+run whatever pnpm is installed. CI (`pnpm/action-setup` `version: latest-12`) and the Docker builds
+(`PNPM_VERSION=12`) name only a pnpm major, so new releases in that major reach them without a PR.
+CI self-updates to the newest release that pnpm's default one-day `minimumReleaseAge` admits: the
+action runs `pnpm self-update` outside this workspace, so the two-day setting above does not apply
+to pnpm itself. Docker builds run `npm install -g pnpm@12`, which has no release delay. Moving to
+the next major is a manual edit that `.github/workflows/pnpm-activation.test.mts` keeps consistent. An enforced pin would make pnpm
 12 write `pnpm-lock.yaml` as two YAML documents, which single-document lockfile readers and GitHub's
 dependency graph (dependabot/dependabot-core#15904) do not fully read.
 

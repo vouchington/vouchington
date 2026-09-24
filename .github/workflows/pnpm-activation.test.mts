@@ -13,7 +13,8 @@ const pnpmSetups = stepLists.flatMap(({ owner, steps }) => {
     isPnpmSetup(step) ? [{ owner, step, prior: inlined.slice(0, index) }] : [],
   )
 })
-const ciPnpmMajor = String(pnpmSetups[0]?.step.with?.version)
+const ciPnpmVersion = String(pnpmSetups[0]?.step.with?.version)
+const ciPnpmMajor = /^latest-(\d+)$/.exec(ciPnpmVersion)?.[1]
 
 describe('pnpm activation via pnpm/action-setup', () => {
   it('has pnpm/action-setup call sites to validate', () => {
@@ -27,17 +28,19 @@ describe('pnpm activation via pnpm/action-setup', () => {
     expect(offenders.map(setup => setup.owner)).toEqual([])
   })
 
-  it('passes only a pnpm major version, the same one at every call site', () => {
-    // A major accepts any release in that line without a pin, `standalone` swaps in a bundled
-    // Node, and `run_install` bypasses the setup-node-pnpm install step.
+  it('passes only latest-<major>, the same one at every call site', () => {
+    // `latest-<major>` self-updates to the newest release in that line that pnpm's
+    // minimumReleaseAge admits. A bare major keeps the action's bundled release (12.3.4 in v6.1.0,
+    // whose `pnpm dlx` fails on ignored build scripts), `standalone` swaps in a bundled Node, and
+    // `run_install` bypasses the setup-node-pnpm install step.
     const offenders = pnpmSetups.filter(
       ({ step }) =>
         Object.keys(step.with ?? {}).join() !== 'version' ||
-        !/^\d+$/.test(String(step.with?.version)),
+        !/^latest-\d+$/.test(String(step.with?.version)),
     )
     expect(offenders.map(setup => setup.owner)).toEqual([])
     expect(new Set(pnpmSetups.map(({ step }) => String(step.with?.version)))).toEqual(
-      new Set([ciPnpmMajor]),
+      new Set([ciPnpmVersion]),
     )
   })
 
