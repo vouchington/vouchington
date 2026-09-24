@@ -74,6 +74,11 @@ describe('deriveVitestBlobCandidateNames', () => {
 })
 
 describe('parseVitestReportExpectationsContext', () => {
+  // The exact-key set, suite name pattern, minimumAttempt/attempt bounds, sort order, and
+  // uniqueness are already strictly validated immediately upstream (the
+  // `merge-vitest-report-expectations` jq step in ci-tests-processing.yml) and again downstream
+  // (vouchington-tooling's `parseContext` inside `prepare-vitest-reports`). This module only
+  // re-checks what it needs to safely derive names from the value.
   const valid = {
     version: VITEST_REPORT_EXPECTATIONS_VERSION,
     attempt: 2,
@@ -81,90 +86,63 @@ describe('parseVitestReportExpectationsContext', () => {
   }
 
   it('accepts a well-formed context', () => {
-    expect(parseVitestReportExpectationsContext(valid, 2)).toEqual(valid)
+    expect(parseVitestReportExpectationsContext(valid)).toEqual(valid)
+  })
+
+  it('tolerates values the upstream/downstream validators reject but derivation does not need', () => {
+    // Extra keys, an out-of-range minimumAttempt, and an unsorted/duplicated suite list are all
+    // rejected upstream or downstream but would not make derivation itself misbehave here.
+    expect(() =>
+      parseVitestReportExpectationsContext({
+        ...valid,
+        extra: true,
+        suites: [
+          { suite: 'suite-b', minimumAttempt: 1 },
+          { suite: 'suite-a', minimumAttempt: 1 },
+          { suite: 'suite-a', minimumAttempt: 5 },
+        ],
+      }),
+    ).not.toThrow()
   })
 
   it.each([
-    ['non-object value', 'not-an-object', /expected exactly \{version, attempt, suites\}/],
-    ['array value', [], /expected exactly \{version, attempt, suites\}/],
-    [
-      'unexpected extra key',
-      { ...valid, extra: true },
-      /expected exactly \{version, attempt, suites\}/,
-    ],
+    ['non-object value', 'not-an-object', /expected an object/],
+    ['array value', [], /expected an object/],
     [
       'wrong version',
       { ...valid, version: 'vitest-report-expectations:v1' },
       /Unsupported Vitest report expectations version/,
     ],
+    ['attempt given as a string', { ...valid, attempt: '2' }, /attempt must be a number/],
     [
-      'attempt mismatched with GITHUB_RUN_ATTEMPT',
-      { ...valid, attempt: 3 },
-      /does not match GITHUB_RUN_ATTEMPT/,
+      'missing attempt',
+      { version: valid.version, suites: valid.suites },
+      /attempt must be a number/,
     ],
-    ['attempt given as a string', { ...valid, attempt: '2' }, /does not match GITHUB_RUN_ATTEMPT/],
     ['non-array suites', { ...valid, suites: 'nope' }, /suites must be an array/],
     [
-      'suite entry missing a required key',
+      'suite entry missing minimumAttempt',
       { ...valid, suites: [{ suite: 'suite-a' }] },
-      /expected exactly \{suite, minimumAttempt\}/,
+      /expected \{suite: string, minimumAttempt: number\}/,
     ],
     [
-      'suite name failing VITEST_SUITE_PATTERN',
-      { ...valid, suites: [{ suite: 'Suite_A', minimumAttempt: 1 }] },
-      /invalid suite name/,
-    ],
-    [
-      'minimumAttempt above the current attempt',
-      { ...valid, suites: [{ suite: 'suite-a', minimumAttempt: 3 }] },
-      /invalid minimumAttempt/,
-    ],
-    [
-      'minimumAttempt below 1',
-      { ...valid, suites: [{ suite: 'suite-a', minimumAttempt: 0 }] },
-      /invalid minimumAttempt/,
+      'suite entry missing suite',
+      { ...valid, suites: [{ minimumAttempt: 1 }] },
+      /expected \{suite: string, minimumAttempt: number\}/,
     ],
     [
       'minimumAttempt given as a string',
       { ...valid, suites: [{ suite: 'suite-a', minimumAttempt: '1' }] },
-      /invalid minimumAttempt/,
-    ],
-    [
-      'minimumAttempt given as a non-integer number',
-      { ...valid, suites: [{ suite: 'suite-a', minimumAttempt: 1.5 }] },
-      /invalid minimumAttempt/,
-    ],
-    [
-      'duplicate suite names',
-      {
-        ...valid,
-        suites: [
-          { suite: 'suite-a', minimumAttempt: 1 },
-          { suite: 'suite-a', minimumAttempt: 2 },
-        ],
-      },
-      /duplicate suite names/,
-    ],
-    [
-      'unsorted suite names',
-      {
-        ...valid,
-        suites: [
-          { suite: 'suite-b', minimumAttempt: 1 },
-          { suite: 'suite-a', minimumAttempt: 1 },
-        ],
-      },
-      /suites must be sorted/,
+      /expected \{suite: string, minimumAttempt: number\}/,
     ],
   ])('rejects %s', (_name, malformed, message) => {
-    expect(() => parseVitestReportExpectationsContext(malformed, 2)).toThrowError(message)
+    expect(() => parseVitestReportExpectationsContext(malformed)).toThrowError(message)
   })
 })
 
 describe('runVitestBlobCandidateNamesCli', () => {
-  it('derives candidates from VITEST_REPORT_EXPECTATIONS and GITHUB_RUN_ATTEMPT', () => {
+  it('derives candidates from VITEST_REPORT_EXPECTATIONS alone', () => {
     const names = runVitestBlobCandidateNamesCli([], {
-      GITHUB_RUN_ATTEMPT: '2',
       VITEST_REPORT_EXPECTATIONS: JSON.stringify({
         version: VITEST_REPORT_EXPECTATIONS_VERSION,
         attempt: 2,
@@ -180,32 +158,14 @@ describe('runVitestBlobCandidateNamesCli', () => {
 
   it('rejects malformed JSON', () => {
     expect(() =>
-      runVitestBlobCandidateNamesCli([], {
-        GITHUB_RUN_ATTEMPT: '1',
-        VITEST_REPORT_EXPECTATIONS: '{not json',
-      }),
+      runVitestBlobCandidateNamesCli([], { VITEST_REPORT_EXPECTATIONS: '{not json' }),
     ).toThrowError(/not valid JSON/)
   })
 
-  it('requires GITHUB_RUN_ATTEMPT', () => {
-    expect(() =>
-      runVitestBlobCandidateNamesCli([], { VITEST_REPORT_EXPECTATIONS: '{}' }),
-    ).toThrowError(/GITHUB_RUN_ATTEMPT is required/)
-  })
-
-  it.each([
-    ['zero', '0'],
-    ['leading zero', '01'],
-    ['negative', '-1'],
-    ['non-numeric', 'abc'],
-    ['fractional', '1.5'],
-  ])('rejects a %s GITHUB_RUN_ATTEMPT', (_name, rawAttempt) => {
-    expect(() =>
-      runVitestBlobCandidateNamesCli([], {
-        GITHUB_RUN_ATTEMPT: rawAttempt,
-        VITEST_REPORT_EXPECTATIONS: '{}',
-      }),
-    ).toThrowError(/GITHUB_RUN_ATTEMPT must be a positive integer/)
+  it('requires VITEST_REPORT_EXPECTATIONS', () => {
+    expect(() => runVitestBlobCandidateNamesCli([], {})).toThrowError(
+      /VITEST_REPORT_EXPECTATIONS is required/,
+    )
   })
 })
 
@@ -213,7 +173,6 @@ describe('vitest-blob-candidate-names.mts process contract', () => {
   it('exits 0 and prints one candidate name per line', () => {
     const result = runCli({
       PATH: process.env.PATH,
-      GITHUB_RUN_ATTEMPT: '1',
       VITEST_REPORT_EXPECTATIONS: JSON.stringify({
         version: VITEST_REPORT_EXPECTATIONS_VERSION,
         attempt: 1,
@@ -230,7 +189,6 @@ describe('vitest-blob-candidate-names.mts process contract', () => {
   it('exits 0 and prints nothing for zero suites', () => {
     const result = runCli({
       PATH: process.env.PATH,
-      GITHUB_RUN_ATTEMPT: '1',
       VITEST_REPORT_EXPECTATIONS: JSON.stringify({
         version: VITEST_REPORT_EXPECTATIONS_VERSION,
         attempt: 1,
@@ -245,6 +203,6 @@ describe('vitest-blob-candidate-names.mts process contract', () => {
     const result = runCli({ PATH: process.env.PATH })
     expect(result.status).toBe(2)
     expect(result.stdout).toBe('')
-    expect(result.stderr).toContain('GITHUB_RUN_ATTEMPT is required')
+    expect(result.stderr).toContain('VITEST_REPORT_EXPECTATIONS is required')
   })
 })
