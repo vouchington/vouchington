@@ -50,7 +50,11 @@ set -a
 source "$REPO_ROOT/.env"
 set +a
 
-SESSION="voucha-$(git_worktree_canonical_path_hash "$REPO_ROOT")"
+if ! SESSION_HASH="$(git_worktree_canonical_path_hash "$REPO_ROOT")"; then
+    echo "Error: could not derive the tmux session name for $REPO_ROOT (git_worktree_canonical_path_hash failed)." >&2
+    exit 1
+fi
+SESSION="voucha-$SESSION_HASH"
 MANAGED_WINDOWS=(nextjs backend worker cloudflare lambdas)
 
 # Restore Valkey before reusing a running session, including after Docker restarts.
