@@ -3,17 +3,22 @@ import { extractWrapperPayloads } from './github-wrapper-payloads.mts'
 import { extractShellCommandArguments } from './shell-commands.mts'
 import { extractShellCommandSubstitutions } from './shell-command-substitutions.mts'
 import { stripNonShellHeredocBodies } from './shell-heredoc.mts'
-import { stripQuotedHeredocBodies } from './shell-heredoc-parser.mts'
 
+/**
+ * The command text and every script nested in it that the GitHub policies read. A heredoc body is
+ * data unless a shell may read it as its script, but an unquoted-delimiter body still runs its
+ * command substitutions, so each candidate is read with its bodies blanked.
+ */
 export function commandsToInspectForGitHubPolicy(command: string): string[] {
-  const unfolded = command.replace(/\\\n/g, ' ')
-  const { shellBodies } = stripNonShellHeredocBodies(unfolded)
-  const normalizedCommand = stripQuotedHeredocBodies(unfolded)
-  const commands = [normalizedCommand, ...shellBodies]
+  const commands = [command.replace(/\\\n/g, ' ')]
   const inspected = new Set<string>()
 
   for (let index = 0; index < commands.length; index += 1) {
-    const candidate = commands[index]
+    const {
+      bodySubstitutions,
+      shellBodies,
+      textWithoutBodies: candidate,
+    } = stripNonShellHeredocBodies(commands[index])
     if (inspected.has(candidate)) {
       continue
     }
@@ -21,7 +26,8 @@ export function commandsToInspectForGitHubPolicy(command: string): string[] {
     commands.push(
       ...extractShellCommandArguments(candidate).map(({ command: shellCommand }) => shellCommand),
       ...extractShellCommandSubstitutions(candidate),
-      ...stripNonShellHeredocBodies(candidate).shellBodies,
+      ...shellBodies,
+      ...bodySubstitutions,
       ...extractWrapperPayloads(candidate),
     )
   }

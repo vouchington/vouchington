@@ -42,6 +42,19 @@ const COMPOUND_OPENERS = new Set(['{', 'if', 'until', 'while'])
 export function parseCommandPrefix(prefixWords: readonly string[]): CommandPrefix | null {
   const words = withoutRedirections(prefixWords)
   if (words === null) return null
+  const read = readCommandPrefix(words)
+  return read?.commandIndex === words.length ? read.prefix : null
+}
+
+/**
+ * Reads the wrapper chain that opens a simple command's words (redirections already removed) and
+ * finds the command word it runs. `commandIndex` is `words.length` when the chain consumes every
+ * word, as `env -S 'bash -s'` does. Returns null when a wrapper's options are malformed or only
+ * describe the command (`command -v gh`).
+ */
+export function readCommandPrefix(
+  words: readonly string[],
+): { commandIndex: number; prefix: CommandPrefix } | null {
   const prefix: CommandPrefix = {
     chdir: [],
     env: {},
@@ -74,7 +87,7 @@ export function parseCommandPrefix(prefixWords: readonly string[]): CommandPrefi
     }
     const name = word.slice(word.lastIndexOf('/') + 1)
     const wrapper = WRAPPERS.get(name)
-    if (wrapper === undefined) return null
+    if (wrapper === undefined) return { commandIndex: cursor, prefix }
     const parsed = parseOptions(words, cursor + 1, wrapper.grammar)
     if (parsed === null || parsed.options.some(option => wrapper.describeOnly?.has(option.name))) {
       return null
@@ -87,13 +100,13 @@ export function parseCommandPrefix(prefixWords: readonly string[]): CommandPrefi
     controlAllowed = name === 'time'
   }
 
-  return prefix
+  return { commandIndex: words.length, prefix }
 }
 
 // The shell applies redirections itself and drops each operator and its target from the argv the
 // command (or wrapper) receives, wherever they appear: `2>/dev/null env -C /tmp gh` runs env with
 // `-C /tmp gh`. A trailing operator's target is the command word, so that word is not a command.
-function withoutRedirections(words: readonly string[]): string[] | null {
+export function withoutRedirections(words: readonly string[]): string[] | null {
   const argv: string[] = []
   for (let index = 0; index < words.length; index += 1) {
     if (!isShellRedirectionOperatorToken(words[index])) {

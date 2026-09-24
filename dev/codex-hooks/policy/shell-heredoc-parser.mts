@@ -45,6 +45,11 @@ export function heredocSpecsFromLine(line: string): HeredocSpec[] {
     if (char !== '<' || line[index + 1] !== '<') {
       continue
     }
+    // `<<<` opens a here-string, whose word ends on this line: no body follows.
+    if (line[index + 2] === '<') {
+      index += 2
+      continue
+    }
 
     const stripLeadingTabs = line[index + 2] === '-'
     let cursor = index + (stripLeadingTabs ? 3 : 2)
@@ -123,31 +128,4 @@ function readHeredocDelimiter(
   }
 
   return { value, endIndex: cursor - 1, expandsSubstitutions: !quoted }
-}
-
-export function stripQuotedHeredocBodies(command: string): string {
-  const lines = command.split('\n')
-  const result: string[] = []
-
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index]
-    result.push(line)
-
-    for (const spec of heredocSpecsFromLine(line)) {
-      index += 1
-      while (index < lines.length && heredocLineDelimiter(lines[index], spec) !== spec.delimiter) {
-        result.push(spec.expandsSubstitutions ? lines[index] : '')
-        index += 1
-      }
-      if (index < lines.length) {
-        result.push(lines[index])
-      }
-    }
-  }
-
-  return result.join('\n')
-}
-
-function heredocLineDelimiter(line: string, spec: HeredocSpec): string {
-  return spec.stripLeadingTabs ? line.replace(/^\t+/, '') : line
 }

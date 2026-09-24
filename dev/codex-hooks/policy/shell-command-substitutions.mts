@@ -1,8 +1,12 @@
 import { stripUnquotedShellComments } from './shell-tokenizer.mts'
-import { stripQuotedHeredocBodies } from './shell-heredoc-parser.mts'
 
-export function extractShellCommandSubstitutions(command: string): string[] {
-  const source = stripUnquotedShellComments(stripQuotedHeredocBodies(command))
+/**
+ * The command substitutions a command's text runs. Heredoc bodies follow other quoting rules, so
+ * the caller blanks them first and reads their substitutions from the heredoc scan
+ * (shell-heredoc.mts).
+ */
+export function extractShellCommandSubstitutions(textWithoutBodies: string): string[] {
+  const source = stripUnquotedShellComments(textWithoutBodies)
   const substitutions: string[] = []
   let quote: "'" | '"' | null = null
   let escaping = false
@@ -48,7 +52,7 @@ export function extractShellCommandSubstitutions(command: string): string[] {
   return substitutions
 }
 
-function readParenthesizedSubstitution(
+export function readParenthesizedSubstitution(
   command: string,
   startIndex: number,
 ): { command: string; endIndex: number } | null {
@@ -86,7 +90,7 @@ function readParenthesizedSubstitution(
   return null
 }
 
-function readBacktickSubstitution(
+export function readBacktickSubstitution(
   command: string,
   startIndex: number,
 ): { command: string; endIndex: number } | null {

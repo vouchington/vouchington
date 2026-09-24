@@ -35,12 +35,17 @@ function readShellOption(word: string): ShellOption | 'end' | 'operand' {
   return 'operand'
 }
 
+/** Whether a command word runs bash, sh, or zsh, by any path. */
+export function isShellWord(word: string): boolean {
+  return SHELLS.has(word.slice(word.lastIndexOf('/') + 1))
+}
+
 /** The index of the script a `bash` / `sh` / `zsh -c` word at `index` runs, if it runs one. */
 export function shellScriptOperandIndex(
   words: readonly string[],
   index: number,
 ): number | undefined {
-  if (!SHELLS.has(words[index].slice(words[index].lastIndexOf('/') + 1))) return undefined
+  if (!isShellWord(words[index])) return undefined
   let runsScript = false
   let cursor = index + 1
   while (cursor < words.length) {

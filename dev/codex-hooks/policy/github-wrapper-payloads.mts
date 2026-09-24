@@ -10,6 +10,7 @@ const GH_LOOKUP_SUBSTITUTION = new RegExp(
   String.raw`(")?(?:\$\(\s*${GH_LOOKUP}\s*\)|\x60\s*${GH_LOOKUP}\s*\x60)\1`,
   'g',
 )
+const PAYLOAD_COMMANDS = new Set(['alias', 'env', 'eval', 'gh'])
 
 /**
  * Commands a wrapper or definition runs that the token-level policy scan cannot see as words:
@@ -28,11 +29,12 @@ export function extractWrapperPayloads(command: string): string[] {
   const words = tokenizeShellWordsDetailed(command, { splitRedirections: true })
   const values = words.map(word => word.value)
   for (let index = 0; index < values.length; index += 1) {
-    if (!isCommandPositionInvocation(values, index)) continue
+    const name = values[index].slice(values[index].lastIndexOf('/') + 1)
+    // Check the name first: the command-position check rescans the segment up to this word.
+    if (!PAYLOAD_COMMANDS.has(name) || !isCommandPositionInvocation(values, index)) continue
     let end = index + 1
     while (end < values.length && !isGhCommandSeparator(values[end])) end += 1
     const args = words.slice(index + 1, end)
-    const name = values[index].slice(values[index].lastIndexOf('/') + 1)
     if (name === 'eval') payloads.push(evalPayload(args))
     if (name === 'alias') payloads.push(...aliasValues(args))
     if (name === 'env') payloads.push(...envSplitStringPayloads(args))

@@ -134,6 +134,8 @@ describe('Codex hook gh policies behind command wrappers', () => {
     "echo merge | xargs -I% bash -e -lc 'gh pr % 1'",
     "echo merge | xargs -I{} bash -euo pipefail -c 'gh pr {} 1'",
     "echo merge | xargs -I{} bash +O extglob --rcfile x --norc -c -- 'gh pr {} 1'",
+    'echo checkout | xargs -I{} gh stack {} 7',
+    "echo pr | xargs -I{} sh -c 'gh {} merge 1'",
   ])('fails closed when xargs supplies the gh subcommand: %s', command => {
     expect(reasonFor(command)).toContain(XARGS_BLOCK)
   })
@@ -215,6 +217,11 @@ describe('Codex hook gh policies behind command wrappers', () => {
     'gh api "repos/$REPO/pulls/1"',
     "echo 1 | xargs -I{} sh -c 'gh pr view {}'",
     "echo 1 | xargs -I{} sh -c 'echo {}'",
+    // Only pr, issue, and stack policies key on the action, so xargs may fill in other actions.
+    "gh pr list --json number -q '.[].number' | xargs -I{} gh api repos/o/r/pulls/{}/reviews",
+    'echo repos/o/r/pulls | xargs -n1 gh api',
+    "gh pr list --json number -q '.[].number' | xargs -I{} sh -c 'gh api repos/o/r/pulls/{}'",
+    'echo 1 | xargs -I{} gh browse {}',
     'echo 1 | xargs -I{} sh ./script.sh {}',
     'echo 1 | xargs -I{} sh -c',
     // Without `-c` the quoted word is an argument, and `--rcfile` consumes the word after it.

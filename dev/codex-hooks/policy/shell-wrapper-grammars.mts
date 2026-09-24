@@ -10,7 +10,7 @@ export type Wrapper = {
 
 const NO_OPTIONS: OptionGrammar = {}
 
-/** GNU and BSD env: every option either implementation gives an argument takes one here. */
+/** GNU and macOS env: every option either implementation gives an argument takes one here. */
 export const ENV_GRAMMAR: OptionGrammar = {
   aliases: { C: 'chdir', S: 'split-string', a: 'argv0', i: 'ignore-environment', u: 'unset' },
   loneDash: 'ignore-environment',
@@ -62,7 +62,7 @@ const XARGS_GRAMMAR: OptionGrammar = {
 /**
  * Programs and builtins that run their operand as a command, so the word after them (and after
  * their own options and operands) is still in command position. Any other command's later words
- * are arguments. Grammars are the GNU and BSD unions so no argument is mistaken for the command.
+ * are arguments. Grammars are the GNU and macOS unions so no argument is mistaken for the command.
  */
 export const WRAPPERS: ReadonlyMap<string, Wrapper> = new Map<string, Wrapper>([
   // zsh precommand modifiers: `- gh`, `nocorrect gh`, `noglob gh`.

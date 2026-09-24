@@ -1,19 +1,27 @@
-import { parseCommandPrefix } from './shell-command-wrappers.mts'
+import {
+  readBacktickSubstitution,
+  readParenthesizedSubstitution,
+} from './shell-command-substitutions.mts'
 import { heredocSpecsFromLine, type HeredocSpec } from './shell-heredoc-parser.mts'
 import { redirectionOperatorOf } from './shell-redirections.mts'
-import { commandSegmentStart, nextShellCommandSeparatorIndex } from './shell-token-utils.mts'
+import { shellReadsStdinAt } from './shell-stdin-script.mts'
 import { tokenizeShellWords } from './shell-tokenizer.mts'
 
-const SHELL_EXECUTABLES = new Set(['bash', 'sh', 'zsh'])
+const HEREDOC_OPERATORS = new Set(['<<', '<<-'])
 
 type HeredocScan = {
+  /** The command substitutions heredoc bodies with an unquoted delimiter run. */
+  bodySubstitutions: string[]
+  /** Heredoc bodies and here-strings a shell may read as its script. */
   shellBodies: string[]
+  /** The command with every heredoc body line blanked, so no body line reads as a command. */
   textWithoutBodies: string
 }
 
 export function stripNonShellHeredocBodies(command: string): HeredocScan {
   const lines = command.split('\n')
   const textLines: string[] = []
+  const bodySubstitutions: string[] = []
   const shellBodies: string[] = []
 
   for (let index = 0; index < lines.length; index += 1) {
@@ -24,23 +32,33 @@ export function stripNonShellHeredocBodies(command: string): HeredocScan {
       continue
     }
 
-    const isShellScriptHeredoc = lineHasDirectShellHeredoc(line)
+    // The hook does not pair each operator with its body, so a line with a shell-read heredoc
+    // inspects every body on it.
+    const isShellScriptHeredoc = lineFeedsShellHeredoc(line)
     for (const spec of specs) {
       const bodyLines: string[] = []
       index += 1
       while (index < lines.length && heredocLineDelimiter(lines[index], spec) !== spec.delimiter) {
         bodyLines.push(lines[index])
+        textLines.push('')
         index += 1
+      }
+      if (index < lines.length) {
+        textLines.push(lines[index])
       }
 
       if (isShellScriptHeredoc) {
         shellBodies.push(bodyLines.join('\n'))
+      }
+      if (spec.expandsSubstitutions) {
+        bodySubstitutions.push(...heredocBodySubstitutions(bodyLines.join('\n')))
       }
     }
   }
 
   const textWithoutBodies = textLines.join('\n')
   return {
+    bodySubstitutions,
     shellBodies: [...shellBodies, ...shellHereStrings(textWithoutBodies)],
     textWithoutBodies,
   }
@@ -50,64 +68,50 @@ export function stripNonShellHeredocBodies(command: string): HeredocScan {
 // would a heredoc body.
 function shellHereStrings(command: string): string[] {
   const tokens = tokenizeShellWords(command, { splitRedirections: true })
-  return tokens.flatMap((token, index) => {
-    if (redirectionOperatorOf(token) !== '<<<' || index + 1 >= tokens.length) return []
-    const segmentEnd = nextShellCommandSeparatorIndex(tokens, index)
-    const readsScript =
-      tokensInvokeShell(tokens.slice(commandSegmentStart(tokens, index), segmentEnd)) ||
-      (tokens[segmentEnd] === '|' &&
-        tokensInvokeShell(
-          tokens.slice(segmentEnd + 1, nextShellCommandSeparatorIndex(tokens, segmentEnd + 1)),
-        ))
-    return readsScript ? [tokens[index + 1]] : []
-  })
+  return tokens.flatMap((token, index) =>
+    redirectionOperatorOf(token) === '<<<' &&
+    index + 1 < tokens.length &&
+    shellReadsStdinAt(tokens, index)
+      ? [tokens[index + 1]]
+      : [],
+  )
+}
+
+// Quotes and `#` are literal text in a heredoc body; a backslash escapes only `$`, a backtick,
+// or another backslash.
+function heredocBodySubstitutions(body: string): string[] {
+  const substitutions: string[] = []
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index]
+    if (char === '\\') {
+      index += 1
+      continue
+    }
+    const substitution =
+      char === '$' && body[index + 1] === '('
+        ? readParenthesizedSubstitution(body, index + 2)
+        : char === '`'
+          ? readBacktickSubstitution(body, index + 1)
+          : null
+    if (substitution !== null) {
+      substitutions.push(substitution.command)
+      index = substitution.endIndex
+    }
+  }
+
+  return substitutions
 }
 
 function heredocLineDelimiter(line: string, spec: HeredocSpec): string {
   return spec.stripLeadingTabs ? line.replace(/^\t+/, '') : line
 }
 
-function lineHasDirectShellHeredoc(line: string): boolean {
-  const tokens = tokenizeShellWords(line)
-  const heredocIndex = tokens.findIndex(token => token.startsWith('<<'))
-  if (heredocIndex <= 0) {
-    return false
-  }
-
-  const segmentStart = commandSegmentStart(tokens, heredocIndex)
-  const commandTokens = tokens.slice(segmentStart, heredocIndex)
-  if (tokensInvokeShell(commandTokens)) {
-    return true
-  }
-
-  const pipeIndex = tokens.indexOf('|', heredocValueEndIndex(tokens, heredocIndex) + 1)
-  if (pipeIndex < 0) {
-    return false
-  }
-
-  const segmentEnd = nextShellCommandSeparatorIndex(tokens, pipeIndex + 1)
-  return tokensInvokeShell(tokens.slice(pipeIndex + 1, segmentEnd))
-}
-
-// A shell reads the heredoc as its script when it is the command word after a recognized wrapper
-// chain (`timeout 5 bash`, `env -C /tmp sh`) and no `-c` string replaces stdin as the script.
-function tokensInvokeShell(tokens: string[]): boolean {
-  const executableIndex = tokens.findIndex(
+// The tokenizer keeps a heredoc operator inside a double-quoted `"$(… <<'EOF'` in the quoted word,
+// so that body stays data (`git commit -m "$(cat <<'EOF'`) even when a shell reads it.
+function lineFeedsShellHeredoc(line: string): boolean {
+  const tokens = tokenizeShellWords(line, { splitRedirections: true })
+  return tokens.some(
     (token, index) =>
-      SHELL_EXECUTABLES.has(token.slice(token.lastIndexOf('/') + 1)) &&
-      parseCommandPrefix(tokens.slice(0, index)) !== null,
+      HEREDOC_OPERATORS.has(redirectionOperatorOf(token)) && shellReadsStdinAt(tokens, index),
   )
-  return (
-    executableIndex >= 0 &&
-    !tokens.slice(executableIndex + 1).some(token => /^-[A-Za-z]*c[A-Za-z]*$/.test(token))
-  )
-}
-
-function heredocValueEndIndex(tokens: string[], heredocIndex: number): number {
-  const token = tokens[heredocIndex]
-  if (token === '<<' || token === '<<-') {
-    return Math.min(heredocIndex + 1, tokens.length - 1)
-  }
-
-  return heredocIndex
 }
