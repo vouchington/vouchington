@@ -11,7 +11,6 @@ describe('AppSidebar Admin section visibility', () => {
   it('hides admin sections for unauthenticated users', () => {
     renderSidebar()
     expect(screen.queryByText('CMS')).toBeNull()
-    expect(screen.queryByText('CRM')).toBeNull()
     expect(screen.queryByText('Engineering')).toBeNull()
     expect(screen.queryByText('Design')).toBeNull()
   })
@@ -19,7 +18,6 @@ describe('AppSidebar Admin section visibility', () => {
   it('hides admin sections for authenticated non-admin users', () => {
     renderSidebar({ id: 'u1', roles: ['user'] } as User)
     expect(screen.queryByText('CMS')).toBeNull()
-    expect(screen.queryByText('CRM')).toBeNull()
     expect(screen.queryByText('Engineering')).toBeNull()
     expect(screen.queryByText('Design')).toBeNull()
   })
@@ -31,10 +29,10 @@ describe('AppSidebar Admin section visibility', () => {
     expect(screen.queryByText('Design')).toBeNull()
   })
 
-  it('shows CRM intent for administrators on CRM routes', () => {
-    setMockPathname('/crm')
+  it('shows membership administration under Settings for administrators', () => {
+    setMockPathname('/memberships/grants')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
-    expect(screen.getAllByText('CRM').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Admin').length).toBeGreaterThan(0)
     expect(screen.queryByText('Design')).toBeNull()
   })
 
@@ -79,16 +77,13 @@ describe('AppSidebar Admin section visibility', () => {
     )
   })
 
-  it('shows CRM admin links for administrators', () => {
-    setMockPathname('/crm')
+  it('shows membership administration for administrators', () => {
+    setMockPathname('/memberships/grants')
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
     expect(screen.getByText('Memberships')).toBeDefined()
-    expect(screen.getAllByText('Support').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByRole('link', { name: /Memberships/i }).getAttribute('href')).toBe(
       '/memberships/grants',
     )
-    const supportLinks = screen.getAllByRole('link', { name: /^Support$/i })
-    expect(supportLinks.some(l => l.getAttribute('href') === '/support')).toBe(true)
   })
 
   it('shows Engineering admin links for administrators', () => {

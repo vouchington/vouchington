@@ -157,31 +157,7 @@ test.describe('Admin support contacts — per-contact navigation', () => {
   })
 })
 
-// ── Section F: CRM contact detail ──────────────────────────────────────────
-
-test.describe('Admin CRM — per-contact navigation', () => {
-  test.use({ storageState: AUTH_STATE })
-
-  test.beforeEach(async ({ page }) => {
-    await page.setViewportSize(DESKTOP_VIEWPORT)
-  })
-
-  test('first contact row link navigates to /crm/:id', async ({ page }) => {
-    const contactId = '019d0000-0000-7000-a000-000000000001'
-    await navigateTo(page, '/crm?q=-pw%40voucha.ai')
-    await expect(
-      page.getByTestId('admin-page-header-title').filter({ hasText: 'CRM Contacts' }),
-    ).toBeVisible()
-
-    const contactLink = page.getByTestId(`crm-contact-link-${contactId}`)
-    await expect(contactLink).toBeVisible()
-    await contactLink.click()
-    await expect(page).toHaveURL(/\/crm\/[^/]+$/)
-    await expect(page.getByTestId('crm-contact-page-heading')).toContainText('Jane Travel Creator')
-  })
-})
-
-// ── Section G: Topic Aliases → per-topic aliases ────────────────────────────
+// ── Section F: Topic Aliases → per-topic aliases ────────────────────────────
 
 test.describe('Admin topic aliases search — Edit Aliases navigation', () => {
   test.use({ storageState: AUTH_STATE })

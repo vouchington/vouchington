@@ -16,17 +16,17 @@ export const ListPageShell: Story = {
     <main className='min-h-screen bg-background p-6 text-foreground'>
       <div className='mx-auto max-w-4xl space-y-4'>
         <AdminPageHeader
-          title='CRM Contacts'
-          description='Manage influencer outreach and contact relationships'
+          title='Admin records'
+          description='Review staff-managed records'
         >
           <Button
             size='touchSm'
             variant='outline'
           >
-            Import CSV
+            Refresh
           </Button>
         </AdminPageHeader>
-        <AdminTableShell aria-label='CRM Contacts'>
+        <AdminTableShell aria-label='Admin records'>
           <table className='w-full text-sm'>
             <thead className='border-b bg-muted/50'>
               <tr>
@@ -43,8 +43,8 @@ export const ListPageShell: Story = {
           </table>
         </AdminTableShell>
         <AdminPagination
-          previousHref='/crm'
-          nextHref='/crm?after=cursor'
+          previousHref='/urls'
+          nextHref='/urls?after=cursor'
         />
       </div>
     </main>

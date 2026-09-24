@@ -241,16 +241,6 @@ test.describe('Admin page shortcuts', () => {
     })
   })
 
-  test('admin user sees CRM shortcut when searching "crm"', async ({ page }) => {
-    await navigateTo(page, '/')
-    await page.keyboard.press('ControlOrMeta+k')
-
-    const input = page.getByTestId('search-input')
-    await input.pressSequentially('crm')
-
-    await expect(page.getByTestId('search-page-shortcut-crm')).toBeVisible({ timeout: 5000 })
-  })
-
   test('unauthenticated user does not see admin shortcuts', async ({ page }) => {
     // Logged out user should not see admin shortcuts
     await page.context().clearCookies()

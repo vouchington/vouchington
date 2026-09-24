@@ -118,9 +118,8 @@ const RULES: readonly [string, NavIntentId | null][] = [
   ['/disputes', 'moderation'],
   ['/users', 'friends'],
   ['/user/', 'friends'],
-  ['/crm', 'crm'],
-  ['/memberships', 'crm'],
-  ['/support', 'crm'],
+  ['/memberships', 'settings'],
+  ['/support', 'support'],
   ['/growth', 'growth'],
 ]
 

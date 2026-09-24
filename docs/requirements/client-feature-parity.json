@@ -705,42 +705,6 @@
       }
     },
     {
-      "id": "crm",
-      "title": "CRM",
-      "domain": "Staff",
-      "intents": ["crm"],
-      "requirements": ["docs/requirements/admin/CRM.md"],
-      "matrixRows": [
-        {
-          "table": "B",
-          "surface": "crm (staff)"
-        }
-      ],
-      "clients": {
-        "web": {
-          "status": "full",
-          "uiEvidence": ["web/app/(crm)/crm/page.tsx"],
-          "behaviorTests": []
-        },
-        "swift": {
-          "status": "full",
-          "uiEvidence": [
-            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/CRMContactsSurface.swift"
-          ],
-          "behaviorTests": [
-            "swift-clients/ui/Tests/VouchaUITests/CRMContactsSurfaceInteractionTests.swift"
-          ]
-        },
-        "dotnet": {
-          "status": "full",
-          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/CrmContactsPage.cs"],
-          "behaviorTests": [
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/Crm/CrmViewModelTests.cs"
-          ]
-        }
-      }
-    },
-    {
       "id": "growth-dashboard",
       "title": "Growth dashboard",
       "domain": "Staff",
@@ -2085,8 +2049,7 @@
             "dotnet-clients/src/Voucha.Client.App/Pages/StaffSupportContactsPage.cs"
           ],
           "behaviorTests": [
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/StaffSupportEndpointTests.cs",
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/CrmRouteDispatchTests.cs"
+            "dotnet-clients/tests/Voucha.Client.Core.Tests/Api/StaffSupportEndpointTests.cs"
           ]
         }
       }

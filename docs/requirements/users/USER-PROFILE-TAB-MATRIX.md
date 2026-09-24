@@ -4,7 +4,7 @@ Public profile page at `/user/:idOrUsername` — shows only what the person has 
 
 ## Intent
 
-Profile pages live in the **Users & Friends** intent (`friends`), not the CRM intent.
+Profile pages live in the **Users & Friends** intent (`friends`).
 (`web/lib/navigation/intents/resolver.ts`: `['/user/', 'friends']`)
 
 ## Tab × Sub-view × Route × Data-source × Access × Visibility

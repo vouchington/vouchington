@@ -16,7 +16,6 @@ export function AdminPagination({ nextHref, previousHref }: AdminPaginationProps
   return (
     <nav
       aria-label={t('extracted.admin.adminPagination.adminPagination_47ae3310')}
-      data-pw='admin-pagination'
       className='flex flex-wrap gap-2'
     >
       {previousHref ? (

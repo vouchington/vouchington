@@ -273,21 +273,17 @@ after rebasing:
 
 ### Consumer matrix
 
-| Consumer                       | Test(s)                                                                                             | Command                                                                                                                | Notes                                                                                                                                                                         |
-| ------------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| UI catalogs (source of truth)  | `index.test.mts`, `parity.test.mts`                                                                 | `pnpm run test:ts-shared`                                                                                              | Key/leaf parity only, not translation content.                                                                                                                                |
-| Transactional email            | `catalog-copy.test.mts`, `locale.test.mts`, per-template `*.test.tsx` snapshots                     | `pnpm run test:email-templates`                                                                                        | Own `resolveUiLocale` in `email-templates/locale.mts`. Workers resolve `email.*` from local SQLite; tests may read catalog JSON. `crm-outreach-copy.mts` stays user-authored. |
-| Web locale resolution          | `resolve-ui-locale.test.ts`, `get-resolved-ui-locale.mock.test.ts`, `get-translations.mock.test.ts` | `pnpm run test:web`                                                                                                    | `resolveUiLocale`/`getResolvedUiLocale` live in **web**, not backend; backend only threads a `uiLocale` string.                                                               |
-| Native resource generation     | `native-resources.test.mts`, `native-resource-export.test.mts`                                      | `node dev/native-localization.mts --output-root <absolute-client-root> --consumer-root <absolute-client-root> --check` | Manifest keys generate locale resources plus typed Swift/.NET key and descriptor accessors in the external client checkout.                                                   |
-| Swift native (client checkout) | `EmailOTPViewModelTests.swift`, `SettingsViewModelLocaleTests.swift`, core wire tests               | `swift-clients/tooling/with-build-lock.sh swift test --package-path swift-clients/ui` (+ locked `swift-clients/core`)  | `ui_locale` derivation/wire plus generated message-resource consumption.                                                                                                      |
-| .NET native (client checkout)  | `AuthLocaleTests.cs`, `UiLocalizationTests.cs`, `SettingsViewModel.LocaleActionsTests.cs`           | `dotnet-clients/tooling/with-build-lock.sh dotnet test dotnet-clients/Voucha.DotNet.sln --configuration Release`       | Locale precedence, session/settings refresh, formatting, `ui_locale` wire, and generated message-resource consumption.                                                        |
+| Consumer                       | Test(s)                                                                                             | Command                                                                                                                | Notes                                                                                                                            |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| UI catalogs (source of truth)  | `index.test.mts`, `parity.test.mts`                                                                 | `pnpm run test:ts-shared`                                                                                              | Key/leaf parity only, not translation content.                                                                                   |
+| Transactional email            | `catalog-copy.test.mts`, `locale.test.mts`, per-template `*.test.tsx` snapshots                     | `pnpm run test:email-templates`                                                                                        | Own `resolveUiLocale` in `email-templates/locale.mts`. Workers resolve `email.*` from local SQLite; tests may read catalog JSON. |
+| Web locale resolution          | `resolve-ui-locale.test.ts`, `get-resolved-ui-locale.mock.test.ts`, `get-translations.mock.test.ts` | `pnpm run test:web`                                                                                                    | `resolveUiLocale`/`getResolvedUiLocale` live in **web**, not backend; backend only threads a `uiLocale` string.                  |
+| Native resource generation     | `native-resources.test.mts`, `native-resource-export.test.mts`                                      | `node dev/native-localization.mts --output-root <absolute-client-root> --consumer-root <absolute-client-root> --check` | Manifest keys generate locale resources plus typed Swift/.NET key and descriptor accessors in the external client checkout.      |
+| Swift native (client checkout) | `EmailOTPViewModelTests.swift`, `SettingsViewModelLocaleTests.swift`, core wire tests               | `swift-clients/tooling/with-build-lock.sh swift test --package-path swift-clients/ui` (+ locked `swift-clients/core`)  | `ui_locale` derivation/wire plus generated message-resource consumption.                                                         |
+| .NET native (client checkout)  | `AuthLocaleTests.cs`, `UiLocalizationTests.cs`, `SettingsViewModel.LocaleActionsTests.cs`           | `dotnet-clients/tooling/with-build-lock.sh dotnet test dotnet-clients/Voucha.DotNet.sln --configuration Release`       | Locale precedence, session/settings refresh, formatting, `ui_locale` wire, and generated message-resource consumption.           |
 
 Use this matrix to check a broad localization change (e.g. adding a locale, renaming a catalog
 key) across every consumer at once, not just the catalogs.
-
-**Known gaps:**
-
-- `email-templates/crm-outreach-copy.mts` is user-authored CRM content, not product catalog copy.
 
 ## Transactional Email Locale
 
@@ -299,7 +295,7 @@ key) across every consumer at once, not just the catalogs.
 - Authenticated user-backed email enqueue paths should pass the saved
   `user.ui_locale` when they have the user record, such as email verification and
   account data export notifications.
-- Do not machine-translate user-authored CRM or support message bodies. Only the
+- Do not machine-translate user-authored support message bodies. Only the
   Voucha-owned wrapper copy, default subject lines, signoffs, buttons, and footers
   may vary by UI locale.
 

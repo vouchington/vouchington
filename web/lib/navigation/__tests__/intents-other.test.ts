@@ -3,26 +3,19 @@ import { describe, it, expect } from 'vitest'
 import { getActiveIntent } from '../intents'
 
 describe('getActiveIntent', () => {
-  describe('crm intent', () => {
-    it('resolves /crm to crm', () => {
-      expect(getActiveIntent('/crm')).toBe('crm')
+  describe('admin route intents', () => {
+    it('resolves /memberships/grants to settings', () => {
+      expect(getActiveIntent('/memberships/grants')).toBe('settings')
     })
 
-    it('resolves /memberships/grants to crm', () => {
-      expect(getActiveIntent('/memberships/grants')).toBe('crm')
-    })
-
-    it('resolves /support to crm', () => {
-      expect(getActiveIntent('/support')).toBe('crm')
-    })
-
-    it('resolves /support/contacts to crm', () => {
-      expect(getActiveIntent('/support/contacts')).toBe('crm')
+    it('resolves support routes to support', () => {
+      expect(getActiveIntent('/support')).toBe('support')
+      expect(getActiveIntent('/support/contacts')).toBe('support')
     })
   })
 
   describe('support navigation', () => {
-    it('resolves /chat/support to chat (before /support → crm)', () => {
+    it('resolves /chat/support to chat before the support route', () => {
       expect(getActiveIntent('/chat/support')).toBe('chat')
     })
 

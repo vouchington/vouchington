@@ -1,7 +1,7 @@
 // GENERATED FILE - do not edit by hand.
 // Regenerate: node static-code-analysis/i18n-extract/route-selector-map.mts
 // Verify:     node static-code-analysis/i18n-extract/route-selector-map.mts --check
-export const WEB_CHROME_SELECTOR = 'web.chrome.bcfef08e9553de5b'
+export const WEB_CHROME_SELECTOR = 'web.chrome.7744bff6260dcc9b'
 // oxfmt-ignore
 export const ROUTE_SELECTORS = [
   { pattern: "/", selectorId: "web.route.af63a24c860189fe.50730295d8eb2790", hasMembership: true },
@@ -108,9 +108,6 @@ export const ROUTE_SELECTORS = [
   { pattern: "/crawler/[id]", selectorId: "web.route.20e3048ba7a9ea74.cdab5c90d08717a5", hasMembership: true },
   { pattern: "/crawler/[id]/edit", selectorId: "web.route.06af515f7fd523d5.11ca4600f004aa26", hasMembership: true },
   { pattern: "/crawlers", selectorId: "web.route.a3665d6ba740f0fb.d458c72dd431adf0", hasMembership: true },
-  { pattern: "/crm", selectorId: "web.route.2540dd9caa084606.2cea99c261ba85c4", hasMembership: true },
-  { pattern: "/crm/[contactId]", selectorId: "web.route.a0f79c5bcd0d42b4.e05e5a8e55f316db", hasMembership: true },
-  { pattern: "/crm/unsubscribe", selectorId: "web.route.7d2cf89158cc1afc.cbf29ce484222325", hasMembership: false },
   { pattern: "/curated-asides", selectorId: "web.route.4bb10a534f861e76.cbf29ce484222325", hasMembership: false },
   { pattern: "/curated-asides/communities", selectorId: "web.route.1688445d0671ac88.70aecd026b9abdee", hasMembership: true },
   { pattern: "/curated-asides/sources", selectorId: "web.route.0497800205539c17.70aecd026b9abdee", hasMembership: true },

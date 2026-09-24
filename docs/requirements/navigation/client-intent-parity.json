@@ -148,11 +148,11 @@
       "roles": []
     },
     {
-      "id": "crm",
-      "label": "CRM",
+      "id": "support",
+      "label": "Support",
       "nativePlacement": "staff-directory",
-      "swiftSection": "crm",
-      "dotnetSection": "crm",
+      "swiftSection": "support",
+      "dotnetSection": "support",
       "requiresAuth": false,
       "roles": ["administrator"]
     },

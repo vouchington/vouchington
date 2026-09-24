@@ -18,8 +18,6 @@ const SPECULATION_EXCLUDED_HREF_PATTERNS = [
   '/chat/*',
   '/support',
   '/support/*',
-  '/crm',
-  '/crm/*',
   '/*/create',
   '/*/create/*',
   '/*/edit',
