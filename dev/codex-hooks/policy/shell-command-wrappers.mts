@@ -2,6 +2,7 @@ import { type ParsedOption, parseOptions } from './shell-option-grammar.mts'
 import { isShellRedirectionOperatorToken } from './shell-redirections.mts'
 import { isShellAssignment, plainShellAssignment } from './shell-token-utils.mts'
 import { WRAPPERS } from './shell-wrapper-grammars.mts'
+import { wrapperCommandStart } from './shell-wrapper-subcommand.mts'
 
 /** What a recognized wrapper chain before a command word changes about how that command runs. */
 export type CommandPrefix = {
@@ -92,24 +93,9 @@ export function readCommandPrefix(
     if (parsed === null || parsed.options.some(option => wrapper.describeOnly?.has(option.name))) {
       return null
     }
-    let next = parsed.next
-    if (wrapper.subcommand !== undefined) {
-      const subcommandWord = words[next]
-      if (subcommandWord === undefined || !wrapper.subcommand.includes(subcommandWord)) return null
-      next += 1
-      if (wrapper.subcommandGrammar !== undefined) {
-        const subParsed = parseOptions(words, next, wrapper.subcommandGrammar)
-        if (subParsed === null) return null
-        next = subParsed.next
-      }
-    }
-    if (wrapper.operandsUntilDoubleDash === true) {
-      const dashIndex = words.indexOf('--', next)
-      if (dashIndex === -1) return null
-      next = dashIndex + 1
-    }
-    cursor = next + (wrapper.operands ?? 0)
-    if (cursor > words.length) return null
+    const commandStart = wrapperCommandStart(words, parsed.next, wrapper)
+    if (commandStart === null) return null
+    cursor = commandStart
     applyWrapperOptions(prefix, name, parsed.options)
     prefix.wrappers.push(name)
     // The `time` keyword times a whole pipeline, so `time ! gh` is still a command.

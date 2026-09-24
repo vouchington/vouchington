@@ -70,9 +70,10 @@ const MISE_EXEC_SUBCOMMANDS = new Set(['exec', 'x'])
 /**
  * Independently walks mise's global options, its `exec`/`x` subcommand, and that subcommand's own
  * options, to find a `-c`/`--command` value — the one mise exec shape `parseCommandPrefix` cannot
- * resolve (shell-command-wrappers.mts's `operandsUntilDoubleDash` needs a literal `--` this shape
- * never has). Used both to extract the payload (github-wrapper-payloads.mts) and, by the opaque-gh
- * safety net, to recognize this shape as already handled instead of raising its own generic block.
+ * resolve (shell-wrapper-subcommand.mts's `operandsUntilDoubleDash` handling needs a literal `--`
+ * this shape never has). Used both to extract the payload (github-wrapper-payloads.mts) and, by
+ * the opaque-gh safety net, to recognize this shape as already handled instead of raising its own
+ * generic block.
  */
 export function miseExecCommandValue(args: readonly string[]): string | undefined {
   const globalParsed = parseOptions(args, 0, MISE_GRAMMAR)
