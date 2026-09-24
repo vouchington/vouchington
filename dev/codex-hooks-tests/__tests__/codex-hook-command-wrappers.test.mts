@@ -6,6 +6,8 @@ import type { ReferencedIssue } from '../../pr-description/closing-refs.mts'
 
 const MERGE_BLOCK = 'never delegated to an agent'
 const XARGS_BLOCK = '`xargs` supplies this gh subcommand from its input'
+const EXPANSION_BLOCK = 'This gh subcommand comes from a shell expansion'
+const UNREADABLE_ALIAS_BLOCK = '`gh alias import` and `gh alias set NAME -` read alias expansions'
 const OPEN_ISSUE: ReferencedIssue = {
   body: '',
   isPullRequest: false,
@@ -113,8 +115,31 @@ describe('Codex hook gh policies behind command wrappers', () => {
     'echo merge | xargs -i gh pr {} 1',
     'echo merge | xargs --replace gh pr {} 1',
     'echo 1 | xargs gh-stack',
+    "echo merge | xargs -I{} sh -c 'gh pr {} 1'",
+    "echo merge | xargs -I% bash -e -lc 'gh pr % 1'",
   ])('fails closed when xargs supplies the gh subcommand: %s', command => {
     expect(reasonFor(command)).toContain(XARGS_BLOCK)
+  })
+
+  it.each([
+    'g() { gh "$@"; }; g pr merge 1',
+    'gh "$@"',
+    'gh $CMD',
+    'gh "$AREA" merge 1',
+    'gh pr "$ACTION" 1',
+    'gh pr `echo merge` 1',
+    'echo 1 | xargs sh -c \'gh pr "$1" 1\' _',
+  ])('fails closed when a shell expansion supplies the gh subcommand: %s', command => {
+    expect(reasonFor(command)).toContain(EXPANSION_BLOCK)
+  })
+
+  it.each([
+    'gh alias import -',
+    'gh alias import aliases.yml',
+    'gh alias set m - < aliases.txt',
+    'gh alias set --clobber m -',
+  ])('fails closed on a gh alias expansion the hook cannot read: %s', command => {
+    expect(reasonFor(command)).toContain(UNREADABLE_ALIAS_BLOCK)
   })
 
   it.each([
@@ -165,8 +190,15 @@ describe('Codex hook gh policies behind command wrappers', () => {
     'echo 1 | xargs -n1 gh pr view',
     'eval echo gh pr merge 1',
     "gh alias set m 'pr view'",
-    'gh alias set m - < aliases.txt',
+    'gh alias list',
     "timeout 5 bash -c true <<'EOF'\ngh pr merge 1\nEOF",
+    // Expansions outside the gh subcommand, and xargs filling only arguments or non-gh scripts.
+    'gh pr view "$PR"',
+    'gh api "repos/$REPO/pulls/1"',
+    "echo 1 | xargs -I{} sh -c 'gh pr view {}'",
+    "echo 1 | xargs -I{} sh -c 'echo {}'",
+    'echo 1 | xargs -I{} sh ./script.sh {}',
+    'echo 1 | xargs -I{} sh -c',
   ])('does not gate a command that runs no gh merge: %s', command => {
     expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
   })

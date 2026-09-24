@@ -19,8 +19,8 @@ import { contentRuleExemption } from './github-content-rule-scope.mts'
 import { findGhPrMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { findRawIssueCreateBlock } from './github-issue-create-policy.mts'
+import { findOpaqueGhBlock } from './github-opaque-gh-policy.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
-import { findXargsGhSubcommandBlock } from './github-xargs-policy.mts'
 import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
 import { ghBodyFromOptions, ghBodyIsOpaqueToHook, parseGhOptions } from './github-options.mts'
 
@@ -44,9 +44,9 @@ export function findGitHubWorkflowBlock(
         continue
       }
       const invocation = parseGhOrGhStackInvocation(tokens, index)
-      const xargsBlock = findXargsGhSubcommandBlock(prefix, tokens[index], invocation)
-      if (xargsBlock !== null) {
-        return xargsBlock
+      const opaqueBlock = findOpaqueGhBlock(prefix, tokens, index, invocation)
+      if (opaqueBlock !== null) {
+        return opaqueBlock
       }
       if (invocation === null) {
         continue

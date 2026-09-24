@@ -13,10 +13,15 @@ export type GhInvocation = {
   optionTokens: string[]
 }
 
+type GhInvocationScan = Pick<GhInvocation, 'optionTokenIndexes' | 'optionTokens'> & {
+  actionIndex?: number
+  areaIndex?: number
+}
+
 export function parseGhOrGhStackInvocation(tokens: string[], index: number): GhInvocation | null {
   const executable = tokens[index].split('/').at(-1)
   if (executable === 'gh-stack') {
-    return parseGhInvocation(['gh', 'stack', ...tokens.slice(index + 1)], 0)
+    return parseGhInvocation(ghStackAsGh(tokens, index), 0)
   }
   if (executable === 'gh') {
     return parseGhInvocation(tokens, index)
@@ -24,10 +29,46 @@ export function parseGhOrGhStackInvocation(tokens: string[], index: number): GhI
   return null
 }
 
+/**
+ * The area and action words the gh or gh-stack invocation at `index` names, in order, as far as
+ * they are present: `['pr', 'merge']`, `['pr']`, or `[]`.
+ */
+export function ghSubcommandWords(tokens: string[], index: number): string[] {
+  const words =
+    tokens[index].split('/').at(-1) === 'gh-stack'
+      ? ghStackAsGh(tokens, index)
+      : tokens.slice(index)
+  const { actionIndex, areaIndex } = scanGhInvocation(words, 0)
+  return [areaIndex, actionIndex].flatMap(wordIndex =>
+    wordIndex === undefined ? [] : [words[wordIndex]],
+  )
+}
+
 export function parseGhInvocation(tokens: string[], ghIndex: number): GhInvocation | null {
-  let area: string | undefined
-  let action: string | undefined
-  let actionIndex = -1
+  const { actionIndex, areaIndex, optionTokenIndexes, optionTokens } = scanGhInvocation(
+    tokens,
+    ghIndex,
+  )
+  if (areaIndex === undefined || actionIndex === undefined) {
+    return null
+  }
+
+  return {
+    action: tokens[actionIndex],
+    area: tokens[areaIndex],
+    arguments: tokens.slice(actionIndex + 1),
+    optionTokenIndexes,
+    optionTokens,
+  }
+}
+
+function ghStackAsGh(tokens: string[], index: number): string[] {
+  return ['gh', 'stack', ...tokens.slice(index + 1)]
+}
+
+function scanGhInvocation(tokens: string[], ghIndex: number): GhInvocationScan {
+  let areaIndex: number | undefined
+  let actionIndex: number | undefined
   const optionTokenIndexes: number[] = []
   const optionTokens: string[] = []
 
@@ -66,12 +107,11 @@ export function parseGhInvocation(tokens: string[], ghIndex: number): GhInvocati
       continue
     }
 
-    if (area === undefined) {
-      area = token
+    if (areaIndex === undefined) {
+      areaIndex = index
       continue
     }
-    if (action === undefined) {
-      action = token
+    if (actionIndex === undefined) {
       actionIndex = index
       continue
     }
@@ -80,15 +120,5 @@ export function parseGhInvocation(tokens: string[], ghIndex: number): GhInvocati
     optionTokenIndexes.push(index)
   }
 
-  if (area === undefined || action === undefined) {
-    return null
-  }
-
-  return {
-    action,
-    area,
-    arguments: tokens.slice(actionIndex + 1),
-    optionTokenIndexes,
-    optionTokens,
-  }
+  return { actionIndex, areaIndex, optionTokenIndexes, optionTokens }
 }
