@@ -39,12 +39,7 @@ export function findGitHubWorkflowBlock(
       splitRedirections: true,
     })
     const tokens = detailedTokens.map(token => token.value)
-    const exemptFromContentRules = contentRuleExemption(
-      command,
-      detailedTokens,
-      options,
-      inspectIndex === 0,
-    )
+    const exemptFromContentRules = contentRuleExemption(detailedTokens, options, inspectIndex === 0)
 
     for (let index = 0; index < tokens.length; index += 1) {
       if (!isCommandPositionInvocation(tokens, index)) {

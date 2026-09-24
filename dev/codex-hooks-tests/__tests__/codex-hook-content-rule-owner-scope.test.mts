@@ -130,6 +130,9 @@ describe('gh content-rule owner scope', () => {
       ['an expanded GH_REPO prefix', '', 'GH_REPO="$TARGET" '],
       ['a GH_REPO exported outside the prefix', '', 'export GH_REPO=acme/app; '],
       ['a GH_REPO prefix for the session owner', '', 'GH_REPO=acme/app '],
+      ['a GH_REPO prefix on an earlier command', '', 'GH_REPO=widgets-inc/tool true && '],
+      ['a GH_REPO that env -i clears', '', 'GH_REPO=widgets-inc/tool env -i PATH=/usr/bin '],
+      ['a GH_REPO that env - clears', '', 'GH_REPO=widgets-inc/tool env - PATH=/usr/bin '],
     ])('for %s', (_name, flags, prefix) => {
       expect(reasonOf(nonDraftPr(flags, prefix))).toContain(DRAFT_FIRST)
       expect(reasonOf(planIssue(flags, prefix))).toContain(PLAN_TITLE)
@@ -162,7 +165,7 @@ describe('gh content-rule owner scope', () => {
       })
     })
 
-    it('for a cwd a nested command, pushd, or a git environment prefix can change', async () => {
+    it('for a cwd a nested command, pushd, a git environment, or the same command can change', async () => {
       await withRepo(WIDGETS_REMOTE, dir => {
         expect(reasonOf(`cd /srv/home && bash -c '${nonDraftPr('')}'`, dir)).toContain(DRAFT_FIRST)
         expect(reasonOf(nonDraftPr('', 'pushd /srv/home && '), dir)).toContain(DRAFT_FIRST)
@@ -170,6 +173,29 @@ describe('gh content-rule owner scope', () => {
         expect(reasonOf(nonDraftPr('', 'export GIT_WORK_TREE=/srv/home; '), dir)).toContain(
           DRAFT_FIRST,
         )
+        const setUrl = 'git remote set-url origin https://github.com/acme/app.git && '
+        expect(reasonOf(nonDraftPr('', setUrl), dir)).toContain(DRAFT_FIRST)
+        expect(reasonOf(nonDraftPr('', 'gh repo set-default acme/app && '), dir)).toContain(
+          DRAFT_FIRST,
+        )
+      })
+    })
+
+    it.each([
+      ['a short-circuited cd', (other: string) => `false && cd ${other}; `],
+      [
+        'a zsh last-pipeline cd',
+        (other: string, home: string) => `cd ${other} && : | cd ${home}; `,
+      ],
+      ['builtin cd', (other: string, home: string) => `cd ${other} && builtin cd ${home} && `],
+      ['an eval cd', (other: string, home: string) => `cd ${other} && eval "cd ${home}" && `],
+      ['a function cd', (other: string, home: string) => `cd ${other} && f() { cd ${home}; }; f; `],
+      ['env --chdir', (other: string, home: string) => `cd ${other} && env --chdir=${home} `],
+    ])('for gh that can still run in the session checkout after %s', async (_name, prefix) => {
+      await withRepo({ origin: 'git@github.com:acme/app.git' }, async home => {
+        await withRepo(WIDGETS_REMOTE, other => {
+          expect(reasonOf(nonDraftPr('', prefix(other, home)), home)).toContain(DRAFT_FIRST)
+        })
       })
     })
 

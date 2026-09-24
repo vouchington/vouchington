@@ -1,6 +1,6 @@
 import type { GitHubWorkflowPolicyOptions } from './github-closing-refs.mts'
-import { checkoutOwner, githubOwner, ownerOfRepoSelector } from './github-checkout-owners.mts'
-import { commandEnvironment } from './github-command-context.mts'
+import { githubOwner, ownerOfRepoSelector } from './github-checkout-owners.mts'
+import { implicitRepositoryOwner } from './github-implicit-repository.mts'
 import type { GhInvocation } from './github-invocation.mts'
 import type { ShellWord } from './shell-tokenizer.mts'
 import { parseGhOptions } from './github-options.mts'
@@ -16,26 +16,24 @@ const EDIT_NON_SELECTOR_VALUE_FLAGS = new Set([
   '--title',
   '-t',
 ])
-// Moves gh to another directory or repository in a way commandCwd doesn't model, so the cwd's
-// remotes no longer prove the target.
-const UNMODELED_REPOSITORY_CHANGE = /\b(?:pushd|popd)\b|\bGIT_[A-Z\d_]+/
 
 /**
  * Returns, for one inspected command, whether a gh invocation in it is exempt from Vouchington's
  * PR and issue content rules (`gh pr create/new/edit`, `gh issue create`): true only when it
  * provably targets a repository whose GitHub owner is outside the session's home owners. Every
  * doubt keeps the rules: no injected, readable, non-empty home owners, an unresolved cwd, remotes
- * naming several owners, or a repository or PR selector that is a shell expansion. A nested
- * command (`bash -c`, a heredoc or `$(…)` body) is inspected from the session cwd whatever the
- * outer command changed, so only a literal `--repo` or `GH_REPO` proves its target. Any other
+ * naming several owners, or a repository or PR selector that is a shell expansion. Without a
+ * literal `--repo`, implicitRepositoryOwner proves the target only when gh provably sees what the
+ * hook sees — a nested `bash -c`, heredoc, or `$(…)` body, or any command or joiner before gh
+ * other than `&&`-joined literal `cd`s, needs a literal `--repo` or `GH_REPO` prefix. Any other
  * invocation — merge authority, `gh api`, the gh stack policy — is never exempt. See #434.
  */
 export function contentRuleExemption(
-  command: string,
   words: ShellWord[],
   options: GitHubWorkflowPolicyOptions,
   isTopLevelCommand: boolean,
 ): (invocation: GhInvocation, index: number, cwd: string | undefined) => boolean {
+  const tokens = words.map(word => word.value)
   return (invocation, index, cwd) => {
     const { action, area } = invocation
     const isContentRuleInvocation =
@@ -44,9 +42,12 @@ export function contentRuleExemption(
     if (!isContentRuleInvocation || options.sessionOwners === undefined) {
       return false
     }
-    const provenCwd =
-      isTopLevelCommand && !UNMODELED_REPOSITORY_CHANGE.test(command) ? cwd : undefined
-    const target = ghTargetOwner(command, invocation, words, index, provenCwd)
+    const repo = parseGhOptions(invocation.optionTokens).repo.at(-1)
+    const base =
+      repo === undefined
+        ? implicitRepositoryOwner(tokens, index, isTopLevelCommand, cwd)
+        : ownerOfRepoSelector(repo)
+    const target = targetOwner(base, invocation, words)
     if (target === undefined) {
       return false
     }
@@ -58,49 +59,18 @@ export function contentRuleExemption(
   }
 }
 
-function ghTargetOwner(
-  command: string,
+function targetOwner(
+  base: string | undefined,
   invocation: GhInvocation,
   words: ShellWord[],
-  index: number,
-  cwd: string | undefined,
 ): string | undefined {
-  const owners = new Set([baseRepositoryOwner(command, invocation, words, index, cwd)])
+  const owners = new Set([base])
   if (invocation.area === 'pr' && invocation.action === 'edit') {
     for (const owner of editSelectorOwners(invocation, words)) {
       owners.add(owner)
     }
   }
   return owners.size === 1 ? [...owners][0] : undefined
-}
-
-// gh's own precedence: --repo, else a non-empty GH_REPO, else the cwd's remotes.
-function baseRepositoryOwner(
-  command: string,
-  invocation: GhInvocation,
-  words: ShellWord[],
-  index: number,
-  cwd: string | undefined,
-): string | undefined {
-  const repo = parseGhOptions(invocation.optionTokens).repo.at(-1)
-  if (repo !== undefined) {
-    return ownerOfRepoSelector(repo)
-  }
-  const env = commandEnvironment(
-    words.map(word => word.value),
-    index,
-  )
-  const prefixSetsGhRepo = 'GH_REPO' in env
-  if (!prefixSetsGhRepo && /\bGH_REPO\b/.test(command)) {
-    // Set or exported elsewhere in the command (`export GH_REPO=…; gh …`), which the hook's own
-    // process.env doesn't see.
-    return undefined
-  }
-  const ghRepo = prefixSetsGhRepo ? env.GH_REPO : process.env.GH_REPO
-  if (ghRepo !== undefined && ghRepo !== '') {
-    return ownerOfRepoSelector(ghRepo)
-  }
-  return cwd === undefined ? undefined : checkoutOwner(cwd)
 }
 
 // `gh pr edit <url>` edits that URL's repository whatever --repo or the cwd says, so a literal PR
