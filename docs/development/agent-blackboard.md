@@ -103,7 +103,10 @@ paths. Agents with the MCP tools and explicit session metadata may call `session
 provides file input, session-id defaults, and replayable errors through the published `Sessions`
 and `Entries` JS clients via `vouchington-tooling/agent-blackboard`. The SessionStart probe
 (`dev/check-blackboard.mts`) uses the same portable helper while retaining Vouchington's stop-work
-policy. These script paths avoid a CLI-to-JS subprocess round trip. Manual CLI use remains
+policy. The journal script records repository attribution: each entry's `data.repositories` lists
+the repositories it concerns (`vouchington/vouchington` unless `--repository` flags say otherwise),
+and the session's `data.repositories` keeps their cumulative union, patched before the append. These
+script paths avoid a CLI-to-JS subprocess round trip. Manual CLI use remains
 available through `pnpm exec agent-blackboard`; direct JS imports make the dependency visible to
 Knip.
 

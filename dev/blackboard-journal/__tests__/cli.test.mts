@@ -88,6 +88,39 @@ describe('blackboard-journal CLI', () => {
     expect(stderr).not.toContain('Replay with:')
   })
 
+  it('preserves every explicit repository in a replay command', async () => {
+    const dir = await makeTempDir()
+    const noteFile = join(dir, 'note.md')
+    await writeFile(noteFile, 'a note')
+
+    const rejection = await execFileAsync(
+      process.execPath,
+      [
+        scriptPath,
+        'append',
+        '--file',
+        noteFile,
+        '--session-id',
+        'sess-1',
+        '--repository',
+        'vouchington/vouchington',
+        '--repository',
+        'vouchington/vouchington-clients',
+      ],
+      {
+        env: {
+          ...process.env,
+          AGENT_BLACKBOARD_URL: 'http://127.0.0.1:1/',
+          AGENT_BLACKBOARD_TOKEN: 'test-token',
+        },
+      },
+    ).catch((error: unknown) => error)
+
+    expect(String((rejection as { stderr: string }).stderr)).toContain(
+      "--repository 'vouchington/vouchington' --repository 'vouchington/vouchington-clients'",
+    )
+  })
+
   it('rejects an unknown subcommand with usage on stderr and exit code 1', async () => {
     const rejection = await execFileAsync(process.execPath, [scriptPath, 'bogus']).then(
       () => {

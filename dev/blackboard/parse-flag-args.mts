@@ -1,4 +1,4 @@
-type FlagValue = string | boolean | undefined
+type FlagValue = string | string[] | boolean | undefined
 
 export type ParsedFlagArgs<Parsed extends Record<string, FlagValue>> = {
   parsed: Parsed
@@ -9,7 +9,7 @@ type StringKey<Parsed extends Record<string, FlagValue>> = Extract<keyof Parsed,
 
 export type FlagKey<Parsed extends Record<string, FlagValue>> =
   | StringKey<Parsed>
-  | { key: StringKey<Parsed>; type: 'boolean' }
+  | { key: StringKey<Parsed>; type: 'boolean' | 'repeatable' }
 
 // Shared by every blackboard/retrospective CLI subcommand (append, entries, save,
 // list, read, archive): each one only differs in its flag map, its ParsedArgs
@@ -42,9 +42,14 @@ export function parseFlagArgs<Parsed extends Record<string, FlagValue>>(
       // legitimate value (e.g. a file path) may itself start with one.
       const valueMissing = value === undefined || value === '--' || Object.hasOwn(flagKeys, value)
       if (valueMissing) throw new Error(`${arg} requires a value`)
+      i++
+      if (typeof flag !== 'string' && flag.type === 'repeatable') {
+        const values = parsed[key]
+        parsed[key] = Array.isArray(values) ? [...values, value] : [value]
+        continue
+      }
       if (parsed[key] !== undefined) throw new Error(`${arg} may only be specified once`)
       parsed[key] = value
-      i++
     } else if (!optionsEnded && arg.startsWith('-')) {
       throw new Error(`unknown option: ${arg}`)
     } else {

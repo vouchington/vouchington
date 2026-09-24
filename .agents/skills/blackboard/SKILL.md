@@ -52,8 +52,11 @@ the same shell. Never silently drop the note.
 ## MCP procedure
 
 Call `session_ensure` with explicit `sessionId`, `parentSessionId` (`null` only for a root session),
-agent, and version; then call `entry_append` with `type: "journal"`, concrete markdown, and an ISO
-timestamp. Require the appended entry in the successful tool result. On any failure, stop; for a
+agent, and version. If the returned session is archived, stop and start a new session. Merge the
+entry's repositories into the session's sorted, deduplicated lowercase `data.repositories` and call
+`session_patch` when that union changed; if the patch fails, do not append. Then call
+`entry_append` with `type: "journal"`, concrete markdown, an ISO timestamp, and `repositories` listing
+only the `owner/name` repositories the entry concerns. Require the appended entry in the successful tool result. On any failure, stop; for a
 credential failure follow [Credential failures](#credential-failures), otherwise correct the
 connection or metadata and retry the same call.
 
@@ -67,6 +70,10 @@ Write the concrete note to a UTF-8 file under `$TMPDIR`, then run:
 ```bash
 node dev/blackboard-journal.mts append --file <note-file>
 ```
+
+The script tags the entry and its session with `vouchington/vouchington`. When the note concerns
+other repositories, pass one `--repository <owner/name>` per repository instead, including
+`vouchington/vouchington` when it also applies.
 
 For a non-root session pass explicit `--session-id <id>` unless the runtime environment already
 supplies it, and for a child, `--parent-session-id <parent-id>`. An interactive root Codex invocation

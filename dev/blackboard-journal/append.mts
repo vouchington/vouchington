@@ -20,7 +20,12 @@ type ParsedArgs = {
   rootCodex?: boolean
   version?: string
   timestamp?: string
+  repositories?: string[]
 }
+
+// Journal entries record every repository they concern. Without an explicit --repository, a note
+// written from this checkout concerns this repository alone.
+export const DEFAULT_JOURNAL_REPOSITORY = 'vouchington/vouchington'
 
 const FLAG_KEYS: Record<string, FlagKey<ParsedArgs>> = {
   '--file': 'noteFile',
@@ -31,6 +36,7 @@ const FLAG_KEYS: Record<string, FlagKey<ParsedArgs>> = {
   '--root-codex': { key: 'rootCodex', type: 'boolean' },
   '--version': 'version',
   '--timestamp': 'timestamp',
+  '--repository': { key: 'repositories', type: 'repeatable' },
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -52,6 +58,7 @@ export class BlackboardJournalError extends Error {
   readonly rootCodex?: boolean
   readonly version?: string
   readonly timestamp?: string
+  readonly repositories?: string[]
 
   constructor(message: string, info: ParsedArgs, cause?: unknown) {
     super(message, { cause })
@@ -64,6 +71,7 @@ export class BlackboardJournalError extends Error {
     this.rootCodex = info.rootCodex
     this.version = info.version
     this.timestamp = info.timestamp
+    this.repositories = info.repositories
   }
 }
 
@@ -114,6 +122,7 @@ export async function runAppend(
       parentSessionId,
       agent,
       version,
+      repositories: parsed.repositories ?? [DEFAULT_JOURNAL_REPOSITORY],
       markdownFile: noteFile,
       timestamp,
       dependencies: clientDependencies(clients),
