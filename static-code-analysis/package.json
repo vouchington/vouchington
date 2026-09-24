@@ -11,13 +11,13 @@
     "@libpg-query/parser": "^18.0.0",
     "@typescript-eslint/parser": "^8.70.1",
     "@vouchington/localization": "0.2.0",
-    "@vouchington/localization-compiler": "0.2.1",
+    "@vouchington/localization-compiler": "0.2.2",
     "@vouchington/postgres": "0.0.9",
     "ajv": "^8.20.0",
-    "no-mistakes": "^0.64.2",
+    "no-mistakes": "^0.65.0",
     "oxfmt": "^0.70.0",
     "smol-toml": "^1.8.0",
-    "vouchington-tooling": "^0.18.1",
+    "vouchington-tooling": "^0.19.1",
     "yaml": "^2.9.0"
   },
   "devDependencies": {
