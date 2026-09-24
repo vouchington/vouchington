@@ -197,7 +197,7 @@ EOF
 
   it('applies the gh stack allowlist after env -C', () => {
     expect(
-      findPreToolUseBlock({ tool_input: { command: 'env -C /tmp gh stack checkout 7' } })?.reason,
+      findPreToolUseBlock({ tool_input: { command: 'env -C /tmp gh stack switch' } })?.reason,
     ).toContain('gh stack allowlist is closed')
   })
 

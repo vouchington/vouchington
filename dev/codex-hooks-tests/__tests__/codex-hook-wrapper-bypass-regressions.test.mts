@@ -31,7 +31,7 @@ describe('Codex hook gh policies behind shell forms the wrapper parser missed', 
   })
 
   it('applies the gh stack allowlist after a zsh precommand modifier', () => {
-    expect(reasonFor('noglob gh stack checkout 7')).toContain(STACK_ALLOWLIST_BLOCK)
+    expect(reasonFor('noglob gh stack switch')).toContain(STACK_ALLOWLIST_BLOCK)
   })
 
   it.each([
