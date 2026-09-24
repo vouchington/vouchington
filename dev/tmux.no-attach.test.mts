@@ -1,6 +1,6 @@
 import { realpathSync } from 'node:fs'
-import { afterEach, describe, expect, it } from 'vitest'
-import { cleanupTmuxTestDirs, makeFakeBin, makeRepo, runTmux } from './test-helpers/tmux.mts'
+import { describe, expect, it } from 'vitest'
+import { makeRepo, registerTmuxFakeHooks, runTmux } from './test-helpers/tmux.mts'
 
 function createdWindowNames(log: string) {
   return log.split('\n').flatMap(line => {
@@ -11,7 +11,7 @@ function createdWindowNames(log: string) {
 }
 
 describe('dev/tmux --no-attach', () => {
-  afterEach(cleanupTmuxTestDirs)
+  const { makeFakeBin } = registerTmuxFakeHooks()
 
   it('starts all service windows without attaching when --no-attach is passed inside tmux', async () => {
     const cwd = await makeRepo()

@@ -1,9 +1,9 @@
 import { mkdtemp, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { workerQueuePolicy } from '../backend/modules/worker-queue-inventory/worker-queue-policy.mts'
-import { cleanupTmuxTestDirs, makeFakeBin, makeRepo, runTmux } from './test-helpers/tmux.mts'
+import { makeRepo, registerTmuxFakeHooks, runTmux } from './test-helpers/tmux.mts'
 
 function createdWindowNames(log: string) {
   return log.split('\n').flatMap(line => {
@@ -14,7 +14,7 @@ function createdWindowNames(log: string) {
 }
 
 describe('dev/tmux', () => {
-  afterEach(cleanupTmuxTestDirs)
+  const { makeFakeBin } = registerTmuxFakeHooks()
 
   it('directs a fresh checkout to initialize before loading package tooling', async () => {
     const cwd = await makeRepo()
