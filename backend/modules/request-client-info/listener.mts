@@ -16,12 +16,7 @@ import {
 
 type HttpListener = (req: IncomingMessage, res: ServerResponse) => void
 const TRUSTED_REQUEST_KINDS = new Set(['bot', 'cache-fill'])
-const EXEMPT_API_PREFIXES = [
-  '/api/v1/mcp',
-  '/api/v1/admin/mcp',
-  '/api/v1/email-unsubscribe',
-  '/api/v1/crm/unsubscribe',
-]
+const EXEMPT_API_PREFIXES = ['/api/v1/mcp', '/api/v1/admin/mcp', '/api/v1/email-unsubscribe']
 const NATIVE_BOOTSTRAP_PATHS = new Set([
   '/api/v1/auth/email-address/tokens',
   '/api/v1/auth/email-address/login',

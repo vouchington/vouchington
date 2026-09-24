@@ -24,7 +24,6 @@
     "@modules/aws": "workspace:^",
     "@modules/gmail-smtp": "workspace:^",
     "@queues/emails": "workspace:^",
-    "@services/crm-contacts": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",
     "@services/users": "workspace:^"
   },

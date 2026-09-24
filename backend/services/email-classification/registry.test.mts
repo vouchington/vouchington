@@ -40,7 +40,7 @@ describe('EMAIL_CLASSIFICATIONS registry', () => {
     )
     for (const entry of marketingEntries) {
       expect(typeof entry.hasActiveSender).toBe('boolean')
-      expect(['user-category', 'crm-contact']).toContain(entry.unsubscribe.scheme)
+      expect(entry.unsubscribe.scheme).toBe('user-category')
     }
 
     const userCategoryUnsubscribes = marketingEntries
@@ -58,14 +58,6 @@ describe('EMAIL_CLASSIFICATIONS registry', () => {
     const discovered = getDiscoveredProcessorNames()
     const missing = discovered.filter(name => !(name in EMAIL_CLASSIFICATIONS))
     expect(missing).toEqual([])
-  })
-
-  it('marks the CRM outreach email as CRM-contact scoped and active', () => {
-    expect(EMAIL_CLASSIFICATIONS.processSendCrmEmail).toEqual({
-      classification: 'marketing',
-      unsubscribe: { scheme: 'crm-contact' },
-      hasActiveSender: true,
-    })
   })
 
   it('marks news digest as registry-only pending a sender', () => {
@@ -92,19 +84,9 @@ describe('buildClassifiedSendParams', () => {
     expect(params.headers).toHaveProperty('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click')
   })
 
-  it('builds crm-contact unsubscribe headers for CRM email with a crmEmail', () => {
-    const params = buildClassifiedSendParams('processSendCrmEmail', {
-      crmEmail: 'tests@voucha.ai',
-    })
-    expect(params.headers).toHaveProperty('List-Unsubscribe')
-  })
-
   it('throws a TypeError when a marketing type is requested without the required ctx field', () => {
     expect(() =>
       buildClassifiedSendParams('processSendFollowTopicsEmail' as EmailType, {}),
     ).toThrow(TypeError)
-    expect(() => buildClassifiedSendParams('processSendCrmEmail' as EmailType, {})).toThrow(
-      TypeError,
-    )
   })
 })

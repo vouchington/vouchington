@@ -4,7 +4,6 @@ import type {
   CommunityModerationSummaryEmailProps,
   CommunityOwnershipTransferEmailProps,
   CommunityRoleChangeEmailProps,
-  CrmOutreachEmailProps,
   DataExportReadyEmailProps,
   EmailRenderResult,
   EmailRenderResultPromise,
@@ -24,7 +23,6 @@ export type {
   CommunityModerationSummaryEmailProps,
   CommunityOwnershipTransferEmailProps,
   CommunityRoleChangeEmailProps,
-  CrmOutreachEmailProps,
   DataExportReadyEmailProps,
   EmailRenderResult,
   EmailRenderResultPromise,
@@ -66,9 +64,6 @@ export declare function renderFollowTopicsEmail(
   props: FollowTopicsEmailProps,
 ): EmailRenderResultPromise
 export declare function renderLoginTokenEmail(props: LoginTokenEmailProps): EmailRenderResultPromise
-export declare function renderCrmOutreachEmail(
-  props: CrmOutreachEmailProps,
-): EmailRenderResultPromise
 export declare function renderPostReferralLinkEmail(
   props: PostReferralLinkEmailProps,
 ): EmailRenderResultPromise

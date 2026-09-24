@@ -24,7 +24,6 @@ Most endpoints require administrator access (`isAdminUser`). The growth metrics 
 | GET    | `/api/v1/article-syncs/:jobId`                               | Poll article sync job status                  |
 
 For import endpoints, see [imports/README.md](./imports/README.md).
-For CRM endpoints, see [crm/README.md](./crm/README.md).
 For growth metrics details, see [growth-metrics/README.md](./growth-metrics/README.md).
 
 ## MCP Clients

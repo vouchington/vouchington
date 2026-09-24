@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { renderCommunityModerationSummaryEmail } from './community-moderation-summary-renderer.mts'
-import { renderCrmOutreachEmail } from './crm-outreach-renderer.mts'
 import { renderFollowNewsSourcesEmail } from './follow-news-sources-renderer.mts'
 import { renderFollowTopicsEmail } from './follow-topics-renderer.mts'
 import { renderPostReferralLinkEmail } from './post-referral-link-renderer.mts'
@@ -62,17 +61,6 @@ const MARKETING_TEMPLATES: { name: string; render: () => EmailRenderResultPromis
         unsubscribeUrl: UNSUBSCRIBE_URL_MARKER,
         physicalAddress: PHYSICAL_ADDRESS_MARKER,
         communities: [],
-      }),
-  },
-  {
-    name: 'crm-outreach',
-    render: () =>
-      renderCrmOutreachEmail({
-        contactName: 'Alice',
-        senderName: 'Bob',
-        bodyHtml: '<p>Hello</p>',
-        unsubscribeUrl: UNSUBSCRIBE_URL_MARKER,
-        physicalAddress: PHYSICAL_ADDRESS_MARKER,
       }),
   },
 ]

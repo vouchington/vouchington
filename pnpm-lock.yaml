@@ -507,24 +507,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/agents/crm-outreach:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-
   backend/agents/customer-support:
     dependencies:
       '@agents/_shared':
@@ -846,9 +828,6 @@ importers:
       '@agents/community-moderation':
         specifier: workspace:^
         version: link:../agents/community-moderation
-      '@agents/crm-outreach':
-        specifier: workspace:^
-        version: link:../agents/crm-outreach
       '@agents/moderation':
         specifier: workspace:^
         version: link:../agents/moderation
@@ -1161,15 +1140,6 @@ importers:
       '@services/crawls':
         specifier: workspace:^
         version: link:../services/crawls
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../services/crm-contacts
-      '@services/crm-messages':
-        specifier: workspace:^
-        version: link:../services/crm-messages
-      '@services/crm-notes':
-        specifier: workspace:^
-        version: link:../services/crm-notes
       '@services/curated-aside-items':
         specifier: workspace:^
         version: link:../services/curated-aside-items
@@ -5272,111 +5242,6 @@ importers:
         specifier: 0.0.2
         version: 0.0.2
 
-  backend/services/crm-contacts:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/token-secrets':
-        specifier: workspace:^
-        version: link:../../modules/token-secrets
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/services/crm-messages:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@queues/emails':
-        specifier: workspace:^
-        version: link:../../queues/emails
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../crm-contacts
-      '@services/ses-bounce-events':
-        specifier: workspace:^
-        version: link:../ses-bounce-events
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/services/crm-notes:
-    dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../crm-contacts
-      '@services/crm-messages':
-        specifier: workspace:^
-        version: link:../crm-messages
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/services/curated-aside-items:
     dependencies:
       '@data-stores/psql':
@@ -5791,9 +5656,6 @@ importers:
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../crm-contacts
       '@services/ses-bounce-events':
         specifier: workspace:^
         version: link:../ses-bounce-events
@@ -11584,9 +11446,6 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
-      '@modules/gmail-smtp':
-        specifier: workspace:^
-        version: link:../../modules/gmail-smtp
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -11611,9 +11470,6 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices
-      '@services/crm-contacts':
-        specifier: workspace:^
-        version: link:../../services/crm-contacts
       '@services/email-classification':
         specifier: workspace:^
         version: link:../../services/email-classification
