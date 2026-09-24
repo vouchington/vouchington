@@ -47,9 +47,13 @@ const ARCH_GRAMMAR: OptionGrammar = {
  * space-separated `-t time`: the two are genuinely incompatible under one letter, and getting this
  * one wrong the other way round is what let `-t -c "gh …"` swallow `-c`'s value as `-t`'s, stranding
  * the disguised gh command where the resolved wrapper chain no longer scans it. A bare BSD `-t
- * TIME` (unattached) therefore does not resolve through this grammar either, but still fails
- * closed — the wrapper chain simply does not parse, so the exec-wrapper safety net
- * (github-exec-wrapper-mention-policy.mts) scans the whole remaining command instead.
+ * TIME` (unattached) still parses under this grammar — `-t` just takes no value, so `TIME` is
+ * misread as script's own FILE operand instead — landing the resolved position one word early, on
+ * the real FILE operand rather than the wrapped command. That is still before the wrapped command,
+ * so the exec-wrapper safety net (github-exec-wrapper-mention-policy.mts) still scans over it and
+ * catches a `gh` mention there, but only with its generic reason, and only because a gated area word
+ * (e.g. `pr`) follows `gh` — so a real, allowed `script -t 0 /dev/null gh pr view 1` also blocks.
+ * Accepted: closing the util-linux `-t[file]` silent-allow gap is worth this BSD false positive.
  */
 export const SCRIPT_GRAMMAR: OptionGrammar = {
   aliases: {

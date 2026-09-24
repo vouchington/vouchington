@@ -89,8 +89,17 @@ describe('Codex hook gh policies behind exec-style wrappers', () => {
   it.each([
     'pnpm --registry https://example.com exec gh pr merge 1',
     'mise --env prod x -- gh pr merge 1',
+    // BSD `script -t TIME` (space-separated, unattached): this grammar's `-t` takes no value, so
+    // it misreads `TIME` as script's FILE operand and only fails closed via this generic backstop.
+    'script -t 0 /dev/null gh pr merge 1',
   ])('fails closed when an exec-style wrapper chain does not fully parse: %s', command => {
     expect(reasonFor(command)).toContain(EXEC_MENTION_BLOCK)
+  })
+
+  // Accepted false-positive tradeoff of the BSD `-t TIME` fallback above: a real, non-merge `gh pr
+  // view` also blocks, because the backstop only checks for `gh` next to a gated area word.
+  it('blocks a legitimate non-merge gh command that follows BSD script -t TIME (accepted tradeoff)', () => {
+    expect(reasonFor('script -q -t 0 /dev/null gh pr view 1')).toContain(EXEC_MENTION_BLOCK)
   })
 
   it.each([
