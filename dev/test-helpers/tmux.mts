@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url'
 import { trackTmuxTestDir } from './tmux-fake-bin.mts'
 export { runTmux } from './run-tmux.mts'
 export { registerTmuxFakeHooks } from './tmux-fake-bin.mts'
-export type { MakeFakeBinOptions } from './tmux-fake-bin.mts'
 
 const sourceTmuxPath = fileURLToPath(new URL('../tmux', import.meta.url))
 const sourceGitWorktreesPath = fileURLToPath(
