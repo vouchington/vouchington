@@ -1,5 +1,6 @@
 import { parseCommandPrefix } from './shell-command-wrappers.mts'
 import { heredocSpecsFromLine, type HeredocSpec } from './shell-heredoc-parser.mts'
+import { redirectionOperatorOf } from './shell-redirections.mts'
 import { commandSegmentStart, nextShellCommandSeparatorIndex } from './shell-token-utils.mts'
 import { tokenizeShellWords } from './shell-tokenizer.mts'
 
@@ -38,10 +39,28 @@ export function stripNonShellHeredocBodies(command: string): HeredocScan {
     }
   }
 
+  const textWithoutBodies = textLines.join('\n')
   return {
-    shellBodies,
-    textWithoutBodies: textLines.join('\n'),
+    shellBodies: [...shellBodies, ...shellHereStrings(textWithoutBodies)],
+    textWithoutBodies,
   }
+}
+
+// `bash <<< 'gh pr merge 1'` and `cat <<< '…' | sh` read the here-string as the script, as they
+// would a heredoc body.
+function shellHereStrings(command: string): string[] {
+  const tokens = tokenizeShellWords(command, { splitRedirections: true })
+  return tokens.flatMap((token, index) => {
+    if (redirectionOperatorOf(token) !== '<<<' || index + 1 >= tokens.length) return []
+    const segmentEnd = nextShellCommandSeparatorIndex(tokens, index)
+    const readsScript =
+      tokensInvokeShell(tokens.slice(commandSegmentStart(tokens, index), segmentEnd)) ||
+      (tokens[segmentEnd] === '|' &&
+        tokensInvokeShell(
+          tokens.slice(segmentEnd + 1, nextShellCommandSeparatorIndex(tokens, segmentEnd + 1)),
+        ))
+    return readsScript ? [tokens[index + 1]] : []
+  })
 }
 
 function heredocLineDelimiter(line: string, spec: HeredocSpec): string {

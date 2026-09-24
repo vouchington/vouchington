@@ -1,6 +1,6 @@
 import { type ParsedOption, parseOptions } from './shell-option-grammar.mts'
 import { isShellRedirectionOperatorToken } from './shell-redirections.mts'
-import { isShellAssignment } from './shell-token-utils.mts'
+import { isShellAssignment, plainShellAssignment } from './shell-token-utils.mts'
 import { WRAPPERS } from './shell-wrapper-grammars.mts'
 
 /** What a recognized wrapper chain before a command word changes about how that command runs. */
@@ -30,6 +30,8 @@ const SHELL_CONTROL_PREFIXES = new Set([
   'until',
   'while',
 ])
+// Control prefixes that open a compound command whose first command follows in the same segment.
+const COMPOUND_OPENERS = new Set(['{', 'if', 'until', 'while'])
 
 /**
  * Parses the words between a command segment's start and a command word. Returns null when they
@@ -52,12 +54,17 @@ export function parseCommandPrefix(prefixWords: readonly string[]): CommandPrefi
   while (cursor < words.length) {
     const word = words[cursor]
     if (isShellAssignment(word)) {
-      const equalsIndex = word.indexOf('=')
-      prefix.env[word.slice(0, equalsIndex)] = word.slice(equalsIndex + 1)
+      const assignment = plainShellAssignment(word)
+      if (assignment !== null) prefix.env[assignment.name] = assignment.value
       cursor += 1
       continue
     }
-    if (controlAllowed && word === 'function' && cursor + 1 < words.length) {
+    // `function NAME` and bash's `coproc NAME` before a compound command (`coproc m { gh …; }`).
+    if (
+      controlAllowed &&
+      (word === 'function' || (word === 'coproc' && COMPOUND_OPENERS.has(words[cursor + 2]))) &&
+      cursor + 1 < words.length
+    ) {
       cursor += 2
       continue
     }

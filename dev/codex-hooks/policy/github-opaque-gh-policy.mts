@@ -25,21 +25,22 @@ export function findOpaqueGhBlock(
   )
 }
 
-// `gh "$@"` in a shell function, `gh $CMD`, and `gh pr "$ACTION"` choose the subcommand at run
-// time. No gh area or action contains `$` or a backtick, so either one marks an expansion.
-// gh stack actions need no rule here: the stack allowlist is closed.
+// `gh "$@"` in a shell function, `gh $CMD`, `gh pr "$ACTION"`, and `gh pr {merge,}` choose the
+// subcommand at run time, and an alias payload ends in `"$@"` (github-wrapper-payloads.mts). No
+// gh area or action contains `$`, a backtick, a brace, or a glob character, so any of them marks
+// an expansion. gh stack actions need no rule here: the stack allowlist is closed.
 function findExpandedGhSubcommandBlock(tokens: string[], index: number): BlockDecision | null {
   if (tokens[index].slice(tokens[index].lastIndexOf('/') + 1) !== 'gh') return null
   const [area, action] = ghSubcommandWords(tokens, index)
   const actionIsGated = area !== undefined && ACTION_POLICY_AREAS.has(area)
   if (!isExpansion(area) && !(actionIsGated && isExpansion(action))) return null
   return {
-    reason: `This gh subcommand comes from a shell expansion (\`$VAR\`, \`"$@"\`, \`$(…)\`), for example a shell function that forwards its arguments to gh, so the hook cannot check it against ${GITHUB_POLICIES}. Run gh with a literal subcommand instead.`,
+    reason: `This gh subcommand comes from a shell expansion (\`$VAR\`, \`"$@"\`, \`$(…)\`, \`{a,b}\`, a glob) or from the arguments a shell function or alias forwards to gh (\`alias g='gh pr'\`, \`gh alias set p pr\`), so the hook cannot check it against ${GITHUB_POLICIES}. Run gh with a literal subcommand, and give each alias its full subcommand.`,
   }
 }
 
 function isExpansion(word: string | undefined): boolean {
-  return word !== undefined && /[$`]/.test(word)
+  return word !== undefined && /[$`{*?[]/.test(word)
 }
 
 // `gh alias import [FILE | -]` and `gh alias set NAME -` read expansions the hook never sees, and

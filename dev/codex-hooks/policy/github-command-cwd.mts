@@ -9,7 +9,7 @@ const CONDITIONAL_PREFIXES = new Set(['then', 'else', 'elif', 'do'])
 const UNRESOLVED_DIRECTORY = /[$`~*?[{]/
 // Wrappers that still run the shell's own `cd` builtin; the rest exec a separate `cd` process
 // whose directory change dies with it.
-const BUILTIN_CD_WRAPPERS = new Set(['builtin', 'command', 'time'])
+const BUILTIN_CD_WRAPPERS = new Set(['-', 'builtin', 'command', 'nocorrect', 'noglob', 'time'])
 
 /**
  * Working directory the `gh` token at `index` would see after sequential

@@ -1,6 +1,6 @@
 import { checkoutOwner, ownerOfRepoSelector } from './github-checkout-owners.mts'
 import { commandPrefixAt, commandSegmentStart } from './github-command-position.mts'
-import { isShellAssignment } from './shell-token-utils.mts'
+import { plainShellAssignment } from './shell-token-utils.mts'
 
 // The prefix words that only set or unset gh's environment: `env` and `command` themselves and
 // `env`'s unset forms. Any other `env` option (`-i`, `-`, `-C`, `-S`) or wrapper clears the
@@ -38,12 +38,14 @@ export function implicitRepositoryOwner(
   return cwdIsProven ? checkoutOwner(cwd) : undefined
 }
 
+// A `NAME+=value` append or `NAME[i]=value` element gives gh a value the hook can't read, so only a
+// plain `NAME=value` assignment counts.
 function prefixOnlySetsVariables(prefix: string[]): boolean {
   for (let cursor = 0; cursor < prefix.length; cursor += 1) {
     const word = prefix[cursor]
     if ((word === '-u' || word === '--unset') && cursor + 1 < prefix.length) {
       cursor += 1
-    } else if (!isShellAssignment(word) && !MODELED_PREFIX_WORD.test(word)) {
+    } else if (plainShellAssignment(word) === null && !MODELED_PREFIX_WORD.test(word)) {
       return false
     }
   }

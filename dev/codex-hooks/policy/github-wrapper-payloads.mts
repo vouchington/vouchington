@@ -48,15 +48,22 @@ function evalPayload(args: ShellWord[]): string {
   return operands.map(arg => arg.value).join(' ')
 }
 
+// An alias runs its value followed by whatever words come after the alias name, and a non-shell
+// gh alias appends its extra arguments the same way, so `alias g='gh pr'` or `gh alias set p pr`
+// leaves the action to each use. `"$@"` stands for those words.
+const FORWARDED_ARGUMENTS = ' "$@"'
+
 function aliasValues(args: ShellWord[]): string[] {
   return args.flatMap(({ value }) => {
     const equalsIndex = value.indexOf('=')
-    return equalsIndex > 0 ? [value.slice(equalsIndex + 1)] : []
+    return equalsIndex > 0 ? [`${value.slice(equalsIndex + 1)}${FORWARDED_ARGUMENTS}`] : []
   })
 }
 
 // env splits an -S string into separate arguments in place of the option and keeps parsing, so
-// `env -C /tmp -S 'gh pr merge 1'` runs `gh pr merge 1` in /tmp. Rebuild that invocation.
+// `env -C /tmp -S 'gh pr merge 1'` runs `gh pr merge 1` in /tmp. Rebuild that invocation. GNU and
+// BSD env read `\_` as a space: a separator outside double quotes, a literal space inside them.
+// The rebuilt shell text keeps either meaning once `\_` becomes a space.
 function envSplitStringPayloads(args: ShellWord[]): string[] {
   const parsed = parseOptions(
     args.map(arg => arg.value),
@@ -65,7 +72,9 @@ function envSplitStringPayloads(args: ShellWord[]): string[] {
   )
   if (parsed === null || !parsed.options.some(option => option.name === 'split-string')) return []
   const options = parsed.options.map(({ name, value }) => {
-    if (name === 'split-string') return value
+    if (name === 'split-string') {
+      return value?.replace(/\\([\s\S])/g, (escape, char: string) => (char === '_' ? ' ' : escape))
+    }
     const attached = value === undefined ? '' : name.length === 1 ? value : `=${value}`
     return quoteWord({
       expandable: false,
@@ -81,7 +90,9 @@ function ghAliasPayloads(args: ShellWord[]): string[] {
   const shell = rest.some(value => value === '-s' || value === '--shell')
   const [, expansion] = rest.filter(value => !value.startsWith('-'))
   if (expansion === undefined) return []
-  return shell || expansion.startsWith('!') ? [expansion.replace(/^!/, '')] : [`gh ${expansion}`]
+  return shell || expansion.startsWith('!')
+    ? [expansion.replace(/^!/, '')]
+    : [`gh ${expansion}${FORWARDED_ARGUMENTS}`]
 }
 
 function quoteWord({ expandable, value }: ShellWord): string {

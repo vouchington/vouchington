@@ -1,6 +1,6 @@
 import { stripNonShellHeredocBodies } from './shell-heredoc.mts'
-import { findShellScriptArguments } from './shell-script-operand.mts'
-import { stripUnquotedShellComments } from './shell-tokenizer.mts'
+import { findShellScriptArguments, shellScriptOperandIndex } from './shell-script-operand.mts'
+import { stripUnquotedShellComments, tokenizeShellWords } from './shell-tokenizer.mts'
 
 const GIT_GLOBAL_OPTIONS_RE = new RegExp(
   String.raw`\bgit(?:\s+(?:` +
@@ -43,10 +43,24 @@ export type ShellCommandArgument = {
 
 export function extractShellCommandArguments(command: string): ShellCommandArgument[] {
   const commandWithoutComments = stripUnquotedShellComments(command)
-  return findShellScriptArguments(commandWithoutComments).map(({ script, shellIndex }) => ({
-    command: script,
-    inheritsEditor: shellCommandInheritsEditor(commandWithoutComments, shellIndex),
-  }))
+  const quotedScripts = findShellScriptArguments(commandWithoutComments).map(
+    ({ script, shellIndex }) => ({
+      command: script,
+      inheritsEditor: shellCommandInheritsEditor(commandWithoutComments, shellIndex),
+    }),
+  )
+  // The quoted scan also reads a `bash -c '…'` nested inside another command's argument. A script
+  // built from several quoted pieces or escapes (`bash -c gh\ pr\ merge`, `"gh pr "merge`) is one
+  // shell word only the tokenizer reads, and it never inherits an exported editor.
+  const seen = new Set(quotedScripts.map(script => script.command))
+  const words = tokenizeShellWords(commandWithoutComments, { splitRedirections: true })
+  const wordScripts = words.flatMap((_word, index) => {
+    const operand = shellScriptOperandIndex(words, index)
+    if (operand === undefined || seen.has(words[operand])) return []
+    seen.add(words[operand])
+    return [{ command: words[operand], inheritsEditor: false }]
+  })
+  return [...quotedScripts, ...wordScripts]
 }
 
 export function shellCommandInheritsEditor(command: string, shellCommandIndex: number): boolean {

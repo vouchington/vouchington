@@ -65,6 +65,8 @@ const XARGS_GRAMMAR: OptionGrammar = {
  * are arguments. Grammars are the GNU and BSD unions so no argument is mistaken for the command.
  */
 export const WRAPPERS: ReadonlyMap<string, Wrapper> = new Map<string, Wrapper>([
+  // zsh precommand modifiers: `- gh`, `nocorrect gh`, `noglob gh`.
+  ['-', { grammar: NO_OPTIONS }],
   ['builtin', { grammar: NO_OPTIONS }],
   ['command', { describeOnly: new Set(['v', 'V']), grammar: NO_OPTIONS }],
   ['env', { grammar: ENV_GRAMMAR }],
@@ -79,6 +81,8 @@ export const WRAPPERS: ReadonlyMap<string, Wrapper> = new Map<string, Wrapper>([
       },
     },
   ],
+  ['nocorrect', { grammar: NO_OPTIONS }],
+  ['noglob', { grammar: NO_OPTIONS }],
   ['nohup', { grammar: NO_OPTIONS }],
   ['rtk', { grammar: NO_OPTIONS }],
   [

@@ -6,7 +6,10 @@ const SHELLS = new Set(['bash', 'sh', 'zsh'])
 const LONG_OPTIONS_WITH_ARGUMENT = new Set(['emulate', 'init-file', 'rcfile'])
 const SHELL_WORD = /(?:^|[\s;&|()])(?:\S*\/)?(?:bash|sh|zsh)(?=\s)/g
 const NEXT_WORD = /\s*(\S+)/y
-const QUOTED_SCRIPT = /(["'])((?:\\.|(?!\1)[\s\S])*)\1/y
+// A backslash is literal inside single quotes. Inside double quotes it escapes one character, and
+// the two branches start with different characters so a run of backslashes has one reading.
+const SINGLE_QUOTED_SCRIPT = /'([^']*)'/y
+const DOUBLE_QUOTED_SCRIPT = /"((?:\\[\s\S]|[^"\\])*)"/y
 
 type ShellOption = { argumentWords: number; runsScript: boolean }
 
@@ -91,6 +94,10 @@ function scriptStart(command: string, position: number): number | undefined {
 
 function readQuotedScript(command: string, start: number): string | undefined {
   if (command.startsWith("$'", start)) return readAnsiCString(command, start + 2)?.value
-  QUOTED_SCRIPT.lastIndex = start
-  return QUOTED_SCRIPT.exec(command)?.[2].replace(/\\(["'\\])/g, '$1')
+  if (command[start] === "'") {
+    SINGLE_QUOTED_SCRIPT.lastIndex = start
+    return SINGLE_QUOTED_SCRIPT.exec(command)?.[1]
+  }
+  DOUBLE_QUOTED_SCRIPT.lastIndex = start
+  return DOUBLE_QUOTED_SCRIPT.exec(command)?.[1].replace(/\\([$`"\\\n])/g, '$1')
 }
