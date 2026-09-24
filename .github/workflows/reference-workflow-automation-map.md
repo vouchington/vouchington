@@ -58,7 +58,9 @@ flowchart LR
 `select-ci`, and `static-code-analysis` gates all of them (`backend-smoke` through
 `static-backend`), so those edges are drawn once to the group. Docs-only changes skip the gated
 jobs. `select-ci` can skip, shard, or narrow a job on a pull request and selects the full suite
-for merge groups. Test-to-test edges accept a skipped upstream but not a failed one; see the
+for merge groups. The rounded join node is not a job: both Playwright suites wait for every area
+static check and application Vitest root. Test-to-test edges accept a skipped upstream but not a
+failed one; see the
 semantic CI DAG in [CLAUDE.md](CLAUDE.md). For the exact job graph, run
 `pnpm run ci:topology --format mermaid --workflow .github/workflows/ci.yml`.
 
@@ -72,43 +74,28 @@ flowchart TD
     detect-changes --> select-ci["select-ci<br/>(PR selection; full suite for merge groups)"]
 
     subgraph gated["Gated jobs"]
-        subgraph area-static["Area static (checks-static.yml)"]
-            static-backend["static-backend"]
-            static-web["static-web"]
-            static-lambdas["static-lambdas"]
-            static-cloudflare-worker["static-cloudflare-worker"]
-        end
-        subgraph app-vitest["Application Vitest roots"]
-            test-ts-shared["test-ts-shared"]
-            test-backend-modules["test-backend-modules"]
-            test-backend-unit["test-backend-unit"]
-            test-postgres-schema["test-postgres-schema"]
-            test-web["test-web"]
-            test-web-api["test-web-api"]
-            test-web-integration["test-web-integration"]
-            test-lambdas["test-lambdas"]
-            test-cloudflare-worker["test-cloudflare-worker"]
-        end
-        test-backend-credentialed["test-backend-credentialed"]
-        backend-smoke["backend-smoke<br/>(migrations + API/worker smoke)"]
-        test-explain-analyze["test-explain-analyze"]
+        static-backend["static-backend<br/>(area static)"]
+        static-web["static-web<br/>(area static + shared web build)"]
+        static-lambdas["static-lambdas<br/>(area static)"]
+        static-cloudflare-worker["static-cloudflare-worker<br/>(area static)"]
+        test-ts-shared["test-ts-shared"]
+        static-backend --> test-backend-modules["test-backend-modules"] & test-backend-unit["test-backend-unit"] & test-backend-credentialed["test-backend-credentialed"]
+        static-backend --> test-postgres-schema["test-postgres-schema"] & test-explain-analyze["test-explain-analyze"] & backend-smoke["backend-smoke<br/>(migrations + API/worker smoke)"]
+        test-ts-shared --> test-backend-modules & test-backend-unit & test-backend-credentialed
+        static-web --> test-web["test-web"] & test-web-api["test-web-api"] & test-web-integration["test-web-integration"]
+        test-web --> test-web-api & test-web-integration
+        static-lambdas --> test-lambdas["test-lambdas"]
+        static-cloudflare-worker --> test-cloudflare-worker["test-cloudflare-worker"]
+        app-vitest-done(["join: area static + application Vitest roots<br/>passed or skipped"])
+        test-ts-shared & test-backend-modules & test-backend-unit & test-postgres-schema --> app-vitest-done
+        test-web & test-web-api & test-web-integration & test-lambdas & test-cloudflare-worker --> app-vitest-done
+        app-vitest-done --> test-playwright["test-playwright"]
+        app-vitest-done --> test-playwright-credentialed["test-playwright-credentialed<br/>(trusted secret context only)"]
+        test-backend-credentialed --> test-playwright-credentialed
         initialize-smoke-test["initialize-smoke-test"]
         storybook["storybook<br/>(tests + build)"]
         test-tooling["test-tooling"]
         test-portability["test-portability<br/>(macOS + Linux)"]
-        test-playwright["test-playwright"]
-        test-playwright-credentialed["test-playwright-credentialed<br/>(trusted secret context only)"]
-        static-backend --> test-backend-modules & test-backend-unit & test-backend-credentialed
-        static-backend --> test-postgres-schema & test-explain-analyze & backend-smoke
-        test-ts-shared --> test-backend-modules & test-backend-unit & test-backend-credentialed
-        static-web --> test-web & test-web-api & test-web-integration
-        test-web --> test-web-api & test-web-integration
-        static-lambdas --> test-lambdas
-        static-cloudflare-worker --> test-cloudflare-worker
-        area-static --> test-playwright & test-playwright-credentialed
-        app-vitest -- "passed or skipped" --> test-playwright
-        app-vitest -- "passed or skipped" --> test-playwright-credentialed
-        test-backend-credentialed --> test-playwright-credentialed
     end
 
     static-code-analysis --> gated
