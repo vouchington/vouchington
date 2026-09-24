@@ -1,10 +1,16 @@
 import type { BlockDecision } from './core.mts'
 import { findUnresolvedEvalBlock } from './github-eval-resolution-policy.mts'
-import { findExecWrapperMentionBlock } from './github-exec-wrapper-mention-policy.mts'
+import {
+  EXEC_STYLE_WRAPPER_NAMES,
+  findExecWrapperMentionBlock,
+} from './github-exec-wrapper-mention-policy.mts'
 import { findFindExecOpaqueBlock, findParallelOpaqueBlock } from './github-exec-runner-policy.mts'
 import { findUnknownGhAreaBlock } from './github-gh-areas.mts'
 import { type GhInvocation, ghSubcommandWords } from './github-invocation.mts'
-import { findUnresolvedVariableExecutableBlock } from './github-variable-executable-policy.mts'
+import {
+  findUnresolvedVariableExecutableBlock,
+  PARAMETER_EXPANSION,
+} from './github-variable-executable-policy.mts'
 import { findXargsGhSubcommandBlock } from './github-xargs-policy.mts'
 import type { CommandPrefix } from './shell-command-wrappers.mts'
 
@@ -52,6 +58,26 @@ function findExpandedGhSubcommandBlock(tokens: string[], index: number): BlockDe
 
 function isExpansion(word: string | undefined): boolean {
   return word !== undefined && /[$`{*?[]/.test(word)
+}
+
+/**
+ * Whether `findOpaqueGhBlock` could possibly fire with `word` at the finder's own index: `find`
+ * and `parallel` (their opaque clause/template checks), an exec-style wrapper name (the backstop),
+ * `eval`, or a parameter expansion (the unresolved-variable-executable check). The other checks
+ * above key on a literal `gh`/`gh-stack` word instead, already covered by the caller's own filter.
+ * Cheap enough to call at every token position before the more expensive wrapper-chain parse —
+ * kept in sync with the chain above by construction: a finder that starts scanning from a new kind
+ * of word needs that word added here too, or the caller's loop never reaches it.
+ */
+export function mayStartOpaqueGhCheck(word: string): boolean {
+  const name = word.slice(word.lastIndexOf('/') + 1)
+  return (
+    name === 'find' ||
+    name === 'parallel' ||
+    name === 'eval' ||
+    EXEC_STYLE_WRAPPER_NAMES.has(name) ||
+    PARAMETER_EXPANSION.test(word)
+  )
 }
 
 // `gh alias import [FILE | -]` and `gh alias set NAME -` read expansions the hook never sees, and

@@ -17,7 +17,7 @@ const GITHUB_POLICIES =
 // gh pr merge 1` unsets a variable named `gh`; `timeout gh pr merge 1` treats `gh` as the
 // duration) — scanning past a wrapper this hook already fully understands would fail closed on
 // those, for a wrapper that has no modeling gap to hide behind.
-const EXEC_STYLE_WRAPPER_NAMES: ReadonlySet<string> = new Set(
+export const EXEC_STYLE_WRAPPER_NAMES: ReadonlySet<string> = new Set(
   EXEC_WRAPPER_ENTRIES.map(([name]) => name),
 )
 

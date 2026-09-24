@@ -15,7 +15,7 @@ const GITHUB_POLICIES =
 // the `GH_LOOKUP_SUBSTITUTION` payload in github-wrapper-payloads.mts before this check ever runs,
 // and re-flagging it here would fail closed on an already-resolved invocation. Backticks are
 // excluded outright, since they are always command substitution, never parameter expansion.
-const PARAMETER_EXPANSION = /\$(?!\()/
+export const PARAMETER_EXPANSION = /\$(?!\()/
 
 /**
  * `$GH pr merge 1` chooses the executable at run time, and so does any other word in the command
