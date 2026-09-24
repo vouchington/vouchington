@@ -89,12 +89,7 @@ function emptyResolveCheck(files: readonly string[]): ResolveCheckBatchResult {
   return {
     allResolve: true,
     unresolvedFiles: [],
-    results: files.map(file => ({
-      file,
-      allResolve: true,
-      imports: [],
-      unresolved: [],
-    })),
+    results: files.map(file => ({ file, allResolve: true, imports: [], unresolved: [] })),
   }
 }
 function dependencyPaths(result: DependencyResult | undefined): string[] {
@@ -103,6 +98,7 @@ function dependencyPaths(result: DependencyResult | undefined): string[] {
 function installGraphMocks(resolveCheck?: ResolveCheckBatchResult): void {
   derivedResolveFiles = []
   noMistakes.analyzeProject.mockImplementation(async options => {
+    const requests = new Map(options.reports.map(report => [report.id, report]))
     const dependencyReports = new Map(
       options.reports
         .filter(report => report.type === 'dependencies')
@@ -113,18 +109,17 @@ function installGraphMocks(resolveCheck?: ResolveCheckBatchResult): void {
     )
     return {
       reports: options.reports.map(report => {
-        const files =
-          report.type === 'resolveCheckDependencies'
-            ? report.dependencyReportIds.flatMap(id => dependencyPaths(dependencyReports.get(id)))
-            : []
-        if (report.type === 'resolveCheckDependencies') derivedResolveFiles.push(files)
+        if (report.type !== 'resolveCheckDependencies')
+          return { id: report.id, type: report.type, result: dependencyReports.get(report.id)! }
+        const files = report.dependencyReportIds.flatMap(id => [
+          ...requestedFiles(requests.get(id)!),
+          ...dependencyPaths(dependencyReports.get(id)),
+        ])
+        derivedResolveFiles.push(files)
         return {
           id: report.id,
           type: report.type,
-          result:
-            report.type === 'resolveCheckDependencies'
-              ? (resolveCheck ?? emptyResolveCheck(files))
-              : dependencyReports.get(report.id)!,
+          result: resolveCheck ?? emptyResolveCheck(files),
         }
       }),
     }
@@ -170,7 +165,12 @@ function expectGraphRequests(expectedCalls = 1): void {
     ])
       expect(requestedRoots.has(file)).toBe(true)
     expect(derivedResolveFiles[index]).toEqual(
-      expect.arrayContaining(['web/lib/dynamic.ts', 'web/lib/labels.ts']),
+      expect.arrayContaining([
+        'web/app/other/page.ts',
+        'web/app/forbidden.tsx',
+        'web/lib/dynamic.ts',
+        'web/lib/labels.ts',
+      ]),
     )
     expect(dependencyReports.at(-1)?.id).toBe('resolve-closure')
     expect(requestedFiles(dependencyReports.at(-1)!)).toEqual([
@@ -252,7 +252,6 @@ describe('mocked web route graph closures', () => {
       expectGraphRequests()
     })
   })
-
   it('fails when reachable source assembles a translation key at runtime', async () => {
     await withRoutes(
       {
@@ -267,7 +266,6 @@ describe('mocked web route graph closures', () => {
       },
     )
   })
-
   it('fails when reachable source uses a computed dynamic import', async () => {
     await withRoutes(
       {
@@ -282,7 +280,6 @@ describe('mocked web route graph closures', () => {
       },
     )
   })
-
   it('fails when production web source casts as MessageKey', async () => {
     await withRoutes(
       {
