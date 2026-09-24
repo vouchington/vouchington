@@ -55,9 +55,7 @@ GitHub artifact probe downloads one or more exact names (repeated `--name`, as
 [`ci-tests-processing.yml`](../.github/workflows/ci-tests-processing.yml) builds from
 [`vitest-blob-candidate-names.mts`](vitest-blob-candidate-names.mts)) or a single pattern, writes a
 typed `availability` output, preserves downloader diagnostics, and turns expected absence into one
-bounded warning so terminal validation decides whether evidence is complete. Repeated `--name` needs
-the `vouchington-tooling` release containing PR #276; the version this repository currently pins
-accepts only one `--name`/`--pattern` selector per invocation.
+bounded warning so terminal validation decides whether evidence is complete.
 
 ## Historical coverage baseline comparison
 
