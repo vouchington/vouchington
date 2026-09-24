@@ -26,7 +26,7 @@
   "dependencies": {
     "@ts-shared/money": "workspace:^",
     "@vouchington/localization": "0.2.0",
-    "@vouchington/localization-compiler": "0.2.1"
+    "@vouchington/localization-compiler": "0.2.2"
   },
   "devDependencies": {
     "@react-email/render": "^2.1.0",
