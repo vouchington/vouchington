@@ -128,6 +128,7 @@ describe('Codex hook gh policies behind command wrappers', () => {
     'gh "$AREA" merge 1',
     'gh pr "$ACTION" 1',
     'gh pr `echo merge` 1',
+    'gh issue "$ACTION" --title t',
     'echo 1 | xargs sh -c \'gh pr "$1" 1\' _',
   ])('fails closed when a shell expansion supplies the gh subcommand: %s', command => {
     expect(reasonFor(command)).toContain(EXPANSION_BLOCK)

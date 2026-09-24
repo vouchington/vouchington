@@ -5,6 +5,8 @@ import type { CommandPrefix } from './shell-command-wrappers.mts'
 
 const GITHUB_POLICIES =
   'the GitHub policies (draft-first PRs, merge authority, the gh stack allowlist)'
+// Areas whose policies key on the action too (`pr merge`, `pr create`, `issue create`).
+const ACTION_POLICY_AREAS = new Set(['issue', 'pr'])
 
 /**
  * A gh command whose subcommand or alias expansion the hook cannot read. The GitHub policies key
@@ -24,12 +26,13 @@ export function findOpaqueGhBlock(
 }
 
 // `gh "$@"` in a shell function, `gh $CMD`, and `gh pr "$ACTION"` choose the subcommand at run
-// time. No gh area or pr action contains `$` or a backtick, so either one marks an expansion.
+// time. No gh area or action contains `$` or a backtick, so either one marks an expansion.
 // gh stack actions need no rule here: the stack allowlist is closed.
 function findExpandedGhSubcommandBlock(tokens: string[], index: number): BlockDecision | null {
   if (tokens[index].slice(tokens[index].lastIndexOf('/') + 1) !== 'gh') return null
   const [area, action] = ghSubcommandWords(tokens, index)
-  if (!isExpansion(area) && !(area === 'pr' && isExpansion(action))) return null
+  const actionIsGated = area !== undefined && ACTION_POLICY_AREAS.has(area)
+  if (!isExpansion(area) && !(actionIsGated && isExpansion(action))) return null
   return {
     reason: `This gh subcommand comes from a shell expansion (\`$VAR\`, \`"$@"\`, \`$(…)\`), for example a shell function that forwards its arguments to gh, so the hook cannot check it against ${GITHUB_POLICIES}. Run gh with a literal subcommand instead.`,
   }
