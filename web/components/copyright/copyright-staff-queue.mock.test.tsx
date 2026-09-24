@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  listCopyrightReviewQueue,
   replayCopyrightActionIntent,
   replayCopyrightDeliveryIntent,
 } from '@/lib/api/client/copyright-notices'
@@ -8,12 +9,14 @@ import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffQueue } from './copyright-staff-queue'
 
 vi.mock(import('@/lib/api/client/copyright-notices'), () => ({
+  listCopyrightReviewQueue: vi.fn<VitestLooseMock>(),
   replayCopyrightActionIntent: vi.fn<VitestLooseMock>(),
   replayCopyrightDeliveryIntent: vi.fn<VitestLooseMock>(),
 }))
 
 const mockReplayAction = vi.mocked(replayCopyrightActionIntent)
 const mockReplayDelivery = vi.mocked(replayCopyrightDeliveryIntent)
+const mockList = vi.mocked(listCopyrightReviewQueue)
 const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
 
 describe('CopyrightStaffQueue recovery actions', () => {
@@ -41,7 +44,14 @@ describe('CopyrightStaffQueue recovery actions', () => {
   ])(
     'retries failed intent $intentId without a decision rationale',
     async ({ index, intentId, replay }) => {
-      render(<CopyrightStaffQueue notices={[makeNotice()]} />)
+      render(
+        <CopyrightStaffQueue
+          data={{
+            copyright_notices: [makeNotice()],
+            page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+          }}
+        />,
+      )
 
       const retries = screen.getAllByRole('button', { name: 'Retry' })
       expect(retries).toHaveLength(2)
@@ -53,6 +63,25 @@ describe('CopyrightStaffQueue recovery actions', () => {
       })
     },
   )
+
+  it('loads a subsequent page from the staff cursor and renders its cases', async () => {
+    mockList.mockResolvedValue({
+      copyright_notices: [{ ...makeNotice(), id: 'case-456' }],
+      page_info: { has_next_page: false, start_cursor: 'next', end_cursor: 'next' },
+    })
+    render(
+      <CopyrightStaffQueue
+        data={{
+          copyright_notices: [makeNotice()],
+          page_info: { has_next_page: true, start_cursor: 'first', end_cursor: 'next' },
+        }}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    await waitFor(() => expect(mockList).toHaveBeenCalledWith({ after: 'next' }))
+    await waitFor(() => expect(screen.getAllByText('Original photograph.')).toHaveLength(2))
+  })
 })
 
 function makeNotice(): CopyrightStaffQueueItem {

@@ -117,3 +117,8 @@ export type CopyrightStaffQueueItem = {
     reviewed_at: string
   }>
 }
+
+export type CopyrightStaffQueuePage = {
+  copyright_notices: CopyrightStaffQueueItem[]
+  page_info: CopyrightNoticesPage['page_info']
+}

@@ -7,7 +7,7 @@ import type {
   CopyrightNoticeDetail,
   CopyrightNoticesPage,
   CopyrightParticipantNoticeDetail,
-  CopyrightStaffQueueItem,
+  CopyrightStaffQueuePage,
 } from '@/types/copyright-notices'
 
 export type CopyrightNoticeTargetInput = {
@@ -94,10 +94,13 @@ export function getCopyrightParticipantNotice(
   return clientApi.get(`/api/v1/copyright-notices/${id}/participant`)
 }
 
-export function listCopyrightReviewQueue(): Promise<{
-  copyright_notices: CopyrightStaffQueueItem[]
-}> {
-  return clientApi.get('/api/v1/copyright-notices/review-queue')
+export function listCopyrightReviewQueue(options?: {
+  after?: string
+  limit?: number
+}): Promise<CopyrightStaffQueuePage> {
+  return clientApi.get('/api/v1/copyright-notices/review-queue', {
+    searchParams: { after: options?.after, limit: options?.limit },
+  })
 }
 
 export function reviewCopyrightFormIntake(

@@ -9,6 +9,41 @@ export async function readCopyrightNoticeTargetId(noticeId: string): Promise<str
   return rows[0].id
 }
 
+export async function readCopyrightStaffQueueBoundary(noticeIds: string[]): Promise<{
+  id: string
+  received_at: string
+}> {
+  const { rows } = await read<{ id: string; received_at: string }>(
+    sql`/* readCopyrightStaffQueueBoundary */
+      SELECT id, to_char(
+        received_at AT TIME ZONE 'UTC',
+        'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+      ) AS received_at
+      FROM copyright_notices
+      WHERE id = ANY(${noticeIds}::uuid[])
+      ORDER BY received_at, id
+      LIMIT 1`,
+  )
+  if (!rows[0]) throw new Error('Copyright staff queue fixture has no notices')
+  return rows[0]
+}
+
+export async function readCopyrightStaffQueueCursorRows(
+  noticeIds: string[],
+): Promise<Array<{ id: string; received_at: string }>> {
+  const { rows } = await read<{ id: string; received_at: string }>(
+    sql`/* readCopyrightStaffQueueCursorRows */
+      SELECT id, to_char(
+        received_at AT TIME ZONE 'UTC',
+        'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+      ) AS received_at
+      FROM copyright_notices
+      WHERE id = ANY(${noticeIds}::uuid[])
+      ORDER BY received_at, id`,
+  )
+  return rows
+}
+
 export async function readCopyrightNoticeTargetIds(noticeId: string): Promise<string[]> {
   const { rows } = await read<{ id: string }>(sql`/* readCopyrightNoticeTargetIds */
     SELECT id FROM copyright_notice_targets WHERE copyright_notice_id = ${noticeId} ORDER BY id`)

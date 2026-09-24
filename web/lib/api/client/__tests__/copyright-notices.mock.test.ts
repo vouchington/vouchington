@@ -28,7 +28,7 @@ import {
   reviewCopyrightRestriction,
 } from '../copyright-notices'
 import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
-import type { CopyrightNoticesPage } from '@/types/copyright-notices'
+import type { CopyrightNoticesPage, CopyrightStaffQueuePage } from '@/types/copyright-notices'
 
 const mockGet = vi.mocked(clientApi.get)
 const mockPost = vi.mocked(clientApi.post)
@@ -46,6 +46,22 @@ describe('copyright notices client', () => {
       response,
       call: () => listCopyrightNotices({ after: 'next', limit: 100 }),
       expectedArgs: ['/api/v1/copyright-notices', { searchParams: { after: 'next', limit: 100 } }],
+    })
+  })
+
+  it('forwards the opaque staff queue continuation cursor', async () => {
+    const staffResponse: CopyrightStaffQueuePage = {
+      copyright_notices: [],
+      page_info: { has_next_page: false, start_cursor: 'next', end_cursor: 'next' },
+    }
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: staffResponse,
+      call: () => listCopyrightReviewQueue({ after: 'next', limit: 50 }),
+      expectedArgs: [
+        '/api/v1/copyright-notices/review-queue',
+        { searchParams: { after: 'next', limit: 50 } },
+      ],
     })
   })
 
@@ -123,9 +139,17 @@ describe('copyright notices client', () => {
     await expectGet(notice, () => getCopyrightParticipantNotice('notice-1'), [
       '/api/v1/copyright-notices/notice-1/participant',
     ])
-    await expectGet({ copyright_notices: [] }, () => listCopyrightReviewQueue(), [
-      '/api/v1/copyright-notices/review-queue',
-    ])
+    await expectGet(
+      {
+        copyright_notices: [],
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      },
+      () => listCopyrightReviewQueue(),
+      [
+        '/api/v1/copyright-notices/review-queue',
+        { searchParams: { after: undefined, limit: undefined } },
+      ],
+    )
   })
 
   it('posts staff review, legal-hold, and replay actions', async () => {
