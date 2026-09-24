@@ -26,7 +26,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/s3-request-presigner": "^3.1136.0",
+    "@aws-sdk/s3-request-presigner": "^3.1137.0",
     "@data-stores/analytics": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/psql": "workspace:^",
