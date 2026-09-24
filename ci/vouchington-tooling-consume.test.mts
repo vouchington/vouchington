@@ -34,12 +34,12 @@ importers:
     configDependencies: {}
     packageManagerDependencies:
       pnpm:
-        specifier: 12.5.1
-        version: 12.5.1
+        specifier: 12.6.0
+        version: 12.6.0
 
 packages:
 
-  pnpm@12.5.1:
+  pnpm@12.6.0:
     resolution: {integrity: sha512-pnpm-placeholder}
 
 ---
