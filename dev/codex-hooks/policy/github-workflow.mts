@@ -19,6 +19,7 @@ import { commandCwd } from './github-command-cwd.mts'
 import { isCommandPositionInvocation } from './github-command-position.mts'
 import { findGhApiMergeBlock } from './github-api-merge-options.mts'
 import { findHandRolledStackBaseBlock } from './github-configured-base.mts'
+import { contentRuleExemption } from './github-content-rule-scope.mts'
 import { findGhPrMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
@@ -50,6 +51,7 @@ export function findGitHubWorkflowBlock(
       splitRedirections: true,
     })
     const tokens = detailedTokens.map(token => token.value)
+    const exemptFromContentRules = contentRuleExemption(command, detailedTokens, options)
 
     for (let index = 0; index < tokens.length; index += 1) {
       if (!isCommandPositionInvocation(tokens, index)) {
@@ -61,6 +63,9 @@ export function findGitHubWorkflowBlock(
       }
       const { action, area } = invocation
       const invocationCwd = commandCwd(tokens, index, cwd)
+      if (exemptFromContentRules(invocation, index, invocationCwd)) {
+        continue
+      }
 
       if (area === 'pr' && (action === 'create' || action === 'new' || action === 'edit')) {
         const ghOptions = parseGhOptions(invocation.optionTokens)

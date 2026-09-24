@@ -132,6 +132,7 @@ export function preToolUseOutput(payload: HookPayload, options: PreToolUseOption
   const block = findPreToolUseBlock(payload, {
     validateClosingIssueReferences: true,
     automationContext: options.automationContext,
+    sessionOwner: options.sessionOwner,
   })
   if (block === null) {
     return ''

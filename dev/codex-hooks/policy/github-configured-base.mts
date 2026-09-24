@@ -10,7 +10,7 @@ const GIT_WORKTREE_OVERRIDE_ENV = new Set([
   'GIT_PREFIX',
 ])
 
-function gitEnvForCwd(): NodeJS.ProcessEnv {
+export function gitEnvForCwd(): NodeJS.ProcessEnv {
   return Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !GIT_WORKTREE_OVERRIDE_ENV.has(key)),
   )

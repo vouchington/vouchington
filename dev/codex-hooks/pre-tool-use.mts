@@ -2,6 +2,7 @@ import * as path from 'node:path'
 
 import { persistGrokRealSessionId } from '../agent-session-id/persist.mts'
 import { isAutomationContext, preToolUseOutput, readHookPayload } from './policy.mts'
+import { checkoutOwner } from './policy/github-content-rule-scope.mts'
 import { resolvePreToolUseRuntime } from './policy/hook-payload.mts'
 
 // argv[2] is the runtime token appended by each config: `claude` (.claude/settings.json) or
@@ -18,6 +19,7 @@ persistGrokRealSessionId(payload, process.env, worktreeRoot)
 const output = preToolUseOutput(payload, {
   automationContext: isAutomationContext(),
   runtime,
+  sessionOwner: () => checkoutOwner(worktreeRoot),
 })
 if (output !== '') {
   process.stdout.write(output)
