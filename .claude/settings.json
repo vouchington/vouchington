@@ -273,7 +273,6 @@
     ],
     "defaultMode": "plan"
   },
-  "model": "opusplan",
   "effortLevel": "xhigh",
   "advisorModel": "opus",
   "statusLine": {
@@ -403,7 +402,6 @@
     "security-triage@vouchington": true,
     "pr-shepherd@jonathanong": true,
     "typescript-lsp@claude-plugins-official": true,
-    "rust-analyzer-lsp@claude-plugins-official": true,
     "lua-lsp@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
     "github@claude-plugins-official": true,
