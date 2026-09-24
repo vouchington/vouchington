@@ -2,6 +2,7 @@ import type { BlockDecision } from './core.mts'
 import { commandPrefixAt } from './github-command-position.mts'
 import { ghSubcommandWords } from './github-invocation.mts'
 import type { CommandPrefix } from './shell-command-wrappers.mts'
+import { isGhWord } from './shell-gh-word.mts'
 import { shellScriptOperandIndex } from './shell-script-operand.mts'
 import { tokenizeShellWords } from './shell-tokenizer.mts'
 
@@ -28,7 +29,7 @@ export function findXargsGhSubcommandBlock(
   if (!prefix.wrappers.includes('xargs')) return null
   const filledIn = (word: string): boolean =>
     prefix.xargsReplacements.some(replacement => word.includes(replacement))
-  if (isGh(tokens[index])) {
+  if (isGhWord(tokens[index])) {
     const [area, action] = ghSubcommandWords(tokens, index)
     const missing = area === undefined || (ACTION_POLICY_AREAS.has(area) && action === undefined)
     return missing || fillsGatedWord([area, action], filledIn) ? XARGS_GH_SUBCOMMAND_BLOCK : null
@@ -39,7 +40,7 @@ export function findXargsGhSubcommandBlock(
   const words = tokenizeShellWords(tokens[scriptIndex], { splitRedirections: true })
   const scriptFillsSubcommand = words.some(
     (word, wordIndex) =>
-      isGh(word) &&
+      isGhWord(word) &&
       commandPrefixAt(words, wordIndex) !== null &&
       fillsGatedWord(ghSubcommandWords(words, wordIndex), filledIn),
   )
@@ -54,9 +55,4 @@ function fillsGatedWord(
   return (
     filledIn(area) || (ACTION_POLICY_AREAS.has(area) && action !== undefined && filledIn(action))
   )
-}
-
-function isGh(word: string): boolean {
-  const name = word.slice(word.lastIndexOf('/') + 1)
-  return name === 'gh' || name === 'gh-stack'
 }

@@ -1,7 +1,19 @@
 import { isCommandPositionInvocation } from './github-command-position.mts'
 import { isGhCommandSeparator } from './github-options.mts'
+import {
+  miseCommandPayload,
+  npxCallPayload,
+  scriptCommandPayload,
+} from './github-wrapper-payloads-exec-forms.mts'
+import {
+  quoteWord,
+  resolvedEvalPayload,
+  resolvedVariableExecutablePayload,
+} from './github-wrapper-payloads-variables.mts'
 import { parseOptions } from './shell-option-grammar.mts'
 import { type ShellWord, tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
+import { isBareVariableWord } from './shell-variable-assignments.mts'
+import { WATCH_GRAMMAR } from './shell-wrapper-exec-grammars.mts'
 import { ENV_GRAMMAR } from './shell-wrapper-grammars.mts'
 
 // `$(which gh)`, `"$(command -v gh)"`, and `` `type -p gh` `` expand to the gh binary itself.
@@ -10,7 +22,23 @@ const GH_LOOKUP_SUBSTITUTION = new RegExp(
   String.raw`(")?(?:\$\(\s*${GH_LOOKUP}\s*\)|\x60\s*${GH_LOOKUP}\s*\x60)\1`,
   'g',
 )
-const PAYLOAD_COMMANDS = new Set(['alias', 'env', 'eval', 'gh'])
+
+type PayloadExtractor = (args: ShellWord[], tokens: string[], index: number) => string[]
+
+// Each entry's key is a command name whose payload is checked below. A `Map` (not a plain
+// object), so an arbitrary command word can never resolve to an Object.prototype member
+// (`constructor`, `toString`) the way a lookup on `{}` would. The key set replaces the old
+// PAYLOAD_COMMANDS list so it cannot drift from the handler it dispatches to.
+const PAYLOAD_EXTRACTORS: ReadonlyMap<string, PayloadExtractor> = new Map([
+  ['alias', aliasValues],
+  ['env', envSplitStringPayloads],
+  ['eval', resolvedEvalPayload],
+  ['gh', ghAliasPayloads],
+  ['mise', miseCommandPayload],
+  ['npx', npxCallPayload],
+  ['script', scriptCommandPayload],
+  ['watch', (args: ShellWord[]): string[] => [watchPayload(args)]],
+])
 
 /**
  * Commands a wrapper or definition runs that the token-level policy scan cannot see as words:
@@ -30,23 +58,33 @@ export function extractWrapperPayloads(command: string): string[] {
   const values = words.map(word => word.value)
   for (let index = 0; index < values.length; index += 1) {
     const name = values[index].slice(values[index].lastIndexOf('/') + 1)
-    // Check the name first: the command-position check rescans the segment up to this word.
-    if (!PAYLOAD_COMMANDS.has(name) || !isCommandPositionInvocation(values, index)) continue
+    // Check the name first: the command-position check rescans the segment up to this word. A
+    // bare variable word (`$GH`) has no payload command name, so it falls back to that check too.
+    const extract =
+      PAYLOAD_EXTRACTORS.get(name) ??
+      (isBareVariableWord(values[index]) ? variableExecutablePayload : undefined)
+    if (extract === undefined) continue
+    if (!isCommandPositionInvocation(values, index)) continue
     let end = index + 1
     while (end < values.length && !isGhCommandSeparator(values[end])) end += 1
     const args = words.slice(index + 1, end)
-    if (name === 'eval') payloads.push(evalPayload(args))
-    if (name === 'alias') payloads.push(...aliasValues(args))
-    if (name === 'env') payloads.push(...envSplitStringPayloads(args))
-    if (name === 'gh') payloads.push(...ghAliasPayloads(args))
+    payloads.push(...extract(args, values, index))
   }
 
   return payloads
 }
 
-// eval joins its arguments with spaces and runs the result as shell input.
-function evalPayload(args: ShellWord[]): string {
-  const operands = args[0]?.value === '--' ? args.slice(1) : args
+function variableExecutablePayload(args: ShellWord[], tokens: string[], index: number): string[] {
+  const resolved = resolvedVariableExecutablePayload(args, tokens, index)
+  return resolved === null ? [] : [resolved]
+}
+
+// `watch` re-runs its argument through the shell on an interval, like eval but re-parsed with its
+// own option grammar first so `watch -n 2 gh …` does not join the interval into the payload.
+function watchPayload(args: ShellWord[]): string {
+  const values = args.map(arg => arg.value)
+  const parsed = parseOptions(values, 0, WATCH_GRAMMAR)
+  const operands = parsed === null ? args : args.slice(parsed.next)
   return operands.map(arg => arg.value).join(' ')
 }
 
@@ -95,8 +133,4 @@ function ghAliasPayloads(args: ShellWord[]): string[] {
   return shell || expansion.startsWith('!')
     ? [expansion.replace(/^!/, '')]
     : [`gh ${expansion}${FORWARDED_ARGUMENTS}`]
-}
-
-function quoteWord({ expandable, value }: ShellWord): string {
-  return expandable ? `"${value.replace(/["\\]/g, '\\$&')}"` : `'${value.replace(/'/g, "'\\''")}'`
 }
