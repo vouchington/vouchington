@@ -120,7 +120,7 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
   })
 
   it('installs JavaScript dependencies before allocating ports', () => {
-    const install = credentialedWorkflowText.indexOf('- uses: ./.github/actions/setup-node-pnpm')
+    const install = credentialedWorkflowText.indexOf('- uses: ./.github/actions/setup-backend')
     const allocate = credentialedWorkflowText.indexOf('- name: Allocate ports')
     expect(install).toBeGreaterThan(-1)
     expect(allocate).toBeGreaterThan(install)

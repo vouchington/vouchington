@@ -31,6 +31,16 @@ describe('pnpm activation via pnpm/action-setup', () => {
     expect(offenders.map(setup => setup.owner)).toEqual([])
   })
 
+  it('sets up pnpm at most once per job or composite action', () => {
+    // setup-backend wraps setup-node-pnpm, so calling both in one job repeats the whole Node,
+    // pnpm, store-cache, and install setup; one setup owner per job must cover every later step.
+    const counts = Map.groupBy(pnpmSetups, setup => setup.owner)
+    const repeated = [...counts].flatMap(([owner, setups]) =>
+      setups.length > 1 ? [`${owner}: ${setups.length}`] : [],
+    )
+    expect(repeated).toEqual([])
+  })
+
   it('never activates pnpm through corepack or npm', () => {
     const offenders = stepLists.filter(({ steps }) =>
       steps.some(step => manualActivationPattern.test(step.run ?? '')),

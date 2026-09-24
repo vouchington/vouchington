@@ -131,7 +131,7 @@ describe('tests-playwright.yml', () => {
 
   it('installs JavaScript dependencies before allocating ports', () => {
     const shardJob = workflowJobSection(workflow, 'playwright-tests')
-    const install = shardJob.indexOf('- uses: ./.github/actions/setup-node-pnpm')
+    const install = shardJob.indexOf('- uses: ./.github/actions/setup-backend')
     const allocate = shardJob.indexOf('- name: Allocate ports')
     expect(install).toBeGreaterThan(-1)
     expect(allocate).toBeGreaterThan(install)
