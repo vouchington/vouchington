@@ -46,12 +46,23 @@ const setupCalls: SetupCall[] = [...workflows].flatMap(([file, workflow]) =>
   ),
 )
 
+// Every setup call in a workflow job or a composite action, so composite callers are held to the
+// same input contract as workflow jobs.
+const setupSteps = stepLists.flatMap(({ owner, steps }) =>
+  steps.flatMap(step =>
+    step.uses === './.github/actions/setup-node-pnpm' ||
+    step.uses === './.github/actions/setup-backend'
+      ? [{ owner, step }]
+      : [],
+  ),
+)
+
 const scriptFreeInstallCallers = new Set([
-  'fix-main-self-retry.yml#retry',
-  'fix-main.yml#classify-self-failure',
-  'fix-main.yml#related-candidates',
-  'fix-main.yml#render-prompt',
-  'fix-main.yml#triage-and-rerun',
+  '.github/workflows/fix-main-self-retry.yml#retry',
+  '.github/workflows/fix-main.yml#classify-self-failure',
+  '.github/workflows/fix-main.yml#related-candidates',
+  '.github/workflows/fix-main.yml#render-prompt',
+  '.github/workflows/fix-main.yml#triage-and-rerun',
 ])
 
 function callerId(call: SetupCall) {
@@ -69,14 +80,13 @@ function hasExplicitCredential(step: Step) {
 
 describe('pnpm install workflow policy', () => {
   it('passes setup-node-pnpm only install-scripts and setup-backend no inputs', () => {
-    expect(setupCalls.length).toBeGreaterThan(0)
-    const unexpected = setupCalls.flatMap(call =>
-      Object.keys(call.step.with ?? {})
+    expect(setupSteps.some(({ owner }) => owner.startsWith('.github/actions/'))).toBe(true)
+    const unexpected = setupSteps.flatMap(({ owner, step }) =>
+      Object.keys(step.with ?? {})
         .filter(
-          input =>
-            call.step.uses !== './.github/actions/setup-node-pnpm' || input !== 'install-scripts',
+          input => step.uses !== './.github/actions/setup-node-pnpm' || input !== 'install-scripts',
         )
-        .map(input => `${callerId(call)}: ${input}`),
+        .map(input => `${owner}: ${input}`),
     )
     expect(unexpected).toEqual([])
   })
@@ -94,11 +104,11 @@ describe('pnpm install workflow policy', () => {
   it('passes install-scripts only as the literal opt-out', () => {
     // setup-node-pnpm treats every value except 'false' as a full install, so a typo such as
     // 'no' would silently run lifecycle scripts; 'true' is the default and is not restated.
-    const invalid = setupCalls.flatMap(call =>
-      call.step.with && 'install-scripts' in call.step.with
-        ? call.step.with['install-scripts'] === 'false'
+    const invalid = setupSteps.flatMap(({ owner, step }) =>
+      step.with && 'install-scripts' in step.with
+        ? step.with['install-scripts'] === 'false'
           ? []
-          : [`${callerId(call)}: ${JSON.stringify(call.step.with['install-scripts'])}`]
+          : [`${owner}: ${JSON.stringify(step.with['install-scripts'])}`]
         : [],
     )
     expect(invalid).toEqual([])
@@ -106,9 +116,9 @@ describe('pnpm install workflow policy', () => {
 
   it('keeps control-plane-only installs script-free', () => {
     expect(
-      setupCalls
-        .filter(call => call.step.with?.['install-scripts'] === 'false')
-        .map(callerId)
+      setupSteps
+        .filter(({ step }) => step.with?.['install-scripts'] === 'false')
+        .map(({ owner }) => owner)
         .toSorted(),
     ).toEqual([...scriptFreeInstallCallers].toSorted())
   })
