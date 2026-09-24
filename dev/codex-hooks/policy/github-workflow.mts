@@ -22,22 +22,10 @@ import { findHandRolledStackBaseBlock } from './github-configured-base.mts'
 import { contentRuleExemption } from './github-content-rule-scope.mts'
 import { findGhPrMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
+import { findRawIssueCreateBlock } from './github-issue-create-policy.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
-import { type ShellWord, tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
+import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
 import { ghBodyFromOptions, ghBodyIsOpaqueToHook, parseGhOptions } from './github-options.mts'
-
-function titleIsOpaque(tokens: ShellWord[]): boolean {
-  let opaque = true
-  for (let index = 0; index < tokens.length; index += 1) {
-    const token = tokens[index]
-    if (token.value === '--title' || token.value === '-t') {
-      opaque = tokens[++index]?.expandable ?? true
-    } else if (token.value.startsWith('--title=') || /^-t(?:=)?.+/.test(token.value)) {
-      opaque = token.expandable
-    }
-  }
-  return opaque
-}
 
 export function findGitHubWorkflowBlock(
   command: string,
@@ -178,15 +166,9 @@ export function findGitHubWorkflowBlock(
       }
 
       if (area === 'issue' && action === 'create') {
-        const options = parseGhOptions(invocation.optionTokens)
-        const title = options.title.at(-1) ?? ''
-        const titleTokens = invocation.optionTokenIndexes.map(index => detailedTokens[index])
-        if (title !== '' && !titleIsOpaque(titleTokens) && !/^Plan:/i.test(title)) {
-          continue
-        }
-        return {
-          reason:
-            'Raw issue creation requires a literal non-Plan title. Accepted Plan issues must use `node dev/plan-issue.mts create ...` so Mermaid syntax and the effective target repository are fully validated.',
+        const issueCreateBlock = findRawIssueCreateBlock(invocation, detailedTokens)
+        if (issueCreateBlock !== null) {
+          return issueCreateBlock
         }
       }
     }
