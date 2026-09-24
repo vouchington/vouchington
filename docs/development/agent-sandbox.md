@@ -102,8 +102,9 @@ Claude's OS sandbox already writes the project root. `filesystem.allowWrite` is 
 additional paths outside that root; in-project build and state output needs no separate grant.
 Claude also grants `~/.local/state/mise`, because mise records the repo's `.mise.toml` there on
 every shell invocation. Claude's `sandbox.network.allowedDomains` adds `registry.npmjs.org` and
-`github.com` so that sandboxed package metadata lookups and git-over-HTTPS reads can reach them
-without escalating the whole command.
+`github.com` for commands that stay sandboxed, such as package metadata lookups or a compound
+command that does not match an `excludedCommands` pattern. Direct `git *` and `gh *` commands
+already run outside the sandbox and do not depend on this list.
 
 - `~/Library/Caches/no-mistakes` — no-mistakes `invocation.lock` on macOS (`ProjectDirs`)
 - `~/.cache/no-mistakes` — no-mistakes lock when Linux `XDG_RUNTIME_DIR` is unset
