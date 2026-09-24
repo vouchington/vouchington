@@ -36,8 +36,8 @@ function hasUnresolvedType(entry: SessionEntry): boolean {
 }
 
 function classifyShape(session: Session, entries: SessionEntry[]): SessionShape {
-  if (entries.some(isRetrospectiveEntry)) return 'retrospective'
   if (entries.some(hasUnresolvedType)) return 'entry-type-unresolved'
+  if (entries.some(isRetrospectiveEntry)) return 'retrospective'
   if (entries.length === 0) {
     // Loose equality on purpose: a partition record missing `parentSessionId` entirely (this
     // reader trusts the file on disk and does not re-validate every field against the Session
