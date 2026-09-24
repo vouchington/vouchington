@@ -1,18 +1,15 @@
-import { execFileSync } from 'node:child_process'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { preToolUseOutput } from '../../codex-hooks/policy.mts'
-import { gitEnvForCwd } from '../../codex-hooks/policy/github-configured-base.mts'
-import { checkoutOwner } from '../../codex-hooks/policy/github-content-rule-scope.mts'
 import {
   findGitHubWorkflowBlock,
   type GitHubWorkflowPolicyOptions,
 } from '../../codex-hooks/policy-helpers.mts'
+import { withRepo } from '../git-remote-repo.mts'
 import { withTestTempDir } from '../test-temp-root.mts'
 
 // Synthetic owners: the session checkout belongs to `acme`; `widgets-inc` is another owner.
-const SESSION = { sessionOwner: () => 'acme' }
+const SESSION = { sessionOwners: () => new Set(['acme']) }
 const UNREAD_CWD = '/owner-scope-session'
 const DRAFT_FIRST = 'New PRs must be opened as draft first'
 const CLOSING_KEYWORD = 'PR bodies must include at least one GitHub closing keyword'
@@ -30,27 +27,6 @@ function reasonOf(
   options: GitHubWorkflowPolicyOptions = SESSION,
 ): string | undefined {
   return findGitHubWorkflowBlock(command, cwd, options)?.reason
-}
-
-function git(dir: string, ...args: string[]): void {
-  execFileSync('git', args, { cwd: dir, env: gitEnvForCwd(), stdio: 'ignore' })
-}
-
-function withRepo<T>(
-  remotes: Record<string, string>,
-  callback: (dir: string) => T,
-  config: Record<string, string> = {},
-): Promise<T> {
-  return withTestTempDir('voucha-owner-scope-', async dir => {
-    git(dir, 'init', '-q')
-    for (const [name, url] of Object.entries(remotes)) {
-      git(dir, 'remote', 'add', name, url)
-    }
-    for (const [key, value] of Object.entries(config)) {
-      git(dir, 'config', key, value)
-    }
-    return callback(dir)
-  })
 }
 
 const WIDGETS_REMOTE = { origin: 'git@github.com:widgets-inc/tool.git' }
@@ -181,12 +157,27 @@ describe('gh content-rule owner scope', () => {
       ).toContain(CLOSING_KEYWORD)
     })
 
-    it('without an injected or provable session owner', () => {
+    it('without injected or provable session owners', () => {
       const command = nonDraftPr('--repo widgets-inc/tool')
       expect(reasonOf(command, UNREAD_CWD, {})).toContain(DRAFT_FIRST)
-      expect(reasonOf(command, UNREAD_CWD, { sessionOwner: () => undefined })).toContain(
+      expect(reasonOf(command, UNREAD_CWD, { sessionOwners: () => undefined })).toContain(
         DRAFT_FIRST,
       )
+      expect(reasonOf(command, UNREAD_CWD, { sessionOwners: () => new Set() })).toContain(
+        DRAFT_FIRST,
+      )
+    })
+
+    it('for a target among several session owners', () => {
+      const sessionOwners = () => new Set(['forker', 'Acme'])
+      expect(reasonOf(nonDraftPr('--repo acme/tool'), UNREAD_CWD, { sessionOwners })).toContain(
+        DRAFT_FIRST,
+      )
+      expect(reasonOf(nonDraftPr('--repo forker/tool'), UNREAD_CWD, { sessionOwners })).toContain(
+        DRAFT_FIRST,
+      )
+      const widgets = nonDraftPr('--repo widgets-inc/tool')
+      expect(reasonOf(widgets, UNREAD_CWD, { sessionOwners })).toBeUndefined()
     })
   })
 
@@ -199,52 +190,27 @@ describe('gh content-rule owner scope', () => {
       expect(reasonOf(command)).toBeDefined()
     })
 
-    it('never reads the session owner for other gh commands', () => {
-      const sessionOwner = vi.fn<() => string | undefined>(() => 'acme')
-      findGitHubWorkflowBlock('gh pr merge 5 --repo widgets-inc/tool', UNREAD_CWD, { sessionOwner })
-      findGitHubWorkflowBlock('gh pr view 5 --repo widgets-inc/tool', UNREAD_CWD, { sessionOwner })
-      expect(sessionOwner).not.toHaveBeenCalled()
+    it('never reads the session owners for other gh commands', () => {
+      const sessionOwners = vi.fn<() => ReadonlySet<string> | undefined>(() => new Set(['acme']))
+      findGitHubWorkflowBlock('gh pr merge 5 --repo widgets-inc/tool', UNREAD_CWD, {
+        sessionOwners,
+      })
+      findGitHubWorkflowBlock('gh pr view 5 --repo widgets-inc/tool', UNREAD_CWD, { sessionOwners })
+      expect(sessionOwners).not.toHaveBeenCalled()
     })
   })
 
-  describe('preToolUseOutput threads the session owner', () => {
+  describe('preToolUseOutput threads the session owners', () => {
     const payload = { tool_input: { command: nonDraftPr('--repo widgets-inc/tool') } }
 
-    it('allows another owner only when the session owner is injected and differs', () => {
-      expect(preToolUseOutput(payload, { sessionOwner: () => 'acme' })).toBe('')
-      expect(JSON.parse(preToolUseOutput(payload, { sessionOwner: () => 'widgets-inc' }))).toEqual({
+    it('allows another owner only when session owners are injected and exclude it', () => {
+      expect(preToolUseOutput(payload, { sessionOwners: () => new Set(['acme']) })).toBe('')
+      const home = () => new Set(['acme', 'widgets-inc'])
+      expect(JSON.parse(preToolUseOutput(payload, { sessionOwners: home }))).toEqual({
         decision: 'block',
         reason: expect.stringContaining(DRAFT_FIRST),
       })
       expect(JSON.parse(preToolUseOutput(payload)).reason).toContain(DRAFT_FIRST)
-    })
-  })
-
-  describe('checkoutOwner', () => {
-    it.each([
-      ['an scp-like URL in another case', 'git@github.com:Widgets-Inc/tool.git'],
-      ['an https URL', 'https://github.com/widgets-inc/tool.git'],
-      ['an ssh URL with a port', 'ssh://git@github.com:22/widgets-inc/tool.git'],
-      ['a trailing slash', 'https://github.com/widgets-inc/tool/'],
-    ])('reads %s', async (_name, url) => {
-      await withRepo({ origin: url }, dir => expect(checkoutOwner(dir)).toBe('widgets-inc'))
-    })
-
-    it('reads the fetch URL, not a push URL', async () => {
-      await withRepo(WIDGETS_REMOTE, dir => {
-        git(dir, 'remote', 'set-url', '--push', 'origin', 'git@github.com:acme/tool.git')
-        expect(checkoutOwner(dir)).toBe('widgets-inc')
-      })
-    })
-
-    it.each([
-      [
-        'only hostless remotes',
-        { origin: '/srv/git/tool.git', mirror: 'file:///srv/git/tool.git' },
-      ],
-      ['an owner-less hosted URL', { origin: 'https://github.com/tool.git' }],
-    ])('is undefined for %s', async (_name, remotes) => {
-      await withRepo(remotes, dir => expect(checkoutOwner(dir)).toBeUndefined())
     })
   })
 })

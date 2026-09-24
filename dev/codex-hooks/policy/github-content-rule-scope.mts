@@ -1,16 +1,10 @@
-import { execFileSync } from 'node:child_process'
-
 import type { GitHubWorkflowPolicyOptions } from './github-closing-refs.mts'
+import { checkoutOwner, githubOwner, ownerOfRepoSelector } from './github-checkout-owners.mts'
 import { commandEnvironment } from './github-command-context.mts'
-import { gitEnvForCwd } from './github-configured-base.mts'
 import type { GhInvocation } from './github-invocation.mts'
 import type { ShellWord } from './shell-tokenizer.mts'
 import { parseGhOptions } from './github-options.mts'
 
-// GitHub's owner-name characters. A shell expansion (`$OWNER`, a glob, `~`) never matches, so an
-// owner the hook can't read literally is never mistaken for a different one.
-const GITHUB_OWNER = /^[a-z\d_][a-z\d_-]*$/i
-const REPO_SELECTOR_CHARACTERS = /^[\w.:@/-]+$/
 // `gh pr edit` flags whose value is free text or a repository selector, never the PR selector.
 const EDIT_NON_SELECTOR_VALUE_FLAGS = new Set([
   '--body',
@@ -26,10 +20,10 @@ const EDIT_NON_SELECTOR_VALUE_FLAGS = new Set([
 /**
  * Returns, for one inspected command, whether a gh invocation in it is exempt from Vouchington's
  * PR and issue content rules (`gh pr create/new/edit`, `gh issue create`): true only when it
- * provably targets a repository under a different GitHub owner than the session's own checkout.
- * Every doubt keeps the rules: no injected session owner, an unresolved cwd, remotes naming several
- * owners, or a repository or PR selector that is a shell expansion. Any other invocation — merge
- * authority, `gh api`, the gh stack policy — is never exempt. See #434.
+ * provably targets a repository whose GitHub owner is outside the session's home owners. Every
+ * doubt keeps the rules: no injected, readable, non-empty home owners, an unresolved cwd, remotes
+ * naming several owners, or a repository or PR selector that is a shell expansion. Any other
+ * invocation — merge authority, `gh api`, the gh stack policy — is never exempt. See #434.
  */
 export function contentRuleExemption(
   command: string,
@@ -41,42 +35,19 @@ export function contentRuleExemption(
     const isContentRuleInvocation =
       (area === 'pr' && (action === 'create' || action === 'new' || action === 'edit')) ||
       (area === 'issue' && action === 'create')
-    if (!isContentRuleInvocation || options.sessionOwner === undefined) {
+    if (!isContentRuleInvocation || options.sessionOwners === undefined) {
       return false
     }
     const target = ghTargetOwner(command, invocation, words, index, cwd)
-    const session = target === undefined ? undefined : options.sessionOwner()?.toLowerCase()
-    return session !== undefined && session !== target
-  }
-}
-
-/**
- * The single lowercased owner of a checkout's GitHub repository, read the way gh reads it: the
- * fetch URLs of `git remote -v` plus any `gh repo set-default` (`remote.<name>.gh-resolved`).
- * Hostless (local-path) remotes are ignored, like gh does; undefined when the checkout can't be
- * read, has no hosted remote, has a hosted remote that isn't OWNER/REPO, or names several owners.
- */
-export function checkoutOwner(cwd: string): string | undefined {
-  const remotes = gitOutput(cwd, ['remote', '-v'])
-  const defaults = gitOutput(cwd, ['config', '--get-regexp', '^remote\\..+\\.gh-resolved$'])
-  if (remotes === undefined || defaults === undefined) {
-    return undefined
-  }
-  const owners = new Set<string | undefined>()
-  for (const line of remotes.split('\n')) {
-    const fetchUrl = /^[^\t]+\t(.+) \(fetch\)$/.exec(line)?.[1]
-    const owner = fetchUrl === undefined ? null : ownerOfRemoteUrl(fetchUrl)
-    if (owner !== null) {
-      owners.add(owner)
+    if (target === undefined) {
+      return false
     }
-  }
-  for (const line of defaults.split('\n')) {
-    const value = line.slice(line.indexOf(' ') + 1)
-    if (line !== '' && value !== 'base') {
-      owners.add(ownerOfRepoSelector(value))
+    const home = options.sessionOwners()
+    if (home === undefined || home.size === 0) {
+      return false
     }
+    return !Array.from(home, owner => owner.toLowerCase()).includes(target)
   }
-  return onlyOwner(owners)
 }
 
 function ghTargetOwner(
@@ -92,7 +63,7 @@ function ghTargetOwner(
       owners.add(owner)
     }
   }
-  return onlyOwner(owners)
+  return owners.size === 1 ? [...owners][0] : undefined
 }
 
 // gh's own precedence: --repo, else a non-empty GH_REPO, else the cwd's remotes.
@@ -142,56 +113,4 @@ function editSelectorOwners(invocation: GhInvocation, words: ShellWord[]): (stri
     }
   })
   return owners
-}
-
-// gh's `[HOST/]OWNER/REPO` or repository URL form.
-function ownerOfRepoSelector(value: string): string | undefined {
-  const path = value.replace(/^https?:\/\//i, '').replace(/\/$/, '')
-  const segments = path.split('/')
-  if (!REPO_SELECTOR_CHARACTERS.test(path) || segments.length < 2 || segments.length > 3) {
-    return undefined
-  }
-  return segments.includes('') ? undefined : githubOwner(segments.at(-2) ?? '')
-}
-
-// null for a hostless remote gh ignores (a local path or file://); undefined for a hosted URL that
-// isn't OWNER/REPO.
-function ownerOfRemoteUrl(url: string): string | null | undefined {
-  const withScheme = /^([a-z][a-z\d+.-]*):\/\/([^/]*)(.*)$/i.exec(url)
-  if (withScheme !== null) {
-    const [, scheme, host, path] = withScheme
-    return scheme.toLowerCase() === 'file' || host === '' ? null : ownerOfRemotePath(path)
-  }
-  // git's scp-like `[user@]host:path` form needs a colon before any slash.
-  const scpLike = /^[^/:]+:(.*)$/.exec(url)
-  return scpLike === null ? null : ownerOfRemotePath(scpLike[1])
-}
-
-function ownerOfRemotePath(path: string): string | undefined {
-  const segments = path.replace(/^\/+|\/+$/g, '').split('/')
-  return segments.length === 2 && segments[1] !== '' ? githubOwner(segments[0]) : undefined
-}
-
-function githubOwner(value: string): string | undefined {
-  return GITHUB_OWNER.test(value) ? value.toLowerCase() : undefined
-}
-
-function onlyOwner(owners: Set<string | undefined>): string | undefined {
-  return owners.size === 1 ? [...owners][0] : undefined
-}
-
-// `git config --get-regexp` exits 1 when nothing matches, which is an empty answer, not a failure.
-function gitOutput(cwd: string, args: string[]): string | undefined {
-  try {
-    return execFileSync('git', args, {
-      cwd,
-      encoding: 'utf8',
-      env: gitEnvForCwd(),
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 5_000,
-    })
-  } catch (error) {
-    const noMatch = args[0] === 'config' && (error as { status?: number | null }).status === 1
-    return noMatch ? '' : undefined
-  }
 }
