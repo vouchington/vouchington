@@ -80,6 +80,8 @@ describe('Codex hook gh policies in a script a shell reads from stdin', () => {
     // Quotes and `#` are literal text in a heredoc body; the substitution still runs.
     "cat > f <<EOF\ndon't\n$(gh pr merge 1)\nEOF",
     'cat > f <<EOF\n# $(gh pr merge 1)\nEOF',
+    // An escaped backslash leaves the `$` live.
+    'cat > f <<EOF\n\\\\$(gh pr merge 1)\nEOF',
   ])('blocks a merge in a substitution an unquoted heredoc body runs: %s', command => {
     expect(reasonFor(command)).toContain(MERGE_BLOCK)
   })
@@ -90,6 +92,8 @@ describe('Codex hook gh policies in a script a shell reads from stdin', () => {
     'git commit -F - <<EOF\nfix: x\n\n- gh pr merge now confirms\nEOF',
     'cat > notes.yml <<EOF\nsteps:\n  - gh pr merge 1\nEOF',
     'cat > notes.md <<EOF\ngh pr merge 1\nEOF',
+    // A backslash escapes `$` and a backtick in an unquoted body, so neither substitution runs.
+    'cat > notes.md <<EOF\n\\$(gh pr merge 1) and \\`gh pr merge 1\\`\nEOF',
     `: ${MERGE_HEREDOC}`,
     `cat > f ${MERGE_HEREDOC}`,
     `gh pr create --draft --title t --body-file - ${MERGE_HEREDOC}`,
