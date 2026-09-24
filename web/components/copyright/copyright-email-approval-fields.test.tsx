@@ -14,8 +14,22 @@ function draft(overrides: Partial<CopyrightEmailApprovalDraft> = {}): CopyrightE
     good_faith_belief: false,
     accuracy_authority_under_penalty_of_perjury: false,
     targets: [
-      { id: 'target-1', post_id: '', image_id: '', target_url: '' },
-      { id: 'target-2', post_id: '', image_id: '', target_url: '' },
+      {
+        id: 'target-1',
+        group_id: 'group-1',
+        post_id: '',
+        image_id: '',
+        target_url: '',
+        resolution_status: 'failed',
+      },
+      {
+        id: 'target-2',
+        group_id: 'group-2',
+        post_id: '',
+        image_id: '',
+        target_url: '',
+        resolution_status: 'failed',
+      },
     ],
     ...overrides,
   }

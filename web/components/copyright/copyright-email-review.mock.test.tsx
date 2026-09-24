@@ -8,6 +8,7 @@ import {
   rejectCopyrightEmailIntake,
   rejectCopyrightEmailCorrespondence,
 } from '@/lib/api/client/copyright-email-intakes'
+import { resolveCopyrightNoticeTargets } from '@/lib/api/client/copyright-notice-targets'
 import {
   copyrightEmailIntakeId as intakeId,
   makeCopyrightEmailIntake as makeIntake,
@@ -28,12 +29,17 @@ vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => ({
   rejectCopyrightEmailCorrespondence: vi.fn<VitestLooseMock>(),
 }))
 
+vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => ({
+  resolveCopyrightNoticeTargets: vi.fn<typeof resolveCopyrightNoticeTargets>(),
+}))
+
 const mockApprove = vi.mocked(approveCopyrightEmailIntake)
 const mockAdmitCorrespondence = vi.mocked(admitCopyrightEmailCorrespondence)
 const mockGet = vi.mocked(getCopyrightEmailIntake)
 const mockList = vi.mocked(listCopyrightEmailIntakes)
 const mockReject = vi.mocked(rejectCopyrightEmailIntake)
 const mockRejectCorrespondence = vi.mocked(rejectCopyrightEmailCorrespondence)
+const mockResolveTargets = vi.mocked(resolveCopyrightNoticeTargets)
 const otherIntakeId = '019f0000-0000-7000-8000-000000000007'
 
 describe('CopyrightEmailReview', () => {
@@ -41,6 +47,15 @@ describe('CopyrightEmailReview', () => {
     vi.clearAllMocks()
     mockList.mockResolvedValue({ copyright_email_intakes: [makeQueueItem()] })
     mockGet.mockResolvedValue({ copyright_email_intake: makeIntake() })
+    mockResolveTargets.mockResolvedValue([
+      {
+        post_id: '019f0000-0000-7000-8000-000000000003',
+        image_id: '019f0000-0000-7000-8000-000000000004',
+        target_url: 'https://voucha.ai/discussion/example',
+        order_index: 0,
+        caption: 'Claimed image',
+      },
+    ])
   })
 
   it('shows private evidence, parsed content, and a recommendation-mapped approval form', async () => {
@@ -66,18 +81,31 @@ describe('CopyrightEmailReview', () => {
 
   it('submits the moderator-edited statutory payload when approving', async () => {
     mockApprove.mockResolvedValue(undefined)
+    mockResolveTargets.mockResolvedValue([
+      {
+        post_id: '019f0000-0000-7000-8000-000000000003',
+        image_id: '019f0000-0000-7000-8000-000000000004',
+        target_url: 'https://voucha.ai/discussion/example',
+        order_index: 0,
+        caption: 'Claimed image',
+      },
+      {
+        post_id: '019f0000-0000-7000-8000-000000000003',
+        image_id: '019f0000-0000-7000-8000-000000000005',
+        target_url: 'https://voucha.ai/discussion/example',
+        order_index: 1,
+        caption: 'Second image',
+      },
+    ])
     render(<CopyrightEmailReview initialItems={[makeQueueItem()]} />)
 
     await selectEmailIntake()
     fireEvent.change(screen.getByLabelText('Claimant email'), {
       target: { value: 'tests+copyright-edited@voucha.ai' },
     })
-    fireEvent.change(screen.getByLabelText('Post ID 1'), {
-      target: { value: '019f0000-0000-7000-8000-000000000003' },
-    })
-    fireEvent.change(screen.getByLabelText('Image ID 1'), {
-      target: { value: '019f0000-0000-7000-8000-000000000004' },
-    })
+    expect(screen.queryByLabelText('Post ID 1')).not.toBeInTheDocument()
+    await selectHostedImage('Claimed image')
+    fireEvent.click(screen.getByLabelText('Hosted image 2: Second image'))
     fireEvent.change(screen.getByLabelText('Review rationale'), {
       target: { value: 'Verified the parsed notice.' },
     })
@@ -97,7 +125,12 @@ describe('CopyrightEmailReview', () => {
           {
             post_id: '019f0000-0000-7000-8000-000000000003',
             image_id: '019f0000-0000-7000-8000-000000000004',
-            target_url: 'https://voucha.ai/posts/example',
+            target_url: 'https://voucha.ai/discussion/example',
+          },
+          {
+            post_id: '019f0000-0000-7000-8000-000000000003',
+            image_id: '019f0000-0000-7000-8000-000000000005',
+            target_url: 'https://voucha.ai/discussion/example',
           },
         ],
         rationale: 'Verified the parsed notice.',
@@ -173,7 +206,7 @@ describe('CopyrightEmailReview', () => {
     render(<CopyrightEmailReview initialItems={[makeQueueItem()]} />)
 
     await selectEmailIntake()
-    resolveFirstTarget()
+    await selectHostedImage('Claimed image')
     fireEvent.change(screen.getByLabelText('Review rationale'), {
       target: { value: 'The notice is complete.' },
     })
@@ -258,11 +291,6 @@ async function selectEmailIntake(id = intakeId) {
   })
 }
 
-function resolveFirstTarget() {
-  fireEvent.change(screen.getByLabelText('Post ID 1'), {
-    target: { value: '019f0000-0000-7000-8000-000000000003' },
-  })
-  fireEvent.change(screen.getByLabelText('Image ID 1'), {
-    target: { value: '019f0000-0000-7000-8000-000000000004' },
-  })
+async function selectHostedImage(name: string) {
+  fireEvent.click(await screen.findByLabelText(`Hosted image 1: ${name}`))
 }

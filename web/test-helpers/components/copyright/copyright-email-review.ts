@@ -39,7 +39,7 @@ export function makeCopyrightEmailIntake(id = copyrightEmailIntakeId) {
         good_faith_belief: true,
         accuracy_authority_under_penalty_of_perjury: true,
         electronic_signature: 'Claimant',
-        target_urls: ['https://voucha.ai/posts/example'],
+        target_urls: ['https://voucha.ai/discussion/example'],
         recommendation: 'potentially_valid',
       },
     },

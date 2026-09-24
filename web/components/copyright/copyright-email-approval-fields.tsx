@@ -1,5 +1,3 @@
-'use client'
-
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -7,8 +5,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   addCopyrightEmailApprovalTarget,
+  MAX_EMAIL_APPROVAL_TARGETS,
   type CopyrightEmailApprovalDraft,
 } from './copyright-email-approval-model'
+import { CopyrightEmailApprovalTargetFields } from './copyright-email-approval-target-fields'
 
 export function CopyrightEmailApprovalFields({
   draft,
@@ -21,15 +21,6 @@ export function CopyrightEmailApprovalFields({
     key: K,
     value: CopyrightEmailApprovalDraft[K],
   ) => onChange({ ...draft, [key]: value })
-  const setTarget = (
-    id: string,
-    key: keyof CopyrightEmailApprovalDraft['targets'][number],
-    value: string,
-  ) =>
-    set(
-      'targets',
-      draft.targets.map(target => (target.id === id ? { ...target, [key]: value } : target)),
-    )
   return (
     <fieldset className='space-y-3 rounded border p-3'>
       <legend className='px-1 font-medium'>Verified statutory notice fields</legend>
@@ -64,49 +55,12 @@ export function CopyrightEmailApprovalFields({
         placeholder='Electronic signature'
         value={draft.electronic_signature}
       />
-      {draft.targets.map((target, index) => (
-        <div
-          className='space-y-2 rounded border p-3'
-          key={target.id}
-        >
-          <p className='text-sm font-medium'>Hosted image {index + 1}</p>
-          <Input
-            aria-label={`Hosted use URL ${index + 1}`}
-            onChange={event => setTarget(target.id, 'target_url', event.target.value)}
-            placeholder='Hosted use URL'
-            value={target.target_url}
-          />
-          <Input
-            aria-label={`Post ID ${index + 1}`}
-            onChange={event => setTarget(target.id, 'post_id', event.target.value)}
-            // ast-grep-ignore: web-no-id-text-input -- moderators verify the agent-extracted immutable post identifier against the attached original email before approval.
-            placeholder='Resolved post ID'
-            value={target.post_id}
-          />
-          <Input
-            aria-label={`Image ID ${index + 1}`}
-            onChange={event => setTarget(target.id, 'image_id', event.target.value)}
-            // ast-grep-ignore: web-no-id-text-input -- moderators verify the agent-extracted immutable image identifier against the attached original email before approval.
-            placeholder='Resolved image ID'
-            value={target.image_id}
-          />
-          {draft.targets.length > 1 && (
-            <Button
-              onClick={() =>
-                set(
-                  'targets',
-                  draft.targets.filter(item => item.id !== target.id),
-                )
-              }
-              type='button'
-              variant='outline'
-            >
-              Remove hosted image
-            </Button>
-          )}
-        </div>
-      ))}
+      <CopyrightEmailApprovalTargetFields
+        draft={draft}
+        onChange={onChange}
+      />
       <Button
+        disabled={draft.targets.length >= MAX_EMAIL_APPROVAL_TARGETS}
         onClick={() => onChange(addCopyrightEmailApprovalTarget(draft))}
         type='button'
         variant='outline'
