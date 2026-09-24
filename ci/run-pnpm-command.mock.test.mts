@@ -135,7 +135,7 @@ describe('run-pnpm-command', () => {
     const { runPnpm } = await import('./run-pnpm-command.mts')
 
     await expect(runPnpm('/repo', ['--dir', 'web', 'build'])).rejects.toThrow(
-      'pnpm is not available. Install pnpm 11 or enable Corepack before building web.',
+      'pnpm is not available. Install pnpm or enable Corepack before building web.',
     )
     expect(spawnCalls).toEqual([])
   })

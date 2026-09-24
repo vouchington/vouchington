@@ -37,6 +37,25 @@ Native dependency policy and automation are owned by the
 - <a id="coverage-matrix"></a>[Coverage matrix](reference-dependency-updates-coverage-matrix.md)
 - <a id="frozen-install-policy"></a>[Frozen-install policy](reference-dependency-updates-frozen-install-policy.md)
 
+### Security alert coverage
+
+pnpm 12 writes `pnpm-lock.yaml` as two YAML documents: first the pinned pnpm under
+`packageManagerDependencies`, then the workspace graph. GitHub's dependency graph reads only the
+first document ([dependabot/dependabot-core#15904](https://github.com/dependabot/dependabot-core/issues/15904)).
+Dependabot security alerts and security updates therefore cover the direct dependencies declared in
+`package.json` manifests, but no transitive package. Dependabot version updates are unaffected. The
+Trivy CRITICAL/HIGH gate in the web and backend image builds still scans each image's full runtime
+tree, but only when an image builds.
+
+Coverage is back once `gh api repos/vouchington/vouchington/dependency-graph/sbom` lists transitive
+packages from the second document. The comparison script is in
+[#456](https://github.com/vouchington/vouchington/issues/456#issuecomment-5819103722).
+
+A `packageManager` bump must also regenerate `pnpm-lock.yaml`, because the first document records
+the pinned pnpm. Without that, `pnpm install --frozen-lockfile` fails with
+`ERR_PNPM_FROZEN_LOCKFILE_WITH_OUTDATED_LOCKFILE`. Renovate's regex manager edits only
+`package.json`, so run `pnpm install` on its branch before merging.
+
 ### Sentry 10.72/10.73 compatibility hold
 
 `@sentry/nextjs` 10.72.x and 10.73.x throw `TypeError: The URL must be of scheme file` at module

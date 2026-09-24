@@ -19,7 +19,7 @@ function getPnpmCommand(): PackageManagerCommand {
   if (hasCommand('pnpm')) return { command: 'pnpm', argsPrefix: [] }
   if (hasCommand('corepack')) return { command: 'corepack', argsPrefix: ['pnpm'] }
 
-  throw new Error('pnpm is not available. Install pnpm 11 or enable Corepack before building web.')
+  throw new Error('pnpm is not available. Install pnpm or enable Corepack before building web.')
 }
 
 export async function runPnpm(
