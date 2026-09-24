@@ -36,6 +36,8 @@ export function sessionsClientFixture(
     ensure: async input => ({ status: 'created', session: sessionFixture(input) }),
     get: async id => sessionFixture({ id, agent: 'codex', version: 'unknown' }),
     list: async () => ({ sessions: [], nextCursor: null }),
+    patch: async input =>
+      sessionFixture({ id: input.sessionId, agent: 'codex', version: 'unknown', data: input.data }),
     ...overrides,
   }
 }

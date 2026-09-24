@@ -9,10 +9,10 @@ function printUsage(stream: NodeJS.WritableStream = process.stderr): void {
   stream.write(
     'Usage: node dev/blackboard-journal.mts append --file <path> ' +
       '[--session-id <id>] [--parent-session-id <id>] [--agent <name>] ' +
-      '[--version <version>] [--timestamp <iso8601>]\n' +
+      '[--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]\n' +
       '       node dev/blackboard-journal.mts append --file <path> ' +
       '--root-codex [--new-root-codex-session] [--agent codex] ' +
-      '[--version <version>] [--timestamp <iso8601>]\n' +
+      '[--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]\n' +
       '       node dev/blackboard-journal.mts entries [--session-id <id> | --root-codex [--new-root-codex-session]]\n' +
       'Note: entries --root-codex refreshes the worktree-local root identity before reading the server.\n',
   )
@@ -40,6 +40,8 @@ function printReplayCommand(error: BlackboardJournalError): void {
   if (error.newRootCodexSession) parts.push('--new-root-codex-session')
   if (error.version) parts.push('--version', shellQuote(error.version))
   if (error.timestamp) parts.push('--timestamp', shellQuote(error.timestamp))
+  for (const repository of error.repositories ?? [])
+    parts.push('--repository', shellQuote(repository))
   process.stderr.write(`Replay with: ${parts.join(' ')}\n`)
 }
 

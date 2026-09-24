@@ -6,7 +6,7 @@ import {
 
 export type BlackboardConnection = ClientConfig
 
-export type BlackboardSessionsClient = Pick<Sessions, 'ensure' | 'get' | 'list'>
+export type BlackboardSessionsClient = Pick<Sessions, 'ensure' | 'get' | 'list' | 'patch'>
 
 export type BlackboardEntriesClient = Pick<Entries, 'append' | 'get'>
 
@@ -48,6 +48,10 @@ export function clientDependencies(clients: {
 
         list(input: unknown) {
           return (clients.sessions ?? createSessionsClient(this.connection)).list(input as never)
+        }
+
+        patch(input: unknown) {
+          return (clients.sessions ?? createSessionsClient(this.connection)).patch(input as never)
         }
 
         get(id: string) {
