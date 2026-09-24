@@ -1,13 +1,10 @@
 import { checkoutOwner, ownerOfRepoSelector } from './github-checkout-owners.mts'
-import {
-  commandEnvironment,
-  commandSegmentStart,
-  isShellAssignment,
-} from './github-command-context.mts'
+import { commandPrefixAt, commandSegmentStart } from './github-command-position.mts'
+import { isShellAssignment } from './shell-token-utils.mts'
 
-// The prefix words commandEnvironment models: `env` and `command` themselves and `env`'s unset
-// forms. Any other `env` option (`-i`, `-`, `-C`, `-S`) or wrapper clears the environment, moves
-// the directory, or rewrites the command where the hook can't follow.
+// The prefix words that only set or unset gh's environment: `env` and `command` themselves and
+// `env`'s unset forms. Any other `env` option (`-i`, `-`, `-C`, `-S`) or wrapper clears the
+// environment, moves the directory, or rewrites the command, so it never proves gh's target.
 const MODELED_PREFIX_WORD = /^(?:env|command|-u.+|--unset=.+)$/
 const GIT_VARIABLE = /^GIT_[A-Z\d_]*=/
 
@@ -24,10 +21,13 @@ export function implicitRepositoryOwner(
   cwd: string | undefined,
 ): string | undefined {
   const prefix = tokens.slice(commandSegmentStart(tokens, index), index)
-  const env = commandEnvironment(tokens, index)
+  const env = commandPrefixAt(tokens, index)?.env
+  if (env === undefined || !prefixOnlySetsVariables(prefix)) {
+    return undefined
+  }
   const prefixSetsGhRepo = 'GH_REPO' in env
   const inherited = isTopLevelCommand && followsOnlyChainedCds(tokens, index)
-  if (!prefixOnlySetsVariables(prefix) || (!prefixSetsGhRepo && !inherited)) {
+  if (!prefixSetsGhRepo && !inherited) {
     return undefined
   }
   const ghRepo = prefixSetsGhRepo ? env.GH_REPO : process.env.GH_REPO

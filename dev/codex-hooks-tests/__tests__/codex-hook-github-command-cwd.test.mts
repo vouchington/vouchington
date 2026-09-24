@@ -68,6 +68,12 @@ describe('commandCwd sequential cd tracking', () => {
     ['cd -L /other && gh pr create --draft --fill', '/other'],
     ['command cd /other && gh pr create --draft --fill', '/other'],
     ['cd "$WORKTREE" && cd /abs && gh pr create --draft --fill', '/abs'],
+    ['{ cd /other; }; gh pr create --draft --fill', '/other'],
+    ['env -C /other gh pr create --draft --fill', '/other'],
+    ['env --chdir=/other gh pr create --draft --fill', '/other'],
+    ['env -C /a -C /b gh pr create --draft --fill', '/b'],
+    ['cd /a && env -C b gh pr create --draft --fill', resolve('/a', 'b')],
+    ['env -C /a nohup env -C b gh pr create --draft --fill', resolve('/a', 'b')],
   ])('applies sequential cd for %s', (command, expected) => {
     expect(cwdFor(command)).toBe(expected)
   })
@@ -83,6 +89,8 @@ describe('commandCwd sequential cd tracking', () => {
     '(cd /wrong; true); gh pr create --draft --fill',
     'printf x | cd /other; gh pr create --draft --fill',
     'f() { cd /other; }; gh pr create --draft --fill',
+    'function f { cd /other; }; gh pr create --draft --fill',
+    'env cd /other && gh pr create --draft --fill',
   ])('keeps session cwd for %s', command => {
     expect(cwdFor(command)).toBe(BASE_CWD)
   })
@@ -99,6 +107,9 @@ describe('commandCwd sequential cd tracking', () => {
     'cd /primary || cd /fallback; gh pr create --draft --fill',
     'cd "$WORKTREE" && cd packages/api && gh pr create --draft --fill',
     'cd /other extra; gh pr create --draft --fill',
+    'env -C "$OTHER" gh pr create --draft --fill',
+    'cd $OTHER && env -C b gh pr create --draft --fill',
+    'env -S -i gh pr create --draft --fill',
   ])('leaves cwd unknown for %s', command => {
     expect(cwdFor(command)).toBeUndefined()
   })
@@ -109,6 +120,10 @@ describe('commandCwd sequential cd tracking', () => {
 
   it('inherits cwd into a following subshell', () => {
     expect(cwdFor('cd /right && (gh pr create --draft --fill)')).toBe('/right')
+  })
+
+  it('returns the shell cwd for a word that is an argument, not a command', () => {
+    expect(commandCwd(tokensOf('cd /right && echo gh'), 4, BASE_CWD)).toBe('/right')
   })
 })
 

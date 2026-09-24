@@ -22,6 +22,10 @@ describe('Codex hook gh pr merge policy', () => {
     'exec -c gh pr merge 123 --squash',
     'exec -l gh pr merge 123 --squash',
     'nohup gh pr merge 123 --squash',
+    'env -C /tmp gh pr merge 1',
+    'env --chdir /tmp gh pr merge 1',
+    'env -u GH_TOKEN gh pr merge 1',
+    'env --unset GH_TOKEN gh pr merge 1',
     'bash -lc "gh pr merge 123"',
     'bash -lc "gh pr merge 123 --squash"',
     "zsh -c 'gh pr merge 123 --squash'",
@@ -189,6 +193,12 @@ EOF
         tool_input: { command: 'gh pr merge 123 --squash; gh pr view 456' },
       })?.reason,
     ).toContain('never delegated to an agent')
+  })
+
+  it('applies the gh stack allowlist after env -C', () => {
+    expect(
+      findPreToolUseBlock({ tool_input: { command: 'env -C /tmp gh stack checkout 7' } })?.reason,
+    ).toContain('gh stack allowlist is closed')
   })
 
   it('does not block unrelated gh pr subcommands', () => {

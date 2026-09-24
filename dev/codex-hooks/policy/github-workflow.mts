@@ -10,13 +10,9 @@ import {
   isFixMainInterimClassifierNoClosingRefBody,
   isScheduledPromptNoSourceBody,
 } from '../../pr-description/scheduled-no-source.mts'
-import {
-  commandEnvironment,
-  commandsToInspectForGitHubPolicy,
-  effectiveGhRepo,
-} from './github-command-context.mts'
+import { commandsToInspectForGitHubPolicy, effectiveGhRepo } from './github-command-context.mts'
 import { commandCwd } from './github-command-cwd.mts'
-import { isCommandPositionInvocation } from './github-command-position.mts'
+import { commandPrefixAt } from './github-command-position.mts'
 import { findGhApiMergeBlock } from './github-api-merge-options.mts'
 import { findHandRolledStackBaseBlock } from './github-configured-base.mts'
 import { contentRuleExemption } from './github-content-rule-scope.mts'
@@ -24,6 +20,7 @@ import { findGhPrMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { findRawIssueCreateBlock } from './github-issue-create-policy.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
+import { findXargsGhSubcommandBlock } from './github-xargs-policy.mts'
 import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
 import { ghBodyFromOptions, ghBodyIsOpaqueToHook, parseGhOptions } from './github-options.mts'
 
@@ -42,10 +39,15 @@ export function findGitHubWorkflowBlock(
     const exemptFromContentRules = contentRuleExemption(detailedTokens, options, inspectIndex === 0)
 
     for (let index = 0; index < tokens.length; index += 1) {
-      if (!isCommandPositionInvocation(tokens, index)) {
+      const prefix = commandPrefixAt(tokens, index)
+      if (prefix === null) {
         continue
       }
       const invocation = parseGhOrGhStackInvocation(tokens, index)
+      const xargsBlock = findXargsGhSubcommandBlock(prefix, tokens[index], invocation)
+      if (xargsBlock !== null) {
+        return xargsBlock
+      }
       if (invocation === null) {
         continue
       }
@@ -65,7 +67,7 @@ export function findGitHubWorkflowBlock(
               'New PRs must be opened as draft first. Use --draft or `node dev/pr-description.mts create ...`.',
           }
         }
-        const repo = effectiveGhRepo(ghOptions.repo.at(-1), tokens, index)
+        const repo = effectiveGhRepo(ghOptions.repo.at(-1), prefix.env)
         const baseBlock =
           invocationCwd === undefined
             ? null
@@ -128,10 +130,7 @@ export function findGitHubWorkflowBlock(
             body,
             invocationCwd ?? cwd,
             options,
-            {
-              env: commandEnvironment(tokens, index),
-              repo,
-            },
+            { env: prefix.env, repo },
           )
           if (issueRefBlock !== null) {
             return issueRefBlock
@@ -142,7 +141,7 @@ export function findGitHubWorkflowBlock(
       const stackBlock = findGitHubStackWorkflowBlock(invocation, options, {
         command,
         cwd: invocationCwd,
-        env: commandEnvironment(tokens, index),
+        env: prefix.env,
       })
       if (stackBlock !== null) {
         return stackBlock

@@ -1,9 +1,6 @@
+import { parseCommandPrefix } from './shell-command-wrappers.mts'
 import { heredocSpecsFromLine, type HeredocSpec } from './shell-heredoc-parser.mts'
-import {
-  commandSegmentStart,
-  isShellAssignment,
-  nextShellCommandSeparatorIndex,
-} from './shell-token-utils.mts'
+import { commandSegmentStart, nextShellCommandSeparatorIndex } from './shell-token-utils.mts'
 import { tokenizeShellWords } from './shell-tokenizer.mts'
 
 const SHELL_EXECUTABLES = new Set(['bash', 'sh', 'zsh'])
@@ -73,17 +70,16 @@ function lineHasDirectShellHeredoc(line: string): boolean {
   return tokensInvokeShell(tokens.slice(pipeIndex + 1, segmentEnd))
 }
 
+// A shell reads the heredoc as its script when it is the command word after a recognized wrapper
+// chain (`timeout 5 bash`, `env -C /tmp sh`) and no `-c` string replaces stdin as the script.
 function tokensInvokeShell(tokens: string[]): boolean {
   const executableIndex = tokens.findIndex(
-    token => !isShellAssignment(token) && token !== 'env' && !token.startsWith('-'),
+    (token, index) =>
+      SHELL_EXECUTABLES.has(token.slice(token.lastIndexOf('/') + 1)) &&
+      parseCommandPrefix(tokens.slice(0, index)) !== null,
   )
-  if (executableIndex < 0) {
-    return false
-  }
-
-  const executable = tokens[executableIndex].split('/').at(-1)
   return (
-    SHELL_EXECUTABLES.has(executable ?? '') &&
+    executableIndex >= 0 &&
     !tokens.slice(executableIndex + 1).some(token => /^-[A-Za-z]*c[A-Za-z]*$/.test(token))
   )
 }
