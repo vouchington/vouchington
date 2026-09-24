@@ -1,14 +1,22 @@
 import { spawnSync } from 'node:child_process'
 
 import { isRecord } from './core.mts'
+import { gitEnvForCwd } from './github-configured-base.mts'
+import { type CheckoutRepo, stackCheckoutRepo } from './github-stack-checkout-repo.mts'
 
-/** Every stack `gh stack checkout <number>` could import, or undefined when the hook cannot tell. */
+/** The hook could not tell which repository gh-stack reads, so it read no stack. */
+export const UNRESOLVED_REPOSITORY = Symbol('unresolved repository')
+
+/**
+ * Every stack `gh stack checkout <number>` could import; undefined when a stack read is unreadable,
+ * or UNRESOLVED_REPOSITORY when the repository is.
+ */
 export type StackCheckoutResolver = (
   cwd: string,
   env: Record<string, string | undefined>,
   number: number,
   deadline: number,
-) => unknown[] | undefined
+) => unknown[] | typeof UNRESOLVED_REPOSITORY | undefined
 
 // A read GitHub answered with a 200 (its JSON body) or a 404. Undefined is a read the hook cannot
 // trust: any other status, unparseable output, a spawn failure, or one the deadline cut short.
@@ -19,6 +27,7 @@ type LayeredStack = Record<string, unknown> & { pull_requests: unknown[] }
 function ghApiRead(
   cwd: string,
   env: Record<string, string | undefined>,
+  repo: CheckoutRepo,
   path: string,
   deadline: number,
 ): ApiRead | undefined {
@@ -26,10 +35,10 @@ function ghApiRead(
   if (timeout <= 0) {
     return undefined
   }
-  const result = spawnSync('gh', ['api', '--include', path], {
+  const result = spawnSync('gh', ['api', '--include', ...repo.hostArgs, `${repo.path}/${path}`], {
     cwd,
     encoding: 'utf8',
-    env: { ...process.env, ...env },
+    env,
     killSignal: 'SIGKILL',
     stdio: ['ignore', 'pipe', 'ignore'],
     timeout,
@@ -59,30 +68,32 @@ function hasLayers(stack: unknown): stack is LayeredStack {
   return isRecord(stack) && Array.isArray(stack.pull_requests) && stack.pull_requests.length > 0
 }
 
-function positiveInteger(value: unknown): number | undefined {
-  return Number.isSafeInteger(value) && (value as number) > 0 ? (value as number) : undefined
-}
-
 /**
- * Mirrors gh-stack's resolveNumericTarget, which reads `<number>` as a stack number first and falls
- * back to PR `<number>`'s stack whenever that stack read fails for any reason, a transient one
- * included, or the stack has no layers. So the hook returns every stack the checkout could import:
- * stack N when it has layers, and PR N's stack when PR N is stacked. A status other than 200 or 404
- * on any read, or a stack whose number or membership does not match, makes the target unreadable.
+ * Mirrors gh-stack's resolveNumericTarget. It reads `<number>` as a stack number first, and falls
+ * back to the first stack `stacks?pull_request=<number>` lists whenever that stack read fails for
+ * any reason, a transient one included, or the stack has no layers. So the hook returns every stack
+ * the checkout could import: stack N when it has layers, and PR N's stack when PR N is stacked. A
+ * status other than 200 or 404 on either read, or a stack whose number or membership does not
+ * match, makes the target unreadable. The reads go to the repository gh-stack reads.
  */
 export function defaultResolveStackForCheckout(
   cwd: string,
   env: Record<string, string | undefined>,
   number: number,
   deadline: number,
-): unknown[] | undefined {
-  const read = (path: string) => ghApiRead(cwd, env, `repos/{owner}/{repo}/${path}`, deadline)
+): unknown[] | typeof UNRESOLVED_REPOSITORY | undefined {
+  const ghEnv = { ...gitEnvForCwd(), ...env }
+  const repo = stackCheckoutRepo(cwd, ghEnv, deadline)
+  if (repo === undefined) {
+    return UNRESOLVED_REPOSITORY
+  }
+  const read = (path: string) => ghApiRead(cwd, ghEnv, repo, path, deadline)
   const byNumber = read(`stacks/${number}`)
   if (byNumber === undefined) {
     return undefined
   }
-  const pull = read(`pulls/${number}`)
-  if (pull === undefined || (pull.found && !isRecord(pull.body))) {
+  const byPull = read(`stacks?pull_request=${number}`)
+  if (byPull === undefined || (byPull.found && !Array.isArray(byPull.body))) {
     return undefined
   }
   const candidates: LayeredStack[] = []
@@ -92,25 +103,18 @@ export function defaultResolveStackForCheckout(
     }
     candidates.push(byNumber.body)
   }
-  const pullStack = pull.found && isRecord(pull.body) ? pull.body.stack : null
-  if (pullStack === null || pullStack === undefined) {
+  // gh-stack imports the first listed stack, and only once it has confirmed that stack holds PR N.
+  const [pullStack] = byPull.found ? (byPull.body as unknown[]) : []
+  if (pullStack === undefined) {
     return candidates.length > 0 ? candidates : undefined
   }
-  const stackNumber = isRecord(pullStack) ? positiveInteger(pullStack.number) : undefined
-  if (stackNumber === undefined) {
-    return undefined
-  }
-  if (candidates.some(stack => stack.number === stackNumber)) {
-    return candidates
-  }
-  const fallback = read(`stacks/${stackNumber}`)
   if (
-    !fallback?.found ||
-    !hasLayers(fallback.body) ||
-    fallback.body.number !== stackNumber ||
-    !fallback.body.pull_requests.some(layer => isRecord(layer) && layer.number === number)
+    !hasLayers(pullStack) ||
+    !pullStack.pull_requests.some(layer => isRecord(layer) && layer.number === number)
   ) {
     return undefined
   }
-  return [...candidates, fallback.body]
+  return candidates.some(stack => stack.number === pullStack.number)
+    ? candidates
+    : [...candidates, pullStack]
 }

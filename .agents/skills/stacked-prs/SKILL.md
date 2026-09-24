@@ -56,8 +56,10 @@ Use only these non-interactive forms:
   while any existing local layer branch differs from its PR head, and the block prints the fix for
   each branch. It is also blocked when the hook cannot read the stack: gh-stack falls back from a
   failed stack read to PR `<n>`'s stack, so the hook checks every stack the number could import and
-  treats any GitHub API answer other than 200 or 404 as unreadable. See
-  [Import a stack before acting on it](#import-a-stack-before-acting-on-it).
+  treats any GitHub API answer other than 200 or 404 as unreadable. The hook reads the repository
+  gh-stack reads (`GH_REPO`, else the first of the `upstream`, `github`, and `origin` remotes; `gh
+repo set-default` does not apply), and blocks when it cannot tell that is one github.com
+  repository. See [Import a stack before acting on it](#import-a-stack-before-acting-on-it).
 - `gh stack submit --auto` — creates drafts. Immediately `node dev/pr-description.mts update` each
   new PR; auto titles and bodies are not sufficient. The hook gates `--auto` / no `--open` only; it
   does not check that the body update ran.

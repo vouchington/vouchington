@@ -15,7 +15,7 @@ type GitRun = { status: number; stdout: string }
 // Every call shares the guard's deadline, because a hook that outlives the harness timeout does not
 // block: a call that cannot finish in time never starts, and one that overruns is killed. Undefined
 // means git did not produce an exit status.
-function runGit(cwd: string, args: string[], deadline: number): GitRun | undefined {
+export function runGit(cwd: string, args: string[], deadline: number): GitRun | undefined {
   const timeout = deadline - Date.now()
   if (timeout <= 0) {
     return undefined

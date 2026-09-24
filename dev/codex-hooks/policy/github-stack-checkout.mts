@@ -7,6 +7,7 @@ import {
 import {
   defaultResolveStackForCheckout,
   type StackCheckoutResolver,
+  UNRESOLVED_REPOSITORY,
 } from './github-stack-checkout-resolve.mts'
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
@@ -103,14 +104,27 @@ export function findStackCheckoutBlock(
   if (!isStandaloneStackCheckout(command) || cwd === undefined) {
     return { reason: STANDALONE_CHECKOUT_REASON }
   }
-  const stacks = readableStacks(resolveStack(cwd, env, target, deadline))
+  const candidates = resolveStack(cwd, env, target, deadline)
+  if (candidates === UNRESOLVED_REPOSITORY) {
+    return {
+      reason:
+        `gh stack checkout ${target}: the hook could not tell which GitHub repository gh-stack reads ` +
+        `in ${cwd}, so it cannot verify the local layer branches. gh-stack reads GH_REPO when it is ` +
+        'set, otherwise the first of the upstream, github, and origin remotes (in that order) on a ' +
+        'GitHub host that gh knows. The hook needs that to be one github.com repository: it blocks ' +
+        'when a top-ranked remote is on another host, when two remotes of the same rank name ' +
+        'different repositories, or when git cannot list the remotes (`git remote -v`).',
+    }
+  }
+  const stacks = readableStacks(candidates)
   if (stacks === undefined) {
     return {
       reason:
         `gh stack checkout ${target}: the hook could not resolve ${target} to a stack whose layers ` +
         'and PR heads it can read, so it cannot verify the local layer branches. Check that ' +
-        `${target} is a stack number or a stacked PR (\`gh api "repos/{owner}/{repo}/pulls/${target}" ` +
-        "--jq '.stack.number'`); if the GitHub API was unreachable, retry once it is.",
+        `${target} is a stack number or a stacked PR (\`gh api ` +
+        `"repos/<owner>/<repo>/stacks?pull_request=${target}" --jq '.[0].number'\`); if the GitHub ` +
+        'API was unreachable, retry once it is.',
     }
   }
   const stale = staleLayerBranches(

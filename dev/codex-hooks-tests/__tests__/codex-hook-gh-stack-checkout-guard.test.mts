@@ -4,7 +4,10 @@ import { realpathSync, rmSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
-import type { StackCheckoutResolver } from '../../codex-hooks/policy/github-stack-checkout-resolve.mts'
+import {
+  type StackCheckoutResolver,
+  UNRESOLVED_REPOSITORY,
+} from '../../codex-hooks/policy/github-stack-checkout-resolve.mts'
 import { commitOn, git, withRepo } from '../../test-helpers/stack-checkout-repo.mts'
 import { makeTestTempDirSync } from '../test-temp-root.mts'
 
@@ -209,6 +212,16 @@ describe('Codex hook gh stack checkout guard', () => {
         { resolveStackForCheckout: () => stacks },
       )
       expect(block?.reason).toContain('could not resolve 7 to a stack')
+    })
+  })
+
+  it('names the repository as the cause when the hook cannot tell which one gh-stack reads', () => {
+    withRepo(({ dir }) => {
+      const block = findPreToolUseBlock(
+        { tool_input: { command: 'gh stack checkout 7', cwd: dir } },
+        { resolveStackForCheckout: () => UNRESOLVED_REPOSITORY },
+      )
+      expect(block?.reason).toContain('could not tell which GitHub repository gh-stack reads')
     })
   })
 
