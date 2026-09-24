@@ -139,7 +139,7 @@
     "@vitest/browser-playwright": "^5.0.1",
     "@vitest/coverage-v8": "^5.0.1",
     "@vouchington/localization": "0.2.0",
-    "@vouchington/localization-compiler": "0.2.1",
+    "@vouchington/localization-compiler": "0.2.2",
     "agent-blackboard": "0.6.0",
     "csv-parse": "7.0.2",
     "dependency-cruiser": "^18.4.0",
