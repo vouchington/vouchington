@@ -3,11 +3,13 @@ import type { GitHubWorkflowPolicyOptions } from './github-closing-refs.mts'
 import { findStackInitBaseBlock } from './github-configured-base.mts'
 import type { GhInvocation } from './github-invocation.mts'
 import { hasNamedFlag, hasNumericPrSelector } from './github-option-flags.mts'
+import { findStackCheckoutBlock } from './github-stack-checkout.mts'
 import { findStackAbandonmentBlock } from './github-stack-topology.mts'
 
 const STACK_AGENT_ACTIONS = new Set([
   'add',
   'bottom',
+  'checkout',
   'delete',
   'down',
   'init',
@@ -24,6 +26,8 @@ const STACK_AGENT_ACTIONS = new Set([
 ])
 
 export type GitHubStackWorkflowContext = {
+  // The complete tool command, which the checkout guard requires to be the checkout alone.
+  command: string
   // The invocation's working directory, or undefined when it could not be determined (an
   // unresolved `cd` target, no cwd threaded through) — matches commandCwd's own return type, so
   // callers never normalize between null and undefined. The init guards below fail open in that
@@ -35,7 +39,7 @@ export type GitHubStackWorkflowContext = {
 export function findGitHubStackWorkflowBlock(
   invocation: GhInvocation,
   options: GitHubWorkflowPolicyOptions,
-  context: GitHubStackWorkflowContext = { cwd: undefined, env: {} },
+  context: GitHubStackWorkflowContext = { command: '', cwd: undefined, env: {} },
 ): BlockDecision | null {
   const stack = stackInvocation(invocation)
   if (stack === null) {
@@ -43,10 +47,14 @@ export function findGitHubStackWorkflowBlock(
   }
   const { action } = stack
 
+  if (isStackHelp(stack)) {
+    return null
+  }
+
   if (!STACK_AGENT_ACTIONS.has(action)) {
     return {
       reason:
-        'gh stack allowlist is closed. Use only the non-interactive commands in .agents/skills/stacked-prs/SKILL.md. Interactive TUIs (modify, switch, checkout) and trunk are banned.',
+        'gh stack allowlist is closed. Use only the non-interactive commands in .agents/skills/stacked-prs/SKILL.md. Interactive TUIs (modify, switch) and trunk are banned.',
     }
   }
 
@@ -66,6 +74,16 @@ export function findGitHubStackWorkflowBlock(
     if (baseBlock !== null) {
       return baseBlock
     }
+  }
+
+  if (action === 'checkout') {
+    return findStackCheckoutBlock(
+      context.command,
+      stack.optionTokens,
+      context.cwd,
+      context.env,
+      options.resolveStackForCheckout,
+    )
   }
 
   if (action === 'submit') {
@@ -114,6 +132,24 @@ export function findGitHubStackWorkflowBlock(
     reason:
       'Merging is a human decision — confirm you want this exact merge before it proceeds. See docs/development/merge-authority.md.',
   }
+}
+
+const HELP_FLAGS = new Set(['--help', '-h'])
+
+// gh-stack is a cobra CLI. Its root command only prints help, `help [command]` only prints help, and
+// `--help` or `-h` prints a command's help and exits before the command runs: no gh-stack v0.1.0
+// command disables flag parsing or reuses -h. Only the bare forms count, since a `--` or any other
+// argument beside the flag can change what runs.
+function isStackHelp({ action, optionTokens }: GhInvocation): boolean {
+  if (HELP_FLAGS.has(action) || action === 'help') {
+    return (
+      optionTokens.length === 0 ||
+      (action === 'help' && optionTokens.length === 1 && STACK_AGENT_ACTIONS.has(optionTokens[0]))
+    )
+  }
+  return (
+    STACK_AGENT_ACTIONS.has(action) && optionTokens.length === 1 && HELP_FLAGS.has(optionTokens[0])
+  )
 }
 
 function stackInvocation(invocation: GhInvocation): GhInvocation | null {

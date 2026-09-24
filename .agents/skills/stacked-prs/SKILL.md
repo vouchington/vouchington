@@ -50,6 +50,16 @@ Use only these non-interactive forms:
   the new stack is genuinely deliberate and separate, reconcile first, then re-run with
   `AGENT_STACK_INIT_CONFIRM_SEPARATE=1` prefixed to acknowledge it.
 - `gh stack add <branch>`
+- `gh stack checkout <stack-number>` — imports an existing remote stack into this worktree; a PR
+  number also works. Run it as the whole command, or as
+  `cd <absolute-worktree-path> && gh stack checkout <stack-number>`. Hook-enforced: it is blocked
+  while any existing local layer branch differs from its PR head, and the block prints the fix for
+  each branch. It is also blocked when the hook cannot read the stack: gh-stack falls back from a
+  failed stack read to PR `<n>`'s stack, so the hook checks every stack the number could import and
+  treats any GitHub API answer other than 200 or 404 as unreadable. The hook reads the repository
+  gh-stack reads (`GH_REPO`, else the first of the `upstream`, `github`, and `origin` remotes; `gh
+repo set-default` does not apply), and blocks when it cannot tell that is one github.com
+  repository. See [Import a stack before acting on it](#import-a-stack-before-acting-on-it).
 - `gh stack submit --auto` — creates drafts. Immediately `node dev/pr-description.mts update` each
   new PR; auto titles and bodies are not sufficient. The hook gates `--auto` / no `--open` only; it
   does not check that the body update ran.
@@ -64,14 +74,18 @@ Use only these non-interactive forms:
   remove tracking only; pull requests and local branches are preserved, and a merged, merging, or
   queued PR cannot be removed. `unstack` is `delete`'s default-form alias.
 
-The hook allowlist is closed at the subcommand level: only `add`, `bottom`, `delete`, `down`, `init`,
-`link`, `merge`, `push`, `rebase`, `submit`, `sync`, `top`, `unstack`, `up`, and `view` are permitted
-`gh stack` actions, and for `merge` specifically a numeric PR-number selector is required. It does not
-further enforce the exact flag combination shown above — `gh stack merge <pr>` and
-`gh stack merge <pr> --yes` also pass the hook even though neither is the form this page requires. Do
-not run interactive TUIs: `gh stack submit` without `--auto`, `gh stack modify`, `gh stack checkout`,
-`gh stack switch`, or bare `gh stack merge` (no PR-number selector — it is a TUI and lands the whole
-stack). Do not run `gh stack trunk` — the main worktree already has `main` checked out, and agents
+The hook allowlist is closed at the subcommand level: only `add`, `bottom`, `checkout`, `delete`,
+`down`, `init`, `link`, `merge`, `push`, `rebase`, `submit`, `sync`, `top`, `unstack`, `up`, and
+`view` are permitted `gh stack` actions. `merge` requires a numeric PR-number selector, and
+`checkout` requires exactly one stack number or PR number and nothing else in the command. Help
+runs no command, so `gh stack --help`, `gh stack help [<action>]`, and `gh stack <action> --help`
+(or `-h`) for a permitted action pass with nothing else beside them. The hook does not further enforce
+the exact flag combination shown above — `gh stack merge <pr>` and `gh stack merge <pr> --yes` also
+pass the hook even though neither is the form this page requires. Do not run interactive TUIs:
+`gh stack submit` without `--auto`, `gh stack modify`, bare `gh stack checkout`, `gh stack switch`, or
+bare `gh stack merge` (no PR-number selector — it is a TUI and lands the whole stack). The hook also
+blocks `gh stack checkout <branch>`: a branch name resolves only against stacks this worktree already
+tracks. Do not run `gh stack trunk` — the main worktree already has `main` checked out, and agents
 stay in a non-main worktree.
 
 ### Worktree and scope
@@ -83,6 +97,21 @@ out in another worktree.
 - `git diff --name-only origin/main...HEAD` — what lands if this layer and every layer below merge
 - `git diff --name-only <parent>...HEAD` — this layer's review scope; it must match the one source issue
 
+### Import a stack before acting on it
+
+`gh stack rebase`, `sync`, `push`, and movement act only on stacks this worktree's local gh-stack
+record tracks. A stack created from another worktree, session, or machine is not tracked here.
+Before rebasing or pushing a stack layer, including when a pr-shepherd instruction says to, import
+the stack into its one worktree:
+
+1. `gh stack checkout <stack-number>`, with the number from `pulls/<N>.stack.number`. It fetches,
+   records the stack, and checks out the top-most unmerged layer.
+2. If the hook blocks it, an existing local layer branch differs from its PR head. gh-stack keeps
+   existing local branches as they are, so the next rebase would start from stale commits. Apply the
+   printed fix for each branch, then rerun the checkout. A branch that is only behind gets a
+   fast-forward command. A branch with local-only commits must be reconciled by hand: push commits
+   that belong on the PR, or move the branch once you have confirmed they are superseded.
+
 ### Lower-layer review fix
 
 Check out the layer that owns the change, commit there, then `gh stack rebase --upstack` and
@@ -92,7 +121,8 @@ Check out the layer that owns the change, commit there, then `gh stack rebase --
 
 Every fact this procedure branches on — topology, layer state, ownership, head SHA — comes from the
 REST/GraphQL API, never from local `gh-stack` metadata. A local base ref can go stale after a remote
-relink or rebase and silently replay already-landed commits ([#11426](https://github.com/vouchington/vouchington/issues/11426)).
+relink or rebase and silently replay already-landed commits (formerly filed as
+jonathanong/filaments#11426).
 `gh stack view --json` and `gh stack bottom` are used only to **act**, never to **decide**, and the
 former errors from a worktree whose current branch is not in the stack — the normal state right after
 a merge retargets the stack.
@@ -100,9 +130,9 @@ a merge retargets the stack.
 ```bash
 gh api "repos/{owner}/{repo}/pulls/<N>" --jq '.stack'   # {base:{ref,sha}, id, number, position, size}
 gh api "repos/{owner}/{repo}/stacks/<n>"                # layers bottom→top, with head.sha and author
-gh api "repos/{owner}/{repo}/stacks" --jq '[.[] | select(.state == "open")]'   # every open stack;
-                                                                               # ?state=open is
-                                                                               # ignored server-side
+gh api "repos/{owner}/{repo}/stacks" --jq '[.[] | select(.open)]'   # every open stack; `state`
+                                                                   # is null, and ?state=open
+                                                                   # is ignored server-side
 ```
 
 Use the **single-stack** endpoint for one stack's layers — the list form returns per-PR `base.ref` as
@@ -195,8 +225,9 @@ layer**:
 4. `gh stack merge <bottom> --yes --squash`. Because `<bottom>` is the bottom-most open layer,
    "everything up to and including it" is exactly one PR.
 5. Do **not** run `gh stack sync` here — return to A2 and re-read topology remotely instead.
-   Unconditional local rebasing right after a merge is the blast radius #11426 already demonstrated;
-   sync belongs to a layer fix in B. If no unmerged owned layers remain, the drain is complete.
+   Unconditional local rebasing right after a merge can replay already-landed commits from a stale
+   local base ref; sync belongs to a layer fix in B. If no unmerged owned layers remain, the drain
+   is complete.
 
 **Residual TOCTOU, stated honestly:** the window between `S1` and the merge cannot be closed —
 `gh stack merge` has no head-SHA pin. The backstop is server-side: branch protection and repository
@@ -224,7 +255,7 @@ session-filtered (what this session may touch):
 ```bash
 # RECONCILE — unfiltered. Must not filter by session, so it still finds a stack this session did
 # not create, including right after a compaction or in a brand-new session.
-gh api repos/{o}/{r}/stacks --jq '[.[] | select(.state == "open")]'
+gh api repos/{o}/{r}/stacks --jq '[.[] | select(.open)]'
 gh pr list --state open --limit 100 --json number,title,author,body   # explicit --limit: the
                                                                       # default is 30, and Dependabot
                                                                       # noise can push owned PRs off
