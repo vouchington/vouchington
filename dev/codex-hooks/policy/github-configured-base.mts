@@ -90,14 +90,19 @@ export function findStackInitBaseBlock(optionTokens: string[], cwd: string): Blo
   return null
 }
 
+// An explicit `--base` needs no checkout; only the configured default reads gh's directory, so a
+// `cwd` the hook cannot resolve skips just that fallback.
 export function findHandRolledStackBaseBlock(
   action: string,
   optionTokens: string[],
-  cwd: string,
+  cwd: string | undefined,
 ): BlockDecision | null {
   const base = lastNamedOption(optionTokens, 'base', 'B')
   const effectiveBase =
-    base ?? (action === 'create' || action === 'new' ? configuredPullRequestBase(cwd) : undefined)
+    base ??
+    (cwd !== undefined && (action === 'create' || action === 'new')
+      ? configuredPullRequestBase(cwd)
+      : undefined)
   if (effectiveBase === undefined || effectiveBase === 'main') {
     return null
   }

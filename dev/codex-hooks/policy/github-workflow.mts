@@ -72,10 +72,11 @@ export function findGitHubWorkflowBlock(
           }
         }
         const repo = effectiveGhRepo(ghOptions.repo.at(-1), prefix.env)
-        const baseBlock =
-          invocationCwd === undefined
-            ? null
-            : findHandRolledStackBaseBlock(action, invocation.optionTokens, invocationCwd)
+        const baseBlock = findHandRolledStackBaseBlock(
+          action,
+          invocation.optionTokens,
+          invocationCwd,
+        )
         if (baseBlock !== null) {
           return baseBlock
         }
