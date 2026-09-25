@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export const dynamic = 'force-dynamic'
 export default function RepeatInfringerPolicyPage() {
   return (
@@ -17,12 +19,12 @@ export default function RepeatInfringerPolicyPage() {
       <p>
         A case records an allegation and a staff outcome. It does not call a member an infringer.
         Retention periods are not set here. They stay with the approved policy. Read the{' '}
-        <a
+        <Link
           className='underline'
           href='/copyright'
         >
           copyright policy
-        </a>
+        </Link>
         .
       </p>
     </main>
