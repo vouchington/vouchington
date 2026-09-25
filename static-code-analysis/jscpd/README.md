@@ -39,11 +39,12 @@ silently on a tool error.
 
 `.jscpd.json` sets `similarity: 0.9`. Besides exact token matches (`exact`), jscpd compares
 JavaScript and TypeScript function pairs by AST similarity and reports a pair that reaches 90% as
-`similar`, so a copied function that changes its literal values or adds or drops a line still
-counts as a clone. SQL, Bash, and CSS stay exact-only. The ratchet treats both kinds the same way:
-only new ones fail. Identifiers are compared as written, so a copy that renames its variables is
-not matched. [`run-jscpd-real-binary.test.mts`](run-jscpd-real-binary.test.mts)
-proves the configured threshold catches a near-miss copy that exact matching misses.
+`similar`. The comparison ignores identifier names and literal values, so a copied function that
+renames its variables, changes its literals, or adds or drops a line still counts as a clone. Code
+outside a function, and SQL, Bash, and CSS, stay exact-only: there, a copy that renames its
+variables is not matched. The ratchet treats both kinds the same way: only new ones fail.
+[`run-jscpd-real-binary.test.mts`](run-jscpd-real-binary.test.mts) proves the configured threshold
+catches a near-miss copy that exact matching misses.
 
 ### Touch It, Dedupe It
 
