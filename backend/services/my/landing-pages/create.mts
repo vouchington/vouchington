@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { invalidate } from '@services/entity-cache/invalidate'
@@ -34,7 +34,7 @@ export async function createMyLandingPage(
     `)
     landingPage = rows[0] as LandingPage
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+    if (isUniqueViolation(error)) {
       const constraint = 'constraint' in error ? error.constraint : null
       if (constraint === 'uq_user_landing_pages__user_id_slug') {
         assert(false, 409, 'You already have a landing page with this slug')

@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { isUniqueViolation, write } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { validateLandingPageSlug, validateSubtitle, validateTitle } from './shared.mts'
@@ -34,7 +34,7 @@ export async function updateMyLandingPage(
     await invalidate.users(userId)
     return rows[0] as LandingPage
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+    if (isUniqueViolation(error)) {
       assert(false, 409, 'You already have a landing page with this slug')
     }
     throw error

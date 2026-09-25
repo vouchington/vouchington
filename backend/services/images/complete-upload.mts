@@ -1,11 +1,11 @@
 import type { MediaBody } from '@vouchington/media'
+import { isUniqueViolation } from '@data-stores/psql'
 import { enqueueExtractImageMetadata } from '@queues/images/enqueues'
 import onError from '@modules/on-error'
 import createHttpError from 'http-errors'
 import { getImageByHash, getImageByIdFromPrimary } from './get.mts'
 import {
   deletePendingImage,
-  isUniqueViolation,
   persistImageHashWhileProcessing,
   replaceFailedImage,
 } from './complete-upload-digest.mts'

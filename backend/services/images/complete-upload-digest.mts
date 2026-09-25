@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import createHttpError from 'http-errors'
 import { getImageByHash, getImageById } from './get.mts'
@@ -109,8 +109,4 @@ async function replaceFailedImageWhileLocked(
     return winner
   }
   return replacement
-}
-
-export function isUniqueViolation(error: unknown): error is { code: '23505' } {
-  return Boolean(error && typeof error === 'object' && 'code' in error && error.code === '23505')
 }
