@@ -91,10 +91,12 @@ record tracks. A stack created from another worktree, session, or machine is not
 Before rebasing or pushing a stack layer, including when a pr-shepherd instruction says to, import
 the stack into its one worktree:
 
-1. `gh stack checkout <stack-number>`, with the number from `pulls/<N>.stack.number`. It fetches,
-   records the stack, and checks out the top-most unmerged layer.
+1. `gh stack checkout <stack-number>`, with the number from `pulls/<N>.stack.number`. It records
+   the stack and checks out the top-most unmerged layer. When this worktree already tracks a
+   matching stack, it just switches branches, so remote-tracking refs can be stale.
 2. Required: gh-stack keeps existing local layer branches as they are, so a stale one would make
-   the next rebase start from stale commits. For each unmerged layer branch `<b>`, run
+   the next rebase start from stale commits. Run `git fetch origin` so each `origin/<b>` is the
+   current PR head, then for each unmerged layer branch `<b>`, run
    `git rev-list --left-right --count <b>...origin/<b>` (left = local-only commits, right = commits
    only on the PR head):
    - `0 0` — up to date.
