@@ -19430,33 +19430,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_notice_action_intents__recoverable": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_action_intents__recoverable ON public.copyright_notice_action_intents USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "next_attempt_at",
-              "descending": false,
-              "expression": "next_attempt_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(state = 'pending'::text)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_copyright_notice_intents__deadline": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -24379,19 +24352,12 @@
           "unique": false,
           "valid": true
         },
-        "idx_copyright_notice_enforcement_requests__pending": {
+        "idx_copyright_notice_enforcement_requests__reconcilable": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__pending ON public.copyright_notice_enforcement_requests USING btree (updated_at, copyright_notice_submission_assessment_id) WHERE (state = 'pending'::text)",
+          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__reconcilable ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_submission_assessment_id) WHERE (state = ANY (ARRAY['pending'::text, 'claimed'::text]))",
           "includedColumns": [],
           "keys": [
-            {
-              "column": "updated_at",
-              "descending": false,
-              "expression": "updated_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            },
             {
               "column": "copyright_notice_submission_assessment_id",
               "descending": false,

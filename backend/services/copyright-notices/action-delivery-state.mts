@@ -1,5 +1,11 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import {
+  parseCopyrightSweepPageOptions,
+  toCopyrightSweepIdPage,
+  type CopyrightSweepIdPage,
+  type CopyrightSweepPageOptions,
+} from './sweep-id-pages.mts'
 import type { CopyrightActionIntentRecord } from './types.mts'
 export {
   completeCopyrightActionIntentInTransaction,
@@ -68,20 +74,28 @@ export async function claimCopyrightActionIntent(
   return rows[0] ?? null
 }
 
-export async function listRecoverableCopyrightActionIntentIds(
-  limit: number,
-  now: Date,
-): Promise<string[]> {
-  const { rows } = await read<{ id: string }>(sql`
-    /* listRecoverableCopyrightActionIntentIds */
+/** Pages the action intents that are due for delivery or whose claim lease expired at `now`. */
+export async function searchRecoverableCopyrightActionIntentIds(
+  options: CopyrightSweepPageOptions & { now: Date },
+): Promise<CopyrightSweepIdPage> {
+  const { limit, afterId } = parseCopyrightSweepPageOptions(
+    options,
+    'Invalid copyright action intent cursor',
+  )
+  // `completed_at IS NULL` lets the planner prove the partial pending-intent index predicate.
+  const query = sql`/* searchRecoverableCopyrightActionIntentIds */
     SELECT id
     FROM copyright_notice_action_intents
-    WHERE (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= ${now}))
-      OR (state = 'claimed' AND claimed_at <= ${new Date(now.getTime() - CLAIM_TIMEOUT_MS)})
-    ORDER BY COALESCE(next_attempt_at, claimed_at), id
-    LIMIT ${limit}
-  `)
-  return rows.map(row => row.id)
+    WHERE completed_at IS NULL
+      AND (
+        (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= ${options.now}))
+        OR (state = 'claimed'
+          AND claimed_at <= ${new Date(options.now.getTime() - CLAIM_TIMEOUT_MS)})
+      )`
+  if (afterId) query.append(sql`\n      AND id > ${afterId}`)
+  query.append(sql`\n    ORDER BY id LIMIT ${limit + 1}`)
+  const { rows } = await read<{ id: string }>(query)
+  return toCopyrightSweepIdPage(rows, limit)
 }
 
 /** Reopens only retryable terminal actions.  The preceding legal event remains in the append-only

@@ -203,6 +203,10 @@ from `@voucha/test-helpers/modules/pagination/uuid-cursors` builds an `after` cu
 page starts at `id`. `readTestPendingCopyrightAgentDispatches(id)` from
 `@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches` applies it to the
 copyright agent-dispatch sweep, so `toEqual([])` proves the owned record is not pending.
+`readTestOwnedCopyrightSweepIds(searchPage, id)` from
+`@voucha/test-helpers/services/copyright-notices/sweep-ids` does the same for any copyright
+reconcile page function that returns a `CopyrightSweepIdPage`; wrap a page function that takes `now`
+as `options => searchPage({ ...options, now })`.
 
 ### Embedding collisions
 
@@ -320,13 +324,14 @@ See [Parallel-Safety and Test-Root Hygiene § Persistent dominant fixtures requi
 
 ### Fixture states a concurrent sweep can act on
 
-Recovery and reconciliation sweeps that tests call directly, such as
-`recoverRejectedCopyrightFormReviewEffects()`, scan the whole database, so they lock and act on
-other tests' rows too. Seed any multi-step state such a sweep would act on in one transaction so no
-sweep sees the intermediate commit. Seeding a rejected form review by a live moderator, then erasing
-the moderator in a second statement, let a parallel sweep lock the review and wait on the moderator
-row the erasure held, which deadlocked (#518).
-`createTestCopyrightFormRejectionByErasedModerator()` commits both together.
+A whole-database recovery sweep locks and acts on other tests' rows too, so tests never call one.
+They read the owned row through the sweep's keyset page (see
+[UUID-keyset sweep reads](#uuid-keyset-sweep-reads)) and call the per-item function on it. Still
+seed any multi-step state a sweep would act on in one transaction, so no concurrent sweep sees the
+intermediate commit. Seeding a rejected form review by a live moderator, then erasing the moderator
+in a second statement, once let a parallel sweep lock the review and wait on the moderator row the
+erasure held, which deadlocked (#518). `createTestCopyrightFormRejectionByErasedModerator()` commits
+both together.
 
 ### Shared membership catalog rows
 

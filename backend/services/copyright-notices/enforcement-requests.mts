@@ -1,12 +1,10 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
 import {
   claimCopyrightEnforcementRequest,
   completeNonEnforceableCopyrightEnforcementRequest,
   type EnforcementRequest,
 } from './enforcement-request-claim.mts'
-import { recoverRejectedCopyrightFormReviewEffects } from './form-reviews-recovery.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 
 export async function processCopyrightEnforcementRequest(
@@ -91,44 +89,6 @@ export async function processCopyrightEnforcementRequest(
     `)
     throw error
   }
-}
-
-export async function reconcileCopyrightEnforcementRequests(limit = 100): Promise<number> {
-  await recoverRejectedCopyrightFormReviewEffects()
-  await recoverMissingDecisionAssessmentsAndBackfill()
-  const { rows } = await write<{ assessment_id: string }>(sql`
-    /* reconcileCopyrightEnforcementRequests:list */
-    SELECT copyright_notice_submission_assessment_id AS assessment_id
-    FROM copyright_notice_enforcement_requests
-    WHERE state = 'pending'
-      OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes')
-    ORDER BY updated_at, copyright_notice_submission_assessment_id
-    LIMIT ${limit}
-  `)
-  const outcomes = await Promise.all(
-    rows.map(row => processCopyrightEnforcementRequest(row.assessment_id)),
-  )
-  return outcomes.filter(outcome => outcome === 'completed').length
-}
-
-async function recoverMissingDecisionAssessmentsAndBackfill(): Promise<void> {
-  await recoverMissingDecisionAssessments()
-  await write(sql`/* reconcileCopyrightEnforcementRequests:backfill */
-    INSERT INTO copyright_notice_enforcement_requests (
-      copyright_notice_submission_assessment_id, copyright_notice_id, imposed_by_id
-    )
-    SELECT assessment.id, submission.copyright_notice_id, assessment.assessed_by_id
-    FROM copyright_notice_submission_assessments assessment
-    JOIN copyright_notice_submissions submission
-      ON submission.id = assessment.copyright_notice_submission_id
-    WHERE submission.kind = 'notice' AND assessment.substantially_compliant
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submission_assessments newer
-        WHERE newer.supersedes_assessment_id = assessment.id
-      )
-    ORDER BY assessment.id ASC NULLS LAST
-    ON CONFLICT (copyright_notice_submission_assessment_id) DO NOTHING
-  `)
 }
 
 async function imposeRestrictionsSequentially(

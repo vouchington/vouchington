@@ -1,38 +1,49 @@
 import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import { createEligibleCopyrightRestoreIntent } from './restoration.mts'
+import {
+  parseCopyrightSweepPageOptions,
+  toCopyrightSweepIdPage,
+  type CopyrightSweepIdPage,
+  type CopyrightSweepPageOptions,
+} from './sweep-id-pages.mts'
 
-/** Materializes day-ten US-DMCA restoration intents from durable deadline state.  This is the
- * primary statutory dispatcher; queue reconciliation only recovers an already-created intent. */
-export async function createDueStatutoryCopyrightRestoreIntents(now: Date): Promise<number> {
+/** Pages the deadlines whose day-ten US-DMCA restoration is due at `now` and not yet materialized. */
+export async function searchDueStatutoryCopyrightRestorationDeadlineIds(
+  options: CopyrightSweepPageOptions & { now: Date },
+): Promise<CopyrightSweepIdPage> {
+  const { limit, afterId } = parseCopyrightSweepPageOptions(
+    options,
+    'Invalid copyright restoration deadline cursor',
+  )
+  const query = sql`/* searchDueStatutoryCopyrightRestorationDeadlineIds */
+    SELECT DISTINCT deadline.id`
+  appendDueStatutoryRestorationSource(query, options.now)
+  if (afterId) query.append(sql`\n      AND deadline.id > ${afterId}`)
+  query.append(sql`\n    ORDER BY deadline.id LIMIT ${limit + 1}`)
+  const { rows } = await read<{ id: string }>(query)
+  return toCopyrightSweepIdPage(rows, limit)
+}
+
+/** Materializes one deadline's day-ten US-DMCA restoration intents from durable deadline state.
+ * This is the primary statutory dispatcher; queue reconciliation only recovers an already-created
+ * intent. */
+export async function createDueStatutoryCopyrightRestoreIntentsForDeadline(
+  deadlineId: string,
+  now: Date,
+): Promise<number> {
+  const query = sql`/* createDueStatutoryCopyrightRestoreIntentsForDeadline */
+    SELECT notice.id AS notice_id, target.id AS target_id, restriction.id AS restriction_id,
+      deadline.id AS deadline_id, target.placement_revision`
+  appendDueStatutoryRestorationSource(query, now)
+  query.append(sql`\n      AND deadline.id = ${deadlineId}`)
   const { rows } = await read<{
     notice_id: string
     target_id: string
     restriction_id: string
     deadline_id: string
     placement_revision: number
-  }>(sql`/* createDueStatutoryCopyrightRestoreIntents */
-    SELECT notice.id AS notice_id, target.id AS target_id, restriction.id AS restriction_id,
-      deadline.id AS deadline_id, target.placement_revision
-    FROM copyright_notice_deadlines deadline
-    JOIN copyright_notices notice ON notice.id = deadline.copyright_notice_id
-    JOIN copyright_notice_submission_assessments assessment
-      ON assessment.id = deadline.qualifying_counter_notice_assessment_id
-    JOIN copyright_notice_counter_notice_assessment_targets assessment_target
-      ON assessment_target.copyright_notice_submission_assessment_id = assessment.id
-    JOIN copyright_notice_targets target ON target.id = assessment_target.copyright_notice_target_id
-    JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
-    WHERE deadline.earliest_restoration_at <= ${now}
-      AND deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
-      AND restriction.lifted_at IS NULL AND restriction.human_reviewed_at IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_action_intents intent
-        WHERE intent.copyright_restriction_id = restriction.id
-          AND intent.copyright_notice_deadline_id = deadline.id
-          AND intent.action = 'restore'
-          AND intent.state IN ('pending', 'claimed', 'completed')
-      )
-  `)
+  }>(query)
   const outcomes = await Promise.allSettled(
     rows.map(row =>
       createEligibleCopyrightRestoreIntent({
@@ -55,4 +66,26 @@ export async function createDueStatutoryCopyrightRestoreIntents(now: Date): Prom
     )
   }
   return outcomes.filter(outcome => outcome.status === 'fulfilled').length
+}
+
+function appendDueStatutoryRestorationSource(query: SQLStatement, now: Date): void {
+  query.append(sql`
+    FROM copyright_notice_deadlines deadline
+    JOIN copyright_notices notice ON notice.id = deadline.copyright_notice_id
+    JOIN copyright_notice_submission_assessments assessment
+      ON assessment.id = deadline.qualifying_counter_notice_assessment_id
+    JOIN copyright_notice_counter_notice_assessment_targets assessment_target
+      ON assessment_target.copyright_notice_submission_assessment_id = assessment.id
+    JOIN copyright_notice_targets target ON target.id = assessment_target.copyright_notice_target_id
+    JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
+    WHERE deadline.earliest_restoration_at <= ${now}
+      AND deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
+      AND restriction.lifted_at IS NULL AND restriction.human_reviewed_at IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_action_intents intent
+        WHERE intent.copyright_restriction_id = restriction.id
+          AND intent.copyright_notice_deadline_id = deadline.id
+          AND intent.action = 'restore'
+          AND intent.state IN ('pending', 'claimed', 'completed')
+      )`)
 }

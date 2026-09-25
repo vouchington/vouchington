@@ -1,53 +1,15 @@
-import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
-import {
-  createDueStatutoryCopyrightRestoreIntents,
-  listRecoverableCopyrightActionIntentIds,
-  processCopyrightActionIntent,
-  reconcileCopyrightEnforcementRequests,
-} from '@services/copyright-notices'
+import { processCopyrightActionIntent } from '@services/copyright-notices'
 
-type CopyrightActionProcessorDependencies = {
-  enqueueApplyCopyrightAction: typeof enqueueApplyCopyrightAction
-  listRecoverableCopyrightActionIntentIds: typeof listRecoverableCopyrightActionIntentIds
+type ApplyCopyrightActionDependencies = {
   processCopyrightActionIntent: typeof processCopyrightActionIntent
-  createDueStatutoryCopyrightRestoreIntents: typeof createDueStatutoryCopyrightRestoreIntents
-  reconcileCopyrightEnforcementRequests: typeof reconcileCopyrightEnforcementRequests
   now: () => Date
 }
 
 export async function processApplyCopyrightAction(
   data: { intentId: string },
-  dependencies: Partial<CopyrightActionProcessorDependencies> = {},
+  dependencies: Partial<ApplyCopyrightActionDependencies> = {},
 ): Promise<'applied' | 'stale' | 'blocked' | 'not_claimed'> {
   const process = dependencies.processCopyrightActionIntent ?? processCopyrightActionIntent
   const now = dependencies.now ?? (() => new Date())
   return await process(data.intentId, now())
-}
-
-export async function processReconcileCopyrightActionIntents(
-  dependencies: Partial<CopyrightActionProcessorDependencies> = {},
-): Promise<{ enqueued: number }> {
-  const list =
-    dependencies.listRecoverableCopyrightActionIntentIds ?? listRecoverableCopyrightActionIntentIds
-  const enqueue = dependencies.enqueueApplyCopyrightAction ?? enqueueApplyCopyrightAction
-  const now = dependencies.now ?? (() => new Date())
-  const evaluatedAt = now()
-  const createDue =
-    dependencies.createDueStatutoryCopyrightRestoreIntents ??
-    createDueStatutoryCopyrightRestoreIntents
-  const reconcileEnforcement =
-    dependencies.reconcileCopyrightEnforcementRequests ?? reconcileCopyrightEnforcementRequests
-  await reconcileCopyrightActionPrerequisites(reconcileEnforcement, createDue, evaluatedAt)
-  const intentIds = await list(100, evaluatedAt)
-  await Promise.all(intentIds.map(intentId => enqueue(intentId)))
-  return { enqueued: intentIds.length }
-}
-
-async function reconcileCopyrightActionPrerequisites(
-  reconcileEnforcement: CopyrightActionProcessorDependencies['reconcileCopyrightEnforcementRequests'],
-  createDue: CopyrightActionProcessorDependencies['createDueStatutoryCopyrightRestoreIntents'],
-  evaluatedAt: Date,
-): Promise<void> {
-  await reconcileEnforcement(100)
-  await createDue(evaluatedAt)
 }

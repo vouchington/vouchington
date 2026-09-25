@@ -10,24 +10,26 @@ import {
   readCopyrightNoticeTargetIds,
 } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import {
-  ageTestCopyrightEnforcementRequest,
   createTestCopyrightFormIntakeReview,
   liftTestCopyrightRestriction,
   readTestLatestCopyrightFormScreeningRecommendation,
 } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
+import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   createCopyrightFormIntake,
   getCopyrightNoticePrivateAggregate,
-  reconcileCopyrightEnforcementRequests,
+  processCopyrightEnforcementRequest,
+  recoverRejectedCopyrightFormReviewEffect,
+  searchReconcilableCopyrightEnforcementRequestIds,
+  searchRecoverableCopyrightFormReviewIntakeIds,
 } from './index.mts'
 import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
-import { recoverRejectedCopyrightFormReviewEffects } from './form-reviews-recovery.mts'
 
 async function createClearScreenedForm(targetCount = 1) {
   const claimant = await createTestUser()
@@ -80,6 +82,18 @@ async function expectFormEffect(submissionId: string): Promise<void> {
 
 async function expectNoFormEffect(submissionId: string): Promise<void> {
   await expect(readTestPendingCopyrightAgentDispatches(submissionId)).resolves.toEqual([])
+}
+
+async function expectRecoverableFormReview(intakeId: string): Promise<void> {
+  await expect(
+    readTestOwnedCopyrightSweepIds(searchRecoverableCopyrightFormReviewIntakeIds, intakeId),
+  ).resolves.toEqual([intakeId])
+}
+
+async function expectNoRecoverableFormReview(intakeId: string): Promise<void> {
+  await expect(
+    readTestOwnedCopyrightSweepIds(searchRecoverableCopyrightFormReviewIntakeIds, intakeId),
+  ).resolves.toEqual([])
 }
 
 describe('copyright form-screening recovery', () => {
@@ -170,8 +184,10 @@ describe('copyright form-screening recovery', () => {
       accepted: false,
     })
 
-    await reconcileCopyrightEnforcementRequests(0)
+    await expectRecoverableFormReview(notice.intake.id)
+    await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
 
+    await expectNoRecoverableFormReview(notice.intake.id)
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     expect(aggregate?.assessments.at(-1)).toMatchObject({
       assessed_by_id: moderator.id,
@@ -183,7 +199,7 @@ describe('copyright form-screening recovery', () => {
     await expectNoFormEffect(notice.intake.copyright_notice_submission_id)
   })
 
-  it('processes an owned pending enforcement request during reconciliation', async () => {
+  it('lists an owned pending enforcement request until it is processed', async () => {
     const { notice, screeningId } = await createClearScreenedForm()
     const assessment = await appendCopyrightSubmissionAssessment({
       submissionId: notice.intake.copyright_notice_submission_id,
@@ -192,12 +208,24 @@ describe('copyright form-screening recovery', () => {
       substantiallyCompliant: true,
       copyrightFormScreeningId: screeningId,
     })
-    await ageTestCopyrightEnforcementRequest(assessment.id)
+    await expect(
+      readTestOwnedCopyrightSweepIds(
+        searchReconcilableCopyrightEnforcementRequestIds,
+        assessment.id,
+      ),
+    ).resolves.toEqual([assessment.id])
 
-    await expect(reconcileCopyrightEnforcementRequests(1)).resolves.toBe(1)
+    await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('completed')
+
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
     ).resolves.toBe(1)
+    await expect(
+      readTestOwnedCopyrightSweepIds(
+        searchReconcilableCopyrightEnforcementRequestIds,
+        assessment.id,
+      ),
+    ).resolves.toEqual([])
   })
 
   it('recovers a rejection committed before any assessment', async () => {
@@ -208,8 +236,10 @@ describe('copyright form-screening recovery', () => {
       accepted: false,
     })
 
-    await recoverRejectedCopyrightFormReviewEffects()
+    await expectRecoverableFormReview(notice.intake.id)
+    await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
 
+    await expectNoRecoverableFormReview(notice.intake.id)
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     expect(aggregate?.assessments).toEqual([
       expect.objectContaining({

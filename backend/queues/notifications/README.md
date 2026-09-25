@@ -21,8 +21,12 @@ Glide Queue system for reconciling notifications and delivering browser push mes
   copyright intents to the in-app or transactional-email worker with stable intent keys.
 - `processApplyCopyrightAction` claims one revision-fenced copyright media action, rechecks its
   authoritative image placement and active blockers, then applies a reversible withhold or restore.
-- `processReconcileCopyrightActionIntents` runs every five minutes and re-enqueues pending or
-  expired claims from the durable action-intent ledger.
+- `processReconcileCopyrightActionIntents` runs every five minutes. In order, it replays rejected
+  form reviews, recreates missing enforcement requests, processes pending or stale claimed
+  enforcement requests, materializes due statutory restore intents, then re-enqueues pending or
+  expired-claim action intents. Each sweep walks every UUID-keyset page, so no backlog is starved
+  by a fixed batch. A failed item or stage does not stop the rest; the job then fails with an
+  `AggregateError` of every failure so the queue retries it.
 - `delete-notification`
   - Performs asynchronous soft deletion for user-initiated deletes
 - `follow-notification`
