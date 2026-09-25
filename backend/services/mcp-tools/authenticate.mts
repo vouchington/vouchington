@@ -1,5 +1,8 @@
 import { validateApiKeyForMcpAudience } from '@services/api-keys/validate'
-import { isOAuthAccessToken, validateOAuthAccessToken } from '@services/oauth-authorization-server'
+import {
+  isOAuthAccessToken,
+  validateOAuthAccessToken,
+} from '@services/oauth-authorization-server/access-tokens'
 import { getPrivateUserByAny, type PrivateUser } from '@services/users'
 import type { ApiScope } from '@modules/scopes'
 import type { McpServerConfig } from './config.mts'
