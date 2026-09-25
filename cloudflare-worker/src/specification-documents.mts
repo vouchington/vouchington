@@ -1,3 +1,10 @@
+import {
+  buildAgentAccessLlmsSection,
+  buildMcpAgentCardEntry,
+  buildMcpAgentSkill,
+  MCP_SPECIFICATION_URL,
+} from './agent-interface-documents.mts'
+import { getSiteOrigin } from './discovery-origin.mts'
 import type { Env } from './types.mts'
 
 export const MARKDOWN_SOURCE_PATHS = ['/md/posts', '/md/topics', '/md/users/{username}'] as const
@@ -20,15 +27,13 @@ const SPEC_LINKS = {
   trafficAdvice: 'https://specification.website/spec/well-known/traffic-advice/',
 } as const
 
-const getSiteOrigin = (env: Env): string => env.SITE_ORIGIN ?? 'https://voucha.ai'
-
 export function buildLlmsTxt(env: Env): string {
   const siteOrigin = getSiteOrigin(env)
   return `# Voucha
 
 > Voucha is a community platform for reviews, discussions, and curated content about rewards programs, credit cards, and personal finance.
 
-Only public unauthenticated content is advertised here. Authenticated routes, private resources, and URLs containing bearer credentials such as RSS \`apikey\` query parameters are intentionally omitted.
+Public content listed here needs no authentication. The one authenticated interface listed is the user MCP server under Agent Access (MCP), which needs the user's own API key. Private resources and URLs containing bearer credentials such as RSS \`apikey\` query parameters are intentionally omitted.
 
 ## Docs
 
@@ -61,11 +66,13 @@ Posts support filtering by \`post_types\` (discussion, review, data_point, story
 
 All list endpoints support \`limit\` (1-25 unauthenticated, 1-100 authenticated, default 25) and \`after\` (cursor) for pagination.
 
+${buildAgentAccessLlmsSection(siteOrigin)}
 ## Specification Alignment
 
 - ${SPEC_LINKS.llms}
 - ${SPEC_LINKS.markdown}
 - ${SPEC_LINKS.linkHeaders}
+- ${MCP_SPECIFICATION_URL}
 `
 }
 
@@ -128,6 +135,7 @@ export function buildAgentCard(env: Env): string {
       url: siteOrigin,
       llms: `${siteOrigin}/llms.txt`,
       skills: `${siteOrigin}/.well-known/agent-skills.json`,
+      mcp: buildMcpAgentCardEntry(siteOrigin),
     },
     null,
     2,
@@ -149,6 +157,7 @@ export function buildAgentSkills(env: Env): string {
             `${siteOrigin}/md/topics`,
           ],
         },
+        buildMcpAgentSkill(siteOrigin),
       ],
     },
     null,

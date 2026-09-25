@@ -378,6 +378,7 @@ Feature specifications, rules, and policies.
 - [Memberships](requirements/users/memberships.md) — Plans, billing, Stripe integration, admin grants
 - [API Keys](requirements/users/api-keys.md) — API key system, permissions, RSS feed access, rate limits
 - [Data Points Spec](requirements/platform/data-points-spec.md) — Structured data point schemas per vertical, aggregation views, data quality rules
+- [Agent Access](requirements/platform/agent-access.md) — Why and how discovery steers AI agents to the API and MCP instead of browser automation
 - [Referral Links](requirements/users/REFERRAL-LINKS.md) — Referral link submission, ranking, and click attribution
 - [Landing Pages](requirements/users/LANDING-PAGES.md) — Item selection, draft persistence, refresh merging, and page switching across clients
 - [Notification Requirements](requirements/navigation/NOTIFICATIONS.md) — Browser push notifications, in-app notification UI

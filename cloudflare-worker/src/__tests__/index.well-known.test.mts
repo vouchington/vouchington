@@ -64,6 +64,12 @@ describe('worker fetch handler — well-known discovery documents', () => {
       name: 'Voucha',
       llms: 'https://voucha.ai/llms.txt',
       skills: 'https://voucha.ai/.well-known/agent-skills.json',
+      mcp: {
+        url: 'https://voucha.ai/api/v1/mcp',
+        transport: 'streamable-http',
+        authentication: { type: 'bearer' },
+        api_keys: 'https://voucha.ai/my/api-keys',
+      },
     })
     expect(fetchSpy).not.toHaveBeenCalled()
   })
@@ -91,6 +97,10 @@ describe('worker fetch handler — well-known discovery documents', () => {
         {
           name: 'browse-public-content',
           resources: expect.arrayContaining(['https://voucha.ai/md/posts']),
+        },
+        {
+          name: 'use-voucha-mcp',
+          resources: expect.arrayContaining(['https://voucha.ai/api/v1/mcp']),
         },
       ],
     })
