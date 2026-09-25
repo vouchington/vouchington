@@ -4096,12 +4096,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@services/agents':
-        specifier: workspace:^
-        version: link:../agents
-      '@services/users':
-        specifier: workspace:^
-        version: link:../users
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2

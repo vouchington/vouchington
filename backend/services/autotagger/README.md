@@ -33,13 +33,13 @@ around that dispatch, not the classifier call itself:
   "pause autotagging" switch — not classifier deactivation, which the dispatch path treats as a
   configuration error (see below).
 
-`prompts.mts`'s `getActiveAutotaggerPrompt` is a separate, legacy lookup: it resolves the
-`autotagger` system user's agent prompt for C7's free-form-reasoning residual path
-(`backend/agents/autotagger/openai-autotagger.mts`), which has no current production caller. C6's
-own configuration lookup (`getActiveClassifierConfigurationBySlugFromPrimary('tagging')`) is
+C6's own configuration lookup (`getActiveClassifierConfigurationBySlugFromPrimary('tagging')`) is
 unrelated and lives in `@services/classifiers`; if that classifier configuration is missing or
 deactivated, dispatch throws rather than silently no-op'ing, since the sanctioned way to pause
-autotagging is the `enabled` field above, not classifier deactivation.
+autotagging is the `enabled` field above, not classifier deactivation. (This package previously
+also held `prompts.mts`'s `getActiveAutotaggerPrompt`, a lookup for the old pre-C6 `run.mts` --
+it was never wired into the C7 residual path below, since `openai-autotagger.mts` never called it,
+and was removed as dead code once C6 replaced `run.mts`.)
 
 ## Key Files
 
@@ -50,7 +50,6 @@ autotagging is the `enabled` field above, not classifier deactivation.
 - `receipt-digest.mts` — `computeAutotaggerReceiptDigest`, `AUTOTAGGER_RECEIPT_DIGEST_VERSION`
 - `limits-config.mts` — `autotaggerPaidLimitsConfig`, `getAutotaggerPaidLimitsFields`,
   `AutotaggerPaidLimitsFields`
-- `prompts.mts` — `getActiveAutotaggerPrompt` (C7 legacy path only, see above)
 
 ## Architecture Notes
 

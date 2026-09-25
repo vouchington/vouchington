@@ -139,7 +139,7 @@ export async function setupTestAutotaggerAgent(): Promise<TestAgentPrompt> {
     agentId = newAgentRows[0].id as string
   }
 
-  // Create a fresh activated prompt (most recent is used by getActiveAutotaggerPrompt)
+  // Create a fresh activated prompt for the dormant C7 residual path's fixtures
   const prompt = await createTestAgentPrompt(agentId, 'Test prompt', 'gpt-5.4-nano', 'openai')
   return activateTestAgentPrompt(prompt.id)
 }
