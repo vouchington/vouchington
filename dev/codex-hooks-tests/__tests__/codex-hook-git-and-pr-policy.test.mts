@@ -69,9 +69,9 @@ describe('Codex hook git and PR policy', () => {
 
   it.each([
     'gh pr create --fill',
-    'gh pr create --title \"feat: test\" --body \"## Related issues\\nCloses #2476\"',
-    'env GH_TOKEN=token gh pr create --title \"feat: test\" --body \"## Related issues\\nCloses #2476\"',
-    'command gh pr create --title \"feat: test\" --body \"## Related issues\\nCloses #2476\"',
+    'gh pr create --title "feat: test" --body "## Related issues\\nCloses #2476"',
+    'env GH_TOKEN=token gh pr create --title "feat: test" --body "## Related issues\\nCloses #2476"',
+    'command gh pr create --title "feat: test" --body "## Related issues\\nCloses #2476"',
   ])('blocks PR creation without --draft: %s', command => {
     expect(
       findPreToolUseBlock({

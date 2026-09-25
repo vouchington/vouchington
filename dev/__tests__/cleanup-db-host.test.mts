@@ -30,7 +30,7 @@ async function makeRepo() {
     join(dir, 'dev', 'lib', 'git-worktrees.sh'),
     await readFile(publishedGitWorktreesPath, 'utf8'),
   )
-  await writeFile(join(dir, 'current-env-with-unset-optional.sh'), ': "\${MISSING_OPTIONAL}"\n')
+  await writeFile(join(dir, 'current-env-with-unset-optional.sh'), ': "${MISSING_OPTIONAL}"\n')
   await writeFile(
     join(dir, '.env'),
     'source ./current-env-with-unset-optional.sh\nexport DATABASE_URL=postgres://dbhost:15432/voucha-current\n',
