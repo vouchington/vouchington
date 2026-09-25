@@ -12,6 +12,10 @@ Full lifecycle management for user referral program links — create, read, upda
 - `getScopedReferralLinks(currentUserId, scope)` — retrieves links filtered by scope
 - `currentUserCanUpdateReferralLink(currentUser, link)` — authorization check
 
+Every read and `RETURNING` that feeds a response selects `userReferralLinkColumns()` from
+`columns.mts`: the declared `UserReferralLink` columns only, so the `created_by_id` and
+`deleted_by_id` audit columns stay internal.
+
 ## Related
 
 - Parent: [../CLAUDE.md](../CLAUDE.md)

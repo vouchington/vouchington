@@ -10,6 +10,7 @@ import { isOfficialAccount } from '@services/users/authorization'
 import { currentUserCanUpdateUserReferralLink } from './authorization.mts'
 import { getUserReferralLink } from './get.mts'
 import type { UserReferralLink } from './types.mts'
+import { userReferralLinkColumns } from './columns.mts'
 import { assertUserReferralLinkScope, type UserReferralLinkScope } from './scope.mts'
 
 export async function updateUserReferralLink(
@@ -53,8 +54,7 @@ export async function updateUserReferralLink(
       SET label = ${label}
       WHERE id = ${linkId}
         AND deleted_at IS NULL
-      RETURNING *
-    `,
+      RETURNING `.append(userReferralLinkColumns()),
   )
 
   return rows[0] ?? null

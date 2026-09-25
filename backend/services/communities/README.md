@@ -68,6 +68,7 @@ await setCommunityArchiveState(currentUser, communityId, true, membership)
 | [`post-type-settings.mts`](post-type-settings.mts) | Review/data-point post-type flags and eligibility helpers |
 | [`delete.mts`](delete.mts)                         | Soft-delete (sets deleted_at)                             |
 | [`get.mts`](get.mts)                               | Fetch community by slug or ID                             |
+| [`columns.mts`](columns.mts)                       | Response column list for detail, batch and search reads   |
 | [`authorization.mts`](authorization.mts)           | Role-based permission helpers                             |
 | [`slugs.mts`](slugs.mts)                           | Slug generation and uniqueness                            |
 | [`types.mts`](types.mts)                           | Shared TypeScript types                                   |

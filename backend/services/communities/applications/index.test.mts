@@ -12,6 +12,19 @@ import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
 
 describe('index', () => {
+  const applicationKeys = [
+    'answers',
+    'approved_at',
+    'community_id',
+    'created_at',
+    'id',
+    'message',
+    'rejected_at',
+    'rejection_reason',
+    'reviewed_at',
+    'reviewed_by_id',
+    'user_id',
+  ]
   let owner: PrivateUser
   let privateCommunity: Community
   let publicCommunity: Community
@@ -91,6 +104,7 @@ describe('index', () => {
       expect(app.community_id).toBe(community.id)
       expect(app.approved_at).toBeNull()
       expect(app.rejected_at).toBeNull()
+      expect(Object.keys(app).sort()).toEqual(applicationKeys)
     })
 
     it('rejects application for a public community', async () => {
@@ -132,6 +146,7 @@ describe('index', () => {
 
       const result = await searchApplications(community.id)
       expect(result.results.length).toBeGreaterThan(0)
+      expect(Object.keys(result.results[0]!).sort()).toEqual(applicationKeys)
     })
   })
 })

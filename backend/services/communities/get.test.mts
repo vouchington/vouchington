@@ -8,6 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import {
+  getCommunityBySlugOnly,
   getCommunityOrThrow,
   loadCommunityForViewer,
   loadCommunityForViewerOrApplicant,
@@ -39,17 +40,51 @@ describe('get', () => {
       expect(community.id).toBe(inserted.id)
     })
 
-    it('strips internal language detector fields from returned communities', async () => {
+    it('returns only the declared community columns, owner, and image placements', async () => {
       const inserted = await insertTestCommunity({ createdById: owner.id })
       await setCommunityLanguageDetectionFieldsForTest(inserted.id)
 
-      const community = await getCommunityOrThrow(inserted.id)
+      const communities = await Promise.all([
+        getCommunityOrThrow(inserted.id),
+        getCommunityOrThrow(inserted.slug),
+        getCommunityBySlugOnly(inserted.slug),
+      ])
 
-      expect(community.lingua_rs_detected_language).toBe('fr')
-      expect('lingua_rs_content_sha256' in community).toBe(false)
-      expect('lingua_rs_input_sha256' in community).toBe(false)
-      expect('lingua_rs_results' in community).toBe(false)
-      expect('lingua_rs_detected_at' in community).toBe(false)
+      expect(communities[0].lingua_rs_detected_language).toBe('fr')
+      const expectedKeys = [
+        'allow_data_point_posts',
+        'allow_review_posts',
+        'archived_at',
+        'archived_by_id',
+        'banner_image_id',
+        'banner_image_placement',
+        'created_at',
+        'created_by_id',
+        'default_language',
+        'deleted_at',
+        'deleted_by_id',
+        'id',
+        'lingua_rs_detected_language',
+        'list_type',
+        'markdown',
+        'member_invites_allowed_at',
+        'member_roster_visibility',
+        'name',
+        'owner',
+        'post_approval_required_at',
+        'profile_image_id',
+        'profile_image_placement',
+        'rules_markdown',
+        'slug',
+        'trusted_at',
+        'updated_at',
+        'visibility',
+      ]
+      expect(communities.map(community => Object.keys(community!).sort())).toEqual([
+        expectedKeys,
+        expectedKeys,
+        expectedKeys,
+      ])
     })
 
     it('throws 404 when not found', async () => {

@@ -91,6 +91,57 @@ describe('community', () => {
         expect(response.body.community.name).toBe(updatedName)
       })
 
+      it('returns exactly the community contract fields from PATCH and GET', async () => {
+        const patchUser = await createTestUser()
+        const community = await insertTestCommunity({ createdById: patchUser.id })
+        await insertTestCommunityMember({
+          communityId: community.id,
+          userId: patchUser.id,
+          role: 'owner',
+        })
+
+        const request = createRequest()
+        await request.authenticateAs(patchUser)
+
+        const patched = await request
+          .patch(`/api/v1/communities/${community.slug}`)
+          .set('Content-Type', 'application/json')
+          .send({ name: `Contract Name ${createRandomString(8)}` })
+          .expect(200)
+        const shown = await request.get(`/api/v1/communities/${community.slug}`).expect(200)
+
+        const expectedKeys = [
+          'allow_data_point_posts',
+          'allow_review_posts',
+          'archived_at',
+          'archived_by_id',
+          'banner_image_id',
+          'banner_image_placement',
+          'created_at',
+          'created_by_id',
+          'default_language',
+          'deleted_at',
+          'deleted_by_id',
+          'id',
+          'lingua_rs_detected_language',
+          'list_type',
+          'markdown',
+          'member_invites_allowed_at',
+          'member_roster_visibility',
+          'name',
+          'post_approval_required_at',
+          'profile_image_id',
+          'profile_image_placement',
+          'rules_markdown',
+          'slug',
+          'trusted_at',
+          'updated_at',
+          'visibility',
+        ]
+        expect(Object.keys(patched.body.community).sort()).toEqual(expectedKeys)
+        expect(Object.keys(shown.body.community).sort()).toEqual(expectedKeys)
+      })
+
       it('updates list_type to follow', async () => {
         const patchUser = await createTestUser()
         const random = createRandomString(8)

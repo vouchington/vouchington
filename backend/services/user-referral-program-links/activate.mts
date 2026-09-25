@@ -6,6 +6,7 @@ import { validateUUID } from '@modules/utils'
 import { currentUserCanUpdateUserReferralLink } from './authorization.mts'
 import { getUserReferralLink } from './get.mts'
 import type { UserReferralLink } from './types.mts'
+import { userReferralLinkColumns } from './columns.mts'
 import { assertUserReferralLinkScope, type UserReferralLinkScope } from './scope.mts'
 
 export async function activateUserReferralLink(
@@ -30,8 +31,7 @@ export async function activateUserReferralLink(
           deactivated_at = NULL
       WHERE id = ${linkId}
         AND deleted_at IS NULL
-      RETURNING *
-    `,
+      RETURNING `.append(userReferralLinkColumns()),
   )
 
   return rows[0] ?? null
@@ -59,8 +59,7 @@ export async function deactivateUserReferralLink(
           deactivated_at = CURRENT_TIMESTAMP
       WHERE id = ${linkId}
         AND deleted_at IS NULL
-      RETURNING *
-    `,
+      RETURNING `.append(userReferralLinkColumns()),
   )
 
   return rows[0] ?? null
