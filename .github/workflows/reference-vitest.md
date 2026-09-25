@@ -19,8 +19,8 @@ once `static-code-analysis` and their area static checks succeed or intentionall
 workflows fan out the same way after their static checks.
 
 Backend Uncredentialed Docker Tests (`tests-backend-unit.yml`) carries failure-only fork-exit
-sentinel and diagnostic-report steps for the recurring
-`backend-unit-vitest-worker-exit-after-pass` signature (formerly filed as
+sentinel and diagnostic-report steps for the recurring backend unit post-pass worker-exit
+signature (formerly filed as
 jonathanong/filaments#8940). See
 [Vitest Worker-Exit Diagnostics](../../docs/development/reference-vitest-worker-exit-diagnostics.md)
 for the sentinel line format, the `VITEST_FORK_CRASH_INJECT` fault-injection allowlist, and the

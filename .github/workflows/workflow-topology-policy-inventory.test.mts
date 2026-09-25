@@ -50,13 +50,12 @@ function policy(jobInventory: WorkflowTopologyPolicy['jobInventory']): WorkflowT
     exactFanIns: {},
     exactCallerJobs: {},
     stepOrders: [],
-    targetedReruns: {},
   }
 }
 
 function diagnostics(configured: WorkflowTopologyPolicy): string[] {
   const fixture = topology()
-  return evaluateGraphPolicy(fixture, createWorkflowTopologyIndex(fixture), configured, [])
+  return evaluateGraphPolicy(fixture, createWorkflowTopologyIndex(fixture), configured)
 }
 
 describe('workflow topology inventory diagnostics', () => {

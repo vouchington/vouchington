@@ -18,7 +18,6 @@ import { assertNoWorkflowViolations } from '../.github/workflows/workflow-test-h
 import { evaluateWorkflowTopologyPolicy } from '../.github/workflows/workflow-topology-policy.mts'
 import { githubWorkflowPaths, loadRepoTopology } from './repo-topology.mts'
 import { writeJobsInventoryDoc } from './render-workflow-runner-inventory.mts'
-import { RULES } from './transient-retry/rules.mts'
 
 const __filename = fileURLToPath(import.meta.url)
 
@@ -31,7 +30,7 @@ export function liveTopologyAuditErrors(topology: WorkflowTopology): string[] {
 
   const index = createWorkflowTopologyIndex(topology)
   return [
-    ...evaluateWorkflowTopologyPolicy(topology, index, RULES),
+    ...evaluateWorkflowTopologyPolicy(topology, index),
     ...callerCalleePermissionMismatches(topology),
     ...missingInventoryEntries(topology).map(
       name => `secret ${name} is referenced with no SECRET_INVENTORY entry`,

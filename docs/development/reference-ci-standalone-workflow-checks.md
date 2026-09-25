@@ -108,8 +108,8 @@ job; either failure blocks CI. The declared `SOURCE_RUN_EXEMPTIONS` are:
 
 Both `triage-and-rerun` jobs (`fix-main.yml` and `fix-dependabot.yml`) used to be exempt here on the
 rationale that `gh run rerun` is idempotent and mutates no issue or PR. That reasoning was wrong —
-each call creates a new run attempt. Fix Dependabot therefore routes every rerun route (targeted
-transient job, full transient workflow, and uncatalogued cancelled/timed-out attempt one) through
+each call creates a new run attempt. Fix Dependabot therefore routes every rerun route (catalogued
+transient workflow and uncatalogued cancelled/timed-out attempt one) through
 [`ci/revalidate-dependabot-rerun.mts`](../../ci/revalidate-dependabot-rerun.mts). In the same process
 immediately before the mutation, it refetches the exact run and its PR association, then requires the
 live PR to be open, Dependabot-authored, same-repository, and at the source ref/SHA. A changed source

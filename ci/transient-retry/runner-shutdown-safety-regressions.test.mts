@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  diagnosticReportSummaryBlock,
+  forkExitSentinelLine,
+  hostPressureDiagnosticsBlock,
+  teardownInstrumentationLines,
+  valkeySaturationLine,
+  workerExitAfterPassLogWithNewInstrumentation,
+  workerExitAfterPassLogWithTeardownOverrun,
+  workerExitDiagnosticsBlock,
+  workerExitInstrumentationLines,
+} from './backend-unit-vitest-instrumentation.fixtures.mts'
 import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
-import { hasExplicitOomEvidence } from './runner-shutdown-fingerprints.mts'
+import {
+  hasBackendUnitVitestFailure,
+  hasExplicitOomEvidence,
+} from './runner-shutdown-fingerprints.mts'
 import type { WorkflowRunContext } from './types.mts'
 
 // Production registration and retry accounting are covered through decide()/RULES in
@@ -72,16 +86,6 @@ describe('runnerShutdownLeafRerunMatch safety regressions', () => {
 
   it.each([
     [
-      'the web-integration lost-communication fast path',
-      () =>
-        makeCtx([webIntegrationJobName], new Map([[webIntegrationJobName, cgroupOom]]), {
-          failedJobAnnotations: () =>
-            Promise.resolve([
-              'The self-hosted runner lost communication with the server. Verify the machine is running and has a healthy network connection',
-            ]),
-        }),
-    ],
-    [
       'a cancelled known consumer',
       () =>
         makeCtx(
@@ -118,6 +122,21 @@ describe('runnerShutdownLeafRerunMatch safety regressions', () => {
     ],
   ])('does NOT rerun when OOM evidence is in %s', async (_name, createCtx) => {
     expect(await runnerShutdownLeafRerunMatch(createCtx())).toBe(false)
+  })
+
+  it('does not classify #8259 teardown-overrun instrumentation as a backend-unit Vitest failure', () => {
+    expect(hasBackendUnitVitestFailure(teardownInstrumentationLines)).toBe(false)
+    expect(hasBackendUnitVitestFailure(workerExitAfterPassLogWithTeardownOverrun)).toBe(false)
+  })
+
+  it('does not classify #8940 fork-exit and diagnostics instrumentation as a backend-unit Vitest failure', () => {
+    expect(hasBackendUnitVitestFailure(forkExitSentinelLine)).toBe(false)
+    expect(hasBackendUnitVitestFailure(valkeySaturationLine)).toBe(false)
+    expect(hasBackendUnitVitestFailure(workerExitDiagnosticsBlock)).toBe(false)
+    expect(hasBackendUnitVitestFailure(diagnosticReportSummaryBlock)).toBe(false)
+    expect(hasBackendUnitVitestFailure(hostPressureDiagnosticsBlock)).toBe(false)
+    expect(hasBackendUnitVitestFailure(workerExitInstrumentationLines)).toBe(false)
+    expect(hasBackendUnitVitestFailure(workerExitAfterPassLogWithNewInstrumentation)).toBe(false)
   })
 
   it('does NOT treat Patch Coverage as downstream of a Playwright-only shutdown', async () => {

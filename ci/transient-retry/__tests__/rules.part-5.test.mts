@@ -21,7 +21,6 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   workflowName: 'CI',
   conclusion: 'failure',
   runAttempt: 1,
-  jobIds: new Map().set('storybook-build / storybook', 1).set('storybook / storybook', 2),
   failedJobNames: [],
   failedJobLogs: () => Promise.resolve(new Map()),
   failedJobAnnotations: () => Promise.resolve([]),

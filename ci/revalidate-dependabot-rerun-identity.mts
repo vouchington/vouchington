@@ -3,7 +3,6 @@ export interface DependabotRerunInputs {
   headBranch: string
   prNumber: number
   repository: string
-  rerunJobId: number | null
   sourceRunAttempt: number
   sourceRunConclusion: string
   sourceRunId: number

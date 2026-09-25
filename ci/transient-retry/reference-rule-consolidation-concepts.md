@@ -7,8 +7,8 @@ root cause, not per status code or URL. This section explains the concepts behin
 
 ### What "same root cause" means
 
-A flake in the same external dependency (GitHub Releases CDN, an AWS control plane, a
-self-hosted runner) is one root cause even if it surfaces as different HTTP status codes
+A flake in the same external dependency (GitHub Releases CDN, an AWS control plane, the
+GitHub-hosted runner fleet) is one root cause even if it surfaces as different HTTP status codes
 (500 / 502 / 503 / 504), `curl` exit codes (22 / 56), step-timeouts, or different asset
 paths within the same release. Similarly, an IAM permission denial that races the same
 policy-update anchor (`aws_iam_policy.github_actions_<group>: (Creation|Modifications) complete`,

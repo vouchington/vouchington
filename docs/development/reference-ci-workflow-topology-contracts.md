@@ -128,8 +128,8 @@ The table-driven policy exercised by
 [`ci/check-live-workflow-topology.mts`](../../ci/check-live-workflow-topology.mts) loads that
 graph once and fails closed on workflow/job inventory drift, missing lock intent or unlocked-workflow
 rationale, exact lock-group collisions (including expression templates), incomplete shared-lock
-families, reusable caller drift, required or forbidden routes, exact aggregate fan-ins, eligibility
-ordering, and targeted-rerun downstream closure. Workflow-specific tests retain conditions, inputs,
+families, reusable caller drift, required or forbidden routes, exact aggregate fan-ins, and
+eligibility ordering. Workflow-specific tests retain conditions, inputs,
 outputs, secrets, permissions, runners, scripts, and runtime mechanics instead of duplicating graph
 assertions. See
 [GitHub Actions Concurrency Locks](../../.github/workflows/reference-github-actions-concurrency-locks.md)

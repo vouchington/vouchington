@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { fetchPriorAttemptJobCounts, parseWorkflowJobEntries } from './attempts.mts'
-import { decide } from './decide.mts'
+import { workerExitAfterPassLog } from './backend-unit-vitest-instrumentation.fixtures.mts'
+import { decide, formatDecisionOutput } from './decide.mts'
 import { parseDecisionEnv } from './env.mts'
+import { RULES } from './rules.mts'
 import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
-
-type RerunTransientRetryRule = Extract<TransientRetryRule, { decision?: 'rerun' }>
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
   workflowName: 'CI',
@@ -17,7 +17,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   ...overrides,
 })
 
-const alwaysMatchRule = (id: string, maxAttempts = 1): RerunTransientRetryRule => ({
+const alwaysMatchRule = (id: string, maxAttempts = 1): TransientRetryRule => ({
   id,
   consumerKey: `consumer-${id}`,
   rootCauseKey: `root-cause-${id}`,
@@ -27,7 +27,7 @@ const alwaysMatchRule = (id: string, maxAttempts = 1): RerunTransientRetryRule =
   match: () => true,
 })
 
-const neverMatchRule = (id: string, maxAttempts = 1): RerunTransientRetryRule => ({
+const neverMatchRule = (id: string, maxAttempts = 1): TransientRetryRule => ({
   id,
   consumerKey: `consumer-${id}`,
   rootCauseKey: `root-cause-${id}`,
@@ -37,7 +37,7 @@ const neverMatchRule = (id: string, maxAttempts = 1): RerunTransientRetryRule =>
   match: () => false,
 })
 
-const asyncMatchRule = (id: string, result: boolean, maxAttempts = 1): RerunTransientRetryRule => ({
+const asyncMatchRule = (id: string, result: boolean, maxAttempts = 1): TransientRetryRule => ({
   id,
   consumerKey: `consumer-${id}`,
   rootCauseKey: `root-cause-${id}`,
@@ -159,7 +159,7 @@ describe('decide()', () => {
   it('returns ignore when the first matching rule is an ignore rule', async () => {
     const ctx = makeCtx()
     const rules: TransientRetryRule[] = [
-      { ...alwaysMatchRule('ignored'), decision: 'ignore', rerunTarget: undefined },
+      { ...alwaysMatchRule('ignored'), decision: 'ignore' },
       alwaysMatchRule('rerun'),
     ]
     const result = await decide(ctx, rules)
@@ -243,5 +243,24 @@ describe('decide()', () => {
     const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
+  })
+
+  it('formats the decision and matched rule as GitHub step outputs', () => {
+    expect(formatDecisionOutput({ decision: 'rerun', matchedRule: 'known-flake' })).toBe(
+      'decision=rerun\nmatched_rule=known-flake\n',
+    )
+  })
+
+  it('dispatches a backend unit worker exit after all tests passed', async () => {
+    const backendUnitJobName = 'test-backend-unit / backend-tests (1)'
+    const result = await decide(
+      makeCtx({
+        failedJobNames: [backendUnitJobName, 'Patch Coverage', 'tests', 'build'],
+        failedJobLogs: () =>
+          Promise.resolve(new Map([[backendUnitJobName, workerExitAfterPassLog]])),
+      }),
+      RULES,
+    )
+    expect(result).toEqual({ decision: 'dispatch', matchedRule: '' })
   })
 })

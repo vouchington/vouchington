@@ -27,8 +27,6 @@ export interface WorkflowRunContext {
   jobNames?: string[]
   /** GitHub conclusion per created job, keyed by exact job name when available. */
   jobConclusions?: Map<string, WorkflowJobConclusion>
-  /** GitHub database id per created job, keyed by exact job name when available. */
-  jobIds?: Map<string, number>
   /** GitHub step state per created job, keyed by exact job name when available. */
   jobSteps?: Map<string, WorkflowJobStep[]>
   failedJobNames: string[]
@@ -44,7 +42,7 @@ export interface WorkflowRunContext {
   failedJobAnnotationFetchFailures?: () => Promise<Set<string>>
 }
 
-interface TransientRetryRuleBase {
+export interface TransientRetryRule {
   id: string // stable slug used in logs/telemetry
   consumerKey: string // stable identity of the command/action being retried
   rootCauseKey: string // stable identity of the transient cause family
@@ -53,31 +51,10 @@ interface TransientRetryRuleBase {
   // GitHub Actions run IDs from the archived predecessor repository, kept for audit provenance.
   // That repository is private, so no URL is rendered — only the numeric id survives.
   exampleRunIds?: string[]
+  /** Omitted means 'rerun'. */
+  decision?: 'rerun' | 'ignore'
   maxAttempts: number // reruns use ruleAttempts; other decisions use the shared ruleAttempt
   needsLogs?: boolean // declare true if match() calls failedJobLogs() or jobLogs()
   needsAnnotations?: boolean // declare true if match() calls failedJobAnnotations(jobName)
   match: (ctx: WorkflowRunContext) => boolean | Promise<boolean>
 }
-
-export type RerunTarget =
-  | { jobName: string; jobNameFamily?: never; resolveJobName?: never }
-  | {
-      jobName?: never
-      /** Static prefix shared by every dynamically-named job in the family (e.g. matrix shards). */
-      jobNameFamily: string
-      /** Resolves the exact job name for this run, or null if it cannot be determined. */
-      resolveJobName: (ctx: WorkflowRunContext) => string | null
-    }
-
-type RerunTransientRetryRule = TransientRetryRuleBase & {
-  decision?: 'rerun'
-  /** Restrict a rerun decision to one exact GitHub job, or one resolved from a job-name family. */
-  rerunTarget?: RerunTarget
-}
-
-type NonRerunTransientRetryRule = TransientRetryRuleBase & {
-  decision: 'ignore'
-  rerunTarget?: never
-}
-
-export type TransientRetryRule = RerunTransientRetryRule | NonRerunTransientRetryRule

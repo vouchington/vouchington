@@ -16,28 +16,12 @@
 
 ### Optional fields
 
-| Field              | Type                                                                                        | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------ | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `exampleRunIds`    | `string[]`                                                                                  | GitHub Actions run IDs from the archived predecessor repository that triggered this rule, kept for audit provenance. That repository is private, so no URL is rendered — only the numeric id.                                                                                                                                                                                                                                                                                                                                                                         |
-| `decision`         | `rerun \| ignore`                                                                           | Default `rerun`. Use `ignore` only when the fingerprint has no actionable code signal and rerunning is expected to keep producing no signal. `dispatch` is not a rule-level option; it is the fallthrough when no rule matches.                                                                                                                                                                                                                                                                                                                                       |
-| `needsLogs`        | `boolean`                                                                                   | Set `true` if `match()` calls `ctx.failedJobLogs()` or `ctx.jobLogs()`. Logs are fetched lazily and cached.                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `needsAnnotations` | `boolean`                                                                                   | Set `true` if `match()` calls `ctx.failedJobAnnotations(jobName)`. Annotations are fetched lazily across all pages for that job name and cached.                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `rerunTarget`      | `{ jobName: string } \| { jobNameFamily: string; resolveJobName: (ctx) => string \| null }` | Restricts a matching rerun rule to one GitHub job database ID. The exact-name form keeps the target identity auditable by a static string. The family form is for jobs whose exact name is dynamic (e.g. matrix shards sized by a repo variable): `resolveJobName` must return the exact name for this run, and resolution fails closed — a `null` return, or a resolved name that does not start with `jobNameFamily`, throws rather than silently falling back to a full-workflow rerun. GitHub also reruns downstream dependent jobs of whichever job is selected. |
-
-The targeted-rerun closure follows GitHub's
-[rerun-job API](https://docs.github.com/en/rest/actions/workflow-runs#re-run-a-job-from-a-workflow-run):
-the selected job and downstream dependents rerun while upstream siblings are reused. This was also
-confirmed in run 29175307375 of the archived predecessor repository.
-Every rule with `rerunTarget` must also have an exact entry in the central
-[`targetedReruns` topology table](../../.github/workflows/workflow-topology-policy-routes.mts). That
-entry names the selected inner job, its exact GitHub job name or job-name family (matching whichever
-shape the rule declares), its complete inner downstream closure, and each outer reusable caller with
-its complete downstream closure. The topology test compares the table exhaustively against
-`rules.mts` and fails when a target identity, caller, or downstream closure drifts in either
-direction; rules without `rerunTarget` must not appear in the table. The dynamic backend-shard family
-(`test-backend-unit / backend-tests (N)`, where `N` comes from the typed Vitest ownership registry
-or a validated manual-dispatch override) is why the family form exists — see
-`backendUnitVitestWorkerExitAfterPassRule` in `backend-test-rules.mts`.
+| Field              | Type              | Notes                                                                                                                                                                                                                           |
+| ------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exampleRunIds`    | `string[]`        | GitHub Actions run IDs from the archived predecessor repository that triggered this rule, kept for audit provenance. That repository is private, so no URL is rendered — only the numeric id.                                   |
+| `decision`         | `rerun \| ignore` | Default `rerun`. Use `ignore` only when the fingerprint has no actionable code signal and rerunning is expected to keep producing no signal. `dispatch` is not a rule-level option; it is the fallthrough when no rule matches. |
+| `needsLogs`        | `boolean`         | Set `true` if `match()` calls `ctx.failedJobLogs()` or `ctx.jobLogs()`. Logs are fetched lazily and cached.                                                                                                                     |
+| `needsAnnotations` | `boolean`         | Set `true` if `match()` calls `ctx.failedJobAnnotations(jobName)`. Annotations are fetched lazily across all pages for that job name and cached.                                                                                |
 
 ### When to set `needsLogs: true`
 
@@ -46,8 +30,6 @@ Only set `needsLogs: true` when the job name alone is insufficient to identify t
 Rules normally inspect failed job logs through `ctx.failedJobLogs()`. When the stable fingerprint
 lives in a successful upstream producer job rather than the failed fan-in job, use
 `ctx.jobLogs(['exact job name'])` so the extra log fetch stays explicitly scoped.
-Targeted rules should use this explicit fetcher for their selected job, so unrelated failed or
-cancelled jobs do not cause unnecessary log downloads.
 
 ### When to set `needsAnnotations: true`
 

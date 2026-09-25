@@ -90,12 +90,6 @@ describe('workflow run context', () => {
 
     expect(ctx.ruleAttempt).toBe(1)
     expect(ctx.jobNames).toEqual(['build', 'test'])
-    expect(ctx.jobIds).toEqual(
-      new Map([
-        ['build', 10],
-        ['test', 11],
-      ]),
-    )
     expect(ctx.jobSteps?.get('test')).toEqual([
       { name: 'Run tests', number: 3, status: 'completed' },
     ])

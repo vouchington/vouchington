@@ -92,32 +92,20 @@ describe('fix-main-self-retry workflow', () => {
     expect(decideStep?.run).toBe('node ci/transient-retry/decide.mts')
   })
 
-  it('reruns only on a transient match, via the targeted job or the failed-jobs form — never a bare full-run rerun', () => {
-    const targetedRerunStep = retryJob?.steps?.find(
-      s => s.name === 'Rerun targeted job on transient match',
-    )
+  it('reruns only the failed jobs on a transient match — never a bare full-run rerun', () => {
     const failedJobsRerunStep = retryJob?.steps?.find(
       s => s.name === 'Rerun failed jobs on transient match',
     )
 
-    expect(targetedRerunStep?.if).toBe(
-      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id != ''",
-    )
-    expect(targetedRerunStep?.run).toContain(
-      'gh run rerun --repo "$GITHUB_REPOSITORY" --job "${{ steps.decide.outputs.rerun_job_id }}"',
-    )
     expect(failedJobsRerunStep?.if).toBe(
-      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id == ''",
+      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun'",
     )
     expect(failedJobsRerunStep?.run).toContain(
       'gh run rerun --repo "$GITHUB_REPOSITORY" --failed "$SOURCE_RUN_ID"',
     )
 
     const rerunSteps = retryJob?.steps?.filter(s => s.run?.includes('gh run rerun')) ?? []
-    expect(rerunSteps).toHaveLength(2)
-    for (const step of rerunSteps) {
-      expect(step.run).toMatch(/gh run rerun --repo "\$GITHUB_REPOSITORY" (--job |--failed )/)
-    }
+    expect(rerunSteps).toEqual([failedJobsRerunStep])
   })
 
   it('the retry job itself never escalates — no issues permission at the retry job or workflow level', () => {
@@ -150,7 +138,6 @@ describe('fix-main-self-retry workflow', () => {
       SOURCE_OUTCOME: '${{ steps.source-state.outcome }}',
       SOURCE_CURRENT: '${{ steps.source-state.outputs.current }}',
       DECISION: '${{ steps.decide.outputs.decision }}',
-      TARGETED_RERUN_OUTCOME: '${{ steps.rerun-job.outcome }}',
       FAILED_JOBS_RERUN_OUTCOME: '${{ steps.rerun-failed-jobs.outcome }}',
       ESCALATE_STATE_OUTCOME: '${{ steps.escalate-state.outcome }}',
       ESCALATE_CONCLUSION: '${{ steps.escalate-state.outputs.conclusion }}',
@@ -165,13 +152,9 @@ describe('fix-main-self-retry workflow', () => {
       disposition: '${{ steps.disposition.outputs.disposition }}',
     })
 
-    const targetedRerunStep = retryJob?.steps?.find(
-      s => s.name === 'Rerun targeted job on transient match',
-    )
     const failedJobsRerunStep = retryJob?.steps?.find(
       s => s.name === 'Rerun failed jobs on transient match',
     )
-    expect(targetedRerunStep?.id).toBe('rerun-job')
     expect(failedJobsRerunStep?.id).toBe('rerun-failed-jobs')
   })
 

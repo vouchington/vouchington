@@ -109,53 +109,6 @@ describe('rerun-known-transient main()', () => {
     expect(logs).toContain('Requested rerun for run 123.')
   })
 
-  it('reruns only the selected job when the decision contains a target', async () => {
-    const calls: string[][] = []
-    const exitCode = await main(
-      ['123'],
-      { GITHUB_REPOSITORY: 'vouchington/vouchington' },
-      {
-        decideRun: alwaysDecision({
-          decision: 'rerun',
-          matchedRule: 'targeted',
-          rerunJobId: 456,
-        }),
-        execFile: makeExecFile(calls),
-        log: () => undefined,
-      },
-    )
-    expect(exitCode).toBe(0)
-    expect(calls).toContainEqual([
-      'run',
-      'rerun',
-      '--repo',
-      'vouchington/vouchington',
-      '--job',
-      '456',
-    ])
-  })
-
-  it('reports the selected job in targeted dry-run mode', async () => {
-    const logs: string[] = []
-    const exitCode = await main(
-      ['123', '--dry-run'],
-      { GITHUB_REPOSITORY: 'vouchington/vouchington' },
-      {
-        decideRun: alwaysDecision({
-          decision: 'rerun',
-          matchedRule: 'targeted',
-          rerunJobId: 456,
-        }),
-        execFile: makeExecFile([]),
-        log: message => logs.push(message),
-      },
-    )
-    expect(exitCode).toBe(0)
-    expect(logs).toContain(
-      'Dry run: would run gh run rerun --repo vouchington/vouchington --job 456',
-    )
-  })
-
   it('infers the repository from the local checkout', async () => {
     const calls: string[][] = []
 

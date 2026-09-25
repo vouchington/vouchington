@@ -10,7 +10,7 @@ export type { DecisionResult } from './decision-evaluator.mts'
 export { decide }
 
 export function formatDecisionOutput(result: DecisionResult): string {
-  return `decision=${result.decision}\nmatched_rule=${result.matchedRule}\nrerun_job_id=${result.rerunJobId ?? ''}\n`
+  return `decision=${result.decision}\nmatched_rule=${result.matchedRule}\n`
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

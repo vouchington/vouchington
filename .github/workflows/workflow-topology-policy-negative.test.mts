@@ -9,7 +9,7 @@ import {
 import type { ConcurrencyPolicy } from './concurrency-topology-policy.mts'
 import { evaluateLockPolicy } from './workflow-topology-policy-concurrency.mts'
 import { evaluateGraphPolicy } from './workflow-topology-policy-graph.mts'
-import type { TargetedRule, WorkflowTopologyPolicy } from './workflow-topology-policy-types.mts'
+import type { WorkflowTopologyPolicy } from './workflow-topology-policy-types.mts'
 import { BASE_PERMISSIONS } from './workflow-secrets-test-fixtures.mts'
 
 const root = '.github/workflows/root.yml'
@@ -104,16 +104,11 @@ function graphPolicy(): WorkflowTopologyPolicy {
     exactFanIns: { [id('b')]: [id('a')] },
     exactCallerJobs: { [leaf]: [id('call')] },
     stepOrders: [{ jobId: id('a'), steps: [{ id: 'eligibility' }, { name: 'Mutate' }] }],
-    targetedReruns: {},
   }
 }
 
-function evaluateGraph(
-  topology: WorkflowTopology,
-  policy = graphPolicy(),
-  rules: TargetedRule[] = [],
-): string[] {
-  return evaluateGraphPolicy(topology, createWorkflowTopologyIndex(topology), policy, rules)
+function evaluateGraph(topology: WorkflowTopology, policy = graphPolicy()): string[] {
+  return evaluateGraphPolicy(topology, createWorkflowTopologyIndex(topology), policy)
 }
 
 function defaultSemantics(): ConcurrencyPolicy {

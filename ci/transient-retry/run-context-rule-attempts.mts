@@ -107,7 +107,6 @@ async function buildAttemptContext({
     jobConclusions: new Map<string, WorkflowJobConclusion>(
       allJobEntries.map(job => [job.name, job.conclusion]),
     ),
-    jobIds: new Map(allJobEntries.map(job => [job.name, job.id])),
     jobSteps: new Map(allJobEntries.map(job => [job.name, job.steps ?? []])),
     failedJobNames: rawJobEntries.map(job => job.name),
     failedJobLogs,
