@@ -24,7 +24,6 @@
     "@agents/_shared": "workspace:^",
     "@agents/classifiers": "workspace:^",
     "@jongleberry/vurst-prompt": "^0.4.3",
-    "@modules/on-error": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/autotagger": "workspace:^",
