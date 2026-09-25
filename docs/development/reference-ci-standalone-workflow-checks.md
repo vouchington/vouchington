@@ -52,8 +52,8 @@ The provider-neutral local script in
 [`ci/harness-session-dispatch.mts`](../../ci/harness-session-dispatch.mts) requires an explicit
 enable flag and exact HTTPS `HARNESS_URL`, then delegates transport to the first-party
 [`auto-harness-client`](https://github.com/jonathanong/auto-harness) npm library. Target routing is
-a static per-repository configuration — the `HARNESS_REPOSITORY_ID`, `HARNESS_TARGET`, and
-`HARNESS_FALLBACKS` GitHub repository variables — rather than a runtime repository/provider-target
+a static configuration — the `HARNESS_REPOSITORY_ID` GitHub repository variable plus the
+organization-wide `HARNESS_TARGET` and `HARNESS_FALLBACKS` variables — rather than a runtime repository/provider-target
 lookup: _which_ provider or command to route to is fixed by these variables, not decided
 dynamically per request. (A name-based `HARNESS_TARGET`/`HARNESS_FALLBACKS` value is still resolved
 to an id via a runtime catalog call — see
