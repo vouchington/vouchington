@@ -1,5 +1,4 @@
 import { createHash, randomBytes } from 'node:crypto'
-import type { APIRequestContext } from '@playwright/test'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { expect, test } from '../../helpers/test.mts'
@@ -121,8 +120,12 @@ test.describe('OAuth consent', () => {
   })
 })
 
+type MetadataRequestContext = {
+  get(path: string): Promise<{ status(): number; text(): Promise<string> }>
+}
+
 // MCP clients learn the canonical resource from RFC 9728 metadata rather than hardcoding an origin.
-async function discoverUserMcpResource(context: APIRequestContext): Promise<string> {
+async function discoverUserMcpResource(context: MetadataRequestContext): Promise<string> {
   const response = await context.get(USER_MCP_RESOURCE_METADATA_PATH)
   const body = await response.text()
   expect(response.status(), body).toBe(200)
