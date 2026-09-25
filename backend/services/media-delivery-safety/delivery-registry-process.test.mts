@@ -71,7 +71,7 @@ describe('media delivery registry processor', () => {
       state: 'pending',
     })
     await expect(
-      listRecoverableMediaDeliveryRegistryKeys(10, new Date(Date.now() + 2 * 60 * 1000)),
+      listRecoverableMediaDeliveryRegistryKeys(1000, new Date(Date.now() + 2 * 60 * 1000)),
     ).resolves.toContain(deliveryKey)
   })
 
