@@ -85,7 +85,12 @@ export function buildWorkerOriginRequest({
   )
   if (target === 'backend') {
     const headers = new Headers(originRequest.headers)
-    applyBackendClientInfoHeaders(headers, { gitCommit: env.GIT_COMMIT, requestKind })
+    applyBackendClientInfoHeaders(headers, {
+      gitCommit: env.GIT_COMMIT,
+      method: originRequestSource.method,
+      requestKind,
+      requestOrigin: new URL(originRequestSource.url).origin,
+    })
     return new Request(originRequest, { headers })
   }
 

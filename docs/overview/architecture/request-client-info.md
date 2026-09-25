@@ -47,10 +47,32 @@ Exemptions are `OPTIONS`, non-API paths, webhook and MCP/admin-MCP paths, signed
 `x-voucha-request-kind: bot` or `cache-fill`. The origin guard runs first, so callers cannot use that
 internal marker to bypass backend validation directly.
 
-The edge identifies browser traffic from standard Fetch Metadata headers and overwrites any
-browser-supplied client identity with `web`/`web`. Native requests retain their explicit metadata.
-Headerless callers that cannot be identified as either are deliberately left unstamped so backend
-enforcement rejects them instead of silently classifying an unknown client as web.
+The edge treats any request carrying `Sec-Fetch-Site`, `Sec-Fetch-Mode`, or `Sec-Fetch-Dest` as
+browser-shaped, removes every client-supplied `x-voucha-*` client header, and stamps `web`/`web` only
+when one of two kinds of browser evidence holds:
+
+- **Same-origin app request:** `Sec-Fetch-Site` is `same-origin`, and any `Origin` or `Referer`
+  that is present resolves to the incoming request's origin. `Origin: null`, which browsers send
+  under a `no-referrer` policy, counts as absent; a foreign or unparseable value disqualifies.
+- **Top-level navigation:** a `GET` or `HEAD` with `Sec-Fetch-Mode: navigate` and
+  `Sec-Fetch-Dest: document`, from any site. OAuth broker callbacks (`/auth/callback/<provider>/broker`)
+  and the Bluesky callback (`/api/v1/auth/bluesky/callback`) arrive this way from the provider.
+
+`same-site` requests from sibling hosts and other cross-site subresource use of `/api` are not
+supported web traffic and stay unstamped. Browser-shaped requests that fail both checks reach the
+backend with no client metadata. Requests without Fetch Metadata keep explicit native metadata, but
+a bare `x-voucha-client: web` claim is removed because the web app never sends it through the edge:
+server rendering, the web proxy, and the localization smoke probe call the backend directly with
+`CF_WORKER_SECRET`. Server rendering must therefore set the internal `API_BASE_URL`; a public
+`NEXT_PUBLIC_API_BASE_URL` fallback that routes through the edge loses its `web` classification.
+Headerless callers are left unstamped so backend enforcement rejects them instead of silently
+classifying an unknown client as web. The evidence check lives in
+`cloudflare-worker/src/web-browser-evidence.mts`.
+
+Any non-browser caller can forge these headers, so `web`, `swift`, and `dotnet` stay
+telemetry-grade. Nothing public is derived from them; public provenance labels come only from the
+authenticated credential. Before enabling enforcement, confirm in observe logs that valid web
+traffic still arrives stamped.
 
 Swift and .NET transports perform one `PATCH /api/v1/session` bootstrap before their first
 same-origin API request. They persist the `dt` and `st` values from the response JSON into their
@@ -68,7 +90,7 @@ focused contract suites with:
 ```sh
 pnpm exec vitest run --project backend-modules backend/modules/request-client-info/index.test.mts backend/modules/request-client-info/listener.test.mts
 pnpm exec vitest run --project ts-shared ts-shared/request-client-info/index.test.mts
-pnpm exec vitest run --project cloudflare-worker cloudflare-worker/src/client-info.test.mts cloudflare-worker/src/origin-request.client-info.test.mts
+pnpm exec vitest run --project cloudflare-worker cloudflare-worker/src/web-browser-evidence.test.mts cloudflare-worker/src/client-info.test.mts cloudflare-worker/src/origin-request.client-info.test.mts
 pnpm exec vitest run --project web web/lib/api/server/client-info.test.ts web/lib/api/server/request.mock.test.ts web/lib/api/server/images-proxy.test.ts
 ```
 
