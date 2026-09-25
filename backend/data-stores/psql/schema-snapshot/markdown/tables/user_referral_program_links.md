@@ -71,4 +71,4 @@ _none_
 **Triggers:**
 
 - `trigger_user_referral_program_links_updated_at`: `CREATE TRIGGER trigger_user_referral_program_links_updated_at BEFORE UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
-- `user_referral_program_links_content_provenance_immutable`: `CREATE TRIGGER user_referral_program_links_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()`
+- `user_referral_program_links_content_provenance_immutable`: `CREATE TRIGGER user_referral_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`

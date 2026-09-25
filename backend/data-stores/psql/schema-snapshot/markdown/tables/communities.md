@@ -89,6 +89,6 @@ _none_
 
 **Triggers:**
 
-- `communities_content_provenance_immutable`: `CREATE TRIGGER communities_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()`
+- `communities_content_provenance_immutable`: `CREATE TRIGGER communities_content_provenance_immutable AFTER UPDATE ON public.communities FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
 - `trigger_communities_updated_at`: `CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_sync_community_image_placements`: `CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_sync_community_image_placements()`

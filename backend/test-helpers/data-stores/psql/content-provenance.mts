@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import { createTestPost } from '../../entities/create-test-entities.mts'
 import { createTestUser } from '../../entities/users.mts'
 
 export type ContentProvenance = {
@@ -15,10 +16,14 @@ export type ContentProvenanceCatalogRow = {
   oauth_client_id_type: string | null
   foreign_key: string | null
   check_constraint: string | null
+  constraints_validated: boolean | null
   index_definition: string | null
+  index_valid: boolean | null
   trigger_definition: string | null
 }
 
+// Each object is looked up by the name its migration gives it, so a later index or CHECK on the
+// same column can't make a lookup ambiguous.
 export async function readContentProvenanceCatalog(
   tables: readonly string[],
 ): Promise<ContentProvenanceCatalogRow[]> {
@@ -27,32 +32,48 @@ export async function readContentProvenanceCatalog(
       table_class.relname AS table_name,
       format_type(channel_column.atttypid, channel_column.atttypmod) AS created_via_type,
       format_type(client_column.atttypid, client_column.atttypmod) AS oauth_client_id_type,
-      (
-        SELECT pg_get_constraintdef(fk.oid) FROM pg_constraint fk
-        WHERE fk.conrelid = table_class.oid AND fk.contype = 'f' AND fk.conkey = ARRAY[client_column.attnum]
-      ) AS foreign_key,
-      (
-        SELECT pg_get_constraintdef(chk.oid) FROM pg_constraint chk
-        WHERE chk.conrelid = table_class.oid AND chk.contype = 'c' AND chk.conkey @> ARRAY[client_column.attnum]
-      ) AS check_constraint,
-      (
-        SELECT pg_get_indexdef(idx.indexrelid) FROM pg_index idx
-        WHERE idx.indrelid = table_class.oid AND idx.indkey[0] = client_column.attnum
-      ) AS index_definition,
-      (
-        SELECT pg_get_triggerdef(trg.oid) FROM pg_trigger trg
-        WHERE trg.tgrelid = table_class.oid
-          AND trg.tgfoid = 'fn_prevent_content_provenance_update'::regproc
-          AND NOT trg.tgisinternal
-      ) AS trigger_definition
+      pg_get_constraintdef(fk.oid) AS foreign_key,
+      pg_get_constraintdef(chk.oid) AS check_constraint,
+      fk.convalidated AND chk.convalidated AS constraints_validated,
+      pg_get_indexdef(idx.indexrelid) AS index_definition,
+      idx.indisvalid AS index_valid,
+      pg_get_triggerdef(trg.oid) AS trigger_definition
     FROM unnest(${tables}::text[]) AS requested(table_name)
     JOIN pg_class table_class ON table_class.oid = to_regclass(requested.table_name)
     LEFT JOIN pg_attribute channel_column
       ON channel_column.attrelid = table_class.oid AND channel_column.attname = 'created_via'
     LEFT JOIN pg_attribute client_column
       ON client_column.attrelid = table_class.oid AND client_column.attname = 'created_via_oauth_client_id'
+    LEFT JOIN pg_constraint fk
+      ON fk.conrelid = table_class.oid AND fk.conname = table_class.relname || '_created_via_oauth_client_id_fkey'
+    LEFT JOIN pg_constraint chk
+      ON chk.conrelid = table_class.oid AND chk.conname = table_class.relname || '_created_via_oauth_client_id_check'
+    LEFT JOIN pg_index idx
+      ON idx.indexrelid = to_regclass('idx_' || table_class.relname || '__created_via_oauth_client_id')
+    LEFT JOIN pg_trigger trg
+      ON trg.tgrelid = table_class.oid AND trg.tgname = table_class.relname || '_content_provenance_immutable'
     ORDER BY table_class.relname`)
   return rows
+}
+
+export async function readContentCreationChannels(): Promise<string[]> {
+  const { rows } = await read<{ channels: string[] }>(sql`/* readContentCreationChannels */
+    SELECT enum_range(NULL::content_creation_channels)::text[] AS channels`)
+  return rows[0]!.channels
+}
+
+// Raw fixture post (no provenance), so the partitioned posts table's cloned trigger, CHECK and FK
+// are exercised on a real partition row.
+export async function createContentProvenancePostFixture() {
+  const post = await createTestPost()
+  return {
+    postId: post.id,
+    updateProvenance: (provenance: ContentProvenance) =>
+      write(sql`/* updateContentProvenancePost */
+        UPDATE posts
+        SET created_via = ${provenance.createdVia}, created_via_oauth_client_id = ${provenance.oauthClientId}
+        WHERE id = ${post.id}`),
+  }
 }
 
 export type ContentProvenanceListFixture = {

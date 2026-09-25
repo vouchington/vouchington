@@ -159,7 +159,7 @@ _none_
 
 **Triggers:**
 
-- `posts_content_provenance_immutable`: `CREATE TRIGGER posts_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()`
+- `posts_content_provenance_immutable`: `CREATE TRIGGER posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
 - `posts_creation_source_url_id_immutable`: `CREATE TRIGGER posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_prevent_post_creation_source_url_update()`
 - `trigger_posts_updated_at`: `CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_id, root_id, broadcast, privacy, is_anonymous, community_id, latest_clearance_change_id, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_sync_posts_search_vector`: `CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_sync_posts_search_vector()`

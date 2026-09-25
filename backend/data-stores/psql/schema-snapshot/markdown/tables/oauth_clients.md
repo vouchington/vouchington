@@ -40,7 +40,7 @@ Not partitioned — growth: unbounded.
 - `oauth_clients_client_secret_hash_check`: `CHECK (((client_secret_hash IS NULL) OR (char_length(client_secret_hash) = 64)))`
 - `oauth_clients_client_type_check`: `CHECK ((client_type = ANY (ARRAY['public'::text, 'confidential'::text])))`
 - `oauth_clients_grant_types_check`: `CHECK (((grant_types <@ ARRAY['authorization_code'::text, 'refresh_token'::text]) AND (grant_types @> ARRAY['authorization_code'::text, 'refresh_token'::text])))`
-- `oauth_clients_metadata_url_check`: `CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND (metadata_url ~ '^https://[^/?#@]+/[^#]*$'::text))))`
+- `oauth_clients_metadata_url_check`: `CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND (metadata_url ~ '^https://[a-z0-9.-]+(:[0-9]{1,5})?/[^#[:space:][:cntrl:]]*$'::text) AND (metadata_url !~ '/\.\.?(/|\?|$)'::text))))`
 - `oauth_clients_redirect_uris_check`: `CHECK (((cardinality(redirect_uris) >= 1) AND (cardinality(redirect_uris) <= 10)))`
 - `oauth_clients_response_types_check`: `CHECK ((response_types = ARRAY['code'::text]))`
 - `oauth_clients_scopes_check`: `CHECK ((cardinality(scopes) > 0))`

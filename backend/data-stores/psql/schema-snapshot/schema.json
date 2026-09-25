@@ -751,7 +751,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_preserve_notification_publication_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    NEW.publication_post_id := COALESCE(NEW.publication_post_id, NEW.post_id);\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id\n    );\n  ELSE\n    NEW.publication_post_id := COALESCE(\n      NEW.publication_post_id,\n      NEW.post_id,\n      OLD.publication_post_id,\n      OLD.post_id\n    );\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id,\n      OLD.publication_rss_feed_item_id,\n      OLD.rss_feed_item_id\n    );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_prevent_content_provenance_update": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_prevent_content_provenance_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.created_via IS DISTINCT FROM OLD.created_via\n    OR NEW.created_via_oauth_client_id IS DISTINCT FROM OLD.created_via_oauth_client_id THEN\n    RAISE EXCEPTION 'content provenance is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_prevent_content_provenance_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.created_via IS DISTINCT FROM OLD.created_via\n    OR NEW.created_via_oauth_client_id IS DISTINCT FROM OLD.created_via_oauth_client_id THEN\n    RAISE EXCEPTION 'content provenance is immutable';\n  END IF;\n  RETURN NULL;\nEND $function$\n"
     },
     "fn_prevent_post_creation_source_url_update": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_prevent_post_creation_source_url_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.creation_source_url_id IS DISTINCT FROM OLD.creation_source_url_id THEN\n    RAISE EXCEPTION 'post creation source URL is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -11297,7 +11297,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "communities_content_provenance_immutable": "CREATE TRIGGER communities_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()",
+        "communities_content_provenance_immutable": "CREATE TRIGGER communities_content_provenance_immutable AFTER UPDATE ON public.communities FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_communities_updated_at": "CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_sync_community_image_placements": "CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_sync_community_image_placements()"
       },
@@ -12407,7 +12407,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "community_applications_content_provenance_immutable": "CREATE TRIGGER community_applications_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.community_applications FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()",
+        "community_applications_content_provenance_immutable": "CREATE TRIGGER community_applications_content_provenance_immutable AFTER UPDATE ON public.community_applications FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_community_applications_updated_at": "CREATE TRIGGER trigger_community_applications_updated_at BEFORE UPDATE ON public.community_applications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -36504,7 +36504,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "lists_content_provenance_immutable": "CREATE TRIGGER lists_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.lists FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()",
+        "lists_content_provenance_immutable": "CREATE TRIGGER lists_content_provenance_immutable AFTER UPDATE ON public.lists FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_lists_updated_at": "CREATE TRIGGER trigger_lists_updated_at BEFORE UPDATE ON public.lists FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -48391,7 +48391,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "moderation_appeals_content_provenance_immutable": "CREATE TRIGGER moderation_appeals_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()",
+        "moderation_appeals_content_provenance_immutable": "CREATE TRIGGER moderation_appeals_content_provenance_immutable AFTER UPDATE ON public.moderation_appeals FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "moderation_transparency_appeals_delete_rollup": "CREATE TRIGGER moderation_transparency_appeals_delete_rollup AFTER DELETE ON public.moderation_appeals REFERENCING OLD TABLE AS deleted_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_delete_rollup()",
         "moderation_transparency_appeals_resolution_guard": "CREATE TRIGGER moderation_transparency_appeals_resolution_guard BEFORE UPDATE OF resolved_at, resolution_action ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_appeal_resolution()",
         "moderation_transparency_appeals_rollup": "CREATE TRIGGER moderation_transparency_appeals_rollup AFTER INSERT ON public.moderation_appeals REFERENCING NEW TABLE AS new_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_insert_rollup()",
@@ -50380,7 +50380,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "moderation_reports_content_provenance_immutable": "CREATE TRIGGER moderation_reports_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()",
+        "moderation_reports_content_provenance_immutable": "CREATE TRIGGER moderation_reports_content_provenance_immutable AFTER UPDATE ON public.moderation_reports FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "moderation_transparency_reports_delete_rollup": "CREATE TRIGGER moderation_transparency_reports_delete_rollup AFTER DELETE ON public.moderation_reports REFERENCING OLD TABLE AS deleted_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_reports_delete_rollup()",
         "moderation_transparency_reports_original_reason_guard": "CREATE TRIGGER moderation_transparency_reports_original_reason_guard BEFORE UPDATE OF original_reason ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_report_original_reason()",
         "moderation_transparency_reports_rollup": "CREATE TRIGGER moderation_transparency_reports_rollup AFTER INSERT ON public.moderation_reports REFERENCING NEW TABLE AS new_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_reports_insert_rollup()",
@@ -55483,7 +55483,7 @@
         "oauth_clients_client_secret_hash_check": "CHECK (((client_secret_hash IS NULL) OR (char_length(client_secret_hash) = 64)))",
         "oauth_clients_client_type_check": "CHECK ((client_type = ANY (ARRAY['public'::text, 'confidential'::text])))",
         "oauth_clients_grant_types_check": "CHECK (((grant_types <@ ARRAY['authorization_code'::text, 'refresh_token'::text]) AND (grant_types @> ARRAY['authorization_code'::text, 'refresh_token'::text])))",
-        "oauth_clients_metadata_url_check": "CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND (metadata_url ~ '^https://[^/?#@]+/[^#]*$'::text))))",
+        "oauth_clients_metadata_url_check": "CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND (metadata_url ~ '^https://[a-z0-9.-]+(:[0-9]{1,5})?/[^#[:space:][:cntrl:]]*$'::text) AND (metadata_url !~ '/\\.\\.?(/|\\?|$)'::text))))",
         "oauth_clients_redirect_uris_check": "CHECK (((cardinality(redirect_uris) >= 1) AND (cardinality(redirect_uris) <= 10)))",
         "oauth_clients_response_types_check": "CHECK ((response_types = ARRAY['code'::text]))",
         "oauth_clients_scopes_check": "CHECK ((cardinality(scopes) > 0))",
@@ -65097,7 +65097,7 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
-        "posts_content_provenance_immutable": "CREATE TRIGGER posts_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()",
+        "posts_content_provenance_immutable": "CREATE TRIGGER posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "posts_creation_source_url_id_immutable": "CREATE TRIGGER posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_prevent_post_creation_source_url_update()",
         "trigger_posts_updated_at": "CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_id, root_id, broadcast, privacy, is_anonymous, community_id, latest_clearance_change_id, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_sync_posts_search_vector": "CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_sync_posts_search_vector()"
@@ -87591,7 +87591,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "rss_feeds_content_provenance_immutable": "CREATE TRIGGER rss_feeds_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()",
+        "rss_feeds_content_provenance_immutable": "CREATE TRIGGER rss_feeds_content_provenance_immutable AFTER UPDATE ON public.rss_feeds FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_rss_feeds_updated_at": "CREATE TRIGGER trigger_rss_feeds_updated_at BEFORE UPDATE ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -96074,7 +96074,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "topics_content_provenance_immutable": "CREATE TRIGGER topics_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()",
+        "topics_content_provenance_immutable": "CREATE TRIGGER topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_create_topic_metrics": "CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_topic_metrics_on_insert()",
         "trigger_sync_topic_image_placements": "CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_sync_topic_image_placements()",
         "trigger_topics_updated_at": "CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
@@ -103656,7 +103656,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_user_referral_program_links_updated_at": "CREATE TRIGGER trigger_user_referral_program_links_updated_at BEFORE UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
-        "user_referral_program_links_content_provenance_immutable": "CREATE TRIGGER user_referral_program_links_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()"
+        "user_referral_program_links_content_provenance_immutable": "CREATE TRIGGER user_referral_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()"
       },
       "uniqueConstraints": {}
     },

@@ -73,7 +73,7 @@ _none_
 
 **Triggers:**
 
-- `moderation_reports_content_provenance_immutable`: `CREATE TRIGGER moderation_reports_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()`
+- `moderation_reports_content_provenance_immutable`: `CREATE TRIGGER moderation_reports_content_provenance_immutable AFTER UPDATE ON public.moderation_reports FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
 - `moderation_transparency_reports_delete_rollup`: `CREATE TRIGGER moderation_transparency_reports_delete_rollup AFTER DELETE ON public.moderation_reports REFERENCING OLD TABLE AS deleted_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_reports_delete_rollup()`
 - `moderation_transparency_reports_original_reason_guard`: `CREATE TRIGGER moderation_transparency_reports_original_reason_guard BEFORE UPDATE OF original_reason ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_report_original_reason()`
 - `moderation_transparency_reports_rollup`: `CREATE TRIGGER moderation_transparency_reports_rollup AFTER INSERT ON public.moderation_reports REFERENCING NEW TABLE AS new_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_reports_insert_rollup()`

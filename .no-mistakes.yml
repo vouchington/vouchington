@@ -1851,109 +1851,109 @@ rules:
           column: published_at
           type: TIMESTAMPTZ
           nullable: true
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-09-content-provenance-posts.sql
           table: posts
           column: created_via
           type: content_creation_channels
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-09-content-provenance-posts.sql
           table: posts
           column: created_via_oauth_client_id
           type: UUID
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-01-content-provenance-communities.sql
           table: communities
           column: created_via
           type: content_creation_channels
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-01-content-provenance-communities.sql
           table: communities
           column: created_via_oauth_client_id
           type: UUID
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-02-content-provenance-topics.sql
           table: topics
           column: created_via
           type: content_creation_channels
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-02-content-provenance-topics.sql
           table: topics
           column: created_via_oauth_client_id
           type: UUID
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-03-content-provenance-lists.sql
           table: lists
           column: created_via
           type: content_creation_channels
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-03-content-provenance-lists.sql
           table: lists
           column: created_via_oauth_client_id
           type: UUID
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-04-content-provenance-rss-feeds.sql
           table: rss_feeds
           column: created_via
           type: content_creation_channels
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-04-content-provenance-rss-feeds.sql
           table: rss_feeds
           column: created_via_oauth_client_id
           type: UUID
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-05-content-provenance-moderation-reports.sql
           table: moderation_reports
           column: created_via
           type: content_creation_channels
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-05-content-provenance-moderation-reports.sql
           table: moderation_reports
           column: created_via_oauth_client_id
           type: UUID
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-06-content-provenance-moderation-appeals.sql
           table: moderation_appeals
           column: created_via
           type: content_creation_channels
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-06-content-provenance-moderation-appeals.sql
           table: moderation_appeals
           column: created_via_oauth_client_id
           type: UUID
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-07-content-provenance-community-applications.sql
           table: community_applications
           column: created_via
           type: content_creation_channels
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-07-content-provenance-community-applications.sql
           table: community_applications
           column: created_via_oauth_client_id
           type: UUID
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-08-content-provenance-user-referral-program-links.sql
           table: user_referral_program_links
           column: created_via
           type: content_creation_channels
           nullable: true
           default: null
-        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+        - path: backend/data-stores/psql/migrations/0726-00-08-content-provenance-user-referral-program-links.sql
           table: user_referral_program_links
           column: created_via_oauth_client_id
           type: UUID

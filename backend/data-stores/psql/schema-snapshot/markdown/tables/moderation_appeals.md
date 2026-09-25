@@ -89,7 +89,7 @@ _none_
 
 **Triggers:**
 
-- `moderation_appeals_content_provenance_immutable`: `CREATE TRIGGER moderation_appeals_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()`
+- `moderation_appeals_content_provenance_immutable`: `CREATE TRIGGER moderation_appeals_content_provenance_immutable AFTER UPDATE ON public.moderation_appeals FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
 - `moderation_transparency_appeals_delete_rollup`: `CREATE TRIGGER moderation_transparency_appeals_delete_rollup AFTER DELETE ON public.moderation_appeals REFERENCING OLD TABLE AS deleted_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_delete_rollup()`
 - `moderation_transparency_appeals_resolution_guard`: `CREATE TRIGGER moderation_transparency_appeals_resolution_guard BEFORE UPDATE OF resolved_at, resolution_action ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_appeal_resolution()`
 - `moderation_transparency_appeals_rollup`: `CREATE TRIGGER moderation_transparency_appeals_rollup AFTER INSERT ON public.moderation_appeals REFERENCING NEW TABLE AS new_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_insert_rollup()`

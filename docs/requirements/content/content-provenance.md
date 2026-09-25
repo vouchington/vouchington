@@ -43,12 +43,12 @@ The tables are `posts` (including comments, stories and topic recommendations), 
 `community_applications` and `user_referral_program_links`. `conversation_messages` gains the same
 columns in a later stage, together with its writers.
 
-Invariants, each enforced by the schema:
+Invariants and what enforces each:
 
 - **Client only on agent channels:** `<table>_created_via_oauth_client_id_check` rejects an OAuth
   client on any channel other than `api` or `mcp`.
-- **Immutable:** the `<table>_content_provenance_immutable` trigger calls
-  `fn_prevent_content_provenance_update()`, which rejects any change to either column, including
+- **Immutable:** the `<table>_content_provenance_immutable` trigger fires `AFTER UPDATE` only when
+  either column changes, and `fn_prevent_content_provenance_update()` rejects the change, including
   setting a value on a row that predates tracking. Provenance describes the row's creation, so an
   upsert that revives an existing row keeps the original channel, and writers leave both columns
   out of `ON CONFLICT DO UPDATE SET`.
@@ -56,7 +56,10 @@ Invariants, each enforced by the schema:
   [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md) clients are retired by
   setting `oauth_clients.revoked_at`, and no code path deletes them.
 - **Private by default:** both columns stay out of API responses until the exposure stage below
-  adds a reviewed label.
+  adds a reviewed label. Tests enforce this rather than the schema: read paths select declared
+  column lists whose tests assert the exact response keys (for example
+  [`communities/get.test.mts`](../../../backend/services/communities/get.test.mts)), and the schema
+  test below fails if a view references either column.
 
 ### OAuth Client Labels
 
@@ -71,10 +74,15 @@ what the label needs:
 
 All three stay `NULL` until the clients that fill them ship, so labels stay generic.
 
-The migration is `backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql`, and
+The migrations are `backend/data-stores/psql/migrations/0726-00-*-content-provenance*.sql`.
+`0726-00-00` adds the enum, trigger function and OAuth client label columns. `0726-00-01` through
+`0726-00-09` each alter one table, so no transaction holds `ACCESS EXCLUSIVE` on two tables.
+`0726-00-10` validates the constraints, `0726-00-11` builds the indexes online, and `0726-00-12`
+attaches the `posts__default` index to its partitioned parent.
 [`schema-content-provenance.test.mts`](../../../backend/data-stores/psql/__tests__/schema-content-provenance.test.mts)
-checks every table's columns, constraints, index and trigger, the OAuth client label columns, and
-that no view references either provenance column.
+checks every table's columns, validated constraints, valid index and trigger, the trigger on a real
+`posts` partition row, the OAuth client label columns, and that no view references either
+provenance column.
 
 ## Rollout
 
@@ -85,6 +93,14 @@ rules. Each stage is a sub-issue of [#237](https://github.com/vouchington/vouchi
 | Stage    | Change                                                                                  | Status  |
 | -------- | --------------------------------------------------------------------------------------- | ------- |
 | Expand   | Nullable columns, constraints and immutability trigger on every table                   | Shipped |
-| Record   | Every writer records its channel and OAuth client                                       | Planned |
+| Record   | Every writer records its channel and OAuth client; seeds and jobs record `system`       | Planned |
 | Expose   | Public "via API" and "via MCP" labels; staff see every channel                          | Planned |
 | Contract | A validated `CHECK` requires provenance on rows created after each table's writer ships | Planned |
+
+The Record stage includes writers outside request handlers: queue jobs, and the config-driven seeds
+that insert topics and communities on every deploy
+([`0005-00-01-seed-topics.mts`](../../../backend/data-stores/psql/config-driven/0005-00-01-seed-topics.mts),
+[`0080-00-01-publisher-type-topics.mts`](../../../backend/data-stores/psql/config-driven/0080-00-01-publisher-type-topics.mts)
+and
+[`0140-00-01-seed-communities.mts`](../../../backend/data-stores/psql/config-driven/0140-00-01-seed-communities.mts)).
+They record `system`, or the Contract stage's `CHECK` rejects their inserts.
