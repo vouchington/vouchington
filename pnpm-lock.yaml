@@ -10316,8 +10316,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       tldts:
-        specifier: ^7.4.12
-        version: 7.4.12
+        specifier: ^7.4.14
+        version: 7.4.14
       undici:
         specifier: ^8.11.0
         version: 8.11.0
@@ -21619,10 +21619,6 @@ packages:
   tldts-experimental@7.4.11:
     resolution: {integrity: sha512-xbNzxktqwNYSryb4FclztEZ+G5waTnMCVBnwoWD1Fq0gjOykgr0rQWe4/2TdIJYHbyjIol5pdNh7OmCRWxIltw==}
 
-  tldts@7.4.12:
-    resolution: {integrity: sha512-WylhSDKVeYnWXL3a+vKTaOxjnOeEGw938hImY8zoRWJjRRK/Jp1K+IihBzIONpUmW4e3WmXT6q5FW6vlESVZCA==}
-    hasBin: true
-
   tldts@7.4.14:
     resolution: {integrity: sha512-EahQoi+Q5oqmG3yxRHx+bwn36OaLbtw6jnTFcGjc8fcmktzTgk45xRnzAx8Ch87PFEiqRhoc3FWBmY+LBrvEGQ==}
     hasBin: true
@@ -31033,10 +31029,6 @@ snapshots:
   tldts-core@7.4.14: {}
 
   tldts-experimental@7.4.11:
-    dependencies:
-      tldts-core: 7.4.12
-
-  tldts@7.4.12:
     dependencies:
       tldts-core: 7.4.12
 
