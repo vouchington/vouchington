@@ -50,21 +50,8 @@ concurrency:
 jobs:
   dispatch:
     name: Dispatch Auto Harness session
-    # Relabeling dispatch from the single-host `Codex` runner to the general
-    # `[self-hosted]` fleet (19 hosts) removed an accidental implicit global
-    # cap of 1 concurrent dispatch: the per-surface `concurrency:` groups
-    # below are each keyed independently (by issue/SHA/singleton/
-    # concurrency-id) and never composed into a fleet-wide bound. Restoring
-    # that cap of 1 is done natively: every admission point across all 7
-    # harness workflows (dispatch, gate, render-prompt, escalate, etc. — 21
-    # in total) shares this same fixed `concurrency.group` literal, so at
-    # most one runs fleet-wide at any moment and the rest FIFO-queue. No
-    # lane computation, extra job, or composite action is needed — a prior
-    # attempt at deduplicating per-job lane math into a composite action
-    # (issue #10411) was reverted because composite actions require
-    # `actions/checkout`, which these deliberately checkout-free admission
-    # points don't all have; a single shared literal sidesteps that
-    # entirely since there's no computation left to extract.
+    # This job only enqueues a session. The Harness service queue (HARNESS_PRIORITY,
+    # HARNESS_QUEUE_TTL_SECONDS) bounds concurrent sessions; GitHub adds no global cap.
     if: >-
       github.ref == 'refs/heads/main' && github.run_attempt == 1 &&
       vars.HARNESS_DISPATCH_ENABLED == 'true' &&
@@ -79,14 +66,6 @@ jobs:
     environment: auto-harness
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: this group holds one running + one pending job, and
-      # coalescing would silently replace (drop) a third distinct request instead of queuing
-      # it. This fleet-wide admission group intentionally differs from latest-pending build
-      # debounce locks.
-      queue: max
-      cancel-in-progress: false
     outputs:
       session-id: ${{ steps.dispatch.outputs.session-id }}
       session-url: ${{ steps.dispatch.outputs.session-url }}

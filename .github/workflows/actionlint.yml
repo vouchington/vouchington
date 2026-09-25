@@ -48,8 +48,7 @@ jobs:
         timeout-minutes: 3
 
       - name: Run actionlint
-        # actionlint 1.7.12 does not yet recognize GitHub's concurrency.queue field.
-        run: actionlint -ignore 'unexpected key "queue" for "concurrency" section'
+        run: actionlint
 
       - name: Audit GitHub Actions security
         run: zizmor --offline --min-severity high --min-confidence high .

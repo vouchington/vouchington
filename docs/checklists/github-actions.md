@@ -12,21 +12,11 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
 - **Concurrency** — every workflow must declare a concurrency group. PR workflows normally cancel in-progress; per-unit main workflows use `cancel-in-progress: false`. `ci.yml` deliberately disables `cancel-in-progress` for the `ready_for_review` event too, so marking a draft ready queues a fully independent full rerun behind the in-progress draft run instead of cancelling it; there is no cross-run result reuse. Keep the exception action-specific and assert that code-changing PR events still cancel.
 - **Deploys stay decoupled** — no cross-workflow deploy-order wait/poll; each deployable is forward/backward-compatible with whatever is live (expand/contract). Only api↔workers may couple (shared DB/code/image). See [deploy decoupling](../overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
 - **`actionlint`** — run on all changed `.github/workflows/*.yml` files before pushing. CI enforces it.
-- **`actionlint` `queue` false positive** — actionlint 1.7.12 does not recognize GitHub's
-  `concurrency.queue` field (used as `queue: max` to make a workflow a real FIFO queue, e.g.
-  the Auto Harness fleet-wide dispatch admission group). It flags `queue: max` as an unexpected
-  key. Do not remove an intentional FIFO queue to silence this. CI's `actionlint` step in
-  [`actionlint.yml`](../../.github/workflows/actionlint.yml) already ignores it repo-wide via
-  `-ignore 'unexpected key "queue" for "concurrency" section'`; run actionlint locally with the same
-  flag rather than treating a local `queue` finding as a real lint error.
-- **Auto Harness fleet-wide dispatch admission** — every Harness-dispatching job across all 7
-  harness workflows shares one fixed `concurrency.group` literal, `harness-dispatch-fleet-admission`,
-  bounding concurrent dispatch fleet-wide to 1 with `queue: max` FIFO queuing and
-  `cancel-in-progress: false` (nothing is ever cancelled or skipped). This replaced a prior
-  4-lane `admission-bucket` hedge (`lane = GITHUB_RUN_ID % ADMISSION_LANES`) that had no fleet
-  telemetry behind its lane count. Because the group is now a single literal rather than
-  per-workflow lane math, extracting that math into a shared composite action (issues #10414,
-  #10585) is moot — there is no math left to share.
+- **Auto Harness admission** — Harness workflows keep only their per-target workflow concurrency
+  (one group per issue, branch, run, or SHA), which prevents duplicate sessions for one target. The
+  Harness service queue, configured by the `HARNESS_PRIORITY` and `HARNESS_QUEUE_TTL_SECONDS`
+  environment of [`harness-dispatch.yml`](../../.github/workflows/harness-dispatch.yml), bounds how
+  many sessions run at once. Do not add a GitHub-side global concurrency group across Harness jobs.
 - **Workflow policy tests** — run
   `pnpm exec vitest run --project github-actions` for every workflow or composite action change.
 - **Keep docs in sync** — update the relevant grouped inventory reference and the matching

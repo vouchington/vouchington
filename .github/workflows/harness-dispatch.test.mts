@@ -85,9 +85,7 @@ describe('Auto Harness dispatch boundary', () => {
     expect(job?.steps.indexOf(checkout!)).toBe(0)
     expect(workflowText).not.toContain('repair-workspace-permissions')
     expect(job?.needs).toBeUndefined()
-    expect(job?.concurrency?.group).toBe('harness-dispatch-fleet-admission')
-    expect(job?.concurrency?.queue).toBe('max')
-    expect(job?.concurrency?.['cancel-in-progress']).toBe(false)
+    expect(job?.concurrency).toBeUndefined()
     expect(checkout?.with).toMatchObject({
       'persist-credentials': false,
       ref: '${{ github.workflow_sha }}',

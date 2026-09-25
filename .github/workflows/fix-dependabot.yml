@@ -33,12 +33,6 @@ jobs:
       checks: read
       contents: read
       pull-requests: read
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     outputs:
       should_dispatch: ${{ steps.triage.outputs.should_dispatch }}
       pr_number: ${{ steps.triage.outputs.pr_number }}
@@ -181,10 +175,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      queue: max
-      cancel-in-progress: false
     outputs:
       skip: ${{ steps.loop-breaker.outputs.skip }}
     steps:
@@ -208,10 +198,6 @@ jobs:
     permissions:
       actions: read
       contents: read
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      queue: max
-      cancel-in-progress: false
     outputs:
       prompt: ${{ steps.render.outputs.prompt }}
       source-current: ${{ steps.source-state.outputs.current }}
@@ -255,10 +241,6 @@ jobs:
     permissions:
       actions: read
       pull-requests: read
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      queue: max
-      cancel-in-progress: false
     outputs:
       current: ${{ steps.pr.outputs.current }}
     steps:
@@ -396,12 +378,6 @@ jobs:
     permissions:
       actions: read
       pull-requests: write
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     env:
       GH_TOKEN: ${{ github.token }}
       EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
