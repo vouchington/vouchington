@@ -1,40 +1,42 @@
+// Each check reads one simple command: the span after `git` stops at `|`, `;`, `&`, and newline,
+// so a flag on a piped or chained command (`git commit -F msg | tail -n 20`) is not a git flag.
 export const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
   {
     pattern:
-      /\bgit\s+push\b[\s\S]*(?:^|[\s])(?:--force(?!-with-lease(?:\b|=))\b|-[A-Za-z]*f[A-Za-z]*\b|\+[^;&|()\s]+)/,
+      /\bgit\s+push\b[^|;&\n]*(?:^|[\s])(?:--force(?!-with-lease(?:\b|=))\b|-[A-Za-z]*f[A-Za-z]*\b|\+[^;&|()\s]+)/,
     reason: 'Force pushes are banned by repository policy.',
   },
   {
-    pattern: /\bgit\s+commit\b[\s\S]*--amend\b/,
+    pattern: /\bgit\s+commit\b[^|;&\n]*--amend\b/,
     reason: 'Commit amend is banned by repository policy.',
   },
   {
-    pattern: /\bgit\s+pull\b[\s\S]*(?:--rebase\b|(?:^|[\s])-[A-Za-z]*r[A-Za-z]*\b)/,
+    pattern: /\bgit\s+pull\b[^|;&\n]*(?:--rebase\b|(?:^|[\s])-[A-Za-z]*r[A-Za-z]*\b)/,
     reason:
       'Use "git fetch origin && git rebase origin/main"; git pull --rebase and git pull -r are banned.',
   },
   {
     pattern:
-      /\bgit\b[\s\S]*(?:(?:^|[\s])-X(?:=|\s)?(?:ours|theirs)\b|(?:^|[\s])-X(?:ours|theirs)\b|--strategy-option(?:=|\s+)(?:ours|theirs)\b)/,
+      /\bgit\b[^|;&\n]*(?:(?:^|[\s])-X(?:=|\s)?(?:ours|theirs)\b|(?:^|[\s])-X(?:ours|theirs)\b|--strategy-option(?:=|\s+)(?:ours|theirs)\b)/,
     reason:
       'Git strategy options for ours/theirs are banned; during rebase they can silently keep the wrong side.',
   },
   {
-    pattern: /\bgit\s+checkout\b[\s\S]*(?:--ours|--theirs)\b/,
+    pattern: /\bgit\s+checkout\b[^|;&\n]*(?:--ours|--theirs)\b/,
     reason: 'git checkout --ours/--theirs is banned; resolve rebase conflicts manually.',
   },
   {
-    pattern: /\bgit\b[\s\S]*--no-verify\b/,
+    pattern: /\bgit\b[^|;&\n]*--no-verify\b/,
     reason:
       '--no-verify bypasses repository git hooks. Fix the underlying failure instead of skipping hooks.',
   },
   {
-    pattern: /\bgit\s+commit\b[\s\S]*(?:^|[\s])-[A-Za-z]*n[A-Za-z]*\b/,
+    pattern: /\bgit\s+commit\b[^|;&\n]*(?:^|[\s])-[A-Za-z]*n[A-Za-z]*\b/,
     reason:
       'git commit -n bypasses the commit-msg and pre-commit hooks. Fix the underlying failure instead.',
   },
   {
-    pattern: /\bgit\b[\s\S]*-c\s+core\.hooksPath\s*=/,
+    pattern: /\bgit\b[^|;&\n]*-c\s+core\.hooksPath\s*=/,
     reason: 'Overriding core.hooksPath disables git hooks. Fix the underlying failure instead.',
   },
 ]

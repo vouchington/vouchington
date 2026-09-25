@@ -18,10 +18,15 @@ export function stripGitGlobalOptionsForPolicy(command: string): string {
   return command.replace(GIT_GLOBAL_OPTIONS_RE, 'git')
 }
 
+/**
+ * The command text and the scripts nested in it that the git, hook-bypass, and dev-server policies
+ * read. A heredoc body is data (a `git commit -F -` message) unless a shell may read it as its
+ * script, but an unquoted-delimiter body still runs its command substitutions.
+ */
 export function commandsToInspectForGitPolicy(command: string): string[] {
   const unfolded = command.replace(/\\\n/g, ' ')
-  const { shellBodies } = stripNonShellHeredocBodies(unfolded)
-  const normalizedCommand = stripGitGlobalOptionsForPolicy(unfolded)
+  const { bodySubstitutions, shellBodies, textWithoutBodies } = stripNonShellHeredocBodies(unfolded)
+  const normalizedCommand = stripGitGlobalOptionsForPolicy(textWithoutBodies)
   return [
     stripQuotedShellText(normalizedCommand),
     ...extractShellCommandArguments(normalizedCommand).map(
@@ -30,8 +35,8 @@ export function commandsToInspectForGitPolicy(command: string): string[] {
           `${inheritsEditor ? 'export GIT_EDITOR=true; ' : ''}${stripGitGlobalOptionsForPolicy(shellCommand)}`,
         ),
     ),
-    ...shellBodies.map(body =>
-      stripQuotedShellText(stripGitGlobalOptionsForPolicy(body.replace(/\\\n/g, ' '))),
+    ...[...shellBodies, ...bodySubstitutions].map(script =>
+      stripQuotedShellText(stripGitGlobalOptionsForPolicy(script.replace(/\\\n/g, ' '))),
     ),
   ]
 }
