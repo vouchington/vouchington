@@ -34,47 +34,17 @@ export function RepeatInfringerAccount({
           <DecisionButton
             disabled={disabled}
             label='Mark withdrawn'
-            onClick={() =>
-              submit(
-                () =>
-                  recordCopyrightRepeatInfringerDisposition(
-                    account.incident_id,
-                    'withdrawn',
-                    rationale,
-                  ),
-                'Withdrawal recorded.',
-              )
-            }
+            onClick={dispositionClick(submit, account.incident_id, 'withdrawn', rationale)}
           />
           <DecisionButton
             disabled={disabled}
             label='Mark duplicate'
-            onClick={() =>
-              submit(
-                () =>
-                  recordCopyrightRepeatInfringerDisposition(
-                    account.incident_id,
-                    'duplicate',
-                    rationale,
-                  ),
-                'Duplicate recorded.',
-              )
-            }
+            onClick={dispositionClick(submit, account.incident_id, 'duplicate', rationale)}
           />
           <DecisionButton
             disabled={disabled}
             label='Mark abusive'
-            onClick={() =>
-              submit(
-                () =>
-                  recordCopyrightRepeatInfringerDisposition(
-                    account.incident_id,
-                    'abusive',
-                    rationale,
-                  ),
-                'Abusive notice recorded.',
-              )
-            }
+            onClick={dispositionClick(submit, account.incident_id, 'abusive', rationale)}
           />
         </div>
       ) : (
@@ -123,49 +93,67 @@ function OpenReviewDecisions({
       <DecisionButton
         disabled={disabled}
         label='Record warning'
-        onClick={() =>
-          submit(
-            () => recordCopyrightRepeatInfringerReviewOutcome(reviewId, 'warning', rationale),
-            'Warning recorded.',
-          )
-        }
+        onClick={outcomeClick(submit, reviewId, 'warning', rationale, 'Warning recorded.')}
       />
       <DecisionButton
         disabled={disabled}
         label='Record no action'
-        onClick={() =>
-          submit(
-            () => recordCopyrightRepeatInfringerReviewOutcome(reviewId, 'no_action', rationale),
-            'No action recorded.',
-          )
-        }
+        onClick={outcomeClick(submit, reviewId, 'no_action', rationale, 'No action recorded.')}
       />
       {canAdminister ? (
         <>
           <DecisionButton
             disabled={disabled}
             label='Restrict account'
-            onClick={() =>
-              submit(
-                () => recordCopyrightRepeatInfringerReviewOutcome(reviewId, 'restrict', rationale),
-                'Restriction recorded.',
-              )
-            }
+            onClick={outcomeClick(submit, reviewId, 'restrict', rationale, 'Restriction recorded.')}
           />
           <DecisionButton
             disabled={disabled}
             label='Terminate account'
-            onClick={() =>
-              submit(
-                () => recordCopyrightRepeatInfringerReviewOutcome(reviewId, 'terminate', rationale),
-                'Termination recorded.',
-              )
-            }
+            onClick={outcomeClick(
+              submit,
+              reviewId,
+              'terminate',
+              rationale,
+              'Termination recorded.',
+            )}
           />
         </>
       ) : null}
     </div>
   )
+}
+
+function dispositionClick(
+  submit: SubmitReview,
+  incidentId: string,
+  disposition: 'withdrawn' | 'duplicate' | 'abusive',
+  rationale: string,
+): () => void {
+  const message =
+    disposition === 'withdrawn'
+      ? 'Withdrawal recorded.'
+      : disposition === 'duplicate'
+        ? 'Duplicate recorded.'
+        : 'Abusive notice recorded.'
+  return () => {
+    submit(
+      () => recordCopyrightRepeatInfringerDisposition(incidentId, disposition, rationale),
+      message,
+    )
+  }
+}
+
+function outcomeClick(
+  submit: SubmitReview,
+  reviewId: string,
+  outcome: 'warning' | 'no_action' | 'restrict' | 'terminate',
+  rationale: string,
+  message: string,
+): () => void {
+  return () => {
+    submit(() => recordCopyrightRepeatInfringerReviewOutcome(reviewId, outcome, rationale), message)
+  }
 }
 
 function DecisionButton({
