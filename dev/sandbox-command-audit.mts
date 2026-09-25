@@ -114,10 +114,9 @@ export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env):
   return options
 }
 
-// Scan -> classify -> report, matching the run(argv, env) shape shared by this
-// directory's other dev/*.mts CLI entry points. classifyAudit only fails when
-// .claude/settings.json itself can't be read/parsed — a real repo checkout always
-// has one, so this is a defensive path rather than an expected outcome.
+// Scan -> classify -> report. classifyAudit only fails when .claude/settings.json
+// itself can't be read/parsed — a real repo checkout always has one, so this is a
+// defensive path rather than an expected outcome.
 export async function run(argv: string[], env: NodeJS.ProcessEnv = process.env): Promise<string> {
   const options = parseArgs(argv, env)
   let repoRoots: string[]
