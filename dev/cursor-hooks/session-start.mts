@@ -5,7 +5,7 @@ import {
   cursorPayloadSessionId,
   resolveAndPersistSessionStartId,
 } from '../agent-session-id/persist.mts'
-import { readHookPayload } from '../codex-hooks/policy.mts'
+import { readHookPayload } from '../codex-hooks/hook-payload.mts'
 import {
   additionalContextFromHookStdout,
   cursorSessionStartResponse,

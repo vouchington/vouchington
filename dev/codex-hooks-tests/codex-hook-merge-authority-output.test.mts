@@ -2,11 +2,8 @@ import { spawnSync } from 'node:child_process'
 import * as path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import {
-  isAutomationContext,
-  preToolUseOutput,
-  type PreToolUseRuntime,
-} from '../codex-hooks/policy.mts'
+import type { PreToolUseRuntime } from '../codex-hooks/hook-payload.mts'
+import { isAutomationContext, preToolUseOutput } from '../codex-hooks/policy.mts'
 
 // Unit coverage for the runtime-facing serialization: preToolUseOutput decides HOW a 'confirm'
 // disposition is surfaced (Claude gets a silent "allow" — the human already made the merge

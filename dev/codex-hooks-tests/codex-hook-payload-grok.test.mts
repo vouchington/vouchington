@@ -2,18 +2,15 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import {
-  extractToolCommand,
-  findPreToolUseBlock,
-  preToolUseOutput,
-} from '../codex-hooks/policy.mts'
+import { findPreToolUseBlock, preToolUseOutput } from '../codex-hooks/policy.mts'
 import { hookCwd } from '../codex-hooks/policy/core.mts'
 import { keyLooksPathLike } from '../codex-hooks/policy/claire-paths.mts'
 import {
+  extractToolCommand,
   hookFilePath,
   hookSessionId,
   resolvePreToolUseRuntime,
-} from '../codex-hooks/policy/hook-payload.mts'
+} from '../codex-hooks/hook-payload.mts'
 
 describe('Grok hook payload helper', () => {
   it('reads Bash commands from toolInput.command', () => {

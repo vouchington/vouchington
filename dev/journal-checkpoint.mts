@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { fileURLToPath } from 'node:url'
 
-import { resolvePreToolUseRuntime } from './codex-hooks/policy/hook-payload.mts'
+import { resolvePreToolUseRuntime } from './codex-hooks/hook-payload.mts'
 import {
   hookSessionId,
   isCompactRestart,

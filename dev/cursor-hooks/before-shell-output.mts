@@ -1,8 +1,5 @@
-import {
-  extractToolCommand,
-  findPreToolUseBlock,
-  type PreToolUseOptions,
-} from '../codex-hooks/policy.mts'
+import { extractToolCommand } from '../codex-hooks/hook-payload.mts'
+import { findPreToolUseBlock, type PreToolUseOptions } from '../codex-hooks/policy.mts'
 import { DEFAULT_AUTOMATION_CONTEXT } from '../codex-hooks/policy/core.mts'
 import type { HookPayload } from '../codex-hooks/types.mts'
 

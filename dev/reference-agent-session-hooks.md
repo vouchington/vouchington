@@ -2,6 +2,10 @@
 
 [Back to Dev Environment Reference](README.md#agent-session-hooks)
 
+Every hook entrypoint reads its stdin payload through `dev/codex-hooks/hook-payload.mts`
+(`readHookPayload`, `extractToolCommand`, and the tool-name, session-id, file-path, and runtime
+helpers). That module has no policy imports, so non-policy hooks never load the PreToolUse policy.
+
 - **`./dev/check-fresh-base`** — SessionStart hook (Claude Code + Codex): fetches `origin/main`, then reports the branch name, clean/dirty state, and whether HEAD is ahead, behind, or diverged. A clean matching branch exits silently. Missing refs and fetch failures report that freshness is unknown instead of silently trusting cached state. Its guidance distinguishes new work from resumed work and never infers `--force`; the reset-or-rebase decision is made after Plan Mode. Set `CHECK_FRESH_BASE_SKIP_FETCH=1` to skip the network fetch (used by tests). Outputs raw JSON (hook format) when run manually. See [Fresh-base planning](../docs/development/README.md#fresh-base-planning).
 - **`./dev/check-web-init`** — SessionStart hook (Claude Code + Codex): nudges `./dev/initialize web` when `.initialized` is absent or not `"web"` from the worktree root, reminding the agent to run `./dev/initialize web` then `./dev/tmux` before UI/browser work. Exits silently when `.initialized` = `"web"`, on `compact` restart, or outside a git repo.
 - **`node dev/codex-hooks/persist-grok-session-id.mts`** — SessionStart hook (Grok Claude-compat only):

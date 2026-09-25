@@ -1,5 +1,5 @@
 import { isRecord } from '../codex-hooks/policy/core.mts'
-import { hookFilePath } from '../codex-hooks/policy/hook-payload.mts'
+import { hookFilePath } from '../codex-hooks/hook-payload.mts'
 import type { HookPayload } from '../codex-hooks/types.mts'
 
 export function cursorEditedFilePath(payload: HookPayload): string {

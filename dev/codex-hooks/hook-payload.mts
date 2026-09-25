@@ -1,8 +1,22 @@
-import type { HookPayload } from '../types.mts'
-import type { PreToolUseRuntime } from './pre-tool-use-confirm-output.mts'
+import { readFileSync } from 'node:fs'
+import type { HookPayload } from './types.mts'
+
+export type PreToolUseRuntime = 'claude' | 'codex' | 'grok'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+export function readHookPayload(stdin = readFileSync(0, 'utf8')): HookPayload {
+  if (stdin.trim() === '') {
+    return {}
+  }
+
+  try {
+    return JSON.parse(stdin) as HookPayload
+  } catch {
+    return {}
+  }
 }
 
 export function isGrokHookProcess(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -26,6 +40,13 @@ export function hookToolInput(payload: HookPayload): Record<string, unknown> | u
   if (isRecord(payload.tool_input)) return payload.tool_input
   if (isRecord(payload.toolInput)) return payload.toolInput
   return undefined
+}
+
+export function extractToolCommand(payload: HookPayload): string {
+  const toolInput = hookToolInput(payload)
+  if (toolInput && typeof toolInput.command === 'string') return toolInput.command
+  if (typeof payload.command === 'string') return payload.command
+  return ''
 }
 
 export function hookToolName(payload: HookPayload): string {

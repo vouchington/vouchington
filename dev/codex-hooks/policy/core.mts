@@ -1,5 +1,5 @@
 import type { HookPayload } from '../types.mts'
-import { hookToolInput } from './hook-payload.mts'
+import { hookToolInput } from '../hook-payload.mts'
 
 export type BlockDecision = {
   reason: string

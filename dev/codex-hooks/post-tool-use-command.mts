@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 import { fileURLToPath } from 'node:url'
 
-import { readHookPayload } from './policy.mts'
-import { hookSessionId, resolvePreToolUseRuntime } from './policy/hook-payload.mts'
+import { hookSessionId, readHookPayload, resolvePreToolUseRuntime } from './hook-payload.mts'
 import type { HookPayload } from './types.mts'
 
 // Merged PostToolUse entrypoint: reads stdin and parses the payload exactly once, then runs every

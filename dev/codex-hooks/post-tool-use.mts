@@ -1,5 +1,4 @@
-import { hookFilePath } from './policy/hook-payload.mts'
-import { readHookPayload } from './policy.mts'
+import { hookFilePath, readHookPayload } from './hook-payload.mts'
 import { checkFile } from './post-tool-use-policy.mts'
 import * as path from 'node:path'
 
