@@ -5,6 +5,27 @@ import { addUserRole } from '@services/users/roles-permissions'
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
 
 describe('links', () => {
+  const referralLinkKeys = [
+    'activated_at',
+    'consecutive_crawl_failures',
+    'created_at',
+    'deactivated_at',
+    'deleted_at',
+    'id',
+    'label',
+    'last_crawl_failure_at',
+    'last_crawl_id',
+    'last_crawl_success_at',
+    'parent_link_id',
+    'referral_program_id',
+    'unfurl_completed_at',
+    'unfurl_failed_at',
+    'unfurl_last_error',
+    'unfurl_requested_at',
+    'updated_at',
+    'url_id',
+    'user_id',
+  ]
   let regularUser: Awaited<ReturnType<typeof createTestUserDirect>> | null = null
   let otherUser: Awaited<ReturnType<typeof createTestUserDirect>> | null = null
   let adminUser: Awaited<ReturnType<typeof createTestUserDirect>> | null = null
@@ -61,30 +82,44 @@ describe('links', () => {
         })
         .expect(201)
       expect(created.body.referral_link.label).toBe('created by api')
+      expect(Object.keys(created.body.referral_link).sort()).toEqual(referralLinkKeys)
 
       const listed = await request.get('/api/v1/referral-links?limit=1').expect(200)
       expect(listed.body.results).toBeDefined()
       expect(listed.body.page_info).toBeDefined()
       expect(Array.isArray(listed.body.results)).toBe(true)
-      expect(listed.body.results.length).toBeLessThanOrEqual(1)
+      expect(listed.body.results.length).toBe(1)
+      expect(Object.keys(listed.body.results[0]).sort()).toEqual(
+        [...referralLinkKeys, 'referral_program_name', 'referral_program_slug', 'url'].sort(),
+      )
 
       const updated = await request
         .patch(`/api/v1/referral-links/${created.body.referral_link.id}`)
         .send({ label: 'updated by api' })
         .expect(200)
       expect(updated.body.referral_link.label).toBe('updated by api')
+      expect(Object.keys(updated.body.referral_link).sort()).toEqual(referralLinkKeys)
+
+      const unchanged = await request
+        .patch(`/api/v1/referral-links/${created.body.referral_link.id}`)
+        .send({})
+        .expect(200)
+      expect(unchanged.body.referral_link.label).toBe('updated by api')
+      expect(Object.keys(unchanged.body.referral_link).sort()).toEqual(referralLinkKeys)
 
       const deactivated = await request
         .delete(`/api/v1/referral-links/${created.body.referral_link.id}/activations`)
         .expect(200)
       expect(deactivated.body.referral_link.id).toBe(created.body.referral_link.id)
       expect(deactivated.body.referral_link.deactivated_at).toBeTruthy()
+      expect(Object.keys(deactivated.body.referral_link).sort()).toEqual(referralLinkKeys)
 
       const activated = await request
         .post(`/api/v1/referral-links/${created.body.referral_link.id}/activations`)
         .expect(200)
       expect(activated.body.referral_link.id).toBe(created.body.referral_link.id)
       expect(activated.body.referral_link.deactivated_at).toBeNull()
+      expect(Object.keys(activated.body.referral_link).sort()).toEqual(referralLinkKeys)
 
       await request.delete(`/api/v1/referral-links/${created.body.referral_link.id}`).expect(204)
     })

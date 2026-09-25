@@ -2,6 +2,7 @@ import { write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { validateUUID } from '@modules/utils'
 import type { UserReferralLink } from './types.mts'
+import { userReferralLinkColumns } from './columns.mts'
 
 const MAX_ERROR_LENGTH = 1000
 
@@ -28,27 +29,7 @@ export async function markReferralLinkUnfurlRequested(
           unfurl_last_error = NULL
       WHERE id = ${linkId}
         AND deleted_at IS NULL
-      RETURNING
-        id,
-        user_id,
-        referral_program_id,
-        url_id,
-        label,
-        activated_at,
-        deactivated_at,
-        created_at,
-        updated_at,
-        deleted_at,
-        consecutive_crawl_failures,
-        last_crawl_failure_at,
-        last_crawl_success_at,
-        last_crawl_id,
-        parent_link_id,
-        unfurl_requested_at,
-        unfurl_completed_at,
-        unfurl_failed_at,
-        unfurl_last_error
-    `,
+      RETURNING `.append(userReferralLinkColumns()),
     options,
   )
 

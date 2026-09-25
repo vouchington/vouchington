@@ -11,6 +11,7 @@ import { mapCommunitySearchResult } from './search/result-mapper.mts'
 import { appendEligiblePostTypeFilter } from './search/eligible-post-type-filter.mts'
 import { parseCommunitySearchCursor } from './search/cursor.mts'
 import { buildCommunityImagePlacementSelect } from './search/image-placements.mts'
+import { communityColumns } from './columns.mts'
 import type { CommunityRootPostType } from './post-type-settings.mts'
 
 export type CommunitySortMode = 'name' | 'members' | 'virtual_subscriptions'
@@ -56,9 +57,9 @@ export async function searchCommunities(
   const { cursorName, cursorId, cursorScore } = parseCommunitySearchCursor(options?.after, sort)
 
   const searchQuery = sql`/* searchCommunities */
-    SELECT c.*,
-      u.id AS owner_id,
-      u.username AS owner_username`
+    SELECT `
+    .append(communityColumns('c'))
+    .append(', u.id AS owner_id, u.username AS owner_username')
 
   searchQuery.append(buildCommunityImagePlacementSelect())
 

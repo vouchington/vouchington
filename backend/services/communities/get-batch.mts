@@ -2,6 +2,8 @@ import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import createError from 'http-errors'
+import { communityColumns } from './columns.mts'
+import { mapCommunityWithOwner, type CommunityRowWithOwner } from './get-mapping.mts'
 import type { CommunityWithOwner } from './get.mts'
 
 export async function getCommunitiesByIdBatch(
@@ -20,7 +22,7 @@ export async function getCommunitiesByIdBatch(
       SELECT unnest($1::uuid[]) AS input_value,
              unnest($2::int[]) AS input_order
     )
-    SELECT c.*,
+    SELECT ${communityColumns('c')},
       u.id AS owner_id,
       u.username AS owner_username,
       input_data.input_order
@@ -36,25 +38,8 @@ export async function getCommunitiesByIdBatch(
 
   const results: Array<CommunityWithOwner | null | undefined> = new Array(ids.length).fill(null)
   for (const row of rows) {
-    const {
-      input_order,
-      owner_id,
-      owner_username,
-      lingua_rs_content_sha256: _contentSha256,
-      lingua_rs_input_sha256: _inputSha256,
-      lingua_rs_results: _results,
-      lingua_rs_detected_at: _detectedAt,
-      ...community
-    } = row as Record<string, unknown> & {
-      input_order: number
-      owner_id: string | null
-      owner_username: string | null
-    }
-
-    results[input_order] = {
-      ...(community as Omit<CommunityWithOwner, 'owner'>),
-      owner: owner_id ? { id: owner_id, username: owner_username } : null,
-    }
+    const { input_order, ...community } = row as CommunityRowWithOwner & { input_order: number }
+    results[input_order] = mapCommunityWithOwner(community)
   }
 
   return results

@@ -5,6 +5,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { CommunityApplication } from '../types.mts'
+import { communityApplicationColumns } from './columns.mts'
 
 type ApplicationStatus = 'pending' | 'approved' | 'rejected'
 
@@ -44,10 +45,14 @@ export async function searchApplications(
   }
 
   const query = sql`/* searchApplications */
-    SELECT *
+    SELECT `
+    .append(communityApplicationColumns)
+    .append(
+      sql`
     FROM community_applications
     WHERE community_id = ${communityId}
-  `
+  `,
+    )
 
   if (options?.status === 'pending') {
     query.append(sql` AND approved_at IS NULL AND rejected_at IS NULL`)

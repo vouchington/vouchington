@@ -86,6 +86,33 @@ describe('GET /api/v1/users/:idOrSlug communities collections', () => {
       .expect(200)
     expect(anonResponse.body.results).toHaveLength(1)
     expect(anonResponse.body.results[0].id).toBe(community.id)
+    expect(Object.keys(anonResponse.body.results[0]).sort()).toEqual([
+      'allow_data_point_posts',
+      'allow_review_posts',
+      'archived_at',
+      'archived_by_id',
+      'banner_image_id',
+      'created_at',
+      'created_by_id',
+      'default_language',
+      'deleted_at',
+      'deleted_by_id',
+      'id',
+      'lingua_rs_detected_language',
+      'list_type',
+      'markdown',
+      'member_invites_allowed_at',
+      'member_roster_visibility',
+      'name',
+      'owner',
+      'post_approval_required_at',
+      'profile_image_id',
+      'rules_markdown',
+      'slug',
+      'trusted_at',
+      'updated_at',
+      'visibility',
+    ])
     expect(anonResponse.headers['cache-control']).toContain('public')
     expect(anonResponse.headers['cache-control']).toContain(
       `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,

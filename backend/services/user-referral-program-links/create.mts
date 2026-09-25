@@ -10,6 +10,7 @@ import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error
 import { isOfficialAccount } from '@services/users/authorization'
 import { currentUserCanCreateUserReferralLink } from './authorization.mts'
 import type { UserReferralLink } from './types.mts'
+import { userReferralLinkColumns } from './columns.mts'
 
 export async function createUserReferralLink(
   currentUser: PrivateUser | null,
@@ -84,8 +85,7 @@ export async function createUserReferralLink(
         label = COALESCE(EXCLUDED.label, user_referral_program_links.label),
         activated_at = CURRENT_TIMESTAMP,
         deactivated_at = NULL
-      RETURNING *
-    `,
+      RETURNING `.append(userReferralLinkColumns()),
   )
 
   return rows[0]

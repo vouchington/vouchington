@@ -11,6 +11,9 @@ system account. Two audit columns distinguish them:
 - `created_by_id` — the admin who published the link
 - `deleted_by_id` — the admin who soft-deleted it
 
+Reads and the create response select only the declared `OfficialReferralLink`
+columns (`columns.mts`); the table's crawl and unfurl state stays internal.
+
 URLs are **immutable**: create and delete only. To update a URL, delete the
 existing row and create a new one.
 

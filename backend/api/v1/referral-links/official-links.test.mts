@@ -64,6 +64,29 @@ describe('official-links', () => {
         .expect(201)
       expect(res.body.official_referral_link.id).toBeTruthy()
       createdLinkId = res.body.official_referral_link.id
+
+      const listed = await request
+        .get(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
+        .expect(200)
+      const listedLink = listed.body.official_referral_links.find(
+        (link: { id: string }) => link.id === createdLinkId,
+      )
+      const expectedKeys = [
+        'activated_at',
+        'created_at',
+        'created_by_id',
+        'deactivated_at',
+        'deleted_at',
+        'deleted_by_id',
+        'id',
+        'label',
+        'referral_program_id',
+        'url',
+        'url_id',
+        'user_id',
+      ]
+      expect(Object.keys(res.body.official_referral_link).sort()).toEqual(expectedKeys)
+      expect(Object.keys(listedLink).sort()).toEqual(expectedKeys)
     })
 
     it('POST /api/v1/referral-programs/:id/official-referral-links returns 409 on duplicate URL', async () => {

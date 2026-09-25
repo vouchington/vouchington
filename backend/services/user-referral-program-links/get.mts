@@ -7,6 +7,7 @@ import { decodeUuidCursor, encodeCursor, isSimpleCursor } from '@modules/paginat
 import type { PageInfo } from '@voucha/types/pagination'
 import { currentUserCanAccessUserReferralLinks } from './authorization.mts'
 import type { UserReferralLink, UserReferralLinkWithDetails } from './types.mts'
+import { userReferralLinkColumns } from './columns.mts'
 
 export async function getUserReferralLinks(
   currentUser: PrivateUser | null,
@@ -55,25 +56,10 @@ export async function getUserReferralLinks(
   } = options ?? {}
 
   const query = sql`/* getUserReferralLinks */
-    SELECT
-      urpl.id,
-      urpl.user_id,
-      urpl.referral_program_id,
-      urpl.url_id,
-      urpl.label,
-      urpl.activated_at,
-      urpl.deactivated_at,
-      urpl.created_at,
-      urpl.updated_at,
-      urpl.deleted_at,
-      urpl.consecutive_crawl_failures,
-      urpl.last_crawl_failure_at,
-      urpl.last_crawl_success_at,
-      urpl.parent_link_id,
-      urpl.unfurl_requested_at,
-      urpl.unfurl_completed_at,
-      urpl.unfurl_failed_at,
-      urpl.unfurl_last_error,
+    SELECT `
+    .append(userReferralLinkColumns('urpl'))
+    .append(
+      sql`,
       u.url,
       t.name AS referral_program_name,
       t.slug AS referral_program_slug
@@ -85,7 +71,8 @@ export async function getUserReferralLinks(
     WHERE urpl.user_id = ${userId}
       AND urpl.deleted_at IS NULL
       AND urpl.parent_link_id IS NULL
-  `
+  `,
+    )
 
   if (referralProgramId) {
     query.append(sql` AND urpl.referral_program_id = ${referralProgramId}`)
@@ -130,30 +117,16 @@ export async function getUserReferralLink(
 
   const { rows } = await read(
     sql`/* getUserReferralLink */
-      SELECT
-        id,
-        user_id,
-        referral_program_id,
-        url_id,
-        label,
-        activated_at,
-        deactivated_at,
-        created_at,
-        updated_at,
-        deleted_at,
-        consecutive_crawl_failures,
-        last_crawl_failure_at,
-        last_crawl_success_at,
-        parent_link_id,
-        unfurl_requested_at,
-        unfurl_completed_at,
-        unfurl_failed_at,
-        unfurl_last_error
+      SELECT `
+      .append(userReferralLinkColumns())
+      .append(
+        sql`
       FROM user_referral_program_links
       WHERE id = ${linkId}
         AND deleted_at IS NULL
       LIMIT 1
     `,
+      ),
     options,
   )
 

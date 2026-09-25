@@ -1,10 +1,12 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import type { CommunityMember } from './types.mts'
+import { communityColumns } from './columns.mts'
+import { buildCommunityImagePlacementSelect } from './search/image-placements.mts'
 import { getCommunityMember } from './members/get.mts'
 import { getPendingApplicationForUser } from './applications/pending.mts'
 import {
@@ -100,23 +102,9 @@ export async function getCommunityOrThrow(
 /** Always queries by slug column — use when the value is a slug, even if it looks like a UUID. */
 export async function getCommunityBySlugOnly(slug: string): Promise<CommunityWithOwner | null> {
   const { rows } = await read(
-    sql`/* getCommunityBySlugOnly */
-    SELECT c.*, u.id AS owner_id, u.username AS owner_username,
-      (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
-       FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
-       WHERE surface.surface_kind = 'community-profile-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
-         AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
-       ORDER BY placement.id DESC LIMIT 1) AS profile_image_placement,
-      (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
-       FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
-       WHERE surface.surface_kind = 'community-banner-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
-         AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
-       ORDER BY placement.id DESC LIMIT 1) AS banner_image_placement
-    FROM communities c
-    LEFT JOIN users u ON u.id = c.created_by_id
-    WHERE c.slug = ${slug.toLowerCase()}
-      AND c.deleted_at IS NULL
-    LIMIT 1`,
+    selectCommunityWithOwner(sql`/* getCommunityBySlugOnly */ SELECT `).append(
+      sql` WHERE c.slug = ${slug.toLowerCase()} AND c.deleted_at IS NULL LIMIT 1`,
+    ),
   )
   if (!rows[0]) return null
   return mapCommunityWithOwner(rows[0] as CommunityRowWithOwner)
@@ -126,58 +114,23 @@ export async function getCommunity(
   idOrSlug: string,
   options?: QueryOptions,
 ): Promise<CommunityWithOwner | null> {
-  let result
-  if (isUUID(idOrSlug)) {
-    const { rows } = await read(
-      sql`/* getCommunityById */
-      SELECT c.*,
-        u.id AS owner_id,
-        u.username AS owner_username,
-        (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
-         FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
-         WHERE surface.surface_kind = 'community-profile-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
-           AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
-         ORDER BY placement.id DESC LIMIT 1) AS profile_image_placement,
-        (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
-         FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
-         WHERE surface.surface_kind = 'community-banner-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
-           AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
-         ORDER BY placement.id DESC LIMIT 1) AS banner_image_placement
-      FROM communities c
-      LEFT JOIN users u ON u.id = c.created_by_id
-      WHERE c.id = ${idOrSlug}
-        AND c.deleted_at IS NULL
-      LIMIT 1`,
-      options,
-    )
-    result = rows[0]
-  } else {
-    const { rows } = await read(
-      sql`/* getCommunityBySlug */
-      SELECT c.*,
-        u.id AS owner_id,
-        u.username AS owner_username,
-        (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
-         FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
-         WHERE surface.surface_kind = 'community-profile-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
-           AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
-         ORDER BY placement.id DESC LIMIT 1) AS profile_image_placement,
-        (SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id)
-         FROM image_surface_placements surface JOIN media_placements placement ON placement.id = surface.placement_id
-         WHERE surface.surface_kind = 'community-banner-image' AND surface.community_id = c.id AND placement.retired_at IS NULL
-           AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
-         ORDER BY placement.id DESC LIMIT 1) AS banner_image_placement
-      FROM communities c
-      LEFT JOIN users u ON u.id = c.created_by_id
-      WHERE c.slug = ${idOrSlug.toLowerCase()}
-        AND c.deleted_at IS NULL
-      LIMIT 1`,
-      options,
-    )
-    result = rows[0]
-  }
+  const query = isUUID(idOrSlug)
+    ? selectCommunityWithOwner(sql`/* getCommunityById */ SELECT `).append(
+        sql` WHERE c.id = ${idOrSlug}`,
+      )
+    : selectCommunityWithOwner(sql`/* getCommunityBySlug */ SELECT `).append(
+        sql` WHERE c.slug = ${idOrSlug.toLowerCase()}`,
+      )
+  const { rows } = await read(query.append(sql` AND c.deleted_at IS NULL LIMIT 1`), options)
+  if (!rows[0]) return null
+  return mapCommunityWithOwner(rows[0] as CommunityRowWithOwner)
+}
 
-  if (!result) return null
-
-  return mapCommunityWithOwner(result as CommunityRowWithOwner)
+/** Completes an annotated `SELECT ` with the community detail projection and its FROM clause. */
+function selectCommunityWithOwner(select: SQLStatement): SQLStatement {
+  return select
+    .append(communityColumns('c'))
+    .append(', u.id AS owner_id, u.username AS owner_username')
+    .append(buildCommunityImagePlacementSelect())
+    .append(' FROM communities c LEFT JOIN users u ON u.id = c.created_by_id')
 }

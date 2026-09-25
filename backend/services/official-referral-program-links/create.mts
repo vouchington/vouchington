@@ -8,6 +8,7 @@ import { getPrivateUserByAny } from '@services/users'
 import { validateUUID } from '@modules/utils'
 import { currentUserCanManageOfficialReferralLink } from './authorization.mts'
 import type { OfficialReferralLink } from './types.mts'
+import { officialReferralLinkColumns } from './columns.mts'
 
 export async function createOfficialReferralLink(
   currentUser: PrivateUser | null,
@@ -48,7 +49,8 @@ export async function createOfficialReferralLink(
   const vouchaUser = await getPrivateUserByAny('voucha')
   assert(vouchaUser, 500, 'Voucha system user not found')
 
-  const { rows } = await write(sql`/* createOfficialReferralLink */
+  const { rows } = await write(
+    sql`/* createOfficialReferralLink */
     INSERT INTO user_referral_program_links (
       user_id,
       referral_program_id,
@@ -67,8 +69,8 @@ export async function createOfficialReferralLink(
     )
     ON CONFLICT (user_id, referral_program_id, url_id) WHERE deleted_at IS NULL
     DO NOTHING
-    RETURNING *
-  `)
+    RETURNING `.append(officialReferralLinkColumns()),
+  )
 
   assert(rows.length > 0, 409, 'An active official link for this URL already exists')
 

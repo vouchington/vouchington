@@ -7,6 +7,7 @@ import { lockAndAssertNotBanned } from '../bans/lock.mts'
 import { getApplicationQuestions } from './questions.mts'
 import { getPendingApplicationForUser } from './pending.mts'
 import type { CommunityApplication } from '../types.mts'
+import { communityApplicationColumns } from './columns.mts'
 
 export async function createApplication(
   currentUserId: string,
@@ -72,8 +73,7 @@ export async function createApplication(
     sql`/* createApplication */
     INSERT INTO community_applications (community_id, user_id, answers, message)
     VALUES (${communityId}, ${currentUserId}, ${JSON.stringify(answers)}::jsonb, ${message ?? null})
-    RETURNING *
-    `,
+    RETURNING `.append(communityApplicationColumns),
     options,
   )
 
