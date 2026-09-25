@@ -115,6 +115,53 @@ describe('tool registry', () => {
     expect(missing).toEqual([])
   })
 
+  it('every user-mcp mutating tool declares a plus or pro plan', () => {
+    const missing = ALL_TOOLS.filter(tool => {
+      const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
+      if (!surfaces.has('mcp')) return false
+      // Anything not explicitly read-only is treated as a mutation, not just destructiveHint:
+      // true, so a future write annotated only readOnlyHint: false (or left to idempotentHint)
+      // can't slip past this gate ungated.
+      if (tool.meta?.annotations?.readOnlyHint === true) return false
+      return tool.meta?.plan !== 'plus' && tool.meta?.plan !== 'pro'
+    })
+    expect(missing.map(t => t.schema.name)).toEqual([])
+  })
+
+  it('user-mcp reads and every admin-only mcp tool declare no paid plan', () => {
+    const gated = ALL_TOOLS.filter(tool => {
+      const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
+      const isUserMcpRead = surfaces.has('mcp') && tool.meta?.annotations?.readOnlyHint === true
+      const isAdminMcp = surfaces.has('admin_mcp')
+      if (!isUserMcpRead && !isAdminMcp) return false
+      return tool.meta?.plan != null && tool.meta.plan !== 'free'
+    })
+    expect(gated.map(t => t.schema.name)).toEqual([])
+  })
+
+  it('rejects a mutating tool that shares the user and admin MCP surfaces', () => {
+    // meta.plan is a single field: it cannot express "plus on mcp, free on admin_mcp". A
+    // mutating tool exposed on both surfaces is unsupported until the model can encode
+    // separate per-surface plans, whether or not it declares a plan at all.
+    const sharedMutation: Tool = {
+      schema: { name: 'shared_mutation_fixture', type: 'function', parameters: null, strict: null },
+      function: (_user: unknown) => () => Promise.resolve({}),
+      meta: {
+        surfaces: ['mcp', 'admin_mcp'],
+        annotations: { destructiveHint: true },
+        api: null,
+      },
+    } as unknown as Tool
+
+    const violating = [...ALL_TOOLS, sharedMutation].filter(tool => {
+      const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
+      const isMutation = tool.meta?.annotations?.readOnlyHint !== true
+      return isMutation && surfaces.has('mcp') && surfaces.has('admin_mcp')
+    })
+
+    expect(violating.map(t => t.schema.name)).toEqual(['shared_mutation_fixture'])
+  })
+
   it('rejects scopes declared for the opposite MCP audience', () => {
     const tool: Tool = {
       schema: {

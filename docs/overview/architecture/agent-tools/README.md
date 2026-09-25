@@ -19,26 +19,42 @@ See also:
 Each tool declares one or more surfaces in `meta.surfaces`. The default when absent is
 `['internal']`.
 
-| Surface    | Description                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------- |
-| `internal` | Available only to server-side agents. Never exposed over any external protocol.                   |
-| `mcp`      | Exposed via the Model Context Protocol server. Accessible to MCP-connected LLM clients.           |
-| `client`   | Exported in `backend/tools/manifest.json` for first-party native clients (e.g., iOS Swift agent). |
+| Surface     | Description                                                                                         |
+| ----------- | --------------------------------------------------------------------------------------------------- |
+| `internal`  | Available only to server-side agents. Never exposed over any external protocol.                     |
+| `mcp`       | Exposed via the user-facing Model Context Protocol server. Accessible to MCP-connected LLM clients. |
+| `admin_mcp` | Exposed via the staff-only admin Model Context Protocol server. Restricted by role, not by plan.    |
+| `client`    | Exported in `backend/tools/manifest.json` for first-party native clients (e.g., iOS Swift agent).   |
 
-A tool may be on multiple surfaces simultaneously. Almost all public tools carry all three
-(`internal`, `mcp`, `client`).
+A tool may be on multiple surfaces simultaneously. Almost all public user-facing tools carry
+all three of `internal`, `mcp`, and `client`. A tool must not carry both `mcp` and
+`admin_mcp` if it mutates data — see [Plan Gating](#plan-gating).
 
 ---
 
 ## Plan Gating
 
-`meta.plan` sets the minimum membership plan required to invoke the tool. Possible values:
+`meta.plan` sets the minimum membership plan required to dispatch a tool on the external
+user `mcp` surface (`tools/list` / `tools/call`; enforced by
+[`isToolAllowedForPlan`](../../../../backend/tools/registry/select.mts) in both
+`listMcpToolsForUser` and `callMcpTool`). Possible values:
 
 - `'free'` (default when absent) — available to all authenticated users
 - `'plus'` — requires Plus or Pro membership
 - `'pro'` — requires Pro membership
 
-No tools are plan-gated in the initial release; the mechanism exists for future use.
+The gate applies only at that MCP dispatch boundary: it never affects native/client tool
+invocation (`manifest.json` carries no plan field), direct REST routes, or internal-agent
+calls. It must stay unset (or `'free'`) on any tool exposed on `admin_mcp` — a single `plan`
+field cannot express separate per-surface plans, so a mutating tool cannot share the `mcp`
+and `admin_mcp` surfaces until the metadata model can (enforced by the registry invariant
+tests in `backend/tools/registry/registry.test.mts`).
+
+Every mutating tool currently exposed on the user `mcp` surface (`manage_my_cards`,
+`manage_my_point_valuations`, `manage_my_rewards_statuses`, `manage_my_spending`,
+`update_my_financial_profile`) requires `plan: 'plus'`; every user-`mcp` read tool stays
+`'free'`. No production tool requires `'pro'` yet — see the generated
+[tool catalog](catalog.md)'s Plan column for the authoritative per-tool value.
 
 ---
 
