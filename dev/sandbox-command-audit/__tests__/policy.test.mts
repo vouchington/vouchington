@@ -80,6 +80,15 @@ describe('loadSandboxPolicy', () => {
     expect(policy.excludedCommandTokens).toEqual([['grep']])
   })
 
+  it('keeps the wildcard on a directory glob so it covers every command under it', () => {
+    const path = writeSettings({
+      permissions: { allow: ['Bash(./dev/*)', 'Bash(node dev/*)'] },
+    })
+    const policy = loadSandboxPolicy(path)
+    if ('error' in policy) throw new Error(`expected a policy, got error: ${policy.error}`)
+    expect(policy.allowListTokens).toEqual([['./dev/*'], ['node', 'dev/*']])
+  })
+
   it('keeps a trailing wildcard on a glued glob that appears after the first token', () => {
     const path = writeSettings({
       permissions: { deny: ['Bash(git push +*)', 'Bash(git pull --rebase*)'] },
@@ -108,6 +117,17 @@ describe('loadSandboxPolicy', () => {
     const path = writeSettings({
       permissions: {
         deny: ['Bash(git * -X ours*)', 'Bash(cp * ~/.ssh/*)', 'Bash(git push * --force *)'],
+      },
+    })
+    const policy = loadSandboxPolicy(path)
+    if ('error' in policy) throw new Error(`expected a policy, got error: ${policy.error}`)
+    expect(policy.denyListTokens).toEqual([])
+  })
+
+  it('drops a pattern with a literal after the wildcard inside the same token', () => {
+    const path = writeSettings({
+      permissions: {
+        deny: ['Bash(./dev*/../*)', 'Bash(node dev*/../*)', 'Bash(curl *|bash*)'],
       },
     })
     const policy = loadSandboxPolicy(path)
@@ -172,5 +192,10 @@ describe('isCoveredByPolicy', () => {
 
   it('does not prefix-match a wildcard policy token against an unrelated candidate token', () => {
     expect(isCoveredByPolicy('git push origin main', [['git', 'push', '+*']])).toBe(false)
+  })
+
+  it('covers every command under a directory glob and nothing beside it', () => {
+    expect(isCoveredByPolicy('./dev/tmux-name web', [['./dev/*']])).toBe(true)
+    expect(isCoveredByPolicy('./devtools/run', [['./dev/*']])).toBe(false)
   })
 })

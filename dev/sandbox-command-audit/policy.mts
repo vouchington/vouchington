@@ -31,10 +31,13 @@ function toStringArray(value: unknown): string[] {
 // is kept with its `*` still attached (e.g. "+*", "--rebase*") so tokensCovered can
 // prefix-match it against the candidate's token at that position. A glued glob that
 // IS the first token (e.g. "git*") means the command name itself, which stays an
-// exact-match literal (its `*` is dropped) per the word-boundary-safe contract below.
+// exact-match literal (its `*` is dropped) per the word-boundary-safe contract below —
+// unless its literal ends in `/` (e.g. "./dev/*"): that names every command under a
+// directory, so the `*` stays attached and prefix-matches "./dev/status".
 //
-// A pattern with a literal token *after* the wildcard — e.g. real deny entries like
-// "git * -X ours*" or "git push * --force" — is narrower than its pre-wildcard prefix
+// A pattern with a literal *after* the wildcard — a later token as in real deny entries
+// "git * -X ours*" or "git push * --force", or text inside the wildcard's own token as
+// in "curl *|bash*" or "./dev*/../*" — is narrower than its pre-wildcard prefix
 // alone: "git push * --force" denies a forced push, not every "git push". Reducing it
 // to ["git", "push"] would make isCoveredByPolicy report an ordinary "git push origin
 // main" as "already covered by this deny rule," which is wrong regardless of how many
@@ -54,11 +57,12 @@ function policyTokens(pattern: string): string[] {
   const starPos = starToken.indexOf('*')
   if (starPos > 0) {
     const literal = starToken.slice(0, starPos).replace(/:$/, '')
-    if (literal.length > 0) prefix.push(starIndex > 0 ? `${literal}*` : literal)
+    const keepGlob = starIndex > 0 || literal.endsWith('/')
+    if (literal.length > 0) prefix.push(keepGlob ? `${literal}*` : literal)
   }
-  const hasTrailingLiteral = tokens
-    .slice(starIndex + 1)
-    .some(token => token.replace(/\*/g, '').length > 0)
+  const hasTrailingLiteral = [starToken.slice(starPos), ...tokens.slice(starIndex + 1)].some(
+    token => token.replace(/\*/g, '').length > 0,
+  )
   if (hasTrailingLiteral) return []
   return prefix
 }
@@ -115,8 +119,9 @@ export function loadSandboxPolicy(settingsPath: string): SandboxPolicy | { error
 }
 
 // A policy token ending in `*` (added by policyTokens for a glued glob after the first
-// token — e.g. "+*", "--rebase*") is a prefix match on the candidate token at that
-// position; every other policy token is compared for exact equality.
+// token — e.g. "+*", "--rebase*" — or for a directory glob such as "./dev/*") is a prefix
+// match on the candidate token at that position; every other policy token is compared for
+// exact equality.
 function tokenMatches(candidateToken: string | undefined, policyToken: string): boolean {
   if (candidateToken === undefined) return false
   if (policyToken.length > 1 && policyToken.endsWith('*')) {

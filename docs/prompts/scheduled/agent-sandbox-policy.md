@@ -49,7 +49,11 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
   filed as jonathanong/filaments#9578). Codex still having two-token
   `["gh","pr"]` while Claude allows only `comment` / `ready` / `edit` / `create --draft` is an
   intentional leftover, not a scheduled-prompt target — do not "fix" it by widening Claude
-  `Bash(gh pr *)`.
+  `Bash(gh pr *)`. Claude `Bash(./dev/*)` / `Bash(node dev/*)` and their `/../` deny rules are a
+  documented review-skip decision
+  ([Claude review-skip for dev/ commands](../../development/agent-sandbox.md#claude-review-skip-for-dev-commands),
+  guarded by `dev/claude-settings-dev-allow.test.mts`) — do not re-propose per-script allow
+  entries, and do not read their breadth as a reason to widen `sandbox.excludedCommands`.
 - Three concrete, unguarded targets to check first: Codex/Grok/Cursor extra writable roots are
   already required to stay equal, and every Codex `writable_roots` entry must appear in Claude
   `sandbox.filesystem.allowWrite` (formerly filed as jonathanong/filaments#9814).
