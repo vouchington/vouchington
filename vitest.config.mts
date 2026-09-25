@@ -37,10 +37,10 @@ export default defineConfig({
     // banned (see dev/vitest-config.test.mts) and non-functional whenever the env var is set.
     fileParallelism: true,
     maxWorkers: parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS),
-    // Persist transformed modules across `vitest run` processes. Path stays under the
-    // workspace `.cache/vite/` tree that self-hosted runners already preserve — not the
-    // default `node_modules/.vitest-cache`, which `./dev/reset` deletes. Browser Mode
-    // ignores this option. Does not go through `actions/cache`.
+    // Persist transformed modules across local `vitest run` processes. Path stays under the
+    // workspace `.cache/vite/` tree — not the default `node_modules/.vitest-cache`, which
+    // `./dev/reset` deletes. Browser Mode ignores this option. CI does not restore it through
+    // `actions/cache` (the cache policy permits only the pnpm store and Playwright browsers).
     fsModuleCache: true,
     fsModuleCachePath: vitestFsModuleCachePath,
     // Root-level only (not per-project): bounds the whole close sequence after tests
@@ -48,7 +48,7 @@ export default defineConfig({
     // Backend forks-pool projects run globalSetup teardown in the main process to close
     // Valkey/PSQL/glide-mq sockets gracefully; that graceful close is also the only
     // socket-leak tripwire (a leaked handle prevents a clean exit). This headroom lets
-    // that close finish under self-hosted-runner CPU contention instead of being force-killed
+    // that close finish under CPU contention instead of being force-killed
     // mid-teardown — which the forks pool then misreports as "Worker exited unexpectedly".
     // A genuine leak still exceeds this and gets force-killed; see the
     // [vitest-teardown]/[vitest-teardown-overrun] diagnostics for what was in flight.

@@ -12,42 +12,21 @@ jobs:
     runs-on: ubuntu-latest
     # Chains three full ./dev/initialize passes (monorepo, backend, web) plus
     # PostgreSQL provisioning, each individually allowed up to 5 minutes below.
-    # The backend pass repeats dependency/native-addon setup and runs database
-    # migrations, so on a cold or contended runner the cumulative job can run
-    # well past a tight cap — and a job-level timeout kills the run before the
-    # `if: always()` Cleanup step can remove its database and containers.
     # See the .no-mistakes.yml github-actions-job-timeouts allow-list entry for
     # this job (repository default cap is 10m) for the step-budget accounting
     # behind this value.
-    timeout-minutes: 30
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Restore checked-out tree
-        shell: bash
-        run: |
-          rm -f -- .git/index
-          git config --worktree --unset-all core.sparseCheckout || true
-          git config --worktree --unset-all core.sparseCheckoutCone || true
-          git config --unset-all core.sparseCheckout || true
-          git config --unset-all core.sparseCheckoutCone || true
-          git read-tree --empty
-          git reset --hard HEAD
       - name: Prepare disposable worktree
         timeout-minutes: 1
         run: |
           set -euo pipefail
           smoke_root="$RUNNER_TEMP/voucha-initialize-smoke/worktrees/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
           smoke_worktree="$smoke_root/voucha"
-          if [ -e "$smoke_worktree" ]; then
-            git worktree remove --force "$smoke_worktree" 2>/dev/null || rm -rf "$smoke_worktree"
-          fi
           mkdir -p "$smoke_root"
           git worktree add --detach "$smoke_worktree" HEAD
-          smoke_index="$(git -C "$smoke_worktree" rev-parse --git-path index)"
-          rm -f -- "$smoke_index"
-          git -C "$smoke_worktree" read-tree --empty
-          git -C "$smoke_worktree" reset --hard HEAD
 
           if [ ! -f "$smoke_worktree/.git" ]; then
             echo "::error::Expected disposable checkout to be a linked worktree"
@@ -61,7 +40,6 @@ jobs:
               ;;
           esac
 
-          echo "SMOKE_ROOT=$smoke_root" >> "$GITHUB_ENV"
           echo "SMOKE_WORKTREE=$smoke_worktree" >> "$GITHUB_ENV"
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -76,65 +54,27 @@ jobs:
       - name: Ensure PostgreSQL is available
         timeout-minutes: 5
         run: |
-          if command -v brew >/dev/null 2>&1; then
-            pg_formula=""
-            pg_prefix=""
-            for ver in 18 17 16 15 14; do
-              formula="postgresql@${ver}"
-              candidate=$(brew --prefix "$formula" 2>/dev/null) || continue
-              if [ -x "${candidate}/bin/psql" ]; then
-                pg_formula="$formula"
-                pg_prefix="$candidate"
-                echo "Found ${formula} at ${pg_prefix}"
-                break
-              fi
-            done
-            if [ -z "$pg_prefix" ]; then
-              echo "Installing postgresql@16..."
-              HOMEBREW_NO_AUTO_UPDATE=1 brew install postgresql@16
-              pg_formula="postgresql@16"
-              pg_prefix=$(brew --prefix postgresql@16)
-            fi
-            echo "${pg_prefix}/bin" >> "$GITHUB_PATH"
-            brew services start "$pg_formula" 2>/dev/null || true
-          elif command -v apt-get >/dev/null 2>&1; then
-            pg_container="voucha-postgres-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
-            if ! command -v psql >/dev/null 2>&1; then
-              sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
-            fi
-            sudo service postgresql stop 2>/dev/null || sudo systemctl stop postgresql 2>/dev/null || true
-            docker rm -f "$pg_container" 2>/dev/null || true
-            docker run -d \
-              --name "$pg_container" \
-              -e POSTGRES_DB=postgres \
-              -e POSTGRES_HOST_AUTH_METHOD=trust \
-              -e POSTGRES_USER=postgres \
-              -e POSTGRES_INITDB_ARGS="-c max_connections=300" \
-              -p "127.0.0.1::5432" \
-              pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
-            PGPORT=$(docker port "$pg_container" 5432 | cut -d: -f2)
-            if [ -z "$PGPORT" ]; then echo "::error::Failed to retrieve Postgres host port from docker"; exit 1; fi
-            export PGHOST=localhost
-            export PGPORT
-            export PGUSER=postgres
-            source "$SMOKE_WORKTREE/dev/lib/worktree-resource-env.sh"
-            smoke_db_name=$(worktree_resource_owned_db_name "$SMOKE_WORKTREE")
-            export DATABASE_URL="postgres://postgres@localhost:${PGPORT}/${smoke_db_name}"
-            {
-              echo "DATABASE_URL=$DATABASE_URL"
-              echo "POSTGRES_CONTAINER=$pg_container"
-            } >> "$GITHUB_ENV"
-            for _attempt in $(seq 1 10); do
-              if pg_isready -h localhost -U postgres; then
-                break
-              fi
-              sleep 1
-            done
-          else
-            echo "::error::PostgreSQL setup requires Homebrew or apt-get"
-            exit 1
+          pg_container="voucha-postgres-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
           fi
-
+          docker run -d \
+            --name "$pg_container" \
+            -e POSTGRES_DB=postgres \
+            -e POSTGRES_HOST_AUTH_METHOD=trust \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_INITDB_ARGS="-c max_connections=300" \
+            -p "127.0.0.1::5432" \
+            pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+          PGPORT=$(docker port "$pg_container" 5432 | cut -d: -f2)
+          if [ -z "$PGPORT" ]; then echo "::error::Failed to retrieve Postgres host port from docker"; exit 1; fi
+          export PGHOST=localhost
+          export PGPORT
+          export PGUSER=postgres
+          source "$SMOKE_WORKTREE/dev/lib/worktree-resource-env.sh"
+          smoke_db_name=$(worktree_resource_owned_db_name "$SMOKE_WORKTREE")
+          export DATABASE_URL="postgres://postgres@localhost:${PGPORT}/${smoke_db_name}"
+          echo "DATABASE_URL=$DATABASE_URL" >> "$GITHUB_ENV"
           for _attempt in $(seq 1 10); do
             if pg_isready; then
               break
@@ -156,30 +96,3 @@ jobs:
           S3_BUCKET_IMAGE_UPLOADS: initialize-smoke-image-uploads
         timeout-minutes: 5
         run: cd "$SMOKE_WORKTREE" && ./dev/initialize web
-      - name: Cleanup
-        if: always()
-        timeout-minutes: 5
-        run: |
-          set +e
-          if [ -n "${SMOKE_WORKTREE:-}" ] && [ -f "$SMOKE_WORKTREE/.env" ]; then
-            source "$SMOKE_WORKTREE/.env"
-          fi
-
-          if [ -n "${VALKEY_CONTAINER:-}" ] && [[ "$VALKEY_CONTAINER" == voucha-valkey-* ]]; then
-            docker rm -f "$VALKEY_CONTAINER" 2>/dev/null || true
-          fi
-          if [ -n "${POSTGRES_CONTAINER:-}" ] && [[ "$POSTGRES_CONTAINER" == voucha-postgres-* ]]; then
-            docker rm -f "$POSTGRES_CONTAINER" 2>/dev/null || true
-          fi
-
-          if [ -n "${DATABASE_URL:-}" ]; then
-            DB="${DATABASE_URL##*/}"; DB="${DB%%\?*}"
-            if [[ "$DB" == voucha-* ]] && command -v dropdb >/dev/null 2>&1; then
-              dropdb "$DB" 2>/dev/null || true
-            fi
-          fi
-
-          if [ -n "${SMOKE_WORKTREE:-}" ]; then
-            git worktree remove --force "$SMOKE_WORKTREE" 2>/dev/null || true
-          fi
-          git worktree prune 2>/dev/null || true

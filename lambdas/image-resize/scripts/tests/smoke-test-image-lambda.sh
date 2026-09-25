@@ -11,9 +11,6 @@ REPO_ROOT="$(cd "$LAMBDAS_DIR/.." && pwd)"
 LAMBDA_OUTPUT_LOG="${TMPDIR:-/tmp}/voucha-image-lambda-smoke-$$.log"
 LAMBDA_PID=''
 MAX_PORT_BIND_ATTEMPTS=2
-# Captured once, before any per-attempt override below, so a reallocation retry never
-# compounds this path onto itself.
-BASE_DIAGNOSTICS_DIR="${BROWSER_PORT_DIAGNOSTICS_DIR:-}"
 
 stop_lambda() {
   if [ -z "$LAMBDA_PID" ]; then
@@ -43,18 +40,8 @@ for attempt in $(seq 1 "$MAX_PORT_BIND_ATTEMPTS"); do
 
   : > "$LAMBDA_OUTPUT_LOG"
 
-  env_args=(
-    "IMAGE_LAMBDA_PORT=$IMAGE_LAMBDA_PORT"
-    "S3_BUCKET_IMAGES=test-images"
-    "S3_BUCKET_RENDERS=test-renders"
-  )
-  if [ -n "$BASE_DIAGNOSTICS_DIR" ]; then
-    # Nest per script-attempt so a reallocation retry never overwrites the previous
-    # attempt's bind-time evidence written under the same base directory.
-    env_args+=("BROWSER_PORT_DIAGNOSTICS_DIR=$BASE_DIAGNOSTICS_DIR/smoke-attempt-$attempt")
-  fi
-
-  env "${env_args[@]}" node "$LAMBDAS_DIR/dev-server.mts" </dev/null > "$LAMBDA_OUTPUT_LOG" 2>&1 &
+  env "IMAGE_LAMBDA_PORT=$IMAGE_LAMBDA_PORT" S3_BUCKET_IMAGES=test-images S3_BUCKET_RENDERS=test-renders \
+    node "$LAMBDAS_DIR/dev-server.mts" </dev/null > "$LAMBDA_OUTPUT_LOG" 2>&1 &
   LAMBDA_PID=$!
 
   HEALTH_STATUS=000

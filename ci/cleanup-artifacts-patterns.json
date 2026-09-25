@@ -6,7 +6,6 @@
     "docs-*",
     "storybook-*",
     "next-static-*",
-    "browser-port-diagnostics-*",
     "web-build-timings-*",
     "playwright-junit-*",
     "playwright-credentialed-junit",

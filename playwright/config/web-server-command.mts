@@ -1,19 +1,8 @@
 import type { ReporterDescription } from '@playwright/test'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-const allocatorPath = join(repoRoot, 'ci', 'allocate-browser-safe-ports.py')
 
 export function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`
-}
-
-export function withHeldPortRelease(port: string, command: string): string {
-  const holdDir = process.env.PORT_HOLD_DIR
-  if (!holdDir) return command
-  const release = `python3 ${shellQuote(allocatorPath)} --release ${shellQuote(port)} --hold-dir ${shellQuote(holdDir)}`
-  return `${release} && ${command}`
 }
 
 export function definedEnv(source: NodeJS.ProcessEnv): Record<string, string> {

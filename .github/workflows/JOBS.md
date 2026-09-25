@@ -92,7 +92,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ghcr-cleanup.yml`                  | `cleanup`                       | job    | `ubuntu-slim`                         | 14            |
 | `gitleaks.yml`                      | `gitleaks`                      | job    | `ubuntu-slim`                         | 5             |
 | `harness-dispatch.yml`              | `dispatch`                      | job    | `ubuntu-latest`                       | 8             |
-| `initialize-smoke-test.yml`         | `initialize-smoke-test`         | job    | `ubuntu-latest`                       | 30            |
+| `initialize-smoke-test.yml`         | `initialize-smoke-test`         | job    | `ubuntu-latest`                       | 25            |
 | `label-pr.yml`                      | `label`                         | job    | `ubuntu-slim`                         | 5             |
 | `lint-links.yml`                    | `lint-links`                    | job    | `ubuntu-slim`                         | 10            |
 | `main-backend.yml`                  | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
@@ -150,8 +150,8 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-backend-unit.yml`            | `prep`                          | job    | `ubuntu-latest`                       | 8             |
 | `tests-cloudflare-worker.yml`       | `cloudflare-worker-tests`       | job    | `ubuntu-latest`                       | 17            |
 | `tests-lambdas.yml`                 | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 37            |
-| `tests-playwright-credentialed.yml` | `playwright-credentialed-tests` | job    | `ubuntu-latest`                       | 25            |
-| `tests-playwright.yml`              | `playwright-tests`              | matrix | `ubuntu-latest`                       | 35            |
+| `tests-playwright-credentialed.yml` | `playwright-credentialed-tests` | job    | `ubuntu-latest`                       | 20            |
+| `tests-playwright.yml`              | `playwright-tests`              | matrix | `ubuntu-latest`                       | 30            |
 | `tests-playwright.yml`              | `select`                        | job    | `ubuntu-latest`                       | 20            |
 | `tests-portability.yml`             | `portability-linux`             | job    | `ubuntu-latest`                       | 17            |
 | `tests-portability.yml`             | `portability-macos`             | job    | `macos-latest`                        | 17            |

@@ -10,21 +10,11 @@ type Workflow = {
         env?: Record<string, string>
         name?: string
         run?: string
-        shell?: string
         uses?: string
       }>
     }
   >
 }
-
-const trustedTreeRestoreCommand = `rm -f -- .git/index
-git config --worktree --unset-all core.sparseCheckout || true
-git config --worktree --unset-all core.sparseCheckoutCone || true
-git config --unset-all core.sparseCheckout || true
-git config --unset-all core.sparseCheckoutCone || true
-git read-tree --empty
-git reset --hard HEAD
-`
 
 function readWorkflow(): Workflow {
   return load(readFileSync('.github/workflows/initialize-smoke-test.yml', 'utf8')) as Workflow
@@ -41,36 +31,13 @@ function workflowStep(name: string) {
 }
 
 describe('initialize-smoke-test workflow', () => {
-  it('clears repository and worktree sparse-checkout state before restoring the root tree', () => {
-    const run = stepRun('Restore checked-out tree')
-
-    expect(run).toContain('git config --worktree --unset-all core.sparseCheckout || true')
-    expect(run).toContain('git config --worktree --unset-all core.sparseCheckoutCone || true')
-    expect(run).toContain('git config --unset-all core.sparseCheckout || true')
-    expect(run).toContain('git config --unset-all core.sparseCheckoutCone || true')
-  })
-
-  it('repairs the checkout before consuming tracked files', () => {
-    const steps = readWorkflow().jobs?.['initialize-smoke-test']?.steps ?? []
-    const checkoutIndex = steps.findIndex(step => step.uses?.startsWith('actions/checkout@'))
-
-    expect(checkoutIndex).toBeGreaterThanOrEqual(0)
-    expect(steps[checkoutIndex + 1]).toEqual({
-      name: 'Restore checked-out tree',
-      shell: 'bash',
-      run: trustedTreeRestoreCommand,
-    })
-  })
-
-  it('materializes the linked worktree from the trusted tree with a complete index', () => {
+  it('initializes inside a linked worktree so dev resources get worktree-scoped names', () => {
     const run = stepRun('Prepare disposable worktree')
-    const create = run.indexOf('git worktree add --detach "$smoke_worktree" HEAD')
-    const restore = run.indexOf('git -C "$smoke_worktree" reset --hard HEAD')
 
-    expect(create).toBeGreaterThanOrEqual(0)
-    expect(restore).toBeGreaterThan(create)
-    expect(run).toContain('rm -f -- "$smoke_index"')
-    expect(run).toContain('git -C "$smoke_worktree" read-tree --empty')
+    expect(run).toContain('git worktree add --detach "$smoke_worktree" HEAD')
+    expect(run).toContain('if [ ! -f "$smoke_worktree/.git" ]; then')
+    expect(run).toContain('*/worktrees/*) ;;')
+    expect(run).toContain('echo "SMOKE_WORKTREE=$smoke_worktree" >> "$GITHUB_ENV"')
   })
 
   it('activates the .nvmrc Node and then pnpm before initialize runs', () => {
@@ -97,7 +64,7 @@ describe('initialize-smoke-test workflow', () => {
     expect(step?.run).toBe(run)
   })
 
-  it('uses the docker-created postgres role for apt-based Postgres setup', () => {
+  it('uses the docker-created postgres role for Postgres setup', () => {
     const run = stepRun('Ensure PostgreSQL is available')
 
     expect(run).toContain('export PGUSER=postgres')

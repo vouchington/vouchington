@@ -68,5 +68,5 @@ explicitly in those contexts.
 
 Test setup also clears Next.js runtime output and Wrangler/Miniflare state before starting
 servers. This is stale-cache prevention: old `.next` output or persisted worker cache can
-produce false failures such as hydration mismatches or cached stale HTML. Persistent runners may
+produce false failures such as hydration mismatches or cached stale HTML. Local checkouts may
 preserve `web/.next/cache` as build-performance state; it is never treated as runtime output.

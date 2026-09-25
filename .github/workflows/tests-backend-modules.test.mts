@@ -49,7 +49,7 @@ describe('backend module test workflow', () => {
     )
   })
 
-  it('never round-trips the Vite transform cache through actions/cache on the self-hosted runner', () => {
+  it('never round-trips the Vite transform cache through actions/cache', () => {
     expect(workflow).not.toContain('Restore Vite transform cache')
     expect(workflow).not.toContain('Save Vite transform cache')
     expect(workflow).not.toContain('.cache/vite/vitest')

@@ -17,9 +17,8 @@ function isolatedGitEnv(): NodeJS.ProcessEnv {
           key !== 'GIT_PREFIX',
       ),
     ),
-    // Runner-ambient global git identity is not guaranteed (and, on a shared self-hosted fleet,
-    // not even stable within one run) — pin author/committer explicitly so `git commit` never
-    // depends on it.
+    // Runner-ambient global git identity is not guaranteed — pin author/committer explicitly
+    // so `git commit` never depends on it.
     GIT_AUTHOR_NAME: 'Codex Hooks Test',
     GIT_AUTHOR_EMAIL: 'codex-hooks-test@example.test',
     GIT_COMMITTER_NAME: 'Codex Hooks Test',

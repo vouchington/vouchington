@@ -97,11 +97,8 @@ absent, so the job succeeds gracefully in partial-credential environments. Run l
 The selector asks `no-mistakes` to compare `origin/<GITHUB_BASE_REF>...HEAD`. Version 0.34+ streams
 that revision diff directly into the planner, preserving full hunks, rename/delete facts, and
 Playwright coverage hints without a fixed in-memory patch buffer or filename-only degradation.
-The `select` job refreshes the base remote-tracking ref via `clean-workspace` with `deepen: 'true'`,
-which unshallows once and wraps the authenticated fetch in a 3-attempt retry. If the revision
-cannot be resolved, `no-mistakes` returns a stable Git diagnostic and the selector fails open to
-the full suite. Do **not** replace this with a bare `git fetch origin main` step — that updates only
-`FETCH_HEAD`, bypasses retry, and skips the hardened authenticated fetch path in `clean-workspace`.
+The `select` job checks out full history (`fetch-depth: 0`). If the revision cannot be resolved,
+`no-mistakes` returns a stable Git diagnostic and the selector fails open to the full suite.
 
 ### Selected-file transport contract
 

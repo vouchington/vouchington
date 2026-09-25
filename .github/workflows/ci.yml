@@ -29,7 +29,7 @@ jobs:
       contents: read
 
   # Area-gated static gates (typecheck/depcruise/build/smoke) lifted off the
-  # per-area Vitest jobs onto the bare self-hosted fleet. Gated on
+  # per-area Vitest jobs into their own jobs. Gated on
   # detect-changes plus select-ci topology outputs: these steps aren't Vitest and must
   # still run on a backend-only or web-only change even when no test file was
   # selected. See .github/workflows/checks-static.yml.

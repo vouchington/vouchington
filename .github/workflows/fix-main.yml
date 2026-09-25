@@ -309,7 +309,7 @@ jobs:
           }
 
           # The age check happens inside jq (fromdateiso8601/now) rather than shell `date` arithmetic:
-          # `date -d`/`date -j` differ between GNU and BSD, and the self-hosted fleet includes macOS hosts.
+          # `date -d`/`date -j` differ between GNU and BSD, and workflow scripts must also run on macOS.
           # `fromdateiso8601` is resolved by gojq, the jq processor `gh` bundles for --jq, not the host's
           # system jq — so no separate jq install/version floor applies. This whole step is generated from
           # ci/source-run-guard-shell.mts, which interpolates MAX_SOURCE_RUN_AGE_MS from
@@ -331,7 +331,7 @@ jobs:
           IFS=$'\t' read -r actual_repo actual_id actual_attempt actual_status actual_conclusion actual_fresh \
             <<< "$source_state"
 
-          # Case-insensitive, portable comparison (no ${var,,}: the self-hosted fleet includes macOS hosts
+          # Case-insensitive, portable comparison (no ${var,,}: workflow scripts must also run on macOS,
           # whose /bin/bash is 3.2, which predates bash 4's lowercase parameter expansion).
           actual_repo_lower="$(printf '%s' "$actual_repo" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
           expected_repo_lower="$(printf '%s' "$GITHUB_REPOSITORY" | LC_ALL=C tr '[:upper:]' '[:lower:]')"

@@ -133,24 +133,6 @@ jobs:
       - name: Smoke test image lambda
         run: ./lambdas/image-resize/scripts/tests/smoke-test-image-lambda.sh
         timeout-minutes: 2
-        env:
-          # Same directory the upload step below globs, computed with the identical
-          # expression so the two never diverge. The smoke script nests a per-attempt
-          # subdirectory under it and passes it to lambdas/dev-server.mts's
-          # listenWithRetry, which captures bind-time collision evidence at the moment of
-          # EADDRINUSE, while the process holding the port is still alive.
-          BROWSER_PORT_DIAGNOSTICS_DIR: ${{ runner.temp }}/browser-port-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
-      - name: Upload browser port diagnostics
-        if: always()
-        continue-on-error: true
-        timeout-minutes: 2
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: browser-port-diagnostics-image-lambda-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/browser-port-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
-          if-no-files-found: warn
-          overwrite: true
-          retention-days: 1
 
   static-cloudflare:
     if: inputs.cloudflare-worker

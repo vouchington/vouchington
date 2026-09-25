@@ -3,11 +3,9 @@ import {
   hasBackendCredentialedVitestFailure,
   hasBackendCredentialedVitestStarted,
   hasBackendUnitVitestFailure,
-  hasGenericFailureSignal,
   hasMigrationFailureSignal,
   hasNextBuildFailureSignal,
   hasPlaywrightFailureSignal,
-  hasRunnerShutdownMarkers,
   hasSmokeTestFailureSignal,
   hasStorybookVitestStarted,
   hasToolingVitestStarted,
@@ -44,14 +42,6 @@ interface ConsumerEntry {
   isConsumerFailure: (log: string) => boolean
 }
 
-function hasPlaywrightSelectorFailure(log: string): boolean {
-  const cleanWorkspaceStart = log.indexOf('##[group]Run ./.github/actions/clean-workspace')
-  if (cleanWorkspaceStart === -1) return true
-  const nextStep = log.indexOf('##[group]Run ', cleanWorkspaceStart + 1)
-  const cleanWorkspaceLog = log.slice(cleanWorkspaceStart, nextStep === -1 ? undefined : nextStep)
-  return !hasRunnerShutdownMarkers(cleanWorkspaceLog) || hasGenericFailureSignal(cleanWorkspaceLog)
-}
-
 const consumers: ConsumerEntry[] = [
   {
     matches: name => backendUnitShardPattern.test(name),
@@ -60,10 +50,6 @@ const consumers: ConsumerEntry[] = [
   {
     matches: name => name === backendSmokeJobName,
     isConsumerFailure: log => hasMigrationFailureSignal(log) || hasSmokeTestFailureSignal(log),
-  },
-  {
-    matches: name => name === playwrightSelectJobName,
-    isConsumerFailure: hasPlaywrightSelectorFailure,
   },
   {
     matches: name => name === backendCredentialedJobName,

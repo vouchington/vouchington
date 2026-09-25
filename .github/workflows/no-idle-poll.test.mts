@@ -24,7 +24,7 @@ function readWorkflow(path: string): Workflow {
 describe('no idle-poll anti-pattern', () => {
   it('has no jobs that idle-poll a sibling workflow via gh run list', () => {
     // Idle-polling (gh run list --workflow ... --commit ... in a loop) ties up a
-    // self-hosted runner for up to 130 min doing nothing but sleeping 20s between checks.
+    // runner for up to 130 min doing nothing but sleeping 20s between checks.
     // Cross-workflow ordering must be expressed as native needs: dependencies within
     // a single workflow; the root cause (shared state) must be eliminated instead.
     for (const path of workflowPaths) {

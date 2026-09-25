@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Resolve a published GHA script, then exec it. Used before pnpm install, when
-# preserved node_modules may still be an older vouchington-tooling that lacks
-# the extracted script.
+# Resolve a published GHA script, then exec it. Usable before pnpm install:
+# it falls back from the installed package to pnpm dlx, then to a
+# lockfile-integrity-checked registry download.
 # usage: exec-vouchington-gha.sh <cli-command> <scripts/gha/file.sh> [args...]
 set -euo pipefail
 if [ "$#" -lt 2 ]; then
@@ -19,26 +19,14 @@ fail() {
   exit 1
 }
 
-use_packaged=1
-use_dlx=1
-if [ "${GITHUB_ACTIONS:-}" = "true" ] && [ "$cmd" = "clean-workspace" ]; then
-  # Do not exec preserved node_modules, the pnpm store, or dlx cache before the
-  # trust gate. Persistent runners may retain a poisoned cached CLI even when
-  # the workspace cleaner has removed the checked-out dependency tree.
-  use_packaged=0
-  use_dlx=0
+packaged="$(bash "$here/vouchington-tooling-script.sh" "$relative" 2>/dev/null || true)"
+if [ -z "${packaged:-}" ] || [ ! -f "$packaged" ]; then
+  if [ -f "$repo/node_modules/vouchington-tooling/$relative" ]; then
+    packaged="$repo/node_modules/vouchington-tooling/$relative"
+  fi
 fi
-
-if [ "$use_packaged" = "1" ]; then
-  packaged="$(bash "$here/vouchington-tooling-script.sh" "$relative" 2>/dev/null || true)"
-  if [ -z "${packaged:-}" ] || [ ! -f "$packaged" ]; then
-    if [ -f "$repo/node_modules/vouchington-tooling/$relative" ]; then
-      packaged="$repo/node_modules/vouchington-tooling/$relative"
-    fi
-  fi
-  if [ -n "${packaged:-}" ] && [ -f "$packaged" ]; then
-    exec bash "$packaged" "$@"
-  fi
+if [ -n "${packaged:-}" ] && [ -f "$packaged" ]; then
+  exec bash "$packaged" "$@"
 fi
 
 read_spec() {
@@ -72,7 +60,7 @@ case "$locked_version" in
   '' | *[!A-Za-z0-9._-]*) fail 'pnpm-lock.yaml has no exact vouchington-tooling version for the root importer' ;;
 esac
 
-if [ "$use_dlx" = "1" ] && command -v pnpm >/dev/null 2>&1 && command -v node >/dev/null 2>&1 &&
+if command -v pnpm >/dev/null 2>&1 && command -v node >/dev/null 2>&1 &&
   pnpm --version >/dev/null 2>&1; then
   exec pnpm dlx --package "vouchington-tooling@${locked_version}" vouchington "$cmd" "$@"
 fi

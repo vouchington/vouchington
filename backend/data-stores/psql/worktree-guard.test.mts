@@ -9,11 +9,7 @@ import {
   isNonMainWorktree,
 } from './worktree-guard.mts'
 
-// On self-hosted runners, /tmp can accumulate stale .git directories across runs.
-// RUNNER_TEMP is runner-scoped and isolated from /tmp, so findRepoRoot won't walk
-// up into a stale /tmp/.git artifact.
-const tempBase = process.env.RUNNER_TEMP || tmpdir()
-const testRoot = mkdtempSync(join(tempBase, 'voucha-worktree-guard-'))
+const testRoot = mkdtempSync(join(tmpdir(), 'voucha-worktree-guard-'))
 
 function makeMainWorktreeDir(): string {
   const dir = mkdtempSync(join(testRoot, 'main-'))
