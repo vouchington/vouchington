@@ -19,4 +19,5 @@ Before adding or changing a Vitest test, fixture, or mock for these hooks, load 
 - Block coarsely, allow precisely. Any block in the command beats an allow. The only allow is a
   single plain merge in an attended Claude session; it needs a positive attended signal, never
   merely the absence of `CI`.
+- Hooks are local: no `gh`, no git network subcommands, no HTTP (`ast-grep-rules/codex-hooks-no-network.yml`).
 - Do not duplicate enforcement another owner has (oxlint `max-lines`, no-mistakes doc size, CI).
