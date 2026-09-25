@@ -402,16 +402,6 @@
           }
         ]
       }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder\" pre-compact"
-          }
-        ]
-      }
     ]
   },
   "enabledPlugins": {

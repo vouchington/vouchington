@@ -77,15 +77,6 @@ describe('dev/tmux-agent-reminder', () => {
     expect(stderr).toBe('')
   })
 
-  it('keeps PreCompact stdout empty for Claude and Codex hook compatibility', () => {
-    const { error, status, stdout, stderr } = runReminder('pre-compact', '%1')
-
-    expect(error).toBeUndefined()
-    expect(status).toBe(0)
-    expect(stdout).toBe('')
-    expect(stderr).toBe('')
-  })
-
   it('treats a cursor pane title as unset and asks for a topic name', () => {
     const { error, status, stdout, stderr } = runReminderWithFakeTmux('user-prompt', 'cursor')
 
