@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createECDH } from 'node:crypto'
+import webpush from 'web-push'
 
 import {
   processReconcilePostNotifications,
@@ -160,10 +160,10 @@ describe('notification push intent processors', () => {
   })
 
   it('hands a claimed intent to the delivery service', async () => {
-    const vapidKeys = createECDH('prime256v1')
-    vapidKeys.generateKeys()
-    vi.stubEnv('WEB_PUSH_PUBLIC_KEY', vapidKeys.getPublicKey().toString('base64url'))
-    vi.stubEnv('WEB_PUSH_PRIVATE_KEY', vapidKeys.getPrivateKey().toString('base64url'))
+    // generateVAPIDKeys zero-pads the private key; raw ECDH keys are sometimes shorter than 32 bytes.
+    const vapidKeys = webpush.generateVAPIDKeys()
+    vi.stubEnv('WEB_PUSH_PUBLIC_KEY', vapidKeys.publicKey)
+    vi.stubEnv('WEB_PUSH_PRIVATE_KEY', vapidKeys.privateKey)
     vi.stubEnv('WEB_PUSH_SUBJECT', 'mailto:tests+push-processor@voucha.ai')
     const recipient = await createTestUserDirect()
     const follower = await createTestUserDirect()
