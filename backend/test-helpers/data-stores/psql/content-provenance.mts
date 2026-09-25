@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { createTestUser } from '../../entities/users.mts'
 
 export type ContentProvenance = {
@@ -84,6 +85,22 @@ export async function insertContentProvenanceOAuthClient(
     )
     RETURNING id`)
   return rows[0]!.id
+}
+
+export async function readViewsReferencingContentProvenance(
+  options: QueryOptions = {},
+): Promise<string[]> {
+  const { rows } = await read<{ view_name: string }>(
+    sql`/* readViewsReferencingContentProvenance */
+      SELECT view_class.relname AS view_name
+      FROM pg_class view_class
+      WHERE view_class.relkind IN ('v', 'm')
+        AND view_class.relnamespace = current_schema()::regnamespace
+        AND strpos(pg_get_viewdef(view_class.oid), 'created_via') > 0
+      ORDER BY view_class.relname`,
+    options,
+  )
+  return rows.map(row => row.view_name)
 }
 
 export async function readConstraintDefinition(name: string): Promise<string | null> {

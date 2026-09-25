@@ -73,7 +73,8 @@ All three stay `NULL` until the clients that fill them ship, so labels stay gene
 
 The migration is `backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql`, and
 [`schema-content-provenance.test.mts`](../../../backend/data-stores/psql/__tests__/schema-content-provenance.test.mts)
-checks every table's columns, constraints, index and trigger, and the OAuth client label columns.
+checks every table's columns, constraints, index and trigger, the OAuth client label columns, and
+that no view references either provenance column.
 
 ## Rollout
 

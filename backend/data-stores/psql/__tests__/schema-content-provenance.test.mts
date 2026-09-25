@@ -5,10 +5,11 @@ import {
   insertContentProvenanceOAuthClient,
   readConstraintDefinition,
   readContentProvenanceCatalog,
+  readViewsReferencingContentProvenance,
   type ContentProvenance,
 } from '../../../test-helpers/data-stores/psql/content-provenance.mts'
 import { createTestUser } from '../../../test-helpers/entities/users.mts'
-import { onGracefulShutdown } from '../index.mts'
+import { beginTransaction, onGracefulShutdown } from '../index.mts'
 
 const CONTENT_TABLES = [
   'communities',
@@ -100,6 +101,18 @@ describe('content provenance schema', () => {
     await expect(fixture.renameList(agentListId)).resolves.toMatchObject({ rowCount: 1 })
   })
 
+  it('keeps provenance out of every view until a reviewed label exposes it', async () => {
+    await expect(readViewsReferencingContentProvenance()).resolves.toEqual([])
+
+    await using transaction = await beginTransaction()
+    const probeView = `content_provenance_probe_${randomUUID().replaceAll('-', '')}`
+    await transaction(`/* createContentProvenanceProbeView */
+      CREATE VIEW ${probeView} AS SELECT id, created_via FROM lists`)
+    await expect(readViewsReferencingContentProvenance({ query: transaction })).resolves.toEqual([
+      probeView,
+    ])
+  })
+
   it('keeps an OAuth client that created content', async () => {
     const fixture = await createContentProvenanceListFixture()
     await fixture.insertList({ createdVia: 'mcp', oauthClientId: fixture.oauthClientId })
@@ -135,9 +148,9 @@ describe('content provenance schema', () => {
     await expect(
       insertContentProvenanceOAuthClient({ verifiedAt: new Date(), verifiedById: staff.id }),
     ).resolves.toEqual(expect.any(String))
-    await expect(
-      insertContentProvenanceOAuthClient({ verifiedAt: new Date() }),
-    ).resolves.toEqual(expect.any(String))
+    await expect(insertContentProvenanceOAuthClient({ verifiedAt: new Date() })).resolves.toEqual(
+      expect.any(String),
+    )
     await expect(
       insertContentProvenanceOAuthClient({ verifiedById: staff.id }),
     ).rejects.toMatchObject({ code: '23514' })

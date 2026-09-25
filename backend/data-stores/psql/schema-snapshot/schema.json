@@ -55749,6 +55749,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_oauth_clients__verified_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_clients__verified_by_id ON public.oauth_clients USING btree (verified_by_id) WHERE (verified_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "verified_by_id",
+              "descending": false,
+              "expression": "verified_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(verified_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "oauth_clients_client_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,

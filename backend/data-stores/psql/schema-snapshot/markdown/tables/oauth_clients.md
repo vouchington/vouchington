@@ -56,6 +56,7 @@ Not partitioned — growth: unbounded.
 
 - `idx_oauth_clients__metadata_url`: `CREATE UNIQUE INDEX idx_oauth_clients__metadata_url ON public.oauth_clients USING btree (metadata_url)`
 - `idx_oauth_clients__owner`: `CREATE INDEX idx_oauth_clients__owner ON public.oauth_clients USING btree (owner_user_id, id) WHERE (owner_user_id IS NOT NULL)`
+- `idx_oauth_clients__verified_by_id`: `CREATE INDEX idx_oauth_clients__verified_by_id ON public.oauth_clients USING btree (verified_by_id) WHERE (verified_by_id IS NOT NULL)`
 - `oauth_clients_client_id_key`: `CREATE UNIQUE INDEX oauth_clients_client_id_key ON public.oauth_clients USING btree (client_id)`
 - `oauth_clients_pkey`: `CREATE UNIQUE INDEX oauth_clients_pkey ON public.oauth_clients USING btree (id)`
 
