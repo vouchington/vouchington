@@ -2,7 +2,6 @@ import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { encryptSecret } from '@modules/token-secrets'
-import { CONFLICT } from '@modules/on-error/error-codes'
 import { isAdminUser } from '@services/users/authorization'
 import { suspendUser } from '@services/users/suspension'
 import type { PrivateUser } from '@services/users/types'
@@ -35,8 +34,9 @@ export async function recordCopyrightRepeatInfringerReviewOutcome(input: {
   outcome: CopyrightRepeatInfringerReviewDecision
 }> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
-  const suspends = input.outcome === 'restrict' || input.outcome === 'terminate'
-  if (suspends) assert(isAdminUser(input.currentUser), 403, 'Forbidden')
+  const suspendingOutcome =
+    input.outcome === 'restrict' || input.outcome === 'terminate' ? input.outcome : null
+  if (suspendingOutcome) assert(isAdminUser(input.currentUser), 403, 'Forbidden')
   assertReviewRationale(input.rationale)
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ account_user_id: string }>(sql`
@@ -47,7 +47,7 @@ export async function recordCopyrightRepeatInfringerReviewOutcome(input: {
   `)
   const review = rows[0]
   assert(review, 404, 'Copyright repeat-infringer review not found')
-  if (suspends) {
+  if (suspendingOutcome) {
     const { rows: operative } = await transaction<{ id: string }>(sql`
       /* recordCopyrightRepeatInfringerReviewOutcome:operative */
       SELECT id FROM copyright_repeat_infringer_incidents
@@ -72,11 +72,11 @@ export async function recordCopyrightRepeatInfringerReviewOutcome(input: {
   `)
   assert(updated[0], 409, 'Copyright repeat-infringer review is already decided')
   await transaction.commit()
-  if (suspends) {
+  if (suspendingOutcome) {
     await suspendUnlessAlreadySuspended(
       input.currentUser,
       review.account_user_id,
-      suspensionReason[input.outcome],
+      suspensionReason[suspendingOutcome],
     )
   }
   return { id: input.reviewId, account_user_id: review.account_user_id, outcome: input.outcome }
@@ -154,12 +154,5 @@ async function suspendUnlessAlreadySuspended(
 }
 
 function isAlreadySuspended(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'status' in error &&
-    error.status === 409 &&
-    'code' in error &&
-    error.code === CONFLICT
-  )
+  return typeof error === 'object' && error !== null && 'status' in error && error.status === 409
 }
