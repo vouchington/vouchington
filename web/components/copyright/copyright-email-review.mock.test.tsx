@@ -1,14 +1,9 @@
 import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  approveCopyrightEmailIntake,
-  admitCopyrightEmailCorrespondence,
-  getCopyrightEmailIntake,
-  listCopyrightEmailIntakes,
-  rejectCopyrightEmailIntake,
-  rejectCopyrightEmailCorrespondence,
-} from '@/lib/api/client/copyright-email-intakes'
-import { resolveCopyrightNoticeTargets } from '@/lib/api/client/copyright-notice-targets'
+  copyrightEmailIntakesClientMock as intakesClient,
+  copyrightNoticeTargetsClientMock as targetsClient,
+} from '@/test-helpers/components/copyright/copyright-email-client-mocks'
 import {
   copyrightEmailIntakeId as intakeId,
   makeCopyrightEmailIntake as makeIntake,
@@ -21,26 +16,16 @@ import { CopyrightEmailReview } from './copyright-email-review'
 
 configure({ testIdAttribute: 'data-pw' })
 
-vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => ({
-  approveCopyrightEmailIntake: vi.fn<VitestLooseMock>(),
-  admitCopyrightEmailCorrespondence: vi.fn<VitestLooseMock>(),
-  getCopyrightEmailIntake: vi.fn<VitestLooseMock>(),
-  listCopyrightEmailIntakes: vi.fn<VitestLooseMock>(),
-  rejectCopyrightEmailIntake: vi.fn<VitestLooseMock>(),
-  rejectCopyrightEmailCorrespondence: vi.fn<VitestLooseMock>(),
-}))
+vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => intakesClient)
+vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => targetsClient)
 
-vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => ({
-  resolveCopyrightNoticeTargets: vi.fn<typeof resolveCopyrightNoticeTargets>(),
-}))
-
-const mockApprove = vi.mocked(approveCopyrightEmailIntake)
-const mockAdmitCorrespondence = vi.mocked(admitCopyrightEmailCorrespondence)
-const mockGet = vi.mocked(getCopyrightEmailIntake)
-const mockList = vi.mocked(listCopyrightEmailIntakes)
-const mockReject = vi.mocked(rejectCopyrightEmailIntake)
-const mockRejectCorrespondence = vi.mocked(rejectCopyrightEmailCorrespondence)
-const mockResolveTargets = vi.mocked(resolveCopyrightNoticeTargets)
+const mockApprove = intakesClient.approveCopyrightEmailIntake
+const mockAdmitCorrespondence = intakesClient.admitCopyrightEmailCorrespondence
+const mockGet = intakesClient.getCopyrightEmailIntake
+const mockList = intakesClient.listCopyrightEmailIntakes
+const mockReject = intakesClient.rejectCopyrightEmailIntake
+const mockRejectCorrespondence = intakesClient.rejectCopyrightEmailCorrespondence
+const mockResolveTargets = targetsClient.resolveCopyrightNoticeTargets
 const otherIntakeId = '019f0000-0000-7000-8000-000000000007'
 
 describe('CopyrightEmailReview', () => {

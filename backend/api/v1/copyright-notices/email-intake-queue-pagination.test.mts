@@ -2,11 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
-import {
-  copyrightStaffEmailIntakeQueueCursorScope,
-  createCopyrightEmailIntake,
-  recordCopyrightEmailParse,
-} from '@services/copyright-notices'
+import { copyrightStaffEmailIntakeQueueCursorScope } from '@services/copyright-notices'
+import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
 
 // Only this file writes copyright email intakes received about 1000 years from now. The staff email
 // queue is global and oldest-first, so a test owns the queue tail only while no later intake exists:
@@ -120,24 +117,7 @@ function reserveFarFutureRows(count: number): number {
 }
 
 async function createParsedIntake(receivedAt: Date): Promise<string> {
-  const sesMessageId = `ses-email-queue-page-${crypto.randomUUID()}`
-  const { intake } = await createCopyrightEmailIntake({
-    sesMessageId,
-    receivedAt,
-    rawStorageKey: `email/${sesMessageId}/original.eml`,
-    rawSha256: Buffer.alloc(32, 8),
-    rawMimeType: 'message/rfc822',
-    rawByteSize: 12,
-  })
-  await recordCopyrightEmailParse(intake, {
-    status: 'succeeded',
-    fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
-    subject: 'Copyright complaint',
-    bodyText: 'This is a copyright complaint.',
-    messageId: `<${crypto.randomUUID()}@example.test>`,
-    replyReferences: [],
-    attachments: [],
-  })
+  const intake = await createParsedCopyrightEmailIntake(receivedAt)
   return intake.id
 }
 

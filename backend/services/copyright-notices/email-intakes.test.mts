@@ -18,6 +18,7 @@ import {
 } from './index.mts'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { getCopyrightEmailIntakeForAgent } from './email-intake-parses.mts'
+import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 
 describe('copyright email intake persistence', () => {
@@ -109,24 +110,7 @@ describe('copyright email intake persistence', () => {
   it('records a moderator rejection once without promoting a public case', async () => {
     const moderatorRecord = await createTestUser()
     const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-    const sesMessageId = `ses-rejected-${crypto.randomUUID()}`
-    const { intake } = await createCopyrightEmailIntake({
-      sesMessageId,
-      receivedAt: new Date(),
-      rawStorageKey: `email/${sesMessageId}/original.eml`,
-      rawSha256: Buffer.alloc(32, 4),
-      rawMimeType: 'message/rfc822',
-      rawByteSize: 12,
-    })
-    await recordCopyrightEmailParse(intake, {
-      status: 'succeeded',
-      fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
-      subject: 'Copyright complaint',
-      bodyText: 'This is a copyright complaint.',
-      messageId: `<${crypto.randomUUID()}@example.test>`,
-      replyReferences: [],
-      attachments: [],
-    })
+    const intake = await createParsedCopyrightEmailIntake()
     const input = {
       currentUser: moderator,
       intakeId: intake.id,

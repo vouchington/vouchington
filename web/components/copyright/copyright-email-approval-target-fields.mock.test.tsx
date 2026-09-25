@@ -1,18 +1,11 @@
 import { useState } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import type { CopyrightNoticeResolvedTarget } from '@/lib/api/client/copyright-notice-targets'
 import {
-  approveCopyrightEmailIntake,
-  admitCopyrightEmailCorrespondence,
-  getCopyrightEmailIntake,
-  listCopyrightEmailIntakes,
-  rejectCopyrightEmailIntake,
-  rejectCopyrightEmailCorrespondence,
-} from '@/lib/api/client/copyright-email-intakes'
-import {
-  resolveCopyrightNoticeTargets,
-  type CopyrightNoticeResolvedTarget,
-} from '@/lib/api/client/copyright-notice-targets'
+  copyrightEmailIntakesClientMock as intakesClient,
+  copyrightNoticeTargetsClientMock as targetsClient,
+} from '@/test-helpers/components/copyright/copyright-email-client-mocks'
 import {
   makeCopyrightEmailIntake,
   makeCopyrightEmailQueuePage,
@@ -21,22 +14,12 @@ import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-mod
 import { CopyrightEmailApprovalTargetFields } from './copyright-email-approval-target-fields'
 import { CopyrightEmailReview } from './copyright-email-review'
 
-vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => ({
-  approveCopyrightEmailIntake: vi.fn<typeof approveCopyrightEmailIntake>(),
-  admitCopyrightEmailCorrespondence: vi.fn<typeof admitCopyrightEmailCorrespondence>(),
-  getCopyrightEmailIntake: vi.fn<typeof getCopyrightEmailIntake>(),
-  listCopyrightEmailIntakes: vi.fn<typeof listCopyrightEmailIntakes>(),
-  rejectCopyrightEmailIntake: vi.fn<typeof rejectCopyrightEmailIntake>(),
-  rejectCopyrightEmailCorrespondence: vi.fn<typeof rejectCopyrightEmailCorrespondence>(),
-}))
+vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => intakesClient)
+vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => targetsClient)
 
-vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => ({
-  resolveCopyrightNoticeTargets: vi.fn<typeof resolveCopyrightNoticeTargets>(),
-}))
-
-const mockResolveTargets = vi.mocked(resolveCopyrightNoticeTargets)
-const mockGet = vi.mocked(getCopyrightEmailIntake)
-const mockList = vi.mocked(listCopyrightEmailIntakes)
+const mockResolveTargets = targetsClient.resolveCopyrightNoticeTargets
+const mockGet = intakesClient.getCopyrightEmailIntake
+const mockList = intakesClient.listCopyrightEmailIntakes
 
 describe('CopyrightEmailApprovalTargetFields', () => {
   it('keeps duplicate recommended URLs as separate target groups', () => {
