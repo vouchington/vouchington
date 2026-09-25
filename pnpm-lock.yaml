@@ -32,8 +32,8 @@ importers:
         specifier: 1.63.0
         version: 1.63.0
       '@redocly/cli':
-        specifier: ^2.51.2
-        version: 2.51.2
+        specifier: ^2.54.2
+        version: 2.54.2
       '@storybook/addon-vitest':
         specifier: ^10.6.0
         version: 10.6.0(@vitest/browser-playwright@5.0.1)(@vitest/browser@5.0.1)(@vitest/runner@4.1.11)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vitest@5.0.1)
@@ -16734,8 +16734,8 @@ packages:
   '@react-email/ui@6.9.5':
     resolution: {integrity: sha512-UvE0yeSQCvdBm9BoEgvZ5vBi8abk02GbRE+4RQjjtxozy66D/O1GbUgK9RdB26+7EqQdOxdwkGLq5CMCiRO96A==}
 
-  '@redocly/cli@2.51.2':
-    resolution: {integrity: sha512-pviW1gfsjCAuIVutmQcihlhlgoivfNzisBIR61EwSSREHGZ08Sbtjp/h/HPDkVavWwdzR/gs2wgHrdXLd6qU1A==}
+  '@redocly/cli@2.54.2':
+    resolution: {integrity: sha512-YQ53kSQV/zpYSdY3WiQvf7JxuVLD8jTEX37YOY6MS+G3tyHDCeONpUkAt6qr9n2/nmGm6m+A+PB/mGFvhkt1uQ==}
     engines: {node: '>=22.12.0 || >=20.19.0 <21.0.0', npm: '>=10'}
     hasBin: true
 
@@ -25734,7 +25734,7 @@ snapshots:
       - react-dom
       - sass
 
-  '@redocly/cli@2.51.2': {}
+  '@redocly/cli@2.54.2': {}
 
   '@reduxjs/toolkit@2.12.0(react-redux@9.3.0(@types/react@19.3.0)(react@19.3.0)(redux@5.0.1))(react@19.3.0)':
     dependencies:
