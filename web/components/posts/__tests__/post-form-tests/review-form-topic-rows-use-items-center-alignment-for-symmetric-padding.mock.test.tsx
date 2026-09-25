@@ -2,16 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import React from 'react'
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 
 import { PostForm } from '../../post-form'
-
-import {
-  expectInputEnterSubmits,
-  expectTextareaCmdEnterSubmits,
-} from '@/test-helpers/form-keyboard'
-
-import type { Post } from '@/types/posts'
 
 const mockRouterPush = vi.fn<VitestLooseMock>()
 
@@ -132,28 +125,6 @@ const VALID_REVIEW_CONTENT =
   'This credit card offers fantastic rewards and I have been using it for over a year now. ' +
   'The annual fee is absolutely worth every penny when you factor in all the benefits available. ' +
   'The customer service team is very helpful and responsive, making it my top recommendation.'
-
-const mockDiscussion: Post = {
-  id: 'post-1',
-  post_type: 'discussion',
-  title: 'Existing Title',
-  markdown: 'Existing content',
-  root_id: null,
-  created_by_id: 'user-1',
-  created_at: '2024-01-15T10:00:00Z',
-  updated_at: '2024-01-15T10:00:00Z',
-  deleted_at: null,
-  deleted_by_id: null,
-  archived_at: null,
-  archived_by_id: null,
-  broadcast: 'everyone',
-  privacy: 'public',
-  is_anonymous: false,
-
-  community_id: null,
-
-  clearance_status: 'approved',
-}
 
 describe('PostForm', () => {
   beforeEach(() => {

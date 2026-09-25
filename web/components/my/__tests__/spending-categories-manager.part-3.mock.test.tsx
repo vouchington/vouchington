@@ -120,8 +120,6 @@ import {
   deleteMySpendingCategory,
 } from '@/lib/api/client'
 
-import { ApiError } from '@/lib/api/error'
-
 import onError from '@/lib/on-error'
 
 import { onSuccess } from '@/lib/on-error/on-success'

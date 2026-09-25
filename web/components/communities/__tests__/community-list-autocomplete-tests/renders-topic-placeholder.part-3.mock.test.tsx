@@ -128,17 +128,9 @@ import { fetchTopics } from '@/lib/api/client/topics'
 
 import { searchRssFeedsClient } from '@/lib/api/client/rss-feeds'
 
-import { fetchPosts } from '@/lib/api/client/posts'
-
-import { fetchHostnames } from '@/lib/api/client/hostnames'
-
 const mockFetchTopics = vi.mocked(fetchTopics)
 
 const mockSearchRssFeeds = vi.mocked(searchRssFeedsClient)
-
-const mockFetchPosts = vi.mocked(fetchPosts)
-
-const mockFetchHostnames = vi.mocked(fetchHostnames)
 
 const AUTOCOMPLETE_WAIT_TIMEOUT = 2000
 
@@ -175,28 +167,6 @@ const baseRssFeed = {
   home_page_url: null,
   hostname: null,
   topic: { id: 'topic-2', name: 'Travel', slug: 'travel', topic_type: 'general' },
-}
-
-const basePost = {
-  id: 'post-1',
-  title: 'Best credit card for travel',
-  post_type: 'discussion' as const,
-  markdown: '',
-  root_id: null,
-  created_by_id: null,
-  created_at: '2024-01-01T00:00:00Z',
-  updated_at: '2024-01-01T00:00:00Z',
-  deleted_at: null,
-  deleted_by_id: null,
-  archived_at: null,
-  archived_by_id: null,
-  broadcast: 'everyone' as const,
-  privacy: 'public' as const,
-  is_anonymous: false,
-
-  community_id: null,
-
-  clearance_status: 'approved' as const,
 }
 
 describe('CommunityListAutocomplete', () => {

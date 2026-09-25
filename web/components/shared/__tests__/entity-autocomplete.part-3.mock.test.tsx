@@ -124,20 +124,6 @@ function renderEntityAutocomplete(
   return { ...result, search, onSelect }
 }
 
-function EntityAutocompleteStoryFixture() {
-  return (
-    <EntityAutocomplete<Item>
-      search={async () => []}
-      getKey={item => item.id}
-      renderItem={item => item.label}
-      onSelect={() => {}}
-      placeholder='Search things...'
-      ariaLabel='Search things'
-      emptyText='No things found.'
-    />
-  )
-}
-
 describe('EntityAutocomplete', () => {
   afterEach(() => {
     vi.useRealTimers()

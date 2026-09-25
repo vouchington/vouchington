@@ -118,13 +118,9 @@ import { fetchTopics } from '@/lib/api/client/topics'
 
 import { fetchPosts } from '@/lib/api/client/posts'
 
-import { fetchUrls } from '@/lib/api/client/urls'
-
 const mockFetchTopics = vi.mocked(fetchTopics)
 
 const mockFetchPosts = vi.mocked(fetchPosts)
-
-const mockFetchUrls = vi.mocked(fetchUrls)
 
 const AUTOCOMPLETE_WAIT_TIMEOUT = 2000
 

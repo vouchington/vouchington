@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 import { PostCard } from '../post-card'
 
-import type { Post, PostMetrics, PostElection } from '@/types/posts'
+import type { Post, PostElection } from '@/types/posts'
 
 import type { PublicUser, User } from '@/types/user'
 
@@ -137,21 +137,6 @@ describe('PostCard', () => {
     community_id: null,
 
     clearance_status: 'approved',
-  }
-
-  const mockMetrics: PostMetrics = {
-    __entity_type: 'post_metrics',
-    id: 'post-1',
-    count: {
-      descendants: 5,
-      children: 3,
-      ancestors: 0,
-    },
-    updated_at: '2024-01-15T10:00:00Z',
-    bookmarks: {
-      follow: 2,
-      save: 1,
-    },
   }
 
   const mockElection: PostElection = {

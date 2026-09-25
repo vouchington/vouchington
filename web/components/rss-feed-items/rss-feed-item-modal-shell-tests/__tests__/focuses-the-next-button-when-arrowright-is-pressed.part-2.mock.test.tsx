@@ -33,10 +33,6 @@ const DEFAULT_PROPS = {
   title: 'Item',
 } as const
 
-const headerDetails = <div data-testid='header-details'>source · date</div>
-
-const actionSlot = <div data-testid='action-slot'>actions</div>
-
 describe('RssFeedItemModalShell', () => {
   beforeEach(() => {
     mockNav.reset()

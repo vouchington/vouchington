@@ -124,42 +124,15 @@ vi.mock(
     }) as unknown as typeof import('sonner'),
 )
 
-import { fetchTopics } from '@/lib/api/client/topics'
-
 import { searchRssFeedsClient } from '@/lib/api/client/rss-feeds'
 
 import { fetchPosts } from '@/lib/api/client/posts'
-
-import { fetchHostnames } from '@/lib/api/client/hostnames'
-
-const mockFetchTopics = vi.mocked(fetchTopics)
 
 const mockSearchRssFeeds = vi.mocked(searchRssFeedsClient)
 
 const mockFetchPosts = vi.mocked(fetchPosts)
 
-const mockFetchHostnames = vi.mocked(fetchHostnames)
-
 const AUTOCOMPLETE_WAIT_TIMEOUT = 2000
-
-const baseTopic = {
-  __entity_type: 'topic' as const,
-  id: 'topic-1',
-  name: 'Chase Sapphire Reserve',
-  slug: 'chase-sapphire-reserve',
-  markdown: '',
-  aliases: [],
-  topic_type: 'card' as const,
-  noindex: false,
-  allow_reviews: true,
-  created_at: '2024-01-01T00:00:00Z',
-  logo_image_id: null,
-  hero_image_id: null,
-  rewards_program_id: null,
-  referral_program_id: null,
-  created_by: { id: 'user-1', display_name: null, display_name_url_id: null },
-  updated_by: { id: 'user-1', display_name: null, display_name_url_id: null },
-}
 
 const baseRssFeed = {
   __entity_type: 'rss_feed' as const,

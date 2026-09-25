@@ -55,12 +55,7 @@ vi.mock(
     }) as unknown as typeof import('@/components/ui/select'),
 )
 
-import {
-  startMyIdentityVerificationCheckout,
-  updateMyIdentityVerificationDisplayPreferences,
-} from '@/lib/api/client/identity-verification'
-
-const mockStart = vi.mocked(startMyIdentityVerificationCheckout)
+import { updateMyIdentityVerificationDisplayPreferences } from '@/lib/api/client/identity-verification'
 
 const mockUpdatePrefs = vi.mocked(updateMyIdentityVerificationDisplayPreferences)
 

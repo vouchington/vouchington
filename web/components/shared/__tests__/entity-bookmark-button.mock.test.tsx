@@ -6,8 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EntityBookmarkButton } from '../entity-bookmark-button'
 
-import { emitBookmarkChange } from '@/hooks/use-bookmark-invalidation'
-
 vi.mock(
   import('@/components/ui/tooltip'),
   () =>

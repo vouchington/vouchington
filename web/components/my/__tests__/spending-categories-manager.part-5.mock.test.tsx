@@ -124,8 +124,6 @@ import { ApiError } from '@/lib/api/error'
 
 import onError from '@/lib/on-error'
 
-import { onSuccess } from '@/lib/on-error/on-success'
-
 const mockCreate = vi.mocked(createMySpendingCategory)
 
 const mockUpdate = vi.mocked(updateMySpendingCategory)
@@ -133,8 +131,6 @@ const mockUpdate = vi.mocked(updateMySpendingCategory)
 const mockDelete = vi.mocked(deleteMySpendingCategory)
 
 const mockOnError = vi.mocked(onError)
-
-const mockOnSuccess = vi.mocked(onSuccess)
 
 const initialCategories: SpendingCategory[] = [
   {

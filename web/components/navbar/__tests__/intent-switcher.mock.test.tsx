@@ -1,7 +1,6 @@
 import type { ReactElement, ReactNode } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { configure, render, screen } from '@testing-library/react'
-import type { User } from '@/types/user'
 import { useAuth } from '@/lib/auth/context'
 import { IntentSwitcher } from '../intent-switcher'
 

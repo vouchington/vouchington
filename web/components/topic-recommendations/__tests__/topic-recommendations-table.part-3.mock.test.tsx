@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { navMockModule } from '@/test-helpers/next-navigation-mock'
 import { TopicRecommendationsTable } from '../topic-recommendations-table'
 
 import type { PostsResponseBody } from '@/types/api-responses'
@@ -10,10 +10,6 @@ import type { PostsResponseBody } from '@/types/api-responses'
 import type { User } from '@/types/user'
 
 let mockCurrentUser: User | null = null
-
-const mockNav = createNavMock()
-const mockRouterRefresh = mockNav.refresh
-const mockRouterPush = mockNav.push
 
 const { mockOnError, mockOnSuccess } = vi.hoisted(() => ({
   mockOnError: vi.fn<VitestLooseMock>(),
@@ -59,15 +55,7 @@ vi.mock(
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
-import {
-  approveTopicRecommendation,
-  updateTopicRecommendation,
-  withdrawTopicRecommendation,
-} from '@/lib/api/client/topic-recommendations'
-
-const mockApprove = vi.mocked(approveTopicRecommendation)
-
-const mockUpdate = vi.mocked(updateTopicRecommendation)
+import { withdrawTopicRecommendation } from '@/lib/api/client/topic-recommendations'
 
 const mockWithdraw = vi.mocked(withdrawTopicRecommendation)
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,7 +12,6 @@ let mockCurrentUser: User | null = null
 
 const mockNav = createNavMock()
 const mockRouterRefresh = mockNav.refresh
-const mockRouterPush = mockNav.push
 
 const { mockOnError, mockOnSuccess } = vi.hoisted(() => ({
   mockOnError: vi.fn<VitestLooseMock>(),
@@ -58,17 +57,9 @@ vi.mock(
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
-import {
-  approveTopicRecommendation,
-  updateTopicRecommendation,
-  withdrawTopicRecommendation,
-} from '@/lib/api/client/topic-recommendations'
+import { approveTopicRecommendation } from '@/lib/api/client/topic-recommendations'
 
 const mockApprove = vi.mocked(approveTopicRecommendation)
-
-const mockUpdate = vi.mocked(updateTopicRecommendation)
-
-const mockWithdraw = vi.mocked(withdrawTopicRecommendation)
 
 const data: PostsResponseBody = {
   results: [{ __entity_type: 'post', id: 'rec-1', ranking: 1, search_vector_ts: null }],

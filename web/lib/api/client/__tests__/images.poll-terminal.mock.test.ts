@@ -11,12 +11,8 @@ vi.mock(
     }) as unknown as typeof import('../instance'),
 )
 
-import { clientApi } from '../instance'
 import { ImageBlockedError, ImageProcessingTimeoutError, pollImageUntilTerminal } from '../images'
-import { ApiError } from '../../error'
 import { makeState, MockEventSource } from '../../../../test-helpers/lib/api/client/images'
-
-const mockGet = vi.mocked(clientApi.get)
 
 describe('images', () => {
   beforeEach(() => {

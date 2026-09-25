@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import CommunityModerationAnalyticsPage, { generateMetadata } from './page'
+import CommunityModerationAnalyticsPage from './page'
 import { ApiError } from '@/lib/api/error'
 import type { ModerationAnalytics } from '@/types/moderation-analytics'
 

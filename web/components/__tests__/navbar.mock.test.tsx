@@ -2,18 +2,16 @@ import type { ReactNode } from 'react'
 
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 import { Navbar as NavbarComponent } from '../navbar'
 
 import type { User } from '@/types/user'
 import { toClientAuthUser, toProfileMenuUser } from '@/lib/auth/client-auth-user'
 
-import { logout } from '@/lib/auth/logout'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { seedMessages } from '@/lib/i18n/use-translations'
 
-import { toast } from 'sonner'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 let mockCurrentUser: User | null = null

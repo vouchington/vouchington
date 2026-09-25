@@ -114,60 +114,11 @@ vi.mock(
     }) as unknown as typeof import('sonner'),
 )
 
-import { fetchTopics } from '@/lib/api/client/topics'
-
-import { fetchPosts } from '@/lib/api/client/posts'
-
 import { fetchUrls } from '@/lib/api/client/urls'
-
-const mockFetchTopics = vi.mocked(fetchTopics)
-
-const mockFetchPosts = vi.mocked(fetchPosts)
 
 const mockFetchUrls = vi.mocked(fetchUrls)
 
 const AUTOCOMPLETE_WAIT_TIMEOUT = 2000
-
-const topicResult = {
-  __entity_type: 'topic' as const,
-  id: 'topic-1',
-  name: 'Chase Sapphire Reserve',
-  slug: 'chase-sapphire-reserve',
-  markdown: '',
-  aliases: [],
-  topic_type: 'card' as const,
-  noindex: false,
-  allow_reviews: true,
-  created_at: '2024-01-01T00:00:00Z',
-  logo_image_id: null,
-  hero_image_id: null,
-  rewards_program_id: null,
-  referral_program_id: null,
-  created_by: { id: 'user-1', display_name: null, display_name_url_id: null },
-  updated_by: { id: 'user-1', display_name: null, display_name_url_id: null },
-}
-
-const postResult = {
-  id: 'post-1',
-  title: 'Best credit card for travel',
-  post_type: 'discussion' as const,
-  markdown: '',
-  root_id: null,
-  created_by_id: null,
-  created_at: '2024-01-01T00:00:00Z',
-  updated_at: '2024-01-01T00:00:00Z',
-  deleted_at: null,
-  deleted_by_id: null,
-  archived_at: null,
-  archived_by_id: null,
-  broadcast: 'everyone' as const,
-  privacy: 'public' as const,
-  is_anonymous: false,
-
-  community_id: null,
-
-  clearance_status: 'approved' as const,
-}
 
 describe('TagAutocomplete', () => {
   afterEach(() => {

@@ -1,15 +1,12 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FollowerShareActions } from '../follower-share-actions'
 
-import { sharePostWithFollowers, sendPostToFollowers } from '@/lib/api/client/posts'
+import { sharePostWithFollowers } from '@/lib/api/client/posts'
 
-import {
-  sendRssFeedItemToFollowers,
-  shareRssFeedItemWithFollowers,
-} from '@/lib/api/client/rss-feeds'
+import { shareRssFeedItemWithFollowers } from '@/lib/api/client/rss-feeds'
 
 import { fetchFollowerUsers } from '@/lib/api/client/users'
 

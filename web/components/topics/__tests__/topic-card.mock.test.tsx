@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/react'
 
 import { TopicCard } from '../topic-card'
 
-import type { Topic, TopicElection, TopicMetrics } from '@/types/topics'
+import type { Topic, TopicMetrics } from '@/types/topics'
 
 import type { User } from '@/types/user'
 
@@ -61,15 +61,11 @@ const nextDynamicMock = vi.hoisted(() => {
 
 vi.mock(import('next/dynamic'), () => nextDynamicMock as unknown as typeof import('next/dynamic'))
 
-// Capture props passed to the vote button for assertions
-let mockLastVoteButtonProps: Record<string, unknown> | null = null
-
 vi.mock(
   import('@/components/votes/score-vote'),
   () =>
     ({
       ScoreVote: (props: Record<string, unknown>) => {
-        mockLastVoteButtonProps = props
         return (
           <div
             data-testid='topic-score-vote'
@@ -182,14 +178,6 @@ describe('TopicCard', () => {
       follow: 150,
     },
     bookmarks__updated_at: '2024-01-15T10:00:00Z',
-  }
-
-  const mockElection: TopicElection = {
-    __entity_type: 'topic_election',
-    id: 'topic-election-1',
-    votes_score_net: 5,
-    votes_count_up: 12,
-    votes_count_down: 7,
   }
 
   it('renders topic name', () => {

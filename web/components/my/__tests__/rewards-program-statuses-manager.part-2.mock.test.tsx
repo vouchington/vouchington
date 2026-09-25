@@ -45,11 +45,7 @@ import {
   deleteMyRewardsProgramStatus,
 } from '@/lib/api/client'
 
-import { ApiError } from '@/lib/api/error'
-
 import onError from '@/lib/on-error'
-
-import { onSuccess } from '@/lib/on-error/on-success'
 
 const mockCreate = vi.mocked(createMyRewardsProgramStatus)
 
@@ -58,8 +54,6 @@ const mockUpdate = vi.mocked(updateMyRewardsProgramStatus)
 const mockDelete = vi.mocked(deleteMyRewardsProgramStatus)
 
 const mockOnError = vi.mocked(onError)
-
-const mockOnSuccess = vi.mocked(onSuccess)
 
 const initialStatuses: RewardsProgramStatus[] = [
   {

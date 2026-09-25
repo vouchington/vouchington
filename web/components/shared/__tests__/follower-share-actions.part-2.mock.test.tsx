@@ -6,12 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FollowerShareActions } from '../follower-share-actions'
 
-import { sharePostWithFollowers, sendPostToFollowers } from '@/lib/api/client/posts'
-
-import {
-  sendRssFeedItemToFollowers,
-  shareRssFeedItemWithFollowers,
-} from '@/lib/api/client/rss-feeds'
+import { sendPostToFollowers } from '@/lib/api/client/posts'
 
 import { fetchFollowerUsers } from '@/lib/api/client/users'
 

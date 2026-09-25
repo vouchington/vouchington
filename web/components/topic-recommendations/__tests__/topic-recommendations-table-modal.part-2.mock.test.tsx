@@ -11,7 +11,6 @@ import type { User } from '@/types/user'
 let mockCurrentUser: User | null = null
 
 const mockNav = createNavMock()
-const mockRouterRefresh = mockNav.refresh
 const mockRouterPush = mockNav.push
 
 const { mockOnError, mockOnSuccess } = vi.hoisted(() => ({
@@ -60,13 +59,10 @@ vi.mock(
 
 import {
   approveTopicRecommendation,
-  rejectTopicRecommendation,
   updateTopicRecommendation,
 } from '@/lib/api/client/topic-recommendations'
 
 const mockApprove = vi.mocked(approveTopicRecommendation)
-
-const mockReject = vi.mocked(rejectTopicRecommendation)
 
 const mockUpdate = vi.mocked(updateTopicRecommendation)
 

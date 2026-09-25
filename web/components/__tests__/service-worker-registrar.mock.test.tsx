@@ -1,9 +1,7 @@
 import { render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getMyWebPushSubscriptionsClient } from '@/lib/api/client/my'
 import { ApiError } from '@/lib/api/error'
 import { clearPushBinding } from '@/lib/push-service-worker'
-import { withWebPushOwnershipLock } from '@/lib/push-ownership-lock'
 import { bootstrapAuthenticatedPushBinding } from '@/lib/push-bootstrap'
 import { ServiceWorkerRegistrar } from '@/components/service-worker-registrar'
 

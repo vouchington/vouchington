@@ -6,10 +6,7 @@ import { TopicRecommendationForm } from '../topic-recommendation-form'
 
 import { ApiError } from '@/lib/api/error'
 
-import {
-  expectInputEnterSubmits,
-  expectTextareaCmdEnterSubmits,
-} from '@/test-helpers/form-keyboard'
+import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
 
 import type { Post } from '@/types/posts'
 
@@ -85,7 +82,6 @@ vi.mock(
 import {
   createTopicRecommendation,
   fetchTopicRecommendationDuplicates,
-  updateTopicRecommendation,
 } from '@/lib/api/client/topic-recommendations'
 
 import { updateMyIdentity } from '@/lib/api/client/my'
@@ -93,8 +89,6 @@ import { updateMyIdentity } from '@/lib/api/client/my'
 const mockCreateTopicRecommendation = vi.mocked(createTopicRecommendation)
 
 const mockFetchTopicRecommendationDuplicates = vi.mocked(fetchTopicRecommendationDuplicates)
-
-const mockUpdateTopicRecommendation = vi.mocked(updateTopicRecommendation)
 
 const mockUpdateMyIdentity = vi.mocked(updateMyIdentity)
 

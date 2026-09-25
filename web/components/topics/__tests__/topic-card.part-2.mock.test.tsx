@@ -61,15 +61,11 @@ const nextDynamicMock = vi.hoisted(() => {
 
 vi.mock(import('next/dynamic'), () => nextDynamicMock as unknown as typeof import('next/dynamic'))
 
-// Capture props passed to the vote button for assertions
-let mockLastVoteButtonProps: Record<string, unknown> | null = null
-
 vi.mock(
   import('@/components/votes/score-vote'),
   () =>
     ({
       ScoreVote: (props: Record<string, unknown>) => {
-        mockLastVoteButtonProps = props
         return (
           <div
             data-testid='topic-score-vote'

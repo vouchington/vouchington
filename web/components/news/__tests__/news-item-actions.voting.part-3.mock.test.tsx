@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 
 import type { ReactNode } from 'react'
 
@@ -179,8 +179,6 @@ vi.mock(import('@/lib/rss-item-nav-context'), () => ({
 }))
 
 import { NewsItemActions } from '../news-item-actions'
-
-import { submitRssFeedItemVote } from '@/lib/api/client/elections'
 
 const MOCK_ITEM: RssFeedItem = makeRssFeedItem({
   id: 'item-1',

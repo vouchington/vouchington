@@ -35,7 +35,7 @@ vi.mock(
     }) as unknown as typeof import('sonner'),
 )
 vi.mock(import('@/lib/on-error'), () => ({
-  default: (err: unknown, options: { fallback: string }) => {
+  default: (_err: unknown, options: { fallback: string }) => {
     toastMock.error(options.fallback)
     return options.fallback
   },

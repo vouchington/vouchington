@@ -30,8 +30,6 @@ mockNav.setPathname('/news')
 
 const leadingAction = <span data-testid='leading'>Show more</span>
 
-const trailingAction = <span data-testid='trailing'>Next</span>
-
 interface ToggleMockProps {
   active?: boolean
   initialActive?: boolean

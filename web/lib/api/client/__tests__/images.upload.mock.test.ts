@@ -13,7 +13,6 @@ vi.mock(
 
 import { clientApi } from '../instance'
 import { ImageBlockedError, POLL_INTERVAL_MS, uploadImageFile } from '../images'
-import { ApiError } from '../../error'
 import {
   flushMicrotasks,
   makeState,

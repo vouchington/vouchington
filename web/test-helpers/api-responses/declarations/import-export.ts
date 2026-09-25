@@ -38,7 +38,7 @@ export const IMPORT_EXPORT_DECLARATIONS = [
   defineWebApiFixture<{ results: ExportTopic[] }>()(
     'native.import-export.topics.export.default',
     nativeImportExportTopicsExportDefault,
-    async context => {
+    async () => {
       const response = await clientFetch('/api/v1/my/export/topics')
       if (!response.ok) throw new Error(`Topic fixture export failed: ${response.status}`)
       return response.json() as Promise<{ results: ExportTopic[] }>

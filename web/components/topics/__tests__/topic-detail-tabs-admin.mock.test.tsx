@@ -1,4 +1,3 @@
-import type React from 'react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { TopicDetailTabs } from '../topic-detail-tabs'
