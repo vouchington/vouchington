@@ -162,7 +162,7 @@
     "picomatch": "^4.0.4",
     "playwright": "1.63.0",
     "playwright-core": "1.63.0",
-    "pr-shepherd": "^0.52.1",
+    "pr-shepherd": "^0.53.1",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "squawk-cli": "2.64.0",

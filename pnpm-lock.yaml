@@ -143,8 +143,8 @@ importers:
         specifier: 1.63.0
         version: 1.63.0
       pr-shepherd:
-        specifier: ^0.52.1
-        version: 0.52.1
+        specifier: ^0.53.1
+        version: 0.53.1
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -20475,10 +20475,6 @@ packages:
     resolution: {integrity: sha512-He9XskOFms62SyAKkLu8CcGcYHAo+BSHSsORI8s4PJH8qZgZY4L4lDfvyN0twvmbpyG+eGrxpyBlskj9d9rJ8A==}
     engines: {node: '>=20.0.0'}
 
-  nodemailer@10.0.3:
-    resolution: {integrity: sha512-h5c8ypcMoOIh44bIcVROvTDbjRdOJX8AXTkxMht2C92HlSjkG+/8kjoqmNPypfjQaVNaUHWyZ3tqs5I3K91F3g==}
-    engines: {node: '>=20.0.0'}
-
   nofilter@3.1.0:
     resolution: {integrity: sha512-l2NNj07e9afPnhAhvgVrCD/oy2Ai1yfLpuo3EpiO1jFTsB4sFz6oIfAfSZyQzVpkZQ9xS8ZS5g1jCBgq4Hwo0g==}
     engines: {node: '>=12.19'}
@@ -20827,8 +20823,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.52.1:
-    resolution: {integrity: sha512-U8t3Pz+Aim4B86GhXRrEHtYQsAUjKtL8WRjM0QosQSMf3FSDdQTM+ltIbm4VKzJkto7lYRmIe961R4IVXLewKA==}
+  pr-shepherd@0.53.1:
+    resolution: {integrity: sha512-f51Kz8dkKXZx9kmX2SsxUrJ3pK88zcXkf8gxuj89QnLad7knLgU7Rsjeh9GVaVmqJ+eOmc0EMX/61Y2fuZLXbg==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -29692,8 +29688,6 @@ snapshots:
 
   nodemailer@10.0.10: {}
 
-  nodemailer@10.0.3: {}
-
   nofilter@3.1.0: {}
 
   normalize-path@3.0.0: {}
@@ -30130,7 +30124,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.52.1:
+  pr-shepherd@0.53.1:
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.0(zod@4.6.5)
       picomatch: 4.0.7
