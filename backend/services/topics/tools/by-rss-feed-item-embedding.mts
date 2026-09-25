@@ -21,7 +21,7 @@ export async function searchTopicsByRssFeedItemEmbedding(
         AND r.bedrock_nova_multimodal_v1_embedding IS NOT NULL
     ) sub
     WHERE dist < 0.75
-    ORDER BY dist
+    ORDER BY dist, id
     LIMIT ${safeLimit}
   `
 

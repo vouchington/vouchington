@@ -1,4 +1,8 @@
-import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
+import {
+  sanitizePromptInjection,
+  sanitizeRssContent,
+  wrapExternalContent,
+} from '@jongleberry/vurst-prompt'
 
 declare const classifierSafeTextBrand: unique symbol
 declare const classifierChoiceKeyBrand: unique symbol
@@ -36,16 +40,24 @@ export async function sanitizeClassifierExternalContent(
   }) as ClassifierSafeText
 }
 
+export type ClassifierExternalContentPart = {
+  content: string
+  isTitle?: boolean
+  /** Route through the RSS-HTML-aware sanitizer instead of plain prompt-injection sanitizing. */
+  isRssHtml?: boolean
+}
+
 /**
  * Multi-part twin of `sanitizeClassifierExternalContent`: sanitizes each part
- * independently (so a title part can pass `isTitle: true` while a body part
- * does not) and wraps the joined result exactly once. Keeps sanitizing and
+ * independently (so a title part can pass `isTitle: true`, or an RSS body
+ * part can route through the HTML-aware sanitizer, while other parts do
+ * not) and wraps the joined result exactly once. Keeps sanitizing and
  * `ClassifierSafeText` brand-creation coupled in this module rather than
  * exposing a wrap-only escape hatch that would let a caller brand
  * already-unsanitized text.
  */
 export async function sanitizeClassifierExternalContentParts(
-  parts: readonly { content: string; isTitle?: boolean }[],
+  parts: readonly ClassifierExternalContentPart[],
   separator: string,
   options: {
     source: string
@@ -54,7 +66,11 @@ export async function sanitizeClassifierExternalContentParts(
   },
 ): Promise<ClassifierSafeText> {
   const sanitizedParts = await Promise.all(
-    parts.map(part => sanitizePromptInjection(part.content, { isTitle: part.isTitle })),
+    parts.map(part =>
+      part.isRssHtml
+        ? sanitizeRssContent(part.content)
+        : sanitizePromptInjection(part.content, { isTitle: part.isTitle }),
+    ),
   )
   return wrapExternalContent(sanitizedParts.join(separator), {
     source: options.source,
