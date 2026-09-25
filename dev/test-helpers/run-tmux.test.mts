@@ -38,11 +38,6 @@ describe('runTmux', () => {
     expect(result.durationMs).toBeLessThan(4000)
   })
 
-  // The "killed beats a trapped exit code" rule (a real harness timeout must be
-  // reported via `killed` even when the child traps the signal and exits with its
-  // own numeric code, e.g. dev/tmux's `trap 'exit 143' TERM`) is a runProcess mapping
-  // concern now, not a runTmux one: see run-process.test.mts.
-
   it('reports a spawn error instead of coercing it to exit code 1', async () => {
     const cwd = join(tmpdir(), 'run-tmux-test-cwd-that-does-not-exist')
 
