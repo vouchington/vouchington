@@ -24366,7 +24366,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(state = 'pending'::text)",
+          "predicate": "(state = ANY (ARRAY['pending'::text, 'claimed'::text]))",
           "primary": false,
           "ready": true,
           "unique": false,
