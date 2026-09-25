@@ -7321,7 +7321,6 @@
             "type": "string"
           }
         },
-        "required": ["web_push_endpoint", "web_push_subscription_id"],
         "type": "object"
       },
       "ManualCrawlTarget": {

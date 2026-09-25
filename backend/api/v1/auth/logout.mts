@@ -9,11 +9,17 @@ import onError from '@modules/on-error'
 import { deleteExactWebPushSubscription } from '@services/notifications'
 import type { Context } from '@jongleberry/api-server'
 import { apiRequestContract } from '../../response-contract.mts'
+import { validateRequestContract } from '../../response-helpers.mts'
 import { readOptionalJsonBody } from './optional-json-body.mts'
 
+// Both fields are optional at the schema level: a body carrying neither (or no JSON body at
+// all) is the normal no-push-cleanup logout. Only a body carrying exactly one of the two is
+// rejected, by the manual pairing assert below -- JSON Schema `required` can't express "both or
+// neither" from this TS type, so that check stays a manual assert after the generated contract
+// validates each present field's type/shape.
 type LogoutRequest = {
-  web_push_endpoint: string
-  web_push_subscription_id: string
+  web_push_endpoint?: string
+  web_push_subscription_id?: string
 }
 
 app.route('/api/v1/auth/logout').post(async ctx => {
@@ -68,6 +74,7 @@ async function parseLogoutPushBinding(ctx: Context) {
     400,
     'logout request body must be an object',
   )
+  validateRequestContract(ctx, 'POST:/api/v1/auth/logout', { body })
   const request = body as LogoutRequest
   const endpoint = request.web_push_endpoint
   const subscriptionId = request.web_push_subscription_id
