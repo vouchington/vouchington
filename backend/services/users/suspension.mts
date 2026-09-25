@@ -86,6 +86,27 @@ export async function unsuspendUser(
   if (!(check[0] as { user_exists: boolean }).user_exists) {
     throw createHttpError(404, 'User not found')
   }
+  const { rows: termination } = await query<{ blocked: boolean }>(sql`
+    /* unsuspendUser:copyrightTermination */
+    SELECT EXISTS (
+      SELECT 1 FROM copyright_repeat_infringer_reviews terminated
+      WHERE terminated.account_user_id = ${userId}
+        AND terminated.outcome = 'terminate'
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_repeat_infringer_reviews reinstated
+          WHERE reinstated.account_user_id = terminated.account_user_id
+            AND reinstated.outcome = 'reinstatement'
+            AND reinstated.outcome_at > terminated.outcome_at
+        )
+    ) AS blocked
+  `)
+  if (termination[0]?.blocked) {
+    throw createCodedError(
+      409,
+      'Copyright termination remains in effect until reinstatement is recorded',
+      CONFLICT,
+    )
+  }
 
   const { rowCount } = await query(sql`/* unsuspendUser */
       UPDATE user_suspensions

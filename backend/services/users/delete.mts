@@ -20,6 +20,7 @@ import {
 } from './delete-profile-pii.mts'
 import type { PrivateUser } from './types.mts'
 import { prepublishImageSurfaceDenial } from '@services/media-delivery-safety'
+import { assertCopyrightEvidenceAllowsDeletion } from './delete-copyright-evidence.mts'
 
 type UserDeletionTarget = {
   id: string
@@ -153,7 +154,9 @@ export async function deleteUser(
   const requestedById = currentUser?.id ?? user.id
 
   await using query = await beginTransaction()
+  // ast-grep-ignore: no-three-sequential-awaits -- the copyright check must follow the deletion lock and precede the privacy fence
   const deletion = await establishUserDeletionRequest(query, user, requestedById)
+  await assertCopyrightEvidenceAllowsDeletion(query, user.id)
   await applyUserDeletionPrivacyFence(query, deletion.request.id, deletion.target, requestedById)
   await query.commit()
 

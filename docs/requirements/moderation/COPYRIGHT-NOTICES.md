@@ -257,6 +257,18 @@ The second operative incident for an account opens a staff review. Opening that 
 suspend or delete the account. Similarity candidates never create an incident. Retention durations
 remain an operator policy and are not stored here.
 
+A copyright reviewer may close that review with `warning` or `no_action`, or record `withdrawn`,
+`duplicate`, or `abusive` on one incident. Each decision stores an encrypted rationale. `restrict`
+and `terminate` require an administrator. Both call the existing account suspension.
+`terminate` makes a later unsuspend refuse until an administrator records `reinstatement`.
+Reinstatement does not itself unsuspend the account. Restrict and terminate also require two
+operative incidents at decision time.
+
+`deleteUser` returns 409 while the account has an operative incident, or an unresolved qualifying
+legal hold on a placement whose post author is that account. A qualifying hold is an assessment
+with an original claimant, the same material, a proceeding kind, a commencement time, and a
+designated-agent receipt, and with no resolution row. An open review alone does not block deletion.
+
 ## Activation gates
 
 Before accepting live notices, the operator must register and publish the actual US designated

@@ -130,6 +130,13 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews': {
     category: 'sensitive',
   },
+  'POST:/api/v1/copyright-repeat-infringer-incidents/:id/dispositions': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-repeat-infringer-reviews/:id/outcomes': { category: 'sensitive' },
+  'POST:/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements': {
+    category: 'sensitive',
+  },
   'GET:/api/v1/admin/moderation-analytics': { category: 'read' },
   'GET:/api/v1/communities/:idOrSlug/moderation-analytics': { category: 'read' },
   'PATCH:/api/v1/communities/:idOrSlug/post-type-settings': { category: 'write' },

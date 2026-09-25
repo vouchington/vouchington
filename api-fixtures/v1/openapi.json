@@ -2832,6 +2832,45 @@
         ],
         "type": "object"
       },
+      "CopyrightRepeatInfringerNoticeAccount": {
+        "additionalProperties": false,
+        "properties": {
+          "account_user_id": {
+            "type": "string"
+          },
+          "incident_id": {
+            "type": "string"
+          },
+          "open_review_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "operative": {
+            "type": "boolean"
+          },
+          "termination_in_effect": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_user_id",
+          "incident_id",
+          "open_review_id",
+          "operative",
+          "termination_in_effect"
+        ],
+        "type": "object"
+      },
+      "CopyrightRepeatInfringerReviewDecision": {
+        "enum": ["no_action", "restrict", "terminate", "warning"],
+        "type": "string"
+      },
       "CopyrightRestrictionRecord": {
         "additionalProperties": false,
         "properties": {
@@ -35957,6 +35996,46 @@
         }
       }
     },
+    "/api/v1/copyright-notices/{id}/repeat-infringer-accounts": {
+      "get": {
+        "operationId": "get_api_v1_copyright-notices_id_repeat-infringer-accounts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_repeat_infringer_accounts": {
+                      "items": {
+                        "$ref": "#/components/schemas/CopyrightRepeatInfringerNoticeAccount"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["copyright_repeat_infringer_accounts"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/copyright-notices/{id}/restrictions/{restrictionId}/reviews": {
       "post": {
         "operationId": "post_api_v1_copyright-notices_id_restrictions_restrictionId_reviews",
@@ -36076,6 +36155,174 @@
                     }
                   },
                   "required": ["availability", "copyright_image_similarity_candidates"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-repeat-infringer-accounts/{accountUserId}/reinstatements": {
+      "post": {
+        "operationId": "post_api_v1_copyright-repeat-infringer-accounts_accountUserId_reinstatements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountUserId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_repeat_infringer_review": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "account_user_id": {
+                          "type": "string"
+                        },
+                        "outcome": {
+                          "const": "reinstatement"
+                        }
+                      },
+                      "required": ["account_user_id", "outcome"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_repeat_infringer_review"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-repeat-infringer-incidents/{id}/dispositions": {
+      "post": {
+        "operationId": "post_api_v1_copyright-repeat-infringer-incidents_id_dispositions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_repeat_infringer_disposition": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "incident_id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["incident_id"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_repeat_infringer_disposition"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-repeat-infringer-reviews/{id}/outcomes": {
+      "post": {
+        "operationId": "post_api_v1_copyright-repeat-infringer-reviews_id_outcomes",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_repeat_infringer_review": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "account_user_id": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "outcome": {
+                          "$ref": "#/components/schemas/CopyrightRepeatInfringerReviewDecision"
+                        }
+                      },
+                      "required": ["account_user_id", "id", "outcome"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_repeat_infringer_review"],
                   "type": "object"
                 }
               }
