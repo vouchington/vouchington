@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { deleteTotpAuthenticatorWithMfaProtection } from '@services/mfa'
 import { assertNotSuspended } from '@services/users/suspension'
 import {
@@ -28,6 +28,7 @@ app.route('/api/v1/auth/totp').post(async (ctx: Context) => {
   assertNotSuspended(currentUser)
 
   const body = (await ctx.request.json('100kb')) as { name?: string }
+  validateRequestContract(ctx, 'POST:/api/v1/auth/totp', { body })
   const name = (body.name ?? 'My Authenticator').trim()
 
   const setupData = await createTotpAuthenticator(currentUser.id, name)
@@ -46,6 +47,7 @@ app.route('/api/v1/auth/totp/setup/verification').post(async (ctx: Context) => {
     authenticator_id?: string
     code?: string
   }
+  validateRequestContract(ctx, 'POST:/api/v1/auth/totp/setup/verification', { body })
   ctx.assert(body.authenticator_id, 422, 'authenticator_id is required')
   ctx.assert(body.code, 422, 'code is required')
 
@@ -87,6 +89,7 @@ app.route('/api/v1/auth/totp/:id').patch(async (ctx: Context) => {
   ctx.assert(ctx.params.id, 400, 'id required')
 
   const body = (await ctx.request.json('100kb')) as { name?: string }
+  validateRequestContract(ctx, 'PATCH:/api/v1/auth/totp/:id', { body })
   const name = (body.name ?? '').trim()
   ctx.assert(name.length > 0 && name.length <= 100, 422, 'name must be 1–100 characters')
 
@@ -105,6 +108,7 @@ app.route('/api/v1/auth/totp/:id').delete(async (ctx: Context) => {
   let reAuthToken: string | undefined
   if (ctx.request.is('json')) {
     const body = (await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string }
+    validateRequestContract(ctx, 'DELETE:/api/v1/auth/totp/:id', { body })
     reAuthToken = body.re_auth_token
   }
 
