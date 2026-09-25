@@ -49,6 +49,10 @@
       "classification": "mixed-discovery-sql"
     },
     {
+      "path": "backend/services/entity-relations/post-access.mts",
+      "classification": "mixed-discovery-sql"
+    },
+    {
       "path": "backend/services/platform-stats/get-platform-stats.mts",
       "classification": "public-view"
     },
@@ -206,6 +210,13 @@
       "classification": "raw-hydrator",
       "reason": "Search assembler delegates its public predicate to base-filters.",
       "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/entity-relations/build-select-query.mts",
+      "classification": "raw-hydrator",
+      "reason": "Relation read assembler delegates its subject and object post predicates to post-access.",
+      "owner_path": "backend/services/entity-relations/post-access.mts",
       "owner_classification": "mixed-discovery-sql"
     },
     {

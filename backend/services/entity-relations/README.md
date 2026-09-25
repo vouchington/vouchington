@@ -45,6 +45,7 @@ It will just not be used by the app anymore.
 - `delete.mts` — soft delete entity relations
 - `query.mts` — query relations with JOINed object data
 - `build-select-query.mts` — builds the viewer-scoped relation read (post access filters, creator masking, cursors)
+- `post-access.mts` — the subject and object post filters for reads, and `getRelatablePostIds` for a write's access check
 - `object-projection.mts` — the explicit `object_data` column list for each readable object type
 - `viewer.mts` — `EntityRelationViewer` (`system`, `anonymous`, or `user` with a staff role) and the access rules derived from it
 - `mentioned.mts` — query existing "mentioned" relations for a post
@@ -146,9 +147,16 @@ Every read takes a required `viewer`. Request handlers build it with `entityRela
 from `@services/users`, since that package depends on this one. Trusted internal jobs pass
 `SYSTEM_ENTITY_RELATION_VIEWER`.
 
-- **Post access:** when the subject or the object is a post, the query applies the same direct post
-  eligibility filter as feeds (`buildDirectPostEligibilityFilter`). Rows the viewer cannot read are
-  filtered in SQL, so `limit + 1` page detection stays exact. `system` readers skip this filter.
+- **Post access:** `post-access.mts` owns the post filters, and `system` readers skip them. Rows
+  the viewer cannot read are filtered in SQL, so `limit + 1` page detection stays exact.
+  - A subject post follows direct access (`buildDirectPostEligibilityFilter`). Its author also
+    passes, so they can relate content to their own post while a community reviews it.
+  - Listed object posts follow discovery rules, like other listings
+    (`buildViewerPostDiscoveryEligibilityFilter`, or `buildPublicPostEligibilityFilter` when signed
+    out).
+  - Object posts named by `objectIds` follow direct access, like opening a link.
+  - `getRelatablePostIds` checks a write's posts against the same subject and named-object filters
+    on the primary, so a relation that passes the check is visible when read back.
 - **Relation creator:** `created_by_id` is `null` when the creator is the anonymous author of the
   subject or object post. The viewer's own relations, administrators, and `system` readers still
   see the creator, matching `maskAnonymousPost`.

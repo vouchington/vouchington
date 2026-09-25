@@ -212,9 +212,10 @@ app
     if (parsed.metadata.subject_type === 'remote_actor') {
       ctx.assert(false, 403, 'remote_actor relations cannot be created via this endpoint')
     }
+    const viewer = entityRelationViewerFor(currentUser)
     await assertCanViewRelatedPosts(
       ctx,
-      currentUser,
+      viewer,
       parsed.metadata,
       parsed.subjectId.id,
       parsed.objectIds.map(object => object.id),
@@ -317,13 +318,10 @@ app
       relations[0]!.subject_id,
       parsed.metadata.predicate,
       parsed.metadata.object_type,
-      {
-        viewer: entityRelationViewerFor(currentUser),
-        readOnly: false,
-        objectIds: [relations[0]!.object_id],
-      },
+      { viewer, readOnly: false, objectIds: [relations[0]!.object_id] },
     )
-    ctx.assert(responseRelation, 500, 'Failed to create entity relation')
+    // assertCanViewRelatedPosts applies the read-back's post filters, so a miss is a bug.
+    if (!responseRelation) throw new Error('A created entity relation is hidden from its creator')
 
     ctx.setStatus(201)
     ctx.json({ relation: withoutEntityRelationCursorMetadata(responseRelation) })

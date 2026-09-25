@@ -23,9 +23,10 @@
       "created_by_id": "user-abc",
       "id": "relation-post-related-post-1",
       "object_data": {
+        "declared_language": "en",
         "id": "post-2",
+        "lingua_rs_detected_language": "en",
         "post_type": "discussion",
-        "slug": "related-post",
         "title": "Related Post"
       },
       "object_id": "post-2",

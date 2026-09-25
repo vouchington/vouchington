@@ -47,7 +47,9 @@ Response: `{ results: [...], page_info: {...}, entity_relations: {...}, entity_r
 
 Visibility follows the reader:
 
-- Relations whose subject or object post the reader cannot view are left out.
+- Relations are left out when the reader cannot open the subject post, or when the object post
+  would not appear in the reader's listings (for example an archived or pending post).
+- The subject post's author sees its relations while a community reviews the post.
 - `created_by_id` is `null` when the creator is the anonymous author of the subject or object post, unless the reader is that author or an administrator.
 - `object_data` holds only the public fields for its type. See [Viewer and projection](../../../services/entity-relations/README.md#viewer-and-projection).
 
@@ -65,7 +67,7 @@ and vote as moderation. Self-tagging and arbitrary topics are rejected.
 { "objectId": "<uuid>" }
 ```
 
-When the subject or object is a post the caller cannot view, or its ID is not a UUID, the route returns `404`.
+When the subject or object is a post the caller cannot open, or its ID is not a UUID, the route returns `404`. Authors may relate content to their own post while a community reviews it. The check reads the primary, so a post created moments earlier passes.
 
 **Response:** `201 Created` with `{ relation: { ... } }`. The relation is read back through the same viewer-scoped query as GET, so it has the same projection and creator masking.
 

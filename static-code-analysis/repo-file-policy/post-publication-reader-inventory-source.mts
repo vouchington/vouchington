@@ -17,6 +17,7 @@ const PUBLIC_READER_SCOPES = [
   'backend/services/communities/list-items/',
   'backend/services/communities/publications/',
   'backend/services/data-points/',
+  'backend/services/entity-relations/',
   'backend/services/my/landing-pages/',
   'backend/services/feeds/',
   'backend/services/posts/search/',

@@ -1,9 +1,9 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { buildDirectPostEligibilityFilter } from '@modules/feed-query-builders'
 import { entityRelationEntityTables, type EntityRelationMetadata } from './metadata.mts'
 import { buildEntityRelationObjectData } from './object-projection.mts'
+import { buildObjectPostAccessFilter, buildSubjectPostAccessFilter } from './post-access.mts'
 import { buildVoteScoreFilters } from './vote-score-filters.mts'
-import { anonymousAuthorMaskFor, postEligibilityFor, type EntityRelationViewer } from './viewer.mts'
+import { anonymousAuthorMaskFor, type EntityRelationViewer } from './viewer.mts'
 
 export type EntityRelationPageCursor = {
   id: string
@@ -23,9 +23,10 @@ export type EntityRelationSelectOptions = {
 }
 
 /**
- * Lists a subject's relations as the viewer may see them: subject and object posts must pass the
- * direct post access rules, and an anonymous post's author is hidden as a relation creator.
- * Visibility is filtered in SQL so LIMIT-based page detection stays exact.
+ * Lists a subject's relations as the viewer may see them. The subject post follows direct access
+ * (plus its author); listed object posts follow discovery rules, and objects named by `objectIds`
+ * follow direct access. An anonymous post's author is hidden as a relation creator. Visibility is
+ * filtered in SQL so LIMIT-based page detection stays exact.
  */
 export function buildEntityRelationSelectQuery(
   metadata: EntityRelationMetadata,
@@ -33,9 +34,15 @@ export function buildEntityRelationSelectQuery(
   options: EntityRelationSelectOptions,
 ): SQLStatement {
   const { limit, sort, after, viewer, objectIds } = options
-  const postEligibility = postEligibilityFor(viewer)
-  const joinsSubjectPost = postEligibility !== null && metadata.subject_type === 'post'
   const objectIsPost = metadata.object_type === 'post'
+  const objectPostFilter = objectIsPost
+    ? buildObjectPostAccessFilter('obj', 'obj_access', viewer, objectIds ? 'named' : 'listed')
+    : null
+  const subjectPostFilter =
+    metadata.subject_type === 'post'
+      ? buildSubjectPostAccessFilter('subject_post', 'subject_access', viewer)
+      : null
+  const joinsSubjectPost = subjectPostFilter !== null
 
   const query = sql`/* buildEntityRelationSelectQuery */
     SELECT
@@ -81,7 +88,7 @@ export function buildEntityRelationSelectQuery(
     JOIN `)
   query.append(objectEntityConfig.select_table ?? objectEntityConfig.foreign_key_table)
   query.append(sql` AS obj ON r.object_id = obj.id`)
-  if (postEligibility && objectIsPost) {
+  if (objectPostFilter) {
     query.append(sql`
     JOIN posts AS obj_access ON obj_access.id = COALESCE(obj.root_id, obj.id)`)
   }
@@ -94,14 +101,8 @@ export function buildEntityRelationSelectQuery(
   const filters: SQLStatement[] = [sql`r.subject_id = ${subjectId}`, sql`r.deleted_at IS NULL`]
   if (objectEntityConfig.has_soft_delete) filters.push(sql`obj.deleted_at IS NULL`)
   if (objectIds) filters.push(sql`r.object_id = ANY(${objectIds}::uuid[])`)
-  if (postEligibility && objectIsPost) {
-    filters.push(buildDirectPostEligibilityFilter('obj', 'obj_access', postEligibility))
-  }
-  if (postEligibility && joinsSubjectPost) {
-    filters.push(
-      buildDirectPostEligibilityFilter('subject_post', 'subject_access', postEligibility),
-    )
-  }
+  if (objectPostFilter) filters.push(objectPostFilter)
+  if (subjectPostFilter) filters.push(subjectPostFilter)
   filters.push(...buildVoteScoreFilters(metadata, options))
   if (after) filters.push(buildCursorFilter(metadata, sort, after))
 
