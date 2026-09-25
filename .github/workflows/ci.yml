@@ -651,13 +651,14 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [tests-processing]
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     env:
       BASH_ENV: /dev/null
     permissions:
       contents: read
     steps:
       - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@49abbef4d698ba7542f53a14be8272c6a206a744 # v0.19.0
+        timeout-minutes: 1
         with:
           results: >-
             {"tests-processing":{"result":"${{ needs.tests-processing.result }}"}}
@@ -720,13 +721,14 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [tests, build-backend, build-web]
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 5
     env:
       BASH_ENV: /dev/null
     permissions:
       contents: read
     steps:
       - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@49abbef4d698ba7542f53a14be8272c6a206a744 # v0.19.0
+        timeout-minutes: 1
         with:
           mode: build
           results: |-

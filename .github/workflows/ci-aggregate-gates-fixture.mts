@@ -22,11 +22,13 @@ type Workflow = {
       needs?: string[]
       outputs?: Record<string, string>
       permissions?: Record<string, unknown>
+      'timeout-minutes'?: number
       with?: Record<string, string | boolean>
       steps?: Array<{
         uses?: string
         name?: string
         if?: string
+        'timeout-minutes'?: number
         env?: Record<string, string>
         run?: string
         with?: Record<string, string>
