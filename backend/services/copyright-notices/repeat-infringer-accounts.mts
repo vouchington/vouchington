@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 
-export type CopyrightRepeatInfringerNoticeAccount = {
+type CopyrightRepeatInfringerNoticeAccount = {
   account_user_id: string
   incident_id: string
   operative: boolean
