@@ -58,18 +58,22 @@ narrowly-scoped allowlist addition if the match is a legitimate false positive.
 
 ## Web route localization map
 
-[`i18n-extract/route-selector-map.mts`](i18n-extract/route-selector-map.mts) requests one
-`no-mistakes` `analyzeProject` dependency report per tracked `web/app` page (with ancestor layouts)
-and per global-chrome file, with `relationships: ['import-static', 'import-dynamic', 'import-type',
-'workspace']`. `no-mistakes` follows dynamic import targets recursively in that same graph pass,
-including nested/transitive `next/dynamic` wrappers, re-exports, and type imports — there is no
+[`i18n-extract/route-selector-map.mts`](i18n-extract/route-selector-map.mts) makes one
+`no-mistakes` `analyzeProject` call, built in
+[`i18n-extract/route-graph-analysis.mts`](i18n-extract/route-graph-analysis.mts). It requests a
+dependency report per tracked `web/app` page (with ancestor layouts) and per global-chrome file,
+plus one combined-root dependency report over the deduplicated route and global-chrome root files,
+all with `relationships: ['import-static', 'import-dynamic', 'import-type', 'workspace']`.
+`no-mistakes` follows dynamic import targets recursively in that same graph pass, including
+nested/transitive `next/dynamic` wrappers, re-exports, and type imports — there is no
 `dynamic-import-closure.mts`. `workspace` is load-bearing, not a legacy leftover: dropping it
 (verified empirically) silently expands the closure and changes the generated catalog membership
 for hundreds of routes, so it must stay even though `import-dynamic` alone looks like it should
-cover proven dynamic imports. A second `analyzeProject` call batches `resolveCheck` over the union
-of those closure files and fails generate/`--check` on unresolved local specifiers (relative, root,
-or `@/` aliases) and on computed `import()`/`require()` rows, except a reviewed exclusion list.
-Package specifiers stay external. The generator also fails computed `import()` lexically. It then
+cover proven dynamic imports. A `resolveCheckDependencies` report in the same call checks the
+combined-root report's root files plus every file reachable from them, and the generator fails
+generate/`--check` on unresolved local specifiers (relative, root, or `@/` aliases) and on computed
+`import()`/`require()` rows, except a reviewed exclusion list. Package specifiers stay external.
+The generator also fails computed `import()` lexically. It then
 scans quoted alias-shaped literals only, fails unknown catalog aliases, and fails unbounded `t()`
 assembly and production `as MessageKey` casts. It does not parse `t()` with an AST. Sidebar chrome aliases come from the layout graph
 (`layout` → `RootAppShell` → `AppSidebar`); there is no catalog prefix dump. It writes the
@@ -82,7 +86,9 @@ reach megabytes). The `--check` form runs in
 [`static-code-analysis.yml`](../.github/workflows/static-code-analysis.yml). The companion
 [`route-bounds.test.mts`](i18n-extract/route-bounds.test.mts) resolves every generated route
 against the real catalog compiler in all four web locales and all public request limits. See
-[localization requirements](../docs/requirements/users/LOCALIZATION.md) for the runtime request.
+[localization requirements](../docs/requirements/users/LOCALIZATION.md) for the runtime request and
+[translation catalog and locale checks](../docs/development/reference-tests-translation-catalog-and-locale-checks.md)
+for the detailed check and test reference.
 
 ## Markdown Information Architecture Gates
 
