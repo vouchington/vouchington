@@ -1,12 +1,16 @@
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
+import { type RunProcessResult, runProcess } from './run-process.mts'
 
 const execFileAsync = promisify(execFile)
 const initializePath = fileURLToPath(new URL('../initialize', import.meta.url))
+const worktreeResourceEnvPath = fileURLToPath(
+  new URL('../lib/worktree-resource-env.sh', import.meta.url),
+)
 const testDirs: string[] = []
 
 export function initializeBashArgs(script: string, args: string[] = []): string[] {
@@ -31,6 +35,69 @@ export function sourceBashArgs(
     sourcePath,
     ...args,
   ]
+}
+
+// Runs `script` after sourcing `sourcePath`, reporting the child's real exit code,
+// signal, and timeout state instead of masking every failure as exit code 1.
+export async function runSourcedBash(
+  sourcePath: string,
+  script: string,
+  args: string[] = [],
+  opts: { cwd?: string; env?: NodeJS.ProcessEnv } = {},
+): Promise<RunProcessResult> {
+  const result = await runProcess('bash', sourceBashArgs(sourcePath, script, args), opts)
+  return { ...result, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
+}
+
+// Runs `script` against dev/lib/worktree-resource-env.sh in a fixture git toplevel,
+// preparing the `.git` marker for a main checkout or a worktree as requested.
+export async function runWorktreeResourceEnv({
+  gitToplevel,
+  isMainWorktree,
+  processTmpdir,
+  script,
+}: {
+  gitToplevel: string
+  isMainWorktree: boolean
+  processTmpdir?: string
+  script: string
+}): Promise<RunProcessResult> {
+  if (isMainWorktree) {
+    await mkdir(join(gitToplevel, '.git'), { recursive: true })
+  } else {
+    await writeFile(join(gitToplevel, '.git'), 'gitdir: /fake/.git/worktrees/test\n')
+  }
+
+  const env: Record<string, string> = {}
+  for (const [k, v] of Object.entries(process.env)) {
+    if (v !== undefined) env[k] = v
+  }
+  if (processTmpdir !== undefined) {
+    env.TMPDIR = processTmpdir
+  }
+
+  return runSourcedBash(worktreeResourceEnvPath, script, [], { cwd: gitToplevel, env })
+}
+
+// Runs `script` via dev/initialize's bash entry point under a fixture HOME, reporting
+// the child's real exit code, signal, and timeout state.
+export async function runInitializeHelperStatus({
+  cwd,
+  script,
+  home,
+}: {
+  cwd: string
+  script: string
+  home?: string
+}): Promise<RunProcessResult> {
+  const result = await runProcess('bash', initializeBashArgs(script), {
+    cwd,
+    env: {
+      ...process.env,
+      HOME: home ?? dirname(cwd),
+    },
+  })
+  return { ...result, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
 }
 
 export async function makeWorktreeDir(...parts: string[]) {

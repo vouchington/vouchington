@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { initializeBashArgs } from '../test-helpers/initialize.mts'
+import { initializeBashArgs, runInitializeHelperStatus } from '../test-helpers/initialize.mts'
 
 const execFileAsync = promisify(execFile)
 
@@ -32,35 +32,6 @@ async function runHelper({ cwd, script, home }: { cwd: string; script: string; h
   return result.stdout.trim()
 }
 
-async function runHelperStatus({
-  cwd,
-  script,
-  home,
-}: {
-  cwd: string
-  script: string
-  home?: string
-}): Promise<{ exitCode: number; stderr: string; stdout: string }> {
-  try {
-    const result = await execFileAsync('bash', initializeBashArgs(script), {
-      cwd,
-      env: {
-        ...process.env,
-        HOME: home ?? dirname(cwd),
-      },
-    })
-
-    return { exitCode: 0, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
-  } catch (err: unknown) {
-    const e = err as { code?: number; stderr?: string; stdout?: string }
-    return {
-      exitCode: typeof e.code === 'number' ? e.code : 1,
-      stderr: (e.stderr ?? '').trim(),
-      stdout: (e.stdout ?? '').trim(),
-    }
-  }
-}
-
 describe('initialize Valkey container helpers', () => {
   afterEach(async () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
@@ -69,7 +40,7 @@ describe('initialize Valkey container helpers', () => {
   it('leaves legacy Valkey containers for cleanup instead of deleting them automatically', async () => {
     const cwd = await makeWorktreeDir('.codex', 'worktrees', 'a7e6', 'voucha')
 
-    const result = await runHelperStatus({
+    const result = await runInitializeHelperStatus({
       cwd,
       script: `
     printf -v VALKEY_CONTAINER '%s' voucha-valkey-d0123456789ab
@@ -105,14 +76,14 @@ describe('initialize Valkey container helpers', () => {
     `,
     })
 
-    expect(result.exitCode).toBe(1)
+    expect(result.code).toBe(1)
     expect(existsSync(join(cwd, '.legacy-valkey-removed'))).toBe(false)
   })
 
   it('refuses to recreate the main Valkey container whenever its port mismatches', async () => {
     const cwd = await makeWorktreeDir('main-valkey-mismatch')
 
-    const result = await runHelperStatus({
+    const result = await runInitializeHelperStatus({
       cwd,
       script: `
     IS_MAIN=true
@@ -138,7 +109,7 @@ describe('initialize Valkey container helpers', () => {
     `,
     })
 
-    expect(result.exitCode).toBe(1)
+    expect(result.code).toBe(1)
     expect(result.stderr).toContain('Refusing to recreate main Valkey container')
     expect(result.stderr).toContain('FORCE_MAIN_VALKEY_RECREATE=1')
   })
