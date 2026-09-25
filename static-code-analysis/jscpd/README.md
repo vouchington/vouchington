@@ -74,13 +74,6 @@ immediately before the jscpd step. Both steps skip on a `main` push, which has n
 ratchet against, and on docs-only runs. See the
 [static-code-analysis.yml reference](../../docs/development/reference-ci-static-analysis-static-code-analysis-yml.md).
 
-`GITHUB_BASE_REF` is the base recorded by the event that started the run, not a live lookup. CI
-does not run on a retarget (an `edited` event), and `gh run rerun` replays the original event, so a
-run can compare against a base the pull request no longer has. Every summary line names the base it
-used, such as `(origin/main)`. When that is not the pull request's current base, push to start a
-fresh run instead of deduping. A stale pass cannot land a new clone, because the merge group
-rescans against `origin/main`.
-
 Locally, run `git fetch origin main` first when `origin/main` is stale or missing. On a stacked
 branch, run `pnpm run jscpd --base <parent-branch>` so the ratchet compares against the parent;
 `pnpm run lint` uses the `origin/main` default. An unresolvable base fails with both hints.
