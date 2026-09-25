@@ -33,6 +33,13 @@ rule:
             field: arguments
             has:
               nthChild: 1
+              regex: ^['"`](curl|wget)(['"`]|\s)
+    - all:
+        - matches: child-process-call
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
               regex: ^['"`]git['"`]$
         - has:
             field: arguments
@@ -98,6 +105,16 @@ examples:
       execSync('git -C dir push origin HEAD')
     isValid: false
     file: 'dev/codex-hooks/post-tool-use-checkers.mts'
+  - code: |
+      import { spawnSync } from 'node:child_process'
+      spawnSync('curl', ['-fsSL', 'https://api.github.com/repos/o/r'])
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-workflow.mts'
+  - code: |
+      import { execSync } from 'node:child_process'
+      execSync('wget -qO- https://example.com')
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-workflow.mts'
   - code: |
       const response = await fetch('https://api.github.com/repos/o/r')
     isValid: false
