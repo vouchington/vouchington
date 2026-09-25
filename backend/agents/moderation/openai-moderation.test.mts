@@ -50,6 +50,7 @@ describe('callOpenAIModeration', () => {
     })
 
     expect(getEntityRelations).toHaveBeenCalledWith('post', post.id, 'related', 'url', {
+      viewer: { kind: 'system' },
       limit: 5,
       sort: 'best',
     })

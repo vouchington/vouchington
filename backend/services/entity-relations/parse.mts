@@ -87,7 +87,7 @@ export function parseEntityRelationSearchInput(input: {
       positiveNetVoteScore: summary ? true : positiveNetVoteScore,
       limit,
       sort,
-    } satisfies EntityRelationQueryOptions,
+    } satisfies Omit<EntityRelationQueryOptions, 'viewer'>,
   }
 }
 

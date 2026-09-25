@@ -45,6 +45,14 @@ Response: `{ results: [...], page_info: {...}, entity_relations: {...}, entity_r
 
 - `entity_relation_elections` — Record keyed by relation ID with vote summaries (`votes_score_net`, `votes_count_up`, `votes_count_down`). Returned for all users (5-min cache TTL, separate from relation data).
 
+Visibility follows the reader:
+
+- Relations are left out when the reader cannot open the subject post, or when the object post
+  would not appear in the reader's listings (for example an archived or pending post).
+- The subject post's author sees its relations while a community reviews the post.
+- `created_by_id` is `null` when the creator is the anonymous author of the subject or object post, unless the reader is that author or an administrator.
+- `object_data` holds only the public fields for its type. See [Viewer and projection](../../../services/entity-relations/README.md#viewer-and-projection).
+
 ## POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType
 
 Creates a new entity relation and automatically casts Confirm for it.
@@ -59,7 +67,9 @@ and vote as moderation. Self-tagging and arbitrary topics are rejected.
 { "objectId": "<uuid>" }
 ```
 
-**Response:** `201 Created` with `{ relation: { ... } }`.
+When the subject or object is a post the caller cannot open, or its ID is not a UUID, the route returns `404`. Authors may relate content to their own post while a community reviews it. The check reads the primary, so a post created moments earlier passes.
+
+**Response:** `201 Created` with `{ relation: { ... } }`. The relation is read back through the same viewer-scoped query as GET, so it has the same projection and creator masking.
 
 ## GET /api/v1/entity-relations/:id/votes
 
@@ -74,12 +84,12 @@ Response includes `results` and `page_info`.
 
 ## Performance
 
-| Endpoint                                                                   | Round Trips | Caching                                                  | Notes                                                           |
-| -------------------------------------------------------------------------- | ----------- | -------------------------------------------------------- | --------------------------------------------------------------- |
-| GET /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType  | 2           | HTTP: anon Cache-Control (short); Entities: Valkey batch | Search IDs, then parallel streaming (elections, votes)          |
-| POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType | 3-5         | None (write)                                             | Auth, parse, upsert; community relations add 2 extra lookups    |
-| PUT /api/v1/entity-relations/:id/vote                                      | 4           | Entities: Valkey batch                                   | Standard vote handler (auth, plan check, entity lookup, upsert) |
-| GET /api/v1/entity-relations/:id/votes                                     | 3           | Entities: Valkey batch                                   | Auth, cached entity lookup, votes query                         |
+| Endpoint                                                                   | Round Trips | Caching                                                  | Notes                                                                                                       |
+| -------------------------------------------------------------------------- | ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| GET /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType  | 2           | HTTP: anon Cache-Control (short); Entities: Valkey batch | Search IDs, then parallel streaming (elections, votes)                                                      |
+| POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType | 4-7         | None (write)                                             | Auth, parse, upsert, read-back; post tuples add a visibility check; community relations add 2 extra lookups |
+| PUT /api/v1/entity-relations/:id/vote                                      | 4           | Entities: Valkey batch                                   | Standard vote handler (auth, plan check, entity lookup, upsert)                                             |
+| GET /api/v1/entity-relations/:id/votes                                     | 3           | Entities: Valkey batch                                   | Auth, cached entity lookup, votes query                                                                     |
 
 ## Related
 

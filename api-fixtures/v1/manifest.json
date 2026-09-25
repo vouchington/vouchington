@@ -62807,7 +62807,7 @@
     },
     "POST:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType": {
       "bodyKind": "content",
-      "hash": "3bff26e45a66c481d199bfda8b6a062d44272f4c2aad4c89c191d6effcb81948",
+      "hash": "7abda8a8d059b2087dd42b241c40e6dd9a35f16100a44d5ced127c8a829a7133",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -62826,7 +62826,15 @@
               "created_by_id": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "deleted_at": {
@@ -71764,7 +71772,7 @@
         "sort": "best"
       },
       "responseSchema": {
-        "hash": "59424583846443e109c51899fc9101bd103dc4c13139cfcd4303886c50965b62",
+        "hash": "670f40f40e1c7452511cdf05b6ddcd765be1f10ee0688587ccd996607aaffa53",
         "key": "native.entity-relations.post.related.post.default"
       },
       "route": {
@@ -71798,7 +71806,7 @@
         "sort": "best"
       },
       "responseSchema": {
-        "hash": "0e7b422f807bc35411dd0f18117bbc419789333782ba58bebda2115440f06249",
+        "hash": "2250c57860e8b6de708ce880083840468468bdb3db9b2c0b0c662f95834f3b51",
         "key": "native.entity-relations.post.related.url.default"
       },
       "route": {

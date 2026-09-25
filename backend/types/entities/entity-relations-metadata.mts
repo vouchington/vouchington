@@ -106,8 +106,7 @@ export const entityRelationEntityTables: Record<
 > = {
   user: {
     foreign_key_table: 'users',
-    // Use the public view so row_to_json(obj.*) never exposes sensitive columns
-    // (vote_weight, suspended_reason, suspended_by_id, etc.) when user is the object type.
+    // Relation reads join the public view so only active users with public columns can match.
     // view_users_public already filters deleted_at IS NULL, so has_soft_delete is false.
     select_table: 'view_users_public',
     has_soft_delete: false,

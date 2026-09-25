@@ -7,7 +7,8 @@ export interface EntityRelation {
   subject_id?: string
   object_id?: string
   created_at: string
-  created_by_id: string
+  /** Null when the creator is the anonymous author of the subject or object post. */
+  created_by_id: string | null
   deleted_at?: string
   deleted_by_id?: string
   order_index?: number

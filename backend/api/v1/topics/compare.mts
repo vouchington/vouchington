@@ -12,6 +12,7 @@ import { indexById } from '@modules/utils'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { entityRelationViewerFor } from '@services/users'
 
 app.route('/api/v1/topics/compare').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/topics/compare')
@@ -38,6 +39,7 @@ app.route('/api/v1/topics/compare').get(async (ctx: Context) => {
   }
 
   const [topicA, topicB] = topics
+  const viewer = entityRelationViewerFor(currentUser)
   const topicIds = [topicA!.id, topicB!.id]
 
   const [topic_metrics, topic_elections, insightsA, insightsB, relationsA, relationsB] =
@@ -47,10 +49,12 @@ app.route('/api/v1/topics/compare').get(async (ctx: Context) => {
       getTopicDataPointInsights(topicA!.id),
       getTopicDataPointInsights(topicB!.id),
       getEntityRelations('topic', topicA!.id, 'category', 'topic', {
+        viewer,
         positiveNetVoteScore: true,
         limit: 20,
       }),
       getEntityRelations('topic', topicB!.id, 'category', 'topic', {
+        viewer,
         positiveNetVoteScore: true,
         limit: 20,
       }),

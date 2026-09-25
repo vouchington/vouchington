@@ -21,6 +21,7 @@ import {
   createRemoteActorFixture,
   randomSuffix,
 } from './inbox.test-helpers.mts'
+import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 // The signature and the actual TCP destination don't need to match — Node reports whatever Host
 // header the client sends as `req.headers.host`, and `inbox.mts` signs/verifies against that
@@ -229,7 +230,9 @@ describe('POST /ap/inbox', () => {
       .expect(202)
 
     expect(response.body).toEqual({ received: true })
-    const relations = await getEntityRelations('remote_actor', remoteActor!.id, 'follow', 'user')
+    const relations = await getEntityRelations('remote_actor', remoteActor!.id, 'follow', 'user', {
+      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+    })
     expect(relations.some(relation => relation.object_id === user.id)).toBe(true)
   })
 

@@ -15,6 +15,7 @@ import { getApPostLikesTally } from '@services/ap-post-likes'
 import { getActorUri, getPostUri, getWebfingerAcct } from '@modules/activitypub-uris'
 import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { getSiteOrigin } from '@modules/utils'
+import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 const ourHostname = new URL(getSiteOrigin()).hostname
@@ -140,7 +141,9 @@ describe('ActivityPub inbound round trip (Phase C6)', () => {
     })
     await deliverSignedActivity(inboxUrl, followBody, keyId, privateKeyPem).expect(202)
 
-    const relations = await getEntityRelations('remote_actor', remoteActor.id, 'follow', 'user')
+    const relations = await getEntityRelations('remote_actor', remoteActor.id, 'follow', 'user', {
+      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+    })
     expect(relations.some(relation => relation.object_id === targetUser.id)).toBe(true)
 
     // 5. Signed Like, delivered to the same discovered inbox (shared inbox, per actor.mts).
