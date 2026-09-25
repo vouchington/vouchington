@@ -1,6 +1,10 @@
 import { cache } from 'react'
 import { serverApi } from './instance'
 import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
+import {
+  normalizeCopyrightEmailIntakeQueuePage,
+  type CopyrightEmailIntakeQueueResponse,
+} from '../copyright-email-intake-queue-page'
 import type {
   CopyrightEmailIntakeQueuePage,
   CopyrightNoticeDetail,
@@ -44,8 +48,10 @@ export const getCopyrightReviewQueue = cache(async (): Promise<CopyrightStaffQue
 
 export const getCopyrightEmailIntakeReviewQueue = cache(
   async (): Promise<CopyrightEmailIntakeQueuePage> => {
-    return serverApi.get<CopyrightEmailIntakeQueuePage>(
-      '/api/v1/copyright-email-intakes/review-queue',
+    return normalizeCopyrightEmailIntakeQueuePage(
+      await serverApi.get<CopyrightEmailIntakeQueueResponse>(
+        '/api/v1/copyright-email-intakes/review-queue',
+      ),
     )
   },
 )

@@ -93,4 +93,13 @@ describe('copyright notice server API helpers', () => {
     expect(mockGet).toHaveBeenCalledWith('/api/v1/copyright-notices/review-queue')
     expect(mockGet).toHaveBeenCalledWith('/api/v1/copyright-email-intakes/review-queue')
   })
+
+  it('renders an unpaginated email intake queue as its final page', async () => {
+    const items = [makeCopyrightEmailQueueItem()]
+    mockGet.mockResolvedValue({ copyright_email_intakes: items })
+
+    await expect(getCopyrightEmailIntakeReviewQueue()).resolves.toEqual(
+      makeCopyrightEmailQueuePage(items, { start_cursor: null }),
+    )
+  })
 })
