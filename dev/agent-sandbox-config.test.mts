@@ -70,7 +70,6 @@ describe('agent sandbox configuration', () => {
       './dev/cleanup',
       './dev/unstick-locks',
       './dev/valkey-logs',
-      './dev/logs',
     ]
     for (const script of scripts) {
       const allow = claudeSettings.permissions.allow

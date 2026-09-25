@@ -60,8 +60,6 @@
       "Bash(./dev/unstick-locks *)",
       "Bash(./dev/valkey-logs)",
       "Bash(./dev/valkey-logs *)",
-      "Bash(./dev/logs)",
-      "Bash(./dev/logs *)",
       "Bash(cargo tree *)",
       "Bash(cargo search *)",
       "Bash(cargo check *)",
@@ -504,8 +502,6 @@
       "./dev/unstick-locks *",
       "./dev/valkey-logs",
       "./dev/valkey-logs *",
-      "./dev/logs",
-      "./dev/logs *",
       "ps aux",
       "ps aux *"
     ],

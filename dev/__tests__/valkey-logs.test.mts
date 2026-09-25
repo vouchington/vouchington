@@ -6,7 +6,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { runProcess } from '../test-helpers/run-process.mts'
 
-const logsPath = fileURLToPath(new URL('../logs', import.meta.url))
 const valkeyLogsPath = fileURLToPath(new URL('../valkey-logs', import.meta.url))
 
 type ScriptRun = {
@@ -130,20 +129,6 @@ describe('dev Valkey log commands', () => {
       expect(output.stderr).not.toContain('DATABASE_URL')
       expect(output.stderr).not.toContain('super-secret-password')
       expect(output.stderr).not.toContain('dbhost')
-    } finally {
-      await rm(dir, { force: true, recursive: true })
-    }
-  })
-
-  it('keeps ./dev/logs as a compatibility alias without requiring DATABASE_URL', async () => {
-    const dir = await createFakeWorkspace()
-    try {
-      const output = await runUntilStartupBanner(logsPath, dir)
-
-      expect(output.timedOut).toBe(false)
-      expect(output.code).toBe(0)
-      expect(output.stdout).toContain('Tailing Valkey commands (container: voucha-test-valkey)')
-      expect(output.stdout).toContain('Source: valkey-cli MONITOR')
     } finally {
       await rm(dir, { force: true, recursive: true })
     }

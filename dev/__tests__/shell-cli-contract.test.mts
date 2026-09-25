@@ -56,7 +56,6 @@ describe('dev shell CLI contracts', () => {
     'cleanup',
     'unstick-locks',
     'valkey-logs',
-    'logs',
     'otel-up',
     'otel-down',
   ])('keeps help and invalid arguments inert for %s', async script => {
