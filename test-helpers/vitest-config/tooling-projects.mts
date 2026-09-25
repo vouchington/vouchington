@@ -25,7 +25,7 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'dev-tools',
-      include: ['dev/**/*.test.mts'],
+      include: ['dev/**/*.test.mts', '.pr-shepherd/**/*.test.mts', '.agents/catalog/**/*.test.mts'],
       exclude: defaultExcludes,
       setupFiles: [isolatedSetupFile],
     },

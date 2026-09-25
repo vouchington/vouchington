@@ -1,6 +1,11 @@
 {
   "$schema": "https://oxc.rs/schema/oxlintrc.json",
-  "ignorePatterns": ["**/.agents/skills/**", "**/.claude/skills/**", "**/.pr-shepherd/**"],
+  "ignorePatterns": [
+    "**/.agents/skills/**",
+    "**/.claude/skills/**",
+    "**/.pr-shepherd/**",
+    "!**/.pr-shepherd/**/__tests__/**"
+  ],
   "plugins": ["react", "nextjs", "jsx-a11y", "react-perf", "vitest", "jest", "promise", "oxc"],
   "jsPlugins": [
     "eslint-plugin-playwright",

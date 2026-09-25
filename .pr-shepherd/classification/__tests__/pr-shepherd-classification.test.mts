@@ -1,7 +1,7 @@
 import type { ClassifyItem, ClassifyPrComment } from 'pr-shepherd/classify'
 import { describe, expect, it } from 'vitest'
 
-import rule from '../.pr-shepherd/classification/codex-rate-limit.mts'
+import rule from '../codex-rate-limit.mts'
 
 const CURRENT_QUOTA =
   'You have reached your Codex usage limits for security reviews. Please try again later.'

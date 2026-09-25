@@ -61,7 +61,7 @@ describe('dev-tools Vitest config', () => {
     const devTools = vitestProjects.find(project => project.test?.name === 'dev-tools')
 
     expect(devTools?.test).toMatchObject({
-      include: ['dev/**/*.test.mts'],
+      include: ['dev/**/*.test.mts', '.pr-shepherd/**/*.test.mts', '.agents/catalog/**/*.test.mts'],
       setupFiles: ['./test-helpers/vitest.setup.tooling-isolated-env.mts'],
     })
   })

@@ -1,7 +1,7 @@
 import type { ClassifyItem } from 'pr-shepherd/classify'
 import { describe, expect, it } from 'vitest'
 
-import rule from '../.pr-shepherd/classification/sourcery-no-access.mts'
+import rule from '../sourcery-no-access.mts'
 
 const UPSELL = `Hi @jonathanong! 👋
 
