@@ -12,15 +12,15 @@
 
 ## Data Model
 
-| Field                                        | Notes                                                                                                   |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `id`                                         | UUID                                                                                                    |
-| `slug`                                       | URL-safe identifier; auto-generated when omitted                                                        |
-| `name`                                       | Must have ≥3 words, trimmed, 1–100 characters                                                           |
-| `description`                                | Plain-text community description                                                                        |
-| `member_roster_visibility`                   | Who can see regular members: `public` \| `users` \| `members` \| `moderators`                           |
-| `archived_at`                                | Non-null when archived                                                                                  |
-| `created_via`, `created_via_oauth_client_id` | Immutable creation channel and OAuth client; see [Content provenance](../content/content-provenance.md) |
+| Field                      | Notes                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `id`                       | UUID                                                                          |
+| `slug`                     | URL-safe identifier; auto-generated when omitted                              |
+| `name`                     | Must have ≥3 words, trimmed, 1–100 characters                                 |
+| `description`              | Plain-text community description                                              |
+| `member_roster_visibility` | Who can see regular members: `public` \| `users` \| `members` \| `moderators` |
+| `archived_at`              | Non-null when archived                                                        |
+| `created_via`              | Immutable channel; see [provenance](../content/content-provenance.md)         |
 
 **Membership roles:** owner, moderator, member.
 

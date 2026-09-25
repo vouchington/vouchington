@@ -10,23 +10,23 @@
 
 ## Data Model
 
-| Field                                        | Notes                                                                                                   |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `id`                                         | UUID                                                                                                    |
-| `user_id`                                    | Owner of the referral link                                                                              |
-| `referral_program_id`                        | FK to the referral program topic                                                                        |
-| `url`                                        | The referral/affiliate URL                                                                              |
-| `label`                                      | Optional display label set by the owner                                                                 |
-| `activated_at`                               | Non-null when link is active                                                                            |
-| `deactivated_at`                             | Non-null when link has been deactivated                                                                 |
-| `review_post_id`                             | FK to the owner's best review for this program's topics (nullable)                                      |
-| `review_avg_rating`                          | Star rating of the linked review (nullable)                                                             |
-| `parent_link_id`                             | FK to the parent referral link when this is an Amex-unfurled per-card child (nullable)                  |
-| `unfurl_requested_at`                        | Non-null once the owner has requested an Amex unfurl (parent only)                                      |
-| `unfurl_completed_at`                        | Non-null when the most recent unfurl finished successfully (parent only)                                |
-| `unfurl_failed_at`                           | Non-null when the most recent unfurl failed, or resolved zero children (parent only)                    |
-| `unfurl_last_error`                          | Truncated (≤1000 chars) error message from the last failed unfurl (parent only)                         |
-| `created_via`, `created_via_oauth_client_id` | Immutable creation channel and OAuth client; see [Content provenance](../content/content-provenance.md) |
+| Field                 | Notes                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| `id`                  | UUID                                                                                   |
+| `user_id`             | Owner of the referral link                                                             |
+| `referral_program_id` | FK to the referral program topic                                                       |
+| `url`                 | The referral/affiliate URL                                                             |
+| `label`               | Optional display label set by the owner                                                |
+| `activated_at`        | Non-null when link is active                                                           |
+| `deactivated_at`      | Non-null when link has been deactivated                                                |
+| `review_post_id`      | FK to the owner's best review for this program's topics (nullable)                     |
+| `review_avg_rating`   | Star rating of the linked review (nullable)                                            |
+| `parent_link_id`      | FK to the parent referral link when this is an Amex-unfurled per-card child (nullable) |
+| `unfurl_requested_at` | Non-null once the owner has requested an Amex unfurl (parent only)                     |
+| `unfurl_completed_at` | Non-null when the most recent unfurl finished successfully (parent only)               |
+| `unfurl_failed_at`    | Non-null when the most recent unfurl failed, or resolved zero children (parent only)   |
+| `unfurl_last_error`   | Truncated (≤1000 chars) error message from the last failed unfurl (parent only)        |
+| `created_via`         | Immutable channel; see [provenance](../content/content-provenance.md)                  |
 
 **Priority groups** (each owner appears in exactly one group — their highest priority match):
 

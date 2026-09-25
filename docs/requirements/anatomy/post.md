@@ -11,23 +11,23 @@
 
 ## Data Model
 
-| Field                                        | Notes                                                                                                   |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `id`                                         | UUID                                                                                                    |
-| `title`                                      | Optional; fallback label is "Untitled {PostType}"                                                       |
-| `markdown`                                   | Body content                                                                                            |
-| `post_type`                                  | Enum (see table below)                                                                                  |
-| `clearance_status`                           | Moderation state: approved / pending / rejected / in_review                                             |
-| `approved_at`                                | Current derived approval timestamp; mutually exclusive with rejection/review                            |
-| `rejected_at`                                | Current derived rejection timestamp                                                                     |
-| `in_review_at`                               | Current derived staff-review timestamp                                                                  |
-| `broadcast`                                  | Feed visibility: `everyone` \| `users` \| `followers` \| `mutual_followers`                             |
-| `privacy`                                    | URL visibility: `public` \| `private`                                                                   |
-| `is_anonymous`                               | Hides author from everyone except creator and admins                                                    |
-| `archived_at`                                | Non-null when archived (hidden from listings, reachable by URL)                                         |
-| `community_id`                               | Non-null for community-scoped posts                                                                     |
-| `created_by_id`                              | Creator; null for system-generated posts                                                                |
-| `created_via`, `created_via_oauth_client_id` | Immutable creation channel and OAuth client; see [Content provenance](../content/content-provenance.md) |
+| Field              | Notes                                                                        |
+| ------------------ | ---------------------------------------------------------------------------- |
+| `id`               | UUID                                                                         |
+| `title`            | Optional; fallback label is "Untitled {PostType}"                            |
+| `markdown`         | Body content                                                                 |
+| `post_type`        | Enum (see table below)                                                       |
+| `clearance_status` | Moderation state: approved / pending / rejected / in_review                  |
+| `approved_at`      | Current derived approval timestamp; mutually exclusive with rejection/review |
+| `rejected_at`      | Current derived rejection timestamp                                          |
+| `in_review_at`     | Current derived staff-review timestamp                                       |
+| `broadcast`        | Feed visibility: `everyone` \| `users` \| `followers` \| `mutual_followers`  |
+| `privacy`          | URL visibility: `public` \| `private`                                        |
+| `is_anonymous`     | Hides author from everyone except creator and admins                         |
+| `archived_at`      | Non-null when archived (hidden from listings, reachable by URL)              |
+| `community_id`     | Non-null for community-scoped posts                                          |
+| `created_by_id`    | Creator; null for system-generated posts                                     |
+| `created_via`      | Immutable channel; see [provenance](../content/content-provenance.md)        |
 
 **Post types:**
 
