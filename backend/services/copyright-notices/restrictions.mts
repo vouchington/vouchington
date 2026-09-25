@@ -173,10 +173,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
       transaction,
     )
   }
-  if (
-    restriction.human_review_action === 'confirm' ||
-    restriction.human_review_action === 'modify'
-  ) {
+  if (restriction.human_review_action === 'confirm') {
     await syncCopyrightRepeatInfringerIncidents(input.noticeId, transaction)
   }
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:event */
