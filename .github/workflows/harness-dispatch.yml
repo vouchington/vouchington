@@ -50,8 +50,9 @@ concurrency:
 jobs:
   dispatch:
     name: Dispatch Auto Harness session
-    # This job only enqueues a session. The Harness service queue (HARNESS_PRIORITY,
-    # HARNESS_QUEUE_TTL_SECONDS) bounds concurrent sessions; GitHub adds no global cap.
+    # This job only creates a session and returns. The Harness scheduler keeps it queued until a
+    # host has capacity: HARNESS_PRIORITY orders that queue and HARNESS_QUEUE_TTL_SECONDS bounds
+    # the wait. GitHub adds no global cap.
     if: >-
       github.ref == 'refs/heads/main' && github.run_attempt == 1 &&
       vars.HARNESS_DISPATCH_ENABLED == 'true' &&

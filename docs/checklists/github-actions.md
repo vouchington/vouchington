@@ -13,10 +13,11 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
 - **Deploys stay decoupled** — no cross-workflow deploy-order wait/poll; each deployable is forward/backward-compatible with whatever is live (expand/contract). Only api↔workers may couple (shared DB/code/image). See [deploy decoupling](../overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
 - **`actionlint`** — run on all changed `.github/workflows/*.yml` files before pushing. CI enforces it.
 - **Auto Harness admission** — Harness workflows keep only their per-target workflow concurrency
-  (one group per issue, branch, run, or SHA), which prevents duplicate sessions for one target. The
-  Harness service queue, configured by the `HARNESS_PRIORITY` and `HARNESS_QUEUE_TTL_SECONDS`
-  environment of [`harness-dispatch.yml`](../../.github/workflows/harness-dispatch.yml), bounds how
-  many sessions run at once. Do not add a GitHub-side global concurrency group across Harness jobs.
+  (one group per issue, branch, run, or SHA), which prevents duplicate sessions for one target.
+  [`harness-dispatch.yml`](../../.github/workflows/harness-dispatch.yml) only creates a session;
+  the Harness scheduler keeps it queued until a host has capacity, ordered by `HARNESS_PRIORITY` and
+  expiring after `HARNESS_QUEUE_TTL_SECONDS`. Do not add a GitHub-side global concurrency group
+  across Harness jobs: it would serialize the short GitHub jobs without limiting running sessions.
 - **Workflow policy tests** — run
   `pnpm exec vitest run --project github-actions` for every workflow or composite action change.
 - **Keep docs in sync** — update the relevant grouped inventory reference and the matching
