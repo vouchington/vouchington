@@ -44,7 +44,7 @@
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",
-    "p-map": "7.0.7",
+    "p-map": "7.0.8",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

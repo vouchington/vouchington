@@ -28,7 +28,7 @@
     "@ts-shared/utils": "workspace:^",
     "@valkey/valkey-glide": "^2.5.2",
     "@voucha/types": "workspace:^",
-    "p-map": "7.0.7",
+    "p-map": "7.0.8",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
