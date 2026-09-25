@@ -145,6 +145,8 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_notice_submission_assessments`, `copyright_notice_submission_requests`,
   `copyright_notice_submission_targets`, `copyright_notice_submissions`,
   `copyright_notice_target_images`, `copyright_notice_targets`, `copyright_notices`,
+  `copyright_repeat_infringer_dispositions`, `copyright_repeat_infringer_incidents`,
+  `copyright_repeat_infringer_reviews`,
   `copyright_restrictions`,
   `crm_contact_lifecycle_changes`,
   `dynamic_config_change_logs`, `follower_distribution_deliveries`, `follower_distributions`,

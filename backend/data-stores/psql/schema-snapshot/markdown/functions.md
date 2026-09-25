@@ -266,6 +266,22 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_submission()
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_copyright_repeat_infringer_incident`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_repeat_infringer_incident()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_repeat_infringer_review`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_repeat_infringer_review()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_copyright_restriction_assessment_scope`
 
 ```sql
