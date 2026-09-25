@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import {
   commandsToInspectForGitPolicy,
   findGitHubWorkflowBlock,
@@ -15,35 +14,16 @@ import {
   blockedHookBypassPatterns,
 } from './policy/blocked-command-patterns.mts'
 import { DEFAULT_AUTOMATION_CONTEXT } from './policy/core.mts'
-import { hookToolInput } from './policy/hook-payload.mts'
+import { extractToolCommand } from './hook-payload.mts'
 import {
   type PreToolUseOptions,
   renderConfirmDisposition,
 } from './policy/pre-tool-use-confirm-output.mts'
 import type { HookPayload } from './types.mts'
 
-export type { PreToolUseOptions, PreToolUseRuntime } from './policy/pre-tool-use-confirm-output.mts'
+export type { PreToolUseOptions } from './policy/pre-tool-use-confirm-output.mts'
 
 export type { HookPayload } from './types.mts'
-
-export function readHookPayload(stdin = readFileSync(0, 'utf8')): HookPayload {
-  if (stdin.trim() === '') {
-    return {}
-  }
-
-  try {
-    return JSON.parse(stdin) as HookPayload
-  } catch {
-    return {}
-  }
-}
-
-export function extractToolCommand(payload: HookPayload): string {
-  const toolInput = hookToolInput(payload)
-  if (toolInput && typeof toolInput.command === 'string') return toolInput.command
-  if (typeof payload.command === 'string') return payload.command
-  return ''
-}
 
 export function findPreToolUseBlock(
   payload: HookPayload,

@@ -1,5 +1,5 @@
 import * as path from 'node:path'
-import { readHookPayload } from '../codex-hooks/policy.mts'
+import { readHookPayload } from '../codex-hooks/hook-payload.mts'
 import { checkFile } from '../codex-hooks/post-tool-use-policy.mts'
 import { cursorEditedFilePath } from './payload.mts'
 

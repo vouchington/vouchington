@@ -3,8 +3,13 @@ import { fileURLToPath } from 'node:url'
 
 import { recordFriction as recordObservation } from 'vouchington-tooling/session-friction'
 
-import { extractToolCommand, readHookPayload } from '../codex-hooks/policy.mts'
-import { hookSessionId, hookToolInput, hookToolName } from '../codex-hooks/policy/hook-payload.mts'
+import {
+  extractToolCommand,
+  hookSessionId,
+  hookToolInput,
+  hookToolName,
+  readHookPayload,
+} from '../codex-hooks/hook-payload.mts'
 import type { HookPayload } from '../codex-hooks/types.mts'
 import { frictionLogDirectory } from './config.mts'
 

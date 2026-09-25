@@ -1,7 +1,7 @@
 import * as path from 'node:path'
 
 import { cursorPayloadSessionId, persistRealSessionId } from '../agent-session-id/persist.mts'
-import { readHookPayload } from '../codex-hooks/policy.mts'
+import { readHookPayload } from '../codex-hooks/hook-payload.mts'
 import { renderPostToolReminder } from '../tmux-reminder-post-tool.mts'
 import { remapCursorPostToolPayload } from './payload.mts'
 

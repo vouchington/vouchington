@@ -1,6 +1,6 @@
 import { DEFAULT_AUTOMATION_CONTEXT, type BlockDecision } from './core.mts'
 
-export type PreToolUseRuntime = 'claude' | 'codex' | 'grok'
+import type { PreToolUseRuntime } from '../hook-payload.mts'
 
 export type PreToolUseOptions = {
   /**

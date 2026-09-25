@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 
-import { isGrokHookProcess } from '../codex-hooks/policy/hook-payload.mts'
+import { isGrokHookProcess } from '../codex-hooks/hook-payload.mts'
 import type { HookPayload } from '../codex-hooks/types.mts'
 import { isValidSessionId } from './valid-id.mts'
 

@@ -1,5 +1,4 @@
-import { extractToolCommand, readHookPayload } from '../codex-hooks/policy.mts'
-import { hookSessionId } from '../codex-hooks/policy/hook-payload.mts'
+import { extractToolCommand, hookSessionId, readHookPayload } from '../codex-hooks/hook-payload.mts'
 import type { HookPayload } from '../codex-hooks/types.mts'
 import type { CheckpointKind } from './checkpoint-entry.mts'
 

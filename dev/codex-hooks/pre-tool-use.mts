@@ -1,9 +1,9 @@
 import * as path from 'node:path'
 
 import { persistGrokRealSessionId } from '../agent-session-id/persist.mts'
-import { isAutomationContext, preToolUseOutput, readHookPayload } from './policy.mts'
+import { isAutomationContext, preToolUseOutput } from './policy.mts'
 import { sessionHomeOwners } from './policy/github-checkout-owners.mts'
-import { resolvePreToolUseRuntime } from './policy/hook-payload.mts'
+import { readHookPayload, resolvePreToolUseRuntime } from './hook-payload.mts'
 
 // argv[2] is the runtime token appended by each config: `claude` (.claude/settings.json) or
 // `codex` (.codex/config.toml). GROK_* wins even when Claude-compat still passes `claude`.

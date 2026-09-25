@@ -4,7 +4,8 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { findPreToolUseBlock, readHookPayload } from '../../codex-hooks/policy.mts'
+import { readHookPayload } from '../../codex-hooks/hook-payload.mts'
+import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
 import {
   findGitHubWorkflowBlock,
   type GitHubCommandContext,

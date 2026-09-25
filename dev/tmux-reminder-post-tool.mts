@@ -1,8 +1,7 @@
 import { spawnSync } from 'node:child_process'
 
-import { extractToolCommand } from './codex-hooks/policy.mts'
 import { isRecord } from './codex-hooks/policy/core.mts'
-import { hookToolName } from './codex-hooks/policy/hook-payload.mts'
+import { extractToolCommand, hookToolName } from './codex-hooks/hook-payload.mts'
 import type { HookPayload } from './codex-hooks/types.mts'
 
 // Ported from dev/tmux-agent-reminder's bash `post-tool` case (jq + grep) so Claude and Codex
