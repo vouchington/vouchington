@@ -38,9 +38,13 @@ runs:
         # github.run_attempt scopes every upload to its workflow attempt, so a failed-job rerun
         # (same run ID, new attempt) never collides with a zombie left by a prior attempt — even
         # one where both the primary and -retry uploads finalized-failed in the same attempt.
-        # Safe for every consumer: they match by prefix (ci-tests-processing.yml) or by the
-        # manifest's own suite/run.attempt fields (vouchington-tooling prepareVitestReports), not
-        # by this literal name.
+        # ci-tests-processing.yml's fallback download now depends on this exact literal name: it
+        # derives the same string (ci/vitest-blob-candidate-names.mts) from each suite's
+        # minimumAttempt through the run's own attempt, with and without this action's only
+        # observed name-suffix, "-retry". A future name-suffix value or a change to this template
+        # needs a matching change there. The manifest's own suite/run.attempt fields remain the
+        # source of truth for selection (vouchington-tooling prepareVitestReports); this name is
+        # only how the artifact is found.
         name: vitest-blob-${{ inputs.suite }}-attempt-${{ github.run_attempt }}${{ inputs.name-suffix }}
         path: |
           .vitest-reports/vitest-blob-manifest.json
