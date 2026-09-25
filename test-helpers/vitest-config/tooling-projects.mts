@@ -2,7 +2,7 @@ import type { TestProjectConfiguration } from 'vitest/config'
 import { isolatedSetupFile, worktreeDbSetupFile } from './tooling-project-policies.mts'
 
 export const toolingTestBudget = {
-  // Child-process-heavy tests are timeout-sensitive under self-hosted runner CPU contention.
+  // Child-process-heavy tests are timeout-sensitive under CPU contention.
   // Run at the root's parallel maxWorkers, but keep generous 30s test/hook budgets so
   // slow child-process spawns and coverage reporting can still finish cleanly.
   //

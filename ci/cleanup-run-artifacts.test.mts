@@ -44,7 +44,7 @@ describe('cleanupRunArtifacts', () => {
       artifact({ id: 2, name: 'next-static-web' }),
       artifact({ id: 3, name: 'unknown-debug-output' }),
       artifact({ id: 4, name: 'vitest-blob-web', expired: true }),
-      artifact({ id: 5, name: 'browser-port-diagnostics-web' }),
+      artifact({ id: 5, name: 'web-build-timings-web' }),
       artifact({ id: 6, name: 'browser-debug-log-storybook' }),
     ])
     const log = {

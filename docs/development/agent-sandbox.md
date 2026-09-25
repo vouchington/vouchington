@@ -14,7 +14,7 @@ later change (formerly filed as jonathanong/filaments#9578), so Codex `auto_revi
 argv. The checked-in policy is what a reactivated CI Codex session would load; harness dispatch
 is currently fail-closed and does not execute these prefixes. See
 [Auto Harness automation security boundary](../../.github/workflows/reference-harness-automation-accepted-risk.md)
-for the accepted self-hosted risk.
+for the accepted risk.
 
 ## Two independent containment layers
 

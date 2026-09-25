@@ -241,9 +241,8 @@ describe('backend uncredentialed Docker test workflow', () => {
   })
 
   it('does not restore or save a remote Vite transform cache', () => {
-    // This self-hosted workflow relies solely on ./.github/actions/clean-workspace to
-    // persist .cache/vite/vitest across runs; a remote actions/cache round-trip here
-    // is redundant and was consuming a job's entire timeout budget.
+    // The repository cache policy permits only the pnpm store and Playwright browsers; a
+    // remote Vite cache round-trip once consumed a job's entire timeout budget.
     expect(workflow).not.toMatch(/actions\/cache\/(?:restore|save)|\.cache\/vite\/vitest/u)
   })
 

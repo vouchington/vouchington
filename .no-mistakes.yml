@@ -2373,15 +2373,9 @@ rules:
         # budget. The outer cap is fail-safe, not a runtime target.
         - job: '.github/workflows/tests-web-api.yml#web-api-tests'
           maxMinutes: 27
-        # The bounded initializer may consume 18m before the trusted supervisor gives Codex 105m; the 150m outer ceiling leaves 27m for setup, transcript upload, completion bundling, and failure diagnostics. A successful shepherd reached 103m38s; run 30189230576 proved that unsupervised worker death requires a hard outer ceiling.
-        - job: '.github/workflows/codex-dispatch.yml#codex'
-          maxMinutes: 150
-        # The credential-free validator includes one bounded 8m immutable-runtime install plus cheap local checks inside bubblewrap; 35m leaves checkout, exact-patch rebase, and diagnostics headroom without expanding publisher write authority.
-        - job: '.github/workflows/codex-dispatch.yml#trusted-completion-validator'
-          maxMinutes: 35
-        # Step budgets across worktree prep (1) + three ./dev/initialize passes (5 each, monorepo/backend/web) + Postgres provisioning (5) + always() cleanup (5) sum 26m; cap adds buffer for the unbounded checkout/setup-node/pnpm-setup steps ahead of them. See #10850.
+        # Step budgets across worktree prep (1) + three ./dev/initialize passes (5 each, monorepo/backend/web) + Postgres provisioning (5) sum 21m; cap adds buffer for the unbounded checkout/setup-node/pnpm-setup steps ahead of them. See #10850.
         - job: '.github/workflows/initialize-smoke-test.yml#initialize-smoke-test'
-          maxMinutes: 30
+          maxMinutes: 25
         # Remaining lint/typecheck/knip/depcruise step budgets plus setup-node-pnpm; the 25m
         # route-selector --check moved to the no-mistakes job.
         - job: '.github/workflows/static-code-analysis.yml#static-code-analysis'
@@ -2412,12 +2406,12 @@ rules:
         # Step budgets sum ~27m; real max 2.72m (n=30), cap must cover the steps. See #8078.
         - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
           maxMinutes: 37
-        # A strict Next build may spend 5m acquiring the host admission lock plus the bounded build/drain window before the sharded browser runtime begins.
+        # Fail-safe for backend/browser setup plus the bounded 13m web build before the sharded browser runtime begins.
         - job: '.github/workflows/tests-playwright.yml#playwright-tests'
-          maxMinutes: 35
-        # A strict Next build may spend 5m acquiring the host admission lock plus the bounded build/drain window before credentialed browser setup and execution begin.
+          maxMinutes: 30
+        # Fail-safe for backend/browser setup plus the bounded 13m web build before credentialed browser setup and execution begin.
         - job: '.github/workflows/tests-playwright-credentialed.yml#playwright-credentialed-tests'
-          maxMinutes: 25
+          maxMinutes: 20
         # Fail-safe ceiling for setup/test/GitHub-artifact-upload steps, retained from the
         # pre-revert coverage-transport budget.
         - job: '.github/workflows/tests-portability.yml#portability-linux'

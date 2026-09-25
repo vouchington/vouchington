@@ -64,8 +64,8 @@ jobs:
           # blank-line guard (mirroring decodeSelectedFiles's blank filter) is required:
           # `<<<` always appends a trailing newline, so an empty VITEST_SELECTED_FILES
           # (the full-suite case) still yields one empty-string read, which must not
-          # become a stray positional arg. This avoids `mapfile` (bash 4.0+) since
-          # self-hosted runner shells are not guaranteed to be bash 4+.
+          # become a stray positional arg. This avoids `mapfile` (bash 4.0+) to
+          # stay portable to macOS `/bin/bash` 3.2.
           FILES=()
           while IFS= read -r file; do
             if [ -n "$file" ]; then FILES+=("$file"); fi

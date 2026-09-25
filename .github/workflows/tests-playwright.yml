@@ -100,7 +100,7 @@ jobs:
     needs: [select]
     if: needs.select.outputs.skip != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 30
     permissions:
       actions: read
       contents: read
@@ -149,74 +149,20 @@ jobs:
         run: |
           echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
           echo "VALKEY_URL=redis://localhost:${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
-      - name: Reap orphaned OTel collectors
-        timeout-minutes: 1
-        run: |
-          set -uo pipefail
-          # Containers created by the current workflow carry both labels. Keep this
-          # primary cleanup path while older collectors without labels may still be
-          # present on long-lived runners during the migration.
-          docker ps -aq --no-trunc \
-            --filter "label=com.voucha.ci.component=playwright-otel" \
-            --filter "label=com.voucha.ci.workspace=$GITHUB_WORKSPACE" | \
-            while IFS= read -r container_id; do
-              [ -z "$container_id" ] || docker rm -f "$container_id" || true
-            done
-          # A legacy collector did not have ownership labels. Reap it only after a
-          # single fresh inspect proves its exact numeric name, pinned collector
-          # image, and read-only config mount all belong to this workspace.
-          export OTEL_CONFIG_SOURCE="$GITHUB_WORKSPACE/dev/otel/collector-config-ci.yaml"
-          docker ps -aq --no-trunc --filter 'name=^/voucha-otel-' | \
-            while IFS= read -r container_id; do
-              [ -z "$container_id" ] && continue
-              if docker inspect "$container_id" | python3 -c "$(cat <<'PY'
-          import json
-          import os
-          import re
-          import sys
-
-          containers = json.load(sys.stdin)
-          container = containers[0] if len(containers) == 1 else {}
-          is_owned_legacy_collector = (
-              len(containers) == 1
-              and re.fullmatch(r"/voucha-otel-[0-9]+-[0-9]+-[0-9]+", container.get("Name", ""))
-              is not None
-              and container.get("Config", {}).get("Image")
-              == "otel/opentelemetry-collector-contrib:0.153.0"
-              and any(
-                  mount.get("Type") == "bind"
-                  and mount.get("Source") == os.environ["OTEL_CONFIG_SOURCE"]
-                  and mount.get("Destination") == "/etc/otelcol-contrib/config.yaml"
-                  and mount.get("RW") is False
-                  for mount in container.get("Mounts", [])
-              )
-          )
-          sys.exit(not is_owned_legacy_collector)
-          PY
-          )"; then
-                docker rm -f "$container_id" || true
-              fi
-            done
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 8
       - name: Allocate ports
         timeout-minutes: 1
         run: |
-          # Hold every allocated port until its consumer binds. Print-and-exit
-          # leaves a minutes-long gap through setup/build that other host
-          # processes can occupy (issue #9270).
+          # One call keeps every app and collector port distinct.
           set -euo pipefail
-          HOLD_DIR="${RUNNER_TEMP}/voucha-port-hold"
-          mkdir -p "$HOLD_DIR/release"
-          PORTS=$(python3 ci/allocate-browser-safe-ports.py 6 --hold --hold-dir "$HOLD_DIR" --workspace "$GITHUB_WORKSPACE")
+          PORTS=$(python3 ci/allocate-browser-safe-ports.py 6)
           read -r PORT NEXT_PORT IMAGE_LAMBDA_PORT WORKER_PORT OTEL_HTTP_PORT OTEL_GRPC_PORT <<< "$PORTS"
           if [ -z "$PORT" ] || [ -z "$NEXT_PORT" ] || [ -z "$IMAGE_LAMBDA_PORT" ] || [ -z "$WORKER_PORT" ] || [ -z "$OTEL_HTTP_PORT" ] || [ -z "$OTEL_GRPC_PORT" ]; then
             echo "::error::Failed to allocate ports"
             exit 1
           fi
-          echo "PORT_HOLD_DIR=$HOLD_DIR" >> "$GITHUB_ENV"
-          python3 ci/allocate-browser-safe-ports.py --check --hold-dir "$HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
           {
             echo "PORT=$PORT"
             echo "NEXT_PORT=$NEXT_PORT"
@@ -235,14 +181,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/otel-output"
           chmod 0777 "$RUNNER_TEMP/otel-output"
           COLLECTOR_NAME="voucha-otel-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.shard }}"
-          docker rm "$COLLECTOR_NAME" >/dev/null 2>&1 || true
-          # These deterministic ports come from the same six-port runner allocation as the
-          # app servers, so Docker cannot choose an unbound app port for the collector.
-          python3 ci/allocate-browser-safe-ports.py --release "$OTEL_HTTP_PORT" --hold-dir "$PORT_HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
-          python3 ci/allocate-browser-safe-ports.py --release "$OTEL_GRPC_PORT" --hold-dir "$PORT_HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
           docker run -d --name "$COLLECTOR_NAME" \
-            --label "com.voucha.ci.component=playwright-otel" \
-            --label "com.voucha.ci.workspace=$GITHUB_WORKSPACE" \
             -p "127.0.0.1:$OTEL_HTTP_PORT:4318" \
             -p "127.0.0.1:$OTEL_GRPC_PORT:4317" \
             -v "$PWD/dev/otel/collector-config-ci.yaml:/etc/otelcol-contrib/config.yaml:ro" \
@@ -253,9 +192,6 @@ jobs:
             docker logs "$COLLECTOR_NAME" || true
             exit 1
           fi
-      - name: Confirm port holder
-        timeout-minutes: 1
-        run: python3 ci/allocate-browser-safe-ports.py --check --hold-dir "$PORT_HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
       - name: Set image origin
         run: echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-playwright
@@ -311,13 +247,6 @@ jobs:
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-report.junit.xml
           PW_FULL_SUITE: ${{ needs.select.outputs.full-suite }}
           PW_FILES: ${{ needs.select.outputs.files }}
-          # The direct artifact-upload step below uploads this directory after the test command.
-          # It flows to lambdas/dev-server.mts's listenWithRetry
-          # (via playwright/config/shared-config.mts's webServer env) so it can capture
-          # bind-time collision evidence at the moment of EADDRINUSE, when the process
-          # holding the port is still alive — the post-hoc step below runs only after
-          # Playwright has already torn down its webServer process group.
-          BROWSER_PORT_DIAGNOSTICS_DIR: ${{ runner.temp }}/browser-port-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
         run: |
           set -euo pipefail
           SHARD_ARG="--shard=${{ matrix.shard }}/${{ needs.select.outputs.shard-total }}"
@@ -328,8 +257,7 @@ jobs:
             # encodeSelectedFiles). A quoted read loop plus a quoted array expansion
             # preserve paths containing spaces or shell glob metacharacters, replacing
             # the previous unquoted $PW_FILES word-splitting/glob-expansion. This avoids
-            # `mapfile` (bash 4.0+) since self-hosted runner shells are not guaranteed to
-            # be bash 4+.
+            # `mapfile` (bash 4.0+) so the script stays portable to macOS /bin/bash 3.2.
             FILES=()
             while IFS= read -r file; do
               if [ -n "$file" ]; then FILES+=("$file"); fi
@@ -348,32 +276,12 @@ jobs:
             echo "retried=false" >> "${GITHUB_OUTPUT:-/dev/null}"
           fi
           exit "$test_exit"
-      - name: Stop port holder
-        if: ${{ always() }}
-        timeout-minutes: 1
-        continue-on-error: true
-        run: |
-          if [ -n "${PORT_HOLD_DIR:-}" ]; then
-            python3 ci/allocate-browser-safe-ports.py --stop --hold-dir "$PORT_HOLD_DIR" --workspace "$GITHUB_WORKSPACE"
-          fi
-      - name: Upload browser port diagnostics
-        if: always()
-        continue-on-error: true
-        timeout-minutes: 2
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: browser-port-diagnostics-playwright-${{ matrix.shard }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/browser-port-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
-          if-no-files-found: warn
-          overwrite: true
-          retention-days: 1
       - name: Stop OTel collector
         if: ${{ always() && inputs.otel_enabled }}
         timeout-minutes: 1
         continue-on-error: true
         run: |
           docker stop --time 10 "voucha-otel-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.shard }}" || true
-          docker rm "voucha-otel-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${{ matrix.shard }}" || true
       - name: Upload OTel debug artifact
         if: ${{ always() && inputs.otel_enabled }}
         timeout-minutes: 1

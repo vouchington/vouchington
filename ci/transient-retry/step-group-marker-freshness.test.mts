@@ -131,29 +131,19 @@ describe('step-group-marker-freshness', () => {
   })
 
   describe('Table A completeness', () => {
-    // Every '##[group]Run ' literal declared anywhere in this directory's *.mts sources must either
-    // be one of the markers asserted above, or be explicitly allowlisted here with a reason — so
-    // adding a new step-header marker with no guard row fails this test instead of failing silently
-    // the way the original PR #10604 markers did.
+    // Every '##[group]Run ' literal declared anywhere in this directory's *.mts sources must be one
+    // of the markers asserted above — so adding a new step-header marker with no guard row fails
+    // this test instead of failing silently the way the original PR #10604 markers did.
     const tableAMarkers = new Set([
       cloudflareWorkerTscStepMarker,
       oxlintTypeAwareStepMarker,
       buildWebTargetsStepMarker,
     ])
 
-    // This plan adds a Table A row only for build-web-targets. Keep the unrelated clean-workspace
-    // marker explicitly allowlisted rather than widening this focused change into a catalogue-wide
-    // migration of existing local `uses:` markers.
-    const allowlistedNonTableAMarkers = new Set([
-      // runner-shutdown-consumers.mts: keys on the composite-action invocation header for
-      // .github/actions/clean-workspace. It remains out of this plan's build-web-targets scope.
-      '##[group]Run ./.github/actions/clean-workspace',
-    ])
-
     const sourceDir = new URL('.', import.meta.url)
     const markerLiteralPattern = /'(##\[group\]Run [^']*)'/g
 
-    it('every declared ##[group]Run marker is covered by Table A or explicitly allowlisted', () => {
+    it('every declared ##[group]Run marker is covered by Table A', () => {
       const uncovered: string[] = []
 
       for (const entry of readdirSync(sourceDir, { withFileTypes: true })) {
@@ -164,11 +154,7 @@ describe('step-group-marker-freshness', () => {
         const contents = readFileSync(new URL(entry.name, sourceDir), 'utf8')
         for (const match of contents.matchAll(markerLiteralPattern)) {
           const marker = match[1]
-          // '##[group]Run ' with nothing after it (runner-shutdown-consumers.mts's
-          // log.indexOf('##[group]Run ', …) scan) is a generic "find the next step" prefix, not a
-          // specific step-header marker — it has no single `run:` value to go stale against.
-          if (marker === '##[group]Run ') continue
-          if (!tableAMarkers.has(marker) && !allowlistedNonTableAMarkers.has(marker)) {
+          if (!tableAMarkers.has(marker)) {
             uncovered.push(`${entry.name}: ${marker}`)
           }
         }

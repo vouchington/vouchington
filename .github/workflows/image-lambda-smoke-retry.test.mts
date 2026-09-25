@@ -104,11 +104,10 @@ if [ "$count" -ge 2 ]; then printf '200'; else printf '000'; fi`,
 }
 
 // Regression coverage for defect (1): the readiness check used to be
-// `grep -q "Lambda dev server:"`, which also matches listenWithRetry's own retry-warning
-// log line and false-passed on a live port collision. This fake node never crashes and
-// never lets curl see a 200, so a script that still trusted the log-grep would exit 0 the
-// moment it saw that line; the current HTTP-poll script must instead run out the 20s
-// readiness window and fail.
+// `grep -q "Lambda dev server:"`, which trusts a log line instead of a served request. This
+// fake node prints that banner but never lets curl see a 200, so a script that still trusted
+// the log-grep would exit 0 the moment it saw the line; the current HTTP-poll script must
+// instead run out the 20s readiness window and fail.
 async function runNeverReady(timeout = 35_000): Promise<SmokeRun> {
   const directory = await mkdtemp(join(tmpdir(), 'voucha-image-lambda-smoke-never-ready-'))
   const bin = join(directory, 'bin')
@@ -119,7 +118,7 @@ async function runNeverReady(timeout = 35_000): Promise<SmokeRun> {
   await writeExecutable(
     join(bin, 'node'),
     `echo launch >> "$EVENTS_FILE"
-echo 'Lambda dev server: port 41001 in use (attempt 1/5), retrying in 241ms'
+echo 'Lambda dev server: http://localhost:41001'
 trap 'exit 0' INT TERM
 while true; do /bin/sleep 1; done`,
   )
@@ -165,7 +164,7 @@ describe('Image lambda smoke port collision recovery', () => {
     expect(run.allocations.trim()).toBe('1')
   })
 
-  it('does not accept a retry-warning log line as readiness (regression for defect 1)', async () => {
+  it('does not accept the startup banner as readiness (regression for defect 1)', async () => {
     const run = await runNeverReady()
 
     expect(run.result).toBeInstanceOf(Error)
@@ -175,15 +174,12 @@ describe('Image lambda smoke port collision recovery', () => {
 })
 
 describe('Image lambda smoke test hardening', () => {
-  it('uses HTTP readiness with an allocated port, a cleanup trap, and nested diagnostics', () => {
+  it('uses HTTP readiness with an allocated port and a cleanup trap', () => {
     expect(smokeScriptSource).toContain('ci/allocate-browser-safe-ports.py 1')
     expect(smokeScriptSource).toContain('trap cleanup EXIT INT TERM')
     expect(smokeScriptSource).toContain('http://127.0.0.1:${IMAGE_LAMBDA_PORT}/health')
-    expect(smokeScriptSource).toContain('"S3_BUCKET_IMAGES=test-images"')
-    expect(smokeScriptSource).toContain('"S3_BUCKET_RENDERS=test-renders"')
-    expect(smokeScriptSource).toContain(
-      'BROWSER_PORT_DIAGNOSTICS_DIR=$BASE_DIAGNOSTICS_DIR/smoke-attempt-$attempt',
-    )
+    expect(smokeScriptSource).toContain('S3_BUCKET_IMAGES=test-images')
+    expect(smokeScriptSource).toContain('S3_BUCKET_RENDERS=test-renders')
     expect(smokeScriptSource).not.toContain('grep -q "Lambda dev server:"')
   })
 })

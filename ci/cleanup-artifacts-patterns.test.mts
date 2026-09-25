@@ -8,11 +8,9 @@ const KEEP_NAMES = [
   'articles-123456789-2',
   'storybook-123456789-2',
   'next-static-abc123',
-  'browser-port-diagnostics-web',
-  // Same category as browser-port-diagnostics-*: best-effort diagnostic evidence for an
-  // intermittent CI failure (issue #10937). retention-days: 1 already bounds storage cost, so
-  // there is no need to also delete it on the very run whose evidence it is meant to preserve --
-  // cleanup-run fires from the terminal *success* fan-in (main-web.yml, main-checks.yml), which
+  // Best-effort diagnostic evidence for an intermittent CI failure (issue #10937).
+  // retention-days: 1 already bounds storage cost, so there is no need to also delete it on the
+  // very run whose evidence it is meant to preserve -- cleanup-run fires from the terminal *success* fan-in (main-web.yml, main-checks.yml), which
   // would otherwise destroy the healthy-but-slow case Phase 1 exists to capture.
   'web-build-timings-build-web-targets-123-1',
   // Same reasoning as web-build-timings-* above, for issue #51: a flaky test that fails then

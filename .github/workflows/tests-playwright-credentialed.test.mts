@@ -126,25 +126,14 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
     expect(allocate).toBeGreaterThan(install)
   })
 
-  it('holds credentialed Playwright ports until each consumer binds', () => {
-    const allocationStep = credentialedWorkflowText.slice(
-      credentialedWorkflowText.indexOf('- name: Allocate ports'),
-      credentialedWorkflowText.indexOf('- name: Confirm port holder'),
+  it('allocates every credentialed Playwright port in one print-and-exit call', () => {
+    expect(credentialedWorkflowText.match(/allocate-browser-safe-ports\.py/g)).toHaveLength(1)
+    expect(credentialedWorkflowText).toContain(
+      'PORTS=$(python3 ci/allocate-browser-safe-ports.py 4)',
     )
-
-    expect(
-      allocationStep.match(/python3 ci\/allocate-browser-safe-ports\.py 4 --hold/g),
-    ).toHaveLength(1)
-    expect(allocationStep).toContain(
+    expect(credentialedWorkflowText).toContain(
       'read -r PORT NEXT_PORT IMAGE_LAMBDA_PORT WORKER_PORT <<< "$PORTS"',
     )
-    expect(allocationStep).toContain('PORT_HOLD_DIR=$HOLD_DIR')
-    expect(allocationStep).toContain('--check --hold-dir "$HOLD_DIR"')
-    expect(allocationStep).not.toContain('lsof -ti:"$p"')
-    expect(allocationStep).not.toContain('deterministic allocation will not retry')
-    expect(allocationStep).not.toContain('re-randomizing')
-    expect(credentialedWorkflowText).toContain('name: Confirm port holder')
-    expect(credentialedWorkflowText).toContain('name: Stop port holder')
   })
 
   it('selects every owning suite when shared port allocation inputs change', () => {

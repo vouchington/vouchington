@@ -1,33 +1,17 @@
-import { EventEmitter } from 'node:events'
+import { execFile as execFileCallback } from 'node:child_process'
+import { once } from 'node:events'
 import http from 'node:http'
+import type { AddressInfo } from 'node:net'
+import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { listenOnEphemeralPort } from '../ts-shared/utils/ephemeral-ports.mts'
 
-import { listenWithRetry, server } from './dev-server.mts'
+import { listen, server } from './dev-server.mts'
 import { PLAYWRIGHT_PODCAST_COVER_URL } from './playwright-podcast-cover.mts'
 
-type ListenOutcome = 'EADDRINUSE' | 'ok'
-
-function createFakeServer(outcomes: ListenOutcome[]): { attempts: number[]; fake: http.Server } {
-  const emitter = new EventEmitter()
-  const attempts: number[] = []
-  const fake = emitter as unknown as http.Server
-  fake.listen = ((port: number, callback?: () => void) => {
-    attempts.push(port)
-    if (callback) {
-      fake.once('listening', callback)
-    }
-    const outcome = outcomes.shift()
-    if (outcome === 'ok') {
-      emitter.emit('listening')
-    } else {
-      emitter.emit('error', Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' }))
-    }
-    return fake
-  }) as unknown as http.Server['listen']
-  return { attempts, fake }
-}
+const execFile = promisify(execFileCallback)
 
 let origin: string
 
@@ -83,60 +67,41 @@ describe('Lambda dev server Playwright fixture', () => {
   })
 })
 
-describe('listenWithRetry', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
-  it('retries an EADDRINUSE bind and succeeds once the port frees up', async () => {
-    const { attempts, fake } = createFakeServer(['EADDRINUSE', 'EADDRINUSE', 'ok'])
+describe('listen', () => {
+  it('prints the requested port in the banner once bound', async () => {
+    const target = http.createServer()
     const logSpy = vi.spyOn(console, 'log').mockReturnValue(undefined)
-    const warnSpy = vi.spyOn(console, 'warn').mockReturnValue(undefined)
+    try {
+      listen(target, 0)
+      await once(target, 'listening')
 
-    listenWithRetry(fake, 4100)
-    expect(attempts).toEqual([4100])
-    expect(logSpy).not.toHaveBeenCalled()
-
-    await vi.advanceTimersToNextTimerAsync()
-    expect(attempts).toEqual([4100, 4100])
-    expect(logSpy).not.toHaveBeenCalled()
-
-    await vi.advanceTimersToNextTimerAsync()
-    expect(attempts).toEqual([4100, 4100, 4100])
-    expect(logSpy).toHaveBeenCalledTimes(4)
-    expect(logSpy).toHaveBeenCalledWith('Lambda dev server: http://localhost:4100')
-    expect(warnSpy).toHaveBeenCalledTimes(2)
-
-    logSpy.mockRestore()
-    warnSpy.mockRestore()
+      expect(logSpy).toHaveBeenCalledWith('Lambda dev server: http://localhost:0')
+    } finally {
+      logSpy.mockRestore()
+      target.close()
+    }
   })
 
-  // The fake server emits 'error' synchronously inside listen(), so these two tests can
-  // assert a synchronous toThrow(). A real http.Server emits 'error' asynchronously, so
-  // the equivalent throw there surfaces as an uncaughtException on a later tick, not a
-  // throw the caller can catch directly — see the comment on that throw in dev-server.mts.
-  it('throws once the attempt budget is exhausted', () => {
-    const { attempts, fake } = createFakeServer(['EADDRINUSE'])
-
-    expect(() => listenWithRetry(fake, 4100, 1, { maxAttempts: 1 })).toThrow('EADDRINUSE')
-    expect(attempts).toEqual([4100])
-  })
-
-  it('rethrows a non-EADDRINUSE bind error immediately without retrying', () => {
-    const emitter = new EventEmitter()
-    const fake = emitter as unknown as http.Server
-    let attempts = 0
-    fake.listen = (() => {
-      attempts += 1
-      emitter.emit('error', Object.assign(new Error('listen EACCES'), { code: 'EACCES' }))
-      return fake
-    }) as unknown as http.Server['listen']
-
-    expect(() => listenWithRetry(fake, 80)).toThrow('EACCES')
-    expect(attempts).toBe(1)
-  })
+  // The image-lambda smoke test reallocates a port only when the dev server exits and its log
+  // contains EADDRINUSE, so a bind collision must crash the real entry point with that text.
+  it(
+    'exits non-zero with EADDRINUSE when its port is already bound',
+    { timeout: 20_000 },
+    async () => {
+      const blocker = http.createServer()
+      blocker.listen(0)
+      await once(blocker, 'listening')
+      const { port } = blocker.address() as AddressInfo
+      try {
+        await expect(
+          execFile(process.execPath, [fileURLToPath(new URL('dev-server.mts', import.meta.url))], {
+            env: { ...process.env, IMAGE_LAMBDA_PORT: String(port) },
+            timeout: 15_000,
+          }),
+        ).rejects.toMatchObject({ code: 1, stderr: expect.stringMatching(/EADDRINUSE/) })
+      } finally {
+        blocker.close()
+      }
+    },
+  )
 })

@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import os
 import shutil
-import signal
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
@@ -72,58 +69,7 @@ if _MOD is not None:
     globals().update({name: getattr(_MOD, name) for name in dir(_MOD) if not name.startswith("_")})
 
 
-def pid_is_alive(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except OSError:
-        return False
-    return True
-
-
-def workspace_from_argv(argv: list[str]) -> str:
-    if "--workspace" in argv:
-        index = argv.index("--workspace")
-        if index + 1 < len(argv):
-            return argv[index + 1]
-    return (
-        os.environ.get("PORT_HOLD_WORKSPACE")
-        or os.environ.get("VOUCHA_PORT_HOLD_WORKSPACE")
-        or os.environ.get("GITHUB_WORKSPACE")
-        or os.getcwd()
-    )
-
-
-def reap_legacy_voucha_identity(workspace: str) -> None:
-    digest = hashlib.sha256(str(Path(workspace).resolve()).encode()).hexdigest()
-    pid_path = Path(f"/tmp/voucha-port-hold-{digest}") / "pid"
-    if not pid_path.is_file():
-        return
-    try:
-        pid = int(pid_path.read_text().strip())
-    except (ValueError, OSError):
-        pid_path.unlink(missing_ok=True)
-        return
-    if not pid_is_alive(pid):
-        pid_path.unlink(missing_ok=True)
-        return
-    try:
-        os.kill(pid, signal.SIGTERM)
-    except ProcessLookupError:
-        pid_path.unlink(missing_ok=True)
-        return
-    deadline = time.monotonic() + 2.0
-    while time.monotonic() < deadline and pid_is_alive(pid):
-        time.sleep(0.05)
-    if pid_is_alive(pid):
-        try:
-            os.kill(pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-    pid_path.unlink(missing_ok=True)
-
-
 if __name__ == "__main__":
-    reap_legacy_voucha_identity(workspace_from_argv(sys.argv[1:]))
     # No policy or forbidden-ports override is forwarded here: both the exec'd
     # packaged script and the pnpm-dlx-fetched CLI default those flags to the
     # runner-port-policy.json/fetch-forbidden-ports.json files vouchington-tooling

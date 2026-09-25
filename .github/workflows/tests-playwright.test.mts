@@ -137,30 +137,16 @@ describe('tests-playwright.yml', () => {
     expect(allocate).toBeGreaterThan(install)
   })
 
-  it('holds Playwright ports until each consumer binds', () => {
+  it('allocates every Playwright port in one print-and-exit call', () => {
     const allocationStep = workflow.slice(
       workflow.indexOf('- name: Allocate ports'),
       workflow.indexOf('- name: Start OTel collector'),
     )
-    const confirmStep = workflow.slice(
-      workflow.indexOf('- name: Confirm port holder'),
-      workflow.indexOf('- name: Set image origin'),
-    )
 
-    expect(
-      allocationStep.match(/python3 ci\/allocate-browser-safe-ports\.py 6 --hold/g),
-    ).toHaveLength(1)
-    expect(allocationStep).toContain('PORT_HOLD_DIR=$HOLD_DIR')
-    expect(allocationStep).toContain('--check --hold-dir "$HOLD_DIR"')
-    expect(allocationStep).not.toContain('lsof -ti:"$p"')
-    expect(allocationStep).not.toContain('deterministic allocation will not retry')
-    expect(allocationStep).not.toContain('re-randomizing')
-    expect(confirmStep).toContain('--check --hold-dir "$PORT_HOLD_DIR"')
-    expect(workflow).toContain('name: Stop port holder')
-    expect(workflow).toContain('if: ${{ always() }}')
-    expect(playwrightSharedConfig).toContain('withHeldPortRelease(')
-    expect(readFileSync('playwright/config/web-server-command.mts', 'utf8')).toContain(
-      'allocate-browser-safe-ports.py',
+    expect(workflow.match(/allocate-browser-safe-ports\.py/g)).toHaveLength(1)
+    expect(allocationStep).toContain('PORTS=$(python3 ci/allocate-browser-safe-ports.py 6)')
+    expect(allocationStep).toContain(
+      'read -r PORT NEXT_PORT IMAGE_LAMBDA_PORT WORKER_PORT OTEL_HTTP_PORT OTEL_GRPC_PORT <<< "$PORTS"',
     )
   })
 

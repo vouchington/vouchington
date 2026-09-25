@@ -177,8 +177,7 @@ jobs:
           # SELECTED_TEST_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
           # encodeSelectedFiles). A quoted read loop plus a quoted array expansion below
           # preserve paths containing spaces or shell glob metacharacters. This avoids
-          # `mapfile` (bash 4.0+) since self-hosted runner shells are not guaranteed to
-          # be bash 4+.
+          # `mapfile` (bash 4.0+) to stay portable to macOS `/bin/bash` 3.2.
           FILES=()
           if [ "${FULL_SUITE:-true}" != "true" ]; then
             if [ -z "$SELECTED_TEST_FILES" ]; then

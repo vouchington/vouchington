@@ -15,7 +15,6 @@ import {
   imageLambdaEnv,
   nodeServerCommand,
   shellQuote,
-  withHeldPortRelease,
 } from './web-server-command.mts'
 const __dirname = fileURLToPath(new URL('../..', import.meta.url))
 
@@ -101,17 +100,14 @@ export function createPlaywrightConfig({
     projects,
     webServer: [
       {
-        command: withHeldPortRelease(
-          BACKEND_PORT,
-          nodeServerCommand({
-            name: 'backend',
-            serviceName: 'voucha-api-e2e',
-            command: backendCommand,
-            logDir: PLAYWRIGHT_WEB_SERVER_LOG_DIR,
-            otelEnabled,
-            otelPreload: './backend/modules/on-error/sentry-preload.mts',
-          }),
-        ),
+        command: nodeServerCommand({
+          name: 'backend',
+          serviceName: 'voucha-api-e2e',
+          command: backendCommand,
+          logDir: PLAYWRIGHT_WEB_SERVER_LOG_DIR,
+          otelEnabled,
+          otelPreload: './backend/modules/on-error/sentry-preload.mts',
+        }),
         name: 'backend',
         url: `${BACKEND_URL}/infra/ping`,
         reuseExistingServer,
@@ -122,17 +118,14 @@ export function createPlaywrightConfig({
         gracefulShutdown: otelGracefulShutdown,
       },
       {
-        command: withHeldPortRelease(
-          IMAGE_LAMBDA_PORT,
-          nodeServerCommand({
-            name: 'lambdas',
-            serviceName: 'voucha-lambdas-e2e',
-            command: `IMAGE_LAMBDA_PORT=${IMAGE_LAMBDA_PORT} node lambdas/dev-server.mts`,
-            logDir: PLAYWRIGHT_WEB_SERVER_LOG_DIR,
-            otelEnabled,
-            otelPreload: './lambdas/shared/sentry-preload.mts',
-          }),
-        ),
+        command: nodeServerCommand({
+          name: 'lambdas',
+          serviceName: 'voucha-lambdas-e2e',
+          command: `IMAGE_LAMBDA_PORT=${IMAGE_LAMBDA_PORT} node lambdas/dev-server.mts`,
+          logDir: PLAYWRIGHT_WEB_SERVER_LOG_DIR,
+          otelEnabled,
+          otelPreload: './lambdas/shared/sentry-preload.mts',
+        }),
         name: 'lambdas',
         url: `${IMAGE_LAMBDA_URL}/health`,
         reuseExistingServer,
@@ -143,10 +136,7 @@ export function createPlaywrightConfig({
         gracefulShutdown: otelGracefulShutdown,
       },
       {
-        command: withHeldPortRelease(
-          WEB_PORT,
-          `bash -lc ${shellQuote(`set -o pipefail; mkdir -p ${shellQuote(PLAYWRIGHT_WEB_SERVER_LOG_DIR)}; node server.js 2>&1 | tee ${shellQuote(join(PLAYWRIGHT_WEB_SERVER_LOG_DIR, 'web.log'))}`)}`,
-        ),
+        command: `bash -lc ${shellQuote(`set -o pipefail; mkdir -p ${shellQuote(PLAYWRIGHT_WEB_SERVER_LOG_DIR)}; node server.js 2>&1 | tee ${shellQuote(join(PLAYWRIGHT_WEB_SERVER_LOG_DIR, 'web.log'))}`)}`,
         name: 'web',
         cwd: join(__dirname, 'web', '.next', 'standalone', 'web'),
         url: WEB_URL,
@@ -169,10 +159,7 @@ export function createPlaywrightConfig({
         gracefulShutdown: otelGracefulShutdown,
       },
       {
-        command: withHeldPortRelease(
-          WORKER_PORT,
-          'node cloudflare-worker/scripts/wrangler/start.mts',
-        ),
+        command: 'node cloudflare-worker/scripts/wrangler/start.mts',
         name: 'cloudflare-worker',
         url: WORKER_URL,
         reuseExistingServer,

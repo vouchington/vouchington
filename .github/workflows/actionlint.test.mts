@@ -29,7 +29,8 @@ describe('actionlint workflow', () => {
     expect(workflow).toMatch(/jdx\/mise-action@/)
     expect(workflow).toContain('      - name: Install CI tools via mise')
     expect(workflow).not.toContain('./ci/install-actionlint.sh')
-    // actions/cache (mise-action's default) hangs on self-hosted runners — must be disabled.
+    // mise-action caches through actions/cache by default; the repository cache policy
+    // permits only the pnpm store and Playwright browsers.
     expect(workflow).toContain('cache: false')
   })
 

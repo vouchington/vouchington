@@ -161,7 +161,7 @@ describe('Web Tests workflow', () => {
     })
   })
 
-  it('never round-trips the Vite transform cache through actions/cache on the self-hosted runner', () => {
+  it('never round-trips the Vite transform cache through actions/cache', () => {
     const tests = jobSection('web-tests')
 
     expect(tests).not.toContain('Restore Vite transform cache')
