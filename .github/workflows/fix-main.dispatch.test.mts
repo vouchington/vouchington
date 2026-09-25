@@ -206,20 +206,11 @@ describe('fix-main workflow', () => {
     expect(decideStep).toBeDefined()
     expect(decideStep?.run).toContain('node ci/transient-retry/decide.mts')
 
-    const targetedRerunStep = triageJob?.steps?.find(
-      s => s.name === 'Rerun targeted job on transient match',
-    )
     const workflowRerunStep = triageJob?.steps?.find(
       s => s.name === 'Rerun workflow on transient match',
     )
-    expect(targetedRerunStep?.if).toBe(
-      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id != ''",
-    )
-    expect(targetedRerunStep?.run).toContain(
-      'gh run rerun --repo "$GITHUB_REPOSITORY" --job "${{ steps.decide.outputs.rerun_job_id }}"',
-    )
     expect(workflowRerunStep?.if).toBe(
-      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id == ''",
+      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun'",
     )
     expect(workflowRerunStep?.run).toContain(
       'gh run rerun --repo "$GITHUB_REPOSITORY" "$WORKFLOW_RUN_ID"',
@@ -229,7 +220,6 @@ describe('fix-main workflow', () => {
     // source-state.outputs.current check above, not from Fix Main's own attempt number: a
     // reran Fix Main attempt (issued by fix-main-self-retry.yml for Fix Main's own transient
     // failure) must still be able to rerun the monitored workflow it was classifying.
-    expect(targetedRerunStep?.if).not.toContain('run_attempt')
     expect(workflowRerunStep?.if).not.toContain('run_attempt')
 
     const triageStep = triageJob?.steps?.find(s => s.id === 'triage')

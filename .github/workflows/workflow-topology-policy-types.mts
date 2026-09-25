@@ -1,4 +1,3 @@
-import type { TransientRetryRule } from '../../ci/transient-retry/types.mts'
 import type { ArtifactEdge } from 'no-mistakes'
 
 export type EdgeRule = readonly [from: string, to: string]
@@ -13,14 +12,6 @@ export type StepOrderRule = {
   steps: readonly StepSelector[]
 }
 export type StepSelector = { id?: string; uses?: string; name?: string }
-export type TargetedRerunPolicy = {
-  innerTargetJob: string
-  innerDownstreamJobs: readonly string[]
-  outerCallers: Readonly<Record<string, readonly string[]>>
-} & (
-  | { rerunTargetJobName: string; rerunTargetJobNameFamily?: never }
-  | { rerunTargetJobName?: never; rerunTargetJobNameFamily: string }
-)
 
 export type WorkflowTopologyPolicy = {
   jobInventory: Readonly<Record<string, readonly string[]>>
@@ -35,7 +26,4 @@ export type WorkflowTopologyPolicy = {
   exactFanIns: Readonly<Record<string, readonly string[]>>
   exactCallerJobs: Readonly<Record<string, readonly string[]>>
   stepOrders: readonly StepOrderRule[]
-  targetedReruns: Readonly<Record<string, TargetedRerunPolicy>>
 }
-
-export type TargetedRule = Pick<TransientRetryRule, 'id' | 'rerunTarget'>

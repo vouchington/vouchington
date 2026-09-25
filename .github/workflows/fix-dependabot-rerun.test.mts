@@ -34,23 +34,15 @@ describe('fix-dependabot rerun routes', () => {
     expect(decide?.run).toBe('node ci/transient-retry/decide.mts')
   })
 
-  it('routes both transient catalogue paths through one event-bound revalidation helper', () => {
+  it('routes the transient catalogue rerun through the event-bound revalidation helper', () => {
     const triageJob = parsed.jobs?.['triage-and-rerun']
-    const targeted = triageJob?.steps?.find(s => s.name === 'Rerun targeted job on transient match')
     const full = triageJob?.steps?.find(s => s.name === 'Rerun workflow on transient match')
 
-    expect(targeted?.if).toBe(
-      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id != ''",
-    )
     expect(full?.if).toBe(
-      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id == ''",
+      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun'",
     )
-    for (const step of [targeted, full]) {
-      expect(step?.run).toContain('node ci/revalidate-dependabot-rerun.mts')
-      expect(step?.env).toMatchObject(eventInputs)
-    }
-    expect(targeted?.env?.['RERUN_JOB_ID']).toBe('${{ steps.decide.outputs.rerun_job_id }}')
-    expect(full?.env).not.toHaveProperty('RERUN_JOB_ID')
+    expect(full?.run).toContain('node ci/revalidate-dependabot-rerun.mts')
+    expect(full?.env).toMatchObject(eventInputs)
   })
 
   it('routes the uncatalogued first-attempt fallback through the same helper before exiting', () => {

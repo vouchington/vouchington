@@ -4,23 +4,8 @@ import {
   formatDiagnosticReportSummaries,
   summarizeDiagnosticReport,
 } from '../vitest-diagnostic-report-summary.mts'
-import type { WorkflowRunContext } from './rules.mts'
 
-export const backendUnitJobName = 'test-backend-unit / backend-tests (1)'
-export const backendUnitJobId = 384_756_192
-
-export const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
-  conclusion: 'failure',
-  runAttempt: 1,
-  failedJobNames: [],
-  jobIds: new Map([[backendUnitJobName, backendUnitJobId]]),
-  failedJobLogs: () => Promise.resolve(new Map()),
-  failedJobAnnotations: () => Promise.resolve([]),
-  ...overrides,
-})
-
-export const workerExitErrorBlock = [
+const workerExitErrorBlock = [
   'Error: [vitest-pool]: Worker forks emitted error.',
   'Caused by: Error: Worker exited unexpectedly',
 ].join('\n')
@@ -35,17 +20,9 @@ export const workerExitAfterPassLog = [
   '##[error]Process completed with exit code 1.',
 ].join('\n')
 
-export const pluralWorkerExitAfterPassLog = workerExitAfterPassLog
-  .replace(
-    'Vitest caught 1 unhandled error during the test run.',
-    'Vitest caught 2 unhandled errors during the test run.',
-  )
-  .replace(workerExitErrorBlock, `${workerExitErrorBlock}\n${workerExitErrorBlock}`)
-  .replace('Errors  1 error', 'Errors  2 errors')
-
 // #8259 teardownTimeout instrumentation (test-helpers/vitest.setup.data-stores.mts,
 // vitest-teardown-overrun-diagnostics.mts): a real trip now also logs these lines. They must
-// stay invisible to both the auto-rerun matcher below and the failure classifier that guards it.
+// stay invisible to hasBackendUnitVitestFailure(), which gates the backend-unit runner-shutdown rerun.
 export const teardownInstrumentationLines = [
   '[vitest-teardown] phase=queues start',
   '[vitest-teardown] phase=queues done ms=42',
@@ -64,9 +41,8 @@ export const workerExitAfterPassLogWithTeardownOverrun = workerExitAfterPassLog.
 
 // #8940: the new fork-exit sentinel, saturation sentinel, diagnostic-report summarizer, and
 // unfinished-modules/sentinel-roll-up reporter sections all land in the same job log on a real
-// trip. Every one of them must stay invisible to both the auto-rerun matcher below and
-// hasBackendUnitVitestFailure() — this mirrors the #8259 teardownInstrumentationLines block above,
-// covering the new deliverable-1/2 emitters instead of deliverable-2's teardown instrumentation.
+// trip. Every one of them must stay invisible to hasBackendUnitVitestFailure() — this mirrors the
+// #8259 teardownInstrumentationLines block above for the fork-exit and diagnostics emitters.
 export const forkExitSentinelLine =
   '[vitest-fork-exit] pid=4242 project=backend-mocks module=backend/services/jwt-session/flows.test.mts mode=exit code=0 heapUsedMB=812.3 heapLimitMB=4288.0 heapPctOfLimit=18.9 rssMB=940.1 uptimeMs=48213'
 export const valkeySaturationLine =
@@ -74,12 +50,8 @@ export const valkeySaturationLine =
 // Mirrors the real SerializedError shape captured from a genuine occurrence (job 91338179263,
 // run 30687491399 attempt 2 shard 2): Vitest's own object carries `type`/`stacks` (a ParsedStack[]
 // keyed on frame index once run through serializeDiagnosticsError's structural walk), not a plain
-// `{name, message}` pair — and separately includes a full `stack` string, since that field is what
-// let the classifier fix below be proven necessary: a short `stack` string (unlike the real
-// capture's 140+ char pnpm-hashed paths, which push it past the reporter's 900-char truncation
-// before it can ever render) fits inside the JSON dump here and reproduces both marker strings
-// verbatim, so this fixture only stays neutral because vitestWorkerForksEmittedErrorPattern /
-// vitestWorkerExitedUnexpectedlyCausePattern are line-anchored, not because of truncation luck.
+// `{name, message}` pair, plus a short `stack` string that fits inside the reporter's 900-char
+// truncation and so renders verbatim in the JSON dump.
 export const workerExitDiagnosticsBlock = formatWorkerExitDiagnostics(
   'failed',
   [{ kind: 'started', moduleId: 'backend/services/jwt-session/flows.test.mts' }],
@@ -164,18 +136,3 @@ export const workerExitAfterPassLogWithNewInstrumentation = workerExitAfterPassL
   '##[error]Process completed with exit code 1.',
   `${workerExitInstrumentationLines}\n##[error]Process completed with exit code 1.`,
 )
-
-export const childProcessEmitUnexpectedExitLog = [
-  'Run pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend/analytics-integration --project backend-data-stores --project backend-mocks --project backend-modules --project backend-test-helpers --project backend-email-templates --shard 1/2 --coverage',
-  'Vitest caught 1 unhandled error during the test run.',
-  'Error: [vitest-pool]: Worker forks emitted error.',
-  ' ❯ EventEmitter.onTaskError node_modules/.pnpm/vitest@vNEXT/node_modules/vitest/dist/chunks/cli-api.BK8pd4xc.js:3459:21',
-  ' ❯ ChildProcess.emitUnexpectedExit node_modules/.pnpm/vitest@vNEXT/node_modules/vitest/dist/chunks/cli-api.BK8pd4xc.js:3025:22',
-  ' ❯ ChildProcess.emit node:events:509:20',
-  'Caused by: Error: Worker exited unexpectedly',
-  ' ❯ ChildProcess.emitUnexpectedExit node_modules/.pnpm/vitest@vNEXT/node_modules/vitest/dist/chunks/cli-api.BK8pd4xc.js:3023:33',
-  'Test Files  921 passed | 2 skipped (923)',
-  'Tests  6639 passed | 9 skipped (6648)',
-  'Errors  1 error',
-  '##[error]Process completed with exit code 1.',
-].join('\n')

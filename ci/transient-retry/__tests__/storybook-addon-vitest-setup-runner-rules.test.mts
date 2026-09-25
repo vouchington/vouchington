@@ -25,10 +25,9 @@ ${runnerMissingAttempt}
     const result = await decide(ctx, RULES)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('storybook-browser-startup-transient')
-    expect(result.rerunJobId).toBeUndefined()
   })
 
-  it('targets the failed Storybook leaf when the overall workflow was cancelled', async () => {
+  it('reruns a failed Storybook leaf when the overall workflow was cancelled', async () => {
     const ctx = makeCtx({
       workflowName: 'CI',
       conclusion: 'cancelled',
@@ -37,7 +36,6 @@ ${runnerMissingAttempt}
         [ciStorybookJobName, 'failure'],
         ['unrelated cancelled job', 'cancelled'],
       ]),
-      jobIds: new Map([[ciStorybookJobName, 987]]),
       jobLogs: names => Promise.resolve(new Map(names.map(name => [name, matchingLog]))),
     })
     await expect(decide(ctx, RULES)).resolves.toEqual({
@@ -52,7 +50,6 @@ ${runnerMissingAttempt}
       conclusion: 'cancelled',
       failedJobNames: [ciStorybookJobName],
       jobConclusions: new Map([[ciStorybookJobName, 'cancelled']]),
-      jobIds: new Map([[ciStorybookJobName, 987]]),
       jobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
     })
     expect((await decide(ctx, RULES)).matchedRule).not.toBe('storybook-browser-startup-transient')
@@ -215,6 +212,5 @@ ${runnerMissingAttempt}
     const result = await decide(ctx, RULES)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('storybook-browser-startup-transient')
-    expect(result.rerunJobId).toBeUndefined()
   })
 })

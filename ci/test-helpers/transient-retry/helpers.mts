@@ -4,10 +4,6 @@ export const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRu
   workflowName: 'CI',
   conclusion: 'failure',
   runAttempt: 1,
-  jobIds: new Map([
-    ['storybook-build / storybook', 1],
-    ['storybook / storybook', 2],
-  ]),
   failedJobNames: [],
   failedJobLogs: () => Promise.resolve(new Map()),
   failedJobAnnotations: () => Promise.resolve([]),

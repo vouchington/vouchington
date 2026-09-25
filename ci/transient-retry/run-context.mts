@@ -115,7 +115,6 @@ export async function buildWorkflowRunContext({
   const rawJobEntries = allJobEntries.filter(job => isFailedWorkflowConclusion(job.conclusion))
   const failedJobNames = rawJobEntries.map(job => job.name)
   const jobConclusions = new Map(allJobEntries.map(job => [job.name, job.conclusion]))
-  const jobIds = new Map(allJobEntries.map(job => [job.name, job.id]))
   const jobSteps = new Map(allJobEntries.map(job => [job.name, job.steps ?? []]))
 
   const { failedJobLogs, failedJobLogFetchFailures, jobLogs } = createLogFetchers({
@@ -186,7 +185,6 @@ export async function buildWorkflowRunContext({
     ruleAttempts,
     jobNames: allJobEntries.map(job => job.name),
     jobConclusions,
-    jobIds,
     jobSteps,
     failedJobNames,
     failedJobLogs,

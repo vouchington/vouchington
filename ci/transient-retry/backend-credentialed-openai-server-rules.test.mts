@@ -11,19 +11,6 @@ import { RULES, type WorkflowRunContext } from './rules.mts'
 const backendCredentialedJobName = 'test-backend-credentialed / backend-credentialed-tests'
 const backendUnitJobName = 'test-backend-unit / backend-tests (1)'
 
-const matchingBedrockTimeoutLog = buildBackendCredentialedFailureLog([
-  {
-    project: 'backend-bedrock',
-    path: 'backend/services/bedrock-embeddings/single/__tests__/index.bedrock.test.mts',
-    titlePath:
-      'Bedrock Nova multimodal embeddings > returns a 1024-dimensional text embedding from the real Bedrock API',
-    markerLines: [
-      'Error: Test timed out in 30000ms.',
-      'If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".',
-    ],
-  },
-])
-
 // Two credentialed OpenAI probes failing simultaneously from one shared provider-side 500 — the
 // only shape that exercises hasOnlyVitestFailuresWithMarkers's every-block branch.
 const matchingOpenAIServerErrorLog = buildBackendCredentialedFailureLog([
@@ -153,53 +140,8 @@ describe('backend-credentialed-provider-smoke-test-transient (OpenAI server erro
     expect(result.matchedRule).toBe('backend-credentialed-provider-smoke-test-transient')
   })
 
-  it('matches paired OpenAI 500 and backend unit worker-exit transients on Main CI backend', async () => {
+  it('dispatches an OpenAI 500 paired with a backend unit worker exit after all tests passed', async () => {
     const ctx = makeCtx({
-      failedJobNames: [backendCredentialedJobName, backendUnitJobName],
-      failedJobLogs: () =>
-        Promise.resolve(
-          new Map([
-            [backendCredentialedJobName, matchingOpenAIServerErrorLog],
-            [backendUnitJobName, backendUnitWorkerExitAfterPassLog],
-          ]),
-        ),
-    })
-
-    const result = await decide(ctx, RULES)
-
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('main-backend-credentialed-provider-and-unit-worker-exit')
-    expect(result.rerunJobId).toBeUndefined()
-  })
-
-  it('does not match paired non-OpenAI provider transients mixed with non-test terminal errors', async () => {
-    const ctx = makeCtx({
-      failedJobNames: [backendCredentialedJobName, backendUnitJobName],
-      failedJobLogs: () =>
-        Promise.resolve(
-          new Map([
-            [
-              backendCredentialedJobName,
-              [
-                matchingBedrockTimeoutLog,
-                'Vitest caught 1 unhandled error during the test run.',
-                'Error: default reporter failed after tests completed',
-              ].join('\n'),
-            ],
-            [backendUnitJobName, backendUnitWorkerExitAfterPassLog],
-          ]),
-        ),
-    })
-
-    const result = await decide(ctx, RULES)
-
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
-  })
-
-  it('does not match the paired transient after the retry cap is exhausted', async () => {
-    const ctx = makeCtx({
-      runAttempt: 2,
       failedJobNames: [backendCredentialedJobName, backendUnitJobName],
       failedJobLogs: () =>
         Promise.resolve(

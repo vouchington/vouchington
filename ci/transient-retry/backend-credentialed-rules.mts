@@ -2,10 +2,6 @@ import {
   hasBackendCredentialedProviderSmokeTestEnvelope,
   hasBackendCredentialedProviderTransientFailure,
 } from './backend-credentialed-log-fingerprints.mts'
-import {
-  hasBackendUnitVitestWorkerUnexpectedExitAfterPassingSummary,
-  isBackendUnitShard,
-} from './backend-test-rules.mts'
 import type { TransientRetryRule } from './types.mts'
 
 const backendProviderTestJobName = 'test-backend-credentialed / backend-credentialed-tests'
@@ -31,57 +27,6 @@ export function isBackendCredentialedProviderSmokeTestTransient(log: string): bo
   if (!hasBackendCredentialedProviderSmokeTestEnvelope(log)) return false
 
   return hasBackendCredentialedProviderTransientFailure(log)
-}
-
-function getSolePairedBackendUnitWorkerExitFailure(
-  failedJobNames: string[],
-  credentialedLog: string,
-  unitLog: string,
-): string | null {
-  if (!isBackendCredentialedProviderSmokeTestTransient(credentialedLog)) return null
-
-  const leafFailures = failedJobNames.filter(name => !CI_AGGREGATE_FAN_IN_JOB_NAMES.has(name))
-  const backendUnitFailures = leafFailures.filter(isBackendUnitShard)
-  if (
-    !leafFailures.includes(backendProviderTestJobName) ||
-    leafFailures.length !== 2 ||
-    backendUnitFailures.length !== 1
-  )
-    return null
-
-  return hasBackendUnitVitestWorkerUnexpectedExitAfterPassingSummary(unitLog)
-    ? (backendUnitFailures[0] ?? null)
-    : null
-}
-
-export const mainBackendCredentialedProviderAndUnitWorkerExitTransientRule: TransientRetryRule = {
-  id: 'main-backend-credentialed-provider-and-unit-worker-exit',
-  consumerKey: 'main-backend-credentialed-provider-and-unit-vitest',
-  rootCauseKey: 'external-provider-transient-plus-worker-exit-after-pass',
-  description:
-    'Main backend CI fails in the credentialed provider smoke tests and a backend unit shard that completed all tests before a Vitest worker exited unexpectedly.',
-  rationale:
-    'Both failed leaves are independently retryable: the credentialed job hit a provider-side transient, and the unit shard reported all files/tests passed before Vitest emitted only worker-pool exit errors. A full run rerun is required because two separate jobs failed.',
-  exampleRunIds: ['30156142228'],
-  maxAttempts: 1,
-  needsLogs: true,
-  match: async ctx => {
-    if (ctx.workflowName !== 'Main CI (backend)' || ctx.conclusion !== 'failure') return false
-    if (!ctx.failedJobNames.includes(backendProviderTestJobName)) return false
-
-    const logs = await ctx.failedJobLogs()
-    const credentialedLog = logs.get(backendProviderTestJobName) ?? ''
-    const backendUnitJobName = ctx.failedJobNames.find(isBackendUnitShard)
-    if (!backendUnitJobName) return false
-
-    return (
-      getSolePairedBackendUnitWorkerExitFailure(
-        ctx.failedJobNames,
-        credentialedLog,
-        logs.get(backendUnitJobName) ?? '',
-      ) !== null
-    )
-  },
 }
 
 export const backendCredentialedProviderSmokeTestTransientRule: TransientRetryRule = {

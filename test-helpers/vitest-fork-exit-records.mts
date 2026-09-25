@@ -123,11 +123,10 @@ export function formatForkExitSentinelSection(summary: ForkExitRecordSummary): s
       `  - pid=${record.pid} project=${record.project} module=${record.module} mode=${record.mode} code=${record.code}`,
     )
     // sanitizeInlineErrorMessage collapses the record's raw, unbounded message to one line: this
-    // report is written straight into the CI job log the transient-retry classifier scans
-    // (ci/transient-retry/backend-test-rules.mts's line-anchored `Error: [vitest-pool]: Worker
-    // forks emitted error.` / `Caused by: Error: Worker exited unexpectedly` patterns), so a raw
-    // multi-line Error.message could otherwise forge a fresh anchored line and collide with them —
-    // the same collision class documented for diagnostic-report JSON in
+    // report is written straight into the CI job log the transient-retry classifier scans, so a raw
+    // multi-line Error.message could otherwise forge fresh physical lines (such as Vitest's own
+    // `Error: [vitest-pool]: Worker forks emitted error.`) that a line-anchored log predicate reads
+    // as real output — the same collision class documented for diagnostic-report JSON in
     // docs/development/reference-vitest-worker-exit-diagnostics.md.
     if (record.errorMessage)
       lines.push(`    error: ${sanitizeInlineErrorMessage(record.errorMessage)}`)

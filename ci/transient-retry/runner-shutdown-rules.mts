@@ -4,7 +4,7 @@ import type { TransientRetryRule } from './types.mts'
 export const runnerShutdownLeafRerunRule: TransientRetryRule = {
   id: 'runner-shutdown-leaf-rerun',
   consumerKey: 'idempotent-ci-leaf-process',
-  rootCauseKey: 'self-hosted-runner-shutdown',
+  rootCauseKey: 'runner-shutdown',
   description:
     'A runner shutdown cancels an idempotent CI leaf job before it completes, causing the leaf and its aggregate fan-ins to fail.',
   rationale:
@@ -23,6 +23,5 @@ export const runnerShutdownLeafRerunRule: TransientRetryRule = {
   // The consumer-specific failure guards prevent masking a real failure on either attempt.
   maxAttempts: 2,
   needsLogs: true,
-  needsAnnotations: true,
   match: runnerShutdownLeafRerunMatch,
 }

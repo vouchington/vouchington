@@ -32,8 +32,8 @@ Review Vitest tests. Pick exactly one concrete, bounded improvement that is safe
   this prompt has no issue-publication path.
 - Avoid unnecessary mocking, especially internal service calls that can be exercised directly.
 - Before proposing a fix for a recurring failure signature, check whether it already recurred:
-  `git log` / `git blame` on the failing test file, `vitest.config.mts`,
-  `test-helpers/vitest-config/**`, and `ci/transient-retry/backend-test-rules.mts`. A signature with
+  `git log` / `git blame` on the failing test file, `vitest.config.mts`, and
+  `test-helpers/vitest-config/**`. A signature with
   multiple prior patches needs the fix that closes the pattern, not another partial instance of it.
 - Honor a documented stopping condition before opening a new instrumentation pass. If
   [Vitest Worker Exit Diagnostics § Stopping condition](../../development/reference-vitest-worker-exit-diagnostics.md#stopping-condition)

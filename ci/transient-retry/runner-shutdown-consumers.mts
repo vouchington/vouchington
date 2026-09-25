@@ -4,7 +4,6 @@ import {
   hasGenericFailureSignal,
   isCleanRunnerShutdown,
 } from './runner-shutdown-fingerprints.mts'
-import { hasSelfHostedRunnerLostCommunicationAnnotation } from './github-annotation-fingerprints.mts'
 import { isStatefulCiJob } from './stateful-job.mts'
 import {
   CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES,
@@ -13,7 +12,6 @@ import {
 import {
   findRunnerShutdownConsumer,
   isCoverageProducerJob,
-  isWebIntegrationShardJob,
   playwrightSelectJobName,
 } from './runner-shutdown-consumer-registry.mts'
 import type { WorkflowRunContext } from './types.mts'
@@ -40,29 +38,9 @@ export async function runnerShutdownLeafRerunMatch(ctx: WorkflowRunContext): Pro
   if (!ctx.failedJobNames.some(name => !CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES.has(name)))
     return false
 
-  const nonAggregateFailures = ctx.failedJobNames.filter(
-    name =>
-      !CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES.has(name) && !CI_PATCH_COVERAGE_JOB_NAMES.has(name),
-  )
   const logs = await ctx.failedJobLogs()
   if ((await ctx.failedJobLogFetchFailures?.())?.size) return false
   if ([...logs.values()].some(hasExplicitOomEvidence)) return false
-  const webIntegrationJobName = nonAggregateFailures.find(isWebIntegrationShardJob)
-  const webIntegrationLog = logs.get(webIntegrationJobName ?? '') ?? ''
-  const webIntegrationConsumer = findRunnerShutdownConsumer(webIntegrationJobName ?? '')
-  if (
-    nonAggregateFailures.length === 1 &&
-    webIntegrationJobName !== undefined &&
-    nonAggregateFailures[0] === webIntegrationJobName &&
-    webIntegrationConsumer !== undefined &&
-    !hasGenericFailureSignal(webIntegrationLog) &&
-    !webIntegrationConsumer.isConsumerFailure(webIntegrationLog) &&
-    (await ctx.failedJobAnnotations(webIntegrationJobName)).some(
-      hasSelfHostedRunnerLostCommunicationAnnotation,
-    )
-  ) {
-    return true
-  }
   const isCancelledKnownConsumerWithoutFailure = (jobName: string): boolean => {
     if (ctx.jobConclusions?.get(jobName) !== 'cancelled') return false
     const consumer = findRunnerShutdownConsumer(jobName)
@@ -99,18 +77,7 @@ export async function runnerShutdownLeafRerunMatch(ctx: WorkflowRunContext): Pro
   for (const jobName of leafJobs) {
     const consumer = findRunnerShutdownConsumer(jobName)
     if (!consumer) return false
-    const log = logs.get(jobName) ?? ''
-    const lostCommunication = (await ctx.failedJobAnnotations(jobName)).some(
-      hasSelfHostedRunnerLostCommunicationAnnotation,
-    )
-    if (
-      lostCommunication &&
-      log.trim().length > 0 &&
-      !hasGenericFailureSignal(log) &&
-      !consumer.isConsumerFailure(log)
-    )
-      continue
-    if (!isCleanRunnerShutdown(log, consumer.isConsumerFailure)) return false
+    if (!isCleanRunnerShutdown(logs.get(jobName) ?? '', consumer.isConsumerFailure)) return false
   }
 
   return true

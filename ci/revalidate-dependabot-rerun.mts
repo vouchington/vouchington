@@ -20,7 +20,6 @@ function positiveInteger(value: string | undefined): number | null {
 
 function readInputs(environment: NodeJS.ProcessEnv): Inputs | null {
   const prNumber = positiveInteger(environment.PR_NUMBER)
-  const rerunJobId = environment.RERUN_JOB_ID ? positiveInteger(environment.RERUN_JOB_ID) : null
   const sourceRunAttempt = positiveInteger(environment.SOURCE_RUN_ATTEMPT)
   const sourceRunId = positiveInteger(environment.SOURCE_RUN_ID)
   const {
@@ -32,7 +31,6 @@ function readInputs(environment: NodeJS.ProcessEnv): Inputs | null {
 
   if (
     !prNumber ||
-    (environment.RERUN_JOB_ID && !rerunJobId) ||
     !sourceRunAttempt ||
     !sourceRunId ||
     !repository ||
@@ -50,7 +48,6 @@ function readInputs(environment: NodeJS.ProcessEnv): Inputs | null {
     headBranch,
     prNumber,
     repository,
-    rerunJobId,
     sourceRunAttempt,
     sourceRunConclusion,
     sourceRunId,
@@ -141,11 +138,14 @@ export async function runDependabotRerun(
     return failure('Dependabot pull request identity or head no longer matches the source event.')
   }
 
-  const rerunArgs = inputs.rerunJobId
-    ? ['run', 'rerun', '--repo', inputs.repository, '--job', String(inputs.rerunJobId)]
-    : ['run', 'rerun', '--repo', inputs.repository, String(inputs.sourceRunId)]
   try {
-    await ghExecFile('gh', rerunArgs, { maxBuffer: LOG_MAX_BUFFER_BYTES })
+    await ghExecFile(
+      'gh',
+      ['run', 'rerun', '--repo', inputs.repository, String(inputs.sourceRunId)],
+      {
+        maxBuffer: LOG_MAX_BUFFER_BYTES,
+      },
+    )
     return 0
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -159,7 +159,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,
     HEAD_BRANCH: process.env.HEAD_BRANCH,
     PR_NUMBER: process.env.PR_NUMBER,
-    RERUN_JOB_ID: process.env.RERUN_JOB_ID,
     SOURCE_RUN_ATTEMPT: process.env.SOURCE_RUN_ATTEMPT,
     SOURCE_RUN_CONCLUSION: process.env.SOURCE_RUN_CONCLUSION,
     SOURCE_RUN_ID: process.env.SOURCE_RUN_ID,

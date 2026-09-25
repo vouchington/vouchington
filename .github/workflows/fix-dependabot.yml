@@ -57,27 +57,10 @@ jobs:
           CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
         run: node ci/transient-retry/decide.mts
-      - name: Rerun targeted job on transient match
-        if: >-
-          steps.source-state.outputs.current == 'true' &&
-          steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
-          MATCHED_RULE: ${{ steps.decide.outputs.matched_rule }}
-          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
-          RERUN_JOB_ID: ${{ steps.decide.outputs.rerun_job_id }}
-          SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
-          SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
-        run: |
-          echo "Matched rule: $MATCHED_RULE"
-          node ci/revalidate-dependabot-rerun.mts
       - name: Rerun workflow on transient match
         if: >-
           steps.source-state.outputs.current == 'true' &&
-          steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id == ''
+          steps.decide.outputs.decision == 'rerun'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}

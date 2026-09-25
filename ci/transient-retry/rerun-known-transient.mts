@@ -155,23 +155,14 @@ export async function main(
   }
 
   if (dryRun) {
-    const target = result.rerunJobId === undefined ? runId : `--job ${result.rerunJobId}`
-    log(`Dry run: would run gh run rerun --repo ${repository} ${target}`)
+    log(`Dry run: would run gh run rerun --repo ${repository} ${runId}`)
     return 0
   }
 
-  const rerunArgs =
-    result.rerunJobId === undefined
-      ? ['run', 'rerun', '--repo', repository, runId]
-      : ['run', 'rerun', '--repo', repository, '--job', String(result.rerunJobId)]
-  await ghExecFile('gh', rerunArgs, {
+  await ghExecFile('gh', ['run', 'rerun', '--repo', repository, runId], {
     maxBuffer: LOG_MAX_BUFFER_BYTES,
   })
-  log(
-    result.rerunJobId === undefined
-      ? `Requested rerun for run ${runId}.`
-      : `Requested rerun for job ${result.rerunJobId}.`,
-  )
+  log(`Requested rerun for run ${runId}.`)
   return 0
 }
 

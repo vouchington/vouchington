@@ -6,11 +6,6 @@ import picomatch from 'picomatch'
 import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import {
-  backendLogoutRateLimitTestTitle,
-  backendLogoutRouteDescribeTitle,
-  backendLogoutTestPath,
-} from './backend-test-rules.mts'
 import { buildBackendCredentialedFailureLog } from './backend-credentialed-fixtures.mts'
 import {
   backendCredentialedProjects,
@@ -59,12 +54,6 @@ const backendAwsLiteralIncludePaths = (
 
 describe('repo-owned-literal-freshness', () => {
   describe('surviving repo-owned literals (Table A)', () => {
-    it('backend-test-rules.mts logout fixture path and titles are fresh', () => {
-      const source = readTracked(backendLogoutTestPath)
-      expect(source).toContain(backendLogoutRouteDescribeTitle)
-      expect(source).toContain(backendLogoutRateLimitTestTitle)
-    })
-
     it('playwright-rules.mts navigate-to helper path is fresh', () => {
       expect(trackedPaths([playwrightNavigateToHelperPath])).toEqual(
         new Set([playwrightNavigateToHelperPath]),
@@ -139,7 +128,7 @@ describe('repo-owned-literal-freshness', () => {
   })
 
   describe('worker-exit-diagnostics fixture allowlist', () => {
-    // backend-test-worker-exit-ci-rules.fixtures.mts uses these as illustrative Vitest module-id
+    // backend-unit-vitest-instrumentation.fixtures.mts uses these as illustrative Vitest module-id
     // sample values passed to formatWorkerExitDiagnostics() — the diagnostics reporter accepts an
     // arbitrary module id string, so neither literal is a freshness pin the matcher depends on.
     // 'flows.test.mts' happens to be a real tracked file under jwt-session/; 'refresh.test.mts' is
@@ -151,11 +140,7 @@ describe('repo-owned-literal-freshness', () => {
   })
 
   describe('completeness', () => {
-    const tableAPaths = new Set([
-      backendLogoutTestPath,
-      playwrightNavigateToHelperPath,
-      ...backendAwsLiteralIncludePaths,
-    ])
+    const tableAPaths = new Set([playwrightNavigateToHelperPath, ...backendAwsLiteralIncludePaths])
     // Reason required inline at the point of use above; duplicated here only as the set the scanner
     // checks against.
     const allowlistedLiterals = new Set([

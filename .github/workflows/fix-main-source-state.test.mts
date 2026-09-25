@@ -75,9 +75,6 @@ describe('fix-main source state', () => {
     const triageJob = parsedMain.jobs?.['triage-and-rerun']
     const sourceStateStep = triageJob?.steps?.find(s => s.id === 'source-state')
     const decideStep = triageJob?.steps?.find(s => s.id === 'decide')
-    const targetedRerunStep = triageJob?.steps?.find(
-      s => s.name === 'Rerun targeted job on transient match',
-    )
     const workflowRerunStep = triageJob?.steps?.find(
       s => s.name === 'Rerun workflow on transient match',
     )
@@ -94,18 +91,14 @@ describe('fix-main source state', () => {
       SOURCE_RUN_ID: '${{ github.event.workflow_run.id }}',
     })
     expect(decideStep?.if).toBe("steps.source-state.outputs.current == 'true'")
-    expect(targetedRerunStep?.if).toBe(
-      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id != ''",
-    )
     expect(workflowRerunStep?.if).toBe(
-      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id == ''",
+      "steps.source-state.outputs.current == 'true' && steps.decide.outputs.decision == 'rerun'",
     )
 
     // Duplicate-rerun protection against the monitored workflow comes from the live
     // source-state.outputs.current check above, not from Fix Main's own attempt number: a
     // reran Fix Main attempt (issued by fix-main-self-retry.yml for Fix Main's own transient
     // failure) must still be able to rerun the monitored workflow it was classifying.
-    expect(targetedRerunStep?.if).not.toContain('run_attempt')
     expect(workflowRerunStep?.if).not.toContain('run_attempt')
 
     // A stale source run must also be unable to set should_dispatch=true.

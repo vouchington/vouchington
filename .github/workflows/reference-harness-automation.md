@@ -242,9 +242,9 @@ declared exemption in `SOURCE_RUN_EXEMPTIONS`; a job outside that set, or a decl
 no longer matches a real job, fails `pnpm test -- --project ci-tools` and blocks CI.
 
 Fix Dependabot treats every `gh run rerun` request as a mutation, not merely a transient-retry
-detail. Its targeted-job, full-workflow, and uncatalogued first-attempt paths all invoke
+detail. Its catalogued full-workflow and uncatalogued first-attempt paths both invoke
 [`ci/revalidate-dependabot-rerun.mts`](../../ci/revalidate-dependabot-rerun.mts), passing the exact
-event repository, source run, PR number, branch, and SHA (plus a job ID only for targeted reruns).
+event repository, source run, PR number, branch, and SHA.
 The helper re-fetches and validates that source run, its sole PR association, and the live open
 same-repository Dependabot PR immediately before issuing exactly one rerun request. Verified
 supersession produces a notice and no mutation; malformed input, API failure, or any identity mismatch

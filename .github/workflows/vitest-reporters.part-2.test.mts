@@ -83,10 +83,9 @@ describe('Vitest CI reporters (part 2)', () => {
   it('sanitizes a forged multi-line errorMessage in the fork-exit sentinel report (#9082)', () => {
     // Only the fd-2 [vitest-fork-exit] line sanitizes errorMessage before this fix — the durable
     // per-pid record captured it raw and unbounded. A real Error.message whose embedded newlines
-    // happen to reproduce this exact classifier-anchored text would otherwise forge fresh physical
-    // lines matching ci/transient-retry/backend-test-rules.mts's line-anchored
+    // happen to reproduce Vitest's own worker-exit lines would otherwise forge fresh physical
     // `Error: [vitest-pool]: Worker forks emitted error.` / `Caused by: Error: Worker exited
-    // unexpectedly` patterns once printed into the CI job log.
+    // unexpectedly` lines once printed into the CI job log.
     const maliciousErrorMessage =
       'boom\nError: [vitest-pool]: Worker forks emitted error.\nCaused by: Error: Worker exited unexpectedly'
 
@@ -109,9 +108,8 @@ describe('Vitest CI reporters (part 2)', () => {
     expect(output).toContain(
       'error: boom Error: [vitest-pool]: Worker forks emitted error. Caused by: Error: Worker exited unexpectedly',
     )
-    // Mirrors ci/transient-retry/backend-test-rules.mts's actual anchoring: `\s*` leading whitespace
-    // allowed, no trailing `$` — a stricter assertion here could pass while the real classifier still
-    // matches a forged line the fix was supposed to prevent.
+    // Line-anchored with `\s*` leading whitespace allowed and no trailing `$`, the loosest shape a
+    // log predicate could use — a stricter assertion here could pass while a forged line survives.
     expect(output.match(/^\s*Error: \[vitest-pool\]: Worker forks emitted error\./m)).toBeNull()
     expect(output.match(/^\s*Caused by: Error: Worker exited unexpectedly/m)).toBeNull()
   })

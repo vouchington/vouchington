@@ -100,19 +100,6 @@ describe('runDependabotRerun', () => {
     ])
   })
 
-  it('revalidates before one targeted job rerun', async () => {
-    const calls: string[][] = []
-
-    await expect(
-      runDependabotRerun(
-        { ...environment, RERUN_JOB_ID: '98765' },
-        { execFile: makeExecFile(calls), now: () => NOW },
-      ),
-    ).resolves.toBe(0)
-
-    expect(rerunCalls(calls)).toEqual([['run', 'rerun', '--repo', REPOSITORY, '--job', '98765']])
-  })
-
   it.each([
     ['attempt changed', { run_attempt: 3 }, NOW],
     ['status changed', { status: 'in_progress' }, NOW],

@@ -2,16 +2,13 @@ import type { WorkflowTopology, WorkflowTopologyIndex } from 'no-mistakes'
 import type {
   EdgeRule,
   StepSelector,
-  TargetedRule,
   WorkflowTopologyPolicy,
 } from './workflow-topology-policy-types.mts'
-import { targetedRerunDiagnostics } from './workflow-topology-policy-targeted.mts'
 
 export function evaluateGraphPolicy(
   topology: WorkflowTopology,
   index: WorkflowTopologyIndex,
   policy: WorkflowTopologyPolicy,
-  targetedRules: readonly TargetedRule[],
 ): string[] {
   const diagnostics = [
     ...inventoryDiagnostics(topology, policy),
@@ -24,7 +21,6 @@ export function evaluateGraphPolicy(
     ...fanInDiagnostics(index, policy),
     ...callerDiagnostics(index, policy),
     ...stepOrderDiagnostics(index, policy),
-    ...targetedRerunDiagnostics(index, policy, targetedRules),
   ]
   return diagnostics.toSorted()
 }

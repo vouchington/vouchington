@@ -3,8 +3,8 @@
 [Back to Vitest Projects](reference-tests-vitest-projects.md#vitest-worker-exit-diagnostics)
 
 Backend unit shards occasionally fail after a fully passing summary with
-`Error: [vitest-pool]: Worker forks emitted error.` / `Caused by: Error: Worker exited unexpectedly`
-(the `backend-unit-vitest-worker-exit-after-pass` signature). Vitest 4's forks-pool rewrite
+`Error: [vitest-pool]: Worker forks emitted error.` / `Caused by: Error: Worker exited unexpectedly`.
+No transient-retry rule reruns this signature. Vitest 4's forks-pool rewrite
 (`ForksPoolWorker`, replacing tinypool — upstream
 [#8649](https://github.com/vitest-dev/vitest/issues/8649)) discards the dying fork's exit code and
 signal before the error ever reaches a reporter, so the failure carried no cause on its own. The
@@ -30,10 +30,10 @@ the unbounded message plus a stack trace bounded to 4000 characters; see
 both an `error:` line (the message) and a `stack:` line (the first 500 raw characters of the stack)
 through the same whitespace-collapse/200-char bound (`sanitizeInlineErrorMessage()`), not raw — its
 `[vitest-worker-exit-diagnostics]` block goes straight into the CI job log the transient-retry
-classifier scans, and a raw multi-line message or stack could otherwise forge a fresh anchored line
-that collides with `ci/transient-retry/backend-test-rules.mts`'s line-anchored
-`Error: [vitest-pool]: Worker forks emitted error.` / `Caused by: Error: Worker exited unexpectedly`
-patterns (#9082; the same collision class documented below for diagnostic-report JSON). The full,
+classifier scans, and a raw multi-line message or stack could otherwise forge fresh physical lines,
+such as Vitest's own `Error: [vitest-pool]: Worker forks emitted error.`, that a line-anchored log
+predicate reads as real output (#9082; the same collision class documented below for
+diagnostic-report JSON). The full,
 unbounded message and the full 4000-character stack survive only in the uploaded JSONL artifact,
 never in the job log — the reporter's `stack:` line is enough to name the throw site, not to read the
 whole trace. Before the `errorMessage` field existed, the sentinel line for these two modes carried no
@@ -82,7 +82,7 @@ count — the surfaced form of the absence signal above.
 `heapUsedMB`/`heapTotalMB`/`heapLimitMB`, `maxRssMB`, and the top native frame's module path — never
 raw report JSON, since native `CHECK failed:` text and arbitrary `nativeStack` symbols are a
 collision risk against the classifier predicates in
-`ci/transient-retry/backend-test-rules.mts`. The full report directory still uploads as a build
+`ci/transient-retry/runner-shutdown-fingerprints.mts`. The full report directory still uploads as a build
 artifact (`vitest-fork-diagnostics-backend-shard-<n>`, `if: failure()`) for anything the summary
 whitelist omits.
 
@@ -142,8 +142,8 @@ _without_ also setting `NODE_PREWARM_PORT`, producing intermittent `EADDRINUSE` 
 the same port in the shared `isolate: false` fork. #9115 fixed it by binding **only** when
 `NODE_PREWARM_PORT` is explicitly set — the production prewarm stages already set it, so that
 remains the safe, required setting — and closing the handle on shutdown. Confirm a new occurrence's
-signals actually match this table before assuming a
-`backend-unit-vitest-worker-exit-after-pass`-shaped failure is automatically this cause.
+signals actually match this table before assuming a post-pass worker-exit failure is
+automatically this cause.
 
 If the next occurrence arrives with all three signals present — sentinel presence/absence, the
 diagnostic-report summary, and the valkey-saturation pid attribution — and

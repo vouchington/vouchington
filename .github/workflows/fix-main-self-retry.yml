@@ -61,21 +61,11 @@ jobs:
           CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
         run: node ci/transient-retry/decide.mts
-      - name: Rerun targeted job on transient match
-        id: rerun-job
-        if: >-
-          steps.source-state.outputs.current == 'true' &&
-          steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Matched rule: ${{ steps.decide.outputs.matched_rule }}"
-          gh run rerun --repo "$GITHUB_REPOSITORY" --job "${{ steps.decide.outputs.rerun_job_id }}"
       - name: Rerun failed jobs on transient match
         id: rerun-failed-jobs
         if: >-
           steps.source-state.outputs.current == 'true' &&
-          steps.decide.outputs.decision == 'rerun' && steps.decide.outputs.rerun_job_id == ''
+          steps.decide.outputs.decision == 'rerun'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
@@ -107,7 +97,6 @@ jobs:
           SOURCE_OUTCOME: ${{ steps.source-state.outcome }}
           SOURCE_CURRENT: ${{ steps.source-state.outputs.current }}
           DECISION: ${{ steps.decide.outputs.decision }}
-          TARGETED_RERUN_OUTCOME: ${{ steps.rerun-job.outcome }}
           FAILED_JOBS_RERUN_OUTCOME: ${{ steps.rerun-failed-jobs.outcome }}
           ESCALATE_STATE_OUTCOME: ${{ steps.escalate-state.outcome }}
           ESCALATE_CONCLUSION: ${{ steps.escalate-state.outputs.conclusion }}
@@ -116,8 +105,7 @@ jobs:
             echo "disposition=handled" >> "$GITHUB_OUTPUT"
           elif [[ "$SOURCE_OUTCOME" == "success" && "$SOURCE_CURRENT" == "false" ]]; then
             echo "disposition=handled" >> "$GITHUB_OUTPUT"
-          elif [[ "$DECISION" == "rerun" &&
-                ( "$TARGETED_RERUN_OUTCOME" == "success" || "$FAILED_JOBS_RERUN_OUTCOME" == "success" ) ]]; then
+          elif [[ "$DECISION" == "rerun" && "$FAILED_JOBS_RERUN_OUTCOME" == "success" ]]; then
             echo "disposition=handled" >> "$GITHUB_OUTPUT"
           else
             echo "disposition=unhandled" >> "$GITHUB_OUTPUT"

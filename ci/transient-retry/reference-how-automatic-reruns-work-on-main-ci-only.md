@@ -39,10 +39,7 @@ Fix Main's **own** run (its `WORKFLOW_RUN_ID`/`WORKFLOW_NAME`/`RUN_ATTEMPT`, not
 No currently-live rule is workflow-agnostic, so `classify-self-failure` can only add a rerun when
 Fix Main's own failure happens to match a rule that is otherwise scoped to a specific monitored
 workflow or job name (for example, one of the coverage-artifact rules if Fix Main's own coverage
-step reproduces that exact fingerprint). The self-hosted-runner-only `runner-disk-admission-rejected`
-and shared-host `clean-workspace-vouchington-tooling-download-flake` rules this section previously
-named were retired with the self-hosted runner fleet and the shared clean-workspace apparatus; no
-replacement workflow-agnostic rule currently exists.
+step reproduces that exact fingerprint).
 
 A run cannot rerun its own in-progress jobs, so the rerun itself is issued from a separate sibling
 workflow, `fix-main-self-retry.yml`, which watches `Automation Fix Main`'s completed runs via

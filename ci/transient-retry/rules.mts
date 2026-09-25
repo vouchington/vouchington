@@ -1,11 +1,4 @@
-import {
-  backendCredentialedProviderSmokeTestTransientRule,
-  mainBackendCredentialedProviderAndUnitWorkerExitTransientRule,
-} from './backend-credentialed-rules.mts'
-import {
-  backendUnitValkeyGlideTimeoutRule,
-  backendUnitVitestWorkerExitAfterPassRule,
-} from './backend-test-rules.mts'
+import { backendCredentialedProviderSmokeTestTransientRule } from './backend-credentialed-rules.mts'
 import {
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
@@ -33,10 +26,7 @@ import {
 import { storybookBrowserStartupTransientRule } from './storybook-rules.mts'
 import type { TransientRetryRule } from './types.mts'
 import { mainWebStaticBuildSilentExitRule } from './web-build-rules.mts'
-import {
-  mainWebIntegrationBackendSilentStartupExitRule,
-  webIntegrationWranglerSocketClosedRule,
-} from './web-integration-rules.mts'
+import { webIntegrationWranglerSocketClosedRule } from './web-integration-rules.mts'
 import {
   mainWebVitestWorkerStartTimeoutAfterPassRule,
   webVitestSigsegvRule,
@@ -51,13 +41,9 @@ export const RULES: TransientRetryRule[] = [
   lintLinksSetupLycheeDownloadFlakeRule,
   detectChangesPathsFilterGithub5xxRule,
   gitleaksInstallReleasesDownloadFlakeRule,
-  mainBackendCredentialedProviderAndUnitWorkerExitTransientRule,
   backendCredentialedProviderSmokeTestTransientRule,
-  backendUnitValkeyGlideTimeoutRule,
-  backendUnitVitestWorkerExitAfterPassRule,
   mainWebPlaywrightSetupAptLockRule,
   mainWebPlaywrightWorkerNavigationTimeoutRule,
-  mainWebIntegrationBackendSilentStartupExitRule,
   webIntegrationWranglerSocketClosedRule,
   coverageTransportExhaustedRule,
   coverageArtifactDownloadTimeoutRule,

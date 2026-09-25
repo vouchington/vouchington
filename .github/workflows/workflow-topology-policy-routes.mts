@@ -134,17 +134,4 @@ export const routePolicy = {
   },
   exactCallerJobs,
   stepOrders: [],
-  targetedReruns: {
-    'backend-unit-vitest-worker-exit-after-pass': {
-      innerTargetJob: '.github/workflows/tests-backend-unit.yml#backend-tests',
-      rerunTargetJobNameFamily: 'test-backend-unit / backend-tests (',
-      innerDownstreamJobs: [],
-      outerCallers: {
-        '.github/workflows/ci.yml#test-backend-unit': splitIds(
-          '.github/workflows/ci.yml#build .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing .github/workflows/ci.yml#upload-codecov',
-        ),
-        '.github/workflows/main-backend.yml#test-backend-unit': [],
-      },
-    },
-  },
 } satisfies Omit<WorkflowTopologyPolicy, 'jobInventory' | 'unlockedWorkflowReasons'>
