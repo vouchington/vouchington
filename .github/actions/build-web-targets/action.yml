@@ -59,8 +59,10 @@ runs:
       id: validate-restored-web-targets
       if: ${{ inputs.shared-build-cache-mode == 'consumer' }}
       shell: bash
+      env:
+        CACHE_HIT: ${{ steps.restore-web-targets.outputs.cache-hit }}
       run: |
-        if [ "${{ steps.restore-web-targets.outputs.cache-hit }}" = 'true' ] && \
+        if [ "$CACHE_HIT" = 'true' ] && \
           node ci/web-build-cache-manifest.mts verify; then
           echo 'complete=true' >> "$GITHUB_OUTPUT"
         else

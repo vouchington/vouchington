@@ -184,13 +184,14 @@ exec "$REAL_CURL" "\${rewritten[@]}"
       expect(checksumRequests).toBe(1)
 
       const installedPath = (await readFile(githubPath, 'utf8')).trim()
-      const scanScript = (scan.run ?? 'exit 99').replace(
-        '${{ steps.gitleaks_scan.outputs.log-opts }}',
-        'base..head',
-      )
-      await execFileAsync('/bin/bash', ['-e', '-o', 'pipefail', '-c', scanScript], {
+      expect(scan.env?.['LOG_OPTS']).toBe('${{ steps.gitleaks_scan.outputs.log-opts }}')
+      await execFileAsync('/bin/bash', ['-e', '-o', 'pipefail', '-c', scan.run ?? 'exit 99'], {
         encoding: 'utf8',
-        env: { ...environment, PATH: `${installedPath}:${environment.PATH}` },
+        env: {
+          ...environment,
+          LOG_OPTS: 'base..head',
+          PATH: `${installedPath}:${environment.PATH}`,
+        },
       })
       await expect(readFile(invocationLog, 'utf8')).resolves.toBe(
         [

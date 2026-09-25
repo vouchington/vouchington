@@ -104,7 +104,10 @@ describe('build-web-targets composite action', () => {
 
     const validateRestoredStep = step('Validate restored web build runtime paths')
     expect(validateRestoredStep.id).toBe('validate-restored-web-targets')
-    expect(validateRestoredStep.run).toContain('steps.restore-web-targets.outputs.cache-hit')
+    expect(validateRestoredStep.env?.['CACHE_HIT']).toBe(
+      '${{ steps.restore-web-targets.outputs.cache-hit }}',
+    )
+    expect(validateRestoredStep.run).toContain('"$CACHE_HIT" = \'true\'')
     expect(validateRestoredStep.run).toContain('node ci/web-build-cache-manifest.mts verify')
 
     const buildStep = step('Build web targets')

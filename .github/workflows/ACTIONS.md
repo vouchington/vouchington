@@ -47,6 +47,13 @@ runner-local worker configuration.
   consumer use GitHub artifacts with `actions: read`/`actions: write` only. The separate
   informational Codecov uploader has `id-token: write` but executes no repository scripts or local
   actions. See [COVERAGE.md](COVERAGE.md#provenance-and-transport).
+- **Script bodies interpolate only constant expressions.** A `run:` or `actions/github-script`
+  `script:` body in a workflow or composite action may contain `${{ }}` only for values GitHub or
+  the workflow fixes before the job starts (`github.repository`, `github.run_id`, `runner.temp`,
+  `matrix.shard`, and the like). Event payloads, refs, inputs, step and job outputs, secrets, and
+  vars reach the script through `env:` and are read as quoted shell variables, so text derived from
+  an event or a third-party action's output is data rather than shell syntax.
+  `workflow-script-expressions.test.mts` owns the allowlist and enforces it.
 - **`$GITHUB_ENV`/`$GITHUB_PATH` poisoning is inherent to GitHub Actions.** Any step in a job can
   write to either file and influence later steps in the same job; no stdout guard covers a direct
   file write. Secret-bearing jobs stay gated by `trusted-secret-context` as above, which bounds the
