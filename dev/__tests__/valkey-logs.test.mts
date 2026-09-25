@@ -12,6 +12,7 @@ const valkeyLogsPath = fileURLToPath(new URL('../valkey-logs', import.meta.url))
 type ScriptRun = {
   stdout: string
   stderr: string
+  code: number | null
   timedOut: boolean
 }
 
@@ -77,7 +78,12 @@ async function runUntilStartupBanner(scriptPath: string, cwd: string): Promise<S
     },
     timeoutMs: 5000,
   })
-  return { stderr: result.stderr, stdout: result.stdout, timedOut: result.timedOut }
+  return {
+    code: result.code,
+    stderr: result.stderr,
+    stdout: result.stdout,
+    timedOut: result.timedOut,
+  }
 }
 
 describe('dev Valkey log commands', () => {
@@ -115,6 +121,7 @@ describe('dev Valkey log commands', () => {
       const output = await runUntilStartupBanner(valkeyLogsPath, dir)
 
       expect(output.timedOut).toBe(false)
+      expect(output.code).toBe(0)
       expect(output.stdout).toContain('Tailing Valkey commands (container: voucha-test-valkey)')
       expect(output.stdout).toContain('Source: valkey-cli MONITOR')
       expect(output.stdout).not.toContain('DATABASE_URL')
@@ -134,6 +141,7 @@ describe('dev Valkey log commands', () => {
       const output = await runUntilStartupBanner(logsPath, dir)
 
       expect(output.timedOut).toBe(false)
+      expect(output.code).toBe(0)
       expect(output.stdout).toContain('Tailing Valkey commands (container: voucha-test-valkey)')
       expect(output.stdout).toContain('Source: valkey-cli MONITOR')
     } finally {
