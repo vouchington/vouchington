@@ -51,6 +51,11 @@ protocol artifacts in bounded, retry-safe batches while preserving clients, gran
 revocation evidence. Expiry indexes include terminal rows so consumed and revoked credentials remain
 prunable.
 
+Clients are retired through `revoked_at` and never deleted, because
+[content provenance](../content/content-provenance.md) references the client that created each
+row. `metadata_url`, `verified_at` and `verified_by_id` decide whether a public provenance label may
+name the client; they stay `NULL` until Client ID Metadata Documents and staff verification ship.
+
 ## Ownership boundaries
 
 This foundation issues and validates credentials and binds them to a requested resource. Protected-

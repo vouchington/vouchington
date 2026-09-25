@@ -25,6 +25,8 @@ Not partitioned — growth: unbounded.
 | `resolved_by_id`                       | `uuid`                                | yes      |                              |          |           |           | Moderator who resolved the report.                                                                                        |
 | `escalated_at`                         | `timestamp with time zone`            | yes      |                              |          |           |           | When a moderator escalated this report for senior-mod attention. NULL means not escalated.                                |
 | `escalated_by_id`                      | `uuid`                                | yes      |                              |          |           |           | The moderator who escalated this report.                                                                                  |
+| `created_via`                          | `content_creation_channels`           | yes      |                              |          |           |           | Immutable channel that created the row; NULL for rows written before content provenance tracking.                         |
+| `created_via_oauth_client_id`          | `uuid`                                | yes      |                              |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.         |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -36,11 +38,13 @@ _none_
 - `moderation_reports_check`: `CHECK ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1))`
 - `moderation_reports_check1`: `CHECK ((((reviewed_at IS NULL) AND (resolution_action IS NULL)) OR ((reviewed_at IS NOT NULL) AND (resolution_action IS NOT NULL))))`
 - `moderation_reports_check2`: `CHECK (((escalated_at IS NOT NULL) OR (escalated_by_id IS NULL)))`
+- `moderation_reports_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
 - `moderation_reports_note_check`: `CHECK (((note IS NULL) OR (char_length(note) <= 1000)))`
 
 **Foreign keys:**
 
 - `moderation_reports_case_id_fkey`: `FOREIGN KEY (case_id) REFERENCES moderation_cases(id) ON DELETE CASCADE`
+- `moderation_reports_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
 - `moderation_reports_escalated_by_id_fkey`: `FOREIGN KEY (escalated_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `moderation_reports_hostname_id_fkey`: `FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE CASCADE`
 - `moderation_reports_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
@@ -51,6 +55,7 @@ _none_
 
 **Indexes:**
 
+- `idx_moderation_reports__created_via_oauth_client_id`: `CREATE INDEX idx_moderation_reports__created_via_oauth_client_id ON public.moderation_reports USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_moderation_reports__reporter_user_id`: `CREATE INDEX idx_moderation_reports__reporter_user_id ON public.moderation_reports USING btree (reporter_user_id) WHERE (reporter_user_id IS NOT NULL)`
 - `idx_moderation_reports_case_id`: `CREATE INDEX idx_moderation_reports_case_id ON public.moderation_reports USING btree (case_id)`
 - `idx_moderation_reports_hostname_id`: `CREATE INDEX idx_moderation_reports_hostname_id ON public.moderation_reports USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`
@@ -68,6 +73,7 @@ _none_
 
 **Triggers:**
 
+- `moderation_reports_content_provenance_immutable`: `CREATE TRIGGER moderation_reports_content_provenance_immutable AFTER UPDATE ON public.moderation_reports FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
 - `moderation_transparency_reports_delete_rollup`: `CREATE TRIGGER moderation_transparency_reports_delete_rollup AFTER DELETE ON public.moderation_reports REFERENCING OLD TABLE AS deleted_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_reports_delete_rollup()`
 - `moderation_transparency_reports_original_reason_guard`: `CREATE TRIGGER moderation_transparency_reports_original_reason_guard BEFORE UPDATE OF original_reason ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_report_original_reason()`
 - `moderation_transparency_reports_rollup`: `CREATE TRIGGER moderation_transparency_reports_rollup AFTER INSERT ON public.moderation_reports REFERENCING NEW TABLE AS new_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_reports_insert_rollup()`

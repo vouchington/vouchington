@@ -344,6 +344,7 @@ Feature specifications, rules, and policies.
 - [Fediverse](requirements/content/FEDIVERSE.md) — Feature-flagged search intent, provider buckets, current boundaries, and the planned A→D federation roadmap
   - [Fediverse Federation architecture](overview/architecture/fediverse-federation.md) — technical design for the roadmap's four phases
 - [Comments](requirements/content/COMMENTS.md) — Comment system requirements
+- [Content Provenance](requirements/content/content-provenance.md) — Immutable creation channel and OAuth client on every user-content table
 - [Topics](requirements/content/TOPICS.md) — Topic management
 - [Users](requirements/users/USERS.md) — User profile routes, tabs, and management views
 - [User Relation Matrix](requirements/users/USER-RELATION-MATRIX.md) — User bookmark relation management on profile pages

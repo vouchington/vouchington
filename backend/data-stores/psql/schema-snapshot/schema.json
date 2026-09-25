@@ -84,6 +84,9 @@
     "consent_types": {
       "values": ["privacy_policy", "terms_of_service", "cookie_analytics"]
     },
+    "content_creation_channels": {
+      "values": ["web", "swift", "dotnet", "api", "mcp", "system"]
+    },
     "conversation_channel_types": {
       "values": ["chat", "customer_support", "direct_message", "modmail", "mod_internal"]
     },
@@ -746,6 +749,9 @@
     },
     "fn_preserve_notification_publication_target": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_preserve_notification_publication_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    NEW.publication_post_id := COALESCE(NEW.publication_post_id, NEW.post_id);\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id\n    );\n  ELSE\n    NEW.publication_post_id := COALESCE(\n      NEW.publication_post_id,\n      NEW.post_id,\n      OLD.publication_post_id,\n      OLD.post_id\n    );\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id,\n      OLD.publication_rss_feed_item_id,\n      OLD.rss_feed_item_id\n    );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_prevent_content_provenance_update": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_prevent_content_provenance_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.created_via IS DISTINCT FROM OLD.created_via\n    OR NEW.created_via_oauth_client_id IS DISTINCT FROM OLD.created_via_oauth_client_id THEN\n    RAISE EXCEPTION 'content provenance is immutable';\n  END IF;\n  RETURN NULL;\nEND $function$\n"
     },
     "fn_prevent_post_creation_source_url_update": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_prevent_post_creation_source_url_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.creation_source_url_id IS DISTINCT FROM OLD.creation_source_url_id THEN\n    RAISE EXCEPTION 'post creation source URL is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -10567,6 +10573,7 @@
     },
     "communities": {
       "checkConstraints": {
+        "communities_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "communities_default_language_check": "CHECK (((default_language IS NULL) OR ((default_language = lower(default_language)) AND (length(default_language) <= 10))))",
         "communities_lingua_rs_content_sha256_check": "CHECK (((lingua_rs_content_sha256 IS NULL) OR (length(lingua_rs_content_sha256) = 32)))",
         "communities_lingua_rs_detected_language_check": "CHECK (((lingua_rs_detected_language IS NULL) OR ((lingua_rs_detected_language = lower(lingua_rs_detected_language)) AND (length(lingua_rs_detected_language) <= 10))))",
@@ -10655,6 +10662,28 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 14,
+          "type": "uuid"
+        },
+        "created_via": {
+          "collation": null,
+          "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 30,
+          "type": "content_creation_channels"
+        },
+        "created_via_oauth_client_id": {
+          "collation": null,
+          "comment": "Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 31,
           "type": "uuid"
         },
         "default_language": {
@@ -10929,6 +10958,15 @@
           "referencedTable": "users",
           "validated": true
         },
+        "communities_created_via_oauth_client_id_fkey": {
+          "columns": ["created_via_oauth_client_id"],
+          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
         "communities_deleted_by_id_fkey": {
           "columns": ["deleted_by_id"],
           "definition": "FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -11110,6 +11148,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_communities__created_via_oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_communities__created_via_oauth_client_id ON public.communities USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_via_oauth_client_id",
+              "descending": false,
+              "expression": "created_via_oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_communities__deleted_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -11239,6 +11297,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "communities_content_provenance_immutable": "CREATE TRIGGER communities_content_provenance_immutable AFTER UPDATE ON public.communities FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_communities_updated_at": "CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_sync_community_image_placements": "CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_sync_community_image_placements()"
       },
@@ -12030,6 +12089,7 @@
       "checkConstraints": {
         "community_applications_check": "CHECK ((NOT ((approved_at IS NOT NULL) AND (rejected_at IS NOT NULL))))",
         "community_applications_check1": "CHECK ((((approved_at IS NULL) AND (rejected_at IS NULL)) OR (reviewed_at IS NOT NULL)))",
+        "community_applications_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "community_applications_message_check": "CHECK (((message IS NULL) OR (char_length(message) <= 5000)))",
         "community_applications_rejection_reason_check": "CHECK (((rejection_reason IS NULL) OR (char_length(rejection_reason) <= 1000)))",
         "community_applications_rejection_reason_check1": "CHECK (((rejection_reason IS NULL) OR (rejection_reason = TRIM(BOTH FROM rejection_reason))))"
@@ -12078,6 +12138,28 @@
           "nullable": true,
           "ordinalPosition": 11,
           "type": "timestamp with time zone"
+        },
+        "created_via": {
+          "collation": null,
+          "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "content_creation_channels"
+        },
+        "created_via_oauth_client_id": {
+          "collation": null,
+          "comment": "Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "uuid"
         },
         "id": {
           "collation": null,
@@ -12179,6 +12261,15 @@
           "referencedTable": "communities",
           "validated": true
         },
+        "community_applications_created_via_oauth_client_id_fkey": {
+          "columns": ["created_via_oauth_client_id"],
+          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
         "community_applications_reviewed_by_id_fkey": {
           "columns": ["reviewed_by_id"],
           "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -12267,6 +12358,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_community_applications__created_via_oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_applications__created_via_oauth_client_id ON public.community_applications USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_via_oauth_client_id",
+              "descending": false,
+              "expression": "created_via_oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_community_applications__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -12296,6 +12407,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "community_applications_content_provenance_immutable": "CREATE TRIGGER community_applications_content_provenance_immutable AFTER UPDATE ON public.community_applications FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_community_applications_updated_at": "CREATE TRIGGER trigger_community_applications_updated_at BEFORE UPDATE ON public.community_applications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -36158,6 +36270,7 @@
     },
     "lists": {
       "checkConstraints": {
+        "lists_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "lists_name_check": "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 255)))"
       },
       "columns": {
@@ -36171,6 +36284,28 @@
           "nullable": false,
           "ordinalPosition": 6,
           "type": "timestamp with time zone"
+        },
+        "created_via": {
+          "collation": null,
+          "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "content_creation_channels"
+        },
+        "created_via_oauth_client_id": {
+          "collation": null,
+          "comment": "Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
         },
         "description": {
           "collation": null,
@@ -36252,6 +36387,15 @@
       },
       "comment": "User-curated named collections of RSS feed items and posts.",
       "foreignKeys": {
+        "lists_created_via_oauth_client_id_fkey": {
+          "columns": ["created_via_oauth_client_id"],
+          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
         "lists_owner_user_id_fkey": {
           "columns": ["owner_user_id"],
           "definition": "FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE",
@@ -36264,6 +36408,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_lists__created_via_oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_lists__created_via_oauth_client_id ON public.lists USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_via_oauth_client_id",
+              "descending": false,
+              "expression": "created_via_oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_lists__owner_user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -36340,6 +36504,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "lists_content_provenance_immutable": "CREATE TRIGGER lists_content_provenance_immutable AFTER UPDATE ON public.lists FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_lists_updated_at": "CREATE TRIGGER trigger_lists_updated_at BEFORE UPDATE ON public.lists FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -47398,7 +47563,8 @@
         "chk_moderation_appeals__post_removal_kind_scope": "CHECK ((((post_id IS NOT NULL) AND (post_removal_kind IS NOT NULL)) OR ((post_id IS NULL) AND (post_removal_kind IS NULL))))",
         "chk_moderation_appeals__resolution_pairing": "CHECK ((((resolved_at IS NULL) AND (resolution_action IS NULL)) OR ((resolved_at IS NOT NULL) AND (resolution_action IS NOT NULL))))",
         "moderation_appeals_appeal_reason_check": "CHECK ((char_length(appeal_reason) <= 4000))",
-        "moderation_appeals_check": "CHECK ((num_nonnulls(user_warning_id, community_ban_id, post_id, user_suspension_id) = 1))"
+        "moderation_appeals_check": "CHECK ((num_nonnulls(user_warning_id, community_ban_id, post_id, user_suspension_id) = 1))",
+        "moderation_appeals_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))"
       },
       "columns": {
         "ai_drafted_at": {
@@ -47521,6 +47687,28 @@
           "nullable": true,
           "ordinalPosition": 29,
           "type": "timestamp with time zone"
+        },
+        "created_via": {
+          "collation": null,
+          "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 31,
+          "type": "content_creation_channels"
+        },
+        "created_via_oauth_client_id": {
+          "collation": null,
+          "comment": "Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 32,
+          "type": "uuid"
         },
         "drafted_at": {
           "collation": null,
@@ -47797,6 +47985,15 @@
           "referencedTable": "communities",
           "validated": true
         },
+        "moderation_appeals_created_via_oauth_client_id_fkey": {
+          "columns": ["created_via_oauth_client_id"],
+          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
         "moderation_appeals_edited_by_id_fkey": {
           "columns": ["edited_by_id"],
           "definition": "FOREIGN KEY (edited_by_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -47918,6 +48115,26 @@
             }
           ],
           "predicate": "(community_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderation_appeals__created_via_oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_appeals__created_via_oauth_client_id ON public.moderation_appeals USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_via_oauth_client_id",
+              "descending": false,
+              "expression": "created_via_oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -48174,6 +48391,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "moderation_appeals_content_provenance_immutable": "CREATE TRIGGER moderation_appeals_content_provenance_immutable AFTER UPDATE ON public.moderation_appeals FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "moderation_transparency_appeals_delete_rollup": "CREATE TRIGGER moderation_transparency_appeals_delete_rollup AFTER DELETE ON public.moderation_appeals REFERENCING OLD TABLE AS deleted_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_delete_rollup()",
         "moderation_transparency_appeals_resolution_guard": "CREATE TRIGGER moderation_transparency_appeals_resolution_guard BEFORE UPDATE OF resolved_at, resolution_action ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_appeal_resolution()",
         "moderation_transparency_appeals_rollup": "CREATE TRIGGER moderation_transparency_appeals_rollup AFTER INSERT ON public.moderation_appeals REFERENCING NEW TABLE AS new_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_insert_rollup()",
@@ -49518,6 +49736,7 @@
         "moderation_reports_check": "CHECK ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1))",
         "moderation_reports_check1": "CHECK ((((reviewed_at IS NULL) AND (resolution_action IS NULL)) OR ((reviewed_at IS NOT NULL) AND (resolution_action IS NOT NULL))))",
         "moderation_reports_check2": "CHECK (((escalated_at IS NOT NULL) OR (escalated_by_id IS NULL)))",
+        "moderation_reports_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "moderation_reports_note_check": "CHECK (((note IS NULL) OR (char_length(note) <= 1000)))"
       },
       "columns": {
@@ -49542,6 +49761,28 @@
           "nullable": true,
           "ordinalPosition": 2,
           "type": "timestamp with time zone"
+        },
+        "created_via": {
+          "collation": null,
+          "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18,
+          "type": "content_creation_channels"
+        },
+        "created_via_oauth_client_id": {
+          "collation": null,
+          "comment": "Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "uuid"
         },
         "escalated_at": {
           "collation": null,
@@ -49720,6 +49961,15 @@
           "referencedTable": "moderation_cases",
           "validated": true
         },
+        "moderation_reports_created_via_oauth_client_id_fkey": {
+          "columns": ["created_via_oauth_client_id"],
+          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
         "moderation_reports_escalated_by_id_fkey": {
           "columns": ["escalated_by_id"],
           "definition": "FOREIGN KEY (escalated_by_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -49786,6 +50036,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_moderation_reports__created_via_oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderation_reports__created_via_oauth_client_id ON public.moderation_reports USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_via_oauth_client_id",
+              "descending": false,
+              "expression": "created_via_oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_moderation_reports__reporter_user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -50110,6 +50380,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "moderation_reports_content_provenance_immutable": "CREATE TRIGGER moderation_reports_content_provenance_immutable AFTER UPDATE ON public.moderation_reports FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "moderation_transparency_reports_delete_rollup": "CREATE TRIGGER moderation_transparency_reports_delete_rollup AFTER DELETE ON public.moderation_reports REFERENCING OLD TABLE AS deleted_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_reports_delete_rollup()",
         "moderation_transparency_reports_original_reason_guard": "CREATE TRIGGER moderation_transparency_reports_original_reason_guard BEFORE UPDATE OF original_reason ON public.moderation_reports FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_report_original_reason()",
         "moderation_transparency_reports_rollup": "CREATE TRIGGER moderation_transparency_reports_rollup AFTER INSERT ON public.moderation_reports REFERENCING NEW TABLE AS new_reports FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_reports_insert_rollup()",
@@ -55212,10 +55483,12 @@
         "oauth_clients_client_secret_hash_check": "CHECK (((client_secret_hash IS NULL) OR (char_length(client_secret_hash) = 64)))",
         "oauth_clients_client_type_check": "CHECK ((client_type = ANY (ARRAY['public'::text, 'confidential'::text])))",
         "oauth_clients_grant_types_check": "CHECK (((grant_types <@ ARRAY['authorization_code'::text, 'refresh_token'::text]) AND (grant_types @> ARRAY['authorization_code'::text, 'refresh_token'::text])))",
+        "oauth_clients_metadata_url_check": "CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND (metadata_url ~ '^https://[a-z0-9.-]+(:[0-9]{1,5})?/[^#[:space:][:cntrl:]]*$'::text) AND (metadata_url !~ '/\\.\\.?(/|\\?|$)'::text))))",
         "oauth_clients_redirect_uris_check": "CHECK (((cardinality(redirect_uris) >= 1) AND (cardinality(redirect_uris) <= 10)))",
         "oauth_clients_response_types_check": "CHECK ((response_types = ARRAY['code'::text]))",
         "oauth_clients_scopes_check": "CHECK ((cardinality(scopes) > 0))",
-        "oauth_clients_token_endpoint_auth_method_check": "CHECK ((token_endpoint_auth_method = ANY (ARRAY['none'::text, 'client_secret_basic'::text])))"
+        "oauth_clients_token_endpoint_auth_method_check": "CHECK ((token_endpoint_auth_method = ANY (ARRAY['none'::text, 'client_secret_basic'::text])))",
+        "oauth_clients_verified_by_id_check": "CHECK (((verified_by_id IS NULL) OR (verified_at IS NOT NULL)))"
       },
       "columns": {
         "client_id": {
@@ -55295,6 +55568,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "metadata_url": {
+          "collation": null,
+          "comment": "HTTPS URL of the Client ID Metadata Document for a client identified by URL; NULL for clients registered through dynamic client registration.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "text"
+        },
         "owner_user_id": {
           "collation": null,
           "comment": "Voucha user that owns the client when registration is authenticated.",
@@ -55371,6 +55655,28 @@
           "nullable": false,
           "ordinalPosition": 14,
           "type": "timestamp with time zone"
+        },
+        "verified_at": {
+          "collation": null,
+          "comment": "When staff verified a dynamically registered client, so its client_name may appear on public content provenance labels; NULL means unverified.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "timestamp with time zone"
+        },
+        "verified_by_id": {
+          "collation": null,
+          "comment": "Staff user who verified the client; NULL when unverified or when that user was deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "uuid"
         }
       },
       "comment": "Dynamically registered clients for the Voucha OAuth authorization server.",
@@ -55383,10 +55689,39 @@
           "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
+        },
+        "oauth_clients_verified_by_id_fkey": {
+          "columns": ["verified_by_id"],
+          "definition": "FOREIGN KEY (verified_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
         }
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_oauth_clients__metadata_url": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_oauth_clients__metadata_url ON public.oauth_clients USING btree (metadata_url)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "metadata_url",
+              "descending": false,
+              "expression": "metadata_url",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "idx_oauth_clients__owner": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -55409,6 +55744,26 @@
             }
           ],
           "predicate": "(owner_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_clients__verified_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_clients__verified_by_id ON public.oauth_clients USING btree (verified_by_id) WHERE (verified_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "verified_by_id",
+              "descending": false,
+              "expression": "verified_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(verified_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -63191,6 +63546,7 @@
         "posts_check5": "CHECK (((root_id IS NULL) OR (id > root_id)))",
         "posts_check6": "CHECK ((NOT ((broadcast = 'everyone'::broadcast_types) AND (privacy = 'private'::privacy_types))))",
         "posts_check7": "CHECK (((post_type <> 'comment'::post_types) OR ((broadcast = 'everyone'::broadcast_types) AND (privacy = 'public'::privacy_types))))",
+        "posts_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "posts_creation_source_url_id_check": "CHECK (((creation_source_url_id IS NULL) OR (post_type = 'link'::post_types)))",
         "posts_declared_language_check": "CHECK (((declared_language IS NULL) OR ((declared_language = lower(declared_language)) AND (length(declared_language) <= 10))))",
         "posts_lingua_rs_content_sha256_check": "CHECK (((lingua_rs_content_sha256 IS NULL) OR (length(lingua_rs_content_sha256) = 32)))",
@@ -63355,6 +63711,28 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 18,
+          "type": "uuid"
+        },
+        "created_via": {
+          "collation": null,
+          "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 44,
+          "type": "content_creation_channels"
+        },
+        "created_via_oauth_client_id": {
+          "collation": null,
+          "comment": "Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 45,
           "type": "uuid"
         },
         "creation_source_url_id": {
@@ -63662,7 +64040,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 49,
+          "ordinalPosition": 51,
           "type": "integer"
         },
         "votes_count_none": {
@@ -63673,7 +64051,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 48,
+          "ordinalPosition": 50,
           "type": "integer"
         },
         "votes_count_up": {
@@ -63684,7 +64062,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 47,
+          "ordinalPosition": 49,
           "type": "integer"
         },
         "votes_score_down": {
@@ -63695,7 +64073,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 46,
+          "ordinalPosition": 48,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -63706,7 +64084,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 51,
+          "ordinalPosition": 53,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -63717,7 +64095,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 45,
+          "ordinalPosition": 47,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -63728,7 +64106,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 52,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -63739,7 +64117,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 44,
+          "ordinalPosition": 46,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -63792,6 +64170,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "users",
+          "validated": true
+        },
+        "posts_created_via_oauth_client_id_fkey": {
+          "columns": ["created_via_oauth_client_id"],
+          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
           "validated": true
         },
         "posts_creation_source_url_id_fkey": {
@@ -64177,6 +64564,26 @@
             }
           ],
           "predicate": "((rejected_at IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__created_via_oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__created_via_oauth_client_id ON ONLY public.posts USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_via_oauth_client_id",
+              "descending": false,
+              "expression": "created_via_oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -64690,6 +65097,7 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "posts_content_provenance_immutable": "CREATE TRIGGER posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "posts_creation_source_url_id_immutable": "CREATE TRIGGER posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_prevent_post_creation_source_url_update()",
         "trigger_posts_updated_at": "CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_id, root_id, broadcast, privacy, is_anonymous, community_id, latest_clearance_change_id, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_sync_posts_search_vector": "CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_sync_posts_search_vector()"
@@ -86646,6 +87054,7 @@
     "rss_feeds": {
       "checkConstraints": {
         "rss_feeds_check": "CHECK (((canonical_rss_feed_id IS NULL) OR (canonical_rss_feed_id <> id)))",
+        "rss_feeds_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "rss_feeds_declared_language_check": "CHECK (((declared_language IS NULL) OR ((declared_language = lower(declared_language)) AND (length(declared_language) <= 10))))",
         "rss_feeds_title_check": "CHECK ((char_length(title) <= 255))",
         "rss_feeds_title_check1": "CHECK ((title = TRIM(BOTH FROM title)))"
@@ -86682,6 +87091,28 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 10,
+          "type": "uuid"
+        },
+        "created_via": {
+          "collation": null,
+          "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "content_creation_channels"
+        },
+        "created_via_oauth_client_id": {
+          "collation": null,
+          "comment": "Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
           "type": "uuid"
         },
         "declared_language": {
@@ -86881,6 +87312,15 @@
           "referencedTable": "users",
           "validated": true
         },
+        "rss_feeds_created_via_oauth_client_id_fkey": {
+          "columns": ["created_via_oauth_client_id"],
+          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
         "rss_feeds_rss_feed_url_id_fkey": {
           "columns": ["rss_feed_url_id"],
           "definition": "FOREIGN KEY (rss_feed_url_id) REFERENCES urls(id) ON DELETE CASCADE",
@@ -86917,6 +87357,26 @@
             }
           ],
           "predicate": "(canonical_rss_feed_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feeds__created_via_oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feeds__created_via_oauth_client_id ON public.rss_feeds USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_via_oauth_client_id",
+              "descending": false,
+              "expression": "created_via_oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -87131,6 +87591,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "rss_feeds_content_provenance_immutable": "CREATE TRIGGER rss_feeds_content_provenance_immutable AFTER UPDATE ON public.rss_feeds FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_rss_feeds_updated_at": "CREATE TRIGGER trigger_rss_feeds_updated_at BEFORE UPDATE ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -94392,6 +94853,7 @@
         "topics_bedrock_nova_multimodal_v1_content_sha256_check": "CHECK ((octet_length(bedrock_nova_multimodal_v1_content_sha256) = 32))",
         "topics_bedrock_nova_multimodal_v1_input_sha256_check": "CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))",
         "topics_bedrock_nova_multimodal_v1_input_token_count_check": "CHECK (((bedrock_nova_multimodal_v1_input_token_count IS NULL) OR (bedrock_nova_multimodal_v1_input_token_count >= 0)))",
+        "topics_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "topics_lingua_rs_content_sha256_check": "CHECK (((lingua_rs_content_sha256 IS NULL) OR (length(lingua_rs_content_sha256) = 32)))",
         "topics_lingua_rs_detected_language_check": "CHECK (((lingua_rs_detected_language IS NULL) OR ((lingua_rs_detected_language = lower(lingua_rs_detected_language)) AND (length(lingua_rs_detected_language) <= 10))))",
         "topics_lingua_rs_input_sha256_check": "CHECK (((lingua_rs_input_sha256 IS NULL) OR (length(lingua_rs_input_sha256) = 32)))",
@@ -94499,6 +94961,28 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 12,
+          "type": "uuid"
+        },
+        "created_via": {
+          "collation": null,
+          "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 37,
+          "type": "content_creation_channels"
+        },
+        "created_via_oauth_client_id": {
+          "collation": null,
+          "comment": "Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 38,
           "type": "uuid"
         },
         "deleted_at": {
@@ -94784,7 +95268,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 42,
+          "ordinalPosition": 44,
           "type": "integer"
         },
         "votes_count_none": {
@@ -94795,7 +95279,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 41,
+          "ordinalPosition": 43,
           "type": "integer"
         },
         "votes_count_up": {
@@ -94806,7 +95290,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 40,
+          "ordinalPosition": 42,
           "type": "integer"
         },
         "votes_score_down": {
@@ -94817,7 +95301,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 39,
+          "ordinalPosition": 41,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -94828,7 +95312,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 46,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -94839,7 +95323,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 38,
+          "ordinalPosition": 40,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -94850,7 +95334,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 45,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -94861,7 +95345,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 37,
+          "ordinalPosition": 39,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -94914,6 +95398,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "users",
+          "validated": true
+        },
+        "topics_created_via_oauth_client_id_fkey": {
+          "columns": ["created_via_oauth_client_id"],
+          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
           "validated": true
         },
         "topics_deleted_by_id_fkey": {
@@ -95066,6 +95559,26 @@
             }
           ],
           "predicate": "(created_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topics__created_via_oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topics__created_via_oauth_client_id ON public.topics USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_via_oauth_client_id",
+              "descending": false,
+              "expression": "created_via_oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -95561,6 +96074,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "topics_content_provenance_immutable": "CREATE TRIGGER topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_create_topic_metrics": "CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_topic_metrics_on_insert()",
         "trigger_sync_topic_image_placements": "CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_sync_topic_image_placements()",
         "trigger_topics_updated_at": "CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
@@ -102564,6 +103078,7 @@
     "user_referral_program_links": {
       "checkConstraints": {
         "user_referral_program_links_check": "CHECK ((NOT ((activated_at IS NOT NULL) AND (deactivated_at IS NOT NULL))))",
+        "user_referral_program_links_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))",
         "user_referral_program_links_label_check": "CHECK ((char_length(label) <= 255))",
         "user_referral_program_links_unfurl_last_error_check": "CHECK ((char_length(unfurl_last_error) <= 1000))"
       },
@@ -102610,6 +103125,28 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 20,
+          "type": "uuid"
+        },
+        "created_via": {
+          "collation": null,
+          "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22,
+          "type": "content_creation_channels"
+        },
+        "created_via_oauth_client_id": {
+          "collation": null,
+          "comment": "Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 23,
           "type": "uuid"
         },
         "deactivated_at": {
@@ -102811,6 +103348,15 @@
           "referencedTable": "users",
           "validated": true
         },
+        "user_referral_program_links_created_via_oauth_client_id_fkey": {
+          "columns": ["created_via_oauth_client_id"],
+          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
         "user_referral_program_links_deleted_by_id_fkey": {
           "columns": ["deleted_by_id"],
           "definition": "FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -102859,6 +103405,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_user_referral_program_links__created_via_oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_referral_program_links__created_via_oauth_client_id ON public.user_referral_program_links USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_via_oauth_client_id",
+              "descending": false,
+              "expression": "created_via_oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_referral_program_links__parent_link_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -103089,7 +103655,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_user_referral_program_links_updated_at": "CREATE TRIGGER trigger_user_referral_program_links_updated_at BEFORE UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_user_referral_program_links_updated_at": "CREATE TRIGGER trigger_user_referral_program_links_updated_at BEFORE UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "user_referral_program_links_content_provenance_immutable": "CREATE TRIGGER user_referral_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()"
       },
       "uniqueConstraints": {}
     },

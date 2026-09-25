@@ -596,6 +596,14 @@ CREATE OR REPLACE FUNCTION public.fn_preserve_notification_publication_target()
  LANGUAGE plpgsql
 ```
 
+## `fn_prevent_content_provenance_update`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_prevent_content_provenance_update()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_prevent_post_creation_source_url_update`
 
 ```sql

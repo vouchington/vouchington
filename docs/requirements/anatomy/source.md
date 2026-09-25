@@ -31,6 +31,7 @@ A source is a topic with `topic_type = 'rss_feed'` plus a 1:1 extension row in `
 | `feed_type`       | `article` \| `podcast` \| `video` \| `mixed`                            |
 | `is_enabled`      | Whether crawling is active                                              |
 | `topic_id`        | FK back to `topics.id`                                                  |
+| `created_via`     | Immutable channel; see [provenance](../content/content-provenance.md)   |
 
 **Display name** (never show raw `topics.name`):
 

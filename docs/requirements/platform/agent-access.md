@@ -11,7 +11,8 @@ How Voucha steers AI agents to its API and MCP server instead of the website.
   neither Voucha nor other users can tell.
 - **So make the API and MCP the easiest path, and show users when it was used.**
   - Discovery documents name the MCP server and how to authenticate to it.
-  - Content created through the API or MCP carries provenance that other users can see
+  - Content created through the API or MCP carries
+    [provenance](../content/content-provenance.md) that other users can see
     ([#237](https://github.com/vouchington/vouchington/issues/237)).
 
 ## Discovery

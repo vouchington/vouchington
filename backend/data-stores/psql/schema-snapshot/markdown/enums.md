@@ -140,6 +140,15 @@
 - `terms_of_service`
 - `cookie_analytics`
 
+## `content_creation_channels`
+
+- `web`
+- `swift`
+- `dotnet`
+- `api`
+- `mcp`
+- `system`
+
 ## `conversation_channel_types`
 
 - `chat`

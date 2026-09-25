@@ -20,6 +20,7 @@
 | `description`              | Plain-text community description                                              |
 | `member_roster_visibility` | Who can see regular members: `public` \| `users` \| `members` \| `moderators` |
 | `archived_at`              | Non-null when archived                                                        |
+| `created_via`              | Immutable channel; see [provenance](../content/content-provenance.md)         |
 
 **Membership roles:** owner, moderator, member.
 

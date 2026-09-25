@@ -27,6 +27,7 @@
 | `archived_at`      | Non-null when archived (hidden from listings, reachable by URL)              |
 | `community_id`     | Non-null for community-scoped posts                                          |
 | `created_by_id`    | Creator; null for system-generated posts                                     |
+| `created_via`      | Immutable channel; see [provenance](../content/content-provenance.md)        |
 
 **Post types:**
 

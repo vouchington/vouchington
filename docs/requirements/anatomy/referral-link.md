@@ -26,6 +26,7 @@
 | `unfurl_completed_at` | Non-null when the most recent unfurl finished successfully (parent only)               |
 | `unfurl_failed_at`    | Non-null when the most recent unfurl failed, or resolved zero children (parent only)   |
 | `unfurl_last_error`   | Truncated (≤1000 chars) error message from the last failed unfurl (parent only)        |
+| `created_via`         | Immutable channel; see [provenance](../content/content-provenance.md)                  |
 
 **Priority groups** (each owner appears in exactly one group — their highest priority match):
 

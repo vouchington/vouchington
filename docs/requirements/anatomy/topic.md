@@ -22,6 +22,7 @@
 | `allow_reviews`        | When false, blocks review creation and hides review UI                |
 | `deleted_at`           | Non-null when soft-deleted                                            |
 | `merged_into_topic_id` | Non-null when merged into another topic                               |
+| `created_via`          | Immutable channel; see [provenance](../content/content-provenance.md) |
 
 **Topic types** (8 total; each maps to a distinct URL slug):
 

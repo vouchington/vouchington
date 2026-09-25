@@ -6,20 +6,22 @@ Membership applications submitted by users to join a community.
 
 Not partitioned — growth: unbounded.
 
-| Column             | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                      |
-| ------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------- |
-| `id`               | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                              |
-| `community_id`     | `uuid`                     | no       |                              |          |           |           | The community being applied to.                                              |
-| `user_id`          | `uuid`                     | no       |                              |          |           |           | The user who submitted the application.                                      |
-| `answers`          | `jsonb`                    | no       |                              |          |           |           | JSON object with answers keyed by question ID.                               |
-| `reviewed_at`      | `timestamp with time zone` | yes      |                              |          |           |           | When a moderator reviewed the application.                                   |
-| `reviewed_by_id`   | `uuid`                     | yes      |                              |          |           |           | Moderator who reviewed the application.                                      |
-| `approved_at`      | `timestamp with time zone` | yes      |                              |          |           |           | When the application was approved. Mutually exclusive with rejected_at.      |
-| `rejected_at`      | `timestamp with time zone` | yes      |                              |          |           |           | When the application was rejected. Mutually exclusive with approved_at.      |
-| `rejection_reason` | `text`                     | yes      |                              |          |           |           | Optional reason provided to the applicant on rejection.                      |
-| `message`          | `text`                     | yes      |                              |          |           |           | Optional freeform message from the applicant when submitting an application. |
-| `created_at`       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                              |
-| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                              |
+| Column                        | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
+| ----------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| `id`                          | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
+| `community_id`                | `uuid`                      | no       |                              |          |           |           | The community being applied to.                                                                                   |
+| `user_id`                     | `uuid`                      | no       |                              |          |           |           | The user who submitted the application.                                                                           |
+| `answers`                     | `jsonb`                     | no       |                              |          |           |           | JSON object with answers keyed by question ID.                                                                    |
+| `reviewed_at`                 | `timestamp with time zone`  | yes      |                              |          |           |           | When a moderator reviewed the application.                                                                        |
+| `reviewed_by_id`              | `uuid`                      | yes      |                              |          |           |           | Moderator who reviewed the application.                                                                           |
+| `approved_at`                 | `timestamp with time zone`  | yes      |                              |          |           |           | When the application was approved. Mutually exclusive with rejected_at.                                           |
+| `rejected_at`                 | `timestamp with time zone`  | yes      |                              |          |           |           | When the application was rejected. Mutually exclusive with approved_at.                                           |
+| `rejection_reason`            | `text`                      | yes      |                              |          |           |           | Optional reason provided to the applicant on rejection.                                                           |
+| `message`                     | `text`                      | yes      |                              |          |           |           | Optional freeform message from the applicant when submitting an application.                                      |
+| `created_at`                  | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                   |
+| `updated_at`                  | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                   |
+| `created_via`                 | `content_creation_channels` | yes      |                              |          |           |           | Immutable channel that created the row; NULL for rows written before content provenance tracking.                 |
+| `created_via_oauth_client_id` | `uuid`                      | yes      |                              |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes. |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -30,6 +32,7 @@ _none_
 
 - `community_applications_check`: `CHECK ((NOT ((approved_at IS NOT NULL) AND (rejected_at IS NOT NULL))))`
 - `community_applications_check1`: `CHECK ((((approved_at IS NULL) AND (rejected_at IS NULL)) OR (reviewed_at IS NOT NULL)))`
+- `community_applications_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
 - `community_applications_message_check`: `CHECK (((message IS NULL) OR (char_length(message) <= 5000)))`
 - `community_applications_rejection_reason_check`: `CHECK (((rejection_reason IS NULL) OR (char_length(rejection_reason) <= 1000)))`
 - `community_applications_rejection_reason_check1`: `CHECK (((rejection_reason IS NULL) OR (rejection_reason = TRIM(BOTH FROM rejection_reason))))`
@@ -37,6 +40,7 @@ _none_
 **Foreign keys:**
 
 - `community_applications_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
+- `community_applications_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
 - `community_applications_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `community_applications_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
@@ -45,8 +49,10 @@ _none_
 - `community_applications_pkey`: `CREATE UNIQUE INDEX community_applications_pkey ON public.community_applications USING btree (id)`
 - `idx_comm_apps__pending`: `CREATE UNIQUE INDEX idx_comm_apps__pending ON public.community_applications USING btree (community_id, user_id) WHERE ((approved_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_community_applications__community_id`: `CREATE INDEX idx_community_applications__community_id ON public.community_applications USING btree (community_id)`
+- `idx_community_applications__created_via_oauth_client_id`: `CREATE INDEX idx_community_applications__created_via_oauth_client_id ON public.community_applications USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_community_applications__user_id`: `CREATE INDEX idx_community_applications__user_id ON public.community_applications USING btree (user_id)`
 
 **Triggers:**
 
+- `community_applications_content_provenance_immutable`: `CREATE TRIGGER community_applications_content_provenance_immutable AFTER UPDATE ON public.community_applications FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
 - `trigger_community_applications_updated_at`: `CREATE TRIGGER trigger_community_applications_updated_at BEFORE UPDATE ON public.community_applications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
