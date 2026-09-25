@@ -2,6 +2,7 @@
   "format": ["typescript", "tsx", "javascript", "sql", "bash", "css"],
   "crossFormats": "typescript,tsx",
   "failOnEmpty": true,
+  "similarity": 0.9,
   "ignore": [
     "**/migrations/**",
     "**/fixtures/**",

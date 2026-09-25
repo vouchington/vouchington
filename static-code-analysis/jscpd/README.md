@@ -14,14 +14,15 @@ and `pnpm run lint` runs it locally.
 1. Validate [`.jscpd.json`](../../.jscpd.json) ignore globs and reject inline ignore markers (see
    [Scope](#scope) and [Exceptions](#exceptions)).
 2. Resolve the baseline commit (see [Choosing the Base](#choosing-the-base)).
-3. Scan tracked files at `HEAD` with `jscpd --baseline-from-ref <baseline>`. jscpd rescans the
-   baseline tree **with `HEAD`'s `.jscpd.json`** and marks each `HEAD` clone `isNew` when the base
-   tree lacks it.
+3. Scan the working tree's tracked files with `jscpd --baseline-from-ref <baseline>`. jscpd
+   rescans the baseline tree **with `HEAD`'s `.jscpd.json`** and marks each clone `isNew` when the
+   base tree lacks it.
 4. Print only the new clones, one per line, then the remediation hint:
 
    ```text
-   jscpd: 1 new clone(s) against merge-base 0123456789ab (origin/main):
+   jscpd: 2 new clone(s) against merge-base 0123456789ab (origin/main):
      exact web/a.ts:10-30 ~ web/b.ts:4-24 (21 lines)
+     similar web/c.ts:1-20 ~ web/d.ts:3-22 (20 lines)
    ```
 
 With no new clones it prints `jscpd: no new clones against <baseline>; N files scanned, M existing
@@ -33,6 +34,16 @@ narrower ignore glob, a stricter threshold) re-evaluates base and `HEAD` alike a
 clones by itself. A jscpd failure, a `git` failure, a missing report, or a report whose shape
 changed (for example a jscpd upgrade that drops `isNew`) fails the run; the gate never passes
 silently on a tool error.
+
+### Near-Miss Clones
+
+`.jscpd.json` sets `similarity: 0.9`. Besides exact token matches (`exact`), jscpd compares
+JavaScript and TypeScript function pairs by AST similarity and reports a pair that reaches 90% as
+`similar`, so a copied function that changes its literal values or adds or drops a line still
+counts as a clone. SQL, Bash, and CSS stay exact-only. The ratchet treats both kinds the same way:
+only new ones fail. Identifiers are compared as written, so a copy that renames its variables is
+not matched. [`run-jscpd-real-binary.test.mts`](run-jscpd-real-binary.test.mts)
+proves the configured threshold catches a near-miss copy that exact matching misses.
 
 ### Touch It, Dedupe It
 
@@ -126,7 +137,7 @@ No exceptions are configured.
 - [`report.mts`](report.mts): the strict `jscpd-report.json` parser and clone formatting.
 - Tests: [`run-jscpd.test.mts`](run-jscpd.test.mts) (fake repository scenarios),
   [`parsers.test.mts`](parsers.test.mts),
-  [`run-jscpd-real-binary.test.mts`](run-jscpd-real-binary.test.mts) (the real jscpd binary on a
-  temporary git repository), and [`wiring.test.mts`](wiring.test.mts), with the
+  [`run-jscpd-real-binary.test.mts`](run-jscpd-real-binary.test.mts) (the real jscpd binary on
+  temporary git repositories, for exact and near-miss clones), and [`wiring.test.mts`](wiring.test.mts), with the
   [`jscpd-fake-repo.mts`](../test-helpers/jscpd-fake-repo.mts) helper. Run them with
   `pnpm exec vitest run --project static-analysis-tools static-code-analysis/jscpd`.
