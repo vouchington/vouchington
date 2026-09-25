@@ -27,10 +27,7 @@ export function AdminTableShell({
         {children}
       </section>
       {isEmpty && emptyMessage ? (
-        <div
-          data-pw='admin-table-shell-empty'
-          className='p-12 text-center'
-        >
+        <div className='p-12 text-center'>
           <p className='text-muted-foreground'>{emptyMessage}</p>
         </div>
       ) : null}

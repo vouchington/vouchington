@@ -4,21 +4,13 @@ import http from 'node:http'
 
 import serverApp from '../../../../backend/entrypoints/api/index.mts'
 
-import * as supportRoutes from '@/lib/api/client/support'
-
 import * as reportsRoutes from '@/lib/api/client/reports'
 
 import * as financialRoutes from '@/lib/api/client/financial-profile'
 
 import * as markdownRoutes from '@/lib/api/client/markdown'
 
-import {
-  createTestUser,
-  createTestPost,
-  insertTestSupportContact,
-  insertTestSupportThread,
-  insertTestSupportMessage,
-} from '../../../../backend/test-helpers/index.mts'
+import { createTestUser, createTestPost } from '../../../../backend/test-helpers/index.mts'
 
 import { createWebApiTestCookieHeader, listenOnFetchSafeLoopback } from '../../routes.mts'
 
@@ -46,10 +38,6 @@ describe('routes-extended', () => {
   let userCookieHeader: CookieHeader
 
   let postId: string
-
-  let createdSupportThreadId: string
-
-  let unrelatedSupportThreadId: string
 
   beforeAll(async () => {
     previousApiBaseUrl = process.env.API_BASE_URL
@@ -91,19 +79,6 @@ describe('routes-extended', () => {
     // Post created by admin so user can report it without "Cannot report yourself"
     const post = await createTestPost({ user: admin })
     postId = post.id
-
-    const suffix = crypto.randomUUID()
-    const contact = await insertTestSupportContact({
-      emailAddress: `tests+support-test-${suffix}@voucha.ai`,
-      name: `Support Test ${suffix}`,
-    })
-    const thread = await insertTestSupportThread({ supportContactId: contact.id })
-    unrelatedSupportThreadId = thread.id
-    await insertTestSupportMessage({
-      supportThreadId: thread.id,
-      direction: 'outbound',
-      draftedAt: new Date(),
-    })
   }, 20_000)
 
   afterAll(async () => {
@@ -147,38 +122,6 @@ describe('routes-extended', () => {
       }
     }
   }
-
-  describe('support user client routes', () => {
-    it('createMySupportThread creates thread', async () => {
-      const suffix = crypto.randomUUID()
-      const result = await withClientRuntime(
-        () =>
-          supportRoutes.createMySupportThread({
-            subject: `Test Support Thread ${suffix}`,
-            message: 'Hello, I need help.',
-          }),
-        userCookieHeader,
-      )
-      expect(result).toMatchObject({ thread: expect.objectContaining({ id: expect.any(String) }) })
-      createdSupportThreadId = result.thread.id
-    })
-
-    it('getMySupportThreadsClient returns threads list', async () => {
-      const result = await withClientRuntime(
-        () => supportRoutes.getMySupportThreadsClient({ limit: 5 }),
-        userCookieHeader,
-      )
-      // The thread created by the previous test belongs to this same user, so it must
-      // show up here; an endpoint that always returns an empty/wrong list would still
-      // pass a bare "results is an Array" check.
-      expect(result.results.some(thread => thread.id === createdSupportThreadId)).toBe(true)
-      // This inclusion check alone still passes if the endpoint stopped scoping by the
-      // authenticated user's support contact and returned a global thread list, which would
-      // expose other users' support data. The unrelated contact's thread seeded in beforeAll
-      // must not leak into this user's result.
-      expect(result.results.some(thread => thread.id === unrelatedSupportThreadId)).toBe(false)
-    })
-  })
 
   describe('reports client routes', () => {
     it('submitReport returns report', async () => {

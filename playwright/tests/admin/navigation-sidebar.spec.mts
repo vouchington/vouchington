@@ -118,24 +118,6 @@ test.describe('Admin sidebar navigation', () => {
     await expect(page.getByTestId('memberships-admin-heading')).toBeVisible()
   })
 
-  test('Support: Support → /support', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/support')
-    await sidebar.getByTestId('sidebar-link-support').click()
-    await expect(page).toHaveURL(/\/support/)
-    await expect(
-      page.getByTestId('admin-page-header-title').filter({ hasText: 'Support Threads' }),
-    ).toBeVisible()
-  })
-
-  test('Support: Support Contacts → /support/contacts', async ({ page }) => {
-    const sidebar = await openSidebarAt(page, '/support')
-    await sidebar.getByTestId('sidebar-link-support-contacts').click()
-    await expect(page).toHaveURL(/\/support\/contacts/)
-    await expect(
-      page.getByTestId('admin-page-header-title').filter({ hasText: 'Support Contacts' }),
-    ).toBeVisible()
-  })
-
   // ── Engineering ───────────────────────────────────────────────────────────
 
   test('Engineering: Queues → /admin/queues', async ({ page }) => {

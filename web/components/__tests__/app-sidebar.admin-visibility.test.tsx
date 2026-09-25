@@ -44,22 +44,19 @@ describe('AppSidebar Admin section visibility', () => {
     expect(screen.queryByText('Design')).toBeNull()
   })
 
-  it.each(['moderator', 'developer', 'customer_support', 'investor'])(
-    'shows only Dynamic Config to a %s',
-    role => {
-      setMockPathname('/admin/dynamic-config')
-      renderSidebar({ id: 'u1', roles: [role] } as User)
+  it.each(['moderator', 'developer', 'investor'])('shows only Dynamic Config to a %s', role => {
+    setMockPathname('/admin/dynamic-config')
+    renderSidebar({ id: 'u1', roles: [role] } as User)
 
-      expect(screen.getByRole('link', { name: /Dynamic Config/i })).toHaveAttribute(
-        'href',
-        '/admin/dynamic-config',
-      )
-      expect(screen.queryByText('Operations')).toBeNull()
-      expect(screen.queryByRole('link', { name: /^Queues$/i })).toBeNull()
-      expect(screen.queryByRole('link', { name: /^PostgreSQL$/i })).toBeNull()
-      expect(screen.queryByRole('link', { name: /^Valkey$/i })).toBeNull()
-    },
-  )
+    expect(screen.getByRole('link', { name: /Dynamic Config/i })).toHaveAttribute(
+      'href',
+      '/admin/dynamic-config',
+    )
+    expect(screen.queryByText('Operations')).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Queues$/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /^PostgreSQL$/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Valkey$/i })).toBeNull()
+  })
 
   it('shows moderation admin links for administrators', () => {
     setMockPathname('/reports')

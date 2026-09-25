@@ -1,5 +1,5 @@
 import { isValidElement } from 'react'
-import { cleanup, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import UserAdminPage from './page'
 
@@ -94,24 +94,13 @@ describe('UserAdminPage', () => {
     expect(mockGetUserProfile).not.toHaveBeenCalled()
   })
 
-  it('shows the landing-page analytics card only for administrators', async () => {
-    const adminResult = await UserAdminPage({ params: Promise.resolve({ idOrUsername: 'alice' }) })
-    render(adminResult)
+  it('shows the landing-page analytics card for administrators', async () => {
+    const result = await UserAdminPage({ params: Promise.resolve({ idOrUsername: 'alice' }) })
+    render(result)
 
-    expect(isValidElement(adminResult)).toBe(true)
+    expect(isValidElement(result)).toBe(true)
     expect(mockGetAdminLandingPagesForUser).toHaveBeenCalledWith('user-1')
     expect(screen.getByText('Landing page analytics card')).toBeInTheDocument()
-
-    mockGetCurrentUser.mockResolvedValue({ ...adminUser, roles: ['customer_support'] })
-    mockGetAdminLandingPagesForUser.mockClear()
-    cleanup()
-    const csResult = await UserAdminPage({ params: Promise.resolve({ idOrUsername: 'alice' }) })
-    render(csResult)
-
-    expect(isValidElement(csResult)).toBe(true)
-    expect(screen.queryByText('Landing page analytics card')).toBeNull()
-    expect(screen.getByText('Membership refund panel')).toBeInTheDocument()
-    expect(mockGetAdminLandingPagesForUser).not.toHaveBeenCalled()
   })
 
   it('renders the admin and refund panels when landing-page analytics fail to load', async () => {

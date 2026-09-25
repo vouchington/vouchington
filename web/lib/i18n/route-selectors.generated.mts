@@ -1,7 +1,7 @@
 // GENERATED FILE - do not edit by hand.
 // Regenerate: node static-code-analysis/i18n-extract/route-selector-map.mts
 // Verify:     node static-code-analysis/i18n-extract/route-selector-map.mts --check
-export const WEB_CHROME_SELECTOR = 'web.chrome.7744bff6260dcc9b'
+export const WEB_CHROME_SELECTOR = 'web.chrome.ebdd9726e2cc9f50'
 // oxfmt-ignore
 export const ROUTE_SELECTORS = [
   { pattern: "/", selectorId: "web.route.af63a24c860189fe.50730295d8eb2790", hasMembership: true },
@@ -69,9 +69,6 @@ export const ROUTE_SELECTORS = [
   { pattern: "/card/[id]/tags/[objectType]", selectorId: "web.route.7275142f1ee2f06a.3ec0f6c499b6ba04", hasMembership: true },
   { pattern: "/cards", selectorId: "web.route.ca92706ff831384d.1d5305eda96644b5", hasMembership: true },
   { pattern: "/channels", selectorId: "web.route.8d58830b786c14ee.63fd61fe5368fdfb", hasMembership: true },
-  { pattern: "/chat/support", selectorId: "web.route.ebc7d1d980f73a60.649a8bf6a4c65015", hasMembership: true },
-  { pattern: "/chat/support/[threadId]", selectorId: "web.route.87b23392fa4d82b2.69af14aa213496a6", hasMembership: true },
-  { pattern: "/chat/support/new", selectorId: "web.route.b292b125a44382e9.5acb0ca933e48340", hasMembership: true },
   { pattern: "/communities", selectorId: "web.route.cdc3229a82e4d82b.04b4685ce10ca69f", hasMembership: true },
   { pattern: "/communities/[slug]", selectorId: "web.route.ad335debd5c79789.a287df0b3bdd17bf", hasMembership: true },
   { pattern: "/communities/[slug]/apply", selectorId: "web.route.4cdd4f0dcf4df49a.a763365586b564d1", hasMembership: true },
@@ -356,10 +353,6 @@ export const ROUTE_SELECTORS = [
   { pattern: "/story/[id]", selectorId: "web.route.dad9deb990ad8a17.ba67637276d87413", hasMembership: true },
   { pattern: "/story/[id]/comment/[commentId]", selectorId: "web.route.055741be859a6c30.54953231a203d0b5", hasMembership: true },
   { pattern: "/story/[id]/tags/[objectType]", selectorId: "web.route.4277e45a8866aea7.cb6bcc52ec3b1e7e", hasMembership: true },
-  { pattern: "/support", selectorId: "web.route.a4864c58ce5475cd.86d272711020417f", hasMembership: true },
-  { pattern: "/support/contacts", selectorId: "web.route.c465ec3a055de64f.03b66cf907f7e7cd", hasMembership: true },
-  { pattern: "/support/contacts/[contactId]", selectorId: "web.route.0f6c53a190c40115.70f867c91cdc10d9", hasMembership: true },
-  { pattern: "/support/threads/[threadId]", selectorId: "web.route.2593f261de7e0683.e8f21ee7cfa580b3", hasMembership: true },
   { pattern: "/test-markdown-html", selectorId: "web.route.507881036aef9e7a.94cf6132f34abb80", hasMembership: true },
   { pattern: "/topic-claims/[topicId]", selectorId: "web.route.879690b6fd973162.3f14900570a64dde", hasMembership: true },
   { pattern: "/topic-recommendations", selectorId: "web.route.73cd2ffaf6556a3c.60d666be473e24fc", hasMembership: true },

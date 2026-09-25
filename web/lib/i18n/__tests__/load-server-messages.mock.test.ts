@@ -272,12 +272,12 @@ describe('loadServerMessages', () => {
   })
 
   it('emits development html props from the catalog snapshot revision', async () => {
-    mockHeadersGet.mockReturnValue('/chat/support')
-    mockGetBatch.mockResolvedValue(localizationBatch('Chat', 60))
+    mockHeadersGet.mockReturnValue('/messages')
+    mockGetBatch.mockResolvedValue(localizationBatch('Messages', 60))
     const catalog = await loadServerMessages('en')
     vi.stubEnv('NODE_ENV', 'development')
     expect(ssrLocalizationRevisionHtmlProps(catalog)).toEqual({
-      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Chat',
+      [SSR_LOCALIZATION_REVISION_ATTRIBUTE]: 'revision-Messages',
     })
   })
 

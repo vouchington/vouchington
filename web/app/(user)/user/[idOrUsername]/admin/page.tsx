@@ -18,9 +18,8 @@ export const metadata: Metadata = createNoIndexMetadata('User Admin')
 export default async function UserAdminPage({ params }: PageProps) {
   const currentUser = await getCurrentUser()
   const isAdmin = currentUser?.roles.includes('administrator') ?? false
-  const isCS = currentUser?.roles.includes('customer_support') ?? false
 
-  if (!currentUser || (!isAdmin && !isCS)) {
+  if (!currentUser || !isAdmin) {
     notFound()
   }
 

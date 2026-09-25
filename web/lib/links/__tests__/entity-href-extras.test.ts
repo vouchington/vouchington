@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  chatSupportThreadHref,
   compareHref,
   createCommunityPathname,
   createDomainPathname,
@@ -20,19 +19,10 @@ import {
   podcastCategoryHref,
   podcastsHref,
   reviewHref,
-  supportContactHref,
-  supportContactsHref,
-  supportThreadHref,
   topicClaimHref,
   topicRecommendationHref,
   urlHref,
 } from '../entity-href'
-
-describe('chatSupportThreadHref', () => {
-  it('builds the user-facing support thread path', () => {
-    expect(chatSupportThreadHref({ id: 'thread-1' })).toBe('/chat/support/thread-1')
-  })
-})
 
 describe('messagesHref', () => {
   it('builds the messages path from the conversation id', () => {
@@ -82,13 +72,7 @@ describe('entity primitives', () => {
   })
 })
 
-describe('admin and support hrefs', () => {
-  it('builds support entity paths', () => {
-    expect(supportThreadHref({ id: 'thread-1' })).toBe('/support/threads/thread-1')
-    expect(supportContactHref({ id: 'contact-1' })).toBe('/support/contacts/contact-1')
-    expect(supportContactsHref('?q=alice')).toBe('/support/contacts?q=alice')
-  })
-
+describe('membership hrefs', () => {
   it('builds membership surface paths', () => {
     expect(plansHref()).toBe('/plans')
     expect(myMembershipHref()).toBe('/my/membership')

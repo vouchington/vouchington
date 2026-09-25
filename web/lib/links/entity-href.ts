@@ -62,10 +62,6 @@ export function reviewHref(review: string | OptionalSlugInput): string {
   return createPostPathname('review', review)
 }
 
-export function chatSupportThreadHref(thread: string | IdInput): string {
-  return `/chat/support/${idOrValue(thread)}`
-}
-
 export function messagesHref(conversation: string | IdInput): string {
   return `/messages/${idOrValue(conversation)}`
 }
@@ -90,18 +86,6 @@ export function createDomainPathname(domain: string | HostnameInput, suffix = ''
 
 export function domainHref(domain: string | HostnameInput): string {
   return `/domain/${typeof domain === 'string' ? domain : 'hostname' in domain ? domain.hostname : domain.id}`
-}
-
-export function supportThreadHref(thread: string | IdInput): string {
-  return `/support/threads/${idOrValue(thread)}`
-}
-
-export function supportContactHref(contact: string | IdInput): string {
-  return `/support/contacts/${idOrValue(contact)}`
-}
-
-export function supportContactsHref(query = ''): string {
-  return `/support/contacts${query}`
 }
 
 export function topicRecommendationHref(recommendation: string | IdInput, suffix = ''): string {

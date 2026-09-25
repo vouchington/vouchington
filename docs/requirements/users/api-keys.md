@@ -29,15 +29,14 @@ API keys use a permission-based access control system. Each key has a `permissio
 
 ### Available Permissions
 
-| Permission              | Description                                           |
-| ----------------------- | ----------------------------------------------------- |
-| `rss:read`              | Access RSS feed endpoints (`/rss/posts`, `/rss/news`) |
-| `topics:read`           | Read topic and recommendation MCP tools               |
-| `posts:read`            | Read post MCP tools                                   |
-| `cards:read/write`      | Read or manage cards; write requires read             |
-| `support-messages:read` | Read the administrator-only support-search tool       |
-| `mcp.user:read/write`   | Compatibility grants for existing user MCP keys       |
-| `mcp.admin:read/write`  | Compatibility grants for existing admin MCP keys      |
+| Permission             | Description                                           |
+| ---------------------- | ----------------------------------------------------- |
+| `rss:read`             | Access RSS feed endpoints (`/rss/posts`, `/rss/news`) |
+| `topics:read`          | Read topic and recommendation MCP tools               |
+| `posts:read`           | Read post MCP tools                                   |
+| `cards:read/write`     | Read or manage cards; write requires read             |
+| `mcp.user:read/write`  | Compatibility grants for existing user MCP keys       |
+| `mcp.admin:read/write` | Compatibility grants for existing admin MCP keys      |
 
 Scopes use the strict lowercase `<resource>:<action>` grammar. Dot-delimited resources compose the
 surface and audience, such as `mcp.user` and `mcp.admin`. Unknown, whitespace-padded, case-normalized,

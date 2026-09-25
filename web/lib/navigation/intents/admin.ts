@@ -1,4 +1,4 @@
-import { Contact, Settings2, ShieldAlert, TrendingUp } from 'lucide-react'
+import { Settings2, ShieldAlert, TrendingUp } from 'lucide-react'
 
 import { DYNAMIC_CONFIG_VIEWER_ROLES } from '../../auth/dynamic-config-access'
 import type { NavIntent } from './types'
@@ -75,31 +75,6 @@ export const ADMIN_INTENTS: readonly NavIntent[] = [
             href: '/my/disputes',
             dataPw: 'sidebar-nav-my-disputes',
             requiresAuth: true,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'support',
-    label: 'extracted.intents.admin.support_be91940b',
-    icon: Contact,
-    roles: ['administrator'] as const,
-    groups: [
-      {
-        label: 'extracted.intents.admin.support_be91940b',
-        dataPw: 'sidebar-group-admin-support',
-        items: [
-          {
-            label: 'extracted.intents.admin.support_be91940b',
-            href: '/support',
-            dataPw: 'sidebar-link-support',
-            excludePathPrefixes: ['/support/contacts'],
-          },
-          {
-            label: 'extracted.intents.admin.supportContacts_96f650a3',
-            href: '/support/contacts',
-            dataPw: 'sidebar-link-support-contacts',
           },
         ],
       },

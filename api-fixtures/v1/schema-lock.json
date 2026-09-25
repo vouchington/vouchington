@@ -1144,10 +1144,6 @@
       "fixtureIds": ["native.spending-categories.create.default"],
       "hash": "f2127ada892422d1160e35df570d52f828ca8e9d8fd6b27cdc6a0b53171833c8"
     },
-    "POST:/api/v1/my/support-threads": {
-      "fixtureIds": ["web.my.support-threads.create.default"],
-      "hash": "a818763bb278db16592589a6a300a02038d06c3d9ab5d04663e6ae90a1e982fd"
-    },
     "POST:/api/v1/posts/:idOrSlug/clearances": {
       "fixtureIds": [
         "native.moderation.clearance.approved",
@@ -2681,10 +2677,6 @@
     "web.memberships.refund.reconciling": {
       "fixtureIds": ["web.memberships.refund.reconciling"],
       "hash": "ae5a6ec7c34dd480b8c56080de416580de44e1d3d642d5568093e5f3641a2c56"
-    },
-    "web.my.support-threads.create.default": {
-      "fixtureIds": ["web.my.support-threads.create.default"],
-      "hash": "11deaf4535dac4b7e9491ba3a57d07dde8e17e878e32375fbfa430e28a749e37"
     },
     "web.oauth.authorization.complete.acknowledged": {
       "fixtureIds": ["web.oauth.authorization.complete.acknowledged"],

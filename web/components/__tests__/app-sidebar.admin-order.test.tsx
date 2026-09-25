@@ -66,11 +66,4 @@ describe('AppSidebar Admin section visibility', () => {
     const { container } = renderSidebar({ id: 'u1', roles: ['developer'] } as User)
     expect(getSectionLabels(container)).toEqual(['Dynamic Config'])
   })
-
-  it('Support intent does not show static Messages group when authenticated', () => {
-    setMockPathname('/chat/support')
-    const { container } = renderSidebar({ id: 'u1', roles: ['user'] } as User)
-    const labels = getSectionLabels(container)
-    expect(labels).not.toContain('Messages')
-  })
 })

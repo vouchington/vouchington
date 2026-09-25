@@ -5,7 +5,6 @@ describe('DYNAMIC_CONFIG_VIEWER_ROLES', () => {
   it('includes expected viewer roles', () => {
     expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('moderator')
     expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('developer')
-    expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('customer_support')
     expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('investor')
   })
 })

@@ -30,7 +30,7 @@ export function PageHeader({
   const defaultTitleSize = hasBaseTitleSize(titleClassName) ? 'text-2xl' : 'text-2xl sm:text-3xl'
 
   return (
-    <div data-pw='page-header'>
+    <div>
       <h1
         data-pw={dataPw}
         className={cn(defaultTitleSize, 'font-bold', titleClassName)}

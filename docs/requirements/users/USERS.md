@@ -10,7 +10,7 @@ See also: [Entity × Action Matrix — user](../reference-user.md#user) · [Enti
   to the id; the link is `administrator`-only. Native clients (Swift and .NET) render the
   same administrator-only status, email when available, and management link.
 - `/user/:idOrUsername` is the canonical, indexable user profile page.
-- `/user/:idOrUsername/admin` is staff-only. Web allows `administrator` or `customer_support` to
+- `/user/:idOrUsername/admin` is staff-only. Web allows `administrator` to
   open the page. The identity-verification retry grant is administrator-only. Native clients render
   that grant form on the same route, reached from the profile header Admin button, the `/users`
   search result row's management link, or `voucha://user/:idOrUsername/admin`. Native does not
