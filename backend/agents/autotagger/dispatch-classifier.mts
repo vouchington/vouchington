@@ -107,12 +107,12 @@ export async function dispatchAutotaggerClassifier(
     transport: configuration.modelProvider,
     apiKey: resolveStructuredDecisionApiKey(configuration.modelProvider),
   })
-  const sharedActorId = await getAutotaggerClassifierSystemUserId()
-
-  const { bindings, digest } = await buildAutotaggerClassifierBindingsAndDigest(
-    configuration,
-    input,
-  )
+  // Independent of one another (neither reads the other's result), so they run concurrently
+  // rather than as a third sequential await.
+  const [sharedActorId, { bindings, digest }] = await Promise.all([
+    getAutotaggerClassifierSystemUserId(),
+    buildAutotaggerClassifierBindingsAndDigest(configuration, input),
+  ])
 
   const claim = await claimAutotaggerReceipt({
     subject: input.subject,

@@ -201,6 +201,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Lower-amplification entities and workflow rows: `agent_prompts`, `agents`,
   `agents__moderators`, `ap_actor_keys`, `ap_posts`, `api_keys`, `app_attestation_keys`,
   `apple_accounts`,
+  `autotagger_receipt_attempts`, `autotagger_receipts`,
   `bedrock_embeddings_batch_entities`, `bedrock_embeddings_batches`,
   `bedrock_nova_multimodal_v1_embeddings`, `bedrock_nova_multimodal_v1_image_embeddings`,
   `bluesky_link_authorizations`, `bluesky_link_completions`, `bluesky_linked_accounts`,

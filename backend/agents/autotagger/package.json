@@ -39,6 +39,7 @@
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {
+    "@services/elections-votes": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
     "@voucha/test-helpers": "workspace:^"

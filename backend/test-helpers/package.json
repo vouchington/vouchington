@@ -40,6 +40,7 @@
     "@modules/openai-utils": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/search-utils": "workspace:^",
+    "@modules/structured-decisions": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@sentry/node": "10.75.2",

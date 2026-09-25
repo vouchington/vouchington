@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
-import { write } from '@data-stores/psql'
 import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
+import {
+  getLocalClassifierBySlug,
+  listLocalActiveClassifierPromptVersions,
+  countLocalAgentsForSystemUsername,
+} from '../../../../test-helpers/data-stores/psql/classifiers-seed.mts'
+import { getLocalTestUserRawByUsername } from '../../../../test-helpers/data-stores/psql/users.mts'
 import generateSeedTaggingClassifierSQL from '../0635-00-02-seed-tagging-classifier.mts'
 
 describe('0635-00-02-seed-tagging-classifier SQL shape', () => {
@@ -42,34 +46,20 @@ describe('0635-00-02-seed-tagging-classifier (real DB)', () => {
     await runConfigDrivenStatementsInTransaction(generated, undefined)
     await runConfigDrivenStatementsInTransaction(generated, undefined)
 
-    const { rows: classifierRows } = await write<{
-      id: string
-      activated_at: Date | null
-      deactivated_at: Date | null
-    }>(sql`SELECT id, activated_at, deactivated_at FROM classifiers WHERE slug = 'tagging'`)
-    expect(classifierRows).toHaveLength(1)
-    expect(classifierRows[0]!.activated_at).not.toBeNull()
-    expect(classifierRows[0]!.deactivated_at).toBeNull()
+    const classifier = await getLocalClassifierBySlug('tagging')
+    expect(classifier).not.toBeNull()
+    expect(classifier!.activated_at).not.toBeNull()
+    expect(classifier!.deactivated_at).toBeNull()
 
-    const { rows: promptRows } = await write<{ id: string; model_name: string }>(sql`
-      SELECT id, model_name FROM classifier_prompt_versions
-      WHERE classifier_id = ${classifierRows[0]!.id}
-        AND activated_at IS NOT NULL AND deactivated_at IS NULL
-    `)
+    const promptRows = await listLocalActiveClassifierPromptVersions(classifier!.id)
     expect(promptRows).toHaveLength(1)
     expect(promptRows[0]!.model_name).toBe('typesafe/jev-1.13')
 
-    const { rows: userRows } = await write<{ is_system: boolean }>(sql`
-      SELECT is_system FROM users WHERE username = 'autotagger-classifier'
-    `)
-    expect(userRows).toHaveLength(1)
-    expect(userRows[0]!.is_system).toBe(true)
+    const user = await getLocalTestUserRawByUsername('autotagger-classifier')
+    expect(user).not.toBeNull()
+    expect(user!.is_system).toBe(true)
 
-    const { rows: agentRows } = await write<{ id: string }>(sql`
-      SELECT a.id FROM agents a
-      JOIN users u ON u.id = a.system_user_id
-      WHERE u.username = 'autotagger-classifier'
-    `)
-    expect(agentRows).toHaveLength(0)
+    const agentCount = await countLocalAgentsForSystemUsername('autotagger-classifier')
+    expect(agentCount).toBe(0)
   })
 })

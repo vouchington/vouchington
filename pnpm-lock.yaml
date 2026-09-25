@@ -325,6 +325,9 @@ importers:
         specifier: workspace:^
         version: link:../../types
     devDependencies:
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../../services/elections-votes
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
@@ -10401,6 +10404,9 @@ importers:
       '@modules/search-utils':
         specifier: workspace:^
         version: link:../modules/search-utils
+      '@modules/structured-decisions':
+        specifier: workspace:^
+        version: link:../modules/structured-decisions
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../modules/token-secrets
