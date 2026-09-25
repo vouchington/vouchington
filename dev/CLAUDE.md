@@ -29,6 +29,8 @@ Before adding or changing a Vitest test, fixture, or mock here, load the
   [vouchington-machines](https://github.com/vouchington/vouchington-machines);
   keep [system dependency docs](../docs/development/system-dependencies.md) synchronized with that
   ownership boundary.
+- Agent hook code (`codex-hooks/`, `codex-hooks-tests/`) follows
+  [codex-hooks/CLAUDE.md](codex-hooks/CLAUDE.md).
 
 Use [local web validation recovery](../docs/development/tests.md#local-web-validation-recovery) only
 after the supported initialization path fails.

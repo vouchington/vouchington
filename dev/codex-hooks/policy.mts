@@ -14,6 +14,7 @@ import {
   findBlockedGitReason,
 } from './policy/blocked-command-patterns.mts'
 import { DEFAULT_AUTOMATION_CONTEXT } from './policy/core.mts'
+import { findInteractiveMergeConfirm } from './policy/github-merge-authority.mts'
 import { extractToolCommand } from './hook-payload.mts'
 import {
   type PreToolUseOptions,
@@ -25,20 +26,20 @@ export type { PreToolUseOptions } from './policy/pre-tool-use-confirm-output.mts
 
 export type { HookPayload } from './types.mts'
 
+// Every check that can block runs first; the interactive lone-merge confirm is the final return,
+// so a block anywhere in the command always beats the merge allow.
 export function findPreToolUseBlock(
   payload: HookPayload,
   options: GitHubWorkflowPolicyOptions = {},
 ): BlockDecision | null {
   const command = extractToolCommand(payload)
+  const automationContext = options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT
   if (hookPayloadReferencesClairePath(payload, command)) {
     return {
       reason: 'Typo: .claire should be .claude.',
     }
   }
-  if (
-    (options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT) &&
-    hookPayloadReferencesProtectedHookPath(payload, command)
-  ) {
+  if (automationContext && hookPayloadReferencesProtectedHookPath(payload, command)) {
     return {
       reason:
         'Cannot Edit/Write/apply_patch the permission-enforcement hooks (dev/codex-hooks/**, ' +
@@ -95,7 +96,7 @@ export function findPreToolUseBlock(
     }
   }
 
-  return null
+  return findInteractiveMergeConfirm(command, automationContext)
 }
 
 /**
@@ -105,6 +106,17 @@ export function findPreToolUseBlock(
  */
 export function isAutomationContext(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.GITHUB_ACTIONS === 'true' || env.CI === 'true'
+}
+
+/**
+ * True only when Claude Code marks this session attended. Claude Code sets
+ * CLAUDE_CODE_SESSION_ATTENDED=1 for an interactive session and 0 for `claude -p` (including a
+ * `claude -p` nested in an interactive session), and hook processes inherit it. A missing or
+ * changed variable fails safe: no silent merge allow, so the harness prompts. See
+ * docs/development/merge-authority.md.
+ */
+export function isAttendedClaudeSession(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.CLAUDE_CODE_SESSION_ATTENDED === '1'
 }
 
 export function preToolUseOutput(payload: HookPayload, options: PreToolUseOptions = {}): string {
@@ -118,7 +130,7 @@ export function preToolUseOutput(payload: HookPayload, options: PreToolUseOption
   }
 
   if (block.disposition === 'confirm') {
-    return renderConfirmDisposition(block, options)
+    return renderConfirmDisposition(options)
   }
 
   return JSON.stringify({

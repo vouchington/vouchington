@@ -37,7 +37,7 @@ describe('cursorBeforeShellOutput', () => {
     })
   })
 
-  it('allows an interactive merge instead of asking', () => {
+  it('asks for an interactive merge, since only an attended Claude session gets the allow', () => {
     expect(
       JSON.parse(
         cursorBeforeShellOutput(
@@ -46,8 +46,9 @@ describe('cursorBeforeShellOutput', () => {
         ),
       ),
     ).toEqual({
-      permission: 'allow',
-      agent_message: expect.stringContaining('proceeding on the human decision'),
+      permission: 'ask',
+      user_message: expect.stringContaining('human decision'),
+      agent_message: expect.stringContaining('human decision'),
     })
   })
 

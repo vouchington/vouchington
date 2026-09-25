@@ -62,17 +62,17 @@ describe('Codex hook gh api merge policy', () => {
   })
 })
 
-// See the equivalent describe block in codex-hook-gh-pr-merge-policy.test.mts — automationContext
-// governs disposition the same way for the gh api merge/GraphQL paths.
-describe('Codex hook gh api merge policy — interactive confirm', () => {
+// Interactively the hook has no opinion on a gh api merge — only a lone `gh pr merge` or
+// `gh stack merge` gets the confirm — so the harness's own approval decides.
+describe('Codex hook gh api merge policy — interactive', () => {
   it.each([
     'gh api -X PUT repos/owner/repo/pulls/123/merge',
     'gh api repos/owner/repo/merges -f base=main -f head=feature',
     "gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {}) { clientMutationId } }'",
-  ])('confirms rather than blocks outside automation: %s', command => {
-    const block = findPreToolUseBlock({ tool_input: { command } }, { automationContext: false })
-    expect(block?.disposition).toBe('confirm')
-    expect(block?.reason).toContain('human decision')
+  ])('has no opinion outside automation: %s', command => {
+    expect(
+      findPreToolUseBlock({ tool_input: { command } }, { automationContext: false }),
+    ).toBeNull()
   })
 
   it('still blocks with disposition "block" when automationContext is explicitly true', () => {

@@ -110,10 +110,10 @@ describe('Grok PreToolUse runtime', () => {
     })
   })
 
-  it('emits nothing for an interactive Grok merge confirm', () => {
+  it('emits nothing for an interactive Grok merge confirm, even with attended inherited', () => {
     const output = preToolUseOutput(
       { toolInput: { command: 'gh pr merge 123 --squash' } },
-      { automationContext: false, runtime: 'grok' },
+      { attended: true, automationContext: false, runtime: 'grok' },
     )
     expect(output).toBe('')
   })

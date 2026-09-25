@@ -5,13 +5,11 @@ export type BlockDecision = {
   reason: string
   /**
    * 'block' (the default when omitted) rejects the tool call outright — both Claude Code and
-   * Codex understand `{decision:'block'}`. 'confirm' means the action is allowed but rendered
-   * through pre-tool-use-confirm-output.mts instead of a hard block: interactively that's a
-   * silent allow (see docs/development/merge-authority.md — the human already decided by asking
-   * for the merge in their own message); in automation the merge branches never actually reach
-   * this disposition (they return 'block' instead). Only the merge-authority branches in
-   * github-workflow.mts, github-stack-workflow.mts, and github-api-merge-options.mts ever set
-   * 'confirm' — every other policy check stays a hard block.
+   * Codex understand `{decision:'block'}`. 'confirm' marks an interactive lone merge, which
+   * pre-tool-use-confirm-output.mts renders as a silent allow only in an attended Claude session
+   * (see docs/development/merge-authority.md). findInteractiveMergeConfirm in
+   * github-merge-authority.mts is the only source of 'confirm', and policy.mts consults it after
+   * every block, so a block anywhere in the command always wins.
    */
   disposition?: 'block' | 'confirm'
 }

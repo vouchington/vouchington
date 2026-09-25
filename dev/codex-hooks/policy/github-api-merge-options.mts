@@ -1,5 +1,5 @@
 import { DEFAULT_AUTOMATION_CONTEXT, type BlockDecision } from './core.mts'
-import { apiMergeReason, graphqlMergeReason } from './github-api-merge-reasons.mts'
+import { API_MERGE_BLOCK, GRAPHQL_MERGE_BLOCK } from './github-api-merge-reasons.mts'
 import {
   attachedShortOptionValue,
   isGhCommandSeparator,
@@ -170,24 +170,25 @@ export function hasMergeGraphqlMutation(invocation: GhApiInvocation): boolean {
  * `area === 'api'`. See the module comment above for why this is defense-in-depth, not the merge
  * boundary. `ghIndex` is the index of the `gh` token itself. `automationContext` defaults to
  * DEFAULT_AUTOMATION_CONTEXT (block) so direct callers keep the strict pre-existing behavior —
- * see GitHubWorkflowPolicyOptions in github-closing-refs.mts for why.
+ * see GitHubWorkflowPolicyOptions in github-closing-refs.mts for why. Interactively this returns
+ * null, so the harness's own approval decides.
  */
 export function findGhApiMergeBlock(
   tokens: string[],
   ghIndex: number,
   automationContext = DEFAULT_AUTOMATION_CONTEXT,
 ): BlockDecision | null {
-  const apiIndex = findGhAreaTokenIndex(tokens, ghIndex)
+  const apiIndex = automationContext ? findGhAreaTokenIndex(tokens, ghIndex) : null
   if (apiIndex === null) {
     return null
   }
 
   const invocation = parseGhApiInvocation(tokens, apiIndex)
   if (isApiMergeInvocation(invocation)) {
-    return apiMergeReason(automationContext)
+    return API_MERGE_BLOCK
   }
   if (hasMergeGraphqlMutation(invocation)) {
-    return graphqlMergeReason(automationContext)
+    return GRAPHQL_MERGE_BLOCK
   }
 
   return null
