@@ -2,12 +2,12 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempDisposableSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { parseJscpdCliArgs, selectBaseRef } from './jscpd/cli.mts'
+import { parseJscpdCliArgs, selectBaseline } from './jscpd/cli.mts'
 import {
   findInlineIgnoreMarkers,
   listTrackedFiles,
   listUntrackedPaths,
-  resolveMergeBase,
+  resolveBaseline,
 } from './jscpd/git.mts'
 import {
   JSCPD_CONFIG_PATH,
@@ -36,13 +36,13 @@ function findConfigProblems(context: JscpdRunContext, globs: string[]): string[]
   return [...findConfigGlobProblems(globs, listTrackedFiles(context)), ...markerProblems]
 }
 
-function scanArguments(mergeBase: string, ignore: string[], outputDir: string): string[] {
+function scanArguments(baseline: string, ignore: string[], outputDir: string): string[] {
   return [
     'exec',
     'jscpd',
     '.',
     '--baseline-from-ref',
-    mergeBase,
+    baseline,
     ...ignore,
     '--reporters',
     'json',
@@ -61,14 +61,13 @@ export function runJscpd(args: string[], context: JscpdRunContext): number {
     return 1
   }
 
-  const baseRef = selectBaseRef(options, context.env)
-  const mergeBase = resolveMergeBase(context, baseRef)
+  const baseline = resolveBaseline(context, selectBaseline(options, context.env))
   const ignore = buildIgnoreArguments([
     ...globs,
     ...untrackedIgnoreGlobs(listUntrackedPaths(context)),
   ])
   using outputDir = mkdtempDisposableSync(join(tmpdir(), 'jscpd-report-'))
-  const scan = runProcess(context, 'pnpm', scanArguments(mergeBase, ignore, outputDir.path))
+  const scan = runProcess(context, 'pnpm', scanArguments(baseline.commit, ignore, outputDir.path))
   if (scan.status !== 0) {
     for (const output of [scan.stdout, scan.stderr]) if (output.trim()) context.error(output.trim())
     context.error(`jscpd failed with ${scan.status === null ? 'a signal' : `exit ${scan.status}`}.`)
@@ -77,14 +76,13 @@ export function runJscpd(args: string[], context: JscpdRunContext): number {
 
   const report = parseJscpdReport(readFileSync(join(outputDir.path, JSCPD_REPORT_FILE), 'utf8'))
   const newClones = report.clones.filter(clone => clone.isNew)
-  const baseline = `merge-base ${mergeBase.slice(0, 12)} (${baseRef})`
   if (newClones.length === 0) {
     context.log(
-      `jscpd: no new clones against ${baseline}; ${report.sources} files scanned, ${report.clones.length} existing clones.`,
+      `jscpd: no new clones against ${baseline.label}; ${report.sources} files scanned, ${report.clones.length} existing clones.`,
     )
     return 0
   }
-  context.error(`jscpd: ${newClones.length} new clone(s) against ${baseline}:`)
+  context.error(`jscpd: ${newClones.length} new clone(s) against ${baseline.label}:`)
   for (const clone of newClones) context.error(`  ${formatClone(clone)}`)
   for (const line of NEW_CLONE_REMEDIATION) context.error(line)
   return 1

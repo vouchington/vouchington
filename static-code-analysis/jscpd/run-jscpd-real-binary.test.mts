@@ -27,6 +27,20 @@ function write(cwd: string, file: string, contents = DUPLICATED_SOURCE): void {
   writeFileSync(join(cwd, file), contents)
 }
 
+function commitAll(cwd: string, message: string): void {
+  git(cwd, 'add', '.')
+  git(cwd, 'commit', '-q', '-m', message)
+}
+
+// Commits the config and files as the merge-base that origin/main points to.
+function initRepo(cwd: string, config: object, files: Record<string, string>): void {
+  git(cwd, 'init', '-q', '-b', 'main')
+  write(cwd, '.jscpd.json', JSON.stringify(config))
+  for (const [file, contents] of Object.entries(files)) write(cwd, file, contents)
+  commitAll(cwd, 'base')
+  git(cwd, 'update-ref', 'refs/remotes/origin/main', 'HEAD')
+}
+
 // Runs the real jscpd binary where the wrapper asks for `pnpm exec jscpd`, since the temporary
 // repository has no package.json of its own.
 const realExecutor: ProcessExecutor = (command, args, options) =>
@@ -34,12 +48,12 @@ const realExecutor: ProcessExecutor = (command, args, options) =>
     ? spawnSync(JSCPD_BIN, args.slice(2), options)
     : spawnSync(command, args, options)
 
-function run(cwd: string) {
+function run(cwd: string, env: Record<string, string> = {}) {
   const logs: string[] = []
   const errors: string[] = []
   const context: JscpdRunContext = {
     cwd,
-    env: {},
+    env,
     execute: realExecutor,
     log: line => logs.push(line),
     error: line => errors.push(line),
@@ -51,21 +65,14 @@ describe('run-jscpd with the real jscpd binary', () => {
   it('fails only on a clone committed since the merge-base and passes once it is removed', () => {
     using repo = mkdtempDisposableSync(join(tmpdir(), 'run-jscpd-e2e-'))
     const cwd = repo.path
-    git(cwd, 'init', '-q', '-b', 'main')
-    write(
+    initRepo(
       cwd,
-      '.jscpd.json',
-      JSON.stringify({ format: ['typescript'], ignore: ['**/fixtures/**'] }),
+      { format: ['typescript'], ignore: ['**/fixtures/**'] },
+      { 'src/a.ts': DUPLICATED_SOURCE },
     )
-    write(cwd, 'src/a.ts')
-    git(cwd, 'add', '.')
-    git(cwd, 'commit', '-q', '-m', 'base')
-    git(cwd, 'update-ref', 'refs/remotes/origin/main', 'HEAD')
-
     write(cwd, 'sub/dup.ts')
     write(cwd, 'test/fixtures/copy.ts')
-    git(cwd, 'add', '.')
-    git(cwd, 'commit', '-q', '-m', 'head copies a.ts')
+    commitAll(cwd, 'head copies a.ts')
     write(cwd, 'dup.ts')
 
     const failing = run(cwd)
@@ -86,5 +93,31 @@ describe('run-jscpd with the real jscpd binary', () => {
     expect(passing.logs).toHaveLength(1)
     expect(passing.logs[0]).toMatch(/^jscpd: no new clones against merge-base [0-9a-f]{12} /)
     expect(git(cwd, 'status', '--porcelain')).toBe('?? dup.ts\n')
+  })
+
+  it('ratchets a pull_request merge commit against its first parent, as on a stack layer', () => {
+    using repo = mkdtempDisposableSync(join(tmpdir(), 'run-jscpd-e2e-'))
+    const cwd = repo.path
+    initRepo(cwd, { format: ['typescript'] }, { 'src/a.ts': DUPLICATED_SOURCE })
+    git(cwd, 'checkout', '-q', '-b', 'parent')
+    write(cwd, 'src/parent-copy.ts')
+    commitAll(cwd, 'the parent layer copies a.ts')
+    git(cwd, 'checkout', '-q', '-b', 'layer')
+    write(cwd, 'src/layer.ts', 'export const layer = 1\n')
+    commitAll(cwd, 'the layer adds no clone')
+    git(cwd, 'checkout', '-q', 'parent')
+    git(cwd, 'merge', '-q', '--no-ff', '-m', 'Merge layer into parent', 'layer')
+
+    const pullRequest = run(cwd, { GITHUB_EVENT_NAME: 'pull_request' })
+    expect(pullRequest.errors).toEqual([])
+    expect(pullRequest.status).toBe(0)
+    expect(pullRequest.logs).toEqual([
+      expect.stringMatching(
+        /^jscpd: no new clones against pull request merge parent [0-9a-f]{12} \(HEAD\^1\); /,
+      ),
+    ])
+    const againstMain = run(cwd)
+    expect(againstMain.status).toBe(1)
+    expect(againstMain.errors.join('\n')).toContain('src/parent-copy.ts')
   })
 })

@@ -4,6 +4,9 @@ import { join } from 'node:path'
 import type { JscpdRunContext, ProcessExecutor, ProcessResult } from '../jscpd/process.mts'
 
 export const SYNTHETIC_MERGE_BASE = 'ab'.repeat(20)
+export const SYNTHETIC_MERGE_PARENT = 'cd'.repeat(20)
+const SYNTHETIC_HEAD = '12'.repeat(20)
+const SYNTHETIC_BRANCH_TIP = 'ef'.repeat(20)
 
 export type FakeClone = {
   kind?: string
@@ -18,6 +21,8 @@ export type FakeRepo = {
   untracked?: string[]
   markerHits?: { file: string; line: number }[]
   mergeBase?: ProcessResult
+  // HEAD's parents; defaults to a pull_request merge commit.
+  headParents?: string[]
   scan?: ProcessResult
   clones?: FakeClone[]
 }
@@ -79,6 +84,10 @@ function respond(repo: FakeRepo, command: string, args: string[]): ProcessResult
   }
   if (command === 'git' && subcommand === 'merge-base') {
     return repo.mergeBase ?? ok(`${SYNTHETIC_MERGE_BASE}\n`)
+  }
+  if (command === 'git' && subcommand === 'rev-list') {
+    const parents = repo.headParents ?? [SYNTHETIC_MERGE_PARENT, SYNTHETIC_BRANCH_TIP]
+    return ok(`${[SYNTHETIC_HEAD, ...parents].join(' ')}\n`)
   }
   throw new Error(`Unexpected command: ${command} ${args.join(' ')}`)
 }

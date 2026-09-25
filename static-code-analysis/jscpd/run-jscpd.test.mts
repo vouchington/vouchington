@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { runJscpd } from '../run-jscpd.mts'
 import {
   SYNTHETIC_MERGE_BASE,
+  SYNTHETIC_MERGE_PARENT,
   createFakeRun,
   scanCall,
   type FakeRun,
@@ -12,23 +13,51 @@ function mergeBaseArgs(run: FakeRun): string[] | undefined {
   return run.calls.find(call => call.args[0] === 'merge-base')?.args
 }
 
+function baselineArg(run: FakeRun): string | undefined {
+  const args = scanCall(run)?.args ?? []
+  return args[args.indexOf('--baseline-from-ref') + 1]
+}
+
 describe('runJscpd base resolution', () => {
-  it('uses the --base ref', () => {
-    using run = createFakeRun({}, { GITHUB_BASE_REF: 'ignored-parent' })
+  it('uses the --base ref, even on a pull_request run', () => {
+    using run = createFakeRun({}, { GITHUB_EVENT_NAME: 'pull_request' })
     expect(runJscpd(['--base', 'feature/parent'], run.context)).toBe(0)
     expect(mergeBaseArgs(run)).toEqual(['merge-base', 'feature/parent', 'HEAD'])
+    expect(baselineArg(run)).toBe(SYNTHETIC_MERGE_BASE)
   })
 
-  it('uses origin/$GITHUB_BASE_REF so stacked pull requests compare against their parent', () => {
-    using run = createFakeRun({}, { GITHUB_BASE_REF: 'feature/parent' })
+  it("compares a pull_request run against its merge commit's first parent", () => {
+    using run = createFakeRun({}, { GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'main' })
     expect(runJscpd([], run.context)).toBe(0)
-    expect(mergeBaseArgs(run)).toEqual(['merge-base', 'origin/feature/parent', 'HEAD'])
+    expect(mergeBaseArgs(run)).toBeUndefined()
+    expect(baselineArg(run)).toBe(SYNTHETIC_MERGE_PARENT)
+    expect(run.logs).toEqual([
+      `jscpd: no new clones against pull request merge parent ${SYNTHETIC_MERGE_PARENT.slice(0, 12)} (HEAD^1); 3 files scanned, 0 existing clones.`,
+    ])
   })
 
-  it('defaults to origin/main', () => {
-    using run = createFakeRun({})
-    expect(runJscpd([], run.context)).toBe(0)
-    expect(mergeBaseArgs(run)).toEqual(['merge-base', 'origin/main', 'HEAD'])
+  it('fails a pull_request run whose HEAD is not a two-parent merge commit', () => {
+    for (const headParents of [[], [SYNTHETIC_MERGE_BASE]]) {
+      using run = createFakeRun({ headParents }, { GITHUB_EVENT_NAME: 'pull_request' })
+      expect(() => runJscpd([], run.context)).toThrow(
+        new RegExp(`HEAD has ${headParents.length} parent\\(s\\)[\\s\\S]*fetch-base-ref`),
+      )
+      expect(scanCall(run)).toBeUndefined()
+    }
+  })
+
+  it('defaults to origin/main outside pull_request runs', () => {
+    const envs: Record<string, string>[] = [
+      {},
+      { GITHUB_EVENT_NAME: 'merge_group' },
+      { GITHUB_EVENT_NAME: 'workflow_dispatch' },
+    ]
+    for (const env of envs) {
+      using run = createFakeRun({}, env)
+      expect(runJscpd([], run.context)).toBe(0)
+      expect(mergeBaseArgs(run)).toEqual(['merge-base', 'origin/main', 'HEAD'])
+      expect(baselineArg(run)).toBe(SYNTHETIC_MERGE_BASE)
+    }
   })
 
   it('explains how to fetch the base or pass --base when merge-base fails', () => {

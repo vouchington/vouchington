@@ -22,9 +22,10 @@ full `no-mistakes check` (shellcheck via mise). TypeScript, type-aware oxlint, a
 syncpack, depcruise, knip, selene, localization, the no-write catalog format check, the web route selector-map check, and the
 ownership-table check stay off. Direct
 `push` to `main` has no input and stays full, except the jscpd new-clone ratchet: it compares a
-branch with its merge-base, so it runs on pull requests (against `origin/<PR base>`, which keeps a
-stacked PR's ratchet on its parent), merge groups and manual runs (against `origin/main`), after
-`fetch-base-ref` fetches that base. It is skipped on a `main` push rather than passing vacuously.
+branch with its base, so it runs on pull requests (against the merge commit's first parent, which
+for a native stack layer already includes the lower layers), merge groups and manual runs (against
+the merge-base with `origin/main`), after `fetch-base-ref` unshallows the checkout and fetches
+`main`. It is skipped on a `main` push rather than passing vacuously.
 See the [jscpd duplication ratchet](../../static-code-analysis/jscpd/README.md). Workspace-owned
 dependency, type, and SQL checks run in their reusable test workflows so they gate that unit's
 main build or deploy. The static-analysis job runs only the centralized tools listed below. Legacy policy rules that are not backed by

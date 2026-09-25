@@ -4,7 +4,7 @@
 
 `pnpm run jscpd` runs [`run-jscpd.mts`](../run-jscpd.mts), a repository policy wrapper around
 [jscpd](https://github.com/kucherenko/jscpd). It fails only when a branch adds duplicated code that
-its merge-base lacks. Clones that already exist on the base are counted in the summary and never
+its base lacks. Clones that already exist on the base are counted in the summary and never
 fail the gate, so the repository gets less duplicated one change at a time without a big-bang
 cleanup. CI runs it in [`static-code-analysis.yml`](../../.github/workflows/static-code-analysis.yml),
 and `pnpm run lint` runs it locally.
@@ -13,10 +13,9 @@ and `pnpm run lint` runs it locally.
 
 1. Validate [`.jscpd.json`](../../.jscpd.json) ignore globs and reject inline ignore markers (see
    [Scope](#scope) and [Exceptions](#exceptions)).
-2. Pick the base ref (see [Choosing the Base](#choosing-the-base)) and resolve
-   `git merge-base <base> HEAD`.
-3. Scan tracked files at `HEAD` with `jscpd --baseline-from-ref <merge-base>`. jscpd rescans the
-   merge-base tree **with `HEAD`'s `.jscpd.json`** and marks each `HEAD` clone `isNew` when the base
+2. Resolve the baseline commit (see [Choosing the Base](#choosing-the-base)).
+3. Scan tracked files at `HEAD` with `jscpd --baseline-from-ref <baseline>`. jscpd rescans the
+   baseline tree **with `HEAD`'s `.jscpd.json`** and marks each `HEAD` clone `isNew` when the base
    tree lacks it.
 4. Print only the new clones, one per line, then the remediation hint:
 
@@ -25,8 +24,9 @@ and `pnpm run lint` runs it locally.
      exact web/a.ts:10-30 ~ web/b.ts:4-24 (21 lines)
    ```
 
-With no new clones it prints `jscpd: no new clones against merge-base …; N files scanned, M
-existing clones.` and exits 0.
+With no new clones it prints `jscpd: no new clones against <baseline>; N files scanned, M existing
+clones.` and exits 0. The baseline reads `merge-base <sha> (<ref>)`, or
+`pull request merge parent <sha> (HEAD^1)` on a `pull_request` run.
 
 Both sides are scanned with the same configuration, so a config-only change (a new format, a
 narrower ignore glob, a stricter threshold) re-evaluates base and `HEAD` alike and reports no new
@@ -47,16 +47,20 @@ files the branch never changed can also count as new. Dedupe the family, not onl
 
 ## Choosing the Base
 
-The base ref is the first of:
+The baseline is the first of:
 
-- `--base <ref>` (`pnpm run jscpd --base <parent-branch>`).
-- `origin/$GITHUB_BASE_REF`: a pull request's base branch, so a stacked PR ratchets against its
-  parent branch rather than `main`.
-- `origin/main`: merge groups, manual workflow runs, and local runs.
+- The merge-base with `--base <ref>` (`pnpm run jscpd --base <parent-branch>`).
+- On a `pull_request` run, `HEAD^1`: the first parent of the merge commit GitHub checks out. That
+  parent is the tree the pull request merges into: the base branch tip, or, for a layer of a
+  native GitHub stack, `main` plus every lower layer. A stack layer's run reports `main` as its base
+  branch (`GITHUB_BASE_REF`), so a merge-base with `origin/$GITHUB_BASE_REF` would count the lower
+  layers' clones against the layer. A `HEAD` without exactly two parents fails the run.
+- The merge-base with `origin/main`: merge groups, manual workflow runs, and local runs.
 
-In CI, the [`fetch-base-ref`](../../.github/actions/fetch-base-ref/action.yml) action fetches the
-base immediately before the jscpd step. Both steps skip on a `main` push, which has no base branch
-to ratchet against, and on docs-only runs. See the
+In CI, the [`fetch-base-ref`](../../.github/actions/fetch-base-ref/action.yml) action unshallows the
+checkout, so `HEAD^1` resolves, and fetches `origin/main` for merge groups and manual runs,
+immediately before the jscpd step. Both steps skip on a `main` push, which has no base branch to
+ratchet against, and on docs-only runs. See the
 [static-code-analysis.yml reference](../../docs/development/reference-ci-static-analysis-static-code-analysis-yml.md).
 
 Locally, run `git fetch origin main` first when `origin/main` is stale or missing. On a stacked
@@ -115,8 +119,8 @@ No exceptions are configured.
 ## Files
 
 - [`run-jscpd.mts`](../run-jscpd.mts): entry point; validates, scans, and reports.
-- [`cli.mts`](cli.mts): `--base` parsing and base-ref selection.
-- [`git.mts`](git.mts): tracked and untracked paths, merge-base resolution, and the marker scan.
+- [`cli.mts`](cli.mts): `--base` parsing and baseline selection.
+- [`git.mts`](git.mts): tracked and untracked paths, baseline resolution, and the marker scan.
 - [`ignore-globs.mts`](ignore-globs.mts): config glob validation, freshness, and `--ignore` building.
 - [`process.mts`](process.mts): the injectable process runner.
 - [`report.mts`](report.mts): the strict `jscpd-report.json` parser and clone formatting.

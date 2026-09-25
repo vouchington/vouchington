@@ -2,6 +2,10 @@ export type JscpdCliOptions = {
   base: string | undefined
 }
 
+export type JscpdBaseline =
+  | { kind: 'merge-base'; ref: string }
+  | { kind: 'pull-request-merge-parent' }
+
 const USAGE = 'Usage: node static-code-analysis/run-jscpd.mts [--base <ref>]'
 
 export function parseJscpdCliArgs(args: string[]): JscpdCliOptions {
@@ -11,13 +15,15 @@ export function parseJscpdCliArgs(args: string[]): JscpdCliOptions {
   throw new Error(`Unknown jscpd arguments: ${args.join(' ')}\n${USAGE}`)
 }
 
-// A stacked pull request's GITHUB_BASE_REF is its parent branch. merge_group, workflow_dispatch,
-// and local runs have no GITHUB_BASE_REF and compare against main.
-export function selectBaseRef(
+// A pull_request run checks out GitHub's merge commit, whose first parent is the tree GitHub merged
+// the branch into: the base branch tip, or for a native stack layer, main plus every lower layer.
+// GITHUB_BASE_REF names main on every stack layer, so it cannot stand in for that parent.
+// merge_group, workflow_dispatch, and local runs compare against main.
+export function selectBaseline(
   options: JscpdCliOptions,
   env: Readonly<Record<string, string | undefined>>,
-): string {
-  if (options.base) return options.base
-  if (env.GITHUB_BASE_REF) return `origin/${env.GITHUB_BASE_REF}`
-  return 'origin/main'
+): JscpdBaseline {
+  if (options.base) return { kind: 'merge-base', ref: options.base }
+  if (env.GITHUB_EVENT_NAME === 'pull_request') return { kind: 'pull-request-merge-parent' }
+  return { kind: 'merge-base', ref: 'origin/main' }
 }
