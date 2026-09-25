@@ -77,14 +77,13 @@ describe('Session route rate-limit identity', () => {
       .expect(200)
   })
 
-  it('normalizes a JSON null session reset body', async () => {
+  it('rejects a JSON null session reset body with a bounded 4xx', async () => {
     const response = await createRequest()
       .delete('/api/v1/session')
       .set('Content-Type', 'application/json')
       .send('null')
-      .expect(200)
+      .expect(422)
 
-    expect(response.body.session.dt).toBeDefined()
-    expect(response.body.session.st).toBeDefined()
+    expect(response.body.session).toBeUndefined()
   })
 })

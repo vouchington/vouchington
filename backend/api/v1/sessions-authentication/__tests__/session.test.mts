@@ -146,14 +146,14 @@ describe('Session Routes', () => {
       const request = createRequest()
       const response = await request.patch('/api/v1/session').send({ dt: 123 }).expect(422)
 
-      expect(response.body.message).toContain('Invalid Device Token')
+      expect(response.body.message).toContain('Invalid request body')
     })
 
     it('should return 422 for invalid session token type', async () => {
       const request = createRequest()
       const response = await request.patch('/api/v1/session').send({ st: 123 }).expect(422)
 
-      expect(response.body.message).toContain('Invalid Session Token')
+      expect(response.body.message).toContain('Invalid request body')
     })
 
     it('should create new session when device IDs do not match', async () => {

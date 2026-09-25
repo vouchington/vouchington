@@ -5142,10 +5142,24 @@
             "type": "string"
           },
           "uiLocale": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "ui_locale": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           }
         },
         "type": "object"
@@ -16119,6 +16133,18 @@
           }
         },
         "required": ["dte", "secure", "ste"],
+        "type": "object"
+      },
+      "SessionTokenBody": {
+        "additionalProperties": false,
+        "properties": {
+          "dt": {
+            "type": "string"
+          },
+          "st": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "SessionTokenPayload": {
@@ -57627,6 +57653,15 @@
     "/api/v1/session": {
       "delete": {
         "operationId": "delete_api_v1_session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionTokenBody"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -57652,6 +57687,15 @@
       },
       "patch": {
         "operationId": "patch_api_v1_session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionTokenBody"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {

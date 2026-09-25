@@ -70,6 +70,34 @@ describe('Email Address Authentication Routes', () => {
         .expect(200)
     })
 
+    it('rejects non-string, non-null ui_locale values', async () => {
+      const response = await createRequest()
+        .post('/api/v1/auth/email-address/tokens')
+        .send({
+          emailAddress: createUniqueTestEmail('locale-shape'),
+          ui_locale: {},
+        })
+        .expect(422)
+
+      expect(response.body.message).toContain('Invalid request body')
+    })
+
+    it('accepts a null ui_locale', async () => {
+      const emailAddress = createUniqueTestEmail('locale-null')
+      const tokens = await createDeviceAndSessionTokens({ did: v7(), sid: v7() })
+      const response = await createRequest()
+        .post('/api/v1/auth/email-address/tokens')
+        .send({
+          emailAddress,
+          ui_locale: null,
+          dt: tokens.deviceToken.token,
+          st: tokens.sessionToken.token,
+        })
+        .expect(200)
+
+      expect(response.body.email_address).toBe(emailAddress)
+    })
+
     describe('App Attest bypass', () => {
       beforeEach(() => {
         vi.stubEnv('APPLE_APP_ATTEST_TEAM_ID', TEST_APP_ATTEST_TEAM_ID)

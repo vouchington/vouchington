@@ -40,10 +40,13 @@ export function validateUUIDParam(ctx: Context, name: string): string {
 /**
  * Validates the declared path/query/JSON carriers of a generated request contract, throwing 422
  * with the registry's redacted message on failure. The registry does not enforce call order —
- * the caller must invoke this after the route's existing authentication and ownership/suspension
- * checks and before handing any carrier value to a service, so unauthenticated or unauthorized
- * callers never see a schema diagnostic. Unknown operations fail closed with a thrown `Error`
- * (not a 422) — see `RuntimeRequestValidatorRegistry.validateAuthenticated`.
+ * the caller must invoke this after the route's existing preamble and before handing any carrier
+ * value to a service. For an authenticated route that preamble is authentication and any
+ * ownership/suspension checks, so unauthorized callers never see a schema diagnostic. For a
+ * public/anonymous route (no auth step exists) it is instead the route's rate limiter and any
+ * honeypot or attempt-limit counters, so a malformed-shape probe still counts against them rather
+ * than short-circuiting for free. Unknown operations fail closed with a thrown `Error` (not a
+ * 422) — see `RuntimeRequestValidatorRegistry.validateAuthenticated`.
  */
 export function validateRequestContract(
   ctx: Context,
