@@ -8,6 +8,10 @@ import type { CopyrightStaffCase } from './read-models-staff-types.mts'
 
 export type { CopyrightStaffCase } from './read-models-staff-types.mts'
 
+// Names the `(received_at, id)` ascending keyset below; cursors encoded under another scope are
+// rejected, so a cursor from a different list can never seek into this one.
+export const copyrightStaffQueueCursorScope = 'copyright-notices:staff-queue:received-at-asc-id-asc'
+
 export async function listCopyrightStaffQueue(
   currentUser: PrivateUser,
   options: { limit: number; after?: { timestamp: string; id: string } },

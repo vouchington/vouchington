@@ -258,6 +258,16 @@ global), or day-free counts scoped to a freshly created community via
 leaves behind on today's date is an intentional, harmless orphan: it is keyed by that test's own
 freshly created community, so it never collides with another test's assertions and needs no cleanup.
 
+### Oldest-first queue heads
+
+Oldest-first queues such as the copyright staff queue (`GET /api/v1/copyright-notices/review-queue`)
+return the whole database's backlog first, and that backlog only grows. A test that reads the queue
+head sees other tests' rows, so its own row falls off the first page once enough older rows pile up,
+and any other test's unreadable row fails the request. Seek to the test's own rows instead:
+`readCopyrightStaffQueueCursorBefore(noticeIds)` from
+`@voucha/test-helpers/data-stores/psql/copyright-notice-reads` returns an `after` cursor positioned
+just before the oldest of the given notices, so every page starts at rows the test created.
+
 ### "No more results" assumptions
 
 Don't assume `limit: 1000` returns all rows — the DB may contain more than 1000. Either use a filter or test `page_info` structure without assuming exhaustive results.

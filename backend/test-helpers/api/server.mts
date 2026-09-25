@@ -10,6 +10,7 @@ import { createDeviceAndSessionTokens } from '../../services/jwt-session/index.m
 import { encodeFeatureFlagCookie, type FeatureFlags } from '../../services/feature-flags/index.mts'
 import { v7 } from 'uuid'
 import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
+import { recordServerErrorResponse } from './server-error-responses.mts'
 
 type ApiTestListener = ReturnType<typeof createApiRequestGuardedListener>
 
@@ -59,6 +60,11 @@ export const createRequest = (): AuthenticatedAgent => {
   agent.set('x-voucha-client', 'web')
   agent.set('x-voucha-platform', 'web')
   agent.set('x-voucha-app-version', 'test')
+  agent.use((request: supertest.Test) => {
+    request.on('response', (response: supertest.Response) =>
+      recordServerErrorResponse(request, response),
+    )
+  })
   agent.setClientInfo = function (headers) {
     for (const [name, value] of Object.entries(headers)) this.set(name, value)
   }

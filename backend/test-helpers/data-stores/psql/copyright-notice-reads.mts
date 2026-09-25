@@ -1,4 +1,6 @@
 import { read, write } from '@data-stores/psql'
+import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
+import { copyrightStaffQueueCursorScope } from '../../../services/copyright-notices/read-models-staff.mts'
 import sql from 'sql-template-strings'
 
 export async function readCopyrightNoticeTargetId(noticeId: string): Promise<string> {
@@ -9,23 +11,30 @@ export async function readCopyrightNoticeTargetId(noticeId: string): Promise<str
   return rows[0].id
 }
 
-export async function readCopyrightStaffQueueBoundary(noticeIds: string[]): Promise<{
-  id: string
-  received_at: string
-}> {
-  const { rows } = await read<{ id: string; received_at: string }>(
-    sql`/* readCopyrightStaffQueueBoundary */
-      SELECT id, to_char(
-        received_at AT TIME ZONE 'UTC',
+/**
+ * Staff-queue `after` cursor whose first page starts at the oldest of `noticeIds`. The queue is
+ * global and the test database is shared and never cleaned, so a test that reads from the queue
+ * head sees other tests' cases; seeking one microsecond before its own oldest case keeps every
+ * page on rows at or after the ones it created.
+ */
+export async function readCopyrightStaffQueueCursorBefore(noticeIds: string[]): Promise<string> {
+  const { rows } = await read<{ id: string; cursor_received_at: string }>(
+    sql`/* readCopyrightStaffQueueCursorBefore */
+      SELECT notice.id, to_char(
+        (notice.received_at - interval '1 microsecond') AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
-      ) AS received_at
-      FROM copyright_notices
-      WHERE id = ANY(${noticeIds}::uuid[])
-      ORDER BY received_at, id
+      ) AS cursor_received_at
+      FROM copyright_notices notice
+      WHERE notice.id = ANY(${noticeIds}::uuid[])
+      ORDER BY notice.received_at, notice.id
       LIMIT 1`,
   )
   if (!rows[0]) throw new Error('Copyright staff queue fixture has no notices')
-  return rows[0]
+  return encodeScopedPreciseTimestampCursor(
+    rows[0].cursor_received_at,
+    rows[0].id,
+    copyrightStaffQueueCursorScope,
+  )
 }
 
 export async function readCopyrightStaffQueueCursorRows(
