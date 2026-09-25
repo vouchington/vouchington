@@ -1,3 +1,5 @@
+import { parseGfmMarkdown } from 'vouchington-tooling/markdown'
+
 import {
   containsNode,
   hasNonApplicableBranch,
@@ -7,7 +9,7 @@ import {
   hasVisibleEvidence,
   isResolvedDisposition,
   labeledListFields,
-  parseMarkdown,
+  type MarkdownNode,
   visibleText,
 } from './markdown.mts'
 import { h2Counts, h2Names, h2Sections } from './heading-sections.mts'
@@ -63,7 +65,7 @@ export function validatePlanIssue(
   const titleSubject = /^Plan:\s*(.*)$/i.exec(title)?.[1] ?? ''
   if (!isMeaningfulEvidence(titleSubject))
     errors.push('Title must start with "Plan:" and include a subject.')
-  const root = parseMarkdown(body)
+  const root: MarkdownNode = parseGfmMarkdown(body)
   if (hasStandaloneFiller(root.children ?? []))
     errors.push('Plan body must not include standalone filler.')
   const byName = h2Sections(root)

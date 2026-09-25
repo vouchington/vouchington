@@ -1,4 +1,7 @@
-import { createRequire } from 'node:module'
+import {
+  findMarkdownNode as findPackageMarkdownNode,
+  type MarkdownNode as PackageMarkdownNode,
+} from 'vouchington-tooling/markdown'
 
 import { isMeaningfulEvidence, isMeaningfulOrJustifiedAbsence } from './evidence-values.mts'
 
@@ -13,15 +16,10 @@ export type MarkdownNode = {
   value?: string
 }
 
-const requireFromHere = createRequire(import.meta.url)
-
-export function parseMarkdown(body: string): MarkdownNode {
-  const { unified } = requireFromHere('unified') as typeof import('unified')
-  const remarkParse = (requireFromHere('remark-parse') as typeof import('remark-parse')).default
-  const remarkGfm = (requireFromHere('remark-gfm') as typeof import('remark-gfm')).default
-  return unified().use(remarkParse).use(remarkGfm).parse(body) as MarkdownNode
-}
-
+// vouchington-tooling's markdownNodeText always includes code/inlineCode/html source text and
+// concatenates descendant text with no separator (only a literal 'break' node inserts a space).
+// Plan-issue evidence checks need code/html excluded by default and siblings treated as
+// space-separated words, so this stays a local implementation rather than delegating.
 export function visibleText(node: MarkdownNode, includeCode = false, includeUrls = false): string {
   if (node.type === 'html') return ''
   if ((node.type === 'code' || node.type === 'inlineCode') && !includeCode) return ''
@@ -35,11 +33,20 @@ export function visibleText(node: MarkdownNode, includeCode = false, includeUrls
     .join(' ')
 }
 
+// findMarkdownNode walks a node pre-order (self, then children, depth-first), which matches this
+// function's previous hand-written recursive walk once the sibling array is wrapped as a synthetic
+// root; no predicate here matches `type === 'root'`, so the wrapper node itself never affects the
+// result. The plan-issue MarkdownNode shape is deliberately looser than the package's strict mdast
+// union (see its type above), so the boundary casts through `unknown`.
 export function containsNode(
   nodes: MarkdownNode[],
   predicate: (node: MarkdownNode) => boolean,
 ): boolean {
-  return nodes.some(node => predicate(node) || containsNode(node.children ?? [], predicate))
+  const root = { type: 'root', children: nodes } as unknown as PackageMarkdownNode
+  return (
+    findPackageMarkdownNode(root, candidate => predicate(candidate as unknown as MarkdownNode)) !==
+    null
+  )
 }
 
 export function hasVisibleEvidence(nodes: MarkdownNode[]): boolean {
