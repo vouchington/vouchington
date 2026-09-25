@@ -88,6 +88,17 @@ function run(cwd: string, env: Record<string, string> = {}) {
   return { status, logs, errors, cloneLines: errors.filter(line => line.startsWith('  ')) }
 }
 
+// Commits the removal of the new copy and returns the summary line of the passing rerun.
+function passingSummaryAfterRemoving(cwd: string, file: string): string {
+  git(cwd, 'rm', '-q', file)
+  git(cwd, 'commit', '-q', '-m', 'dedupe')
+  const passing = run(cwd)
+  expect(passing.errors).toEqual([])
+  expect(passing.status).toBe(0)
+  expect(passing.logs).toHaveLength(1)
+  return passing.logs[0]
+}
+
 describe('run-jscpd with the real jscpd binary', () => {
   it('fails only on a clone committed since the merge-base and passes once it is removed', () => {
     using repo = mkdtempDisposableSync(join(tmpdir(), 'run-jscpd-e2e-'))
@@ -111,13 +122,9 @@ describe('run-jscpd with the real jscpd binary', () => {
     expect(failing.cloneLines[0]).toContain('src/a.ts')
     expect(failing.cloneLines[0]).toContain('sub/dup.ts')
 
-    git(cwd, 'rm', '-q', 'sub/dup.ts')
-    git(cwd, 'commit', '-q', '-m', 'dedupe')
-    const passing = run(cwd)
-    expect(passing.errors).toEqual([])
-    expect(passing.status).toBe(0)
-    expect(passing.logs).toHaveLength(1)
-    expect(passing.logs[0]).toMatch(/^jscpd: no new clones against merge-base [0-9a-f]{12} /)
+    expect(passingSummaryAfterRemoving(cwd, 'sub/dup.ts')).toMatch(
+      /^jscpd: no new clones against merge-base [0-9a-f]{12} /,
+    )
     expect(git(cwd, 'status', '--porcelain')).toBe('?? dup.ts\n')
   })
 
@@ -167,12 +174,8 @@ describe('run-jscpd with the real jscpd binary', () => {
       expect(line).toContain('src/c.ts')
     }
 
-    git(cwd, 'rm', '-q', 'src/c.ts')
-    git(cwd, 'commit', '-q', '-m', 'dedupe')
-    const passing = run(cwd)
-    expect(passing.errors).toEqual([])
-    expect(passing.status).toBe(0)
-    expect(passing.logs).toHaveLength(1)
-    expect(passing.logs[0]).toMatch(/; 2 files scanned, [1-9]\d* existing clones\.$/)
+    expect(passingSummaryAfterRemoving(cwd, 'src/c.ts')).toMatch(
+      /; 2 files scanned, [1-9]\d* existing clones\.$/,
+    )
   })
 })
