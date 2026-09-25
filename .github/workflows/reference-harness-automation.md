@@ -53,15 +53,24 @@ read `HARNESS_API_KEY` before review, an accepted residual risk documented in
 They read:
 
 - the repository secret `HARNESS_API_KEY`;
-- variable `HARNESS_URL`, an exact HTTPS origin;
-- variable `HARNESS_REPOSITORY_ID`, the Auto Harness repository id for this GitHub remote;
-- variable `HARNESS_TARGET`, a JSON object naming the primary route, e.g.
+- organization variable `HARNESS_URL`, an exact HTTPS origin;
+- repository variable `HARNESS_REPOSITORY_ID`, the Auto Harness repository id for this GitHub remote;
+- organization variable `HARNESS_TARGET`, a JSON object naming the primary route, e.g.
   `{"providerId":"<uuid>"}` (id fields are the current live format; name fields such as
   `{"providerName":"claude"}` are also accepted — see below — once the variable is repointed);
-- variable `HARNESS_TARGET_PLAN`, an optional JSON object of the same shape used only for the `/plan` surface (`surface-gate: HARNESS_PLAN_ENABLED`); falls back to `HARNESS_TARGET` when unset. `/plan` never mutates code, so it is routed to a plan-locked, non-auto-permission Command (`claude-print-plan`, `--permission-mode plan --model opus`) while every other surface uses `HARNESS_TARGET`'s auto-permission Command (`claude-print-auto`, `--permission-mode auto --model sonnet`). Both Commands are provisioned out-of-band via the harness admin UI, since `catalog:write` is not in `HARNESS_API_KEY`'s scope. Provision `HARNESS_TARGET_PLAN` before repointing `HARNESS_TARGET` to `claude-print-auto`: because `HARNESS_TARGET_PLAN` falls back to `HARNESS_TARGET` when unset, switching `HARNESS_TARGET` first would resolve `/plan` to the auto-permission Command for the gap, removing the plan-mode enforcement `/plan` needs for issue-authored (untrusted) request bodies.
-- variable `HARNESS_FALLBACKS`, an optional JSON array of the same shape, tried in order if the
+- organization variable `HARNESS_TARGET_PLAN`, an optional JSON object of the same shape used only for the `/plan` surface (`surface-gate: HARNESS_PLAN_ENABLED`); falls back to `HARNESS_TARGET` when unset. `/plan` never mutates code, so it is routed to a plan-locked, non-auto-permission Command (`claude-print-plan`, `--permission-mode plan --model opus`) while every other surface uses `HARNESS_TARGET`'s auto-permission Command (`claude-print-auto`, `--permission-mode auto --model sonnet`). Both Commands are provisioned out-of-band via the harness admin UI, since `catalog:write` is not in `HARNESS_API_KEY`'s scope. Provision `HARNESS_TARGET_PLAN` before repointing `HARNESS_TARGET` to `claude-print-auto`: because `HARNESS_TARGET_PLAN` falls back to `HARNESS_TARGET` when unset, switching `HARNESS_TARGET` first would resolve `/plan` to the auto-permission Command for the gap, removing the plan-mode enforcement `/plan` needs for issue-authored (untrusted) request bodies.
+- organization variable `HARNESS_FALLBACKS`, an optional JSON array of the same shape, tried in order if the
   primary route fails to admit; defaults to none when unset.
-- variable `HARNESS_FALLBACKS_PLAN`, the `/plan`-surface analog of `HARNESS_FALLBACKS`, following the same `HARNESS_TARGET`/`HARNESS_TARGET_PLAN` split so a fallback route can't resolve the wrong permission mode for its surface; falls back to `HARNESS_FALLBACKS` when unset. The same rollout-ordering hazard applies here as for `HARNESS_TARGET_PLAN`: provision `HARNESS_FALLBACKS_PLAN` with plan-locked fallback Commands before repointing `HARNESS_FALLBACKS` to auto-permission fallback Commands, or a primary-route admission failure during that gap would run untrusted issue-authored `/plan` text through an auto-permission fallback.
+- organization variable `HARNESS_FALLBACKS_PLAN`, the `/plan`-surface analog of `HARNESS_FALLBACKS`, following the same `HARNESS_TARGET`/`HARNESS_TARGET_PLAN` split so a fallback route can't resolve the wrong permission mode for its surface; falls back to `HARNESS_FALLBACKS` when unset. The same rollout-ordering hazard applies here as for `HARNESS_TARGET_PLAN`: provision `HARNESS_FALLBACKS_PLAN` with plan-locked fallback Commands before repointing `HARNESS_FALLBACKS` to auto-permission fallback Commands, or a primary-route admission failure during that gap would run untrusted issue-authored `/plan` text through an auto-permission fallback.
+
+Variable scope: the instance-wide route (`HARNESS_URL`, `HARNESS_TARGET`, `HARNESS_TARGET_PLAN`,
+`HARNESS_FALLBACKS`, `HARNESS_FALLBACKS_PLAN`) lives in `vouchington` organization variables
+shared with the selected repositories that dispatch to the same Auto Harness instance. Everything
+that identifies or gates this repository stays repository-scoped: `HARNESS_REPOSITORY_ID`, the
+`HARNESS_API_KEY` secret (one Auto Harness service account per repository), and every
+`HARNESS_*_ENABLED` gate. GitHub resolves a repository variable ahead of an organization variable
+of the same name, so a repository copy of an organization-scoped variable silently overrides it;
+delete such copies rather than keeping them in sync.
 
 Operator rollout ordering: when migrating a secret out of Environment scope, delete the
 Environment-scoped copy only after the repository-scoped copy is confirmed present — never the
