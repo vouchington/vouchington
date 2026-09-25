@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildWorkerOriginRequest } from './origin-request.mts'
+import { getOriginPathOverride } from './routing.mts'
 import type { Env } from './types.mts'
 
 const env = {
@@ -15,6 +16,7 @@ function build(request: Request, requestKind?: 'bot' | 'cache-fill') {
     edgeSession: { kind: 'anon-passthrough' },
     env,
     origin: env.BACKEND_ORIGIN!,
+    pathOverride: getOriginPathOverride(new URL(request.url).pathname) ?? undefined,
     request,
     requestId: 'request-id',
     requestKind,
@@ -51,11 +53,22 @@ describe('buildWorkerOriginRequest client information', () => {
     expect(post(env.BACKEND_ORIGIN!).headers.get('x-voucha-client')).toBeNull()
   })
 
-  it('stamps cross-site sign-in callback navigations', () => {
+  it.each([
+    [
+      'https://voucha.ai/auth/callback/github/broker?code=x',
+      '/api/v1/auth/oauth/github/broker-callback',
+      'https://github.com/',
+    ],
+    [
+      'https://voucha.ai/api/v1/auth/bluesky/callback?code=x',
+      '/api/v1/auth/bluesky/callback',
+      'https://bsky.social/',
+    ],
+  ])('stamps the cross-site sign-in callback navigation to %s', (url, originPath, referer) => {
     const originRequest = build(
-      new Request('https://voucha.ai/api/v1/auth/oauth/google/broker-callback?code=x', {
+      new Request(url, {
         headers: {
-          referer: 'https://accounts.example/',
+          referer,
           'sec-fetch-dest': 'document',
           'sec-fetch-mode': 'navigate',
           'sec-fetch-site': 'cross-site',
@@ -63,6 +76,7 @@ describe('buildWorkerOriginRequest client information', () => {
       }),
     )
 
+    expect(new URL(originRequest.url).pathname).toBe(originPath)
     expect(originRequest.headers.get('x-voucha-client')).toBe('web')
   })
 
@@ -107,6 +121,7 @@ describe('buildWorkerOriginRequest client information', () => {
       new Request('https://voucha.ai/api/v1/posts', {
         headers: {
           'sec-fetch-site': 'same-origin',
+          'x-voucha-client': 'web',
           'x-voucha-request-kind': 'attacker',
         },
       }),

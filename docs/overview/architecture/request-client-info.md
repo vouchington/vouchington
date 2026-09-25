@@ -51,19 +51,23 @@ The edge treats any request carrying `Sec-Fetch-Site`, `Sec-Fetch-Mode`, or `Sec
 browser-shaped, removes every client-supplied `x-voucha-*` client header, and stamps `web`/`web` only
 when one of two kinds of browser evidence holds:
 
-- **Same-origin app request:** `Sec-Fetch-Site` is `same-origin` or `same-site`; `Origin` is present
-  on `POST`, `PUT`, `PATCH`, and `DELETE`; and any `Origin` or `Referer` resolves to the incoming
-  request's origin. In practice `same-site` passes only when the browser sent neither header.
+- **Same-origin app request:** `Sec-Fetch-Site` is `same-origin`, and any `Origin` or `Referer`
+  that is present resolves to the incoming request's origin. `Origin: null`, which browsers send
+  under a `no-referrer` policy, counts as absent; a foreign or unparseable value disqualifies.
 - **Top-level navigation:** a `GET` or `HEAD` with `Sec-Fetch-Mode: navigate` and
-  `Sec-Fetch-Dest: document`, from any site. OAuth and Bluesky sign-in callbacks arrive this way
-  from the provider.
+  `Sec-Fetch-Dest: document`, from any site. OAuth broker callbacks (`/auth/callback/<provider>/broker`)
+  and the Bluesky callback (`/api/v1/auth/bluesky/callback`) arrive this way from the provider.
 
-Browser-shaped requests that fail both checks reach the backend with no client metadata. Requests
-without Fetch Metadata keep explicit native metadata, but a bare `x-voucha-client: web` claim is
-removed because the web app never sends it: server rendering and the localization smoke probe call
-the backend directly with `CF_WORKER_SECRET`. Headerless callers are left unstamped so backend
-enforcement rejects them instead of silently classifying an unknown client as web. The evidence
-check lives in `cloudflare-worker/src/web-browser-evidence.mts`.
+`same-site` requests from sibling hosts and other cross-site subresource use of `/api` are not
+supported web traffic and stay unstamped. Browser-shaped requests that fail both checks reach the
+backend with no client metadata. Requests without Fetch Metadata keep explicit native metadata, but
+a bare `x-voucha-client: web` claim is removed because the web app never sends it through the edge:
+server rendering, the web proxy, and the localization smoke probe call the backend directly with
+`CF_WORKER_SECRET`. Server rendering must therefore set the internal `API_BASE_URL`; a public
+`NEXT_PUBLIC_API_BASE_URL` fallback that routes through the edge loses its `web` classification.
+Headerless callers are left unstamped so backend enforcement rejects them instead of silently
+classifying an unknown client as web. The evidence check lives in
+`cloudflare-worker/src/web-browser-evidence.mts`.
 
 Any non-browser caller can forge these headers, so `web`, `swift`, and `dotnet` stay
 telemetry-grade. Nothing public is derived from them; public provenance labels come only from the
