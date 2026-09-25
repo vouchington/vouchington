@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 // Claude Code matches a Bash rule against the whole command text, with `*` standing in for any
 // text; a trailing ` *` that is the rule's only wildcard also matches the bare command. The
 // blanket dev/ allow rules skip review for every checked-in dev/ entrypoint, and the `/../`
-// deny rules keep them from approving a path that escapes dev/. Rationale:
+// deny rules refuse the plain spelling of a path that escapes dev/. Rationale:
 // docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
 
 type ClaudeSettings = {

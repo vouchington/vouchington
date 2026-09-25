@@ -142,26 +142,35 @@ workspace-write lists to stay equal and every Codex writable root to appear in C
 
 Claude `permissions.allow` pre-approves every `dev/` entrypoint with two blanket rules,
 `Bash(./dev/*)` and `Bash(node dev/*)`, instead of one entry per script. A `Bash(...)` rule matches
-the whole command text and `*` matches any text, so a new `dev/` script skips review without a
-settings change. On entering auto mode, Claude Code drops allow rules that grant arbitrary code
-execution: blanket `Bash(*)`, wildcarded interpreters like `Bash(python*)`, package-manager run
-commands, and `Agent` / `Monitor` rules
-([permission modes](https://code.claude.com/docs/en/permission-modes)). Neither `dev/` rule is on
-that list, so in auto mode `dev/` commands skip the classifier as well as the prompt. Grok reuses
-these allow/deny strings through Claude-compat.
+the whole command text and `*` matches any text, so a new `dev/` script skips the permission prompt
+without a settings change. Grok reuses these allow/deny strings through Claude-compat.
+
+Auto-mode behavior is unverified. On entering auto mode, Claude Code drops "broad allow rules that
+grant arbitrary code execution" and gives examples: blanket `Bash(*)`, wildcarded interpreters like
+`Bash(python*)`, package-manager run commands, and `Agent` / `Monitor` rules
+([permission modes](https://code.claude.com/docs/en/permission-modes)). Neither `dev/` rule matches
+a listed example, but both can run arbitrary code: auto mode auto-approves file edits in the working
+directory, so an agent can write a `dev/` file and then run it. The docs do not say whether Claude
+Code drops blanket script-path rules like these, and no live auto-mode session has checked. If it
+keeps them, `dev/` commands skip the classifier as well as the prompt; if it drops them, auto mode
+still sends `dev/` commands to the classifier and the rules only skip prompts in other modes.
 
 This is review-skip only. OS escalation stays per-script: a `dev/` command that must leave the OS
 sandbox still needs its own `sandbox.excludedCommands` pair and Codex `prefix_rule` (next section).
 A `dev/` script without those entries runs pre-approved but OS-sandboxed.
 
-Two deny rules, `Bash(./dev*/../*)` and `Bash(node dev*/../*)`, keep the allow rules from approving
-a path that climbs out of `dev/`, such as `./dev/../bin/sh`. Deny beats allow and refuses the
-command outright; they are deny rather than ask because Grok reuses the strings and its handling of
-ask is not documented. The rules match anywhere in the command text, so a `dev/` command with
-`/../` in an argument (`./dev/audit-rename web/../old new`) is refused too; pass that path without `..`.
+Two deny rules, `Bash(./dev*/../*)` and `Bash(node dev*/../*)`, refuse the plain spelling of a path
+that climbs out of `dev/`, such as `./dev/../bin/sh`. They are a guardrail, not a boundary: they
+match the literal `/../`, and shell quoting or escaping (`./dev/".."/bin/sh`) can spell the same path
+without it. That reaches nothing the accepted risk below does not already allow, since an agent can
+write a `dev/` file that runs anything. Deny beats allow and refuses the command outright; they are
+deny rather than ask because Grok reuses the strings and its handling of ask is not documented. The
+rules match anywhere in the command text, so a `dev/` command with `/../` in an argument
+(`./dev/audit-rename web/../old new`) is refused too; pass that path without `..`.
 
 Accepted risk: the rules trust whatever is under `dev/` when the command runs, not only reviewed
-scripts. An agent can create or edit a `dev/` file and run it without review. The PreToolUse policy
+scripts. An agent can create or edit a `dev/` file and run it without review of the run; in auto
+mode the edit is auto-approved too. The PreToolUse policy
 hook, a guardrail rather than a boundary ([Hook threat model](#hook-threat-model)), blocks edits to
 its own hook code and the modules those hooks import, but nothing else under `dev/`.
 `sandbox.allowUnsandboxedCommands` is unset, so a command that fails under the sandbox can be
