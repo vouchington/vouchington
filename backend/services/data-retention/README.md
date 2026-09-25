@@ -48,6 +48,12 @@ completion cleanup creates a JavaScript time for each batch, and abandoned Blues
 capture one JavaScript time per cleanup run. Production defaults drain all currently eligible rows
 with `batchSize = 500`; topic-import attempts use 25 because each retained response may be 4 MiB.
 
+Cleanups whose batch delete returns a row count share `runBoundedBatches()`: it validates
+`batchSize` and `maxBatches`, keeps deleting while each batch is full, and reports `hasMore` when
+the last batch was full, including when `maxBatches` stopped the run. Orphaned OAuth account
+cleanup shares one batch budget across providers, and OAuth authorization-server cleanup's batch
+returns its own `hasMore`, so neither uses it.
+
 Tests use `createTestRetentionWindow()` for relative-age rules and `createTestExpiryWindow()` for
 direct expiry timestamps. Both scope deletion to test-owned SQL windows; the expiry helper makes
 `now` equal its upper bound so exact cutoff behavior can be asserted directly.
