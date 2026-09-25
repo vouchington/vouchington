@@ -69,9 +69,19 @@ describe('runAppend repository attribution', () => {
       new Error('agent-blackboard request failed: POST /sessions -> 500'),
     )
     const rejection = await runAppend(
-      ['--file', noteFile, '--session-id', 'sess-1', '--repository', 'vouchington/vouchington'],
+      [
+        '--file',
+        noteFile,
+        '--session-id',
+        'sess-1',
+        '--agent',
+        'codex',
+        '--repository',
+        'vouchington/vouchington',
+      ],
       HOSTED_ENV,
     ).catch((error: unknown) => error)
+    expect(appendJournal).toHaveBeenCalledOnce()
     expect(rejection).toBeInstanceOf(BlackboardJournalError)
     if (!(rejection instanceof BlackboardJournalError)) throw new TypeError('unreachable')
     expect(rejection.repositories).toEqual(['vouchington/vouchington'])
