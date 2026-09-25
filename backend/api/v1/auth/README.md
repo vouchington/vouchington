@@ -31,7 +31,10 @@ pairs are cleared without writing a revocation marker.
 The fields are all-or-nothing and deactivate only the authenticated user's exact current push
 generation before session revocation; absent bindings preserve the existing no-body logout contract.
 Concurrent exact bindings admitted before revocation clean once; bindings first submitted after the
-revocation fence are no-ops.
+revocation fence are no-ops. Once both fields are present, the body is checked against the generated
+contract (rejecting an unknown field or a wrong-typed field with `422`) before the URL/UUID-specific
+checks; see
+[Request Validation](../sessions-authentication/reference-request-validation.md#precondition-then-schema-ordering).
 
 ## GET /api/v1/auth/me
 
@@ -41,7 +44,10 @@ Returns the current authenticated user, or `401 Unauthorized` if not logged in.
 
 Connects an OAuth account for the given provider to the currently authenticated user.
 
-**Request:** Provider-specific OAuth payload from the client flow.
+**Request:** Provider-specific OAuth payload from the client flow. Validated after `requireAuth`
+against a permissive `Record_string_unknown` contract (any JSON object; the provider payload shape
+is not further constrained) — see
+[Request Validation](../sessions-authentication/reference-request-validation.md#endpoints-without-a-request-contract-schema).
 
 ## DELETE /api/v1/auth/oauth/:provider/connect
 
@@ -53,7 +59,9 @@ Disconnects the OAuth account for the given provider from the currently authenti
 
 Logs in or creates an account using the provider's OAuth payload. Only for unauthenticated users.
 
-**Request:** Provider-specific OAuth payload from the client flow.
+**Request:** Provider-specific OAuth payload from the client flow. Validated against the same
+permissive `Record_string_unknown` contract as `PUT connect` above, after the route's existing
+rate-limit check and before `continueOAuthFlow`.
 
 **Response:** Sets auth cookies. Returns user info.
 
@@ -73,13 +81,18 @@ depends on.
 **Response:** `{ "redirect_url": "https://bsky.social/oauth/authorize?..." }`
 Native starts also return `flow_id`.
 
-**Errors:** `400` if `handle` is missing or blank. `409` if the current user already has a Bluesky
+**Errors:** `422` for an unrecognized field or wrong-typed `handle`/`callback_mode` (checked after
+`requireAuth`/`assertNotSuspended`, before the checks below — see
+[Request Validation](../sessions-authentication/reference-request-validation.md#precondition-then-schema-ordering)).
+`400` if `handle` is missing or blank. `409` if the current user already has a Bluesky
 account linked.
 
 ## GET /api/v1/auth/bluesky/callback
 
 The AT Protocol authorization server's redirect target, completing the OAuth flow started by
-`POST /api/v1/auth/bluesky/link`. This path is fixed by `getBlueskyRedirectUri()` (baked into the
+`POST /api/v1/auth/bluesky/link`. Redirect-only: no request-contract schema applies (see
+[Request Validation](../sessions-authentication/reference-request-validation.md#endpoints-without-a-request-contract-schema)).
+This path is fixed by `getBlueskyRedirectUri()` (baked into the
 client-metadata document Bluesky validates `client_id`/`redirect_uris` against at authorize time)
 and cannot be moved. The session cookie is available on this top-level redirect through its
 `SameSite=Lax` policy. The callback requires that session, rejects a suspended user before calling
@@ -122,6 +135,11 @@ Sends an OTP to the provided email address.
 auto-submit the verification step.
 
 **Rate limiting:** 2 tokens per minute per email/IP/device/session.
+
+**Errors:** `422` for an unrecognized field or wrong-typed value, checked after the rate limit and
+honeypot checks below and before sending the OTP. `emailAddress`/`cfTurnstileResponse`/`uiLocale`
+are accepted as aliases for `email_address`/`cf_turnstile_response`/`ui_locale` (both native clients
+and the web client use different casings for the same fields).
 
 **Honeypot:** If `hp_website` or `hp_phone` fields are non-empty, returns a fake `200 { email_address }` without creating a real token (bot detection — see [`@services/honeypot`](../../../services/honeypot/README.md)).
 

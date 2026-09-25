@@ -35,3 +35,8 @@
 | DELETE | `/api/v1/auth/bluesky/link`                             | Required       | Unlink the current user's Bluesky account             |
 
 > Login/logout endpoints are in [`../auth/`](../auth/README.md).
+
+`GET /api/v1/auth/sessions` and `GET /api/v1/auth/passkeys` above are list endpoints with no JSON
+body and carry no request-contract schema; every other endpoint validates its body against the
+generated contract before service execution. See
+[Request Validation](reference-request-validation.md) for the exclusion list and ordering rules.
