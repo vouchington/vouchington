@@ -336,7 +336,7 @@ fire-and-forget dispatch deliberately carries no terminal completion attestation
 - [triage-security](../triage-security/SKILL.md) — calls this skill for each
   verified provider PR handoff, without `--arm-auto-merge`.
 - The installed plugin or canonical Voucha CLI
-  (`pnpm exec pr-shepherd <N> --interval 60s --until-terminal --quiet-status`)
+  (`pnpm exec pr-shepherd <N> --until-terminal --quiet-status`)
   is the local polling alternative to the CI-triggered `/shepherd` comment and
   runs until `CANCEL` (ready-delay elapsed, or merged/closed) or `ESCALATE`.
   Use it directly, without going through `ready-and-shepherd`, and let

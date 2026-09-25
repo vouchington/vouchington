@@ -6,6 +6,11 @@ ignoreChecks:
   - 'Kilo Code Review'
   - 'CodeRabbit'
 
+# Single source of the WAIT-tick cadence: checked-in guidance omits `--interval` so this applies.
+# GraphQL quota-warning bands scale from it (2x/5x/10x → 6/15/30 minutes).
+poll:
+  intervalSeconds: 180
+
 # The repo disallows merge commits and rebase merges (squash-only, see
 # allow_squash_merge/allow_merge_commit/allow_rebase_merge); without this,
 # Shepherd's `--merge` default fails with "Merge commits are not allowed on
