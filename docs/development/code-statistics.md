@@ -16,7 +16,8 @@ allowlists are:
   `cloudflare-worker`, `playwright`, `integration-tests`, `ci`, `dev`, `docs`,
   `monitors`, …). Any file whose path starts with `<root>/` is eligible.
 - **`countedRootFiles`** — individual root-level files (e.g. `package.json`,
-  `README.md`, `vitest.config.mts`, `renovate.json`, …).
+  `README.md`, `vitest.config.mts`, `renovate.json`, `.jscpd.json`, …). Root
+  dot-config JSON is classified as `tooling` (see below).
 
 `scc` is invoked with the explicit list of matching roots/files rather than `.`.
 Off-allowlist roots (e.g. `articles/`) are never passed to `scc`, even when they

@@ -11,6 +11,7 @@ export const targets = {
         'pnpm exec oxlint --type-aware --deny-warnings',
         'static-code-analysis.yml',
       ),
+      workflowCommand('jscpd', 'pnpm run jscpd', 'static-code-analysis.yml'),
       workflowCommand(
         'syncpack',
         'pnpm exec syncpack lint && pnpm exec syncpack format --check',

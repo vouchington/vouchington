@@ -1,0 +1,11 @@
+{
+  "format": ["typescript", "tsx", "javascript", "sql", "bash", "css"],
+  "crossFormats": "typescript,tsx",
+  "failOnEmpty": true,
+  "ignore": [
+    "**/migrations/**",
+    "**/fixtures/**",
+    "**/web/storybook/component-story-ratchet-part-*.stories.tsx",
+    "**/route-selectors.generated.mts"
+  ]
+}
