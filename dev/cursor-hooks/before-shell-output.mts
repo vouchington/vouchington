@@ -16,10 +16,7 @@ export function cursorBeforeShellOutput(
     })
   }
 
-  const block = findPreToolUseBlock(payload, {
-    validateClosingIssueReferences: true,
-    automationContext: options.automationContext,
-  })
+  const block = findPreToolUseBlock(payload, { automationContext: options.automationContext })
   if (block === null) {
     return JSON.stringify({ permission: 'allow' })
   }

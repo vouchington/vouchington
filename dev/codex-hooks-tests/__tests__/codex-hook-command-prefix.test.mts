@@ -1,18 +1,11 @@
+import { writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
-import { findGitHubWorkflowBlock } from '../../codex-hooks/policy-helpers.mts'
 import { parseCommandPrefix } from '../../codex-hooks/policy/shell-command-wrappers.mts'
-import type { ReferencedIssue } from '../../pr-description/closing-refs.mts'
-
-const OPEN_ISSUE: ReferencedIssue = {
-  body: '',
-  isPullRequest: false,
-  number: 1,
-  state: 'open',
-  title: 'Open issue',
-  url: 'https://github.com/owner/repo/issues/1',
-}
+import { withTestTempDir } from '../test-temp-root.mts'
 
 describe('parseCommandPrefix', () => {
   it('collects env assignments, unsets, and each env -C across a wrapper chain', () => {
@@ -114,20 +107,21 @@ describe('Codex hook gh policies behind a modeled wrapper chain', () => {
     )
   })
 
-  it('resolves closing refs from the env -C directory', () => {
-    let resolverCwd: string | undefined
-    const block = findGitHubWorkflowBlock(
-      'env -C /other gh pr create --draft --title t --body "Closes #1"',
-      '/session',
-      {
-        resolveClosingIssueReference: (_ref, cwd) => {
-          resolverCwd = cwd
-          return { issue: OPEN_ISSUE, ok: true }
-        },
-        validateClosingIssueReferences: true,
-      },
-    )
-    expect(block).toBeNull()
-    expect(resolverCwd).toBe('/other')
+  it('reads a relative body file from the env -C directory', async () => {
+    await withTestTempDir('voucha-env-c-session-', async sessionDir => {
+      await withTestTempDir('voucha-env-c-body-', async otherDir => {
+        await writeFile(join(sessionDir, 'pr-body.md'), '## Summary\nno closing ref\n')
+        await writeFile(join(otherDir, 'pr-body.md'), '## Related issues\nCloses #1\n')
+        const command = (dir: string) =>
+          `env -C ${dir} gh pr create --draft --title t --body-file pr-body.md`
+        expect(
+          findPreToolUseBlock({ tool_input: { command: command(sessionDir), cwd: otherDir } })
+            ?.reason,
+        ).toContain('Closes #123')
+        expect(
+          findPreToolUseBlock({ tool_input: { command: command(otherDir), cwd: sessionDir } }),
+        ).toBeNull()
+      })
+    })
   })
 })

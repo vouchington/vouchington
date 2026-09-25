@@ -1,4 +1,4 @@
-import type { GitHubWorkflowPolicyOptions } from './github-closing-refs.mts'
+import type { GitHubWorkflowPolicyOptions } from './core.mts'
 import { githubOwner, ownerOfRepoSelector } from './github-checkout-owners.mts'
 import { implicitRepositoryOwner } from './github-implicit-repository.mts'
 import type { GhInvocation } from './github-invocation.mts'

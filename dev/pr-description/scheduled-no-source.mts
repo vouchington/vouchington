@@ -21,11 +21,11 @@ const FIX_MAIN_INTERIM_CLASSIFIER_MARKER =
   '<!-- related-issues-validation: no-closing-ref-fix-main-interim-classifier -->'
 // Unlike every other non-closing Refs/Part-of reference in this codebase (see git-and-prs.md),
 // this specific Refs entry stands in for the closing keyword this exception waives, so it is
-// resolved and required to name an open, non-pull-request issue (see validate.mts and
-// github-closing-refs.mts). Anchoring the whole trimmed line — rather than searching for the
-// pattern anywhere in the text — means prose ("Do not use Refs #456"), inline code
-// (`` `Refs #456` ``), and HTML comments (`<!-- Refs #456 -->`) can never satisfy it: each wraps
-// the match in characters that break the ^...$ anchors.
+// resolved and required to name an open, non-pull-request issue (see validate.mts). Anchoring the
+// whole trimmed line — rather than searching for the pattern anywhere in the text — means prose
+// ("Do not use Refs #456"), inline code (`` `Refs #456` ``), and HTML comments
+// (`<!-- Refs #456 -->`) can never satisfy it: each wraps the match in characters that break the
+// ^...$ anchors.
 const STANDALONE_ROOT_CAUSE_REF_RE =
   /^Refs:?[ \t]+(?:(?<owner>[\w.-]+)\/(?<repo>[\w.-]+))?#(?<number>\d+)$/i
 const FIX_MAIN_WORKSPACE_SETUP_LINE = 'Workspace setup: Automation fix-main run'
@@ -167,8 +167,8 @@ const FIX_MAIN_ROOT_CAUSE_CONTEXT_LABEL =
  * `allowClosed` waives the open-issue requirement for a PR that has already merged: fix-main.md
  * requires the root-cause issue open only immediately before publication, and once the
  * interim-classifier PR has merged, that root-cause issue is expected to eventually get fixed and
- * closed. Pre-publication callers (e.g. the closing-refs policy hook) must leave this `false` so
- * the gate still holds at the moment that matters.
+ * closed. Pre-publication validation (`node dev/pr-description.mts create`, which has no merged
+ * target) leaves this `false` so the gate still holds at the moment that matters.
  */
 export function validateFixMainRootCauseRef(
   rootCauseRef: ClosingIssueReference | undefined,

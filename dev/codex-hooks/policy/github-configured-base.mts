@@ -61,10 +61,6 @@ export function configuredPullRequestBase(cwd: string): string | undefined {
   return gitText(cwd, ['config', '--get', `branch.${branch}.gh-merge-base`])
 }
 
-export function currentBranchName(cwd: string): string | undefined {
-  return gitText(cwd, ['branch', '--show-current'])
-}
-
 /**
  * Root guard for `gh stack init` (plan #11426/#11439): a stack rooted off trunk cannot drain if
  * its base branch is ever abandoned (#11376, #11352 both rooted this way). Scoped to `init` only —

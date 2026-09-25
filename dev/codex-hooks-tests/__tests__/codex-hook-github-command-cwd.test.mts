@@ -7,12 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
 import { commandCwd } from '../../codex-hooks/policy/github-command-cwd.mts'
 import { commandPrefixAt } from '../../codex-hooks/policy/github-command-position.mts'
-import {
-  findGitHubWorkflowBlock,
-  type GitHubCommandContext,
-  tokenizeShellWords,
-} from '../../codex-hooks/policy-helpers.mts'
-import type { ReferencedIssue } from '../../pr-description/closing-refs.mts'
+import { tokenizeShellWords } from '../../codex-hooks/policy-helpers.mts'
 import { withTestTempDir } from '../test-temp-root.mts'
 
 const BASE_CWD = '/filaments-session'
@@ -31,31 +26,6 @@ function ghIndex(tokens: string[]): number {
 function cwdFor(command: string, baseCwd = BASE_CWD): string | undefined {
   const tokens = tokensOf(command)
   return commandCwd(tokens, ghIndex(tokens), baseCwd)
-}
-
-function createCommand(prefix: string): string {
-  return `${prefix}gh pr create --draft --title "feat: test" --body "${PR_BODY}"`
-}
-
-function resolverCwd(
-  command: string,
-  baseCwd = BASE_CWD,
-): {
-  block: ReturnType<typeof findGitHubWorkflowBlock>
-  context: GitHubCommandContext | undefined
-  cwd: string | undefined
-} {
-  let cwd: string | undefined
-  let context: GitHubCommandContext | undefined
-  const block = findGitHubWorkflowBlock(command, baseCwd, {
-    resolveClosingIssueReference: (_ref, resolverCwd, resolverContext) => {
-      cwd = resolverCwd
-      context = resolverContext
-      return { issue: makeIssue(), ok: true }
-    },
-    validateClosingIssueReferences: true,
-  })
-  return { block, context, cwd }
 }
 
 describe('commandCwd sequential cd tracking', () => {
@@ -127,49 +97,6 @@ describe('commandCwd sequential cd tracking', () => {
 })
 
 describe('Codex hook GitHub policy uses command-local cwd', () => {
-  it('passes the cd target as the closing-ref resolver cwd', () => {
-    const { block, cwd } = resolverCwd(createCommand('cd /other && '))
-    expect(block).toBeNull()
-    expect(cwd).toBe('/other')
-  })
-
-  it('keeps session cwd when there is no cd', () => {
-    const { block, cwd } = resolverCwd(createCommand(''))
-    expect(block).toBeNull()
-    expect(cwd).toBe(BASE_CWD)
-  })
-
-  it('does not use a || cd target for closing-ref cwd', () => {
-    const { block, cwd } = resolverCwd(createCommand('cd /other || '))
-    expect(block).toBeNull()
-    expect(cwd).toBeUndefined()
-  })
-
-  it('keeps --repo identity when cd is present', () => {
-    const { block, context, cwd } = resolverCwd(
-      'cd /other && gh pr create --draft --repo github.com/Other/Repo --title "feat: test" --body "## Related issues\nCloses #2476"',
-    )
-    expect(block).toBeNull()
-    expect(cwd).toBe('/other')
-    expect(context).toEqual(expect.objectContaining({ repo: 'other/repo' }))
-  })
-
-  it('passes same-segment GH_REPO to closing-ref context', () => {
-    const { block, context } = resolverCwd(
-      'cd /other && GH_REPO=other/repo gh pr create --draft --title "feat: test" --body "## Related issues\nCloses #2476"',
-    )
-    expect(block).toBeNull()
-    expect(context).toEqual(
-      expect.objectContaining({ env: expect.objectContaining({ GH_REPO: 'other/repo' }) }),
-    )
-  })
-
-  it('fail-opens expandable cd instead of blocking lookup', () => {
-    const { block, cwd } = resolverCwd(createCommand('cd $OTHER && '))
-    expect(block).toBeNull()
-    expect(cwd).toBeUndefined()
-  })
-
   it('reads a relative body file from the cd target', async () => {
     await withTestTempDir('voucha-cd-pr-session-', async sessionDir => {
       await withTestTempDir('voucha-cd-pr-body-', async otherDir => {
@@ -223,73 +150,21 @@ describe('Codex hook GitHub policy uses command-local cwd', () => {
     })
   })
 
-  it('applies cd inside bash -lc inspected bodies', () => {
-    const { cwd } = resolverCwd(
-      `bash -lc "cd /other && gh pr create --draft --title t --body 'Closes #2476'"`,
-    )
-    expect(cwd).toBe('/other')
-  })
-})
-
-const FIX_MAIN_BODY =
-  '## Related issues\n\nRefs #456\nNo closing reference; root-cause issue tracked via the Refs entry above.\n<!-- related-issues-validation: no-closing-ref-fix-main-interim-classifier -->\n\nWorkspace setup: Automation fix-main run'
-
-function fixMainCommand(prefix: string, suffix = ''): string {
-  return `${prefix}gh pr create --draft --title "fix: interim classifier"${suffix} --body "${FIX_MAIN_BODY}"`
-}
-
-describe('Codex hook Fix Main interim-classifier deferred verification', () => {
-  it('blocks the exception when its effective repository cannot be determined', () => {
-    const block = findGitHubWorkflowBlock(fixMainCommand('cd $OTHER && '), BASE_CWD, {
-      validateClosingIssueReferences: true,
+  it('applies cd inside bash -lc inspected bodies', async () => {
+    await withTestTempDir('voucha-cd-pr-session-', async sessionDir => {
+      await withTestTempDir('voucha-cd-pr-body-', async otherDir => {
+        await writeFile(join(sessionDir, 'pr-body.md'), '## Summary\nno closing ref\n')
+        await writeFile(join(otherDir, 'pr-body.md'), `${PR_BODY}\n`)
+        const command = (dir: string) =>
+          `bash -lc "cd ${dir} && gh pr create --draft --title t --body-file pr-body.md"`
+        expect(
+          findPreToolUseBlock({ tool_input: { command: command(sessionDir), cwd: otherDir } })
+            ?.reason,
+        ).toContain('Closes #123')
+        expect(
+          findPreToolUseBlock({ tool_input: { command: command(otherDir), cwd: sessionDir } }),
+        ).toBeNull()
+      })
     })
-    expect(block?.reason).toContain('Fix Main interim-classifier exception')
-  })
-
-  it('does not block the exception when closing-ref validation is disabled', () => {
-    const block = findGitHubWorkflowBlock(fixMainCommand('cd $OTHER && '), BASE_CWD, {})
-    expect(block).toBeNull()
-  })
-
-  it('still verifies the root-cause ref via --repo context despite an unresolvable cd target', () => {
-    const block = findGitHubWorkflowBlock(
-      fixMainCommand('cd $OTHER && ', ' --repo other/repo'),
-      BASE_CWD,
-      {
-        resolveClosingIssueReference: () => ({
-          issue: makeIssue({ state: 'closed', title: 'Closed root cause' }),
-          ok: true,
-        }),
-        validateClosingIssueReferences: true,
-      },
-    )
-    expect(block?.reason).toContain('#456 is CLOSED: Closed root cause')
-  })
-
-  it('still verifies the root-cause ref via a same-segment GH_REPO despite an unresolvable cd target', () => {
-    const block = findGitHubWorkflowBlock(
-      fixMainCommand('cd $OTHER && GH_REPO=other/repo '),
-      BASE_CWD,
-      {
-        resolveClosingIssueReference: () => ({
-          issue: makeIssue({ state: 'closed', title: 'Closed root cause' }),
-          ok: true,
-        }),
-        validateClosingIssueReferences: true,
-      },
-    )
-    expect(block?.reason).toContain('#456 is CLOSED: Closed root cause')
   })
 })
-
-function makeIssue(overrides: Partial<ReferencedIssue> = {}): ReferencedIssue {
-  return {
-    body: '',
-    isPullRequest: false,
-    number: 2476,
-    state: 'open',
-    title: 'Open issue',
-    url: 'https://github.com/owner/repo/issues/2476',
-    ...overrides,
-  }
-}

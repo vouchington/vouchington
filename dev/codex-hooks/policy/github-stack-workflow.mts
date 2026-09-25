@@ -1,10 +1,7 @@
 import type { BlockDecision } from './core.mts'
-import type { GitHubWorkflowPolicyOptions } from './github-closing-refs.mts'
 import { findStackInitBaseBlock } from './github-configured-base.mts'
 import type { GhInvocation } from './github-invocation.mts'
 import { hasNamedFlag, hasNumericPrSelector } from './github-option-flags.mts'
-import { findStackCheckoutBlock } from './github-stack-checkout.mts'
-import { findStackAbandonmentBlock } from './github-stack-topology.mts'
 
 const STACK_AGENT_ACTIONS = new Set([
   'add',
@@ -25,21 +22,20 @@ const STACK_AGENT_ACTIONS = new Set([
   'view',
 ])
 
-export type GitHubStackWorkflowContext = {
-  // The complete tool command, which the checkout guard requires to be the checkout alone.
-  command: string
-  // The invocation's working directory, or undefined when it could not be determined (an
-  // unresolved `cd` target, no cwd threaded through) — matches commandCwd's own return type, so
-  // callers never normalize between null and undefined. The init guards that read the checkout
-  // (abandonment, HEAD ancestry) fail open in that case rather than substitute the session cwd.
-  cwd: string | undefined
-  env: Record<string, string | undefined>
-}
+const CHECKOUT_TARGET_REASON =
+  'gh stack checkout takes exactly one stack number or PR number: ' +
+  '`gh stack checkout <stack-number>`. The bare form is an interactive picker, and a branch-name ' +
+  'target resolves only against stacks this worktree already tracks. See ' +
+  '.agents/skills/stacked-prs/SKILL.md.'
 
+/**
+ * `cwd` is the invocation's working directory, or undefined when it could not be determined (an
+ * unresolved `cd` target) — commandCwd's own return type. The init HEAD-ancestry guard fails open
+ * in that case rather than substitute the session cwd.
+ */
 export function findGitHubStackWorkflowBlock(
   invocation: GhInvocation,
-  options: GitHubWorkflowPolicyOptions,
-  context: GitHubStackWorkflowContext = { command: '', cwd: undefined, env: {} },
+  cwd: string | undefined,
 ): BlockDecision | null {
   const stack = stackInvocation(invocation)
   if (stack === null) {
@@ -59,30 +55,14 @@ export function findGitHubStackWorkflowBlock(
   }
 
   if (action === 'init') {
-    // Abandonment before root: a branch that is already a layer of an open stack has unmerged
-    // commits, so the root guard below would fire first and mask the more specific "you forgot
-    // this stack — use `gh stack add`" diagnosis with a generic "not merged into origin/main" one.
-    const abandonmentBlock =
-      context.cwd === undefined
-        ? null
-        : findStackAbandonmentBlock(context.cwd, context.env, options.resolveStackTopology)
-    if (abandonmentBlock !== null) {
-      return abandonmentBlock
-    }
-    const baseBlock = findStackInitBaseBlock(stack.optionTokens, context.cwd)
+    const baseBlock = findStackInitBaseBlock(stack.optionTokens, cwd)
     if (baseBlock !== null) {
       return baseBlock
     }
   }
 
   if (action === 'checkout') {
-    return findStackCheckoutBlock(
-      context.command,
-      stack.optionTokens,
-      context.cwd,
-      context.env,
-      options.resolveStackForCheckout,
-    )
+    return isStackCheckoutTarget(stack.optionTokens) ? null : { reason: CHECKOUT_TARGET_REASON }
   }
 
   if (action === 'submit') {
@@ -116,6 +96,12 @@ export function findGitHubStackWorkflowBlock(
     }
   }
   return null
+}
+
+// Exactly one positive stack or PR number. The bare form opens a picker, and gh-stack resolves a
+// branch name only against stacks this worktree already tracks.
+function isStackCheckoutTarget(optionTokens: string[]): boolean {
+  return optionTokens.length === 1 && /^[1-9]\d*$/.test(optionTokens[0])
 }
 
 const HELP_FLAGS = new Set(['--help', '-h'])
