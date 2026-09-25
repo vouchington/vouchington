@@ -13,7 +13,11 @@ import { enqueueChat, getChatJobId } from '@queues/ai-agents/enqueues/chat'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { type ChatTokenSubscription, subscribeChatTokens } from '@data-stores/valkey-pubsub'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import {
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../../response-helpers.mts'
 import {
   acquireDuringSSECycle,
   MAX_SSE_CYCLE_DURATION_MS,
@@ -29,7 +33,10 @@ app.route('/api/v1/conversations/:conversationId/chat').post(async (ctx: Context
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/conversations/:conversationId/chat')
   assertNotSuspended(currentUser)
 
-  const conversationId = ctx.params.conversationId!
+  const conversationId = validateUUIDParam(ctx, 'conversationId')
+  validateRequestContract(ctx, 'POST:/api/v1/conversations/:conversationId/chat', {
+    path: ctx.params,
+  })
 
   // Verify conversation exists and user owns it
   const conversation = await getConversationByIdForMutation(conversationId)
@@ -45,6 +52,7 @@ app.route('/api/v1/conversations/:conversationId/chat').post(async (ctx: Context
   ctx.assert(!isRunning, 409, 'A message is already being processed')
 
   const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+  validateRequestContract(ctx, 'POST:/api/v1/conversations/:conversationId/chat', { body })
   const rawMessage = body.message
   let modelProvider: ReturnType<typeof parseHostedChatModelProvider>
   try {

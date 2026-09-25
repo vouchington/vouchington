@@ -13,7 +13,7 @@ probe protected request shapes. Validation still runs before any service executi
 
 Unknown generated operation names fail closed. Known operations without a schema for a particular
 request carrier accept that carrier unchanged, while invalid values return one redacted,
-carrier-specific error suitable for a `400` response.
+carrier-specific error suitable for a `422` response.
 
 ## Generated contracts
 
@@ -26,6 +26,11 @@ shape changes.
 This package provides the shared compiler and registry. Route-family integrations should remain
 small adapters at their existing authorization boundary and add focused tests proving that invalid
 input is rejected before execution.
+
+The first REST adopter is `validateRequestContract` in
+[`backend/api/response-helpers.mts`](../../api/response-helpers.mts) — see
+[`backend/api/README.md`](../../api/README.md#route-helpers) for its call pattern. Later route
+families should reuse that adapter rather than calling this registry directly.
 
 ## Related
 

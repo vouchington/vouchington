@@ -66,13 +66,17 @@ Use `response-helpers.mts` for standard route preambles:
   rejects non-JSON media types for body-bearing mutation routes unless the route declares an
   explicit accepted-media-type exception. Enforcement is body-bearing only, so bodyless mutations
   pass through without a `Content-Type` header.
+- `validateRequestContract(ctx, operation, input)` checks a route's path/body/query carriers
+  against the generated contract for `operation` (`'METHOD:/path'`) and throws 422 with the
+  registry's redacted message. Callers own ordering: call it after auth and
+  ownership/suspension checks, before any service call or semantic check, so unauthenticated or
+  unauthorized callers never see a schema diagnostic.
 
-Generated request contracts are available to route-family migrations through
-`@services/runtime-request-validation`. Callers must authenticate and authorize first, then
-validate before the route invokes a service or writes state. This avoids leaking detailed schema
-failures to unauthenticated callers. `api-fixtures/v1/openapi.json` and
-`api-fixtures/v1/request-contracts.json` are sibling compiler-generated outputs; runtime code uses
-only the latter. Routes with signature-verified or raw bodies keep their specialized parsers.
+`validateRequestContract` is backed by `@services/runtime-request-validation`; use the adapter, not
+the registry, from routes. Routes with signature-verified or raw bodies keep their specialized
+parsers. Caveats: `ctx.query` is raw strings with no type coercion, so skip `query` carriers with
+`integer`/`number` fields; generated path schemas lack `format: uuid` today, so keep
+`validateUUIDParam` for UUID shape.
 
 Route modification invariants live in [CLAUDE.md](CLAUDE.md).
 
