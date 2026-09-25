@@ -49,19 +49,38 @@ describe('runProcess', () => {
     expect(result.durationMs).toBeLessThan(4000)
   })
 
-  it('reports a timeout even when a TERM trap makes the child exit with its own code', async () => {
-    // A trapped shutdown can make a killed child look like it exited normally by its
-    // own numeric code. `killed` must still win: timedOut stays true and the exit
-    // code from the trap is reported honestly, not miscategorized as a normal exit.
-    const result = await runProcess(
-      '/bin/bash',
-      ['-c', "trap 'kill $!; exit 143' TERM; /bin/sleep 5 & wait"],
-      { timeoutMs: 200 },
-    )
+  it.each([143, 0])(
+    'reports a timeout even when a TERM trap makes the child exit %i',
+    async exitCode => {
+      // A trapped shutdown can make a killed child look like it exited normally by its
+      // own code, including 0. timedOut must still be true, and the trap's exit code is
+      // reported as-is rather than miscategorized as a normal exit.
+      const result = await runProcess(
+        '/bin/bash',
+        ['-c', `trap 'kill $!; exit ${exitCode}' TERM; /bin/sleep 5 & wait`],
+        { timeoutMs: 200 },
+      )
 
-    expect(result).toMatchObject({ code: 143, signal: null, timedOut: true, errno: undefined })
-    expect(result.durationMs).toBeGreaterThanOrEqual(150)
-    expect(result.durationMs).toBeLessThan(4000)
+      expect(result).toMatchObject({
+        code: exitCode,
+        signal: null,
+        timedOut: true,
+        errno: undefined,
+      })
+      expect(result.durationMs).toBeGreaterThanOrEqual(150)
+      expect(result.durationMs).toBeLessThan(4000)
+    },
+  )
+
+  it('returns at the timeout even when a grandchild keeps stdout open', async () => {
+    // The backgrounded sleep inherits the stdout pipe and outlives the killed shell by
+    // about three seconds; the timeout must not wait for it to close the pipe.
+    const result = await runProcess('/bin/bash', ['-c', '/bin/sleep 3 & wait'], {
+      timeoutMs: 200,
+    })
+
+    expect(result).toMatchObject({ code: null, signal: 'SIGTERM', timedOut: true })
+    expect(result.durationMs).toBeLessThan(2000)
   })
 
   it('reports a spawn error via errno instead of coercing it to exit code 1', async () => {

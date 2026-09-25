@@ -16,7 +16,6 @@ export interface RunProcessResult {
 interface ExecFileError {
   code?: number | string
   signal?: string | null
-  killed?: boolean
   stdout?: string
   stderr?: string
 }
@@ -49,20 +48,31 @@ export async function runProcess(
   let errno: string | undefined
   let stdout = ''
   let stderr = ''
+  const pending = execFileAsync(file, args, { cwd, env })
+  // execFile's own `timeout` resolves as success when the child traps SIGTERM and exits 0,
+  // so the timer lives here and sets timedOut regardless of how the child then exits. Like
+  // execFile's timeout, it destroys the pipes first so a grandchild holding them open cannot
+  // delay the result.
+  const timer =
+    timeoutMs === undefined
+      ? undefined
+      : setTimeout(() => {
+          timedOut = true
+          pending.child.stdout?.destroy()
+          pending.child.stderr?.destroy()
+          pending.child.kill('SIGTERM')
+        }, timeoutMs)
   try {
-    ;({ stdout, stderr } = await execFileAsync(file, args, {
-      cwd,
-      env,
-      timeout: timeoutMs,
-    }))
+    ;({ stdout, stderr } = await pending)
   } catch (error) {
     const result = error as ExecFileError
     code = typeof result.code === 'number' ? result.code : null
     errno = typeof result.code === 'string' ? result.code : undefined
     signal = result.signal ?? null
-    timedOut = result.killed === true
     stdout = result.stdout ?? ''
     stderr = result.stderr ?? ''
+  } finally {
+    clearTimeout(timer)
   }
   return {
     code,
