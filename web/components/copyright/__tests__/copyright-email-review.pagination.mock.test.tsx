@@ -10,7 +10,7 @@ import {
   makeCopyrightEmailQueueItem as makeQueueItem,
   makeCopyrightEmailQueuePage as makeQueuePage,
 } from '@/test-helpers/components/copyright/copyright-email-review'
-import { CopyrightEmailReview } from './copyright-email-review'
+import { CopyrightEmailReview } from '../copyright-email-review'
 
 vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => intakesClient)
 vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => targetsClient)
