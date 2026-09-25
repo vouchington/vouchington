@@ -133,4 +133,16 @@ describe('dev Valkey log commands', () => {
       await rm(dir, { force: true, recursive: true })
     }
   })
+
+  it('starts the Valkey monitor without requiring DATABASE_URL', async () => {
+    const workspace = await createFakeWorkspace()
+    try {
+      const output = await runUntilStartupBanner(valkeyLogsPath, workspace.dir, workspace.binDir)
+
+      expect(output.stdout).toContain('Tailing Valkey commands (container: voucha-test-valkey)')
+      expect(output.stdout).toContain('Source: valkey-cli MONITOR')
+    } finally {
+      await rm(workspace.dir, { force: true, recursive: true })
+    }
+  })
 })
