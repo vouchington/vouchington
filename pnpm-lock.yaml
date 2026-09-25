@@ -4825,6 +4825,9 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../../modules/token-secrets
@@ -4858,6 +4861,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0

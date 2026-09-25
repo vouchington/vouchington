@@ -56,7 +56,11 @@ export {
   reconcileCopyrightEnforcementRequests,
 } from './enforcement-requests.mts'
 export { reviewCopyrightAppeal, reviewCopyrightCounterNotice } from './submission-reviews.mts'
-export { getPendingCopyrightAgentDispatches } from './reconcile-agent-dispatches.mts'
+export {
+  getPendingCopyrightAgentDispatches,
+  type CopyrightAgentDispatch,
+  type CopyrightAgentDispatchPage,
+} from './reconcile-agent-dispatches.mts'
 export {
   claimCopyrightDeliveryIntent,
   createCopyrightDeliveryIntent,

@@ -111,8 +111,11 @@ for both queue deduplication and retained-failure retry, so a crash between comm
 cannot lose a draft or create a second run.
 
 Copyright forms, successfully parsed email intakes, and appeals are durable before queue delivery. The
-five-minute `reconcile-copyright-agent-dispatches` job re-enqueues records still missing their agent
-result with stable logical job IDs. A saved latest clear signed-in form screen with no moderator
+five-minute `reconcile-copyright-agent-dispatches` job pages the whole pending backlog from
+PostgreSQL by dispatched intake or submission ID and re-enqueues records still missing their agent
+result with stable logical job IDs. A failed dispatch does not stop the rest of its page or later
+pages; the job fails with every collected error after the walk, so a stuck low-ID record cannot
+starve newer work. A saved latest clear signed-in form screen with no moderator
 review instead invokes the durable form-effect service directly, which resumes its assessment and
 unrestricted targets without calling a model. Reviewed forms and targets already lifted under an
 automated assessment never re-enter automated enforcement. Failed MIME parses are preserved for
