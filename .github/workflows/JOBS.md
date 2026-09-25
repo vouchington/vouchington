@@ -35,7 +35,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci-tests-processing.yml`           | `tests-processing`              | job    | `ubuntu-latest`                       | 14            |
 | `ci-upload-codecov.yml`             | `upload-codecov`                | job    | `ubuntu-latest`                       | 8             |
 | `ci.yml`                            | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
-| `ci.yml`                            | `build`                         | job    | `ubuntu-latest`                       | 1             |
+| `ci.yml`                            | `build`                         | job    | `ubuntu-latest`                       | 5             |
 | `ci.yml`                            | `build-backend`                 | job    | → `build-backend.yml`                 | 360           |
 | `ci.yml`                            | `build-web`                     | job    | → `build-web.yml`                     | 360           |
 | `ci.yml`                            | `detect-changes`                | job    | → `ci-detect-changes.yml`             | 360           |
@@ -63,7 +63,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci.yml`                            | `test-web`                      | job    | → `tests-web.yml`                     | 360           |
 | `ci.yml`                            | `test-web-api`                  | job    | → `tests-web-api.yml`                 | 360           |
 | `ci.yml`                            | `test-web-integration`          | job    | → `tests-web-integration.yml`         | 360           |
-| `ci.yml`                            | `tests`                         | job    | `ubuntu-latest`                       | 2             |
+| `ci.yml`                            | `tests`                         | job    | `ubuntu-latest`                       | 5             |
 | `ci.yml`                            | `tests-processing`              | job    | → `ci-tests-processing.yml`           | 360           |
 | `ci.yml`                            | `upload-codecov`                | job    | → `ci-upload-codecov.yml`             | 360           |
 | `cleanup-artifacts.yml`             | `cleanup-run`                   | job    | `ubuntu-slim`                         | 10            |
