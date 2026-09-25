@@ -16,6 +16,9 @@ CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
   ON copyright_repeat_infringer_incidents (account_user_id)
   WHERE operative;
 
+CREATE INDEX idx_copyright_repeat_infringer_incidents__notice
+  ON copyright_repeat_infringer_incidents (copyright_notice_id);
+
 CREATE TABLE copyright_repeat_infringer_dispositions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_repeat_infringer_incident_id uuid NOT NULL UNIQUE REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE RESTRICT,
@@ -26,6 +29,9 @@ CREATE TABLE copyright_repeat_infringer_dispositions (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_copyright_repeat_infringer_dispositions__recorded_by
+  ON copyright_repeat_infringer_dispositions (recorded_by_id);
 
 CREATE TABLE copyright_repeat_infringer_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -46,6 +52,12 @@ CREATE TABLE copyright_repeat_infringer_reviews (
 CREATE UNIQUE INDEX idx_copyright_repeat_infringer_reviews__one_open
   ON copyright_repeat_infringer_reviews (account_user_id)
   WHERE outcome IS NULL;
+
+CREATE INDEX idx_copyright_repeat_infringer_reviews__account
+  ON copyright_repeat_infringer_reviews (account_user_id);
+
+CREATE INDEX idx_copyright_repeat_infringer_reviews__outcome_by
+  ON copyright_repeat_infringer_reviews (outcome_by_id);
 
 CREATE FUNCTION fn_guard_copyright_repeat_infringer_incident()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$

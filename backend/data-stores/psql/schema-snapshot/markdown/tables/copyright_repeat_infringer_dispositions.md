@@ -37,6 +37,7 @@ Not partitioned — growth: bounded.
 
 - `copyright_repeat_infringer_di_copyright_repeat_infringer_in_key`: `CREATE UNIQUE INDEX copyright_repeat_infringer_di_copyright_repeat_infringer_in_key ON public.copyright_repeat_infringer_dispositions USING btree (copyright_repeat_infringer_incident_id)`
 - `copyright_repeat_infringer_dispositions_pkey`: `CREATE UNIQUE INDEX copyright_repeat_infringer_dispositions_pkey ON public.copyright_repeat_infringer_dispositions USING btree (id)`
+- `idx_copyright_repeat_infringer_dispositions__recorded_by`: `CREATE INDEX idx_copyright_repeat_infringer_dispositions__recorded_by ON public.copyright_repeat_infringer_dispositions USING btree (recorded_by_id)`
 
 **Triggers:**
 

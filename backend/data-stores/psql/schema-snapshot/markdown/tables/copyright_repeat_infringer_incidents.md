@@ -33,6 +33,7 @@ _none_
 
 - `copyright_repeat_infringer_in_account_user_id_copyright_not_key`: `CREATE UNIQUE INDEX copyright_repeat_infringer_in_account_user_id_copyright_not_key ON public.copyright_repeat_infringer_incidents USING btree (account_user_id, copyright_notice_id)`
 - `copyright_repeat_infringer_incidents_pkey`: `CREATE UNIQUE INDEX copyright_repeat_infringer_incidents_pkey ON public.copyright_repeat_infringer_incidents USING btree (id)`
+- `idx_copyright_repeat_infringer_incidents__notice`: `CREATE INDEX idx_copyright_repeat_infringer_incidents__notice ON public.copyright_repeat_infringer_incidents USING btree (copyright_notice_id)`
 - `idx_copyright_repeat_infringer_incidents__operative_account`: `CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account ON public.copyright_repeat_infringer_incidents USING btree (account_user_id) WHERE operative`
 
 **Triggers:**

@@ -27272,6 +27272,26 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "idx_copyright_repeat_infringer_dispositions__recorded_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_dispositions__recorded_by ON public.copyright_repeat_infringer_dispositions USING btree (recorded_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "recorded_by_id",
+              "descending": false,
+              "expression": "recorded_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "partition": null,
@@ -27430,6 +27450,26 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_copyright_repeat_infringer_incidents__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_incidents__notice ON public.copyright_repeat_infringer_incidents USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_copyright_repeat_infringer_incidents__operative_account": {
@@ -27621,6 +27661,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_copyright_repeat_infringer_reviews__account": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_reviews__account ON public.copyright_repeat_infringer_reviews USING btree (account_user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "account_user_id",
+              "descending": false,
+              "expression": "account_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_repeat_infringer_reviews__one_open": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -27639,6 +27699,26 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_copyright_repeat_infringer_reviews__outcome_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_reviews__outcome_by ON public.copyright_repeat_infringer_reviews USING btree (outcome_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "outcome_by_id",
+              "descending": false,
+              "expression": "outcome_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         }
       },

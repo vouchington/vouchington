@@ -38,7 +38,9 @@ _none_
 **Indexes:**
 
 - `copyright_repeat_infringer_reviews_pkey`: `CREATE UNIQUE INDEX copyright_repeat_infringer_reviews_pkey ON public.copyright_repeat_infringer_reviews USING btree (id)`
+- `idx_copyright_repeat_infringer_reviews__account`: `CREATE INDEX idx_copyright_repeat_infringer_reviews__account ON public.copyright_repeat_infringer_reviews USING btree (account_user_id)`
 - `idx_copyright_repeat_infringer_reviews__one_open`: `CREATE UNIQUE INDEX idx_copyright_repeat_infringer_reviews__one_open ON public.copyright_repeat_infringer_reviews USING btree (account_user_id) WHERE (outcome IS NULL)`
+- `idx_copyright_repeat_infringer_reviews__outcome_by`: `CREATE INDEX idx_copyright_repeat_infringer_reviews__outcome_by ON public.copyright_repeat_infringer_reviews USING btree (outcome_by_id)`
 
 **Triggers:**
 
