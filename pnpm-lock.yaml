@@ -231,7 +231,7 @@ importers:
         version: link:../../tools
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -268,7 +268,7 @@ importers:
         version: link:../../services/users
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -320,7 +320,7 @@ importers:
         version: link:../../tools
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@modules/openrouter-utils':
         specifier: workspace:^
@@ -442,7 +442,7 @@ importers:
         version: link:../../services/posts
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -600,7 +600,7 @@ importers:
         version: link:../../services/topic-claims
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -646,7 +646,7 @@ importers:
         version: link:../../services/users
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
@@ -730,7 +730,7 @@ importers:
         version: link:../../services/moderation-reports
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -792,7 +792,7 @@ importers:
         version: link:../../types
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
       p-map:
         specifier: 7.0.7
         version: 7.0.7
@@ -829,7 +829,7 @@ importers:
         version: link:../../services/stories
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -2438,7 +2438,7 @@ importers:
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
 
   backend/modules/openrouter-utils:
     dependencies:
@@ -2450,7 +2450,7 @@ importers:
         version: link:../utils
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
 
   backend/modules/pagination:
     dependencies:
@@ -7841,7 +7841,7 @@ importers:
         version: link:../../../ts-shared/utils
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -10562,7 +10562,7 @@ importers:
         version: 6.2.12
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
       otpauth:
         specifier: ^9.5.2
         version: 9.5.2
@@ -11050,7 +11050,7 @@ importers:
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
       openai:
         specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2)
+        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
       p-map:
         specifier: 7.0.7
         version: 7.0.7
@@ -12703,7 +12703,7 @@ importers:
     dependencies:
       '@sentry/cloudflare':
         specifier: 10.75.1
-        version: 10.75.1(@cloudflare/workers-types@5.20260922.1)(wrangler@4.136.2(@cloudflare/workers-types@5.20260922.1)(@types/node@26.5.0))
+        version: 10.75.1(@cloudflare/workers-types@5.20260922.1)(wrangler@4.136.3(@cloudflare/workers-types@5.20260922.1)(@types/node@26.5.0))
       '@ts-shared/cache':
         specifier: workspace:^
         version: link:../ts-shared/cache
@@ -12748,8 +12748,8 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@26.5.0)(@vitest/browser-playwright@5.0.1)(@vitest/coverage-v8@5.0.1)(@vitest/ui@5.0.1)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       wrangler:
-        specifier: ^4.136.2
-        version: 4.136.2(@cloudflare/workers-types@5.20260922.1)(@types/node@26.5.0)
+        specifier: ^4.136.3
+        version: 4.136.3(@cloudflare/workers-types@5.20260922.1)(@types/node@26.5.0)
 
   email-templates:
     dependencies:
@@ -21882,10 +21882,6 @@ packages:
     resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
     engines: {node: '>=20.18.1'}
 
-  undici@8.10.2:
-    resolution: {integrity: sha512-/y4/bH9YNU5hi9NIrpOuvGXFcxrj3CMrV+/AYpowAYTpHn8gX/XPFjNy766FPoYY0miQhdW977JFWKGNhBdwyQ==}
-    engines: {node: '>=22.19.0'}
-
   undici@8.11.0:
     resolution: {integrity: sha512-AdzuGcAkzhbha3GgCSoUBx2P0quwym6qdFNCQz/fDGZc8w9XJ741wHUbt2kTmfPz+ZIOMkySFkiY7RXmiDDC8w==}
     engines: {node: '>=22.19.0'}
@@ -22233,8 +22229,8 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  wrangler@4.136.2:
-    resolution: {integrity: sha512-BeWkkU7leFyalKi++LDHUaWSumwLVNeBeY2Ma+CqylT/hxs2sKT5e/q88MvXUl4Ng4iPS90H9H1qlb5oK3uhhQ==}
+  wrangler@4.136.3:
+    resolution: {integrity: sha512-L1bS8BI9xoEk3RRr5XoZn5q5k1jCRo8+37ZEEab/jsUFzE1Ea2sIBAbmP1CdwSeD6mZYmnUtR6xpi9esHIl6GA==}
     engines: {node: '>=22.0.0'}
     hasBin: true
     peerDependencies:
@@ -26201,7 +26197,7 @@ snapshots:
       - encoding
       - supports-color
 
-  '@sentry/cloudflare@10.75.1(@cloudflare/workers-types@5.20260922.1)(wrangler@4.136.2(@cloudflare/workers-types@5.20260922.1)(@types/node@26.5.0))':
+  '@sentry/cloudflare@10.75.1(@cloudflare/workers-types@5.20260922.1)(wrangler@4.136.3(@cloudflare/workers-types@5.20260922.1)(@types/node@26.5.0))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@sentry/core': 10.75.1
@@ -26209,7 +26205,7 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       '@cloudflare/workers-types': 5.20260922.1
-      wrangler: 4.136.2(@cloudflare/workers-types@5.20260922.1)(@types/node@26.5.0)
+      wrangler: 4.136.3(@cloudflare/workers-types@5.20260922.1)(@types/node@26.5.0)
 
   '@sentry/conventions@0.16.0': {}
 
@@ -29885,14 +29881,6 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)(zod@4.6.2):
-    optionalDependencies:
-      '@aws-sdk/credential-provider-node': 3.972.83
-      '@smithy/signature-v4': 5.7.3
-      undici: 8.10.2
-      ws: 8.21.3
-      zod: 4.6.2
-
   openai@7.15.0(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.83
@@ -31307,8 +31295,6 @@ snapshots:
 
   undici@7.29.1: {}
 
-  undici@8.10.2: {}
-
   undici@8.11.0: {}
 
   unenv@2.0.0-rc.24:
@@ -31728,7 +31714,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20260921.1
       '@cloudflare/workerd-windows-64': 1.20260921.1
 
-  wrangler@4.136.2(@cloudflare/workers-types@5.20260922.1)(@types/node@26.5.0):
+  wrangler@4.136.3(@cloudflare/workers-types@5.20260922.1)(@types/node@26.5.0):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20260921.1)
