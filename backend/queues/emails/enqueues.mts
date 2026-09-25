@@ -8,7 +8,6 @@ import type {
   ProcessSendCommunityModerationSummaryEmailVariables,
   ProcessSendCommunityOwnershipTransferEmailVariables,
   ProcessSendCommunityRoleChangeEmailVariables,
-  ProcessSendCrmEmailVariables,
   ProcessSendDataExportReadyEmailVariables,
   ProcessSendEmailAddressLoginTokenVariables,
   ProcessSendEmailVerificationTokenVariables,
@@ -55,9 +54,6 @@ export const enqueueSendCommunityModerationSummaryEmail =
   createEnqueueFunction<ProcessSendCommunityModerationSummaryEmailVariables>(
     'processSendCommunityModerationSummaryEmail',
   )
-
-export const enqueueSendCrmEmail =
-  createEnqueueFunction<ProcessSendCrmEmailVariables>('processSendCrmEmail')
 
 export const enqueueSendSupportEmail =
   createEnqueueFunction<ProcessSendSupportEmailVariables>('processSendSupportEmail')

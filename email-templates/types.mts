@@ -71,17 +71,6 @@ export type CommunityOwnershipTransferEmailProps = LocalizedEmailProps & {
   recipientRole: 'new_owner' | 'previous_owner'
 }
 
-export type CrmOutreachEmailProps = LocalizedEmailProps & {
-  contactName: string
-  senderName: string
-  bodyHtml: string
-  ctaUrl?: string
-  ctaLabel?: string
-  imageUrl?: string
-  unsubscribeUrl: string
-  physicalAddress: string
-}
-
 export type SupportReplyEmailProps = LocalizedEmailProps & {
   bodyText: string
   subject?: string

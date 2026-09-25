@@ -4,22 +4,19 @@ import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
 describe('response-helpers', () => {
-  let admin: PrivateUser
   let regularUser: PrivateUser
 
   beforeAll(async () => {
-    ;[admin, regularUser] = await Promise.all([
-      createTestUser({ administrator: true }),
-      createTestUser(),
-    ])
+    regularUser = await createTestUser()
   })
 
   /**
    * These tests exercise the response-helpers via routes that adopt them:
    * - requireAuth via GET /api/v1/my/notifications
    * - getOptionalAuthAndRateLimit via GET /api/v1/topics
-   * - requireAuthAndRateLimit via GET /api/v1/crm/contacts
-   * - validateUUIDParam and parseJsonBody via /api/v1/crm/contacts/:id
+   * - requireAuthAndRateLimit via GET /api/v1/admin/warnings
+   * - validateUUIDParam via GET /api/v1/appeals/:id
+   * - parseJsonBody via POST /api/v1/markdown/preview
    *
    * The getOptionalAuthAndRateLimit cases use a random no-match `q` marker: /api/v1/topics is the
    * heaviest list endpoint in the app (search, then five requested-topic set aggregates,
@@ -61,39 +58,39 @@ describe('response-helpers', () => {
   describe('requireAuthAndRateLimit', () => {
     it('returns 401 when not authenticated', async () => {
       const request = createRequest()
-      await request.get('/api/v1/crm/contacts').expect(401)
+      await request.get(`/api/v1/admin/warnings?userId=${regularUser.id}`).expect(401)
     })
 
     it('returns 403 for non-admin users', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
-      await request.get('/api/v1/crm/contacts').expect(403)
+      await request.get(`/api/v1/admin/warnings?userId=${regularUser.id}`).expect(403)
     })
   })
 
   describe('validateUUIDParam', () => {
     it('returns 422 for an invalid UUID in a route param', async () => {
       const request = createRequest()
-      await request.authenticateAs(admin)
-      await request.get('/api/v1/crm/contacts/not-a-uuid').expect(422)
+      await request.authenticateAs(regularUser)
+      await request.get('/api/v1/appeals/not-a-uuid').expect(422)
     })
 
     it('passes through a valid UUID', async () => {
       // A real UUID that doesn't exist should get a 404, not a 422
       const request = createRequest()
-      await request.authenticateAs(admin)
-      await request.get('/api/v1/crm/contacts/00000000-0000-0000-0000-000000000099').expect(404)
+      await request.authenticateAs(regularUser)
+      await request.get('/api/v1/appeals/00000000-0000-0000-0000-000000000099').expect(404)
     })
   })
 
   describe('parseJsonBody', () => {
     it('returns 415 when content-type is not JSON', async () => {
       const request = createRequest()
-      await request.authenticateAs(admin)
+      await request.authenticateAs(regularUser)
       await request
-        .post('/api/v1/crm/contacts')
+        .post('/api/v1/markdown/preview')
         .set('Content-Type', 'text/plain')
-        .send('name=test')
+        .send('# Preview')
         .expect(415)
     })
   })

@@ -2,7 +2,6 @@
 
 [Back to @agents/\_shared](README.md#used-by)
 
-- `@agents/crm-outreach` — drafts personalized outreach emails for CRM contacts
 - `@agents/customer-support` — generates draft replies for customer support threads
 - `@agents/story-post` — generates titles and summaries for news stories
 - `@agents/story-clustering` — decides whether RSS items belong to the same story

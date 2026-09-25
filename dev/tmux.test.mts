@@ -1,9 +1,9 @@
 import { mkdtemp, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { workerQueuePolicy } from '../backend/modules/worker-queue-inventory/worker-queue-policy.mts'
-import { cleanupTmuxTestDirs, makeFakeBin, makeRepo, runTmux } from './test-helpers/tmux.mts'
+import { makeRepo, registerTmuxFakeHooks, runTmux } from './test-helpers/tmux.mts'
 
 function createdWindowNames(log: string) {
   return log.split('\n').flatMap(line => {
@@ -14,7 +14,7 @@ function createdWindowNames(log: string) {
 }
 
 describe('dev/tmux', () => {
-  afterEach(cleanupTmuxTestDirs)
+  const { makeFakeBin } = registerTmuxFakeHooks()
 
   it('directs a fresh checkout to initialize before loading package tooling', async () => {
     const cwd = await makeRepo()
@@ -24,7 +24,7 @@ describe('dev/tmux', () => {
 
     const result = await runTmux({ binDir, cwd })
 
-    expect(result.exitCode).toBe(1)
+    expect(result).toEqual(expect.objectContaining({ code: 1 }))
     expect(result.stdout).toContain('Run ./dev/initialize web first')
     expect(result.stderr).not.toContain('No such file or directory')
   })
@@ -35,7 +35,7 @@ describe('dev/tmux', () => {
 
     const result = await runTmux({ binDir, cwd })
 
-    expect(result.exitCode).toBe(1)
+    expect(result).toEqual(expect.objectContaining({ code: 1 }))
     expect(result.stdout).toContain('vouchington-machines')
     expect(result.stdout).toContain('docs/development/system-dependencies.md')
     expect(result.stdout).not.toMatch(/brew install tmux|apt install tmux/)
@@ -47,7 +47,7 @@ describe('dev/tmux', () => {
 
     const result = await runTmux({ binDir, cwd })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(createdWindowNames(result.log)).toEqual([
       'nextjs',
       'backend',
@@ -78,7 +78,7 @@ describe('dev/tmux', () => {
         extraEnv: { FAKE_TMUX_EXECUTE_COMMANDS: '1', OTEL_ENABLED: '1' },
       })
 
-      expect(result.exitCode).toBe(0)
+      expect(result).toEqual(expect.objectContaining({ code: 0 }))
       expect(result.statusLog.trim().split('\n')).toEqual([
         'nextjs\t0',
         'backend\t0',
@@ -107,7 +107,7 @@ describe('dev/tmux', () => {
 
     const result = await runTmux({ binDir, cwd })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.log).toContain('--disable-warning=DEP0205')
     expect(result.log).toContain('--max-old-space-size=3072')
     expect(result.log).not.toContain('NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=3072}"')
@@ -119,7 +119,7 @@ describe('dev/tmux', () => {
 
     const result = await runTmux({ binDir, cwd })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.log).toContain('case " ${NODE_OPTIONS:-} " in *" --max-old-space-size="*)')
     expect(result.log).not.toContain(
       'case " ${NODE_OPTIONS:-} " in *" --max-old-space-size=3072 "*)',
@@ -132,7 +132,7 @@ describe('dev/tmux', () => {
 
     const result = await runTmux({ binDir, cwd })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.log).toContain(
       `QUEUES=${[...workerQueuePolicy.cpuOnlyQueues, ...workerQueuePolicy.ioCapableQueues].join(',')}`,
     )
@@ -148,6 +148,8 @@ describe('dev/tmux', () => {
       runTmux({ binDir, cwd: second, args: ['--no-attach'] }),
     ])
 
+    expect(firstResult).toEqual(expect.objectContaining({ code: 0 }))
+    expect(secondResult).toEqual(expect.objectContaining({ code: 0 }))
     const sessionOf = (log: string) => log.match(/new-session -d -s (\S+)/)?.[1]
     expect(sessionOf(firstResult.log)).toBeDefined()
     expect(sessionOf(secondResult.log)).toBeDefined()
@@ -163,6 +165,7 @@ describe('dev/tmux', () => {
     try {
       const direct = await runTmux({ binDir, cwd, args: ['--no-attach'] })
       const throughAlias = await runTmux({ binDir, cwd: alias, args: ['--no-attach'] })
+      expect(direct).toEqual(expect.objectContaining({ code: 0 }))
       const sessionOf = (log: string) => [...log.matchAll(/new-session -d -s (\S+)/g)].at(-1)?.[1]
       expect(sessionOf(direct.log)).toBeDefined()
       expect(sessionOf(throughAlias.log)).toBe(sessionOf(direct.log))
@@ -186,7 +189,7 @@ describe('dev/tmux', () => {
       },
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.stdout).toContain('Services already running')
     expect(createdWindowNames(result.log)).toEqual(['nextjs'])
     expect(result.log).not.toContain('respawn-pane')
@@ -205,7 +208,7 @@ describe('dev/tmux', () => {
       },
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(result.stdout).toContain('Services already running')
     expect(createdWindowNames(result.log)).toEqual([])
     expect(result.log.split('\n').filter(line => line.startsWith('show-options'))).toHaveLength(3)
@@ -222,7 +225,7 @@ describe('dev/tmux', () => {
       extraEnv: { FAKE_TMUX_FAIL_WINDOW: 'worker' },
     })
 
-    expect(result.exitCode).toBe(1)
+    expect(result).toEqual(expect.objectContaining({ code: 1 }))
     expect(result.log).toContain('new-window')
     expect(result.log).toContain('kill-session -t =voucha-')
     expect(result.log).not.toContain(' -n lambdas ')
@@ -238,7 +241,7 @@ describe('dev/tmux', () => {
       extraEnv: { FAKE_TMUX_SIGNAL_NEW_SESSION: '1' },
     })
 
-    expect(result.exitCode).toBe(143)
+    expect(result).toEqual(expect.objectContaining({ code: 143 }))
     expect(result.log).toContain('show-environment -t =voucha-')
     expect(result.log).toContain('kill-session -t =voucha-')
     expect(result.log).not.toContain('@voucha-ready 1')
@@ -250,7 +253,7 @@ describe('dev/tmux', () => {
 
     const result = await runTmux({ binDir, cwd, tmuxEnv: '/tmp/tmux-session' })
 
-    expect(result.exitCode).toBe(1)
+    expect(result).toEqual(expect.objectContaining({ code: 1 }))
     expect(result.stdout).toContain('Error: ./dev/tmux must be run outside tmux.')
     expect(result.log).toBe('')
   })
@@ -261,7 +264,7 @@ describe('dev/tmux', () => {
 
     const result = await runTmux({ binDir, cwd })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(createdWindowNames(result.log)).toEqual([
       'nextjs',
       'backend',
@@ -280,7 +283,7 @@ describe('dev/tmux', () => {
 
     const result = await runTmux({ binDir, cwd })
 
-    expect(result.exitCode).toBe(0)
+    expect(result).toEqual(expect.objectContaining({ code: 0 }))
     expect(createdWindowNames(result.log)).toEqual([
       'nextjs',
       'backend',

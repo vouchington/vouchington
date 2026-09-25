@@ -1,5 +1,16 @@
 import type { BlockDecision } from './core.mts'
+import { findUnresolvedEvalBlock } from './github-eval-resolution-policy.mts'
+import {
+  EXEC_STYLE_WRAPPER_NAMES,
+  findExecWrapperMentionBlock,
+} from './github-exec-wrapper-mention-policy.mts'
+import { findFindExecOpaqueBlock, findParallelOpaqueBlock } from './github-exec-runner-policy.mts'
+import { findUnknownGhAreaBlock } from './github-gh-areas.mts'
 import { type GhInvocation, ghSubcommandWords } from './github-invocation.mts'
+import {
+  findUnresolvedVariableExecutableBlock,
+  PARAMETER_EXPANSION,
+} from './github-variable-executable-policy.mts'
 import { findXargsGhSubcommandBlock } from './github-xargs-policy.mts'
 import type { CommandPrefix } from './shell-command-wrappers.mts'
 
@@ -21,7 +32,13 @@ export function findOpaqueGhBlock(
   return (
     findXargsGhSubcommandBlock(prefix, tokens, index) ??
     findExpandedGhSubcommandBlock(tokens, index) ??
-    findUnreadableGhAliasBlock(invocation)
+    findUnreadableGhAliasBlock(invocation) ??
+    findFindExecOpaqueBlock(tokens, index) ??
+    findParallelOpaqueBlock(tokens, index) ??
+    findExecWrapperMentionBlock(tokens, index) ??
+    findUnresolvedEvalBlock(tokens, index) ??
+    findUnresolvedVariableExecutableBlock(tokens, index) ??
+    findUnknownGhAreaBlock(tokens, invocation)
   )
 }
 
@@ -41,6 +58,27 @@ function findExpandedGhSubcommandBlock(tokens: string[], index: number): BlockDe
 
 function isExpansion(word: string | undefined): boolean {
   return word !== undefined && /[$`{*?[]/.test(word)
+}
+
+/**
+ * Whether `findOpaqueGhBlock` could possibly fire with `word` at the finder's own index: `find`
+ * and `parallel` (their opaque clause/template checks), an exec-style wrapper name (the backstop),
+ * `eval`, or a parameter expansion (the unresolved-variable-executable check). The other checks
+ * above key on a literal `gh`/`gh-stack` word instead, already covered by the caller's own filter.
+ * Cheap enough to call at every token position before the more expensive wrapper-chain parse. If a
+ * finder above starts scanning from a new kind of word and this list is not updated to match, the
+ * caller's loop will never reach it — nothing here enforces that by construction; the
+ * `codex-hook-command-wrappers-*.test.mts` finder tests are what catch the mismatch.
+ */
+export function mayStartOpaqueGhCheck(word: string): boolean {
+  const name = word.slice(word.lastIndexOf('/') + 1)
+  return (
+    name === 'find' ||
+    name === 'parallel' ||
+    name === 'eval' ||
+    EXEC_STYLE_WRAPPER_NAMES.has(name) ||
+    PARAMETER_EXPANSION.test(word)
+  )
 }
 
 // `gh alias import [FILE | -]` and `gh alias set NAME -` read expansions the hook never sees, and

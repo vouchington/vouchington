@@ -9,6 +9,7 @@ import {
 } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import {
+  CatalogRowNotFoundError,
   exportCatalogCsv,
   importCatalogCsv,
   loadCatalogDirectory,
@@ -46,8 +47,7 @@ export async function runCatalogCli(args: readonly string[]): Promise<void> {
     try {
       return await runLocalizationCli(remove)
     } catch (error) {
-      if (error instanceof TypeError && error.message === `Catalog table does not contain "${id}"`)
-        return
+      if (error instanceof CatalogRowNotFoundError) return
       throw error
     }
   }

@@ -47,6 +47,23 @@ describe('parseFlagArgs', () => {
     ).toThrow('--file may only be specified once')
   })
 
+  it('collects every value of a repeatable flag in order', () => {
+    type RepeatableArgs = { repositories?: string[] }
+    const { parsed } = parseFlagArgs<RepeatableArgs>(
+      ['--repository', 'owner/one', '--repository', 'owner/two'],
+      { '--repository': { key: 'repositories', type: 'repeatable' } },
+    )
+    expect(parsed.repositories).toEqual(['owner/one', 'owner/two'])
+  })
+
+  it('treats a repeatable flag with no value as missing', () => {
+    expect(() =>
+      parseFlagArgs<{ repositories?: string[] }>(['--repository'], {
+        '--repository': { key: 'repositories', type: 'repeatable' },
+      }),
+    ).toThrow('--repository requires a value')
+  })
+
   it('rejects an unrecognized flag', () => {
     expect(() => parseFlagArgs<ParsedArgs>(['--wat'], FLAG_KEYS)).toThrow('unknown option: --wat')
   })

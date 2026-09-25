@@ -10,8 +10,9 @@ Before adding or changing a scheduled workflow that force-updates a fixed branch
 - Use `git -c core.hooksPath=/dev/null commit` and the same hook-disabled form for the branch update so repository hooks cannot run inside unattended workflow automation.
 - Owner-qualify PR lookups with `headRepositoryOwner.login` and `headRefName`, then validate the result is numeric before commenting, shepherding, auto-merging, or otherwise mutating the PR.
 - Pass `GH_TOKEN` to GitHub-backed updater CLIs such as `npx --yes skills update`; do not rely on ambient checkout credentials.
-- Update the relevant grouped inventory reference and the canonical [Workflow automation
-  map](reference-workflow-automation-map.md) when the workflow is standalone. Update
+- Update the relevant grouped inventory reference and the matching diagram linked from the
+  canonical [Workflow automation map](reference-workflow-automation-map.md) when the workflow is
+  standalone. Update
   [README.md](README.md) and [WORKFLOWS.md](WORKFLOWS.md) navigation only when adding or removing
   a focused reference leaf or group.
 

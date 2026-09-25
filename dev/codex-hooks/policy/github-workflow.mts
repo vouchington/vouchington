@@ -19,7 +19,7 @@ import { contentRuleExemption } from './github-content-rule-scope.mts'
 import { findGhPrMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { findRawIssueCreateBlock } from './github-issue-create-policy.mts'
-import { findOpaqueGhBlock } from './github-opaque-gh-policy.mts'
+import { findOpaqueGhBlock, mayStartOpaqueGhCheck } from './github-opaque-gh-policy.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
 import { isShellWord } from './shell-script-operand.mts'
 import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
@@ -184,10 +184,11 @@ export function findGitHubWorkflowBlock(
   return null
 }
 
-// Every policy above reads a gh or gh-stack command, or a shell whose `-c` script xargs fills in.
-// Skipping other words before commandPrefixAt keeps a long command from rescanning its segment
-// at every word.
+// Every policy above reads a gh or gh-stack command, a shell whose `-c` script xargs fills in, or
+// one of findOpaqueGhBlock's own opaque-wrapper checks (find, parallel, eval, an exec-style
+// wrapper, a parameter expansion — mayStartOpaqueGhCheck). Skipping other words before
+// commandPrefixAt keeps a long command from rescanning its segment at every word.
 function mayRunGh(word: string): boolean {
   const name = word.slice(word.lastIndexOf('/') + 1)
-  return name === 'gh' || name === 'gh-stack' || isShellWord(word)
+  return name === 'gh' || name === 'gh-stack' || isShellWord(word) || mayStartOpaqueGhCheck(word)
 }

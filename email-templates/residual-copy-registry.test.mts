@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest'
 
 const directory = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(directory, '..')
-const allowedByLocale = new Set(['crm-outreach-copy.mts', 'crm-outreach.tsx'])
+const allowedByLocale = new Set<string>()
 
 function findResidualProductCopy(root: string): string[] {
   return readdirSync(root, { encoding: 'utf8', recursive: true }).filter(name => {

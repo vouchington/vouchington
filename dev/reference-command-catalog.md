@@ -101,8 +101,8 @@ one-at-a-time operations owned by the canonical
 Stage each note in a non-empty UTF-8 file, then append it with:
 
 ```bash
-node dev/blackboard-journal.mts append --file <note-file> [--session-id <id>] [--parent-session-id <id>] [--agent <name>] [--version <version>] [--timestamp <iso8601>]
-node dev/blackboard-journal.mts append --file <note-file> --root-codex [--new-root-codex-session] [--agent codex] [--version <version>] [--timestamp <iso8601>]
+node dev/blackboard-journal.mts append --file <note-file> [--session-id <id>] [--parent-session-id <id>] [--agent <name>] [--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]
+node dev/blackboard-journal.mts append --file <note-file> --root-codex [--new-root-codex-session] [--agent codex] [--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]
 ```
 
 Read a session's journal entries back (oldest first) with:

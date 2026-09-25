@@ -27,6 +27,20 @@ demonstrated failure, documented with a one-line comment (see `toolingTestBudget
 slower test takes a per-test `{ timeout: ... }` override instead of raising its whole project's
 budget, so one slow test doesn't mask a regression in every other test in that project.
 
+The same headroom rule applies one layer down: a test that spawns a child process with its own
+timeout must keep that timeout strictly below its project's `testTimeout`, and must report the
+child's signal/timeout state on the result instead of coercing a kill into a generic failure code —
+see `RUN_TMUX_TIMEOUT_MS` and `RunTmuxResult` in
+[`dev/test-helpers/run-tmux.mts`](../../dev/test-helpers/run-tmux.mts) for the pattern.
+
+A first exec of a freshly written executable file is expensive on macOS — roughly 200ms idle, over
+1s under full-suite load — while re-execing an already-run file costs single-digit milliseconds. A
+harness that writes a fresh set of fake executables per test can burn through a child process's
+timeout budget under load. Build and warm one set of fakes per test file in `beforeAll`, then hand
+each test a symlink to the warmed files instead of writing new ones, and symlink any pass-through
+tool straight to its real system binary rather than copying it. See
+[`dev/test-helpers/tmux-fake-bin.mts`](../../dev/test-helpers/tmux-fake-bin.mts) for the pattern.
+
 Run any single project directly: `pnpm exec vitest run --project <name>`.
 
 Reusable root scripts call [`ci/run-vitest-project-group.mts`](../../ci/run-vitest-project-group.mts), whose typed catalog is also used by local coverage. The runner starts one Vitest process for the selected projects and removes exactly one leading separator inserted by `pnpm run`, so both `pnpm run test:backend:default -- <files>` and forwarded Vitest flags work. Keep durable scripts project-based; filename lists are appropriate only for one-off local commands.

@@ -12,6 +12,12 @@ export type OptionGrammar = {
   shortOptionalArgument?: string
   /** Short letters whose argument is required: attached (`-C/tmp`) or the next word. */
   shortRequiredArgument?: string
+  /**
+   * Single-dash multi-character long options (BSD `arch`: `-arm64`, `-arch NAME`), tried before a
+   * short cluster so `-arm64e` parses as one option rather than letters that can collide with a
+   * registered short one (`-e`).
+   */
+  singleDashLong?: Readonly<Record<string, LongOptionArgument>>
 }
 
 export type ParsedOption = { name: string; value: string | undefined }
@@ -50,8 +56,10 @@ export function parseOptions(
     }
     if (!word.startsWith('-') || word === '-') break
     const next = word.startsWith('--')
-      ? parseLongOption(words, cursor, grammar, options)
-      : parseShortCluster(words, cursor, grammar, options)
+      ? parseLongStyleOption(words, cursor, 2, grammar.long ?? {}, options)
+      : singleDashLongMatch(word, grammar.singleDashLong)
+        ? parseLongStyleOption(words, cursor, 1, grammar.singleDashLong ?? {}, options)
+        : parseShortCluster(words, cursor, grammar, options)
     if (next === null) return null
     cursor = next
   }
@@ -59,23 +67,35 @@ export function parseOptions(
   return { next: cursor, options }
 }
 
-function parseLongOption(
+function singleDashLongMatch(
+  word: string,
+  table: Readonly<Record<string, LongOptionArgument>> | undefined,
+): boolean {
+  if (table === undefined) return false
+  const written = word.indexOf('=') === -1 ? word.slice(1) : word.slice(1, word.indexOf('='))
+  return resolveLongName(written, table) !== undefined
+}
+
+// Shared by `--long` options (prefixLength 2) and BSD single-dash long options like `arch`'s
+// `-arm64`/`-arch NAME` (prefixLength 1).
+function parseLongStyleOption(
   words: readonly string[],
   cursor: number,
-  grammar: OptionGrammar,
+  prefixLength: number,
+  table: Readonly<Record<string, LongOptionArgument>>,
   options: ParsedOption[],
 ): number | null {
   const word = words[cursor]
   const equalsIndex = word.indexOf('=')
-  const written = equalsIndex === -1 ? word.slice(2) : word.slice(2, equalsIndex)
+  const written =
+    equalsIndex === -1 ? word.slice(prefixLength) : word.slice(prefixLength, equalsIndex)
   const attached = equalsIndex === -1 ? undefined : word.slice(equalsIndex + 1)
-  const long = grammar.long ?? {}
-  const name = resolveLongName(written, long)
+  const name = resolveLongName(written, table)
   if (name === undefined) {
     options.push({ name: written, value: attached })
     return cursor + 1
   }
-  if (long[name] === 'required' && attached === undefined) {
+  if (table[name] === 'required' && attached === undefined) {
     const value = words[cursor + 1]
     if (value === undefined) return null
     options.push({ name, value })

@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
-import * as gmailSmtp from '@modules/gmail-smtp'
 import { processSendEmailAddressLoginToken } from './authentication.mts'
 import { processSendCommunityInviteEmail } from './community-invite.mts'
-import { processSendCrmEmail } from './crm-email.mts'
 import { processSendDataExportReadyEmail } from './data-export-ready.mts'
 import { processSendEmailVerificationToken } from './email-verification.mts'
 import { processSendSupportEmail } from './support-email.mts'
@@ -160,57 +158,5 @@ describe('processSendSupportEmail', () => {
         text: expect.stringContaining('- El equipo de soporte de Voucha'),
       }),
     )
-  })
-})
-
-describe('processSendCrmEmail', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
-    vi.spyOn(gmailSmtp, 'sendGmailEmail').mockResolvedValue({} as never)
-  })
-
-  it('renders CRM outreach email and sends via SES when provider is ses', async () => {
-    await processSendCrmEmail(
-      { emailAddress: 'tests+contact@voucha.ai' },
-      {
-        contactName: 'Bob',
-        senderName: 'Alice',
-        bodyHtml: '<p>Hello Bob</p>',
-        provider: 'ses',
-      },
-    )
-
-    expect(ses.sendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: 'tests+contact@voucha.ai',
-        subject: expect.any(String),
-        html: expect.any(String),
-        text: expect.any(String),
-      }),
-    )
-    expect(gmailSmtp.sendGmailEmail).not.toHaveBeenCalled()
-  })
-
-  it('sends via Gmail SMTP when provider is gmail_smtp', async () => {
-    await processSendCrmEmail(
-      { emailAddress: 'tests+contact@voucha.ai' },
-      {
-        contactName: 'Bob',
-        senderName: 'Alice',
-        bodyHtml: '<p>Hello Bob</p>',
-        provider: 'gmail_smtp',
-      },
-    )
-
-    expect(gmailSmtp.sendGmailEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: 'tests+contact@voucha.ai',
-        subject: expect.any(String),
-        html: expect.any(String),
-        text: expect.any(String),
-      }),
-    )
-    expect(ses.sendEmail).not.toHaveBeenCalled()
   })
 })

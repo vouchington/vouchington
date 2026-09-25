@@ -20,7 +20,7 @@ const parsed = parseLLMJsonResponse<MyType>(text)
 
 Standard iterative tool-calling loop. Handles termination, final fallback call, and observability hooks automatically.
 
-**Used by:** `crm-outreach`, `customer-support`
+**Used by:** `customer-support`
 
 ```typescript
 import { runToolLoop, buildAgentTools } from '@agents/_shared'
