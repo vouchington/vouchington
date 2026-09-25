@@ -45,10 +45,10 @@ full-auto session, leaves only the first two (see
 [the decision flow](reference-merge-authority-decision-flow.md)).
 
 The hook blocks coarsely and allows precisely. A block may overmatch, and any block in a command
-beats an allow. In automation, for example, any command that names `gh` together with a merge
-blocks, however it is wrapped or quoted; the
-[decision flow](reference-merge-authority-decision-flow.md) names its accepted overmatches and known
-misses. The one allow is a single plain merge in an attended Claude session (see
+beats an allow. In automation, for example, any command text the hook reads that names `gh`
+together with a merge blocks, quoted or not; the
+[decision flow](reference-merge-authority-decision-flow.md) names its accepted overmatches and the
+forms it never reads. The one allow is a single plain merge in an attended Claude session (see
 [Merge Authority](merge-authority.md)). Rules for changing the hooks live in
 [dev/codex-hooks/CLAUDE.md](../../dev/codex-hooks/CLAUDE.md).
 
