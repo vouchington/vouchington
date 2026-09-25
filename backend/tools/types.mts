@@ -39,7 +39,13 @@ export type ToolApiEndpoint = {
 export type ToolMeta = {
   // Which surfaces this tool is exposed on. Defaults to ['internal'] when absent.
   surfaces: readonly ToolSurface[]
-  // Minimum membership plan required. Default 'free'. No tools plan-gated initially (mechanism only).
+  // Minimum membership plan required to dispatch this tool on the external user `mcp` surface
+  // (`tools/list`/`tools/call`; see backend/tools/registry/select.mts#isToolAllowedForPlan).
+  // Default 'free'. This paywall applies only at that dispatch boundary: it never gates
+  // native/client invocation, direct REST routes, or internal-agent calls. Must stay unset (or
+  // 'free') on any tool exposed on `admin_mcp`, including a tool that also carries `mcp` — a
+  // single field cannot express separate per-surface plans, so a mutating tool cannot share the
+  // `mcp` and `admin_mcp` surfaces until the metadata model can.
   plan?: 'free' | 'plus' | 'pro'
   annotations?: ToolAnnotations
   // Canonical scopes required for an externally callable surface. Internal and client-only tools need none.

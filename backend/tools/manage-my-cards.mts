@@ -61,6 +61,7 @@ export default createManageEntityTool({
   removeFn: (user, id) => deleteIndividualCardById(user, user, id),
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    plan: 'plus',
     requiredScopes: { mcp: ['cards:read', 'cards:write'] },
     annotations: { destructiveHint: true },
     api: [

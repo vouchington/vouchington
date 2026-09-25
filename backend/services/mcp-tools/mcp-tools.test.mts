@@ -13,13 +13,17 @@ import {
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 
+// Plan-gating coverage (free/plus/pro listing, denial-before-invocation, and the synthetic
+// pro-only fixture) lives in ./plan-gating.test.mts to keep this file under the max-lines budget.
 type McpUser = PrivateUser & { membership_plan: 'plus' | 'pro' | null }
 
 describe('listMcpToolsForUser', () => {
   let user: McpUser
+  let plusUser: McpUser
 
   beforeAll(async () => {
     user = { ...(await createTestUser()), membership_plan: null }
+    plusUser = { ...(await createTestUser()), membership_plan: 'plus' }
   })
 
   it('hides tools whose explicit resource scope is absent', () => {
@@ -33,7 +37,7 @@ describe('listMcpToolsForUser', () => {
       tool => tool.name,
     )
     const writeNames = listMcpToolsForUser(
-      user,
+      plusUser,
       ['cards:read', 'cards:write'],
       USER_MCP_SERVER_CONFIG,
     ).map(tool => tool.name)
@@ -44,13 +48,13 @@ describe('listMcpToolsForUser', () => {
   })
 
   it('keeps legacy broad grants compatible', () => {
-    const readOnly = listMcpToolsForUser(user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG)
+    const readOnly = listMcpToolsForUser(plusUser, ['mcp.user:read'], USER_MCP_SERVER_CONFIG)
     const withWrite = listMcpToolsForUser(
-      user,
+      plusUser,
       ['mcp.user:read', 'mcp.user:write'],
       USER_MCP_SERVER_CONFIG,
     )
-    expect(withWrite.length).toBeGreaterThanOrEqual(readOnly.length)
+    expect(withWrite.length).toBeGreaterThan(readOnly.length)
   })
 
   it('returns array of McpToolShape with name and inputSchema', () => {
@@ -86,9 +90,11 @@ describe('listMcpToolsForUser', () => {
 
 describe('callMcpTool', () => {
   let user: McpUser
+  let plusUser: McpUser
 
   beforeAll(async () => {
     user = { ...(await createTestUser()), membership_plan: null }
+    plusUser = { ...(await createTestUser()), membership_plan: 'plus' }
   })
 
   it('rejects serialized tool results over the MCP response limit', () => {
@@ -174,8 +180,10 @@ describe('callMcpTool', () => {
 
     if (!writeTool) return // skip if no write tools exist
 
+    // Use a plus-plan caller so the write tool's own plan gate doesn't pre-empt the scope check
+    // this test targets.
     await expect(
-      callMcpTool(writeTool.schema.name, {}, user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
+      callMcpTool(writeTool.schema.name, {}, plusUser, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
     ).rejects.toMatchObject({
       message: expect.stringContaining('requires scopes'),
     })
