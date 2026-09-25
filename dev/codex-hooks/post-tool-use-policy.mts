@@ -1,8 +1,6 @@
 import {
   autoFormatChecker,
   dataPwSpecChecker,
-  docSizeChecker,
-  maxLinesChecker,
   nonWebMockPolicyChecker,
   servicePackageChecker,
   type Checker,
@@ -12,8 +10,6 @@ import {
 export type { PostToolUseWarning } from './post-tool-use-checkers.mts'
 
 const CHECKERS: Checker[] = [
-  maxLinesChecker,
-  docSizeChecker,
   autoFormatChecker,
   nonWebMockPolicyChecker,
   dataPwSpecChecker,
