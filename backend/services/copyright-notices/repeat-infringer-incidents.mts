@@ -104,6 +104,7 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
   const incident = rows[0]
   assert(incident, 404, 'Copyright repeat-infringer incident not found')
   const { rows: inserted } = await transaction<{ id: string }>(sql`
+    /* recordCopyrightRepeatInfringerDisposition:insert */
     INSERT INTO copyright_repeat_infringer_dispositions (
       copyright_repeat_infringer_incident_id, disposition, rationale_ciphertext, recorded_at,
       recorded_by_id
@@ -128,12 +129,14 @@ export async function getCopyrightRepeatInfringerAccount(
     copyright_notice_id: string
     operative: boolean
   }>(sql`
+    /* getCopyrightRepeatInfringerAccount:incidents */
     SELECT id, copyright_notice_id, operative
     FROM copyright_repeat_infringer_incidents
     WHERE account_user_id = ${accountUserId}
     ORDER BY copyright_notice_id
   `)
   const { rows: reviews } = await read<{ id: string }>(sql`
+    /* getCopyrightRepeatInfringerAccount:openReview */
     SELECT id FROM copyright_repeat_infringer_reviews
     WHERE account_user_id = ${accountUserId} AND outcome IS NULL
   `)
