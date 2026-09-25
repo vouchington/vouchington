@@ -27,14 +27,14 @@ export function shellReadsStdinAt(tokens: string[], operatorIndex: number): bool
 }
 
 // A shell reads stdin as its script unless a `-c` script comes before its first operand. The hook
-// also fails closed on a compound command (`{ bash; }`, `(bash)`, `done`), an `env -S` string, a
-// wrapper it cannot read, and a command word an expansion chooses (`$SHELL`).
+// also fails closed on a compound command (`{ bash; }`, `(bash)`, `done`), a wrapper option it
+// cannot read (`env -S`), and a command word an expansion chooses (`$SHELL`).
 function segmentMayRunStdin(tokens: string[], start: number, end: number): boolean {
   if (tokens[start - 1] === ')' || tokens[start - 1] === '}') return true
   const words = withoutRedirections(tokens.slice(start, end))
   if (words === null || words.length === 0 || COMPOUND_CLOSERS.has(words[0])) return true
   const read = readCommandPrefix(words)
-  if (read === null || read.prefix.splitString) return true
+  if (read === null) return true
   const command = words[read.commandIndex]
   if (command === undefined || EXPANSION.test(command)) return true
   return isShellWord(command) && shellScriptOperandIndex(words, read.commandIndex) === undefined

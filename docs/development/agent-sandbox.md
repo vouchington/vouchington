@@ -23,7 +23,7 @@ Every agent tool call in this repo passes through two layers that don't overlap:
 1. **The PreToolUse policy hook** (`dev/codex-hooks/pre-tool-use.mts` → `policy.mts`) — semantic
    gating: force-push, `--amend`, dev-server launches, hook self-mutation, and merge
    authority (see [Merge Authority](merge-authority.md)). Wired identically for Claude
-   (`.claude/settings.json`'s `PreToolUse` hook, line 232) and Codex, and it fires **regardless** of
+   (`.claude/settings.json`'s `PreToolUse` hook) and Codex, and it fires **regardless** of
    whether the command is OS-sandboxed.
 2. **The OS sandbox** (Landlock/seccomp on Linux, the App Sandbox on macOS) — filesystem
    read/write scoping and network allowlisting at the kernel/OS level. This is what
@@ -42,7 +42,10 @@ obfuscated or indirect forms, and bypass reports of that kind are out of scope. 
 the OS sandbox (layer 2), the harness permission prompts, and branch protection on `main`.
 
 The hook blocks coarsely and allows precisely. A block may overmatch, and any block in a command
-beats an allow. The one allow is a single plain merge in an attended Claude session (see
+beats an allow. In automation, for example, any command that names `gh` together with a merge
+blocks, however it is wrapped or quoted; the
+[decision flow](reference-merge-authority-decision-flow.md) names its accepted overmatches and known
+misses. The one allow is a single plain merge in an attended Claude session (see
 [Merge Authority](merge-authority.md)). Rules for changing the hooks live in
 [dev/codex-hooks/CLAUDE.md](../../dev/codex-hooks/CLAUDE.md).
 

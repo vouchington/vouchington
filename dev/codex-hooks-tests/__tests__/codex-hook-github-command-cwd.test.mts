@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
 import { commandCwd } from '../../codex-hooks/policy/github-command-cwd.mts'
-import { isCommandPositionInvocation } from '../../codex-hooks/policy/github-command-position.mts'
+import { commandPrefixAt } from '../../codex-hooks/policy/github-command-position.mts'
 import {
   findGitHubWorkflowBlock,
   type GitHubCommandContext,
@@ -24,7 +24,7 @@ function tokensOf(command: string): string[] {
 
 function ghIndex(tokens: string[]): number {
   return tokens.findIndex(
-    (token, index) => token === 'gh' && isCommandPositionInvocation(tokens, index),
+    (token, index) => token === 'gh' && commandPrefixAt(tokens, index) !== null,
   )
 }
 
@@ -109,7 +109,6 @@ describe('commandCwd sequential cd tracking', () => {
     'cd /other extra; gh pr create --draft --fill',
     'env -C "$OTHER" gh pr create --draft --fill',
     'cd $OTHER && env -C b gh pr create --draft --fill',
-    'env -S -i gh pr create --draft --fill',
   ])('leaves cwd unknown for %s', command => {
     expect(cwdFor(command)).toBeUndefined()
   })

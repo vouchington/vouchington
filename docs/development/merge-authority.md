@@ -1,7 +1,9 @@
 # Merge Authority
 
 **The rule:** merging (`gh pr merge`, `gh stack merge`, `gh api .../merge`, `gh api graphql` merge/auto-merge
-mutations) is hard-blocked for every agent tool call running in **GitHub Actions**. In an
+mutations) is hard-blocked for every agent tool call running in **GitHub Actions**. That check is
+coarse, so it also blocks some commands that only mention a merge; see the
+[decision flow](reference-merge-authority-decision-flow.md). In an
 **attended interactive Claude session**, the human has already made the merge decision by asking
 for it in their own message, so a command that is exactly one `gh pr merge`, or one `gh stack
 merge` with a PR number, proceeds without a further tool-level prompt. The hook has no opinion on

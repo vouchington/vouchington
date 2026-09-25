@@ -1,8 +1,5 @@
-import { type ParsedOption, parseOptions } from './shell-option-grammar.mts'
 import { isShellRedirectionOperatorToken } from './shell-redirections.mts'
 import { isShellAssignment, plainShellAssignment } from './shell-token-utils.mts'
-import { WRAPPERS } from './shell-wrapper-grammars.mts'
-import { wrapperCommandStart } from './shell-wrapper-subcommand.mts'
 
 /** What a recognized wrapper chain before a command word changes about how that command runs. */
 export type CommandPrefix = {
@@ -10,12 +7,13 @@ export type CommandPrefix = {
   chdir: string[]
   /** Assignments and `env -u` unsets the command sees. */
   env: Record<string, string | undefined>
-  /** An `env -S` string can carry its own `-C`, so the command's cwd is unknown. */
-  splitString: boolean
   /** Wrapper basenames, outermost first. */
   wrappers: string[]
-  /** `xargs` replacement strings (`-I`, `-i`, `-J`, `--replace`) that stdin items fill in. */
-  xargsReplacements: string[]
+}
+
+type WrapperGrammar = {
+  arguments: Readonly<Record<string, 'chdir' | 'unset' | 'other'>>
+  flags: readonly string[]
 }
 
 // Reserved words that may open a simple command without choosing which program it runs.
@@ -35,10 +33,31 @@ const SHELL_CONTROL_PREFIXES = new Set([
 const COMPOUND_OPENERS = new Set(['{', 'if', 'until', 'while'])
 
 /**
+ * The only wrappers the hook reads through, by basename, with each option spelling they accept.
+ * An `arguments` option takes one argument, attached (`-C/tmp`, `--chdir=/tmp`) or the next word.
+ * Any other option (`env -S`, a flag cluster) and every other wrapper (`timeout`, `sudo`, `xargs`)
+ * leaves the command word unread. See the hook threat model in docs/development/agent-sandbox.md.
+ */
+const WRAPPERS: ReadonlyMap<string, WrapperGrammar> = new Map<string, WrapperGrammar>([
+  ['builtin', { arguments: {}, flags: [] }],
+  ['command', { arguments: {}, flags: ['-p'] }],
+  [
+    'env',
+    {
+      arguments: { '--chdir': 'chdir', '--unset': 'unset', '-C': 'chdir', '-u': 'unset' },
+      flags: ['-', '-i', '--ignore-environment'],
+    },
+  ],
+  ['exec', { arguments: { '-a': 'other' }, flags: ['-c', '-l'] }],
+  ['nohup', { arguments: {}, flags: [] }],
+  ['time', { arguments: {}, flags: ['-p'] }],
+])
+
+/**
  * Parses the words between a command segment's start and a command word. Returns null when they
  * are not a recognized wrapper chain, i.e. the command word is an argument rather than the
- * program the shell runs. Wrappers chain in any order (`nohup env -C /tmp timeout 5 gh`) and match
- * by basename (`/usr/bin/env`).
+ * program the shell runs. Wrappers chain in any order (`nohup env -C /tmp gh`) and match by
+ * basename (`/usr/bin/env`).
  */
 export function parseCommandPrefix(prefixWords: readonly string[]): CommandPrefix | null {
   const words = withoutRedirections(prefixWords)
@@ -49,20 +68,13 @@ export function parseCommandPrefix(prefixWords: readonly string[]): CommandPrefi
 
 /**
  * Reads the wrapper chain that opens a simple command's words (redirections already removed) and
- * finds the command word it runs. `commandIndex` is `words.length` when the chain consumes every
- * word, as `env -S 'bash -s'` does. Returns null when a wrapper's options are malformed or only
+ * finds the command word it runs. Returns null when a wrapper's options are unrecognized or only
  * describe the command (`command -v gh`).
  */
 export function readCommandPrefix(
   words: readonly string[],
 ): { commandIndex: number; prefix: CommandPrefix } | null {
-  const prefix: CommandPrefix = {
-    chdir: [],
-    env: {},
-    splitString: false,
-    wrappers: [],
-    xargsReplacements: [],
-  }
+  const prefix: CommandPrefix = { chdir: [], env: {}, wrappers: [] }
   let controlAllowed = true
   let cursor = 0
   while (cursor < words.length) {
@@ -87,16 +99,10 @@ export function readCommandPrefix(
       continue
     }
     const name = word.slice(word.lastIndexOf('/') + 1)
-    const wrapper = WRAPPERS.get(name)
-    if (wrapper === undefined) return { commandIndex: cursor, prefix }
-    const parsed = parseOptions(words, cursor + 1, wrapper.grammar)
-    if (parsed === null || parsed.options.some(option => wrapper.describeOnly?.has(option.name))) {
-      return null
-    }
-    const commandStart = wrapperCommandStart(words, parsed.next, wrapper)
-    if (commandStart === null) return null
-    cursor = commandStart
-    applyWrapperOptions(prefix, name, parsed.options)
+    const grammar = WRAPPERS.get(name)
+    if (grammar === undefined) return { commandIndex: cursor, prefix }
+    cursor = readWrapperOptions(words, cursor + 1, grammar, prefix)
+    if (cursor < 0) return null
     prefix.wrappers.push(name)
     // The `time` keyword times a whole pipeline, so `time ! gh` is still a command.
     controlAllowed = name === 'time'
@@ -122,17 +128,28 @@ export function withoutRedirections(words: readonly string[]): string[] | null {
   return argv
 }
 
-function applyWrapperOptions(prefix: CommandPrefix, name: string, options: ParsedOption[]): void {
+// Applies one wrapper's options to `prefix` and returns the index after them (right after `--` or
+// at the first operand), or -1 for an option outside the grammar. GNU and BSD env keep only the
+// last -C, relative to the directory env started in.
+function readWrapperOptions(
+  words: readonly string[],
+  start: number,
+  grammar: WrapperGrammar,
+  prefix: CommandPrefix,
+): number {
   let chdir: string | undefined
-  for (const option of options) {
-    if (name === 'xargs' && option.name === 'replace') {
-      prefix.xargsReplacements.push(option.value ?? '{}')
-    }
-    if (name !== 'env') continue
-    if (option.name === 'chdir') chdir = option.value
-    if (option.name === 'unset' && option.value !== undefined) prefix.env[option.value] = undefined
-    if (option.name === 'split-string') prefix.splitString = true
+  let cursor = start
+  while (words[cursor]?.startsWith('-')) {
+    const word = words[cursor++]
+    if (word === '--') break
+    if (grammar.flags.includes(word)) continue
+    const spelling = Object.keys(grammar.arguments).find(option => word.startsWith(option))
+    const attached = spelling === undefined ? '' : word.slice(spelling.length).replace(/^=/, '')
+    const value = attached || words[cursor++]
+    if (spelling === undefined || value === undefined) return -1
+    if (grammar.arguments[spelling] === 'unset') prefix.env[value] = undefined
+    if (grammar.arguments[spelling] === 'chdir') chdir = value
   }
-  // GNU and BSD env keep only the last -C, relative to the directory env started in.
   if (chdir !== undefined) prefix.chdir.push(chdir)
+  return cursor
 }

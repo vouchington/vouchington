@@ -1,5 +1,4 @@
 import type { GitHubCommandContext } from './github-closing-refs.mts'
-import { extractWrapperPayloads } from './github-wrapper-payloads.mts'
 import { extractShellCommandArguments } from './shell-commands.mts'
 import { extractShellCommandSubstitutions } from './shell-command-substitutions.mts'
 import { stripNonShellHeredocBodies } from './shell-heredoc.mts'
@@ -28,7 +27,6 @@ export function commandsToInspectForGitHubPolicy(command: string): string[] {
       ...extractShellCommandSubstitutions(candidate),
       ...shellBodies,
       ...bodySubstitutions,
-      ...extractWrapperPayloads(candidate),
     )
   }
 
