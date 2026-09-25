@@ -24,13 +24,14 @@ A source is a topic with `topic_type = 'rss_feed'` plus a 1:1 extension row in `
 
 **`rss_feeds` extension row:**
 
-| Field             | Notes                                                                   |
-| ----------------- | ----------------------------------------------------------------------- |
-| `rss_feed_url_id` | FK to the `urls` row for the feed URL                                   |
-| `home_page_url`   | Source homepage URL (resolved at service layer, not a direct DB column) |
-| `feed_type`       | `article` \| `podcast` \| `video` \| `mixed`                            |
-| `is_enabled`      | Whether crawling is active                                              |
-| `topic_id`        | FK back to `topics.id`                                                  |
+| Field                                        | Notes                                                                                                   |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `rss_feed_url_id`                            | FK to the `urls` row for the feed URL                                                                   |
+| `home_page_url`                              | Source homepage URL (resolved at service layer, not a direct DB column)                                 |
+| `feed_type`                                  | `article` \| `podcast` \| `video` \| `mixed`                                                            |
+| `is_enabled`                                 | Whether crawling is active                                                                              |
+| `topic_id`                                   | FK back to `topics.id`                                                                                  |
+| `created_via`, `created_via_oauth_client_id` | Immutable creation channel and OAuth client; see [Content provenance](../content/content-provenance.md) |
 
 **Display name** (never show raw `topics.name`):
 
