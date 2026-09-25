@@ -95,6 +95,21 @@ prefiltered candidates use prompt defaults. A repeated identical batch ID return
 decision; conflicting reuse fails closed. No generic classifier code casts votes, applies labels,
 tags topics, or changes story membership.
 
+### Measurer-less single-call executor
+
+`executeSingleCallClassifierDecision` (`@agents/classifiers/execute-single-call.mts`) is a
+sharding-free twin of `executeClassifierDecision` for classifier families that have no exact,
+synchronous context measurer for their active provider/model — the C6 tagging autotagger's Noul
+classifier dispatch (`backend/agents/autotagger/dispatch-classifier-execute.mts`) is the current
+caller. It shares validation, mapping, and persistence with the sharded executor through a common
+base input type, but sends every binding as a single request instead of packing shards against a
+token budget: it makes no character, byte, or candidate-count estimate at all, rather than
+approximating one. The tradeoff this accepts: an oversized-context provider rejection is not
+caught or packed around ahead of time — it surfaces as an ordinary `StructuredDecisionError`, and
+the caller's own retry/queue semantics (for C6, the receipt lease expiring and a fresh dispatch
+attempt) are what recover from it, rather than the call layer itself ever splitting an
+over-budget request into shards.
+
 ## Related
 
 - [AI agents](ai-agents.md)
