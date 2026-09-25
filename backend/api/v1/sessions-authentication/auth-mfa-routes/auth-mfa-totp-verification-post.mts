@@ -11,6 +11,7 @@ import { verifyTotpCode } from '@services/totp'
 import { getPrivateUserByAny } from '@services/users/get'
 import app from '../../../app.mts'
 import { getDeviceContext } from '../device-context.mts'
+import { validateRequestContract } from '../../../response-helpers.mts'
 
 app.route('/api/v1/auth/mfa/totp/verification').post(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('POST:/api/v1/auth/mfa/totp/verification')
@@ -19,23 +20,29 @@ app.route('/api/v1/auth/mfa/totp/verification').post(async (ctx: Context) => {
     login_attempt_id?: string
     code?: string
   }
-  ctx.assert(body.login_attempt_id, 422, 'login_attempt_id is required')
+  // Type-guarded before the attempt-limit counter below so a wrong-typed id still counts against
+  // it instead of reaching the lookup with a non-string key.
+  const loginAttemptId =
+    typeof body.login_attempt_id === 'string' ? body.login_attempt_id : undefined
+  ctx.assert(loginAttemptId, 422, 'login_attempt_id is required')
   ctx.assert(body.code, 422, 'code is required')
 
-  const attempt = await peekLoginAttempt(body.login_attempt_id)
+  const attempt = await peekLoginAttempt(loginAttemptId)
   ctx.assert(attempt, 401, 'Login attempt expired or invalid')
-  const alreadyLimited = await isMfaLoginAttemptLimited(body.login_attempt_id, attempt)
+  const alreadyLimited = await isMfaLoginAttemptLimited(loginAttemptId, attempt)
   if (alreadyLimited) ctx.throw(429, 'Too many invalid verification codes. Please try again later.')
+
+  validateRequestContract(ctx, 'POST:/api/v1/auth/mfa/totp/verification', { body })
 
   const valid = await verifyTotpCode(attempt.userId, body.code)
   if (!valid) {
-    const limited = await recordFailedMfaLoginAttempt(body.login_attempt_id, attempt)
+    const limited = await recordFailedMfaLoginAttempt(loginAttemptId, attempt)
     if (limited) ctx.throw(429, 'Too many invalid verification codes. Please try again later.')
   }
   ctx.assert(valid, 401, 'Invalid verification code')
 
   // Consume only after successful validation so failed codes don't destroy the attempt
-  const consumedAttempt = await getAndDeleteLoginAttempt(body.login_attempt_id)
+  const consumedAttempt = await getAndDeleteLoginAttempt(loginAttemptId)
   ctx.assert(consumedAttempt, 401, 'Login attempt expired or invalid')
 
   const user = await getPrivateUserByAny(consumedAttempt.userId)

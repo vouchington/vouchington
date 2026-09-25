@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getExpectedOrigin } from '@modules/api-utils'
 import { assertNotSuspended } from '@services/users/suspension'
 import {
@@ -46,6 +46,7 @@ app.route('/api/v1/auth/passkeys/registration/verify').post(async (ctx: Context)
   await ctx.applyRouteRateLimit('POST:/api/v1/auth/passkeys/registration/verify')
 
   const body = (await ctx.request.json('100kb')) as { response?: unknown; name?: string }
+  validateRequestContract(ctx, 'POST:/api/v1/auth/passkeys/registration/verify', { body })
   ctx.assert(body.response, 422, 'response is required')
   const expectedOrigin = getExpectedOrigin(ctx.req)
   const passkey = await verifyPasskeyRegistration(
@@ -90,6 +91,7 @@ app.route('/api/v1/auth/passkeys/:id').patch(async (ctx: Context) => {
   ctx.assert(ctx.params.id, 400, 'id required')
 
   const body = (await ctx.request.json('100kb')) as { name?: string }
+  validateRequestContract(ctx, 'PATCH:/api/v1/auth/passkeys/:id', { body })
   const name = (body.name ?? '').trim()
   ctx.assert(name.length > 0 && name.length <= 100, 422, 'name must be 1–100 characters')
 
@@ -108,6 +110,7 @@ app.route('/api/v1/auth/passkeys/:id').delete(async (ctx: Context) => {
   let reAuthToken: string | undefined
   if (ctx.request.is('json')) {
     const body = (await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string }
+    validateRequestContract(ctx, 'DELETE:/api/v1/auth/passkeys/:id', { body })
     reAuthToken = body.re_auth_token
   }
 
