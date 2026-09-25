@@ -38,6 +38,34 @@ describe('buildWorkerOriginRequest client information', () => {
     expect(originRequest.headers.get('x-voucha-app-version')).toBe('edge-release')
   })
 
+  it('compares browser evidence with the incoming request origin and method', () => {
+    const post = (origin: string) =>
+      build(
+        new Request('https://voucha.ai/api/v1/posts', {
+          headers: { origin, 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin' },
+          method: 'POST',
+        }),
+      )
+
+    expect(post('https://voucha.ai').headers.get('x-voucha-client')).toBe('web')
+    expect(post(env.BACKEND_ORIGIN!).headers.get('x-voucha-client')).toBeNull()
+  })
+
+  it('stamps cross-site sign-in callback navigations', () => {
+    const originRequest = build(
+      new Request('https://voucha.ai/api/v1/auth/oauth/google/broker-callback?code=x', {
+        headers: {
+          referer: 'https://accounts.example/',
+          'sec-fetch-dest': 'document',
+          'sec-fetch-mode': 'navigate',
+          'sec-fetch-site': 'cross-site',
+        },
+      }),
+    )
+
+    expect(originRequest.headers.get('x-voucha-client')).toBe('web')
+  })
+
   it('preserves native metadata through backend origin construction', () => {
     const originRequest = build(
       new Request('https://voucha.ai/api/v1/posts', {
