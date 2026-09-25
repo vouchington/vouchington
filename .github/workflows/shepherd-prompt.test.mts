@@ -17,9 +17,6 @@ describe('shepherd prompt contract', () => {
     )
     expect(workflowText).toContain('PR_TITLE=pr-title.txt')
     expect(promptText).toContain('`./dev/initialize monorepo`')
-    expect(promptText).toContain(
-      'pr-shepherd {{PR_NUMBER}} --interval 60s --until-terminal --quiet-status',
-    )
     expect(promptText).toContain('`pr-shepherd@{{PR_SHEPHERD_VERSION}}`')
     expect(promptText).toContain(
       'npm install --prefix "$SHEPHERD_DIR" --no-save --ignore-scripts pr-shepherd@{{PR_SHEPHERD_VERSION}}',

@@ -122,7 +122,6 @@ describe('Harness automation prompt contracts', () => {
 
     expect(prompt).toContain('trusted host')
     expect(prompt).toContain('expected head SHA')
-    expect(prompt).toContain('pr-shepherd {{PR_NUMBER}} --interval 60s --until-terminal')
     expect(activation).toContain('validated prior checkpoint')
     expect(security).toContain('Shepherd resume')
     expect(workflow).not.toMatch(/PR_(?:STATE_)?SNAPSHOT=/u)

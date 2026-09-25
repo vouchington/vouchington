@@ -24,7 +24,7 @@ mutating the PR, create a fresh temporary directory outside the worktree, run
 from that directory, and require `"$SHEPHERD_DIR/node_modules/.bin/pr-shepherd" --version` to print
 exactly `{{PR_SHEPHERD_VERSION}}`. Then, from the PR worktree, invoke that absolute binary for every
 `pr-shepherd` command below. Run one
-`pr-shepherd {{PR_NUMBER}} --interval 60s --until-terminal --quiet-status` process and follow its
+`pr-shepherd {{PR_NUMBER}} --until-terminal --quiet-status` process and follow its
 printed `## Instructions` exactly. Use a 4.5-minute timeout only for a bounded wait. `FIX_CODE` means
 make and validate the required changes on `{{PR_HEAD_REF}}`. `CANCEL`, `CLOSED`, and `ESCALATE` mean stop and
 report. Never overwrite concurrent work.
