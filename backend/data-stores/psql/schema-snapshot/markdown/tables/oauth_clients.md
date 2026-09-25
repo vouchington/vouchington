@@ -6,22 +6,25 @@ Dynamically registered clients for the Voucha OAuth authorization server.
 
 Not partitioned — growth: unbounded.
 
-| Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                  |
-| ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
-| `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                          |
-| `client_id`                  | `text`                     | no       |                              |          |           |           | Public OAuth client identifier issued at registration.                   |
-| `owner_user_id`              | `uuid`                     | yes      |                              |          |           |           | Voucha user that owns the client when registration is authenticated.     |
-| `client_name`                | `text`                     | no       |                              |          |           |           | Display-safe client name shown during consent.                           |
-| `client_type`                | `text`                     | no       |                              |          |           |           | Public or confidential OAuth client classification.                      |
-| `token_endpoint_auth_method` | `text`                     | no       |                              |          |           |           | Client authentication method accepted by token and revocation endpoints. |
-| `redirect_uris`              | `text[]`                   | no       |                              |          |           |           | Exact validated redirect URIs registered for the client.                 |
-| `grant_types`                | `text[]`                   | no       |                              |          |           |           | OAuth grant types registered for the client.                             |
-| `response_types`             | `text[]`                   | no       |                              |          |           |           | OAuth authorization response types registered for the client.            |
-| `scopes`                     | `text[]`                   | no       |                              |          |           |           | Maximum canonical scope set the client may request.                      |
-| `client_secret_hash`         | `text`                     | yes      |                              |          |           |           | Purpose-bound hash of a one-time confidential client secret.             |
-| `revoked_at`                 | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the client was revoked.                                    |
-| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                          |
-| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                          |
+| Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                        |
+| ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                |
+| `client_id`                  | `text`                     | no       |                              |          |           |           | Public OAuth client identifier issued at registration.                                                                                         |
+| `owner_user_id`              | `uuid`                     | yes      |                              |          |           |           | Voucha user that owns the client when registration is authenticated.                                                                           |
+| `client_name`                | `text`                     | no       |                              |          |           |           | Display-safe client name shown during consent.                                                                                                 |
+| `client_type`                | `text`                     | no       |                              |          |           |           | Public or confidential OAuth client classification.                                                                                            |
+| `token_endpoint_auth_method` | `text`                     | no       |                              |          |           |           | Client authentication method accepted by token and revocation endpoints.                                                                       |
+| `redirect_uris`              | `text[]`                   | no       |                              |          |           |           | Exact validated redirect URIs registered for the client.                                                                                       |
+| `grant_types`                | `text[]`                   | no       |                              |          |           |           | OAuth grant types registered for the client.                                                                                                   |
+| `response_types`             | `text[]`                   | no       |                              |          |           |           | OAuth authorization response types registered for the client.                                                                                  |
+| `scopes`                     | `text[]`                   | no       |                              |          |           |           | Maximum canonical scope set the client may request.                                                                                            |
+| `client_secret_hash`         | `text`                     | yes      |                              |          |           |           | Purpose-bound hash of a one-time confidential client secret.                                                                                   |
+| `revoked_at`                 | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the client was revoked.                                                                                                          |
+| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                |
+| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                |
+| `metadata_url`               | `text`                     | yes      |                              |          |           |           | HTTPS URL of the Client ID Metadata Document for a client identified by URL; NULL for clients registered through dynamic client registration.  |
+| `verified_at`                | `timestamp with time zone` | yes      |                              |          |           |           | When staff verified a dynamically registered client, so its client_name may appear on public content provenance labels; NULL means unverified. |
+| `verified_by_id`             | `uuid`                     | yes      |                              |          |           |           | Staff user who verified the client; NULL when unverified or when that user was deleted.                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -37,17 +40,21 @@ Not partitioned — growth: unbounded.
 - `oauth_clients_client_secret_hash_check`: `CHECK (((client_secret_hash IS NULL) OR (char_length(client_secret_hash) = 64)))`
 - `oauth_clients_client_type_check`: `CHECK ((client_type = ANY (ARRAY['public'::text, 'confidential'::text])))`
 - `oauth_clients_grant_types_check`: `CHECK (((grant_types <@ ARRAY['authorization_code'::text, 'refresh_token'::text]) AND (grant_types @> ARRAY['authorization_code'::text, 'refresh_token'::text])))`
+- `oauth_clients_metadata_url_check`: `CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND (metadata_url ~ '^https://[^/?#@]+/[^#]*$'::text))))`
 - `oauth_clients_redirect_uris_check`: `CHECK (((cardinality(redirect_uris) >= 1) AND (cardinality(redirect_uris) <= 10)))`
 - `oauth_clients_response_types_check`: `CHECK ((response_types = ARRAY['code'::text]))`
 - `oauth_clients_scopes_check`: `CHECK ((cardinality(scopes) > 0))`
 - `oauth_clients_token_endpoint_auth_method_check`: `CHECK ((token_endpoint_auth_method = ANY (ARRAY['none'::text, 'client_secret_basic'::text])))`
+- `oauth_clients_verified_by_id_check`: `CHECK (((verified_by_id IS NULL) OR (verified_at IS NOT NULL)))`
 
 **Foreign keys:**
 
 - `oauth_clients_owner_user_id_fkey`: `FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `oauth_clients_verified_by_id_fkey`: `FOREIGN KEY (verified_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
+- `idx_oauth_clients__metadata_url`: `CREATE UNIQUE INDEX idx_oauth_clients__metadata_url ON public.oauth_clients USING btree (metadata_url)`
 - `idx_oauth_clients__owner`: `CREATE INDEX idx_oauth_clients__owner ON public.oauth_clients USING btree (owner_user_id, id) WHERE (owner_user_id IS NOT NULL)`
 - `oauth_clients_client_id_key`: `CREATE UNIQUE INDEX oauth_clients_client_id_key ON public.oauth_clients USING btree (client_id)`
 - `oauth_clients_pkey`: `CREATE UNIQUE INDEX oauth_clients_pkey ON public.oauth_clients USING btree (id)`

@@ -16953,8 +16953,7 @@
         "chk_conversation_messages__discarded": "CHECK (((sent_at IS NULL) OR (discarded_at IS NULL)))",
         "chk_conversation_messages__edited": "CHECK ((((edited_at IS NULL) AND (edited_by_id IS NULL)) OR ((edited_at IS NOT NULL) AND (edited_by_id IS NOT NULL))))",
         "chk_conversation_messages__kind_content": "CHECK ((((kind = 'chat'::conversation_message_kinds) AND (content IS NOT NULL)) OR ((kind = ANY (ARRAY['email'::conversation_message_kinds, 'note'::conversation_message_kinds])) AND ((body_text IS NOT NULL) OR (body_html IS NOT NULL))) OR ((kind = 'message'::conversation_message_kinds) AND (body_text IS NOT NULL))))",
-        "chk_conversation_messages__sender": "CHECK ((num_nonnulls(created_by_id, support_contact_id) <= 1))",
-        "conversation_messages_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))"
+        "chk_conversation_messages__sender": "CHECK ((num_nonnulls(created_by_id, support_contact_id) <= 1))"
       },
       "columns": {
         "ai_generated_at": {
@@ -17076,28 +17075,6 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 4,
-          "type": "uuid"
-        },
-        "created_via": {
-          "collation": null,
-          "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 33,
-          "type": "content_creation_channels"
-        },
-        "created_via_oauth_client_id": {
-          "collation": null,
-          "comment": "Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 34,
           "type": "uuid"
         },
         "deleted_at": {
@@ -17339,15 +17316,6 @@
           "referencedTable": "users",
           "validated": true
         },
-        "conversation_messages_created_via_oauth_client_id_fkey": {
-          "columns": ["created_via_oauth_client_id"],
-          "definition": "FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "oauth_clients",
-          "validated": true
-        },
         "conversation_messages_deleted_by_id_fkey": {
           "columns": ["deleted_by_id"],
           "definition": "FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -17473,26 +17441,6 @@
           "ready": true,
           "unique": false,
           "valid": true
-        },
-        "idx_conversation_messages__created_via_oauth_client_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conversation_messages__created_via_oauth_client_id ON ONLY public.conversation_messages USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "created_via_oauth_client_id",
-              "descending": false,
-              "expression": "created_via_oauth_client_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(created_via_oauth_client_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
         }
       },
       "partition": {
@@ -17512,7 +17460,6 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
-        "conversation_messages_content_provenance_immutable": "CREATE TRIGGER conversation_messages_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.conversation_messages FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_conversation_messages_updated_at": "CREATE TRIGGER trigger_conversation_messages_updated_at BEFORE UPDATE ON public.conversation_messages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -55536,10 +55483,12 @@
         "oauth_clients_client_secret_hash_check": "CHECK (((client_secret_hash IS NULL) OR (char_length(client_secret_hash) = 64)))",
         "oauth_clients_client_type_check": "CHECK ((client_type = ANY (ARRAY['public'::text, 'confidential'::text])))",
         "oauth_clients_grant_types_check": "CHECK (((grant_types <@ ARRAY['authorization_code'::text, 'refresh_token'::text]) AND (grant_types @> ARRAY['authorization_code'::text, 'refresh_token'::text])))",
+        "oauth_clients_metadata_url_check": "CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND (metadata_url ~ '^https://[^/?#@]+/[^#]*$'::text))))",
         "oauth_clients_redirect_uris_check": "CHECK (((cardinality(redirect_uris) >= 1) AND (cardinality(redirect_uris) <= 10)))",
         "oauth_clients_response_types_check": "CHECK ((response_types = ARRAY['code'::text]))",
         "oauth_clients_scopes_check": "CHECK ((cardinality(scopes) > 0))",
-        "oauth_clients_token_endpoint_auth_method_check": "CHECK ((token_endpoint_auth_method = ANY (ARRAY['none'::text, 'client_secret_basic'::text])))"
+        "oauth_clients_token_endpoint_auth_method_check": "CHECK ((token_endpoint_auth_method = ANY (ARRAY['none'::text, 'client_secret_basic'::text])))",
+        "oauth_clients_verified_by_id_check": "CHECK (((verified_by_id IS NULL) OR (verified_at IS NOT NULL)))"
       },
       "columns": {
         "client_id": {
@@ -55619,6 +55568,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "metadata_url": {
+          "collation": null,
+          "comment": "HTTPS URL of the Client ID Metadata Document for a client identified by URL; NULL for clients registered through dynamic client registration.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "text"
+        },
         "owner_user_id": {
           "collation": null,
           "comment": "Voucha user that owns the client when registration is authenticated.",
@@ -55695,6 +55655,28 @@
           "nullable": false,
           "ordinalPosition": 14,
           "type": "timestamp with time zone"
+        },
+        "verified_at": {
+          "collation": null,
+          "comment": "When staff verified a dynamically registered client, so its client_name may appear on public content provenance labels; NULL means unverified.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "timestamp with time zone"
+        },
+        "verified_by_id": {
+          "collation": null,
+          "comment": "Staff user who verified the client; NULL when unverified or when that user was deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "uuid"
         }
       },
       "comment": "Dynamically registered clients for the Voucha OAuth authorization server.",
@@ -55707,10 +55689,39 @@
           "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
+        },
+        "oauth_clients_verified_by_id_fkey": {
+          "columns": ["verified_by_id"],
+          "definition": "FOREIGN KEY (verified_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
         }
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_oauth_clients__metadata_url": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_oauth_clients__metadata_url ON public.oauth_clients USING btree (metadata_url)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "metadata_url",
+              "descending": false,
+              "expression": "metadata_url",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "idx_oauth_clients__owner": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -63690,7 +63701,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 52,
+          "ordinalPosition": 44,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -63701,7 +63712,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53,
+          "ordinalPosition": 45,
           "type": "uuid"
         },
         "creation_source_url_id": {
@@ -64009,7 +64020,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 49,
+          "ordinalPosition": 51,
           "type": "integer"
         },
         "votes_count_none": {
@@ -64020,7 +64031,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 48,
+          "ordinalPosition": 50,
           "type": "integer"
         },
         "votes_count_up": {
@@ -64031,7 +64042,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 47,
+          "ordinalPosition": 49,
           "type": "integer"
         },
         "votes_score_down": {
@@ -64042,7 +64053,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 46,
+          "ordinalPosition": 48,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -64053,7 +64064,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 51,
+          "ordinalPosition": 53,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -64064,7 +64075,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 45,
+          "ordinalPosition": 47,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -64075,7 +64086,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 52,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -64086,7 +64097,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 44,
+          "ordinalPosition": 46,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -94940,7 +94951,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 37,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -94951,7 +94962,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 38,
           "type": "uuid"
         },
         "deleted_at": {
@@ -95237,7 +95248,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 42,
+          "ordinalPosition": 44,
           "type": "integer"
         },
         "votes_count_none": {
@@ -95248,7 +95259,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 41,
+          "ordinalPosition": 43,
           "type": "integer"
         },
         "votes_count_up": {
@@ -95259,7 +95270,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 40,
+          "ordinalPosition": 42,
           "type": "integer"
         },
         "votes_score_down": {
@@ -95270,7 +95281,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 39,
+          "ordinalPosition": 41,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -95281,7 +95292,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 46,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -95292,7 +95303,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 38,
+          "ordinalPosition": 40,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -95303,7 +95314,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 45,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -95314,7 +95325,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 37,
+          "ordinalPosition": 39,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {

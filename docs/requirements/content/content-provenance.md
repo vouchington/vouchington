@@ -4,8 +4,9 @@ Which channel created each piece of user content, and which OAuth client acted w
 
 ## Why
 
-- Voucha can't block AI agents. It steers them to the API and MCP and shows users when content
-  arrived through those paths ([#237](https://github.com/vouchington/vouchington/issues/237)).
+- Voucha can't block AI agents. It steers them to the API and MCP
+  ([agent access](../platform/agent-access.md)) and shows users when content arrived through those
+  paths ([#237](https://github.com/vouchington/vouchington/issues/237)).
 - Provenance is **declared** by the credential that made the write. The `ai-generated` moderator
   label is **detected** from the text by the moderation pipeline
   ([`moderator-labels.mts`](../../../backend/services/moderation/moderator-labels.mts)). The two
