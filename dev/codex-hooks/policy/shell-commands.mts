@@ -18,22 +18,26 @@ export function stripGitGlobalOptionsForPolicy(command: string): string {
   return command.replace(GIT_GLOBAL_OPTIONS_RE, 'git')
 }
 
+/**
+ * The scripts the git, hook-bypass, and dev-server policies read: the command text, each heredoc
+ * body a shell may read as its script, and each substitution an unquoted-delimiter body runs, each
+ * with the `bash -c` scripts nested in it. Any other heredoc body is data (a `git commit -F -`
+ * message).
+ */
 export function commandsToInspectForGitPolicy(command: string): string[] {
-  const unfolded = command.replace(/\\\n/g, ' ')
-  const { shellBodies } = stripNonShellHeredocBodies(unfolded)
-  const normalizedCommand = stripGitGlobalOptionsForPolicy(unfolded)
-  return [
-    stripQuotedShellText(normalizedCommand),
-    ...extractShellCommandArguments(normalizedCommand).map(
-      ({ command: shellCommand, inheritsEditor }) =>
-        stripQuotedShellText(
+  const { bodySubstitutions, shellBodies, textWithoutBodies } = stripNonShellHeredocBodies(
+    command.replace(/\\\n/g, ' '),
+  )
+  return [textWithoutBodies, ...shellBodies, ...bodySubstitutions].flatMap(script => {
+    const normalizedScript = stripGitGlobalOptionsForPolicy(script.replace(/\\\n/g, ' '))
+    return [
+      normalizedScript,
+      ...extractShellCommandArguments(normalizedScript).map(
+        ({ command: shellCommand, inheritsEditor }) =>
           `${inheritsEditor ? 'export GIT_EDITOR=true; ' : ''}${stripGitGlobalOptionsForPolicy(shellCommand)}`,
-        ),
-    ),
-    ...shellBodies.map(body =>
-      stripQuotedShellText(stripGitGlobalOptionsForPolicy(body.replace(/\\\n/g, ' '))),
-    ),
-  ]
+      ),
+    ].map(text => stripQuotedShellText(text))
+  })
 }
 
 export type ShellCommandArgument = {
