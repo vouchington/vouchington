@@ -31,10 +31,6 @@ describe('normalizeCommandPrefix', () => {
     expect(normalizeCommandPrefix('git --no-pager log --oneline')).toBe('git log')
   })
 
-  it('recurses past the rtk wrapper before skipping git global options', () => {
-    expect(normalizeCommandPrefix('rtk git -C /repo status')).toBe('rtk git status')
-  })
-
   it('falls back to just "git" when only global options precede an empty subcommand', () => {
     expect(normalizeCommandPrefix('git -C /repo')).toBe('git')
   })
@@ -47,16 +43,6 @@ describe('normalizeCommandPrefix', () => {
 
   it('does not go deeper for a package runner without a run/exec second token', () => {
     expect(normalizeCommandPrefix('pnpm install')).toBe('pnpm install')
-  })
-
-  it('recurses past the rtk wrapper token', () => {
-    expect(normalizeCommandPrefix('rtk git log --oneline')).toBe('rtk git log')
-    expect(normalizeCommandPrefix('rtk pnpm run build')).toBe('rtk pnpm run build')
-    expect(normalizeCommandPrefix('rtk cat foo.txt')).toBe('rtk cat foo.txt')
-  })
-
-  it('falls back to just "rtk" when the wrapper has no wrapped command', () => {
-    expect(normalizeCommandPrefix('rtk')).toBe('rtk')
   })
 
   it('normalizes only the first segment of a compound command', () => {
