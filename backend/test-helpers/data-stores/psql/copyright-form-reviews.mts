@@ -1,14 +1,15 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 
 /** Seeds the durable post-review crash boundary without invoking its downstream effects. */
-export async function createTestCopyrightFormIntakeReview(input: {
-  intakeId: string
-  moderatorId: string
-  accepted: boolean
-}): Promise<void> {
-  await write(sql`/* createTestCopyrightFormIntakeReview */
+export async function createTestCopyrightFormIntakeReview(
+  input: { intakeId: string; moderatorId: string; accepted: boolean },
+  options: QueryOptions = {},
+): Promise<void> {
+  const query = options.query ?? write
+  await query(sql`/* createTestCopyrightFormIntakeReview */
     INSERT INTO copyright_notice_form_intake_reviews (
       copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
     ) VALUES (
@@ -18,13 +19,24 @@ export async function createTestCopyrightFormIntakeReview(input: {
   `)
 }
 
-/** Erases a review actor while retaining the immutable moderator decision. */
-export async function eraseTestCopyrightFormReviewModerator(moderatorId: string): Promise<void> {
-  const { rowCount } = await write(sql`/* eraseTestCopyrightFormReviewModerator */
-    DELETE FROM users WHERE id = ${moderatorId}
+/**
+ * Seeds a durable rejection whose moderator is already erased. The review and the erasure commit
+ * together, so no concurrent recovery sweep can lock a review that still names a live moderator
+ * while the erasure holds that moderator's row.
+ */
+export async function createTestCopyrightFormRejectionByErasedModerator(input: {
+  intakeId: string
+  moderatorId: string
+}): Promise<void> {
+  await using transaction = await beginTransaction()
+  await createTestCopyrightFormIntakeReview({ ...input, accepted: false }, { query: transaction })
+  const { rowCount } = await transaction(sql`
+    /* createTestCopyrightFormRejectionByErasedModerator:erase */
+    DELETE FROM users WHERE id = ${input.moderatorId}
   `)
   if (rowCount !== 1)
-    throw new Error(`Copyright form review moderator was not erased: ${moderatorId}`)
+    throw new Error(`Copyright form review moderator was not erased: ${input.moderatorId}`)
+  await transaction.commit()
 }
 
 /** Reads the actor-erasure result for one immutable form review. */

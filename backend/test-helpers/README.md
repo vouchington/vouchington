@@ -314,6 +314,16 @@ await withDominantPostFixtures(
 
 See [Parallel-Safety and Test-Root Hygiene § Persistent dominant fixtures require deterministic cleanup](../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#persistent-dominant-fixtures-require-deterministic-cleanup) and [Parallel-Safety and Test-Root Hygiene § Rate-limiter cleanup must be ownership-scoped, never prefix-wide](../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#rate-limiter-cleanup-must-be-ownership-scoped-never-prefix-wide).
 
+### Fixture states a concurrent sweep can act on
+
+Recovery and reconciliation sweeps that tests call directly, such as
+`recoverRejectedCopyrightFormReviewEffects()`, scan the whole database, so they lock and act on
+other tests' rows too. Seed any multi-step state such a sweep would act on in one transaction so no
+sweep sees the intermediate commit. Seeding a rejected form review by a live moderator, then erasing
+the moderator in a second statement, let a parallel sweep lock the review and wait on the moderator
+row the erasure held, which deadlocked (#518).
+`createTestCopyrightFormRejectionByErasedModerator()` commits both together.
+
 ### Shared membership catalog rows
 
 Only four `membership_products` rows are ever active — `plan ∈ {plus, pro} × interval ∈ {monthly, yearly}`, enforced by a partial unique index and pre-seeded by migration. `createTestSku()` upserts on `(plan, billing_interval) WHERE retired_at IS NULL`, so every caller with the same plan+interval gets the identical row. That row is shared, not owned — do not isolate by `(plan, interval)`; the interval pool is small and easily exhausted.
