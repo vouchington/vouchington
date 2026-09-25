@@ -104,7 +104,13 @@ export async function renderClassifierCandidateQuestion(
     )
   }
   const sanitizedName = await sanitizePromptInjection(candidateName, { isTitle: true })
-  return template.replace(CANDIDATE_PLACEHOLDER, sanitizedName) as ClassifierSafeText
+  // A function replacer, not a string one: `String.prototype.replace` treats `$&`, `` $` ``, `$'`
+  // and `$$` in a *string* replacement as special patterns (whole match, pre-match, post-match,
+  // literal `$`) rather than literal text. `sanitizedName` is attacker-influenceable (it is the
+  // candidate/topic's display name), so a string replacer would let one of those sequences splice
+  // trusted template text into the rendered question. A function replacer's return value is always
+  // inserted literally, with no special-pattern interpretation.
+  return template.replace(CANDIDATE_PLACEHOLDER, () => sanitizedName) as ClassifierSafeText
 }
 
 export function classifierPrompt(

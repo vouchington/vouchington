@@ -19,8 +19,11 @@ around that dispatch, not the classifier call itself:
   attempt number, fencing out the previous claimant. `completeAutotaggerReceipt` terminally clears
   the lease and marks the matching attempt completed, fenced by `leaseToken`.
   `failAutotaggerReceipt` records a non-terminal attempt failure
-  (`AutotaggerReceiptFailureOutcome`: `'provider-error' | 'invalid-result'`) so the lease can
-  expire and a retry can recover.
+  (`AutotaggerReceiptFailureOutcome`: `'provider-error' | 'invalid-result'`) and immediately clears
+  the lease (`lease_token`/`leased_at`/`lease_expires_at` all set back to `NULL`), fenced by
+  `leaseToken` -- it does not wait for the lease to expire on its own. `claimAutotaggerReceipt`
+  treats a `NULL` lease token as not live, so a retry can reclaim the identity right away instead of
+  waiting out `leaseSeconds`.
 - **Receipt digest** (`receipt-digest.mts`) — `computeAutotaggerReceiptDigest` hashes the
   candidate-set identity (state, questions, scope, effective cap, classifier/prompt/model
   identity) into the `Buffer` that keys a receipt. Changing any input mints a new receipt identity
