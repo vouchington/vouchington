@@ -2,6 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   type CopyrightStaffCase,
+  copyrightStaffQueueCursorScope,
   currentUserCanReviewCopyrightNotices,
   listCopyrightStaffQueue,
 } from '@services/copyright-notices'
@@ -19,7 +20,6 @@ const staffQueueParser = createPaginationParser({
   cursor: { type: 'precise_timestamp' },
   limit: { min: 1, max: 100, default: 100 },
 })
-const staffQueueCursorScope = 'copyright-notices:staff-queue:received-at-asc-id-asc'
 
 type CopyrightStaffQueueResponse = {
   copyright_notices: CopyrightStaffCase[]
@@ -44,7 +44,7 @@ app.route('/api/v1/copyright-notices/review-queue').get(async (ctx: Context) => 
   const after = options.after
     ? decodeScopedPreciseTimestampCursor(
         options.after,
-        staffQueueCursorScope,
+        copyrightStaffQueueCursorScope,
         'Invalid copyright staff queue cursor',
       )
     : undefined
@@ -56,7 +56,7 @@ app.route('/api/v1/copyright-notices/review-queue').get(async (ctx: Context) => 
     encodeScopedPreciseTimestampCursor(
       staffCase.cursor_received_at,
       staffCase.id,
-      staffQueueCursorScope,
+      copyrightStaffQueueCursorScope,
     )
   const response: CopyrightStaffQueueResponse = {
     copyright_notices: cases.map(({ cursor_received_at: _, ...staffCase }) => staffCase),
@@ -67,7 +67,7 @@ app.route('/api/v1/copyright-notices/review-queue').get(async (ctx: Context) => 
         ? encodeScopedPreciseTimestampCursor(
             endCursor.timestamp,
             endCursor.id,
-            staffQueueCursorScope,
+            copyrightStaffQueueCursorScope,
           )
         : null,
     },

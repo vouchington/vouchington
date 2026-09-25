@@ -32,7 +32,7 @@ export {
   getCopyrightPublicNoticeDetail,
   listAcceptedCopyrightNotices,
 } from './read-models.mts'
-export { listCopyrightStaffQueue } from './read-models-staff.mts'
+export { copyrightStaffQueueCursorScope, listCopyrightStaffQueue } from './read-models-staff.mts'
 export type { CopyrightStaffCase } from './read-models-staff.mts'
 export { appendCopyrightNoticeSubmission } from './submission-appending.mts'
 export { appendCopyrightSubmissionAssessment } from './compliance.mts'
