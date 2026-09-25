@@ -11,16 +11,12 @@ import { useUiLocale } from './ui-locale-context'
 function RouteMessages({
   children,
   initialCatalog,
-  initialLocale,
-  initialPathname,
   locale,
   pathname,
   shouldLoadDestination,
 }: {
   children: ReactNode
   initialCatalog: EnCatalog
-  initialLocale: string
-  initialPathname: string
   locale: string
   pathname: string
   shouldLoadDestination: boolean
@@ -79,8 +75,6 @@ export function LocalizedRouteBoundary({
   const routeMessages = (
     <RouteMessages
       initialCatalog={initialCatalog}
-      initialLocale={initialLocale}
-      initialPathname={initialPathname}
       locale={locale}
       pathname={pathname}
       shouldLoadDestination={shouldLoadDestination}

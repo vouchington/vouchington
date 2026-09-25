@@ -6,7 +6,6 @@ import { searchRssFeedsClient } from '@/lib/api/client/rss-feeds'
 import { fetchTopics } from '@/lib/api/client/topics'
 import type { CuratedAsideType } from '@/types/api-responses/curated-aside-items'
 import type { ViewRssFeed } from '@/types/rss-feeds'
-import type { Topic } from '@/types/topics'
 import type { CommunitiesSearchResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
 

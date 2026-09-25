@@ -18,11 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ModerationAnalyticsRangeFilter } from '@/components/moderation/moderation-analytics-range-filter'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { formatNumber, formatUtcDate } from '@ts-shared/utils/format'
-import type {
-  DailyTypedCountDataPoint,
-  ModerationAnalytics,
-  ModerationAnalyticsRange,
-} from '@/types/moderation-analytics'
+import type { DailyTypedCountDataPoint, ModerationAnalytics } from '@/types/moderation-analytics'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 const axisTick = { fontSize: 11 }

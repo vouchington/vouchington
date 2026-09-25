@@ -11,7 +11,6 @@ import {
   type TopHashtagsResponseBody,
 } from '@/lib/api/client/topic-recommendations'
 import { linkTopicAlias, unlinkTopicAlias } from '@/lib/api/client/topics'
-import { topicHref } from '@/lib/links/entity-href'
 import { TopHashtagFilters } from './top-hashtag-filters'
 import { TopHashtagLinkForm } from './top-hashtag-link-form'
 import { TopHashtagRow } from './top-hashtag-row'

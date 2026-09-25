@@ -1,5 +1,5 @@
 import type { AudienceDefaults } from './types'
-import type { Post, PostBroadcast, PostPrivacy } from '@/types/posts'
+import type { Post } from '@/types/posts'
 import type { DataPointVertical, StructuredDataState } from '../data-point-fields'
 import type { ReviewTopicEntry } from '../post-form-sections'
 import type { Topic } from '@/types/topics'

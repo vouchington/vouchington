@@ -2,11 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import {
-  createMyWebPushSubscription,
-  deleteMyWebPushSubscription,
-  getMyWebPushSubscriptionsClient,
-} from '@/lib/api/client/my'
+import { deleteMyWebPushSubscription, getMyWebPushSubscriptionsClient } from '@/lib/api/client/my'
 import { ApiError } from '@/lib/api/error'
 import type { NotificationPushSubscription } from './notifications-page'
 import { getCurrentSubscription, getPushManager } from './push-utils'
