@@ -1,14 +1,16 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  entriesClientFixture,
-  sessionFixture,
-  sessionsClientFixture,
-} from '../../test-helpers/blackboard/client-fixtures.mts'
-import { BlackboardJournalError, runAppend } from '../append.mts'
+const appendJournal = vi.fn<typeof import('vouchington-tooling/agent-blackboard').appendJournal>()
+
+vi.mock<typeof import('vouchington-tooling/agent-blackboard')>(
+  import('vouchington-tooling/agent-blackboard'),
+  () => ({ appendJournal }),
+)
+
+const { BlackboardJournalError, runAppend } = await import('../append.mts')
 
 const testDirs: string[] = []
 
@@ -31,14 +33,6 @@ async function captureRejection(promise: Promise<unknown>): Promise<unknown> {
     },
     (error: unknown) => error,
   )
-}
-
-function failingSessionsClient() {
-  return sessionsClientFixture({
-    ensure: async () => {
-      throw new Error('agent-blackboard request failed: POST /sessions -> 500')
-    },
-  })
 }
 
 const HOSTED_ENV = {
@@ -74,19 +68,22 @@ describe('runAppend arg parsing', () => {
 
 describe('runAppend hard-fail + replay contract', () => {
   afterEach(async () => {
+    appendJournal.mockReset()
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
   it('wraps a connection failure in a BlackboardJournalError carrying the replay fields', async () => {
     const dir = await makeTempDir()
     const noteFile = await makeNoteFile(dir, 'a note')
+    appendJournal.mockRejectedValue(
+      new Error('agent-blackboard request failed: POST /sessions -> 500'),
+    )
 
     const rejection = await captureRejection(
-      runAppend(
-        ['--file', noteFile, '--session-id', 'sess-1'],
-        { ...HOSTED_ENV, CLAUDE_CODE_SESSION_ID: 'sess-1' },
-        { sessions: failingSessionsClient() },
-      ),
+      runAppend(['--file', noteFile, '--session-id', 'sess-1'], {
+        ...HOSTED_ENV,
+        CLAUDE_CODE_SESSION_ID: 'sess-1',
+      }),
     )
 
     expect(rejection).toBeInstanceOf(BlackboardJournalError)
@@ -101,13 +98,12 @@ describe('runAppend hard-fail + replay contract', () => {
   it('omits sessionIdArg from the replay fields when the session id came from env', async () => {
     const dir = await makeTempDir()
     const noteFile = await makeNoteFile(dir, 'a note')
+    appendJournal.mockRejectedValue(
+      new Error('agent-blackboard request failed: POST /sessions -> 500'),
+    )
 
     const rejection = await captureRejection(
-      runAppend(
-        ['--file', noteFile],
-        { ...HOSTED_ENV, CLAUDE_CODE_SESSION_ID: 'env-sess' },
-        { sessions: failingSessionsClient() },
-      ),
+      runAppend(['--file', noteFile], { ...HOSTED_ENV, CLAUDE_CODE_SESSION_ID: 'env-sess' }),
     )
 
     expect(rejection).toBeInstanceOf(BlackboardJournalError)
@@ -119,6 +115,9 @@ describe('runAppend hard-fail + replay contract', () => {
   it('carries parent-session-id, agent, version, and timestamp into the replay fields', async () => {
     const dir = await makeTempDir()
     const noteFile = await makeNoteFile(dir, 'a note')
+    appendJournal.mockRejectedValue(
+      new Error('agent-blackboard request failed: POST /sessions -> 500'),
+    )
 
     const rejection = await captureRejection(
       runAppend(
@@ -137,7 +136,6 @@ describe('runAppend hard-fail + replay contract', () => {
           '2026-07-22T00:00:00.000Z',
         ],
         HOSTED_ENV,
-        { sessions: failingSessionsClient() },
       ),
     )
 
@@ -152,85 +150,67 @@ describe('runAppend hard-fail + replay contract', () => {
 
 describe('runAppend Codex identity', () => {
   afterEach(async () => {
+    appendJournal.mockReset()
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
   it('ensures agent codex for --session-id when CODEX_THREAD_ID is set', async () => {
     const dir = await makeTempDir()
     const noteFile = await makeNoteFile(dir, 'a note')
-    const ensureCalls: unknown[] = []
-    await runAppend(
-      ['--file', noteFile, '--session-id', 'thread-1'],
-      { ...HOSTED_ENV, CODEX_THREAD_ID: 'thread-1' },
-      {
-        entries: entriesClientFixture(),
-        sessions: sessionsClientFixture({
-          ensure: async input => {
-            ensureCalls.push(input)
-            return { status: 'created', session: sessionFixture(input) }
-          },
-        }),
-      },
-    )
-    expect(ensureCalls).toContainEqual(
-      expect.objectContaining({ id: 'thread-1', agent: 'codex', version: 'unknown' }),
+    appendJournal.mockResolvedValue('journaled')
+    await runAppend(['--file', noteFile, '--session-id', 'thread-1'], {
+      ...HOSTED_ENV,
+      CODEX_THREAD_ID: 'thread-1',
+    })
+    expect(appendJournal).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: 'thread-1', agent: 'codex', version: 'unknown' }),
     )
   })
 
   it('keeps a direct Cursor and Grok session paired as Grok', async () => {
     const dir = await makeTempDir()
     const noteFile = await makeNoteFile(dir, 'a note')
-    const ensureCalls: unknown[] = []
+    appendJournal.mockResolvedValue('journaled')
     await runAppend(
       ['--file', noteFile],
       { ...HOSTED_ENV, CURSOR_SESSION_ID: 'cursor-id', GROK_SESSION_ID: 'grok-id' },
-      {
-        entries: entriesClientFixture(),
-        sessions: sessionsClientFixture({
-          ensure: async input => {
-            ensureCalls.push(input)
-            return { status: 'created', session: sessionFixture(input) }
-          },
-        }),
-      },
       dir,
     )
-    expect(ensureCalls).toContainEqual(expect.objectContaining({ id: 'grok-id', agent: 'grok' }))
+    expect(appendJournal).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: 'grok-id', agent: 'grok' }),
+    )
   })
 
   it('hard-fails when no agent identity can be resolved', async () => {
     const dir = await makeTempDir()
     const noteFile = await makeNoteFile(dir, 'a note')
     const rejection = await captureRejection(
-      runAppend(['--file', noteFile, '--session-id', 'sess-1'], HOSTED_ENV, {}, dir),
+      runAppend(['--file', noteFile, '--session-id', 'sess-1'], HOSTED_ENV, dir),
     )
     expect(rejection).toBeInstanceOf(BlackboardJournalError)
     expect(() => {
       throw rejection
     }).toThrow(/no blackboard agent identity/)
+    expect(appendJournal).not.toHaveBeenCalled()
   })
 
-  it('hard-fails when the existing session agent does not match', async () => {
+  it('hard-fails when the underlying appendJournal call rejects with a session mismatch', async () => {
     const dir = await makeTempDir()
     const noteFile = await makeNoteFile(dir, 'a note')
-    const ensureCalls: unknown[] = []
-    const rejection = await captureRejection(
-      runAppend(
-        ['--file', noteFile, '--session-id', 'thread-1'],
-        { ...HOSTED_ENV, CODEX_THREAD_ID: 'thread-1' },
-        {
-          sessions: sessionsClientFixture({
-            ensure: async input => {
-              ensureCalls.push(input)
-              throw new Error(
-                'session thread-1 exists with different fields: agent: expected "codex", got "claude-code"',
-              )
-            },
-          }),
-        },
+    appendJournal.mockRejectedValue(
+      new Error(
+        'session thread-1 exists with different fields: agent: expected "codex", got "claude-code"',
       ),
     )
-    expect(ensureCalls).toContainEqual(expect.objectContaining({ id: 'thread-1', agent: 'codex' }))
+    const rejection = await captureRejection(
+      runAppend(['--file', noteFile, '--session-id', 'thread-1'], {
+        ...HOSTED_ENV,
+        CODEX_THREAD_ID: 'thread-1',
+      }),
+    )
+    expect(appendJournal).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: 'thread-1', agent: 'codex' }),
+    )
     expect(rejection).toBeInstanceOf(BlackboardJournalError)
     expect(() => {
       throw rejection

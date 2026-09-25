@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 // guidance: checked-in docs and skills invoke the workspace-pinned CLI and no retired subcommands.
 // pr-shepherd's command behavior, exit codes, and routing belong to its own tests and skill.
 
-const ROOT_URL = new URL('../', import.meta.url)
+const ROOT_URL = new URL('../../', import.meta.url)
 const ROOT_DIR = fileURLToPath(ROOT_URL)
 const repoFile = (path: string): URL => new URL(path, ROOT_URL)
 
