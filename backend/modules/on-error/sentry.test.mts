@@ -206,6 +206,7 @@ describe('shouldInitializeSentry', () => {
       captureException: vi.fn<VitestLooseMock>(),
       captureMessage: vi.fn<VitestLooseMock>(),
       flush: vi.fn<VitestLooseMock>(),
+      suppressTracing: vi.fn<VitestLooseMock>(),
     }
     registry.vouchaSentryMocks = testClient
 

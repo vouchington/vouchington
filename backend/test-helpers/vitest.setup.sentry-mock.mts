@@ -23,6 +23,7 @@ const sentryMocks = vi.hoisted(() => {
       captureMessage: ReturnType<typeof vi.fn<VitestLooseMock>>
       flush: ReturnType<typeof vi.fn<VitestLooseMock>>
       addBreadcrumb: ReturnType<typeof vi.fn<VitestLooseMock>>
+      suppressTracing: ReturnType<typeof vi.fn<VitestLooseMock>>
     }
   }
   const mocks = globalMocks[key] ?? {
@@ -31,9 +32,11 @@ const sentryMocks = vi.hoisted(() => {
     captureMessage: vi.fn<VitestLooseMock>(),
     flush: vi.fn<VitestLooseMock>(() => Promise.resolve(true)),
     addBreadcrumb: vi.fn<VitestLooseMock>(),
+    suppressTracing: vi.fn<VitestLooseMock>((callback: () => unknown) => callback()),
   }
   globalMocks[key] = mocks
   mocks.captureMessage ??= vi.fn<VitestLooseMock>()
+  mocks.suppressTracing ??= vi.fn<VitestLooseMock>((callback: () => unknown) => callback())
   return mocks
 })
 
@@ -50,9 +53,12 @@ beforeEach(() => {
   sentryMocks.flush.mockReset()
   sentryMocks.flush.mockResolvedValue(true)
   sentryMocks.addBreadcrumb.mockReset()
+  sentryMocks.suppressTracing.mockReset()
+  sentryMocks.suppressTracing.mockImplementation((callback: () => unknown) => callback())
 })
 
 export const sentryCaptureExceptionMock = sentryMocks.captureException
 export const sentryCaptureMessageMock = sentryMocks.captureMessage
 export const sentryFlushMock = sentryMocks.flush
 export const sentryAddBreadcrumbMock = sentryMocks.addBreadcrumb
+export const sentrySuppressTracingMock = sentryMocks.suppressTracing

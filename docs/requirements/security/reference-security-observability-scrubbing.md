@@ -108,6 +108,17 @@ URL-bearing-header stripping and credential redaction remain separate pure helpe
 contracts and no-op identity guarantees stay independently testable. The combined event scrubber
 applies both without allowing either transformation to overwrite the other.
 
+### Credential-in-path requests
+
+Scrubbing strips query strings, not path segments, so a request whose URL path is itself the
+credential must not be traced at all. The Grafana IRM heartbeat (`GRAFANA_IRM_HEARTBEAT_URL`) is the
+one such request: `sendGrafanaHeartbeat` in `backend/entrypoints/worker-cpu/grafana-heartbeat.mts`
+runs it inside `suppressSentryTracing` (from `@modules/on-error`) and OpenTelemetry's
+`suppressTracing`. Both are required: Sentry v11 instruments `fetch` and `http` natively and honors
+only its own scope-based suppression, so OpenTelemetry's context key alone does not keep `url.full`
+off Sentry spans and breadcrumbs. `grafana-heartbeat-tracing.no-data.mock.test.mts` pins that the
+request runs inside the Sentry suppression.
+
 ### Explicit boundary
 
 The shared contract covers request metadata only: request and breadcrumb URLs, query strings,

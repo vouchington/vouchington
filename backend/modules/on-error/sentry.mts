@@ -12,7 +12,7 @@ import { scrubSentrySpan } from './sentry-scrub.mts'
 type SentryInitOptions = NonNullable<Parameters<typeof SentrySdk.init>[0]>
 export type TestSentryClient = Pick<
   typeof SentrySdk,
-  'addBreadcrumb' | 'captureException' | 'captureMessage' | 'flush'
+  'addBreadcrumb' | 'captureException' | 'captureMessage' | 'flush' | 'suppressTracing'
 >
 export type SentryMockRegistry = typeof globalThis & {
   vouchaSentryMocks?: TestSentryClient
@@ -116,6 +116,9 @@ const Sentry: TestSentryClient = {
   },
   flush(...args: Parameters<TestSentryClient['flush']>) {
     return (getTestSentryClient() ?? SentrySdk).flush(...args)
+  },
+  suppressTracing<T>(callback: () => T): T {
+    return (getTestSentryClient() ?? SentrySdk).suppressTracing(callback)
   },
 }
 
