@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-usage() { echo "Usage: ./dev/logs"; }
-if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
-if [ "$#" -ne 0 ]; then echo "Error: ./dev/logs does not accept arguments." >&2; usage >&2; exit 2; fi
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-exec "$SCRIPT_DIR/valkey-logs" "$@"

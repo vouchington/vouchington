@@ -53,9 +53,8 @@ export type ClassifyOptions = {
 }
 
 // Section 1's Claude side comes from claudeSandboxFailures (real permission/access
-// failures) — Codex no longer contributes here since Codex escalation extraction was
-// removed in favor of the live friction hook (dev/session-friction) that now captures
-// Codex `with_escalated_permissions` uses as they happen.
+// failures). Codex `with_escalated_permissions` uses are captured live by the
+// dev/session-friction hook, not here.
 function classifyGenuineBypassCandidates(
   scan: ScanResult,
   policy: SandboxPolicy,

@@ -13,8 +13,6 @@ import {
 import type { HookPayload } from '../codex-hooks/types.mts'
 import { frictionLogDirectory } from './config.mts'
 
-const COMMAND_WRAPPERS = ['rtk']
-
 function resolveFrictionSessionId(payload: HookPayload, env: NodeJS.ProcessEnv): string {
   const fromPayload = hookSessionId(payload)
   if (fromPayload !== '') return fromPayload
@@ -56,7 +54,6 @@ export function recordFriction(payload: HookPayload, env: NodeJS.ProcessEnv = pr
     {
       type: 'tool-result',
       command: extractToolCommand(payload),
-      commandWrappers: COMMAND_WRAPPERS,
       escalationDetail,
       structuredStderr: structuredStderr(payload),
     },
@@ -78,8 +75,8 @@ export function recordPermissionRequestFriction(
   const command = extractToolCommand(payload)
   const observation =
     hookToolName(payload) === 'Bash'
-      ? { type: 'permission-request' as const, command, commandWrappers: COMMAND_WRAPPERS }
-      : { type: 'tool-result' as const, command, commandWrappers: COMMAND_WRAPPERS }
+      ? { type: 'permission-request' as const, command }
+      : { type: 'tool-result' as const, command }
   recordObservation(sessionId, observation, { directory: frictionLogDirectory(env) })
 }
 

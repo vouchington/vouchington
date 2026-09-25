@@ -6,7 +6,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { runProcess } from '../test-helpers/run-process.mts'
 
-const logsPath = fileURLToPath(new URL('../logs', import.meta.url))
 const valkeyLogsPath = fileURLToPath(new URL('../valkey-logs', import.meta.url))
 
 type ScriptRun = {
@@ -135,10 +134,10 @@ describe('dev Valkey log commands', () => {
     }
   })
 
-  it('keeps ./dev/logs as a compatibility alias without requiring DATABASE_URL', async () => {
+  it('starts the Valkey monitor without requiring DATABASE_URL', async () => {
     const dir = await createFakeWorkspace()
     try {
-      const output = await runUntilStartupBanner(logsPath, dir)
+      const output = await runUntilStartupBanner(valkeyLogsPath, dir)
 
       expect(output.timedOut).toBe(false)
       expect(output.code).toBe(0)

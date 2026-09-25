@@ -31,12 +31,6 @@
         "command": "node dev/cursor-hooks/post-tool.mts",
         "timeout": 10
       }
-    ],
-    "preCompact": [
-      {
-        "command": "dev/tmux-agent-reminder pre-compact",
-        "timeout": 10
-      }
     ]
   }
 }

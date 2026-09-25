@@ -82,21 +82,8 @@ export function commandsFromCodexCall(payload: Record<string, unknown>): string[
   return command ? [command] : []
 }
 
-function isStructuredFailure(payload: Record<string, unknown>): boolean {
+export function isStructuredFailure(payload: Record<string, unknown>): boolean {
   return payload.status === 'failed' || payload.is_error === true || payload.success === false
-}
-
-export function countStructuredFailure(
-  payload: Record<string, unknown>,
-  failedCallIds: Set<string>,
-): boolean {
-  if (!isStructuredFailure(payload)) return false
-  const callId = typeof payload.call_id === 'string' ? payload.call_id : undefined
-  if (callId) {
-    if (failedCallIds.has(callId)) return false
-    failedCallIds.add(callId)
-  }
-  return true
 }
 
 export function isCodexCallOutputFailure(payload: Record<string, unknown>): boolean {

@@ -4,7 +4,6 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { computeTranscriptFactsFromFiles } from '../compute-stream.mts'
-import { computeTranscriptFacts } from '../compute.mts'
 
 const testDirs: string[] = []
 
@@ -98,8 +97,23 @@ describe('computeTranscriptFactsFromFiles', () => {
     const mainPath = await makeTranscript('claude-main.jsonl', main)
     const childPath = await makeTranscript('claude-child.jsonl', child)
 
+    // Pinned expected values, hand-derived from this exact input by tracing applyClaude/
+    // applyCodex in compute-stream.mts field by field. Change only alongside an intentional
+    // change to that counting logic.
     await expect(computeTranscriptFactsFromFiles(mainPath, [childPath])).resolves.toEqual({
-      facts: computeTranscriptFacts([...main, ...child]),
+      facts: {
+        userPrompts: 1,
+        assistantResponses: 1,
+        toolCalls: 2,
+        failedToolCalls: 0,
+        noMistakesInvocations: 0,
+        advisorCalls: 1,
+        pushCommandAttempts: 1,
+        compactions: 0,
+        tokens: { input: 5, output: 3, cacheRead: 2, cacheCreation: 0 },
+        subagentToolCalls: 0,
+        subagentTokens: { input: 7, output: 4, cacheRead: 0, cacheCreation: 9 },
+      },
     })
   })
 
@@ -148,8 +162,23 @@ describe('computeTranscriptFactsFromFiles', () => {
     ]
     const path = await makeTranscript('codex-parity.jsonl', lines)
 
+    // Pinned expected values, hand-derived from this exact input by tracing applyClaude/
+    // applyCodex in compute-stream.mts field by field. Change only alongside an intentional
+    // change to that counting logic.
     await expect(computeTranscriptFactsFromFiles(path)).resolves.toEqual({
-      facts: computeTranscriptFacts(lines),
+      facts: {
+        userPrompts: 1,
+        assistantResponses: 1,
+        toolCalls: 2,
+        failedToolCalls: 1,
+        noMistakesInvocations: 1,
+        advisorCalls: 0,
+        pushCommandAttempts: 1,
+        compactions: 2,
+        tokens: { input: 10, output: 8, cacheRead: 4, cacheCreation: 0 },
+        subagentToolCalls: 0,
+        subagentTokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+      },
     })
   })
 

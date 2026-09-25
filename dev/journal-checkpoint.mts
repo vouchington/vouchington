@@ -8,11 +8,10 @@ import {
   readHookPayload,
 } from './journal-checkpoint/checkpoints.mts'
 
-// Mechanical journal auto-append trigger for #9337: a SessionStart(compact) hook that writes real
-// dev/blackboard-journal.mts entries at the post-compaction checkpoint instead of only ever
-// printing a reminder string. The other half — the PostToolUse (tool) checkpoint — now runs
-// in-process from the merged dev/codex-hooks/post-tool-use-command.mts entrypoint via
-// runToolCheckpoint in dev/journal-checkpoint/tool.mts; this file no longer has a `tool` mode.
+// SessionStart(compact) hook that appends a dev/blackboard-journal.mts entry at the
+// post-compaction checkpoint. The PostToolUse (tool) checkpoint runs separately, in-process
+// from dev/codex-hooks/post-tool-use-command.mts via runToolCheckpoint in
+// dev/journal-checkpoint/tool.mts; this file has no `tool` mode.
 // Always exits 0 with empty stdout on every path, including a thrown error — this hook must never
 // block a session, inject unwanted context, or add visible latency. Payload parsing and the cheap
 // session-id pre-filter happen here so a non-matching invocation (a regular session start, or any

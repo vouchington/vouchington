@@ -14,7 +14,7 @@ Claude Code and Codex load `vouchington-workflow:retrospective`; Grok, Cursor, a
 **Budget: ≤10 tool calls, ≤5 minutes, ≤25k tokens.** Aggregate already-captured facts; do not
 re-mine transcripts. Do not dispatch a subagent or read raw session JSONL, and do not use
 `grep`, `rg`, `jq`, or `awk` over transcripts. Permitted evidence sources are
-`./dev/retrospective-facts`, `node dev/retrospective-transcript-facts.mts`,
+`pnpm exec vouchington retrospective-facts`, `pnpm exec vouchington retrospective-transcript`,
 `node dev/session-friction/report.mts`, and `node dev/blackboard-journal.mts entries [--root-codex]`.
 Unanswerable evidence is `unknown — no journal`, never a guess.
 
@@ -26,7 +26,7 @@ root session, add `--new-root-codex-session` to exactly one of those script call
 If a retrospective already exists, do
 not rerun facts or save: collect only the delta since its timestamp, append one journal entry, or
 report `no delta since <timestamp>`. Otherwise collect the default outputs, in order,
-from `./dev/retrospective-facts --pr <PR_NUMBER>` (or `--no-pr`/explicit `--branch`), transcript
+from `pnpm exec vouchington retrospective-facts --pr <PR_NUMBER>` (or `--no-pr`/explicit `--branch`), transcript
 facts, then the session-friction report. The canonical skill owns the evidence-minimization boundary
 for durable content. `retrospective-facts` must fetch `origin/main`; never infer identity from the
 checkout. A zero-work session writes only front matter, the three facts sections, and

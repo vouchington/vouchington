@@ -63,8 +63,9 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['--since', 'abc'], {})).toThrow('--since requires a positive integer')
   })
 
-  // #8204 — mirrors dev/retrospective-transcript-facts.mts's --session-id, reusing
-  // agent-session-id/valid-id.mts rather than re-deriving the format check.
+  // #8204 — mirrors the --session-id convention shared by this repo's other session-scoped
+  // CLIs (e.g. dev/session-friction/report.mts), reusing agent-session-id/valid-id.mts rather
+  // than re-deriving the format check.
   it('parses --session-id and sets it on the returned options', () => {
     const options = parseArgs(['--session-id', 'abc-123_DEF'], {})
     expect(options.sessionId).toBe('abc-123_DEF')

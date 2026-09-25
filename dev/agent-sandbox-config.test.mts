@@ -64,14 +64,12 @@ describe('agent sandbox configuration', () => {
       './dev/tmux-agent-reminder',
       './dev/stop-services',
       './dev/status',
-      './dev/retrospective-facts',
       './dev/reset',
       './dev/reset-worktree',
       './dev/teardown',
       './dev/cleanup',
       './dev/unstick-locks',
       './dev/valkey-logs',
-      './dev/logs',
     ]
     for (const script of scripts) {
       const allow = claudeSettings.permissions.allow

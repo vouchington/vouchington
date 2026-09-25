@@ -129,9 +129,3 @@ command = 'node "$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use.
 timeout = 30
 statusMessage = "Running post-edit checks"
 
-[[hooks.PreCompact]]
-
-[[hooks.PreCompact.hooks]]
-type = "command"
-command = '"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder" pre-compact'
-timeout = 10

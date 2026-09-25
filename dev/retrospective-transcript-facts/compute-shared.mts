@@ -15,7 +15,7 @@ export type TranscriptFacts = {
   noMistakesInvocations: number
   advisorCalls: number
   // Counts every attempted `git push` invocation, not verified remote updates — a push
-  // that fails or is rejected still increments this. `dev/retrospective-facts` (bash)
+  // that fails or is rejected still increments this. `pnpm exec vouchington retrospective-facts`
   // derives the reflog-verified update count separately; see fact-contracts.md.
   pushCommandAttempts: number
   compactions: number
@@ -25,11 +25,6 @@ export type TranscriptFacts = {
 }
 
 export type ParsedLine = Record<string, unknown>
-
-export type CodexOwnedSegment = {
-  lines: string[]
-  baseline: TokenTotals
-}
 
 export function emptyTokens(): TokenTotals {
   return { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 }
@@ -63,20 +58,6 @@ export function asNumber(value: unknown): number {
 
 export function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : []
-}
-
-export function parseLines(lines: string[]): ParsedLine[] {
-  const records: ParsedLine[] = []
-  for (const line of lines) {
-    if (!line.trim()) continue
-    try {
-      const record = asRecord(JSON.parse(line))
-      if (record) records.push(record)
-    } catch {
-      // A partially written final line must not hide the valid records before it.
-    }
-  }
-  return records
 }
 
 export function applyCommand(command: string, facts: TranscriptFacts): void {

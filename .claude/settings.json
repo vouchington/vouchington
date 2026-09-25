@@ -40,8 +40,6 @@
       "Bash(./dev/stop-services *)",
       "Bash(./dev/status)",
       "Bash(./dev/status *)",
-      "Bash(./dev/retrospective-facts)",
-      "Bash(./dev/retrospective-facts *)",
       "Bash(node dev/blackboard-journal.mts)",
       "Bash(node dev/blackboard-journal.mts *)",
       "Bash(node dev/retrospective-save.mts)",
@@ -62,8 +60,6 @@
       "Bash(./dev/unstick-locks *)",
       "Bash(./dev/valkey-logs)",
       "Bash(./dev/valkey-logs *)",
-      "Bash(./dev/logs)",
-      "Bash(./dev/logs *)",
       "Bash(cargo tree *)",
       "Bash(cargo search *)",
       "Bash(cargo check *)",
@@ -406,16 +402,6 @@
           }
         ]
       }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder\" pre-compact"
-          }
-        ]
-      }
     ]
   },
   "enabledPlugins": {
@@ -478,8 +464,6 @@
       "./dev/stop-services *",
       "./dev/status",
       "./dev/status *",
-      "./dev/retrospective-facts",
-      "./dev/retrospective-facts *",
       "node dev/blackboard-journal.mts",
       "node dev/blackboard-journal.mts *",
       "node dev/retrospective-save.mts",
@@ -508,8 +492,6 @@
       "./dev/unstick-locks *",
       "./dev/valkey-logs",
       "./dev/valkey-logs *",
-      "./dev/logs",
-      "./dev/logs *",
       "ps aux",
       "ps aux *"
     ],

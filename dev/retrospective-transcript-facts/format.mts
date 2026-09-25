@@ -1,4 +1,4 @@
-import type { TranscriptFacts } from './compute.mts'
+import type { TranscriptFacts } from './compute-shared.mts'
 
 export function formatTranscriptFacts(sessionId: string, facts: TranscriptFacts): string {
   return `${[

@@ -76,23 +76,14 @@ function stripGitGlobalOptions(tokens: string[]): string[] {
 }
 
 // Normalizes a segment to "<leading token> <first subcommand>" (e.g. "git status",
-// "gh pr", or just "cat" when there's no second token), with two exceptions that go
+// "gh pr", or just "cat" when there's no second token), with one exception that goes
 // one token deeper because .claude/settings.json itself distinguishes at that depth:
-//
-//   - package runners: "pnpm run build" vs "pnpm exec build" are different
-//     sandbox.excludedCommands/permissions.allow entries, so the run/exec target must
-//     stay out of the generic two-token rule.
-//   - the `rtk` wrapper: kept only for backward-compatible normalization of
-//     historical session transcripts recorded before rtk's removal (issue
-//     #8101) that still contain "rtk git log *"-style commands. rtk is no
-//     longer used, installed, or approved anywhere in the live repo, so the
-//     wrapped command is normalized one level deeper than usual by
-//     recursing past the wrapper token purely to keep old-transcript replay
-//     and analysis working.
+// package runners — "pnpm run build" vs "pnpm exec build" are different
+// sandbox.excludedCommands/permissions.allow entries, so the run/exec target must
+// stay out of the generic two-token rule.
 function normalizeSegment(segment: string[]): string {
   const [first, ...rest] = segment
   if (!first) return ''
-  if (first === 'rtk' && rest.length > 0) return `rtk ${normalizeSegment(rest)}`
   if (isPackageRunner(first) && (rest[0] === 'run' || rest[0] === 'exec') && rest[1]) {
     return `${redactOverlongToken(first)} ${rest[0]} ${redactOverlongToken(rest[1])}`
   }

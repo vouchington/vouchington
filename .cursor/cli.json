@@ -4,7 +4,6 @@
       "Shell(pnpm)",
       "Shell(git)",
       "Shell(gh)",
-      "Shell(rtk)",
       "Shell(node)",
       "Shell(cargo)",
       "Shell(docker)",

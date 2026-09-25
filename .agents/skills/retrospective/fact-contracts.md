@@ -6,7 +6,7 @@ the canonical retrospective skill's evidence boundary.
 
 ## Transcript Facts
 
-`node dev/retrospective-transcript-facts.mts` resolves Codex from `CODEX_THREAD_ID` and nested
+`pnpm exec vouchington retrospective-transcript` resolves Codex from `CODEX_THREAD_ID` and nested
 `~/.codex/sessions/**/rollout-*<id>.jsonl` files, including recursive subagents; otherwise it
 resolves Claude Code from `CLAUDE_CODE_SESSION_ID` and `~/.claude/projects/*/<id>.jsonl`, including
 sibling subagent files. Codex takes precedence when both environment IDs exist.
@@ -26,7 +26,7 @@ instead of estimating the numbers yourself.
 
 `Push commands attempted: N` counts every `git push` invocation seen in the transcript, not
 verified remote updates — a push that fails or is rejected still increments it.
-`./dev/retrospective-facts` (bash, in `## Verifiable Facts`) separately derives the
+`pnpm exec vouchington retrospective-facts` (in `## Verifiable Facts`) separately derives the
 reflog-verified update count (`remote_update_count`/`push_like_update_count`). Attempts exceeding
 verified updates is expected, not a discrepancy to explain away — it means at least one push
 failed or was rejected.

@@ -221,7 +221,7 @@ structural `checkpoint` field (`dev/journal-checkpoint/checkpoint-entry.mts`'s `
 reflection — without depending on the rendered `## Auto-append: ` heading:
 
 1. **Post-compaction** — a SessionStart hook gated to the `compact` restart source computes the same
-   facts as `node dev/retrospective-transcript-facts.mts` from the pre-compaction transcript and
+   facts as `pnpm exec vouchington retrospective-transcript` from the pre-compaction transcript and
    journals them.
 2. **Repeated command failure** — a PostToolUse hook tracks high-signal test/lint/CI command
    failures (`vitest`, `playwright`, `no-mistakes`, `tsgo`, `oxlint`, `gh run`, `pr-shepherd`) in a
@@ -269,7 +269,8 @@ backstop.
 
 The hook must stay listed in the Claude Code sandbox's `sandbox.excludedCommands`
 (`.claude/settings.json`), alongside `blackboard-journal.mts`, `retrospective-save.mts`, and
-`retrospective-facts`. The sandbox denies `AGENT_BLACKBOARD_TOKEN` and blocks egress, so a
+`pnpm exec vouchington retrospective-facts` (covered by the broader `pnpm exec *` entry). The
+sandbox denies `AGENT_BLACKBOARD_TOKEN` and blocks egress, so a
 sandboxed probe cannot determine deployment health. `dev/check-blackboard.mts` detects
 `SANDBOX_RUNTIME=1` and emits a "probe skipped" context note instead of a false stop-work
 directive.
