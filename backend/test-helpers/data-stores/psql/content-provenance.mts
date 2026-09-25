@@ -63,16 +63,38 @@ export type ContentProvenanceListFixture = {
   deleteOAuthClient(): ReturnType<typeof write>
 }
 
-export async function createContentProvenanceListFixture(): Promise<ContentProvenanceListFixture> {
-  const owner = await createTestUser()
+export type OAuthClientLabelColumns = {
+  metadataUrl?: string | null
+  verifiedAt?: Date | null
+  verifiedById?: string | null
+}
+
+export async function insertContentProvenanceOAuthClient(
+  columns: OAuthClientLabelColumns = {},
+): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* insertContentProvenanceOAuthClient */
-    INSERT INTO oauth_clients (client_id, client_name, client_type, token_endpoint_auth_method, redirect_uris, grant_types, response_types, scopes)
+    INSERT INTO oauth_clients (
+      client_id, client_name, client_type, token_endpoint_auth_method, redirect_uris, grant_types,
+      response_types, scopes, metadata_url, verified_at, verified_by_id
+    )
     VALUES (
       ${`voucha_${randomBytes(24).toString('base64url')}`}, 'Content provenance test client', 'public', 'none',
-      ARRAY['https://agent.example/callback'], ARRAY['authorization_code', 'refresh_token'], ARRAY['code'], ARRAY['mcp:read']
+      ARRAY['https://agent.example/callback'], ARRAY['authorization_code', 'refresh_token'], ARRAY['code'], ARRAY['mcp:read'],
+      ${columns.metadataUrl ?? null}, ${columns.verifiedAt ?? null}, ${columns.verifiedById ?? null}
     )
     RETURNING id`)
-  const oauthClientId = rows[0]!.id
+  return rows[0]!.id
+}
+
+export async function readConstraintDefinition(name: string): Promise<string | null> {
+  const { rows } = await read<{ definition: string }>(sql`/* readContentProvenanceConstraint */
+    SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conname = ${name}`)
+  return rows[0]?.definition ?? null
+}
+
+export async function createContentProvenanceListFixture(): Promise<ContentProvenanceListFixture> {
+  const owner = await createTestUser()
+  const oauthClientId = await insertContentProvenanceOAuthClient()
 
   return {
     oauthClientId,

@@ -294,33 +294,41 @@ CREATE TRIGGER user_referral_program_links_content_provenance_immutable
 COMMENT ON COLUMN user_referral_program_links.created_via IS 'Immutable channel that created the row; NULL for rows written before content provenance tracking.';
 COMMENT ON COLUMN user_referral_program_links.created_via_oauth_client_id IS 'Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.';
 
-ALTER TABLE conversation_messages
-  ADD COLUMN IF NOT EXISTS created_via content_creation_channels,
-  ADD COLUMN IF NOT EXISTS created_via_oauth_client_id UUID;
+ALTER TABLE oauth_clients
+  ADD COLUMN IF NOT EXISTS metadata_url TEXT,
+  ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS verified_by_id UUID;
 
-ALTER TABLE conversation_messages
-  ADD CONSTRAINT conversation_messages_created_via_oauth_client_id_fkey
-  FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT
+ALTER TABLE oauth_clients
+  ADD CONSTRAINT oauth_clients_metadata_url_check
+  CHECK (
+    metadata_url IS NULL
+    OR (char_length(metadata_url) <= 2048 AND metadata_url ~ '^https://[^/?#@]+/[^#]*$')
+  )
   NOT VALID;
 
-ALTER TABLE conversation_messages
-  ADD CONSTRAINT conversation_messages_created_via_oauth_client_id_check
-  CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp')))
+ALTER TABLE oauth_clients
+  ADD CONSTRAINT oauth_clients_verified_by_id_fkey
+  FOREIGN KEY (verified_by_id) REFERENCES users(id) ON DELETE SET NULL
   NOT VALID;
 
-ALTER TABLE conversation_messages
-  VALIDATE CONSTRAINT conversation_messages_created_via_oauth_client_id_fkey;
+ALTER TABLE oauth_clients
+  ADD CONSTRAINT oauth_clients_verified_by_id_check
+  CHECK (verified_by_id IS NULL OR verified_at IS NOT NULL)
+  NOT VALID;
 
-ALTER TABLE conversation_messages
-  VALIDATE CONSTRAINT conversation_messages_created_via_oauth_client_id_check;
+ALTER TABLE oauth_clients
+  VALIDATE CONSTRAINT oauth_clients_metadata_url_check;
 
-CREATE INDEX IF NOT EXISTS idx_conversation_messages__created_via_oauth_client_id
-  ON conversation_messages (created_via_oauth_client_id)
-  WHERE created_via_oauth_client_id IS NOT NULL;
+ALTER TABLE oauth_clients
+  VALIDATE CONSTRAINT oauth_clients_verified_by_id_fkey;
 
-CREATE TRIGGER conversation_messages_content_provenance_immutable
-  BEFORE UPDATE OF created_via, created_via_oauth_client_id ON conversation_messages
-  FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update();
+ALTER TABLE oauth_clients
+  VALIDATE CONSTRAINT oauth_clients_verified_by_id_check;
 
-COMMENT ON COLUMN conversation_messages.created_via IS 'Immutable channel that created the row; NULL for rows written before content provenance tracking.';
-COMMENT ON COLUMN conversation_messages.created_via_oauth_client_id IS 'Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_clients__metadata_url
+  ON oauth_clients (metadata_url);
+
+COMMENT ON COLUMN oauth_clients.metadata_url IS 'HTTPS URL of the Client ID Metadata Document for a client identified by URL; NULL for clients registered through dynamic client registration.';
+COMMENT ON COLUMN oauth_clients.verified_at IS 'When staff verified a dynamically registered client, so its client_name may appear on public content provenance labels; NULL means unverified.';
+COMMENT ON COLUMN oauth_clients.verified_by_id IS 'Staff user who verified the client; NULL when unverified or when that user was deleted.';

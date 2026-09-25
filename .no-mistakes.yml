@@ -1960,14 +1960,20 @@ rules:
           nullable: true
           default: null
         - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
-          table: conversation_messages
-          column: created_via
-          type: content_creation_channels
+          table: oauth_clients
+          column: metadata_url
+          type: TEXT
           nullable: true
           default: null
         - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
-          table: conversation_messages
-          column: created_via_oauth_client_id
+          table: oauth_clients
+          column: verified_at
+          type: TIMESTAMPTZ
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: oauth_clients
+          column: verified_by_id
           type: UUID
           nullable: true
           default: null

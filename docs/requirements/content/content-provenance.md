@@ -39,7 +39,8 @@ Every user-content table carries two columns:
 
 The tables are `posts` (including comments, stories and topic recommendations), `communities`,
 `topics`, `lists`, `rss_feeds`, `moderation_reports`, `moderation_appeals`,
-`community_applications`, `user_referral_program_links` and `conversation_messages`.
+`community_applications` and `user_referral_program_links`. `conversation_messages` gains the same
+columns in a later stage, together with its writers.
 
 Invariants, each enforced by the schema:
 
@@ -56,9 +57,22 @@ Invariants, each enforced by the schema:
 - **Private by default:** both columns stay out of API responses until the exposure stage below
   adds a reviewed label.
 
+### OAuth Client Labels
+
+The public label names an OAuth client only when the name can be trusted. `oauth_clients` carries
+what the label needs:
+
+| Column           | Notes                                                                                        |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| `metadata_url`   | Unique HTTPS URL of a Client ID Metadata Document; `NULL` for dynamically registered clients |
+| `verified_at`    | When staff verified a dynamically registered client's `client_name`                          |
+| `verified_by_id` | FK → `users.id`, `ON DELETE SET NULL`; set only when `verified_at` is set                    |
+
+All three stay `NULL` until the clients that fill them ship, so labels stay generic.
+
 The migration is `backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql`, and
 [`schema-content-provenance.test.mts`](../../../backend/data-stores/psql/__tests__/schema-content-provenance.test.mts)
-checks every table's columns, constraints, index and trigger.
+checks every table's columns, constraints, index and trigger, and the OAuth client label columns.
 
 ## Rollout
 

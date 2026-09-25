@@ -2,15 +2,17 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
   createContentProvenanceListFixture,
+  insertContentProvenanceOAuthClient,
+  readConstraintDefinition,
   readContentProvenanceCatalog,
   type ContentProvenance,
 } from '../../../test-helpers/data-stores/psql/content-provenance.mts'
+import { createTestUser } from '../../../test-helpers/entities/users.mts'
 import { onGracefulShutdown } from '../index.mts'
 
 const CONTENT_TABLES = [
   'communities',
   'community_applications',
-  'conversation_messages',
   'lists',
   'moderation_appeals',
   'moderation_reports',
@@ -103,5 +105,44 @@ describe('content provenance schema', () => {
     await fixture.insertList({ createdVia: 'mcp', oauthClientId: fixture.oauthClientId })
 
     await expect(fixture.deleteOAuthClient()).rejects.toMatchObject({ code: '23001' })
+  })
+
+  it('keeps each OAuth client metadata URL a unique HTTPS URL with a path', async () => {
+    const metadataUrl = `https://agent.example/${randomUUID()}/client.json`
+    await expect(insertContentProvenanceOAuthClient({ metadataUrl })).resolves.toEqual(
+      expect.any(String),
+    )
+    await expect(insertContentProvenanceOAuthClient({ metadataUrl })).rejects.toMatchObject({
+      code: '23505',
+    })
+
+    for (const invalidUrl of [
+      'http://agent.example/client.json',
+      'https://agent.example',
+      'https://user@agent.example/client.json',
+      'https://agent.example/client.json#fragment',
+      `https://agent.example/${'a'.repeat(2048)}`,
+    ]) {
+      await expect(
+        insertContentProvenanceOAuthClient({ metadataUrl: invalidUrl }),
+      ).rejects.toMatchObject({ code: '23514' })
+    }
+  })
+
+  it('records who verified an OAuth client only alongside when', async () => {
+    const staff = await createTestUser()
+
+    await expect(
+      insertContentProvenanceOAuthClient({ verifiedAt: new Date(), verifiedById: staff.id }),
+    ).resolves.toEqual(expect.any(String))
+    await expect(
+      insertContentProvenanceOAuthClient({ verifiedAt: new Date() }),
+    ).resolves.toEqual(expect.any(String))
+    await expect(
+      insertContentProvenanceOAuthClient({ verifiedById: staff.id }),
+    ).rejects.toMatchObject({ code: '23514' })
+    await expect(readConstraintDefinition('oauth_clients_verified_by_id_fkey')).resolves.toBe(
+      'FOREIGN KEY (verified_by_id) REFERENCES users(id) ON DELETE SET NULL',
+    )
   })
 })
