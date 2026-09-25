@@ -42,7 +42,8 @@ describe('POST /api/v1/mcp rate limits', () => {
       write_tier3: 1,
       write_tier4: 1,
       write_tier5: 1,
-      write_ttl: 60,
+      // Distinct from any fallback, so Retry-After must carry the configured window.
+      write_ttl: 45,
     })
     const { access_token: accessToken } = await issueTestOAuthTokens(await createTestUser())
     const ip = nextTestRequestIp()
@@ -57,6 +58,6 @@ describe('POST /api/v1/mcp rate limits', () => {
     for (let call = 0; call < ALLOWED_CALLS; call++) await post().expect(200)
     const limited = await post().expect(429)
 
-    expect(limited.headers['retry-after']).toBe('60')
+    expect(limited.headers['retry-after']).toBe('45')
   })
 })
