@@ -6,7 +6,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { getPrivateUserByAny } from '@services/users/get.mts'
+import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
