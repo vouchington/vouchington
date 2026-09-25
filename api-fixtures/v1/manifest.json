@@ -10832,6 +10832,165 @@
       "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-email-intakes/review-queue": {
+      "bodyKind": "content",
+      "hash": "e863b849eb4237af55a33a64de79c36360687105787cdbb1749cccc2353bc54d",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-email-intakes/review-queue",
+      "schema": {
+        "definitions": {
+          "CopyrightEmailIntakeQueueResponse": {
+            "additionalProperties": false,
+            "properties": {
+              "copyright_email_intakes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "name": "CopyrightStaffEmailIntakeQueueItem",
+                    "type": "ref"
+                  },
+                  "type": "array"
+                }
+              },
+              "page_info": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "has_next_page": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
+                    "start_cursor": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "CopyrightStaffEmailIntakeQueueItem": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "linked_notice_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "parse_status": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "failed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "succeeded"
+                    }
+                  ]
+                }
+              },
+              "received_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "recommendation_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "review_path": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "initial"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "matched_thread"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "unresolved_thread"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "name": "CopyrightEmailIntakeQueueResponse",
+          "type": "ref"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/email-intake-queue-route.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices": {
       "bodyKind": "content",
       "hash": "25d75957fe0a0c16be24b3ef14e4b5c9bd66dc4eaca857802ce29ed8c286fa1f",
@@ -77669,6 +77828,31 @@
       },
       "route": {
         "routeTemplate": "/api/v1/copyright-notices/review-queue"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-email-intakes/review-queue",
+      "bodyFile": "responses/web.copyright.email-intake-queue.default.json",
+      "consumers": ["web"],
+      "id": "web.copyright.email-intake-queue.default",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/email-intake-queue-route.mts",
+        "web/lib/api/client/copyright-email-intakes.ts",
+        "web/lib/api/server/copyright-notices.ts"
+      ],
+      "path": "/api/v1/copyright-email-intakes/review-queue",
+      "responseSchema": {
+        "hash": "8a1b695335a766e2a4b3a708026f9bb34cad58eb05e3fc788bb90cfd8cb2513b",
+        "key": "web.copyright.email-intake-queue.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/copyright-email-intakes/review-queue"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"

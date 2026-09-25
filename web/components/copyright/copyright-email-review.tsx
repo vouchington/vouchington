@@ -3,27 +3,46 @@
 import { useState } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { InfiniteScroll } from '@/components/shared/infinite-scroll'
+import { usePaginatedList } from '@/hooks/use-paginated-list'
+import type {
+  CopyrightEmailIntakeQueueItem,
+  CopyrightEmailIntakeQueuePage,
+} from '@/types/copyright-notices'
 import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-model'
 import {
   createCopyrightEmailCorrespondenceDraft,
   type CopyrightEmailCorrespondenceDraft,
 } from './copyright-email-correspondence-model'
 import { CopyrightEmailReviewDetail } from './copyright-email-review-detail'
-import type { CopyrightEmailIntake } from '@/lib/api/client/copyright-email-intakes'
+import {
+  listCopyrightEmailIntakes,
+  type CopyrightEmailIntake,
+} from '@/lib/api/client/copyright-email-intakes'
 import { useCopyrightEmailReviewActions } from './copyright-email-review-actions'
 
-type CopyrightEmailReviewItem = {
-  id: string
-  received_at: string
-  review_path?: 'initial' | 'unresolved_thread' | 'matched_thread'
-}
-
-export function CopyrightEmailReview({
-  initialItems,
-}: {
-  initialItems: CopyrightEmailReviewItem[]
-}) {
-  const [items, setItems] = useState(initialItems)
+export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueuePage }) {
+  const {
+    pages,
+    hasNextPage,
+    endCursor,
+    loadMore,
+    loadingMore,
+    fetchError,
+    clearError,
+    resetToFirstPage,
+    resetKey,
+  } = usePaginatedList(
+    data,
+    '/api/v1/copyright-email-intakes/review-queue',
+    {},
+    { loadPage: after => listCopyrightEmailIntakes({ after }) },
+  )
+  const itemById = new Map<string, CopyrightEmailIntakeQueueItem>()
+  for (const page of pages) {
+    for (const item of page.copyright_email_intakes) itemById.set(item.id, item)
+  }
+  const items = [...itemById.values()]
   const [detail, setDetail] = useState<CopyrightEmailIntake | null>(null)
   const [rationale, setRationale] = useState('')
   const [draft, setDraft] = useState<CopyrightEmailApprovalDraft | null>(null)
@@ -45,7 +64,7 @@ export function CopyrightEmailReview({
       setDetail,
       setDraft,
       setError,
-      setItems,
+      resetQueue: page => resetToFirstPage?.(page),
       setLoading,
       setManualFallbackReason,
       setRationale,
@@ -69,24 +88,36 @@ export function CopyrightEmailReview({
         </Alert>
       )}
       <div className='grid gap-4 md:grid-cols-2'>
-        <ul className='space-y-1'>
-          {items.map(item => (
-            <li key={item.id}>
-              <Button
-                disabled={loading}
-                onClick={() => selectIntake(item.id)}
-                variant='link'
-              >
-                {item.review_path === 'matched_thread'
-                  ? 'Matched correspondence'
-                  : item.review_path === 'unresolved_thread'
-                    ? 'Unresolved reply'
-                    : 'Initial intake'}{' '}
-                {item.id}
-              </Button>
-            </li>
-          ))}
-        </ul>
+        <div>
+          <InfiniteScroll
+            hasNextPage={hasNextPage}
+            endCursor={endCursor}
+            onLoadMore={loadMore}
+            loadingMore={loadingMore}
+            fetchError={fetchError}
+            clearError={clearError}
+            resetKey={resetKey}
+          >
+            <ul className='space-y-1'>
+              {items.map(item => (
+                <li key={item.id}>
+                  <Button
+                    disabled={loading}
+                    onClick={() => selectIntake(item.id)}
+                    variant='link'
+                  >
+                    {item.review_path === 'matched_thread'
+                      ? 'Matched correspondence'
+                      : item.review_path === 'unresolved_thread'
+                        ? 'Unresolved reply'
+                        : 'Initial intake'}{' '}
+                    {item.id}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </InfiniteScroll>
+        </div>
         {detail && (
           <CopyrightEmailReviewDetail
             detail={detail}

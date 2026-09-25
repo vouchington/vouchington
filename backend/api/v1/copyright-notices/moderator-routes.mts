@@ -22,7 +22,6 @@ import {
   completeCopyrightMandatoryHumanReview,
   replayFailedCopyrightActionIntent,
   getCopyrightStaffEmailIntake,
-  listCopyrightStaffEmailIntakes,
   loadCopyrightEmailRawEvidence,
   appendCopyrightLegalHoldAssessment,
   resolveCopyrightLegalHold,
@@ -46,16 +45,6 @@ import {
   parseNullableCopyrightEnum,
 } from '@services/copyright-notices/moderator-http-input'
 
-app.route('/api/v1/copyright-email-intakes/review-queue').get(async (ctx: Context) => {
-  setPrivateNoStoreCacheHeaders(ctx)
-  const currentUser = await requireAuthAndRateLimit(
-    ctx,
-    currentUserCanReviewCopyrightNotices,
-    'GET:/api/v1/copyright-email-intakes/review-queue',
-  )
-  assertNotSuspended(currentUser)
-  ctx.json({ copyright_email_intakes: await listCopyrightStaffEmailIntakes(currentUser) })
-})
 app.route('/api/v1/copyright-email-intakes/:id').get(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
   const currentUser = await requireAuthAndRateLimit(

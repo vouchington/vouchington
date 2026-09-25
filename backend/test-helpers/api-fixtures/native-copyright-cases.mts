@@ -93,6 +93,37 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
     ],
   },
   {
+    id: 'web.copyright.email-intake-queue.default',
+    method: 'GET',
+    path: '/api/v1/copyright-email-intakes/review-queue',
+    route: { routeTemplate: '/api/v1/copyright-email-intakes/review-queue' },
+    auth: 'fixture-admin',
+    status: 200,
+    body: {
+      copyright_email_intakes: [
+        {
+          id: '00000000-0000-7000-8000-000000000820',
+          received_at: '2026-07-01T12:00:00.000Z',
+          parse_status: 'succeeded',
+          recommendation_id: null,
+          review_path: 'initial',
+          linked_notice_id: null,
+        },
+      ],
+      page_info: {
+        has_next_page: true,
+        start_cursor: 'copyright-email-intakes-first',
+        end_cursor: 'copyright-email-intakes-next',
+      },
+    },
+    consumers: ['web'],
+    migratedFrom: [
+      'backend/api/v1/copyright-notices/email-intake-queue-route.mts',
+      'web/lib/api/client/copyright-email-intakes.ts',
+      'web/lib/api/server/copyright-notices.ts',
+    ],
+  },
+  {
     id: 'native.posts.images.placement.default',
     method: 'GET',
     path: `/api/v1/posts/${postId}/images`,

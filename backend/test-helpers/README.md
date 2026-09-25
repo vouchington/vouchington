@@ -277,6 +277,10 @@ and any other test's unreadable row fails the request. Seek to the test's own ro
 `readCopyrightStaffQueueCursorBefore(noticeIds)` from
 `@voucha/test-helpers/data-stores/psql/copyright-notice-reads` returns an `after` cursor positioned
 just before the oldest of the given notices, so every page starts at rows the test created.
+The staff email intake queue (`GET /api/v1/copyright-email-intakes/review-queue`) applies the same
+rule with an `after` cursor encoded just before the test's own `received_at`; a test that asserts a
+final page instead receives its intakes about 1000 years ahead so it owns the queue tail (see
+`backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts`).
 
 ### "No more results" assumptions
 

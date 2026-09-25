@@ -13,6 +13,7 @@ import {
   copyrightEmailIntakeId as intakeId,
   makeCopyrightEmailIntake as makeIntake,
   makeCopyrightEmailQueueItem as makeQueueItem,
+  makeCopyrightEmailQueuePage as makeQueuePage,
   makeMatchedCopyrightEmailIntake as makeMatchedIntake,
   makeMatchedCopyrightEmailQueueItem as makeMatchedQueueItem,
 } from '@/test-helpers/components/copyright/copyright-email-review'
@@ -45,7 +46,7 @@ const otherIntakeId = '019f0000-0000-7000-8000-000000000007'
 describe('CopyrightEmailReview', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockList.mockResolvedValue({ copyright_email_intakes: [makeQueueItem()] })
+    mockList.mockResolvedValue(makeQueuePage())
     mockGet.mockResolvedValue({ copyright_email_intake: makeIntake() })
     mockResolveTargets.mockResolvedValue([
       {
@@ -59,7 +60,7 @@ describe('CopyrightEmailReview', () => {
   })
 
   it('shows private evidence, parsed content, and a recommendation-mapped approval form', async () => {
-    render(<CopyrightEmailReview initialItems={[makeQueueItem()]} />)
+    render(<CopyrightEmailReview data={makeQueuePage()} />)
 
     await selectEmailIntake()
 
@@ -97,7 +98,7 @@ describe('CopyrightEmailReview', () => {
         caption: 'Second image',
       },
     ])
-    render(<CopyrightEmailReview initialItems={[makeQueueItem()]} />)
+    render(<CopyrightEmailReview data={makeQueuePage()} />)
 
     await selectEmailIntake()
     fireEvent.change(screen.getByLabelText('Claimant email'), {
@@ -143,7 +144,7 @@ describe('CopyrightEmailReview', () => {
 
   it('submits rejection and keeps action failures visible to the moderator', async () => {
     mockReject.mockRejectedValue(new Error('API rejected the action'))
-    render(<CopyrightEmailReview initialItems={[makeQueueItem()]} />)
+    render(<CopyrightEmailReview data={makeQueuePage()} />)
 
     await selectEmailIntake()
     fireEvent.change(screen.getByLabelText('Review rationale'), {
@@ -164,7 +165,7 @@ describe('CopyrightEmailReview', () => {
 
   it('keeps detail-load failures visible to the moderator', async () => {
     mockGet.mockRejectedValue(new Error('The intake detail is unavailable'))
-    render(<CopyrightEmailReview initialItems={[makeQueueItem()]} />)
+    render(<CopyrightEmailReview data={makeQueuePage()} />)
 
     fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
 
@@ -180,7 +181,8 @@ describe('CopyrightEmailReview', () => {
     mockGet.mockResolvedValueOnce({
       copyright_email_intake: { ...makeIntake(otherIntakeId), recommendation: null },
     })
-    render(<CopyrightEmailReview initialItems={[makeQueueItem(), makeQueueItem(otherIntakeId)]} />)
+    const queue = makeQueuePage([makeQueueItem(), makeQueueItem(otherIntakeId)])
+    render(<CopyrightEmailReview data={queue} />)
 
     await selectEmailIntake(intakeId)
     fireEvent.change(screen.getByLabelText('Review rationale'), {
@@ -203,7 +205,7 @@ describe('CopyrightEmailReview', () => {
   it('keeps queue-refresh failures visible after an approval', async () => {
     mockApprove.mockResolvedValue(undefined)
     mockList.mockRejectedValue(new Error('The review queue is unavailable'))
-    render(<CopyrightEmailReview initialItems={[makeQueueItem()]} />)
+    render(<CopyrightEmailReview data={makeQueuePage()} />)
 
     await selectEmailIntake()
     await selectHostedImage('Claimed image')
@@ -220,7 +222,7 @@ describe('CopyrightEmailReview', () => {
   it('admits a matched reply with its selected legal classification and fields', async () => {
     mockGet.mockResolvedValue({ copyright_email_intake: makeMatchedIntake() })
     mockAdmitCorrespondence.mockResolvedValue(undefined)
-    render(<CopyrightEmailReview initialItems={[makeMatchedQueueItem()]} />)
+    render(<CopyrightEmailReview data={makeQueuePage([makeMatchedQueueItem()])} />)
 
     await selectEmailIntake()
     fireEvent.click(screen.getByRole('combobox', { name: 'Classification' }))
@@ -249,7 +251,7 @@ describe('CopyrightEmailReview', () => {
   it('rejects matched correspondence with the selected classification', async () => {
     mockGet.mockResolvedValue({ copyright_email_intake: makeMatchedIntake() })
     mockRejectCorrespondence.mockResolvedValue(undefined)
-    render(<CopyrightEmailReview initialItems={[makeMatchedQueueItem()]} />)
+    render(<CopyrightEmailReview data={makeQueuePage([makeMatchedQueueItem()])} />)
     await selectEmailIntake()
     fireEvent.change(screen.getByLabelText('Review rationale'), {
       target: { value: 'This reply is not a copyright filing.' },
@@ -271,7 +273,7 @@ describe('CopyrightEmailReview', () => {
     })
     render(
       <CopyrightEmailReview
-        initialItems={[{ ...makeQueueItem(), review_path: 'unresolved_thread' }]}
+        data={makeQueuePage([{ ...makeQueueItem(), review_path: 'unresolved_thread' }])}
       />,
     )
 

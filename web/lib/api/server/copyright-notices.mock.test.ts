@@ -38,6 +38,10 @@ import type {
   CopyrightNoticesPage,
   CopyrightParticipantNoticeDetail,
 } from '@/types/copyright-notices'
+import {
+  makeCopyrightEmailQueueItem,
+  makeCopyrightEmailQueuePage,
+} from '@/test-helpers/components/copyright/copyright-email-review'
 
 describe('copyright notice server API helpers', () => {
   beforeEach(() => {
@@ -74,14 +78,18 @@ describe('copyright notice server API helpers', () => {
       copyright_notices: [{ id: 'notice-1' }],
       page_info: { has_next_page: true, start_cursor: 'first', end_cursor: 'next' },
     }
+    const emailPage = makeCopyrightEmailQueuePage([makeCopyrightEmailQueueItem()], {
+      has_next_page: true,
+      end_cursor: 'next',
+    })
     mockGet
       .mockResolvedValueOnce({ copyright_notice: notice })
       .mockResolvedValueOnce(staffPage)
-      .mockResolvedValueOnce({ copyright_email_intakes: [{ id: 'intake-1' }] })
+      .mockResolvedValueOnce(emailPage)
 
     await expect(getCopyrightNoticeServer('notice-1')).resolves.toBe(notice)
     await expect(getCopyrightReviewQueue()).resolves.toBe(staffPage)
-    await expect(getCopyrightEmailIntakeReviewQueue()).resolves.toEqual([{ id: 'intake-1' }])
+    await expect(getCopyrightEmailIntakeReviewQueue()).resolves.toBe(emailPage)
     expect(mockGet).toHaveBeenCalledWith('/api/v1/copyright-notices/review-queue')
     expect(mockGet).toHaveBeenCalledWith('/api/v1/copyright-email-intakes/review-queue')
   })

@@ -12,6 +12,6 @@ export default async function CopyrightEmailReviewPage() {
   if (!currentUser.roles.includes('administrator') && !currentUser.roles.includes('moderator')) {
     notFound()
   }
-  const initialItems = await getCopyrightEmailIntakeReviewQueue()
-  return <CopyrightEmailReview initialItems={initialItems} />
+  const data = await getCopyrightEmailIntakeReviewQueue()
+  return <CopyrightEmailReview data={data} />
 }

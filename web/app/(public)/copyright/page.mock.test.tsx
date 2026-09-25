@@ -40,7 +40,9 @@ vi.mock(import('@/components/copyright/copyright-staff-queue'), () => ({
   CopyrightStaffQueue: () => <div>staff queue</div>,
 }))
 vi.mock(import('@/components/copyright/copyright-email-review'), () => ({
-  CopyrightEmailReview: () => <div>email review</div>,
+  CopyrightEmailReview: ({ data }) => (
+    <div>email review {data.copyright_email_intakes.map(intake => intake.id).join(',')}</div>
+  ),
 }))
 
 import { requireCurrentUser } from '@/lib/auth/require-current-user'
@@ -51,6 +53,10 @@ import {
   getCopyrightParticipantNoticeServer,
   getCopyrightReviewQueue,
 } from '@/lib/api/server/copyright-notices'
+import {
+  copyrightEmailIntakeId,
+  makeCopyrightEmailQueuePage,
+} from '@/test-helpers/components/copyright/copyright-email-review'
 import CopyrightPage from './page'
 import CounterNoticePage from './counter-notice/page'
 import DesignatedAgentPage from './designated-agent/page'
@@ -110,7 +116,7 @@ describe('copyright pages', () => {
       copyright_notices: [],
       page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     })
-    mockEmailQueue.mockResolvedValue([])
+    mockEmailQueue.mockResolvedValue(makeCopyrightEmailQueuePage())
     render(await CopyrightNoticesPage({ searchParams: Promise.resolve({ after: 'cursor' }) }))
     expect(screen.getByText('Case notice-1')).toBeInTheDocument()
     expect(screen.getByText('Load more accepted copyright notices')).toBeInTheDocument()
@@ -119,7 +125,7 @@ describe('copyright pages', () => {
     render(await CopyrightReviewQueuePage())
     expect(screen.getByText('staff queue')).toBeInTheDocument()
     render(await CopyrightEmailReviewPage())
-    expect(screen.getByText('email review')).toBeInTheDocument()
+    expect(screen.getByText(`email review ${copyrightEmailIntakeId}`)).toBeInTheDocument()
   })
 
   it('loads a public notice and poster response routes', async () => {

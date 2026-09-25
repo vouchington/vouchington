@@ -15,7 +15,7 @@ import {
 } from '@/lib/api/client/copyright-notice-targets'
 import {
   makeCopyrightEmailIntake,
-  makeCopyrightEmailQueueItem,
+  makeCopyrightEmailQueuePage,
 } from '@/test-helpers/components/copyright/copyright-email-review'
 import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-model'
 import { CopyrightEmailApprovalTargetFields } from './copyright-email-approval-target-fields'
@@ -91,9 +91,9 @@ describe('CopyrightEmailApprovalTargetFields', () => {
 
   it('keeps approval disabled after resolver failure until staff supplies manual verified IDs', async () => {
     mockGet.mockResolvedValue({ copyright_email_intake: makeCopyrightEmailIntake() })
-    mockList.mockResolvedValue({ copyright_email_intakes: [makeCopyrightEmailQueueItem()] })
+    mockList.mockResolvedValue(makeCopyrightEmailQueuePage())
     mockResolveTargets.mockRejectedValue(new Error('The hosted post is unavailable.'))
-    render(<CopyrightEmailReview initialItems={[makeCopyrightEmailQueueItem()]} />)
+    render(<CopyrightEmailReview data={makeCopyrightEmailQueuePage()} />)
     fireEvent.click(screen.getByRole('button', { name: /019f0000-0000-7000-8000-000000000001/ }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('hosted post is unavailable')

@@ -1,13 +1,35 @@
+import type {
+  CopyrightEmailIntakeQueueItem,
+  CopyrightEmailIntakeQueuePage,
+} from '@/types/copyright-notices'
+
 export const copyrightEmailIntakeId = '019f0000-0000-7000-8000-000000000001'
 
-export function makeCopyrightEmailQueueItem(id = copyrightEmailIntakeId) {
+export function makeCopyrightEmailQueueItem(
+  id = copyrightEmailIntakeId,
+): CopyrightEmailIntakeQueueItem {
   return {
     id,
     received_at: '2026-09-19T00:00:00.000Z',
     parse_status: 'succeeded',
     recommendation_id: '019f0000-0000-7000-8000-000000000002',
-    review_path: 'initial' as const,
+    review_path: 'initial',
     linked_notice_id: null,
+  }
+}
+
+export function makeCopyrightEmailQueuePage(
+  items: CopyrightEmailIntakeQueueItem[] = [makeCopyrightEmailQueueItem()],
+  pageInfo: Partial<CopyrightEmailIntakeQueuePage['page_info']> = {},
+): CopyrightEmailIntakeQueuePage {
+  return {
+    copyright_email_intakes: items,
+    page_info: {
+      has_next_page: false,
+      start_cursor: items.length > 0 ? 'start' : null,
+      end_cursor: null,
+      ...pageInfo,
+    },
   }
 }
 
@@ -46,10 +68,10 @@ export function makeCopyrightEmailIntake(id = copyrightEmailIntakeId) {
   }
 }
 
-export function makeMatchedCopyrightEmailQueueItem() {
+export function makeMatchedCopyrightEmailQueueItem(): CopyrightEmailIntakeQueueItem {
   return {
     ...makeCopyrightEmailQueueItem(),
-    review_path: 'matched_thread' as const,
+    review_path: 'matched_thread',
     linked_notice_id: '019f0000-0000-7000-8000-000000000006',
   }
 }

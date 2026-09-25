@@ -250,6 +250,10 @@
       "fixtureIds": [],
       "hash": "11115901eecde79a3b5f6be7e3b6ccb54ea38fc4ca9098c4c58e75a7740944eb"
     },
+    "GET:/api/v1/copyright-email-intakes/review-queue": {
+      "fixtureIds": ["web.copyright.email-intake-queue.default"],
+      "hash": "e863b849eb4237af55a33a64de79c36360687105787cdbb1749cccc2353bc54d"
+    },
     "GET:/api/v1/copyright-notices": {
       "fixtureIds": ["web.copyright.notices.default"],
       "hash": "25d75957fe0a0c16be24b3ef14e4b5c9bd66dc4eaca857802ce29ed8c286fa1f"
@@ -2657,6 +2661,10 @@
     "web.communities.warning.create.default": {
       "fixtureIds": ["web.communities.warning.create.default"],
       "hash": "b038a2f206ce0215d4d59994436070776411fd7e26ec212e912a03af1ee89ef9"
+    },
+    "web.copyright.email-intake-queue.default": {
+      "fixtureIds": ["web.copyright.email-intake-queue.default"],
+      "hash": "8a1b695335a766e2a4b3a708026f9bb34cad58eb05e3fc788bb90cfd8cb2513b"
     },
     "web.copyright.notices.default": {
       "fixtureIds": ["web.copyright.notices.default"],
