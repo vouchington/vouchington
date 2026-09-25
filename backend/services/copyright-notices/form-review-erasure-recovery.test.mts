@@ -6,8 +6,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import {
-  createTestCopyrightFormIntakeReview,
-  eraseTestCopyrightFormReviewModerator,
+  createTestCopyrightFormRejectionByErasedModerator,
   readTestCopyrightEnforcementRequestState,
   readTestCopyrightFormReviewActor,
 } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
@@ -67,12 +66,7 @@ async function createAutomatedCopyrightForm() {
 
 async function rejectWithErasedModerator(intakeId: string): Promise<void> {
   const moderator = await createTestUser()
-  await createTestCopyrightFormIntakeReview({
-    intakeId,
-    moderatorId: moderator.id,
-    accepted: false,
-  })
-  await eraseTestCopyrightFormReviewModerator(moderator.id)
+  await createTestCopyrightFormRejectionByErasedModerator({ intakeId, moderatorId: moderator.id })
   await expect(readTestCopyrightFormReviewActor(intakeId)).resolves.toBeNull()
 }
 
