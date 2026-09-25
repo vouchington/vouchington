@@ -11,7 +11,7 @@ Not partitioned — growth: unbounded.
 | `id`             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                            |
 | `created_at`     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                            |
 | `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                            |
-| `import_type`    | `admin_import_types`       | no       |                              |          |           |           | The type of entities being imported: topic, CRM contact, or RSS feed.      |
+| `import_type`    | `admin_import_types`       | no       |                              |          |           |           | The type of entities being imported: topic or RSS feed.                    |
 | `created_by_id`  | `uuid`                     | no       |                              |          |           |           |                                                                            |
 | `total_rows`     | `integer`                  | no       |                              |          |           |           | Total number of rows in this import batch (max 50000).                     |
 | `completed_rows` | `integer`                  | no       | `0`                          |          |           |           | Number of rows successfully imported so far.                               |

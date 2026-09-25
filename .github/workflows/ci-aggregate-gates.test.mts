@@ -20,6 +20,10 @@ import {
 
 const execFileAsync = promisify(execFile)
 
+// A job's timeout starts at runner assignment, before hosted-VM provisioning finishes, so a
+// gate job whose own clock equals its step budget is cancelled by a slow boot alone.
+const MIN_GATE_PROVISIONING_HEADROOM_MINUTES = 3
+
 async function runDependencyFreeGate(results: string) {
   const emptyWorkspace = await mkdtemp(join(tmpdir(), 'ci-dependency-free-results-'))
   try {
@@ -193,6 +197,20 @@ describe('CI aggregate gates', () => {
     expect(workflow.jobs?.build?.steps).toHaveLength(1)
     expect(buildGate).toBe(testsGate)
   })
+
+  it.each(['tests', 'build'])(
+    'bounds the %s gate step and leaves job headroom for runner provisioning',
+    name => {
+      const job = workflow.jobs?.[name]
+      const jobTimeout = job?.['timeout-minutes']
+      const stepTimeout = job?.steps?.[0]?.['timeout-minutes']
+      if (typeof jobTimeout !== 'number' || typeof stepTimeout !== 'number')
+        throw new TypeError(`${name} needs numeric job and gate-step timeout-minutes`)
+      expect(jobTimeout - stepTimeout).toBeGreaterThanOrEqual(
+        MIN_GATE_PROVISIONING_HEADROOM_MINUTES,
+      )
+    },
+  )
 
   it('keeps compact result payloads well below the workflow attribute limit', () => {
     const payloads = [

@@ -35,7 +35,7 @@
     "test:smoke": "./scripts/tests/smoke-test-cloudflare-worker.sh"
   },
   "dependencies": {
-    "@sentry/cloudflare": "10.75.1",
+    "@sentry/cloudflare": "10.75.2",
     "@ts-shared/cache": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/languages": "workspace:^",

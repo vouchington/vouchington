@@ -42,7 +42,7 @@
     "@modules/search-utils": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@sentry/node": "10.75.1",
+    "@sentry/node": "10.75.2",
     "@ts-shared/money": "workspace:^",
     "@valkey/valkey-glide": "^2.5.2",
     "@voucha/api-fixtures": "workspace:^",
@@ -54,7 +54,7 @@
     "sql-template-strings": "^2.2.2",
     "supertest": "^7.2.2",
     "uuid": "^14.0.2",
-    "vouchington-tooling": "^0.19.1"
+    "vouchington-tooling": "^0.19.2"
   },
   "devDependencies": {
     "@ts-shared/utils": "workspace:^",

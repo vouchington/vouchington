@@ -22,7 +22,6 @@ describe('PostgreSQL relation schema integrity', () => {
     const { foreignKeys: rows, invariants } = await getAdminImportRelationCatalog()
 
     expect(rows.map(row => `${row.column_name}:${row.target_table}:${row.delete_rule}`)).toEqual([
-      'crm_contact_id:crm_contacts:RESTRICT',
       'rss_feed_id:rss_feeds:RESTRICT',
       'topic_id:topics:RESTRICT',
     ])
@@ -30,7 +29,7 @@ describe('PostgreSQL relation schema integrity', () => {
     expect(invariants).toHaveLength(1)
     expect(invariants[0]!.constraint_definition).toContain('completed_at IS NOT NULL')
     expect(invariants[0]!.constraint_definition).toContain(
-      'num_nonnulls(topic_id, crm_contact_id, rss_feed_id) = 1',
+      'num_nonnulls(topic_id, rss_feed_id) = 1',
     )
     expect(invariants[0]!.target_trigger_count).toBe(1)
   })

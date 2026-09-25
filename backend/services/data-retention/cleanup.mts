@@ -3,7 +3,6 @@
 // the retention job must hard-delete orphaned OAuth rows that have no owning service
 // to delegate to (user_id is already NULL). Exposing hardDelete helpers from each
 // OAuth provider would add significant boilerplate for a single use case.
-// CRM contact/note author FKs are reassigned before deletion because they require a non-null creator.
 import { providerTableConfigs } from '@services/oauth/providers'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { cleanupLocalAnalyticsRetention } from '@data-stores/analytics/retention'
@@ -215,10 +214,6 @@ export async function cleanupSoftDeletedUsers(
   let deleted = 0
   let hasMore = false
 
-  // Null out or reassign FK references that lack ON DELETE CASCADE/SET NULL before
-  // hard-deleting users.
-  //
-  // - crm_contacts.created_by_id: NOT NULL ... ON DELETE RESTRICT — must reassign to tombstone user.
   for (let batches = 0; batches < maxBatches; batches += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each bounded deletion commit determines whether another user batch remains
     const batchDeleted = await cleanupSoftDeletedUserBatch(

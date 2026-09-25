@@ -49,7 +49,7 @@ export async function getRemovedTablePresence(tableNames: string[]): Promise<Rel
     `/* getRemovedPostgresTables */
       SELECT table_name, to_regclass('public.' || table_name)::text AS relation
       FROM unnest($1::text[]) AS table_name
-      ORDER BY table_name`,
+      ORDER BY array_position($1::text[], table_name)`,
     [tableNames],
   )
   return rows
