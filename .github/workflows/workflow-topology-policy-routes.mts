@@ -23,6 +23,14 @@ const applicationPrTests = [
   'test-playwright',
   'test-playwright-credentialed',
 ] as const
+// Every PR test and Docker validation build is gated only by static analysis; none waits on another.
+const staticGatedPrJobs = [
+  ...unrelatedPrTests,
+  ...applicationPrTests,
+  'test-explain-analyze',
+  'build-backend',
+  'build-web',
+] as const
 export const routePolicy = {
   requiredArtifactEdges,
   requiredJobs: [
@@ -33,14 +41,14 @@ export const routePolicy = {
   forbiddenJobs: [],
   requiredDirectEdges: [
     edge('.github/workflows/ci.yml#tests', '.github/workflows/ci.yml#build'),
-    edge(ciJob('tests'), ciJob('build-backend')),
-    edge(ciJob('tests'), ciJob('build-web')),
-    ...['static-backend', 'static-web', 'static-lambdas', 'static-cloudflare-worker'].map(job =>
-      edge(ciJob('static-code-analysis'), ciJob(job)),
-    ),
-    ...['test-backend-modules', 'test-backend-unit', 'test-backend-credentialed'].map(job =>
-      edge(ciJob('test-ts-shared'), ciJob(job)),
-    ),
+    ...[
+      'static-backend',
+      'static-web',
+      'static-lambdas',
+      'static-cloudflare-worker',
+      'build-backend',
+      'build-web',
+    ].map(job => edge(ciJob('static-code-analysis'), ciJob(job))),
     ...[
       'test-backend-modules',
       'test-backend-unit',
@@ -48,6 +56,7 @@ export const routePolicy = {
       'test-backend-credentialed',
       'test-postgres-schema',
       'test-explain-analyze',
+      'build-backend',
     ].map(job => edge(ciJob('static-backend'), ciJob(job))),
     ...[
       'test-web',
@@ -55,6 +64,7 @@ export const routePolicy = {
       'test-web-integration',
       'test-playwright',
       'test-playwright-credentialed',
+      'build-web',
     ].map(job => edge(ciJob('static-web'), ciJob(job))),
     ...['test-lambdas', 'test-playwright', 'test-playwright-credentialed'].map(job =>
       edge(ciJob('static-lambdas'), ciJob(job)),
@@ -62,23 +72,6 @@ export const routePolicy = {
     ...['test-cloudflare-worker', 'test-playwright', 'test-playwright-credentialed'].map(job =>
       edge(ciJob('static-cloudflare-worker'), ciJob(job)),
     ),
-    edge(ciJob('test-web'), ciJob('test-web-api')),
-    edge(ciJob('test-web'), ciJob('test-web-integration')),
-    ...[
-      'test-ts-shared',
-      'test-backend-modules',
-      'test-backend-unit',
-      'test-postgres-schema',
-      'test-web',
-      'test-web-api',
-      'test-web-integration',
-      'test-lambdas',
-      'test-cloudflare-worker',
-    ].flatMap(job => [
-      edge(ciJob(job), ciJob('test-playwright')),
-      edge(ciJob(job), ciJob('test-playwright-credentialed')),
-    ]),
-    edge(ciJob('test-backend-credentialed'), ciJob('test-playwright-credentialed')),
     ...[
       'test-backend-modules',
       'test-backend-unit',
@@ -113,10 +106,10 @@ export const routePolicy = {
       edge(ciJob(job), ciJob('test-playwright')),
       edge(ciJob(job), ciJob('test-playwright-credentialed')),
     ]),
-    edge(ciJob('test-playwright'), ciJob('test-playwright-credentialed')),
-    edge(ciJob('test-playwright-credentialed'), ciJob('test-playwright')),
-    edge(ciJob('test-web-api'), ciJob('test-web-integration')),
-    edge(ciJob('test-web-integration'), ciJob('test-web-api')),
+    ...['build-backend', 'build-web'].map(job => edge(ciJob('tests'), ciJob(job))),
+    ...staticGatedPrJobs.flatMap(from =>
+      staticGatedPrJobs.flatMap(to => (to === from ? [] : [edge(ciJob(from), ciJob(to))])),
+    ),
   ],
   requiredTransitiveEdges: [],
   forbiddenTransitiveEdges: unrelatedPrTests.flatMap(unrelated =>
@@ -148,7 +141,7 @@ export const routePolicy = {
       innerDownstreamJobs: [],
       outerCallers: {
         '.github/workflows/ci.yml#test-backend-unit': splitIds(
-          '.github/workflows/ci.yml#build .github/workflows/ci.yml#build-backend .github/workflows/ci.yml#build-web .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing .github/workflows/ci.yml#upload-codecov',
+          '.github/workflows/ci.yml#build .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#tests .github/workflows/ci.yml#tests-processing .github/workflows/ci.yml#upload-codecov',
         ),
         '.github/workflows/main-backend.yml#test-backend-unit': [],
       },

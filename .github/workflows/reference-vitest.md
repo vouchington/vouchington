@@ -13,13 +13,10 @@ ownership table and [Vitest CI Selection](../../docs/development/ci.md#vitest-ci
 selection design.
 
 The PR and merge-group orchestrator calls `checks-static.yml` once per application area and gates
-that area's tests on static success. Shared TypeScript tests must succeed or intentionally skip
-before their consuming backend suites; web Vitest has the same gate before the API and full-stack
-web-integration sibling suites. Both Playwright suites start only after their application Vitest
-prerequisites succeed or intentionally skip. Tooling, portability, native clients, and Storybook
-remain outside the Playwright gate; grouped main workflows fan out after static checks.
-Manual `workflow_dispatch` diagnostics retain failure-tolerant test ordering so later suites run
-after earlier test failures.
+that area's tests on static success. No test waits on another: shared TypeScript, backend, web,
+API, and full-stack web-integration suites, both Playwright suites, and Docker validation all start
+once `static-code-analysis` and their area static checks succeed or intentionally skip. Grouped main
+workflows fan out the same way after their static checks.
 
 Backend Uncredentialed Docker Tests (`tests-backend-unit.yml`) carries failure-only fork-exit
 sentinel and diagnostic-report steps for the recurring

@@ -76,8 +76,8 @@ a second Git diff, so the safety routing and test selection cannot disagree abou
    shadowing another.
 3. **Full suite is selected** — CI does not read PR labels at all. The `vitest:full` and
    `playwright:full` labels are no-ops; every pull-request CI attempt selects the full Vitest suite.
-   A failed upstream static or application test can suppress dependent jobs, and there is no
-   label-driven narrowing behavior to opt out of.
+   A failed upstream static check suppresses the tests it gates, no test result suppresses
+   another test, and there is no label-driven narrowing behavior to opt out of.
 4. **`.no-mistakes.yml` `pullRequest` environment** — `test_plan.vitest.environments.pullRequest`
    defines `direct`, `dependencies`, and a 1% `sample` group (`sampleWhenLimited: true`), plus
    broad `fullSuiteTriggers` only for high-risk root configuration. Every current Vitest trigger
@@ -155,15 +155,14 @@ a second Git diff, so the safety routing and test selection cannot disagree abou
    For every full-suite path, including a selected set promoted to full, the reusable prep job
    counts the checked-out live file-count suite and resolves the same capped formula; a missing or
    nonpositive count fails closed. Selector overrides are reserved for narrowed selected-file runs,
-   where they describe the selected set rather than the full suite. The file-count thresholds are 520 backend files, 800 web files,
+   where they describe the selected set rather than the full suite. The file-count thresholds are 350 backend files, 500 web files,
    and 64 API files per shard — fewer, longer-running shards, sized so each targets around
    eight minutes, leaving room below the ten-minute Vitest command watchdog for setup and artifact
    transport. Integration is intentionally not
    auto-sized: its Worker/Next build and full-stack setup dominate the current Vitest duration, so
    automatic fan-out would duplicate that fixed cost. It accepts a validated manual override and
-   retains distinct `web-integration-shard-N` report identities. The backend-unit matrix alone
-   caps `max-parallel` at five, preserving its prior simultaneous Tests-pool demand while its six
-   shards queue in the same run; other matrices use normal GitHub runner queueing. PR #9522 run
+   retains distinct `web-integration-shard-N` report identities. Every matrix, including
+   backend-unit, uses normal GitHub runner queueing without a `max-parallel` cap. PR #9522 run
    `32120944162` selected 2151 backend-unit files (131653 encoded
    bytes) and failed to spawn `/usr/bin/bash` with `E2BIG` because that list stayed in
    `SELECTED_TEST_FILES`. `resolveJobSelection()` now promotes a job to `full-<job>=true` and
@@ -283,8 +282,8 @@ before building the matrix.
 
 | Job / setting             | Value   | Purpose                                                              |
 | ------------------------- | ------- | -------------------------------------------------------------------- |
-| `test-backend-unit`       | 520     | Files per shard for selected and checked-out full suites             |
-| `test-web`                | 800     | Files per shard for selected and checked-out full suites             |
+| `test-backend-unit`       | 350     | Files per shard for selected and checked-out full suites             |
+| `test-web`                | 500     | Files per shard for selected and checked-out full suites             |
 | `test-web-api`            | 64      | Files per shard for selected and checked-out full suites             |
 | `test-web-integration`    | 1       | Fixed shard count; explicit validated override may expand the matrix |
 | `VITEST_SAMPLE_COLD_JOBS` | (unset) | Set to `false` to restore unscoped (non-warm-job-only) sampling      |

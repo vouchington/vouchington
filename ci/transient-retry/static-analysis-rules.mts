@@ -6,7 +6,7 @@ import { CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES } from './ci-aggregate-jobs.mts'
 import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
 const staticAnalysisJobName = 'static-code-analysis / static-code-analysis'
-const staticAnalysisNoMistakesJobName = 'static-code-analysis / no-mistakes-owned'
+const staticAnalysisNoMistakesJobName = 'static-code-analysis / no-mistakes'
 
 function isStaticAnalysisCheckRun(name: string): boolean {
   return name === staticAnalysisJobName || name === staticAnalysisNoMistakesJobName

@@ -106,12 +106,7 @@ describe('CI topology-selection wiring', () => {
   })
 
   it('declares the web API prerequisite before consuming its result', () => {
-    for (const jobName of [
-      'test-playwright',
-      'test-playwright-credentialed',
-      'test-coverage',
-      'tests-processing',
-    ]) {
+    for (const jobName of ['test-coverage', 'tests-processing']) {
       expect(workflow.jobs?.[jobName]?.needs).toContain('test-web-api')
     }
   })
