@@ -89,9 +89,9 @@ worker, lambda, and web processes when `OTEL_ENABLED=1`.
 
 When `OTEL_ENABLED=1`:
 
-- Sentry itself stays disabled unless `ENVIRONMENT` is `staging` or `production` —
-  never true in CI — so local and Playwright runs send traces to the collector only,
-  never Sentry errors.
+- Sentry is not involved: it stays disabled unless `ENVIRONMENT` is `staging` or
+  `production` — never true in CI — so local and Playwright runs send traces to the
+  collector only, never Sentry errors.
 - The web server sets `enableOpenTelemetrySetup: false` (`@sentry/nextjs` otherwise
   registers its own global provider by default) so it does not compete with the
   preloaded hook for the global provider.
@@ -140,7 +140,7 @@ App instrumentation code is **unchanged** between local and AWS.
 | `dev/otel/collector-config-ci.yaml`   | Collector pipeline for main CI Playwright OTel output files uploaded to S3                                                   |
 | `dev/otel-up`                         | Start the local stack                                                                                                        |
 | `dev/otel-down`                       | Stop the local stack                                                                                                         |
-| `web/instrumentation.ts`              | Next.js `register()` hook — loads the Sentry server config; Sentry owns the provider and can export an extra OTLP stream     |
-| `backend/modules/on-error/sentry.mts` | Sentry init with an extra OTLP span processor when `OTEL_ENABLED=1`                                                          |
+| `dev/otel-register.mts`               | The single OTel TracerProvider/OTLP owner: re-exports the `@opentelemetry/auto-instrumentations-node/register` hook          |
+| `web/sentry-server-options.ts`        | Sets `enableOpenTelemetrySetup: false` when `OTEL_ENABLED=1` so Sentry leaves the global provider to the hook                |
 | Root `package.json` (devDependencies) | `@opentelemetry/api` + `@opentelemetry/auto-instrumentations-node` (resolved via pnpm hoist from `dev/tmux` node invocation) |
-| `dev/tmux`                            | Injects `--import` hook + `OTEL_SERVICE_NAME` per service when `OTEL_ENABLED`                                                |
+| `dev/tmux`                            | Injects `--import dev/otel-register.mts` + `OTEL_SERVICE_NAME` per service when `OTEL_ENABLED`                               |

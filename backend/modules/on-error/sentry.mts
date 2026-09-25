@@ -65,15 +65,14 @@ export function createSentryInitOptions(
   const filterEvent = deps.filterSentryEvent ?? filterSentryEvent
   const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
   const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
-  const { enabled, environment, otelOnly, sentryDsn, configurationInvalid } = resolveEnablement({
+  const { enabled, environment, sentryDsn, configurationInvalid } = resolveEnablement({
     dsn: envVars.SENTRY_DSN,
     environment: envVars.ENVIRONMENT,
-    otelEnabled: envVars.OTEL_ENABLED === '1',
   })
   warnIfSentryConfigurationInvalid(configurationInvalid)
 
   return {
-    dsn: otelOnly ? undefined : sentryDsn?.dsn,
+    dsn: sentryDsn?.dsn,
     tracesSampleRate: 1.0,
     environment: environment ?? nodeEnv,
     enabled,
@@ -83,7 +82,7 @@ export function createSentryInitOptions(
     // Applies to any direct Sentry.captureException() calls that bypass onError().
     // withSpikeProtection wraps the outer pipeline so a single recurring error can never again
     // consume a full month's Sentry error quota by itself (see sentry-spike-protection.mts).
-    beforeSend: otelOnly ? () => null : withSpikeProtection(composeSentryBeforeSend(filterEvent)),
+    beforeSend: withSpikeProtection(composeSentryBeforeSend(filterEvent)),
 
     // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan,
@@ -98,9 +97,7 @@ export function shouldInitializeSentry(
   envVars: NodeJS.ProcessEnv = process.env,
   testClient: TestSentryClient | undefined = getTestSentryClient(),
 ): boolean {
-  const isTestRuntime = envVars.NODE_ENV === 'test'
-  const testRuntimeOptIn = envVars.OTEL_ENABLED === '1'
-  return !testClient && (!isTestRuntime || testRuntimeOptIn)
+  return !testClient && envVars.NODE_ENV !== 'test'
 }
 
 if (shouldInitializeSentry()) {

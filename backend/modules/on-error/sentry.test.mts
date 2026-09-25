@@ -93,16 +93,13 @@ describe('filterSentryEvent', () => {
 
 describe('createSentryInitOptions', () => {
   it('uses SENTRY_DSN and disables deployed reporting when it is missing or invalid', () => {
-    expect(createSentryInitOptions({ ENVIRONMENT: 'production', OTEL_ENABLED: '0' })).toMatchObject(
-      {
-        dsn: undefined,
-        enabled: false,
-      },
-    )
+    expect(createSentryInitOptions({ ENVIRONMENT: 'production' })).toMatchObject({
+      dsn: undefined,
+      enabled: false,
+    })
     expect(
       createSentryInitOptions({
         ENVIRONMENT: 'production',
-        OTEL_ENABLED: '0',
         SENTRY_DSN: 'https://public@example.test/123',
       }),
     ).toMatchObject({ dsn: 'https://public@example.test/123', enabled: true })
@@ -112,7 +109,6 @@ describe('createSentryInitOptions', () => {
     const options = createSentryInitOptions({
       GIT_COMMIT: 'dev-sha',
       NODE_ENV: 'development',
-      OTEL_ENABLED: '0',
     })
 
     expect(options.enabled).toBe(false)
@@ -133,7 +129,6 @@ describe('createSentryInitOptions', () => {
       expect(
         createSentryInitOptions({
           ENVIRONMENT: environment,
-          OTEL_ENABLED: '0',
           SENTRY_DSN: 'https://public@example.test/123',
         }).enabled,
       ).toBe(true)
@@ -145,39 +140,22 @@ describe('createSentryInitOptions', () => {
       createSentryInitOptions({
         ENVIRONMENT: 'staging',
         NODE_ENV: 'production',
-        OTEL_ENABLED: '0',
       }).environment,
     ).toBe('staging')
-    expect(createSentryInitOptions({ OTEL_ENABLED: '0' }).environment).toBe('development')
+    expect(createSentryInitOptions({}).environment).toBe('development')
   })
 
-  it('stays disabled during tests and non-opted-in CI', () => {
-    expect(createSentryInitOptions({ NODE_ENV: 'test', OTEL_ENABLED: '0' }).enabled).toBe(false)
-    expect(
-      createSentryInitOptions({ CI: 'true', NODE_ENV: 'development', OTEL_ENABLED: '0' }).enabled,
-    ).toBe(false)
+  it('stays disabled during tests and CI', () => {
+    expect(createSentryInitOptions({ NODE_ENV: 'test' }).enabled).toBe(false)
+    expect(createSentryInitOptions({ CI: 'true', NODE_ENV: 'development' }).enabled).toBe(false)
   })
 
-  it('enables local OTel-only mode without a Sentry DSN', () => {
-    const options = createSentryInitOptions({
-      NODE_ENV: 'test',
-      OTEL_ENABLED: '1',
-    })
-
-    expect(options.enabled).toBe(true)
-    expect(options.dsn).toBeUndefined()
-    expect(
-      options.beforeSend?.(makeEvent('otel-only'), { originalException: new Error('boom') }),
-    ).toBeNull()
-  })
-
-  it('lets deployed-environment reporting win over OTel-only mode when both apply', () => {
+  it('wires the release, DSN, environment, and span scrubber for a deployed environment', () => {
     const scrubSpan = vi.fn<VitestLooseMock>()
     const options = createSentryInitOptions(
       {
         ENVIRONMENT: 'staging',
         NODE_ENV: 'test',
-        OTEL_ENABLED: '1',
         GIT_COMMIT: 'abc123',
         SENTRY_DSN: 'https://public@example.test/123',
       },
@@ -214,12 +192,12 @@ describe('shouldInitializeSentry', () => {
     }
   })
 
-  it('skips unopted-in test runtimes', () => {
+  it('skips test runtimes', () => {
     expect(shouldInitializeSentry({ NODE_ENV: 'test' })).toBe(false)
   })
 
-  it('initializes OTel-only test runtimes', () => {
-    expect(shouldInitializeSentry({ NODE_ENV: 'test', OTEL_ENABLED: '1' })).toBe(true)
+  it('initializes outside test runtimes', () => {
+    expect(shouldInitializeSentry({ NODE_ENV: 'development' })).toBe(true)
   })
 
   it('skips initialization when a backend test Sentry client is registered', () => {
@@ -231,6 +209,6 @@ describe('shouldInitializeSentry', () => {
     }
     registry.vouchaSentryMocks = testClient
 
-    expect(shouldInitializeSentry({ NODE_ENV: 'test', OTEL_ENABLED: '1' })).toBe(false)
+    expect(shouldInitializeSentry({ NODE_ENV: 'development' })).toBe(false)
   })
 })

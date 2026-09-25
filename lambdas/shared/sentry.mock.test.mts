@@ -21,14 +21,12 @@ describe('initSentry', () => {
   const originalGitCommit = process.env.GIT_COMMIT
   const originalSentryDsn = process.env.SENTRY_DSN
   const originalSentryTracesSampleRate = process.env.SENTRY_TRACES_SAMPLE_RATE
-  const originalOtelEnabled = process.env.OTEL_ENABLED
 
   beforeEach(() => {
     vi.mocked(Sentry.init).mockClear()
     delete process.env.ENVIRONMENT
     delete process.env.SENTRY_DSN
     delete process.env.SENTRY_TRACES_SAMPLE_RATE
-    delete process.env.OTEL_ENABLED
   })
 
   afterEach(() => {
@@ -57,11 +55,6 @@ describe('initSentry', () => {
       delete process.env.SENTRY_TRACES_SAMPLE_RATE
     } else {
       process.env.SENTRY_TRACES_SAMPLE_RATE = originalSentryTracesSampleRate
-    }
-    if (originalOtelEnabled === undefined) {
-      delete process.env.OTEL_ENABLED
-    } else {
-      process.env.OTEL_ENABLED = originalOtelEnabled
     }
   })
 
@@ -130,24 +123,6 @@ describe('initSentry', () => {
     process.env.GIT_COMMIT = 'abc123'
     initSentry({ lambdaName: 'test-lambda' })
     expect(Sentry.init).toHaveBeenCalledWith(expect.objectContaining({ release: 'abc123' }))
-  })
-
-  it('enables local OTel-only mode without a Sentry DSN', () => {
-    process.env.NODE_ENV = 'development'
-    delete process.env.CI
-    process.env.OTEL_ENABLED = '1'
-
-    initSentry({ lambdaName: 'test-lambda' })
-
-    expect(Sentry.init).toHaveBeenCalledWith(
-      expect.objectContaining({
-        dsn: undefined,
-        enabled: true,
-      }),
-    )
-
-    const beforeSend = getBeforeSend(vi.mocked(Sentry.init))
-    expect(beforeSend({} as SentryEvent, {} as SentryEventHint)).toBeNull()
   })
 
   it('sets lambda name as a tag via initialScope', () => {

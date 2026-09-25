@@ -38,12 +38,10 @@ export function createSentryClientInitOptions(deps: SentryClientInitDeps = {}): 
   const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
   const beforeSend = deps.scrubSentryError ?? scrubSentryError
   const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
-  // The browser has no OTel tracing story — OTEL_ENABLED never reaches the client bundle.
   const runtimeConfig = getRuntimeConfig() ?? {}
   const { enabled, environment, sentryDsn, configurationInvalid } = resolveEnablement({
     dsn: runtimeConfig.sentryDsn,
     environment: runtimeConfig.environment,
-    otelEnabled: false,
   })
   warnIfSentryConfigurationInvalid(configurationInvalid)
 

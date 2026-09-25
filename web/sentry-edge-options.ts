@@ -30,15 +30,14 @@ export function createSentryEdgeInitOptions(
   const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
   const beforeSend = deps.scrubSentryError ?? scrubSentryError
   const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
-  const { enabled, environment, otelOnly, sentryDsn, configurationInvalid } = resolveEnablement({
+  const { enabled, environment, sentryDsn, configurationInvalid } = resolveEnablement({
     dsn: envVars.SENTRY_DSN,
     environment: envVars.ENVIRONMENT,
-    otelEnabled: envVars.OTEL_ENABLED === '1',
   })
   warnIfSentryConfigurationInvalid(configurationInvalid)
 
   return {
-    dsn: otelOnly ? undefined : sentryDsn?.dsn,
+    dsn: sentryDsn?.dsn,
 
     // Set sample rate (1.0 = 100% for development, adjust for production)
     tracesSampleRate: 1,
@@ -54,7 +53,7 @@ export function createSentryEdgeInitOptions(
     debug: false,
 
     // Drop expected 4xx ApiError events — client errors are normal and not actionable.
-    beforeSend: otelOnly ? () => null : beforeSend,
+    beforeSend,
 
     // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan,

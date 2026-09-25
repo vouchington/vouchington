@@ -20,13 +20,11 @@ type SentrySpan = Parameters<NonNullable<CloudflareOptions['beforeSendSpan']>>[0
 
 // Called by withSentry() on each request to build initialization options.
 // Disabled unless ENVIRONMENT is an allowlisted deployed environment
-// (staging/production). The Worker has no local OTel path, so otelEnabled is
-// always false here.
+// (staging/production).
 export function createSentryOptions(env: Env): CloudflareOptions {
   const { enabled, environment, sentryDsn } = resolveSentryDsnEnablement({
     dsn: env.SENTRY_DSN,
     environment: env.ENVIRONMENT,
-    otelEnabled: false,
   })
   return {
     dsn: sentryDsn?.dsn,

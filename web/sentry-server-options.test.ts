@@ -22,19 +22,6 @@ describe('createSentryServerInitOptions', () => {
     ).toMatchObject({ dsn: 'https://public@example.test/123', enabled: true })
   })
 
-  it('enables local OTel without sending Sentry events', () => {
-    const options = createSentryServerInitOptions(
-      {
-        NODE_ENV: 'development',
-        OTEL_ENABLED: '1',
-      },
-      { scrubSentryError, scrubSentrySpan },
-    )
-
-    expect(options).toMatchObject({ dsn: undefined, enabled: true })
-    expect(options.beforeSend?.({} as never, {} as never)).toBeNull()
-  })
-
   it('leaves the global TracerProvider to the OTel preload only when OTEL_ENABLED=1', () => {
     expect(
       createSentryServerInitOptions({ NODE_ENV: 'development', OTEL_ENABLED: '1' }),
@@ -84,7 +71,6 @@ describe('createSentryServerInitOptions', () => {
       resolveSentryDsnEnablement({
         dsn: 'https://public@example.test/123',
         environment: 'staging',
-        otelEnabled: false,
       }).enabled,
     )
   })

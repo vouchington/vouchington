@@ -57,9 +57,8 @@ The gated sites:
 
 CI, local dev, and test runs never send Sentry events — there is no CI opt-in
 mechanism; the former `SENTRY_ENABLE_IN_CI` / `environment:ci-main` reporting path
-has been removed entirely. `OTEL_ENABLED=1` still enables the SDK for local OTel
-tracing (`otelOnly` mode), but with `dsn: undefined` and a `beforeSend` that drops
-every event, so no data reaches Sentry from that mode either.
+has been removed entirely. `OTEL_ENABLED=1` does not enable Sentry: local OTel tracing is
+owned by the generic `dev/otel-register.mts` hook, independent of the Sentry SDK.
 
 Intentional errors must not reach Sentry from staging/production. The backend
 `onError` path and Sentry `beforeSend` filters drop status `<500`, `ECONNRESET`,
@@ -85,10 +84,11 @@ Local Playwright:
 OTEL_ENABLED=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 OTEL_LOGS_EXPORTER=otlp pnpm exec playwright test playwright/tests/auth/login.spec.mts
 ```
 
-When `OTEL_ENABLED=1`, the backend preloads Sentry's OTel instrumentation hook
-and the backend, lambda, and Next.js Sentry init paths attach an extra OTLP span
-processor. Sentry owns the global provider, preventing double TracerProvider
-registration while exporting the same run to the OTel Collector. Cloudflare
+When `OTEL_ENABLED=1`, `dev/tmux` and the Playwright harness load the generic
+`dev/otel-register.mts` hook (`@opentelemetry/auto-instrumentations-node/register`) into
+the backend, worker, lambda, and Next.js processes. The hook owns the global
+TracerProvider and OTLP export to the OTel Collector; the Sentry SDK registers no provider
+(the web server sets `enableOpenTelemetrySetup: false` to that end). Cloudflare
 Worker/workerd OTel is out of scope.
 
 CI-main OTel runs inside the normal sharded Playwright job. The same main run

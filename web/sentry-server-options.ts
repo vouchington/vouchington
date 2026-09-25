@@ -30,16 +30,14 @@ export function createSentryServerInitOptions(
   const beforeSend = deps.scrubSentryError ?? scrubSentryError
   const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
   const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
-  const otelEnabled = envVars.OTEL_ENABLED === '1'
-  const { enabled, environment, otelOnly, sentryDsn, configurationInvalid } = resolveEnablement({
+  const { enabled, environment, sentryDsn, configurationInvalid } = resolveEnablement({
     dsn: envVars.SENTRY_DSN,
     environment: envVars.ENVIRONMENT,
-    otelEnabled,
   })
   warnIfSentryConfigurationInvalid(configurationInvalid)
 
   return {
-    dsn: otelOnly ? undefined : sentryDsn?.dsn,
+    dsn: sentryDsn?.dsn,
 
     // Set sample rate (1.0 = 100% for development, adjust for production)
     tracesSampleRate: 1,
@@ -55,13 +53,13 @@ export function createSentryServerInitOptions(
     debug: false,
 
     // Drop expected 4xx ApiError events — client errors are normal and not actionable.
-    beforeSend: otelOnly ? () => null : beforeSend,
+    beforeSend,
 
     // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan,
 
     // @sentry/nextjs registers its own global TracerProvider by default. With OTEL_ENABLED=1 the
     // server runs under the dev/otel-register.mts preload, which owns the provider and OTLP export.
-    ...(otelEnabled && { enableOpenTelemetrySetup: false }),
+    ...(envVars.OTEL_ENABLED === '1' && { enableOpenTelemetrySetup: false }),
   }
 }

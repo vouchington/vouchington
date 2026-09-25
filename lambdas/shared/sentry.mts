@@ -2,7 +2,7 @@
 // Uses @sentry/aws-serverless with NODE_OPTIONS="--import @sentry/aws-serverless/awslambda-auto"
 // for automatic handler wrapping. This module configures the DSN, environment, and filtering.
 //
-// Enabled only for ENVIRONMENT=staging|production, or when OTel-only mode opts in.
+// Enabled only for ENVIRONMENT=staging|production.
 
 import * as Sentry from '@sentry/aws-serverless'
 import {
@@ -51,16 +51,14 @@ export function captureException(error: unknown): void {
 }
 
 export function initSentry({ lambdaName, beforeSend }: InitSentryOptions): void {
-  const { enabled, environment, otelOnly, sentryDsn, configurationInvalid } =
-    resolveSentryDsnEnablement({
-      dsn: process.env.SENTRY_DSN,
-      environment: process.env.ENVIRONMENT,
-      otelEnabled: process.env.OTEL_ENABLED === '1',
-    })
+  const { enabled, environment, sentryDsn, configurationInvalid } = resolveSentryDsnEnablement({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.ENVIRONMENT,
+  })
   warnIfSentryConfigurationInvalid(configurationInvalid)
 
   const sentryInitOptions: SentryInitOptions = {
-    dsn: otelOnly ? undefined : sentryDsn?.dsn,
+    dsn: sentryDsn?.dsn,
     // resolveSentryDsnEnablement() passes ENVIRONMENT through unchanged; when it's unset, fall back
     // to the shared deploy-environment accessor (ENVIRONMENT ?? NODE_ENV ?? 'development') rather
     // than a hand-rolled NODE_ENV-only read.
@@ -73,13 +71,11 @@ export function initSentry({ lambdaName, beforeSend }: InitSentryOptions): void 
     },
     // withSpikeProtection wraps the outer pipeline so a single recurring error can never again
     // consume a full month's Sentry error quota by itself (see sentry-spike-protection.mts).
-    beforeSend: otelOnly
-      ? () => null
-      : withSpikeProtection(
-          composeSentryBeforeSend(beforeSend, event =>
-            scrubSentryEvent(scrubSensitiveSentryEvent(event)),
-          ),
-        ),
+    beforeSend: withSpikeProtection(
+      composeSentryBeforeSend(beforeSend, event =>
+        scrubSentryEvent(scrubSensitiveSentryEvent(event)),
+      ),
+    ),
     // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan: scrubSentrySpan,
   }

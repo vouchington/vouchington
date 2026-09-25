@@ -68,12 +68,10 @@ their existing control flow.
 | Lambdas           | `lambdas/shared/sentry.mts`                                           | Retains the existing deep event scrubber, then applies the shared request-metadata contract                                      |
 | Cloudflare Worker | `cloudflare-worker/src/sentry.mts`                                    | Registers the shared error and span scrubbers                                                                                    |
 
-Enabled Sentry reporting surfaces always register the scrubbers. In OTel-only mode, backend,
-web-server, and Lambda intentionally replace `beforeSend` with a direct null-drop because their DSN
-is unset; their Sentry span hooks remain registered even though no Sentry payload is
-transmitted. These hooks do not establish a scrubbing contract for the independent OTLP export path,
-which is outside the scope of this change. CI Sentry mode keeps normal reporting and scrubbing
-enabled.
+Enabled Sentry reporting surfaces always register the scrubbers. Sentry is disabled outside
+`staging`/`production`, including under `OTEL_ENABLED=1`. These hooks do not establish a scrubbing
+contract for the independent OTLP export path (`dev/otel-register.mts`), which carries no Sentry
+payload and is outside the scope of this change.
 
 ### URL-bearing request headers
 

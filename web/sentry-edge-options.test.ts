@@ -21,16 +21,6 @@ describe('createSentryEdgeInitOptions', () => {
     ).toMatchObject({ dsn: 'https://public@example.test/123', enabled: true })
   })
 
-  it('enables local OTel without sending Sentry events', () => {
-    const options = createSentryEdgeInitOptions(
-      { NODE_ENV: 'development', OTEL_ENABLED: '1' },
-      { scrubSentryError, scrubSentrySpan },
-    )
-
-    expect(options).toMatchObject({ dsn: undefined, enabled: true })
-    expect(options.beforeSend?.({} as never, {} as never)).toBeNull()
-  })
-
   it('stays disabled outside the deployed-environment allowlist', () => {
     const options = createSentryEdgeInitOptions(
       { NODE_ENV: 'production' },
