@@ -18,6 +18,7 @@
     "paths": {
       "@/*": ["../web/*"],
       "@ts-shared/money": ["../ts-shared/money/index.mts"],
+      "@ts-shared/route-classification": ["../ts-shared/route-classification/index.mts"],
       "@ts-shared/session-jwt": ["../ts-shared/session-jwt/index.mts"],
       "@modules/pagination": ["../backend/modules/pagination/index.mts"],
       "@voucha/scripts/seed": ["../backend/scripts/seed/index.mts"],

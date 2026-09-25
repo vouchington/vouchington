@@ -2,6 +2,8 @@
 
 Stateless MCP Streamable HTTP endpoint. Exposes user-scoped Voucha tools to MCP clients via API key authentication. Admin tools use the separate admin MCP endpoint documented in [../admin/README.md](../admin/README.md#mcp-clients).
 
+Public discovery documents such as `/llms.txt` advertise this endpoint so that agents use MCP instead of browser automation; see [Agent Access](../../../../docs/requirements/platform/agent-access.md).
+
 ## Endpoints
 
 | Method   | Route         | Authentication     | HTTP Caching | Description                 |

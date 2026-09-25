@@ -24,8 +24,9 @@ runbooks for staging operations. Before adding or changing a Vitest test, fixtur
   sequentially, and cancel early without blocking; follow `readEnvelopeWithLimit` in
   `src/sentry-tunnel.mts`.
 - The Worker is the sole HTTP caching layer; Next.js must not emit `Cache-Control`.
-- Public discovery may advertise only unauthenticated resources. Add private route classification
-  to `@ts-shared/route-classification`, not consumer-local lists. Follow
+- Public discovery may advertise only unauthenticated resources, plus the exact agent-interface
+  paths in `ADVERTISED_AGENT_INTERFACE_PATHS`, which never go in `Link` headers. Add private route
+  classification to `@ts-shared/route-classification`, not consumer-local lists. Follow
   [SEO discovery requirements](../docs/requirements/seo/SEO.md#machine-readable-discovery).
 - `CACHE_PLACEHOLDER_NONCE` is a secret fixed per deployment and rewritten per request. Never log it
   or regenerate it per request; follow the
