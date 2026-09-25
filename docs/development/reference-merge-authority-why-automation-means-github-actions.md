@@ -14,7 +14,7 @@ authenticates as the human's own `gh` auth, never the CI write token. That disti
 "agent vs. human" — is what the hook actually keys on, via
 `isAutomationContext(env) = env.GITHUB_ACTIONS === 'true' || env.CI === 'true'`.
 
-**If a merge is unexpectedly blocked (not confirmed) in an interactive session:** the `CI`
+**If a merge is unexpectedly blocked (not allowed) in an interactive session:** the `CI`
 fallback is intentionally broad — some local tooling and shell profiles set `CI=true` outside of
 GitHub Actions, which is enough to trip `isAutomationContext` and hard-block the merge instead of
-asking. Check `echo $CI` in the session's shell before assuming the hook is misbehaving.
+allowing it. Check `echo $CI` in the session's shell before assuming the hook is misbehaving.

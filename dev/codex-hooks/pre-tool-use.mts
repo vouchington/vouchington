@@ -1,7 +1,7 @@
 import * as path from 'node:path'
 
 import { persistGrokRealSessionId } from '../agent-session-id/persist.mts'
-import { isAutomationContext, preToolUseOutput } from './policy.mts'
+import { isAttendedClaudeSession, isAutomationContext, preToolUseOutput } from './policy.mts'
 import { sessionHomeOwners } from './policy/github-checkout-owners.mts'
 import { readHookPayload, resolvePreToolUseRuntime } from './hook-payload.mts'
 
@@ -17,6 +17,7 @@ const payload = readHookPayload()
 persistGrokRealSessionId(payload, process.env, worktreeRoot)
 
 const output = preToolUseOutput(payload, {
+  attended: isAttendedClaudeSession(),
   automationContext: isAutomationContext(),
   runtime,
   sessionOwners: () => sessionHomeOwners(worktreeRoot),

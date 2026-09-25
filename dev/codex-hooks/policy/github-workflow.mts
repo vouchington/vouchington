@@ -155,8 +155,14 @@ export function findGitHubWorkflowBlock(
       if (area === 'pr' && action === 'merge') {
         // Defaults to DEFAULT_AUTOMATION_CONTEXT (block) when the caller doesn't pass
         // automationContext — see GitHubWorkflowPolicyOptions in github-closing-refs.mts. Only
-        // pre-tool-use.mts computes this from real GITHUB_ACTIONS/CI env.
-        return findGhPrMergeBlock(options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT)
+        // pre-tool-use.mts computes this from real GITHUB_ACTIONS/CI env. Interactively the scan
+        // continues, so a later segment's block still applies.
+        const mergeBlock = findGhPrMergeBlock(
+          options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT,
+        )
+        if (mergeBlock !== null) {
+          return mergeBlock
+        }
       }
 
       // `gh api` reaches merge-shaped endpoints by a path `gh pr merge` above never sees; see

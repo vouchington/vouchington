@@ -186,9 +186,9 @@ describe('Codex hook gh policies behind command wrappers', () => {
     expect(resolverCwd).toBe('/other')
   })
 
-  it('confirms a wrapped merge interactively and blocks it in automation', () => {
+  it('leaves a wrapped merge to the harness interactively and blocks it in automation', () => {
     const input = { tool_input: { command: 'env -C /tmp gh pr merge 1' } }
-    expect(findPreToolUseBlock(input, { automationContext: false })?.disposition).toBe('confirm')
+    expect(findPreToolUseBlock(input, { automationContext: false })).toBeNull()
     expect(findPreToolUseBlock(input, { automationContext: true })?.disposition).toBe('block')
   })
 

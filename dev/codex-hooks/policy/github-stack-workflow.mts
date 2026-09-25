@@ -119,17 +119,15 @@ export function findGitHubStackWorkflowBlock(
     }
   }
 
-  if (options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT) {
-    return {
-      disposition: 'block',
-      reason:
-        'Merge authority is never delegated to an agent in automation. "gh stack merge" is banned in GitHub Actions, with or without --yes — stacked merges land every layer up to the selected PR without a per-layer human decision. Interactive sessions may merge with human confirmation — see docs/development/merge-authority.md.',
-    }
+  // Interactively the merge confirm comes from findInteractiveMergeConfirm, which policy.mts
+  // checks only after every block.
+  if (!(options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT)) {
+    return null
   }
   return {
-    disposition: 'confirm',
+    disposition: 'block',
     reason:
-      'Merging is a human decision — confirm you want this exact merge before it proceeds. See docs/development/merge-authority.md.',
+      'Merge authority is never delegated to an agent in automation. "gh stack merge" is banned in GitHub Actions, with or without --yes — stacked merges land every layer up to the selected PR without a per-layer human decision. Interactive sessions may merge with human confirmation — see docs/development/merge-authority.md.',
   }
 }
 

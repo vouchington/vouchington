@@ -210,11 +210,11 @@ EOF
   })
 })
 
-// automationContext:false is interactive (a human running the session, not GitHub Actions). The
-// merge is no longer a hard block there — it downgrades to a human confirmation. See
-// docs/development/merge-authority.md for why this split is safe: automationContext defaults to
-// true (block) everywhere above, so this is the only place merge stops being an unconditional
-// block.
+// automationContext:false is interactive (a human running the session, not GitHub Actions). A lone
+// merge is no longer a hard block there — it downgrades to a human confirmation, which only an
+// attended Claude session renders as an allow. See docs/development/merge-authority.md for why
+// this split is safe: automationContext defaults to true (block) everywhere above, so this is the
+// only place merge stops being an unconditional block.
 describe('Codex hook gh pr merge policy — interactive confirm', () => {
   it.each(['gh pr merge 123', 'gh pr merge 123 --squash', 'gh pr merge 123 --auto --squash'])(
     'confirms rather than blocks outside automation: %s',

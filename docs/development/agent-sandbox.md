@@ -32,6 +32,20 @@ Every agent tool call in this repo passes through two layers that don't overlap:
 
 Narrowing `excludedCommands` only affects layer 2. It does not add or remove any semantic gate.
 
+## Hook threat model
+
+Layer 1 is a guardrail against a cooperative agent's honest mistakes, such as a habitual
+force-push, a `--no-verify` retry, a merge from automation, or a PR opened ready instead of draft.
+It is not a security boundary. A command can always reach the same effect through forms the hook
+never sees (`python -c`, `node -e`, a script file, `echo … | bash`), so the hook does not parse
+obfuscated or indirect forms, and bypass reports of that kind are out of scope. The boundaries are
+the OS sandbox (layer 2), the harness permission prompts, and branch protection on `main`.
+
+The hook blocks coarsely and allows precisely. A block may overmatch, and any block in a command
+beats an allow. The one allow is a single plain merge in an attended Claude session (see
+[Merge Authority](merge-authority.md)). Rules for changing the hooks live in
+[dev/codex-hooks/CLAUDE.md](../../dev/codex-hooks/CLAUDE.md).
+
 ## Claude and Codex sandbox semantics are different, not parallel
 
 - **Claude:** `sandbox.excludedCommands` = runs _outside_ the OS sandbox. `permissions.allow` =
