@@ -1,5 +1,5 @@
-export { authenticateMcpBearer, type McpBearerAuthentication } from './authenticate.mts'
-export { buildMcpBearerChallenge, type McpBearerChallenge } from './challenge.mts'
+export { authenticateMcpBearer } from './authenticate.mts'
+export { buildMcpBearerChallenge } from './challenge.mts'
 export { handleMcpHttpRequest } from './handle-request.mts'
 export { buildMcpContextUser } from './list-tools.mts'
 export { findMcpStepUpScopes } from './resolve-tool-call.mts'
