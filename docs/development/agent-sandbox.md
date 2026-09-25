@@ -108,7 +108,7 @@ already run outside the sandbox and do not depend on this list.
 
 - `~/Library/Caches/no-mistakes` — no-mistakes `invocation.lock` on macOS (`ProjectDirs`)
 - `~/.cache/no-mistakes` — no-mistakes lock when Linux `XDG_RUNTIME_DIR` is unset
-- `~/Library/Caches/pnpm` and `~/.cache/pnpm` — pnpm 11 metadata cache
+- `~/Library/Caches/pnpm` and `~/.cache/pnpm` — pnpm metadata cache
 - `~/.pnpm-state` and `~/.local/state/pnpm` — pnpm state dir
 
 The SQLite error `unable to open database file` comes from pnpm's store `{storeDir}/v11/index.db`

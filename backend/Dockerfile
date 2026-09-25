@@ -43,14 +43,13 @@ FROM base-node AS builder
 
 WORKDIR /app
 
-# Install Corepack explicitly before enabling it so the build does not depend on
-# what the base Node image bundles.
-# renovate: datasource=npm depName=corepack
-ARG COREPACK_VERSION=0.34.5
-RUN npm install -g corepack@${COREPACK_VERSION} --force && corepack enable
+# Install pnpm with npm so the build does not depend on what the base Node image
+# bundles. pnpm-activation.test.mts keeps this major equal to CI's pnpm/action-setup
+# `latest-<major>`.
+ARG PNPM_VERSION=12
+RUN npm install -g pnpm@${PNPM_VERSION}
 
-# Copy the root dependency contract first so Corepack can resolve the pinned
-# pnpm version from packageManager. Workspace manifests follow before the one
+# Copy the root dependency contract first. Workspace manifests follow before the one
 # filtered install layer; application source changes therefore keep dependency
 # installation cached without a separate lifecycle-running prefetch pass.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

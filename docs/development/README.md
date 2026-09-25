@@ -212,8 +212,7 @@ finish; the kernel releases its lock automatically if the process exits. See
 
 ## Dependency Updates
 
-Dependabot (npm/docker/github-actions) and Renovate (the root `package.json`
-`packageManager` pnpm pin, `.nvmrc`, and regex-managed version literals) jointly keep dependencies
-fresh. Pnpm toolchain updates wait two days and require manual review. See
-[dependency-updates.md](dependency-updates.md) for the branch/PR delay, coverage matrix, and how to
-add a new pinned binary.
+Dependabot (npm/docker/github-actions) and Renovate (`.nvmrc` and regex-managed version literals)
+jointly keep dependencies fresh. pnpm itself is not pinned; CI and Docker builds name only a pnpm
+major. See [dependency-updates.md](dependency-updates.md) for the release delays, coverage matrix,
+and how to add a new pinned binary.

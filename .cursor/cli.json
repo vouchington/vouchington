@@ -15,7 +15,6 @@
       "Shell(selene)",
       "Shell(tmux)",
       "Shell(mise)",
-      "Shell(corepack)",
       "Shell(jq)",
       "Mcp(agent-blackboard:entry_append)",
       "Mcp(agent-blackboard:entry_get)",

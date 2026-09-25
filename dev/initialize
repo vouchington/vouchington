@@ -1443,17 +1443,8 @@ main() {
 
     echo -e "${BLUE}Ensuring pnpm is available...${NC}"
     if ! command -v pnpm >/dev/null 2>&1; then
-        if command -v corepack >/dev/null 2>&1; then
-            corepack enable pnpm
-        else
-            echo -e "${RED}Error: pnpm is not installed and corepack is not available.${NC}"
-            echo "Install pnpm 11 or enable Corepack, then rerun ./dev/initialize $MODE."
-            exit 1
-        fi
-    fi
-    if ! command -v pnpm >/dev/null 2>&1; then
-        echo -e "${RED}Error: pnpm is still unavailable after enabling Corepack.${NC}"
-        echo "Install pnpm 11, then rerun ./dev/initialize $MODE."
+        echo -e "${RED}Error: pnpm is not installed.${NC}"
+        echo "Install pnpm 12, then rerun ./dev/initialize $MODE."
         exit 1
     fi
     echo ""

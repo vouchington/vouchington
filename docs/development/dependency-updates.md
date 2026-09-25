@@ -3,7 +3,7 @@
 Two bots keep this repo's dependencies fresh:
 
 - **Dependabot** — owns configured Vouchington package managers (npm, Docker, GitHub Actions). Config: [`.github/dependabot.yml`](../../.github/dependabot.yml).
-- **Renovate** (Mend-hosted GitHub App) — owns the residual gaps Dependabot has no native manager for: the pnpm toolchain pin in the root `package.json`, the Node version in `.nvmrc`, plus version literals embedded in workflow YAML and shell scripts via regex `customManagers`. Config: [`renovate.json`](../../renovate.json).
+- **Renovate** (Mend-hosted GitHub App) — owns the residual gaps Dependabot has no native manager for: the Node version in `.nvmrc`, plus version literals embedded in workflow YAML and shell scripts via regex `customManagers`. Config: [`renovate.json`](../../renovate.json).
 
 ## Review and merge
 
@@ -12,8 +12,17 @@ and Renovate sets `automerge: false`; neither bot arms GitHub auto-merge. This d
 CI trust boundary: a human who queues a same-repository dependency-bot PR still causes a merge-group
 run with the existing CI credential policy. Review the PR before placing it in the merge queue.
 
-All configured release delays are two days: Renovate does not create a pnpm toolchain branch or PR
-until that delay elapses.
+All configured release delays are two days: Dependabot's cooldown and pnpm's `minimumReleaseAge`.
+
+pnpm itself is not pinned. The root `package.json` has no `packageManager` field, so local installs
+run whatever pnpm is installed. CI (`pnpm/action-setup` `version: latest-12`) and the Docker builds
+(`PNPM_VERSION=12`) name only a pnpm major, so new releases in that major reach them without a PR.
+CI self-updates to the newest release that pnpm's default one-day `minimumReleaseAge` admits: the
+action runs `pnpm self-update` outside this workspace, so the two-day setting above does not apply
+to pnpm itself. Docker builds run `npm install -g pnpm@12`, which has no release delay. Moving to
+the next major is a manual edit that `.github/workflows/pnpm-activation.test.mts` keeps consistent. An enforced pin would make pnpm
+12 write `pnpm-lock.yaml` as two YAML documents, which single-document lockfile readers and GitHub's
+dependency graph (dependabot/dependabot-core#15904) do not fully read.
 
 Dependabot checks all configured ecosystems every day at 04:00 America/Los_Angeles. Renovate runs before 6am Monday in the same timezone.
 

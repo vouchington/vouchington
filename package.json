@@ -170,11 +170,10 @@
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "unified": "^11.0.5",
     "vitest": "^5.0.1",
-    "vouchington-tooling": "^0.19.1",
+    "vouchington-tooling": "^0.19.2",
     "yaml": "^2.9.0"
   },
   "engines": {
     "node": ">=24.16.0"
-  },
-  "packageManager": "pnpm@11.13.1"
+  }
 }

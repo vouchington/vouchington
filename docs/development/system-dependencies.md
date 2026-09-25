@@ -9,8 +9,8 @@ cargo, Docker, or runtime installers.
 
 Voucha expects the host repository to provide these capabilities:
 
-- Node.js matching [`.nvmrc`](../../.nvmrc), pnpm through Corepack, JDK 17 or newer, and the
-  native build toolchain.
+- Node.js matching [`.nvmrc`](../../.nvmrc), pnpm 12, JDK 17 or newer, and the native build
+  toolchain.
 - Git, tmux, lsof, jq, ripgrep, fd, mkcert, GitHub CLI, and `mise`.
 - Docker, PostgreSQL 18 with pgvector, and Playwright system dependencies for the full web stack.
 - AWS CLI for diagnostics and the optional OpenTofu CLI when working in the separate
