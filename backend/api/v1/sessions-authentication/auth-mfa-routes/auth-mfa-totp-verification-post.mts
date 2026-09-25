@@ -1,17 +1,13 @@
 import type { Context } from '@jongleberry/api-server'
-import { setAuthenticationCookies } from '@modules/api-utils'
 import {
-  completeMfaLoginWithContext,
-  getAndDeleteLoginAttempt,
   isMfaLoginAttemptLimited,
   peekLoginAttempt,
   recordFailedMfaLoginAttempt,
 } from '@services/mfa'
 import { verifyTotpCode } from '@services/totp'
-import { getPrivateUserByAny } from '@services/users/get'
 import app from '../../../app.mts'
-import { getDeviceContext } from '../device-context.mts'
 import { validateRequestContract } from '../../../response-helpers.mts'
+import { completeMfaVerification } from './complete-mfa-verification.mts'
 
 app.route('/api/v1/auth/mfa/totp/verification').post(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('POST:/api/v1/auth/mfa/totp/verification')
@@ -41,21 +37,5 @@ app.route('/api/v1/auth/mfa/totp/verification').post(async (ctx: Context) => {
   }
   ctx.assert(valid, 401, 'Invalid verification code')
 
-  // Consume only after successful validation so failed codes don't destroy the attempt
-  const consumedAttempt = await getAndDeleteLoginAttempt(loginAttemptId)
-  ctx.assert(consumedAttempt, 401, 'Login attempt expired or invalid')
-
-  const user = await getPrivateUserByAny(consumedAttempt.userId)
-  const login = await completeMfaLoginWithContext(consumedAttempt, user, getDeviceContext(ctx))
-  setAuthenticationCookies(ctx, {
-    dt: login.deviceToken.token,
-    st: login.sessionToken.token,
-    deviceClass: login.deviceClass,
-  })
-  ctx.json({
-    user: { id: login.userId },
-    dt: login.deviceToken,
-    st: login.sessionToken,
-    session: login.sessionToken.payload,
-  })
+  await completeMfaVerification(ctx, loginAttemptId)
 })

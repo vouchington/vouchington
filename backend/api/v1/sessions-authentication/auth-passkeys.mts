@@ -16,6 +16,7 @@ import {
   decodeScopedUuidCursor,
   encodeScopedUuidCursor,
 } from '@modules/pagination'
+import { handleRenameRoute, parseOptionalReAuthToken } from './item-management-route-helpers.mts'
 
 const passkeysParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -85,19 +86,9 @@ app.route('/api/v1/auth/passkeys').get(async (ctx: Context) => {
   })
 })
 
-app.route('/api/v1/auth/passkeys/:id').patch(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/auth/passkeys/:id')
-  assertNotSuspended(currentUser)
-  ctx.assert(ctx.params.id, 400, 'id required')
-
-  const body = (await ctx.request.json('100kb')) as { name?: string }
-  validateRequestContract(ctx, 'PATCH:/api/v1/auth/passkeys/:id', { body })
-  const name = (body.name ?? '').trim()
-  ctx.assert(name.length > 0 && name.length <= 100, 422, 'name must be 1–100 characters')
-
-  await renamePasskey(currentUser.id, ctx.params.id, name)
-  ctx.setStatus(204)
-})
+app
+  .route('/api/v1/auth/passkeys/:id')
+  .patch((ctx: Context) => handleRenameRoute(ctx, 'PATCH:/api/v1/auth/passkeys/:id', renamePasskey))
 
 app.route('/api/v1/auth/passkeys/:id').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/auth/passkeys/:id')
@@ -105,14 +96,7 @@ app.route('/api/v1/auth/passkeys/:id').delete(async (ctx: Context) => {
   ctx.assert(ctx.params.id, 400, 'id required')
   const passkeyId = ctx.params.id
 
-  // Treat a missing or unparseable body as an absent re_auth_token so clients
-  // reliably receive MFA_REAUTH_REQUIRED rather than a 400 JSON parse error.
-  let reAuthToken: string | undefined
-  if (ctx.request.is('json')) {
-    const body = (await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string }
-    validateRequestContract(ctx, 'DELETE:/api/v1/auth/passkeys/:id', { body })
-    reAuthToken = body.re_auth_token
-  }
+  const reAuthToken = await parseOptionalReAuthToken(ctx, 'DELETE:/api/v1/auth/passkeys/:id')
 
   await deletePasskeyWithMfaProtection(currentUser.id, passkeyId, reAuthToken)
   ctx.setStatus(204)

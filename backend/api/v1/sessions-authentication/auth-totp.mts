@@ -15,6 +15,7 @@ import {
   decodeScopedUuidCursor,
   encodeScopedUuidCursor,
 } from '@modules/pagination'
+import { handleRenameRoute, parseOptionalReAuthToken } from './item-management-route-helpers.mts'
 
 const totpParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -83,19 +84,11 @@ app.route('/api/v1/auth/totp').get(async (ctx: Context) => {
 
 // ─── Management (requires auth) ───────────────────────────────────────────────
 
-app.route('/api/v1/auth/totp/:id').patch(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/auth/totp/:id')
-  assertNotSuspended(currentUser)
-  ctx.assert(ctx.params.id, 400, 'id required')
-
-  const body = (await ctx.request.json('100kb')) as { name?: string }
-  validateRequestContract(ctx, 'PATCH:/api/v1/auth/totp/:id', { body })
-  const name = (body.name ?? '').trim()
-  ctx.assert(name.length > 0 && name.length <= 100, 422, 'name must be 1–100 characters')
-
-  await renameTotpAuthenticator(currentUser.id, ctx.params.id, name)
-  ctx.setStatus(204)
-})
+app
+  .route('/api/v1/auth/totp/:id')
+  .patch((ctx: Context) =>
+    handleRenameRoute(ctx, 'PATCH:/api/v1/auth/totp/:id', renameTotpAuthenticator),
+  )
 
 app.route('/api/v1/auth/totp/:id').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/auth/totp/:id')
@@ -103,14 +96,7 @@ app.route('/api/v1/auth/totp/:id').delete(async (ctx: Context) => {
   ctx.assert(ctx.params.id, 400, 'id required')
   const authenticatorId = ctx.params.id
 
-  // Treat a missing or unparseable body as an absent re_auth_token so clients
-  // reliably receive MFA_REAUTH_REQUIRED rather than a 400 JSON parse error.
-  let reAuthToken: string | undefined
-  if (ctx.request.is('json')) {
-    const body = (await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string }
-    validateRequestContract(ctx, 'DELETE:/api/v1/auth/totp/:id', { body })
-    reAuthToken = body.re_auth_token
-  }
+  const reAuthToken = await parseOptionalReAuthToken(ctx, 'DELETE:/api/v1/auth/totp/:id')
 
   await deleteTotpAuthenticatorWithMfaProtection(currentUser.id, authenticatorId, reAuthToken)
   ctx.setStatus(204)
