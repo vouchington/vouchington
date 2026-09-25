@@ -152,9 +152,11 @@ describe('copyright response forms', () => {
     fireEvent.click(screen.getByLabelText(/consent to the jurisdiction/i))
     fireEvent.click(screen.getByLabelText(/accept service of process/i))
     fireEvent.click(screen.getByRole('button', { name: 'Submit counter-notice' }))
-    await waitFor(() => expect(mockCreateCounterNotice).toHaveBeenCalled())
-    expect(turnstileReset).toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: 'Submit counter-notice' })).toBeEnabled()
+    await waitFor(() => {
+      expect(mockCreateCounterNotice).toHaveBeenCalled()
+      expect(turnstileReset).toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: 'Submit counter-notice' })).toBeEnabled()
+    })
   })
 
   it('locks the form after a duplicate counter-notice so the consumed token is not posted again', async () => {
@@ -171,10 +173,12 @@ describe('copyright response forms', () => {
     fillCounterNotice()
     fireEvent.click(screen.getByRole('button', { name: 'Submit counter-notice' }))
 
-    await waitFor(() => expect(mockCreateCounterNotice).toHaveBeenCalledTimes(1))
-    expect(screen.getByRole('button', { name: 'Submit counter-notice' })).toBeDisabled()
-    expect(turnstileReset).toHaveBeenCalled()
-    expect(mockNav.push).toHaveBeenCalledWith(`/copyright/notices/${noticeId}`)
+    await waitFor(() => {
+      expect(mockCreateCounterNotice).toHaveBeenCalledTimes(1)
+      expect(screen.getByRole('button', { name: 'Submit counter-notice' })).toBeDisabled()
+      expect(turnstileReset).toHaveBeenCalled()
+      expect(mockNav.push).toHaveBeenCalledWith(`/copyright/notices/${noticeId}`)
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Submit counter-notice' }))
     expect(mockCreateCounterNotice).toHaveBeenCalledTimes(1)
   })
