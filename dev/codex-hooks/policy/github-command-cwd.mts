@@ -9,7 +9,7 @@ const CONDITIONAL_PREFIXES = new Set(['then', 'else', 'elif', 'do'])
 const UNRESOLVED_DIRECTORY = /[$`~*?[{]/
 // Wrappers that still run the shell's own `cd` builtin; the rest exec a separate `cd` process
 // whose directory change dies with it.
-const BUILTIN_CD_WRAPPERS = new Set(['-', 'builtin', 'command', 'nocorrect', 'noglob', 'time'])
+const BUILTIN_CD_WRAPPERS = new Set(['builtin', 'command', 'time'])
 
 /**
  * Working directory the `gh` token at `index` would see after sequential
@@ -25,7 +25,6 @@ export function commandCwd(tokens: string[], index: number, baseCwd: string): st
 }
 
 function applyEnvChdir(prefix: CommandPrefix, shellCwd: string | undefined): string | undefined {
-  if (prefix.splitString) return undefined
   let current = shellCwd
   for (const directory of prefix.chdir) {
     if (UNRESOLVED_DIRECTORY.test(directory)) return undefined

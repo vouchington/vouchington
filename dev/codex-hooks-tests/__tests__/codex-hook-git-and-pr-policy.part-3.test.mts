@@ -60,5 +60,27 @@ describe('Codex hook git policy in a shell script after shell options', () => {
   it('applies GIT_EDITOR=true from before the shell', () => {
     const command = 'GIT_EDITOR=true bash -e -c "git rebase --continue"'
     expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
+    expect(
+      findPreToolUseBlock({
+        tool_input: { command: "GIT_EDITOR=true bash -c 'git rebase --continue'" },
+      }),
+    ).toBeNull()
+  })
+})
+
+describe('Codex hook git policy in any quoting of a shell script', () => {
+  it.each([
+    [String.raw`bash -c git\ commit\ --amend`, 'Commit amend is banned'],
+    ["bash -c 'git commit '--amend", 'Commit amend is banned'],
+    ["bash <<< 'git commit --amend'", 'Commit amend is banned'],
+    // Only a plain `GIT_EDITOR=true` sets the editor: `+=` appends to a value the hook cannot see.
+    ['GIT_EDITOR+=true git rebase --continue', 'GIT_EDITOR=true git rebase --continue'],
+    // A script pieced together from several quoted words never inherits an exported editor.
+    [
+      String.raw`export GIT_EDITOR=true; bash -c git\ rebase\ --continue`,
+      'GIT_EDITOR=true git rebase --continue',
+    ],
+  ])('blocks a banned git command: %s', (command, reasonText) => {
+    expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain(reasonText)
   })
 })

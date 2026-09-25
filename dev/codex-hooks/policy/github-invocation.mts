@@ -29,21 +29,6 @@ export function parseGhOrGhStackInvocation(tokens: string[], index: number): GhI
   return null
 }
 
-/**
- * The area and action words the gh or gh-stack invocation at `index` names, in order, as far as
- * they are present: `['pr', 'merge']`, `['pr']`, or `[]`.
- */
-export function ghSubcommandWords(tokens: string[], index: number): string[] {
-  const words =
-    tokens[index].split('/').at(-1) === 'gh-stack'
-      ? ghStackAsGh(tokens, index)
-      : tokens.slice(index)
-  const { actionIndex, areaIndex } = scanGhInvocation(words, 0)
-  return [areaIndex, actionIndex].flatMap(wordIndex =>
-    wordIndex === undefined ? [] : [words[wordIndex]],
-  )
-}
-
 export function parseGhInvocation(tokens: string[], ghIndex: number): GhInvocation | null {
   const { actionIndex, areaIndex, optionTokenIndexes, optionTokens } = scanGhInvocation(
     tokens,

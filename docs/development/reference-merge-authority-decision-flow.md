@@ -15,17 +15,26 @@ flowchart TD
   attended -- no --> native
 ```
 
-Automation blocks all three merge shapes (`gh pr merge ...`, `gh stack merge ...`, and the `gh api`
-merge branch, including the GraphQL `enablePullRequestAutoMerge`/`mergePullRequest` mutations).
+Automation blocks any command that names `gh` or `gh-stack` together with a merge: a `merge` word
+(`gh pr merge ...`, `gh stack merge ...`), a `/merge` or `/merges` API path, or the GraphQL
+`enablePullRequestAutoMerge`/`mergePullRequest` mutations. The check is coarse on purpose. It reads
+the same scripts, substitutions, and heredocs as the other gh rules but parses no wrappers or
+spellings, so it also blocks `git merge` beside `gh`, merge `--help`, and prose naming
+`gh pr merge`. It misses obfuscated or indirect forms, such as a variable or alias that supplies
+`gh` or the action (`$GH pr merge 1`), a mutation read from a file
+(`gh api graphql -F query=@file`), or a heredoc script behind an unmodeled wrapper
+(`timeout 5 bash <<'EOF'`); see the [hook threat model](agent-sandbox.md#hook-threat-model).
 Interactively, only a lone `gh pr merge` or numeric `gh stack merge` in an attended Claude session
-gets the silent allow. Every other interactive merge gets no hook opinion, and the Cursor adapter
-answers `permission: ask`. Every other hook policy (force-push, `--amend`, dev-server launches,
-hook-bypass flags, PR draft-first, closing-ref validation) is unrelated to merge authority and
-blocks the same way in automation and interactive sessions, and those blocks win over the merge
-allow. The PR and issue content rules (draft-first, closing-ref validation, `--base`, raw `Plan:`
-issues) are also scoped to the session checkout's home GitHub owners: they skip a `gh` command that
-provably targets another owner's repository, while the merge shapes stay global. See the
-[Codex hook policy](../../.agents/skills/agent-workflow/git-and-prs.md) and #434.
+gets the silent allow. Every other interactive merge gets no hook opinion. The Cursor adapter has no
+attended signal, so it answers `permission: ask` for a lone merge and, as for every command the hook
+does not block, `permission: allow` for any other interactive merge. Every other hook policy
+(force-push, `--amend`, dev-server launches, hook-bypass flags, PR draft-first, closing-ref
+validation) is unrelated to merge authority and blocks the same way in automation and interactive
+sessions, and those blocks win over the merge allow. The PR and issue content rules (draft-first,
+closing-ref validation, `--base`, raw `Plan:` issues) are also scoped to the session checkout's home
+GitHub owners: they skip a `gh` command that provably targets another owner's repository, while the
+merge shapes stay global. See the [Codex hook policy](../../.agents/skills/agent-workflow/git-and-prs.md)
+and #434.
 
 **Confirm strength differs by runtime.** Claude's `permissionDecision: "allow"` proceeds silently no
 matter what auto-mode is active, so the hook emits it only for an attended session. An unattended
@@ -41,10 +50,12 @@ Implementation:
   `.claude/settings.json` and `.codex/config.toml` respectively). It computes `automationContext`
   (`isAutomationContext`) and `attended` (`isAttendedClaudeSession`) once and threads them through
   `preToolUseOutput()`.
-- The automation merge blocks live in `dev/codex-hooks/policy/github-workflow.mts` (`gh pr merge`),
-  `github-stack-workflow.mts` (`gh stack merge`), and `github-api-merge-options.mts` (`gh api` /
-  `gh api graphql` merge mutations, with reason text in `github-api-merge-reasons.mts`). Each
-  returns null interactively.
+- The automation merge block is `findAutomationMergeBlock` in
+  `dev/codex-hooks/policy/github-merge-authority.mts`. It is the final return of
+  `findGitHubWorkflowBlock` in `github-workflow.mts`, so a more specific gh block in the same
+  command keeps its own reason, and it returns null interactively. Separately,
+  `github-stack-workflow.mts` blocks a `gh stack merge` with no numeric selector in every context,
+  because the bare form is a TUI that lands the whole stack.
 - `findPreToolUseBlock` in `dev/codex-hooks/policy.mts` runs every block first. Its final return is
   `findInteractiveMergeConfirm` from `dev/codex-hooks/policy/github-merge-authority.mts`, the only
   source of `disposition: 'confirm'`. That uses `isLoneMergeCommand`, which rejects any shell
@@ -54,16 +65,18 @@ Implementation:
   empty output otherwise.
 - Tests: `dev/codex-hooks-tests/codex-hook-merge-authority-output.test.mts` covers the precedence,
   lone-merge, and attended rows end to end through the wired entry script.
-  `dev/codex-hooks-tests/__tests__/codex-hook-gh-pr-merge-policy.test.mts` and
-  `…gh-api-merge-policy.test.mts` assert that `automationContext:true` blocks every merge shape.
+  `dev/codex-hooks-tests/__tests__/codex-hook-automation-merge-coarse.test.mts` pins the merge
+  forms `automationContext:true` blocks, the accepted overmatches, and the known misses.
+  `…gh-pr-merge-policy.test.mts` pins the shell surfaces the rule still reads as data.
 
 **Scope note:** this hook governs merges issued as **agent tool calls**. It does not touch
 workflow-initiated merges. Dependency-bot auto-merge is disabled in this repository; see the
 [dependency update merge policy](dependency-updates.md#review-and-merge).
 
 **What stays unconditional:** automation (`GITHUB_ACTIONS`/`CI` set) hard-blocks every merge shape
-regardless of runtime, with no path back to `allow`. The merge branches return `disposition:
-'block'` directly, and `findInteractiveMergeConfirm` never returns a confirm under automation. What
+regardless of runtime, with no path back to `allow`. `findAutomationMergeBlock` returns
+`disposition: 'block'` directly, and `findInteractiveMergeConfirm` never returns a confirm under
+automation. What
 changed is the interactive side: the human decision that authorizes a merge is the human asking for
 it in their own message, not a second tool-level popup. So a lone merge in an attended Claude
 session renders as an immediate, silent `allow` instead of a forced prompt.

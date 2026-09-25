@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
 
 // "gh pr merge" is banned outright in automation — with or without --auto — because merge
-// authority requires a contemporaneous human decision. These cases exercise the shell-parsing surfaces (quoting,
-// comments, substitutions, heredocs, redirections, wrapper commands) that could otherwise hide a
-// merge invocation from the hook; every one of them must still resolve to a block.
+// authority requires a contemporaneous human decision. The automation rule is coarse (any gh plus
+// merge in the command blocks); these cases pin the few shell surfaces it still reads as data:
+// unquoted comments and non-shell heredoc bodies.
 describe('Codex hook gh pr merge policy', () => {
   it.each([
     'gh pr merge 123',
@@ -128,10 +128,16 @@ bash -lc $'gh pr merge 456'`,
     ).toBeNull()
   })
 
+  // Quoted gh+merge text is an accepted automation overmatch; interactively it gets no opinion.
   it.each(["echo '$(gh pr merge 123 --squash)'", "echo '`gh pr merge 123 --squash`'"])(
-    'does not block single-quoted (unexpanded) command-substitution text: %s',
+    'blocks single-quoted (unexpanded) command-substitution text in automation only: %s',
     command => {
-      expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
+      expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain(
+        'never delegated to an agent',
+      )
+      expect(
+        findPreToolUseBlock({ tool_input: { command } }, { automationContext: false }),
+      ).toBeNull()
     },
   )
 

@@ -13,15 +13,12 @@ import {
 import { commandsToInspectForGitHubPolicy, effectiveGhRepo } from './github-command-context.mts'
 import { commandCwd } from './github-command-cwd.mts'
 import { commandPrefixAt } from './github-command-position.mts'
-import { findGhApiMergeBlock } from './github-api-merge-options.mts'
 import { findHandRolledStackBaseBlock } from './github-configured-base.mts'
 import { contentRuleExemption } from './github-content-rule-scope.mts'
-import { findGhPrMergeBlock } from './github-merge-authority.mts'
+import { findAutomationMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { findRawIssueCreateBlock } from './github-issue-create-policy.mts'
-import { findOpaqueGhBlock, mayStartOpaqueGhCheck } from './github-opaque-gh-policy.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
-import { isShellWord } from './shell-script-operand.mts'
 import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
 import { ghBodyFromOptions, ghBodyIsOpaqueToHook, parseGhOptions } from './github-options.mts'
 
@@ -48,10 +45,6 @@ export function findGitHubWorkflowBlock(
         continue
       }
       const invocation = parseGhOrGhStackInvocation(tokens, index)
-      const opaqueBlock = findOpaqueGhBlock(prefix, tokens, index, invocation)
-      if (opaqueBlock !== null) {
-        return opaqueBlock
-      }
       if (invocation === null) {
         continue
       }
@@ -152,32 +145,6 @@ export function findGitHubWorkflowBlock(
         return stackBlock
       }
 
-      if (area === 'pr' && action === 'merge') {
-        // Defaults to DEFAULT_AUTOMATION_CONTEXT (block) when the caller doesn't pass
-        // automationContext — see GitHubWorkflowPolicyOptions in github-closing-refs.mts. Only
-        // pre-tool-use.mts computes this from real GITHUB_ACTIONS/CI env. Interactively the scan
-        // continues, so a later segment's block still applies.
-        const mergeBlock = findGhPrMergeBlock(
-          options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT,
-        )
-        if (mergeBlock !== null) {
-          return mergeBlock
-        }
-      }
-
-      // `gh api` reaches merge-shaped endpoints by a path `gh pr merge` above never sees; see
-      // github-api-merge-options.mts for the parser and why this is best-effort, not the boundary.
-      if (area === 'api') {
-        const apiMergeBlock = findGhApiMergeBlock(
-          tokens,
-          index,
-          options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT,
-        )
-        if (apiMergeBlock !== null) {
-          return apiMergeBlock
-        }
-      }
-
       if (contentRulesApply && area === 'issue' && action === 'create') {
         const issueCreateBlock = findRawIssueCreateBlock(invocation, detailedTokens)
         if (issueCreateBlock !== null) {
@@ -187,14 +154,15 @@ export function findGitHubWorkflowBlock(
     }
   }
 
-  return null
+  // The specific reasons above win; any other merge in automation gets the coarse block. Defaults
+  // to DEFAULT_AUTOMATION_CONTEXT (block) when the caller doesn't pass automationContext; only
+  // pre-tool-use.mts computes it from the real GITHUB_ACTIONS/CI env.
+  return findAutomationMergeBlock(command, options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT)
 }
 
-// Every policy above reads a gh or gh-stack command, a shell whose `-c` script xargs fills in, or
-// one of findOpaqueGhBlock's own opaque-wrapper checks (find, parallel, eval, an exec-style
-// wrapper, a parameter expansion — mayStartOpaqueGhCheck). Skipping other words before
-// commandPrefixAt keeps a long command from rescanning its segment at every word.
+// Every policy above reads a gh or gh-stack command. Skipping other words before commandPrefixAt
+// keeps a long command from rescanning its segment at every word.
 function mayRunGh(word: string): boolean {
   const name = word.slice(word.lastIndexOf('/') + 1)
-  return name === 'gh' || name === 'gh-stack' || isShellWord(word) || mayStartOpaqueGhCheck(word)
+  return name === 'gh' || name === 'gh-stack'
 }

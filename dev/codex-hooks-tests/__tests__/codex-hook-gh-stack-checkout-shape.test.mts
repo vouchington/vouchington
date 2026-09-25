@@ -65,7 +65,7 @@ describe('Codex hook gh stack checkout command shape', () => {
     'echo "$(gh stack checkout 7)"',
     '(gh stack checkout 7)',
     'env --chdir=TARGET gh stack checkout 7',
-    'noglob gh stack checkout 7',
+    'nohup gh stack checkout 7',
     'GIT_DIR=TARGET/.git gh stack checkout 7',
     'GIT_DIR+=x gh stack checkout 7',
     'export GIT_DIR=TARGET/.git; gh stack checkout 7',

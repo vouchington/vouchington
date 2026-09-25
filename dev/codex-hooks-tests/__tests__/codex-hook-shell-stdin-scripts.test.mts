@@ -102,9 +102,13 @@ describe('Codex hook gh policies in a script a shell reads from stdin', () => {
     `python3 - ${MERGE_HEREDOC}`,
     // A `-c` script replaces stdin as the shell's script.
     `bash -c 'echo hi' ${MERGE_HEREDOC}`,
-    `bash -c true ${MERGE_HERE_STRING}`,
     `bash -e -c true ${MERGE_HEREDOC}`,
-  ])('does not gate a heredoc or here-string no shell runs: %s', command => {
+  ])('does not gate a heredoc no shell runs: %s', command => {
     expect(reasonFor(command)).toBeUndefined()
+  })
+
+  // A here-string's words stay in the command line, so the coarse automation rule sees them.
+  it('blocks a here-string no shell runs as an accepted automation overmatch', () => {
+    expect(reasonFor(`bash -c true ${MERGE_HERE_STRING}`)).toContain(MERGE_BLOCK)
   })
 })

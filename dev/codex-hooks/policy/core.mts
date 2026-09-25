@@ -16,9 +16,8 @@ export type BlockDecision = {
 /**
  * Default for `automationContext` when a caller omits it — block (the strict, safe default).
  * Only pre-tool-use.mts computes the real value from process.env; every other layer falls back
- * to this single constant so the merge-branch call sites (github-workflow.mts's inline check and
- * its call into findGhApiMergeBlock, plus findGhApiMergeBlock's own parameter default in
- * github-api-merge-options.mts) can't drift independently.
+ * to this single constant so policy.mts and github-workflow.mts's findAutomationMergeBlock call
+ * can't drift independently.
  */
 export const DEFAULT_AUTOMATION_CONTEXT = true
 export function isRecord(value: unknown): value is Record<string, unknown> {

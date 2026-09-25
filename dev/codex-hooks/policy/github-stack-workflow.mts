@@ -1,4 +1,4 @@
-import { DEFAULT_AUTOMATION_CONTEXT, type BlockDecision } from './core.mts'
+import type { BlockDecision } from './core.mts'
 import type { GitHubWorkflowPolicyOptions } from './github-closing-refs.mts'
 import { findStackInitBaseBlock } from './github-configured-base.mts'
 import type { GhInvocation } from './github-invocation.mts'
@@ -108,27 +108,14 @@ export function findGitHubStackWorkflowBlock(
     }
   }
 
-  if (action !== 'merge') {
-    return null
-  }
-
-  if (!hasNumericPrSelector(stack.optionTokens)) {
+  // Merge authority itself is findAutomationMergeBlock's and findInteractiveMergeConfirm's.
+  if (action === 'merge' && !hasNumericPrSelector(stack.optionTokens)) {
     return {
       reason:
         'gh stack merge requires a PR-number selector. Bare merge is a TUI and lands the whole stack. Use `gh stack merge --squash <pr>`.',
     }
   }
-
-  // Interactively the merge confirm comes from findInteractiveMergeConfirm, which policy.mts
-  // checks only after every block.
-  if (!(options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT)) {
-    return null
-  }
-  return {
-    disposition: 'block',
-    reason:
-      'Merge authority is never delegated to an agent in automation. "gh stack merge" is banned in GitHub Actions, with or without --yes — stacked merges land every layer up to the selected PR without a per-layer human decision. Interactive sessions may merge with human confirmation — see docs/development/merge-authority.md.',
-  }
+  return null
 }
 
 const HELP_FLAGS = new Set(['--help', '-h'])

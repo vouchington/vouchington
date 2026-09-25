@@ -1,25 +1,48 @@
 import type { BlockDecision } from './core.mts'
+import { commandsToInspectForGitHubPolicy } from './github-command-context.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { hasNumericPrSelector } from './github-option-flags.mts'
 import { plainShellAssignment } from './shell-token-utils.mts'
 import { tokenizeShellWords } from './shell-tokenizer.mts'
 
+const AUTOMATION_MERGE_REASON =
+  'Merge authority is never delegated to an agent in automation. This command names gh together with a merge (`gh pr merge`, `gh stack merge`, or a `gh api` merge endpoint or mutation), so it is blocked in GitHub Actions; a human performs the merge. If the merge text is only prose, split the command or move the prose into a --body-file. See docs/development/merge-authority.md.'
+
+// `gh` or `gh-stack` as a word of its own, including a path (`/usr/bin/gh`).
+const GH_WORD = /(?:^|[^\w.-])gh(?:-stack)?(?![\w.-])/
+const MERGE_WORD = /(?<![\w-])merge(?![\w-])/
+const MERGE_ENDPOINT = /\/merges?(?:$|[/?#])|mergePullRequest|enablePullRequestAutoMerge/
+
 /**
- * `gh pr merge` is the direct path GitHub exposes for merging; `gh api` reaches merge-shaped
- * endpoints by a different path handled separately in github-api-merge-options.mts. Automation
- * never receives merge authority. Interactively this returns null: the only interactive merge
- * disposition is findInteractiveMergeConfirm's, which policy.mts checks after every block. See
- * docs/development/merge-authority.md.
+ * Automation never receives merge authority. The check is deliberately coarse and parses no
+ * wrappers: a command that names gh and has a merge-shaped word in any script the hook reads
+ * blocks. Overmatches (a `git merge` beside gh, merge help, quoted prose) are accepted; see the
+ * hook threat model in docs/development/agent-sandbox.md. Interactively this returns null.
  */
-export function findGhPrMergeBlock(automationContext: boolean): BlockDecision | null {
-  if (!automationContext) {
-    return null
-  }
-  return {
-    disposition: 'block',
-    reason:
-      'Merge authority is never delegated to an agent in automation. "gh pr merge" is banned in GitHub Actions, with or without --auto — arming auto-merge still merges without a contemporaneous human decision once checks pass. Interactive sessions may merge with human confirmation — see docs/development/merge-authority.md.',
-  }
+export function findAutomationMergeBlock(
+  command: string,
+  automationContext: boolean,
+): BlockDecision | null {
+  return automationContext && mentionsGhMerge(command)
+    ? { disposition: 'block', reason: AUTOMATION_MERGE_REASON }
+    : null
+}
+
+function mentionsGhMerge(command: string): boolean {
+  return (
+    GH_WORD.test(command) &&
+    commandsToInspectForGitHubPolicy(command).some(inspected =>
+      tokenizeShellWords(inspected, { splitRedirections: true }).some(isMergeShaped),
+    )
+  )
+}
+
+function isMergeShaped(token: string): boolean {
+  return (
+    token === 'merge' ||
+    MERGE_ENDPOINT.test(token) ||
+    (GH_WORD.test(token) && MERGE_WORD.test(token))
+  )
 }
 
 /**

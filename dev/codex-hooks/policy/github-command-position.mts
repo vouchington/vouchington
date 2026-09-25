@@ -13,7 +13,3 @@ export function commandSegmentStart(tokens: string[], index: number): number {
 export function commandPrefixAt(tokens: string[], index: number): CommandPrefix | null {
   return parseCommandPrefix(tokens.slice(commandSegmentStart(tokens, index), index))
 }
-
-export function isCommandPositionInvocation(tokens: string[], index: number): boolean {
-  return commandPrefixAt(tokens, index) !== null
-}

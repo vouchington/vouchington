@@ -7,15 +7,26 @@ describe('Codex hook gh stack help policy', () => {
     'gh stack --help',
     'gh stack -h',
     'gh stack help',
-    'gh stack help merge',
-    'gh stack merge --help',
     'gh stack checkout --help',
     'gh stack submit -h',
     'gh stack init --help',
-    'gh-stack merge --help',
-    'gh extension exec stack merge --help',
   ])('allows help that runs no command, even in automation: %s', command => {
     expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
+  })
+
+  // The coarse automation merge rule does not parse help flags: merge help is an accepted overmatch.
+  it.each([
+    'gh stack help merge',
+    'gh stack merge --help',
+    'gh-stack merge --help',
+    'gh extension exec stack merge --help',
+  ])('blocks merge help in automation and allows it interactively: %s', command => {
+    expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain(
+      'never delegated to an agent',
+    )
+    expect(
+      findPreToolUseBlock({ tool_input: { command } }, { automationContext: false }),
+    ).toBeNull()
   })
 
   it.each([

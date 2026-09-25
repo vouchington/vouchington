@@ -56,7 +56,7 @@ describe('gh content-rule owner scope', () => {
         '--repo widgets-inc/tool',
         'export GH_REPO=acme/app; ',
       ],
-      ['--repo behind command wrappers', '--repo widgets-inc/tool', 'env -C /srv/home timeout 5 '],
+      ['--repo behind command wrappers', '--repo widgets-inc/tool', 'env -C /srv/home nohup '],
     ])('via %s', (_name, flags, prefix) => {
       expect(reasonOf(nonDraftPr(flags, prefix))).toBeUndefined()
       expect(reasonOf(planIssue(flags, prefix))).toBeUndefined()
@@ -137,7 +137,7 @@ describe('gh content-rule owner scope', () => {
       ['a GH_REPO append', '', 'GH_REPO+=widgets-inc/tool '],
       ['a GH_REPO array element', '', 'GH_REPO[0]=widgets-inc/tool '],
       ['a GH_REPO prefix behind env -C', '', 'env -C /srv/home GH_REPO=widgets-inc/tool '],
-      ['a GH_REPO prefix before another wrapper', '', 'GH_REPO=widgets-inc/tool timeout 5 '],
+      ['a GH_REPO prefix before another wrapper', '', 'GH_REPO=widgets-inc/tool nohup '],
     ])('for %s', (_name, flags, prefix) => {
       expect(reasonOf(nonDraftPr(flags, prefix))).toContain(DRAFT_FIRST)
       expect(reasonOf(planIssue(flags, prefix))).toContain(PLAN_TITLE)

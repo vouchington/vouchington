@@ -8,8 +8,10 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
   purposes — staleness, breadth drift, and doc-vs-config parity across all of them are in scope to
   find and report. But `.codex/rules/`, `.codex/config.toml`, and `dev/codex-hooks/**` are
   themselves hard-blocked from `Edit`/`Write`/`apply_patch` in exactly the automation context this
-  scheduled prompt runs in (`dev/codex-hooks/policy.mts:63-75`, paths named in
-  `dev/codex-hooks/policy/protected-hook-paths.mts:13-19` — the #8009 hook self-mutation gap;
+  scheduled prompt runs in (the `hookPayloadReferencesProtectedHookPath` check in
+  `dev/codex-hooks/policy.mts`, paths named by `PROTECTED_HOOK_DIR_PREFIXES` and
+  `PROTECTED_HOOK_EXACT_FILES` in `dev/codex-hooks/policy/protected-hook-paths.mts` — the #8009
+  hook self-mutation gap;
   interactive sessions are unaffected). Pick the shippable change from an editable surface —
   `.claude/settings.json`, `.grok/sandbox.toml`, or the docs below. This prompt carries no
   `<!-- harness-scheduled-completion: issue -->` marker, so `scheduled-prompts.yml` dispatches it in
