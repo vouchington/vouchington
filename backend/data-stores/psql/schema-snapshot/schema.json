@@ -5421,6 +5421,550 @@
       },
       "uniqueConstraints": {}
     },
+    "autotagger_receipt_attempts": {
+      "checkConstraints": {
+        "autotagger_receipt_attempts_attempt_number_check": "CHECK ((attempt_number >= 1))",
+        "autotagger_receipt_attempts_outcome_check": "CHECK (((outcome IS NULL) OR (outcome = ANY (ARRAY['provider-error'::text, 'invalid-result'::text, 'expired'::text]))))",
+        "chk_autotagger_receipt_attempts__outcome_requires_failure": "CHECK (((failed_at IS NOT NULL) OR (outcome IS NULL)))",
+        "chk_autotagger_receipt_attempts__terminal_exclusive": "CHECK ((num_nonnulls(completed_at, failed_at) <= 1))"
+      },
+      "columns": {
+        "attempt_number": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "smallint"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "failed_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "lease_token": {
+          "collation": null,
+          "comment": "Fencing token matching the receipt lease active during this attempt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "outcome": {
+          "collation": null,
+          "comment": "Stable failure reason. NULL when the attempt completed successfully.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "receipt_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        }
+      },
+      "comment": "Durable per-claim attempt ledger for autotagger_receipts. Records why a claim ended: completed, a provider error, an invalid result, or lease expiry.",
+      "foreignKeys": {
+        "autotagger_receipt_attempts_receipt_id_fkey": {
+          "columns": ["receipt_id"],
+          "definition": "FOREIGN KEY (receipt_id) REFERENCES autotagger_receipts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "autotagger_receipts",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "autotagger_receipt_attempts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX autotagger_receipt_attempts_pkey ON public.autotagger_receipt_attempts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_autotagger_receipt_attempts__receipt_id__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_autotagger_receipt_attempts__receipt_id__id ON public.autotagger_receipt_attempts USING btree (receipt_id, id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "receipt_id",
+              "descending": false,
+              "expression": "receipt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_autotagger_receipt_attempts__receipt_attempt": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_autotagger_receipt_attempts__receipt_attempt ON public.autotagger_receipt_attempts USING btree (receipt_id, attempt_number)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "receipt_id",
+              "descending": false,
+              "expression": "receipt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "attempt_number",
+              "descending": false,
+              "expression": "attempt_number",
+              "nullsFirst": false,
+              "opclass": "int2_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_autotagger_receipt_attempts__receipt_lease_token": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_autotagger_receipt_attempts__receipt_lease_token ON public.autotagger_receipt_attempts USING btree (receipt_id, lease_token)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "receipt_id",
+              "descending": false,
+              "expression": "receipt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "lease_token",
+              "descending": false,
+              "expression": "lease_token",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "uq_autotagger_receipt_attempts__receipt_attempt": {
+          "columns": ["receipt_id", "attempt_number"],
+          "definition": "UNIQUE (receipt_id, attempt_number)"
+        },
+        "uq_autotagger_receipt_attempts__receipt_lease_token": {
+          "columns": ["receipt_id", "lease_token"],
+          "definition": "UNIQUE (receipt_id, lease_token)"
+        }
+      }
+    },
+    "autotagger_receipts": {
+      "checkConstraints": {
+        "autotagger_receipts_digest_check": "CHECK ((octet_length(digest) = 32))",
+        "autotagger_receipts_digest_version_check": "CHECK ((digest_version >= 1))",
+        "chk_autotagger_receipts__lease_token_expires_at": "CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL)))",
+        "chk_autotagger_receipts__lease_token_leased_at": "CHECK (((lease_token IS NULL) = (leased_at IS NULL)))",
+        "chk_autotagger_receipts__not_completed_while_leased": "CHECK (((completed_at IS NULL) OR (lease_token IS NULL)))",
+        "chk_autotagger_receipts__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))"
+      },
+      "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "Assigned at receipt creation; reused as classifier_decision_batches.id once a decision commits. Not a foreign key: the batch may not exist yet.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": "Clock time at which the classifier decision committed and downstream vote application became safe to run idempotently.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "digest": {
+          "collation": null,
+          "comment": "SHA-256 of the exact sanitized request state: wrapped state, rendered candidate IDs/text, ordered candidates, scope, effective cap, classifier/prompt IDs, and provider/model revision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "bytea"
+        },
+        "digest_version": {
+          "collation": null,
+          "comment": "Version of the receipt digest composition, bumped whenever the hashed request shape changes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "smallint"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "lease_expires_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "lease_token": {
+          "collation": null,
+          "comment": "Fencing token identifying the current exclusive claimant. NULL when unclaimed or completed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "leased_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Claim/lease/completion ledger for the C6 embedding-path tagging classifier. A changed digest is a new identity with its own row and batch_id.",
+      "foreignKeys": {
+        "autotagger_receipts_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "autotagger_receipts_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "autotagger_receipts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX autotagger_receipts_pkey ON public.autotagger_receipts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_autotagger_receipts__lease_expires_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_autotagger_receipts__lease_expires_at ON public.autotagger_receipts USING btree (lease_expires_at) WHERE (lease_token IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lease_expires_at",
+              "descending": false,
+              "expression": "lease_expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "predicate": "(lease_token IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_autotagger_receipts__batch_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_autotagger_receipts__batch_id ON public.autotagger_receipts USING btree (batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_autotagger_receipts__post_digest": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_autotagger_receipts__post_digest ON public.autotagger_receipts USING btree (post_id, digest_version, digest) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "digest_version",
+              "descending": false,
+              "expression": "digest_version",
+              "nullsFirst": false,
+              "opclass": "int2_ops"
+            },
+            {
+              "column": "digest",
+              "descending": false,
+              "expression": "digest",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_autotagger_receipts__rss_feed_item_digest": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_autotagger_receipts__rss_feed_item_digest ON public.autotagger_receipts USING btree (rss_feed_item_id, digest_version, digest) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "digest_version",
+              "descending": false,
+              "expression": "digest_version",
+              "nullsFirst": false,
+              "opclass": "int2_ops"
+            },
+            {
+              "column": "digest",
+              "descending": false,
+              "expression": "digest",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_autotagger_receipts_updated_at": "CREATE TRIGGER trigger_autotagger_receipts_updated_at BEFORE UPDATE ON public.autotagger_receipts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "uq_autotagger_receipts__batch_id": {
+          "columns": ["batch_id"],
+          "definition": "UNIQUE (batch_id)"
+        }
+      }
+    },
     "bedrock_embeddings_batch_entities": {
       "checkConstraints": {
         "chk_bedrock_embeddings_batch_entities__entity_columns": "CHECK ((((entity_type = 'topics'::bedrock_embedding_batch_job_types) AND (topic_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NULL)) OR ((entity_type = 'posts'::bedrock_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NOT NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NULL)) OR ((entity_type = 'rss_feed_items'::bedrock_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NOT NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NULL)) OR ((entity_type = 'crawl_chunks'::bedrock_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NOT NULL) AND (crawl_order_index IS NOT NULL) AND (image_id IS NULL)) OR ((entity_type = 'images'::bedrock_embedding_batch_job_types) AND (topic_id IS NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (crawl_id IS NULL) AND (crawl_order_index IS NULL) AND (image_id IS NOT NULL))))"

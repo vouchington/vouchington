@@ -9,6 +9,8 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'api_keys',
   'app_attestation_keys',
   'apple_accounts',
+  'autotagger_receipt_attempts',
+  'autotagger_receipts',
   'bedrock_embeddings_batch_entities',
   'bedrock_embeddings_batches',
   'bedrock_nova_multimodal_v1_embeddings',
