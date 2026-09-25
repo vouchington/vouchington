@@ -6,16 +6,16 @@ Durable per-claim attempt ledger for autotagger_receipts. Records why a claim en
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                              |
-| ---------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------- |
-| `id`             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                      |
-| `receipt_id`     | `uuid`                     | no       |                              |          |           |           |                                                                      |
-| `attempt_number` | `smallint`                 | no       |                              |          |           |           |                                                                      |
-| `lease_token`    | `uuid`                     | no       |                              |          |           |           | Fencing token matching the receipt lease active during this attempt. |
-| `completed_at`   | `timestamp with time zone` | yes      |                              |          |           |           |                                                                      |
-| `failed_at`      | `timestamp with time zone` | yes      |                              |          |           |           |                                                                      |
-| `outcome`        | `text`                     | yes      |                              |          |           |           | Stable failure reason. NULL when the attempt completed successfully. |
-| `created_at`     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                      |
+| Column           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                            |
+| ---------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------- |
+| `id`             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                    |
+| `receipt_id`     | `uuid`                     | no       |                              |          |           |           | Receipt this attempt was claimed against.                                          |
+| `attempt_number` | `smallint`                 | no       |                              |          |           |           | Ordinal of this attempt within its receipt, starting at 1.                         |
+| `lease_token`    | `uuid`                     | no       |                              |          |           |           | Fencing token matching the receipt lease active during this attempt.               |
+| `completed_at`   | `timestamp with time zone` | yes      |                              |          |           |           | Clock time this attempt completed successfully. Mutually exclusive with failed_at. |
+| `failed_at`      | `timestamp with time zone` | yes      |                              |          |           |           | Clock time this attempt ended in failure. Mutually exclusive with completed_at.    |
+| `outcome`        | `text`                     | yes      |                              |          |           |           | Stable failure reason. NULL when the attempt completed successfully.               |
+| `created_at`     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
 

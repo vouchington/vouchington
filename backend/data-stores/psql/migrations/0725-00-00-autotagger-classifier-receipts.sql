@@ -42,6 +42,10 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE autotagger_receipts IS
   'Claim/lease/completion ledger for the C6 embedding-path tagging classifier. A changed digest is a new identity with its own row and batch_id.';
+COMMENT ON COLUMN autotagger_receipts.post_id IS
+  'Post subject of this receipt. Exactly one of post_id/rss_feed_item_id is set.';
+COMMENT ON COLUMN autotagger_receipts.rss_feed_item_id IS
+  'RSS feed item subject of this receipt. Exactly one of post_id/rss_feed_item_id is set.';
 COMMENT ON COLUMN autotagger_receipts.digest_version IS
   'Version of the receipt digest composition, bumped whenever the hashed request shape changes.';
 COMMENT ON COLUMN autotagger_receipts.digest IS
@@ -50,6 +54,10 @@ COMMENT ON COLUMN autotagger_receipts.batch_id IS
   'Assigned at receipt creation; reused as classifier_decision_batches.id once a decision commits. Not a foreign key: the batch may not exist yet.';
 COMMENT ON COLUMN autotagger_receipts.lease_token IS
   'Fencing token identifying the current exclusive claimant. NULL when unclaimed or completed.';
+COMMENT ON COLUMN autotagger_receipts.leased_at IS
+  'Clock time the current lease was acquired. NULL when unclaimed; cleared together with lease_token.';
+COMMENT ON COLUMN autotagger_receipts.lease_expires_at IS
+  'Clock time after which the current lease is stale and eligible for reclaim. NULL when unclaimed.';
 COMMENT ON COLUMN autotagger_receipts.completed_at IS
   'Clock time at which the classifier decision committed and downstream vote application became safe to run idempotently.';
 
@@ -75,7 +83,15 @@ ON autotagger_receipt_attempts (receipt_id, id DESC);
 
 COMMENT ON TABLE autotagger_receipt_attempts IS
   'Durable per-claim attempt ledger for autotagger_receipts. Records why a claim ended: completed, a provider error, an invalid result, or lease expiry.';
+COMMENT ON COLUMN autotagger_receipt_attempts.receipt_id IS
+  'Receipt this attempt was claimed against.';
+COMMENT ON COLUMN autotagger_receipt_attempts.attempt_number IS
+  'Ordinal of this attempt within its receipt, starting at 1.';
 COMMENT ON COLUMN autotagger_receipt_attempts.lease_token IS
   'Fencing token matching the receipt lease active during this attempt.';
+COMMENT ON COLUMN autotagger_receipt_attempts.completed_at IS
+  'Clock time this attempt completed successfully. Mutually exclusive with failed_at.';
+COMMENT ON COLUMN autotagger_receipt_attempts.failed_at IS
+  'Clock time this attempt ended in failure. Mutually exclusive with completed_at.';
 COMMENT ON COLUMN autotagger_receipt_attempts.outcome IS
   'Stable failure reason. NULL when the attempt completed successfully.';

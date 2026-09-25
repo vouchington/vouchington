@@ -5437,7 +5437,7 @@
       "columns": {
         "attempt_number": {
           "collation": null,
-          "comment": null,
+          "comment": "Ordinal of this attempt within its receipt, starting at 1.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5448,7 +5448,7 @@
         },
         "completed_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Clock time this attempt completed successfully. Mutually exclusive with failed_at.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5470,7 +5470,7 @@
         },
         "failed_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Clock time this attempt ended in failure. Mutually exclusive with completed_at.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5514,7 +5514,7 @@
         },
         "receipt_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Receipt this attempt was claimed against.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5737,7 +5737,7 @@
         },
         "lease_expires_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Clock time after which the current lease is stale and eligible for reclaim. NULL when unclaimed.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5759,7 +5759,7 @@
         },
         "leased_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Clock time the current lease was acquired. NULL when unclaimed; cleared together with lease_token.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5770,7 +5770,7 @@
         },
         "post_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Post subject of this receipt. Exactly one of post_id/rss_feed_item_id is set.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5781,7 +5781,7 @@
         },
         "rss_feed_item_id": {
           "collation": null,
-          "comment": null,
+          "comment": "RSS feed item subject of this receipt. Exactly one of post_id/rss_feed_item_id is set.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
