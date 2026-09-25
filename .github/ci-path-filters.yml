@@ -214,6 +214,8 @@ tooling:
   - '**/package.json'
   - 'pnpm-workspace.yaml'
   - '.agents/skills/**'
+  - '.agents/catalog/**'
+  - '.pr-shepherd/**'
   - 'backend/README.md'
   - 'backend/**'
   - 'backend/agents/CLAUDE.md'
