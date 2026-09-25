@@ -89,7 +89,19 @@ jobs:
         timeout-minutes: 5
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./ci/download-optional-run-artifacts.sh --pattern 'vitest-blob-*' --dir './vitest-blob-fallback'
+          VITEST_REPORT_EXPECTATIONS: ${{ steps.merge-vitest-report-expectations.outputs.context }}
+        run: |
+          set -euo pipefail
+          names=$(node ci/vitest-blob-candidate-names.mts)
+          if [ -z "$names" ]; then
+            echo "[vitest-blob-consumer-fallback] no Vitest blob candidates expected; skipping download" >&2
+          else
+            args=()
+            while IFS= read -r name; do
+              args+=(--name "$name")
+            done <<< "$names"
+            ./ci/download-optional-run-artifacts.sh "${args[@]}" --dir './vitest-blob-fallback'
+          fi
       - name: Merge Vitest reports
         id: merge-vitest-reports
         if: "!cancelled() && (github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.ref == 'refs/heads/main')"

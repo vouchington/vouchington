@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
+import { RETRY_NAME_SUFFIX } from '../../ci/vitest-blob-candidate-names.mts'
+
 const workflowDir = '.github/workflows'
 const workflowFiles = readdirSync(workflowDir).filter(file => /\.(ya?ml)$/.test(file))
 const blobWorkflowFiles = workflowFiles.filter(file =>
@@ -130,9 +132,20 @@ describe('Vitest CI reporters', () => {
     expect(reporterHelpers).toContain('Accepted values: run, merge.')
     expect(reporterHelpers).toContain('createVitestWorkerExitDiagnosticsReporter')
 
+    // Issue #365: the fallback download now derives exact candidate artifact names from the
+    // resolved expectations context (ci/vitest-blob-candidate-names.mts) instead of downloading
+    // every vitest-blob-* artifact across every attempt with one wildcard pattern.
+    expect(testsProcessingWorkflow).not.toContain("--pattern 'vitest-blob-*'")
     expect(testsProcessingWorkflow).toContain('download-optional-run-artifacts.sh')
+    expect(testsProcessingWorkflow).toContain('node ci/vitest-blob-candidate-names.mts')
     expect(testsProcessingWorkflow).toContain(
-      "--pattern 'vitest-blob-*' --dir './vitest-blob-fallback'",
+      'VITEST_REPORT_EXPECTATIONS: ${{ steps.merge-vitest-report-expectations.outputs.context }}',
+    )
+    expect(testsProcessingWorkflow).toContain('set -euo pipefail')
+    expect(testsProcessingWorkflow).toContain("--dir './vitest-blob-fallback'")
+    expect(testsProcessingWorkflow).toContain('args+=(--name "$name")')
+    expect(testsProcessingWorkflow).toContain(
+      'no Vitest blob candidates expected; skipping download',
     )
     expect(testsProcessingWorkflow).toContain(`name: Merge Vitest reports
         id: merge-vitest-reports
@@ -151,6 +164,29 @@ describe('Vitest CI reporters', () => {
     )
     expect(testsProcessingWorkflow).not.toContain('VITEST_MERGE_OUTCOME')
     expect(testsProcessingWorkflow).not.toContain('Vitest report merge failed')
+  })
+
+  it('keeps the Vitest blob artifact name template exact and every name-suffix in the known set', () => {
+    // ci/vitest-blob-candidate-names.mts (issue #365) derives exact fallback download names by
+    // reconstructing this literal template and appending RETRY_NAME_SUFFIX. A drift in either the
+    // template or the set of name-suffix values producers pass would silently break derivation.
+    const uploadVitestBlobAction = readFileSync(
+      '.github/actions/upload-vitest-blob/action.yml',
+      'utf8',
+    )
+    expect(uploadVitestBlobAction).toContain(
+      'name: vitest-blob-${{ inputs.suite }}-attempt-${{ github.run_attempt }}${{ inputs.name-suffix }}',
+    )
+
+    const nameSuffixValues = blobWorkflowFiles.flatMap(file => {
+      const source = readFileSync(join(workflowDir, file), 'utf8')
+      return vitestBlobStepBlocks(source).map(step => step.match(/name-suffix:\s*(\S+)/)?.[1])
+    })
+    expect(nameSuffixValues.length).toBeGreaterThan(0)
+    expect(nameSuffixValues).toContain(RETRY_NAME_SUFFIX)
+    for (const value of nameSuffixValues) {
+      expect(value === undefined || value === RETRY_NAME_SUFFIX).toBe(true)
+    }
   })
 
   it('keeps every Vitest blob fallback behind an explicit input and CI opt-in', () => {

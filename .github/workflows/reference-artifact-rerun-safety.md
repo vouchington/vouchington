@@ -55,6 +55,14 @@ Before changing artifact handoffs, check failed-only reruns and full reruns expl
   expected suite. The exact `vitest-report-expectations:v2` context carries the producing minimum
   attempt from a mandatory `vitest-report-attempt-*` marker for every suite, so one rerun matrix
   child cannot fall back to an older report while an untouched successful sibling remains reusable.
+  The fallback download step itself requests exact artifact names, not a wildcard pattern:
+  [`ci/vitest-blob-candidate-names.mts`](../../ci/vitest-blob-candidate-names.mts) derives every
+  `vitest-blob-${suite}-attempt-${n}` candidate (with and without the retry step's `-retry` suffix)
+  from each suite's `minimumAttempt` through the resolved context's current attempt, so an unrelated
+  artifact or a stale earlier-attempt blob from a different suite is never even requested. A
+  candidate that is absent (e.g. a `-retry` upload that never ran) produces a bounded warning and
+  does not block the others; a candidate that is present but fails to download remains a hard
+  failure — see `ci/download-optional-run-artifacts.sh`.
   Marker steps use `always()` so a participating cancelled child records its current attempt too;
   single-artifact flattened downloads and multi-artifact nested downloads are both exact validated
   layouts. The download root is validated as a whole before any candidate from it participates: a
