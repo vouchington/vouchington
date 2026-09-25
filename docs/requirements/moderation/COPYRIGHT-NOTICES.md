@@ -246,6 +246,17 @@ removing one ground cannot remove another.
 A member-visible case records an allegation and, where applicable, a provisional restriction or reviewed
 outcome. It never describes the claimant as the proven owner or the poster as an infringer.
 
+## Repeat-infringer incidents
+
+A human `confirm` or `modify` on a restriction creates one incident for the post author of that
+placement. Several targets on the same notice stay one incident. A guest placement with no author
+does not create one. Restoration does not remove the incident. `reverse` removes it, and so does a
+staff disposition of `withdrawn`, `duplicate`, or `abusive`.
+
+The second operative incident for an account opens a staff review. Opening that review does not
+suspend or delete the account. Similarity candidates never create an incident. Retention durations
+remain an operator policy and are not stored here.
+
 ## Activation gates
 
 Before accepting live notices, the operator must register and publish the actual US designated

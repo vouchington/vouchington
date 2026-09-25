@@ -660,6 +660,12 @@
     "fn_guard_copyright_notice_submission": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_submission()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright legal receipt records are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.submitted_by_user_id IS NOT NULL\n    AND NEW.submitted_by_user_id IS NULL\n    AND ROW(\n      OLD.id,\n      OLD.copyright_notice_id,\n      OLD.kind,\n      OLD.received_at,\n      OLD.source_kind,\n      OLD.body_ciphertext,\n      OLD.created_at,\n      OLD.updated_at\n    ) IS NOT DISTINCT FROM ROW(\n      NEW.id,\n      NEW.copyright_notice_id,\n      NEW.kind,\n      NEW.received_at,\n      NEW.source_kind,\n      NEW.body_ciphertext,\n      NEW.created_at,\n      NEW.updated_at\n    ) THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION 'copyright legal receipt records are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
+    "fn_guard_copyright_repeat_infringer_incident": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_repeat_infringer_incident()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright repeat-infringer incidents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.account_user_id IS DISTINCT FROM OLD.account_user_id\n    OR NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id THEN\n    RAISE EXCEPTION 'copyright repeat-infringer incident identity is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_repeat_infringer_review": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_repeat_infringer_review()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright repeat-infringer reviews are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.account_user_id IS DISTINCT FROM OLD.account_user_id\n    OR NEW.opened_at IS DISTINCT FROM OLD.opened_at THEN\n    RAISE EXCEPTION 'copyright repeat-infringer review identity is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.outcome IS NOT NULL AND (\n    NEW.outcome IS DISTINCT FROM OLD.outcome\n    OR NEW.outcome_at IS DISTINCT FROM OLD.outcome_at\n    OR NEW.rationale_ciphertext IS DISTINCT FROM OLD.rationale_ciphertext\n    OR (\n      OLD.outcome_by_id IS DISTINCT FROM NEW.outcome_by_id\n      AND NEW.outcome_by_id IS NOT NULL\n    )\n  ) THEN\n    RAISE EXCEPTION 'copyright repeat-infringer review outcome is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_guard_copyright_restriction_assessment_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_assessment_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.authorizing_assessment_id IS DISTINCT FROM OLD.authorizing_assessment_id THEN\n    RAISE EXCEPTION 'copyright restriction authorizing assessment is immutable'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submission_assessments assessment\n    JOIN copyright_notice_submissions submission\n      ON submission.id = assessment.copyright_notice_submission_id\n    JOIN copyright_notice_targets target\n      ON target.id = NEW.copyright_notice_target_id\n    WHERE assessment.id = NEW.authorizing_assessment_id\n      AND assessment.substantially_compliant\n      AND submission.kind = 'notice'\n      AND submission.copyright_notice_id = target.copyright_notice_id\n      AND (\n        submission.source_kind <> 'guest_form'\n        OR EXISTS (\n          SELECT 1\n          FROM copyright_notice_form_intakes intake\n          JOIN copyright_notice_form_intake_reviews review\n            ON review.copyright_notice_form_intake_id = intake.id\n          WHERE intake.copyright_notice_submission_id = submission.id\n            AND review.accepted\n        )\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_submission_assessments newer\n        WHERE newer.supersedes_assessment_id = assessment.id\n      )\n  ) THEN\n    RAISE EXCEPTION 'copyright restriction requires a current compliant notice assessment in the same case'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -27106,6 +27112,545 @@
         "trigger_copyright_notices_identity_immutable": "CREATE TRIGGER trigger_copyright_notices_identity_immutable BEFORE DELETE OR UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_identity()",
         "trigger_copyright_notices_lifecycle_guard": "CREATE TRIGGER trigger_copyright_notices_lifecycle_guard BEFORE UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_notice_lifecycle()",
         "trigger_copyright_notices_updated_at": "CREATE TRIGGER trigger_copyright_notices_updated_at BEFORE UPDATE ON public.copyright_notices FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "copyright_repeat_infringer_dispositions": {
+      "checkConstraints": {
+        "copyright_repeat_infringer_dispositi_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))",
+        "copyright_repeat_infringer_dispositions_disposition_check": "CHECK ((disposition = ANY (ARRAY['withdrawn'::text, 'duplicate'::text, 'abusive'::text])))"
+      },
+      "columns": {
+        "copyright_repeat_infringer_incident_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "disposition": {
+          "collation": null,
+          "comment": "Why the incident stopped counting. Restoration is not a disposition.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted staff rationale for removing the incident.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "recorded_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "recorded_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Staff decision that a confirmed incident no longer counts: withdrawn, duplicate, or abusive.",
+      "foreignKeys": {
+        "copyright_repeat_infringer_di_copyright_repeat_infringer_i_fkey": {
+          "columns": ["copyright_repeat_infringer_incident_id"],
+          "definition": "FOREIGN KEY (copyright_repeat_infringer_incident_id) REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_repeat_infringer_incidents",
+          "validated": true
+        },
+        "copyright_repeat_infringer_dispositions_recorded_by_id_fkey": {
+          "columns": ["recorded_by_id"],
+          "definition": "FOREIGN KEY (recorded_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "copyright_repeat_infringer_di_copyright_repeat_infringer_in_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_repeat_infringer_di_copyright_repeat_infringer_in_key ON public.copyright_repeat_infringer_dispositions USING btree (copyright_repeat_infringer_incident_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_repeat_infringer_incident_id",
+              "descending": false,
+              "expression": "copyright_repeat_infringer_incident_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_repeat_infringer_dispositions_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_repeat_infringer_dispositions_pkey ON public.copyright_repeat_infringer_dispositions USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_repeat_infringer_dispositions_actor": "CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_actor BEFORE INSERT ON public.copyright_repeat_infringer_dispositions FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('recorded_by_id')",
+        "trigger_copyright_repeat_infringer_dispositions_immutable": "CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_immutable BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_dispositions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_immutable_with_actor_erasure('recorded_by_id')"
+      },
+      "uniqueConstraints": {
+        "copyright_repeat_infringer_di_copyright_repeat_infringer_in_key": {
+          "columns": ["copyright_repeat_infringer_incident_id"],
+          "definition": "UNIQUE (copyright_repeat_infringer_incident_id)"
+        }
+      }
+    },
+    "copyright_repeat_infringer_incidents": {
+      "checkConstraints": {},
+      "columns": {
+        "account_user_id": {
+          "collation": null,
+          "comment": "Post author who owned the confirmed placement. Guest placements do not create an incident.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Copyright notice this incident belongs to. Several targets on one notice are still one incident.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "operative": {
+          "collation": null,
+          "comment": "Whether this notice still counts toward the repeat-infringer review threshold.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "boolean"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One account incident per copyright notice. Operative means a human confirm or modify still stands and no withdrawal, duplicate, or abusive disposition exists.",
+      "foreignKeys": {
+        "copyright_repeat_infringer_incidents_account_user_id_fkey": {
+          "columns": ["account_user_id"],
+          "definition": "FOREIGN KEY (account_user_id) REFERENCES users(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "copyright_repeat_infringer_incidents_copyright_notice_id_fkey": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "copyright_repeat_infringer_in_account_user_id_copyright_not_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_repeat_infringer_in_account_user_id_copyright_not_key ON public.copyright_repeat_infringer_incidents USING btree (account_user_id, copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "account_user_id",
+              "descending": false,
+              "expression": "account_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_repeat_infringer_incidents_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_repeat_infringer_incidents_pkey ON public.copyright_repeat_infringer_incidents USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_repeat_infringer_incidents__operative_account": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account ON public.copyright_repeat_infringer_incidents USING btree (account_user_id) WHERE operative",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "account_user_id",
+              "descending": false,
+              "expression": "account_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "operative",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_repeat_infringer_incidents_guard": "CREATE TRIGGER trigger_copyright_repeat_infringer_incidents_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_incidents FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_repeat_infringer_incident()"
+      },
+      "uniqueConstraints": {
+        "copyright_repeat_infringer_in_account_user_id_copyright_not_key": {
+          "columns": ["account_user_id", "copyright_notice_id"],
+          "definition": "UNIQUE (account_user_id, copyright_notice_id)"
+        }
+      }
+    },
+    "copyright_repeat_infringer_reviews": {
+      "checkConstraints": {
+        "copyright_repeat_infringer_reviews_check": "CHECK (((outcome IS NULL) = (outcome_at IS NULL)))",
+        "copyright_repeat_infringer_reviews_check1": "CHECK (((outcome IS NULL) = (rationale_ciphertext IS NULL)))",
+        "copyright_repeat_infringer_reviews_outcome_check": "CHECK ((outcome = ANY (ARRAY['warning'::text, 'no_action'::text, 'restrict'::text, 'terminate'::text, 'reinstatement'::text])))",
+        "copyright_repeat_infringer_reviews_rationale_ciphertext_check": "CHECK (((rationale_ciphertext IS NULL) OR ((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536))))"
+      },
+      "columns": {
+        "account_user_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "opened_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "outcome": {
+          "collation": null,
+          "comment": "Staff outcome. Null while the review is open. Restrict and terminate are applied by a later administrator action.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "outcome_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "outcome_by_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted staff rationale recorded with the outcome.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Required staff review opened when an account reaches two operative incidents. Opening a review does not suspend the account.",
+      "foreignKeys": {
+        "copyright_repeat_infringer_reviews_account_user_id_fkey": {
+          "columns": ["account_user_id"],
+          "definition": "FOREIGN KEY (account_user_id) REFERENCES users(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "copyright_repeat_infringer_reviews_outcome_by_id_fkey": {
+          "columns": ["outcome_by_id"],
+          "definition": "FOREIGN KEY (outcome_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "copyright_repeat_infringer_reviews_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_repeat_infringer_reviews_pkey ON public.copyright_repeat_infringer_reviews USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_repeat_infringer_reviews__one_open": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_copyright_repeat_infringer_reviews__one_open ON public.copyright_repeat_infringer_reviews USING btree (account_user_id) WHERE (outcome IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "account_user_id",
+              "descending": false,
+              "expression": "account_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(outcome IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_repeat_infringer_reviews_guard": "CREATE TRIGGER trigger_copyright_repeat_infringer_reviews_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_repeat_infringer_review()"
       },
       "uniqueConstraints": {}
     },

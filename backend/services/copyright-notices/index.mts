@@ -38,6 +38,10 @@ export { appendCopyrightNoticeSubmission } from './submission-appending.mts'
 export { appendCopyrightSubmissionAssessment } from './compliance.mts'
 export { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 export { completeCopyrightMandatoryHumanReview } from './human-review.mts'
+export {
+  getCopyrightRepeatInfringerAccount,
+  recordCopyrightRepeatInfringerDisposition,
+} from './repeat-infringer-incidents.mts'
 export { appendCopyrightLegalHoldAssessment, resolveCopyrightLegalHold } from './holds.mts'
 export {
   approveCopyrightCorrespondence,
