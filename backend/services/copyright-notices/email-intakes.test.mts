@@ -6,10 +6,10 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
+import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import {
   createCopyrightEmailIntake,
   createCopyrightNoticeAggregate,
-  getPendingCopyrightAgentDispatches,
   listRecoverableCopyrightEmailIntakeResponses,
   prepareCopyrightEmailIntakeResponseDelivery,
   promoteCopyrightEmailIntake,
@@ -68,10 +68,9 @@ describe('copyright email intake persistence', () => {
         expect.objectContaining({ filename: 'evidence.pdf', sha256: Buffer.alloc(32, 2) }),
       ],
     })
-    await expect(getPendingCopyrightAgentDispatches()).resolves.toContainEqual({
-      kind: 'email',
-      intakeId: created.intake.id,
-    })
+    await expect(readTestPendingCopyrightAgentDispatches(created.intake.id)).resolves.toEqual([
+      { kind: 'email', intakeId: created.intake.id },
+    ])
     await expect(
       appendCopyrightEmailIntakeRecommendation({
         intakeId: created.intake.id,
@@ -104,10 +103,7 @@ describe('copyright email intake persistence', () => {
     })
     await recordCopyrightEmailParse(intake, { status: 'failed', error: 'Malformed MIME' })
 
-    await expect(getPendingCopyrightAgentDispatches()).resolves.not.toContainEqual({
-      kind: 'email',
-      intakeId: intake.id,
-    })
+    await expect(readTestPendingCopyrightAgentDispatches(intake.id)).resolves.toEqual([])
   })
 
   it('records a moderator rejection once without promoting a public case', async () => {

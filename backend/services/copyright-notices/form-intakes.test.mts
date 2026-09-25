@@ -6,13 +6,13 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import {
   copyrightAppealRecommendations,
   createCopyrightAppeal,
   createCopyrightCounterNotice,
   createCopyrightFormIntake,
   getCopyrightNoticePrivateAggregate,
-  getPendingCopyrightAgentDispatches,
 } from './index.mts'
 import {
   appendCopyrightFormScreening,
@@ -140,10 +140,9 @@ describe('copyright form intakes', () => {
       crypto.randomUUID(),
       { reason: 'The reported image is my original work.', targetIds: [targetId] },
     )
-    await expect(getPendingCopyrightAgentDispatches()).resolves.toContainEqual({
-      kind: 'appeal',
-      submissionId: appeal.submission.id,
-    })
+    await expect(readTestPendingCopyrightAgentDispatches(appeal.submission.id)).resolves.toEqual([
+      { kind: 'appeal', submissionId: appeal.submission.id },
+    ])
     await copyrightAppealRecommendations.append({
       submissionId: appeal.submission.id,
       inputSha256: Buffer.alloc(32, 7),

@@ -194,6 +194,16 @@ const { postId } = await createTrendingPostData({ votesScoreUp: 500 })
 const result = await getTrendingPosts({ timeRange: 'day', limit: 100, minScore: 100 })
 ```
 
+### UUID-keyset sweep reads
+
+A recovery sweep paged by UUID returns the whole database's lowest IDs first, so a test asserting on
+its own row from page one fails once enough rows accumulate, and a negative assertion passes
+vacuously. Read the owned row through the production keyset instead: `encodeUuidCursorBefore(id)`
+from `@voucha/test-helpers/modules/pagination/uuid-cursors` builds an `after` cursor whose first
+page starts at `id`. `readTestPendingCopyrightAgentDispatches(id)` from
+`@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches` applies it to the
+copyright agent-dispatch sweep, so `toEqual([])` proves the owned record is not pending.
+
 ### Embedding collisions
 
 Default `Array(1536).fill(0.1)` embeddings are identical across all test entities. After enough runs, hundreds share the same embedding, making cosine-similarity results unpredictable.

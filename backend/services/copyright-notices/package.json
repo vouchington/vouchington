@@ -22,6 +22,7 @@
     "@data-stores/psql": "workspace:^",
     "@jongleberry/api-server": "^2.1.0",
     "@modules/aws": "workspace:^",
+    "@modules/pagination": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/notifications": "workspace:^",
@@ -33,6 +34,7 @@
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
+    "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.2"
