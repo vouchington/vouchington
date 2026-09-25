@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 const workflow = readFileSync('.github/workflows/tests-playwright.yml', 'utf8')
 const playwrightSharedConfig = readFileSync('playwright/config/shared-config.mts', 'utf8')
+const playwrightServerCommand = readFileSync('playwright/config/web-server-command.mts', 'utf8')
 
 function workflowJobSection(body: string, jobName: string): string {
   const match = body.match(
@@ -43,9 +44,12 @@ describe('tests-playwright.yml OTel collector', () => {
     expect(workflow).toContain('playwright-otel-output-shard-${{ matrix.shard }}')
     expect(playwrightSharedConfig).toContain(`OTEL_SERVICE_NAME: 'voucha-web'`)
     expect(playwrightSharedConfig).toContain(
-      `otelPreload: './backend/modules/on-error/sentry-preload.mts'`,
+      'NODE_OPTIONS: withOtelNodeOptions(nodeOptions, otelEnabled),',
     )
-    expect(playwrightSharedConfig).toContain(`otelPreload: './lambdas/shared/sentry-preload.mts'`)
+    expect(playwrightSharedConfig).not.toContain('sentry-preload')
+    expect(playwrightServerCommand).toContain(
+      "const otelRegisterPreload = join(repoRoot, 'dev', 'otel-register.mts')",
+    )
     expect(workflow).not.toContain('aws-actions/configure-aws-credentials')
     expect(workflow).not.toContain('id-token: write')
     // ci.yml (PR-only) still passes the otel flag for main-push detection in PRs

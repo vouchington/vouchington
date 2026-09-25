@@ -42,11 +42,11 @@ vi.mock(import('node:os'), () => {
   } as unknown as typeof import('node:os')
 })
 vi.mock(
-  import('@sentry/nextjs'),
+  import('@sentry/nextjs/config'),
   () =>
     ({
       withSentryConfig,
-    }) as unknown as typeof import('@sentry/nextjs'),
+    }) as unknown as typeof import('@sentry/nextjs/config'),
 )
 
 import config, { assertSecureSharpVersion } from '../next.config'

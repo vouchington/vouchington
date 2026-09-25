@@ -4,9 +4,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 const serverConfigMock = vi.fn<VitestLooseMock>()
 const edgeConfigMock = vi.fn<VitestLooseMock>()
 vi.mock(import('./instrumentation'), async importActual => importActual())
-vi.mock(import('./sentry-otel'), () => ({
-  createOtelSpanProcessors: vi.fn<() => undefined>(() => undefined),
-}))
 vi.mock(import('./sentry.server.config'), () => {
   serverConfigMock()
   return {}

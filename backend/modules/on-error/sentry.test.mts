@@ -3,12 +3,10 @@ import { CrawlerNetworkError, CrawlerTimeoutError } from './errors.mts'
 import {
   createSentryInitOptions,
   filterSentryEvent,
-  hasExternalOtelAutoInstrumentationPreload,
   shouldInitializeSentry,
   type SentryMockRegistry,
 } from './sentry.mts'
-import { createOtelSpanProcessors } from './sentry-otel.mts'
-import { scrubSentrySpan, scrubSentryTransaction } from './sentry-scrub.mts'
+import { scrubSentrySpan } from './sentry-scrub.mts'
 
 function makeEvent(eventId: string): Parameters<typeof filterSentryEvent>[0] {
   return { event_id: eventId } as Parameters<typeof filterSentryEvent>[0]
@@ -93,21 +91,6 @@ describe('filterSentryEvent', () => {
   })
 })
 
-describe('createOtelSpanProcessors', () => {
-  it('does not create span processors when OTel is disabled', () => {
-    expect(createOtelSpanProcessors({ OTEL_ENABLED: '0' })).toBeUndefined()
-  })
-
-  it('creates an OTLP span processor when OTel is enabled', () => {
-    expect(
-      createOtelSpanProcessors({
-        OTEL_ENABLED: '1',
-        OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318',
-      }),
-    ).toHaveLength(1)
-  })
-})
-
 describe('createSentryInitOptions', () => {
   it('uses SENTRY_DSN and disables deployed reporting when it is missing or invalid', () => {
     expect(createSentryInitOptions({ ENVIRONMENT: 'production', OTEL_ENABLED: '0' })).toMatchObject(
@@ -142,7 +125,6 @@ describe('createSentryInitOptions', () => {
     )
     expect(scrubbed).toEqual({ request: { url: 'https://example.com/x' } })
     expect(options.beforeSendSpan).toBe(scrubSentrySpan)
-    expect(options.beforeSendTransaction).toBe(scrubSentryTransaction)
   })
 
   it.each(['staging', 'production'] as const)(
@@ -180,24 +162,17 @@ describe('createSentryInitOptions', () => {
     const options = createSentryInitOptions({
       NODE_ENV: 'test',
       OTEL_ENABLED: '1',
-      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318',
     })
 
     expect(options.enabled).toBe(true)
     expect(options.dsn).toBeUndefined()
-    expect(options.openTelemetrySpanProcessors).toHaveLength(1)
     expect(
       options.beforeSend?.(makeEvent('otel-only'), { originalException: new Error('boom') }),
     ).toBeNull()
   })
 
   it('lets deployed-environment reporting win over OTel-only mode when both apply', () => {
-    const spanProcessors = [{ name: 'processor' }] as unknown as ReturnType<
-      typeof createOtelSpanProcessors
-    >
-    const createSpanProcessors = () => spanProcessors
     const scrubSpan = vi.fn<VitestLooseMock>()
-    const scrubTransaction = vi.fn<VitestLooseMock>()
     const options = createSentryInitOptions(
       {
         ENVIRONMENT: 'staging',
@@ -207,9 +182,7 @@ describe('createSentryInitOptions', () => {
         SENTRY_DSN: 'https://public@example.test/123',
       },
       {
-        createOtelSpanProcessors: createSpanProcessors,
         scrubSentrySpan: scrubSpan,
-        scrubSentryTransaction: scrubTransaction,
       },
     )
 
@@ -217,9 +190,7 @@ describe('createSentryInitOptions', () => {
     expect(options.dsn).toBe('https://public@example.test/123')
     expect(options.environment).toBe('staging')
     expect(options.release).toBe('abc123')
-    expect(options.openTelemetrySpanProcessors).toBe(spanProcessors)
     expect(options.beforeSendSpan).toBe(scrubSpan)
-    expect(options.beforeSendTransaction).toBe(scrubTransaction)
   })
 })
 
@@ -244,12 +215,11 @@ describe('shouldInitializeSentry', () => {
   })
 
   it('skips unopted-in test runtimes', () => {
-    expect(shouldInitializeSentry({ NODE_ENV: 'test' }, false)).toBe(false)
+    expect(shouldInitializeSentry({ NODE_ENV: 'test' })).toBe(false)
   })
 
-  it('initializes OTel-only test runtimes unless an external OTel preload owns instrumentation', () => {
-    expect(shouldInitializeSentry({ NODE_ENV: 'test', OTEL_ENABLED: '1' }, false)).toBe(true)
-    expect(shouldInitializeSentry({ NODE_ENV: 'test', OTEL_ENABLED: '1' }, true)).toBe(false)
+  it('initializes OTel-only test runtimes', () => {
+    expect(shouldInitializeSentry({ NODE_ENV: 'test', OTEL_ENABLED: '1' })).toBe(true)
   })
 
   it('skips initialization when a backend test Sentry client is registered', () => {
@@ -261,30 +231,6 @@ describe('shouldInitializeSentry', () => {
     }
     registry.vouchaSentryMocks = testClient
 
-    expect(shouldInitializeSentry({ NODE_ENV: 'test', OTEL_ENABLED: '1' }, false)).toBe(false)
-  })
-})
-
-describe('hasExternalOtelAutoInstrumentationPreload', () => {
-  it('detects the generic auto-instrumentation preload from execArgv or NODE_OPTIONS', () => {
-    expect(
-      hasExternalOtelAutoInstrumentationPreload({
-        execArgv: ['--import', '@opentelemetry/auto-instrumentations-node/register'],
-      }),
-    ).toBe(true)
-    expect(
-      hasExternalOtelAutoInstrumentationPreload({
-        execArgv: [],
-        nodeOptions: '--import @opentelemetry/auto-instrumentations-node/register',
-      }),
-    ).toBe(true)
-  })
-
-  it('does not treat the Sentry preload as external auto-instrumentation', () => {
-    expect(
-      hasExternalOtelAutoInstrumentationPreload({
-        execArgv: ['--import', './backend/modules/on-error/sentry-preload.mts'],
-      }),
-    ).toBe(false)
+    expect(shouldInitializeSentry({ NODE_ENV: 'test', OTEL_ENABLED: '1' })).toBe(false)
   })
 })

@@ -16,7 +16,6 @@ import {
 } from '@ts-shared/utils/sentry-deployment-gate'
 import { withSpikeProtection } from '@ts-shared/utils/sentry-spike-protection'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
-import { createOtelSpanProcessors } from './sentry-otel.mts'
 
 const DEFAULT_TRACES_SAMPLE_RATE = 1.0
 const REDACTED = '[Filtered]'
@@ -30,13 +29,8 @@ const TOKEN_ASSIGNMENT_PATTERN =
   /\b((?:access[_-]?token|refresh[_-]?token|id[_-]?token|token|secret|password|passwd|api[_-]?key)=)[^&\s]+/gi
 
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
-type SentryInitOptionsWithOtel = SentryInitOptions & {
-  openTelemetrySpanProcessors?: ReturnType<typeof createOtelSpanProcessors>
-}
 type BeforeSend = NonNullable<SentryInitOptions['beforeSend']>
 type SentrySpan = Parameters<NonNullable<SentryInitOptions['beforeSendSpan']>>[0]
-type SentryTransactionEvent = Parameters<NonNullable<SentryInitOptions['beforeSendTransaction']>>[0]
-type SentryTransactionHint = Parameters<NonNullable<SentryInitOptions['beforeSendTransaction']>>[1]
 
 let sentryConfigurationInvalidLogged = false
 
@@ -65,7 +59,7 @@ export function initSentry({ lambdaName, beforeSend }: InitSentryOptions): void 
     })
   warnIfSentryConfigurationInvalid(configurationInvalid)
 
-  const sentryInitOptions: SentryInitOptionsWithOtel = {
+  const sentryInitOptions: SentryInitOptions = {
     dsn: otelOnly ? undefined : sentryDsn?.dsn,
     // resolveSentryDsnEnablement() passes ENVIRONMENT through unchanged; when it's unset, fall back
     // to the shared deploy-environment accessor (ENVIRONMENT ?? NODE_ENV ?? 'development') rather
@@ -86,25 +80,16 @@ export function initSentry({ lambdaName, beforeSend }: InitSentryOptions): void 
             scrubSentryEvent(scrubSensitiveSentryEvent(event)),
           ),
         ),
-    // Scrub request URLs and credentials from errors, transactions, and spans.
+    // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan: scrubSentrySpan,
-    beforeSendTransaction: scrubSentryTransaction,
-    openTelemetrySpanProcessors: createOtelSpanProcessors(),
   }
 
   Sentry.init(sentryInitOptions)
 }
 
 export function scrubSentrySpan(span: SentrySpan): SentrySpan {
-  const data = scrubSpanAttributes(span.data)
-  return data === span.data ? span : { ...span, data }
-}
-
-export function scrubSentryTransaction(
-  event: SentryTransactionEvent,
-  _hint: SentryTransactionHint,
-): SentryTransactionEvent {
-  return scrubSentryEvent(event)
+  const attributes = scrubSpanAttributes(span.attributes)
+  return attributes === span.attributes ? span : { ...span, attributes }
 }
 
 function getTracesSampleRate(): number {

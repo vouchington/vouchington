@@ -63,9 +63,9 @@ For local Playwright, start the collector and run:
 OTEL_ENABLED=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 OTEL_LOGS_EXPORTER=otlp pnpm exec playwright test playwright/tests/auth/login.spec.mts
 ```
 
-Playwright preloads the Node auto-instrumentation hook for the backend and lambda
-dev server, while the standalone web server uses `web/instrumentation.ts`.
-Cloudflare Worker/workerd OTel is not wired in this phase.
+Playwright preloads `dev/otel-register.mts` (the Node auto-instrumentation hook) into
+the backend, lambda dev server, and standalone web server. Cloudflare Worker/workerd
+OTel is not wired in this phase.
 
 ### 4. Stop the stack
 
@@ -80,22 +80,26 @@ All instrumentation is a complete no-op when the variable is unset.
 
 ## Sentry coexistence
 
-`@sentry/node` v10 registers its own global OTel TracerProvider internally. The
-Playwright harness uses Sentry's preload/init path and adds an extra OTLP span
-processor so one provider can export both to Sentry and to the OTel Collector.
-Do not combine that path with the generic
-`@opentelemetry/auto-instrumentations-node/register` preload in the same process.
+`dev/otel-register.mts` (the generic
+`@opentelemetry/auto-instrumentations-node/register` hook) is the only owner of the
+OTel TracerProvider and OTLP export. Sentry SDK v11 reports its spans natively, so
+Sentry no longer registers a provider, adds an OTLP span processor, or preloads
+itself: `dev/tmux` and the Playwright harness load the same hook into the backend,
+worker, lambda, and web processes when `OTEL_ENABLED=1`.
 
 When `OTEL_ENABLED=1`:
 
-- Playwright backend/web/lambda servers use Sentry-owned OTel, but Sentry itself
-  stays disabled unless `ENVIRONMENT` is `staging` or `production` — never true in
-  CI — so these runs send traces only, never Sentry errors.
-- `dev/tmux` still uses the generic auto-instrumentation preload for local
-  service development; backend Sentry detects that preload and skips `Sentry.init`
-  to avoid double TracerProvider registration.
+- Sentry itself stays disabled unless `ENVIRONMENT` is `staging` or `production` —
+  never true in CI — so local and Playwright runs send traces to the collector only,
+  never Sentry errors.
+- The web server sets `enableOpenTelemetrySetup: false` (`@sentry/nextjs` otherwise
+  registers its own global provider by default) so it does not compete with the
+  preloaded hook for the global provider.
 - Sentry in deployed environments is unaffected (`OTEL_ENABLED` is never set in
   deploy env).
+
+Sentry spans reach the collector only through the hook's own instrumentation; Sentry
+spans created with `Sentry.startSpan*` are not exported over OTLP.
 
 ## AWS deploy path (future)
 

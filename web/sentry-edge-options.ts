@@ -3,11 +3,7 @@ import {
   resolveSentryDsnEnablement,
   SENTRY_CONFIGURATION_WARNING,
 } from '@ts-shared/utils/sentry-deployment-gate'
-import {
-  scrubSentryError,
-  scrubSentrySpan,
-  scrubSentryTransaction,
-} from '@/lib/on-error/scrub-sentry-event'
+import { scrubSentryError, scrubSentrySpan } from '@/lib/on-error/scrub-sentry-event'
 
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
 
@@ -15,7 +11,6 @@ interface SentryEdgeInitDeps {
   resolveSentryEnablement?: typeof resolveSentryDsnEnablement
   scrubSentryError?: typeof scrubSentryError
   scrubSentrySpan?: typeof scrubSentrySpan
-  scrubSentryTransaction?: typeof scrubSentryTransaction
 }
 
 let sentryConfigurationInvalidLogged = false
@@ -35,7 +30,6 @@ export function createSentryEdgeInitOptions(
   const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
   const beforeSend = deps.scrubSentryError ?? scrubSentryError
   const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
-  const beforeSendTransaction = deps.scrubSentryTransaction ?? scrubSentryTransaction
   const { enabled, environment, otelOnly, sentryDsn, configurationInvalid } = resolveEnablement({
     dsn: envVars.SENTRY_DSN,
     environment: envVars.ENVIRONMENT,
@@ -62,8 +56,7 @@ export function createSentryEdgeInitOptions(
     // Drop expected 4xx ApiError events — client errors are normal and not actionable.
     beforeSend: otelOnly ? () => null : beforeSend,
 
-    // Scrub request URLs and credentials from errors, transactions, and spans.
+    // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan,
-    beforeSendTransaction,
   }
 }

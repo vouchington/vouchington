@@ -15,6 +15,7 @@ import {
   imageLambdaEnv,
   nodeServerCommand,
   shellQuote,
+  withOtelNodeOptions,
 } from './web-server-command.mts'
 const __dirname = fileURLToPath(new URL('../..', import.meta.url))
 
@@ -106,7 +107,6 @@ export function createPlaywrightConfig({
           command: backendCommand,
           logDir: PLAYWRIGHT_WEB_SERVER_LOG_DIR,
           otelEnabled,
-          otelPreload: './backend/modules/on-error/sentry-preload.mts',
         }),
         name: 'backend',
         url: `${BACKEND_URL}/infra/ping`,
@@ -124,7 +124,6 @@ export function createPlaywrightConfig({
           command: `IMAGE_LAMBDA_PORT=${IMAGE_LAMBDA_PORT} node lambdas/dev-server.mts`,
           logDir: PLAYWRIGHT_WEB_SERVER_LOG_DIR,
           otelEnabled,
-          otelPreload: './lambdas/shared/sentry-preload.mts',
         }),
         name: 'lambdas',
         url: `${IMAGE_LAMBDA_URL}/health`,
@@ -153,7 +152,7 @@ export function createPlaywrightConfig({
           IMAGE_ORIGIN: process.env.IMAGE_ORIGIN ?? IMAGE_LAMBDA_URL,
           NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY:
             process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY ?? TEST_WEB_PUSH_PUBLIC_KEY,
-          NODE_OPTIONS: nodeOptions,
+          NODE_OPTIONS: withOtelNodeOptions(nodeOptions, otelEnabled),
           ...(otelEnabled ? { OTEL_LOGS_EXPORTER: 'otlp', OTEL_SERVICE_NAME: 'voucha-web' } : {}),
         },
         gracefulShutdown: otelGracefulShutdown,

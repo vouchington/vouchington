@@ -4,13 +4,13 @@
 
 ## Sentry Request-Metadata Scrubbing
 
-Sentry telemetry (errors, transactions, spans, breadcrumbs, and the Request Interface) previously shipped full URLs,
+Sentry telemetry (errors, spans, breadcrumbs, and the Request Interface) previously shipped full URLs,
 including query strings and fragments. Unsubscribe tokens, email-verification tokens, and API keys
 are transmitted as query parameters across this codebase, so those URLs leaked secrets to Sentry.
 See the original analysis (formerly filed as jonathanong/filaments#8834).
 
-Sentry also copies request headers and cookies into error and transaction Request Interfaces without
-applying its span-header filtering. Repository-side scrubbing is therefore mandatory defense in
+Sentry also copies request headers and cookies into error Request Interfaces and segment-span attributes
+without applying its span-header filtering. Repository-side scrubbing is therefore mandatory defense in
 depth; hosted Sentry Data Scrubbing settings are not known from this repository.
 
 ### Shared scrubbing utility
@@ -23,7 +23,7 @@ owns credential redaction, event composition, and the dependency-free `beforeSen
 Both modules delegate generic URL, header, and span transformations to
 `@vouchington/utils/observability`. Vouchington retains its Voucha-specific key and credential
 policy, plus a copy-on-write adapter: a safe event, request, breadcrumb, header object, or span
-data record is returned by reference; only a changed branch is rebuilt. The upstream helpers
+attributes record is returned by reference; only a changed branch is rebuilt. The upstream helpers
 include a header helper that intentionally returns a fresh record, so calling that helper directly
 would violate this Sentry hook contract.
 
@@ -50,25 +50,27 @@ The two `http.request.header.*` keys have different provenance — see
 
 ### Hook wiring, per workspace
 
-Every workspace wires all three SDK v10 hooks: `beforeSendSpan` (covers root **and** child span
-`.data` — the SDK merges the root-span hook's return value back into `event.contexts.trace.data`, and
-replaces each `event.spans[]` entry with the per-child result), `beforeSendTransaction` (covers
-`event.breadcrumbs[].data` and `event.request`), and `beforeSend` (covers errors). Existing filters
-or Lambda-specific hooks run first; their final non-null result is scrubbed. Null drops, synchronous
-returns, async returns, thrown errors, and rejected promises keep their existing control flow.
+Every workspace wires both SDK v11 hooks. Sentry v11 defaults to span streaming
+(`traceLifecycle: 'stream'`): there is no transaction event, so `beforeSendTransaction` never runs
+and is not registered. `beforeSendSpan` receives every span — segment and child alike — as a
+`StreamedSpanJSON` whose `attributes` record carries the URL, header, and cookie keys listed above
+(the request rides on the segment span's attributes rather than on `event.request`); `beforeSend`
+covers errors. Existing filters or Lambda-specific hooks run first; their final non-null result is
+scrubbed. Null drops, synchronous returns, async returns, thrown errors, and rejected promises keep
+their existing control flow.
 
 | Workspace         | File                                                                  | Notes                                                                                                                            |
 | ----------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Backend           | `backend/modules/on-error/sentry-scrub.mts` (wired from `sentry.mts`) | `scrubSentrySpan`/`scrubSentryTransaction`, overridable via `SentryInitDeps`                                                     |
+| Backend           | `backend/modules/on-error/sentry-scrub.mts` (wired from `sentry.mts`) | `scrubSentrySpan`, overridable via `SentryInitDeps`                                                                              |
 | Web (server)      | `web/sentry-server-options.ts`                                        | DI pattern via `SentryServerInitDeps`; `web/sentry.server.config.ts` initializes these options                                   |
 | Web (client)      | `web/sentry.client.config.ts`                                         | Inline `Sentry.init()`; the only surface where the plain `url` and `*.fragment` keys are actually observed (browser fetch spans) |
 | Web (edge)        | `web/sentry.edge.config.ts`                                           | Inline `Sentry.init()`, same hooks                                                                                               |
 | Lambdas           | `lambdas/shared/sentry.mts`                                           | Retains the existing deep event scrubber, then applies the shared request-metadata contract                                      |
-| Cloudflare Worker | `cloudflare-worker/src/sentry.mts`                                    | Registers the shared error, transaction, and span scrubbers                                                                      |
+| Cloudflare Worker | `cloudflare-worker/src/sentry.mts`                                    | Registers the shared error and span scrubbers                                                                                    |
 
 Enabled Sentry reporting surfaces always register the scrubbers. In OTel-only mode, backend,
 web-server, and Lambda intentionally replace `beforeSend` with a direct null-drop because their DSN
-is unset; their Sentry span and transaction hooks remain registered even though no Sentry payload is
+is unset; their Sentry span hooks remain registered even though no Sentry payload is
 transmitted. These hooks do not establish a scrubbing contract for the independent OTLP export path,
 which is outside the scope of this change. CI Sentry mode keeps normal reporting and scrubbing
 enabled.
@@ -113,9 +115,15 @@ applies both without allowing either transformation to overwrite the other.
 The shared contract covers request metadata only: request and breadcrumb URLs, query strings,
 credential request headers, Request Interface cookies, and corresponding span attributes. It does
 not inspect request bodies, arbitrary `extra` values, arbitrary contexts, attachments, replays, or
-logs. Lambda events retain their pre-existing broader deep scrubber. Reading Sentry 10.68.0's
-`requestdata.js` and `utils/request.js` confirms that its other request-header producers use the
+logs. Lambda events retain their pre-existing broader deep scrubber. Reading Sentry v10's
+`requestdata.js` and `utils/request.js` confirmed that its other request-header producers use the
 same normalized `http.request.header.*` and cookie-key shapes covered here.
+
+The `http.request.body.data` span attribute that Sentry v11 emits on segment spans is likewise
+outside the contract, and that is parity rather than a regression: v10's `requestdata.js` defaulted
+`include.data` to `true` and copied the normalized request body into `event.request.data` on
+transaction events (and onto the same `http.request.body.data` span attribute), and nothing in this
+repository scrubbed it there either.
 
 ### Verification
 
@@ -129,15 +137,12 @@ request-header counterparts strip in place while non-URL-bearing headers and non
 pass through byte-identical — plus non-mutation and reference-identity guarantees on the input
 object, including multi-value `referer` headers. Backend, Lambda, Cloudflare Worker, and web hook
 tests each characterize the same request-header result through their runtime wrapper. It tests the
-utility functions directly; it does not invoke the Sentry SDK, so it cannot
-exercise the SDK's own `merge()` wholesale-replace semantics that fold a `beforeSendSpan` return value
-back into `event.contexts.trace.data`, nor prove that the SDK actually populates
-`request.headers.referer`/`http.request.header.referer` in the first place. That propagation path was
-verified by reading `@sentry/core`'s `processBeforeSend` and `merge()` source directly (not by a test
-in this repo) — `merge(a, b, levels)` recurses to `levels = 0` at `contexts.trace` and returns the
-child object wholesale at that level, which is why a `delete` inside `beforeSendSpan`'s return value
-reaches the final event instead of being merged away. The header-producer claims above were verified
-the same way, by reading `@sentry/browser`, `@sentry/core`, and `@sentry/cloudflare` 10.68.0 source.
+utility functions directly; it does not invoke the Sentry SDK, so it cannot prove that the SDK
+actually populates `request.headers.referer`/`http.request.header.referer` in the first place, nor
+that a `delete` inside `beforeSendSpan`'s return value reaches the transmitted span (streamed spans
+use the returned `StreamedSpanJSON` directly, with no merge step). Those SDK-behavior claims were
+verified by reading `@sentry/core`, `@sentry/browser`, and `@sentry/cloudflare` source (v10.68.0 for
+the header producers, v11.0.0 for the streamed span path), not by a test in this repo.
 The tests also freeze inputs and verify copy-on-write identity for changed and unchanged objects,
 plus sync, async, and null hook composition. Each workspace additionally has its own hook-wiring test alongside its
 `sentry.mts`/`sentry-server-options.ts` equivalent, asserting the hooks are registered — none of them

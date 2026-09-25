@@ -97,6 +97,7 @@ describe('dev/tmux', () => {
         `node-arg\t${join(cwd, 'dev', 'otel-register.mts')}`,
       )
       expect(result.nodeArgLog).toContain('node-env\tIMAGE_LAMBDA_PORT=3903')
+      expect(result.nodeArgLog.match(/node-arg\t.*otel-register\.mts/g)).toHaveLength(3)
       expect(result.stderr).not.toMatch(/unexpected EOF|unterminated quoted string/i)
     },
   )

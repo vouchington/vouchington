@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createSentryOptions, scrubSentrySpan, scrubSentryTransaction } from '../sentry.mts'
+import { createSentryOptions, scrubSentrySpan } from '../sentry.mts'
 
 describe('createSentryOptions', () => {
   it('uses SENTRY_DSN and disables deployed reporting when it is missing or invalid', () => {
@@ -50,7 +50,7 @@ describe('createSentryOptions', () => {
     expect(opts.release).toBeUndefined()
   })
 
-  it('wires scrubbing for errors, spans, and transactions', () => {
+  it('wires scrubbing for errors and spans', () => {
     const opts = createSentryOptions({ ENVIRONMENT: 'production' })
     expect(
       opts.beforeSend?.(
@@ -70,62 +70,32 @@ describe('createSentryOptions', () => {
       },
     })
     expect(opts.beforeSendSpan).toBe(scrubSentrySpan)
-    expect(opts.beforeSendTransaction).toBe(scrubSentryTransaction)
   })
 })
 
 describe('scrubSentrySpan', () => {
   it('strips the query string in place and deletes query/fragment-only attributes', () => {
     const span = {
-      data: { url: 'https://example.com/unsubscribe?token=abc123', 'url.query': 'token=abc123' },
+      attributes: {
+        'url.full': 'https://example.com/unsubscribe?token=abc123',
+        'url.query': 'token=abc123',
+      },
     } as unknown as Parameters<typeof scrubSentrySpan>[0]
 
     const result = scrubSentrySpan(span)
-    expect(result.data.url).toBe('https://example.com/unsubscribe')
-    expect('url.query' in result.data).toBe(false)
+    expect(result.attributes['url.full']).toBe('https://example.com/unsubscribe')
+    expect('url.query' in result.attributes).toBe(false)
     expect(
       scrubSentrySpan({
-        data: { 'http.request.header.cookie.st': 'secret' },
-      } as unknown as Parameters<typeof scrubSentrySpan>[0]).data,
-    ).toEqual({ 'http.request.header.cookie.st': '[Filtered]' })
+        attributes: { 'http.request.header.cookie.dt': 'secret' },
+      } as unknown as Parameters<typeof scrubSentrySpan>[0]).attributes,
+    ).toEqual({ 'http.request.header.cookie.dt': '[Filtered]' })
   })
 
   it('returns the same span reference when no attributes need scrubbing', () => {
-    const span = { data: { 'http.method': 'GET' } } as unknown as Parameters<
+    const span = { attributes: { 'http.request.method': 'GET' } } as unknown as Parameters<
       typeof scrubSentrySpan
     >[0]
     expect(scrubSentrySpan(span)).toBe(span)
-  })
-})
-
-describe('scrubSentryTransaction', () => {
-  it('scrubs request URL fields and breadcrumb URL data', () => {
-    const event = {
-      request: {
-        url: 'https://example.com/verify?token=abc123',
-        query_string: 'token=abc123',
-        cookies: { dt: 'secret' },
-        headers: { referer: ['https://example.com/unsubscribe?token=abc123'] },
-      },
-      breadcrumbs: [{ category: 'http', data: { url: 'https://example.com/x?token=abc123' } }],
-    } as unknown as Parameters<typeof scrubSentryTransaction>[0]
-
-    const result = scrubSentryTransaction(event, {} as Parameters<typeof scrubSentryTransaction>[1])
-
-    expect(result.request?.url).toBe('https://example.com/verify')
-    expect(result.request && 'query_string' in result.request).toBe(false)
-    expect(result.request?.cookies).toEqual({ dt: '[Filtered]' })
-    expect(result.request?.headers).toEqual({ referer: ['https://example.com/unsubscribe'] })
-    expect(result.breadcrumbs?.[0]?.data?.url).toBe('https://example.com/x')
-  })
-
-  it('returns the same event reference when nothing needs scrubbing', () => {
-    const event = {
-      request: { url: 'https://example.com/verify' },
-      breadcrumbs: [{ category: 'navigation' }],
-    } as unknown as Parameters<typeof scrubSentryTransaction>[0]
-    expect(scrubSentryTransaction(event, {} as Parameters<typeof scrubSentryTransaction>[1])).toBe(
-      event,
-    )
   })
 })

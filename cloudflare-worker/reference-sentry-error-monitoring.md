@@ -13,6 +13,6 @@ Sentry is initialized via [`src/sentry.mts`](src/sentry.mts) using `@sentry/clou
   HSTS/strict-mode; see [reference-production-mode.md](reference-production-mode.md).
 - **Release:** `GIT_COMMIT` is set by the private deployment receiver.
 - **Error capture:** only origin fetch failures (502s) via `captureWorkerException()` in the origin `fetch()` catch block. Expected edge responses (geo-blocks=403, rate limits=429, WebSocket errors=400) return via `edgeErrorResponse()` and never throw.
-- **Request-metadata scrubbing:** `beforeSend`, `beforeSendTransaction`, and `beforeSendSpan` remove
+- **Request-metadata scrubbing:** `beforeSend` and `beforeSendSpan` remove
   URL query strings/fragments and redact credential headers and cookies before transmission.
 - **Tunnel:** the `POST /monitoring` Sentry tunnel ([`src/sentry-tunnel.mts`](src/sentry-tunnel.mts)) trusts only normalized configured web and Worker DSNs. It returns `403` for a mismatch and `503` when neither configured DSN is valid.

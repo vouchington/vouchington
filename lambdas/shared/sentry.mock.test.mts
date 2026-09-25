@@ -22,7 +22,6 @@ describe('initSentry', () => {
   const originalSentryDsn = process.env.SENTRY_DSN
   const originalSentryTracesSampleRate = process.env.SENTRY_TRACES_SAMPLE_RATE
   const originalOtelEnabled = process.env.OTEL_ENABLED
-  const originalOtelEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT
 
   beforeEach(() => {
     vi.mocked(Sentry.init).mockClear()
@@ -30,7 +29,6 @@ describe('initSentry', () => {
     delete process.env.SENTRY_DSN
     delete process.env.SENTRY_TRACES_SAMPLE_RATE
     delete process.env.OTEL_ENABLED
-    delete process.env.OTEL_EXPORTER_OTLP_ENDPOINT
   })
 
   afterEach(() => {
@@ -64,11 +62,6 @@ describe('initSentry', () => {
       delete process.env.OTEL_ENABLED
     } else {
       process.env.OTEL_ENABLED = originalOtelEnabled
-    }
-    if (originalOtelEndpoint === undefined) {
-      delete process.env.OTEL_EXPORTER_OTLP_ENDPOINT
-    } else {
-      process.env.OTEL_EXPORTER_OTLP_ENDPOINT = originalOtelEndpoint
     }
   })
 
@@ -139,25 +132,10 @@ describe('initSentry', () => {
     expect(Sentry.init).toHaveBeenCalledWith(expect.objectContaining({ release: 'abc123' }))
   })
 
-  it('adds an OTLP span processor when OTel is enabled', () => {
-    process.env.NODE_ENV = 'test'
-    process.env.OTEL_ENABLED = '1'
-    process.env.OTEL_EXPORTER_OTLP_ENDPOINT = 'http://localhost:4318'
-
-    initSentry({ lambdaName: 'test-lambda' })
-
-    expect(Sentry.init).toHaveBeenCalledWith(
-      expect.objectContaining({
-        openTelemetrySpanProcessors: expect.arrayContaining([expect.any(Object)]),
-      }),
-    )
-  })
-
   it('enables local OTel-only mode without a Sentry DSN', () => {
     process.env.NODE_ENV = 'development'
     delete process.env.CI
     process.env.OTEL_ENABLED = '1'
-    process.env.OTEL_EXPORTER_OTLP_ENDPOINT = 'http://localhost:4318'
 
     initSentry({ lambdaName: 'test-lambda' })
 
@@ -165,7 +143,6 @@ describe('initSentry', () => {
       expect.objectContaining({
         dsn: undefined,
         enabled: true,
-        openTelemetrySpanProcessors: expect.arrayContaining([expect.any(Object)]),
       }),
     )
 

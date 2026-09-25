@@ -11,15 +11,12 @@ import { captureException, type CloudflareOptions } from '@sentry/cloudflare'
 import { resolveSentryDsnEnablement } from '@ts-shared/utils/sentry-deployment-gate'
 import {
   composeSentryBeforeSend,
-  scrubSentryEvent,
   scrubSpanAttributes,
 } from '@ts-shared/utils/sentry-event-scrubbing'
 import type { BotTier } from './bot-tier.mts'
 import type { Env } from './types.mts'
 
 type SentrySpan = Parameters<NonNullable<CloudflareOptions['beforeSendSpan']>>[0]
-type SentryTransactionEvent = Parameters<NonNullable<CloudflareOptions['beforeSendTransaction']>>[0]
-type SentryTransactionHint = Parameters<NonNullable<CloudflareOptions['beforeSendTransaction']>>[1]
 
 // Called by withSentry() on each request to build initialization options.
 // Disabled unless ENVIRONMENT is an allowlisted deployed environment
@@ -38,22 +35,14 @@ export function createSentryOptions(env: Env): CloudflareOptions {
     enabled,
     tracesSampleRate: 0.1,
     beforeSend: composeSentryBeforeSend(),
-    // Scrub request URLs and credentials from errors, transactions, and spans.
+    // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan: scrubSentrySpan,
-    beforeSendTransaction: scrubSentryTransaction,
   }
 }
 
 export function scrubSentrySpan(span: SentrySpan): SentrySpan {
-  const data = scrubSpanAttributes(span.data)
-  return data === span.data ? span : { ...span, data }
-}
-
-export function scrubSentryTransaction(
-  event: SentryTransactionEvent,
-  _hint: SentryTransactionHint,
-): SentryTransactionEvent {
-  return scrubSentryEvent(event)
+  const attributes = scrubSpanAttributes(span.attributes)
+  return attributes === span.attributes ? span : { ...span, attributes }
 }
 
 export interface WorkerExceptionTags {

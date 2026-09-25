@@ -7,13 +7,9 @@ import {
 } from '@ts-shared/utils/sentry-deployment-gate'
 import { withSpikeProtection } from '@ts-shared/utils/sentry-spike-protection'
 import { isExpectedCrawlerOperationalError } from './expected-crawler-operational-error.mts'
-import { createOtelSpanProcessors } from './sentry-otel.mts'
-import { scrubSentrySpan, scrubSentryTransaction } from './sentry-scrub.mts'
+import { scrubSentrySpan } from './sentry-scrub.mts'
 
-const externalOtelAutoInstrumentationRegister = '@opentelemetry/auto-instrumentations-node/register'
-type SentryInitOptions = NonNullable<Parameters<typeof SentrySdk.init>[0]> & {
-  openTelemetrySpanProcessors?: ReturnType<typeof createOtelSpanProcessors>
-}
+type SentryInitOptions = NonNullable<Parameters<typeof SentrySdk.init>[0]>
 export type TestSentryClient = Pick<
   typeof SentrySdk,
   'addBreadcrumb' | 'captureException' | 'captureMessage' | 'flush'
@@ -23,11 +19,9 @@ export type SentryMockRegistry = typeof globalThis & {
 }
 
 type SentryInitDeps = {
-  createOtelSpanProcessors?: typeof createOtelSpanProcessors
   filterSentryEvent?: typeof filterSentryEvent
   resolveSentryEnablement?: typeof resolveSentryDsnEnablement
   scrubSentrySpan?: typeof scrubSentrySpan
-  scrubSentryTransaction?: typeof scrubSentryTransaction
 }
 
 let sentryConfigurationInvalidLogged = false
@@ -37,18 +31,6 @@ function warnIfSentryConfigurationInvalid(configurationInvalid: boolean): void {
     console.warn(SENTRY_CONFIGURATION_WARNING)
     sentryConfigurationInvalidLogged = true
   }
-}
-
-export function hasExternalOtelAutoInstrumentationPreload({
-  execArgv = process.execArgv,
-  nodeOptions = process.env.NODE_OPTIONS,
-}: {
-  execArgv?: readonly string[]
-  nodeOptions?: string
-} = {}): boolean {
-  return [...execArgv, nodeOptions ?? ''].some(arg =>
-    arg.includes(externalOtelAutoInstrumentationRegister),
-  )
 }
 
 export function filterSentryEvent(
@@ -80,11 +62,9 @@ export function createSentryInitOptions(
   deps: SentryInitDeps = {},
 ): SentryInitOptions {
   const nodeEnv = envVars.NODE_ENV || 'development'
-  const createSpanProcessors = deps.createOtelSpanProcessors ?? createOtelSpanProcessors
   const filterEvent = deps.filterSentryEvent ?? filterSentryEvent
   const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
   const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
-  const beforeSendTransaction = deps.scrubSentryTransaction ?? scrubSentryTransaction
   const { enabled, environment, otelOnly, sentryDsn, configurationInvalid } = resolveEnablement({
     dsn: envVars.SENTRY_DSN,
     environment: envVars.ENVIRONMENT,
@@ -98,7 +78,6 @@ export function createSentryInitOptions(
     environment: environment ?? nodeEnv,
     enabled,
     release: envVars.GIT_COMMIT || undefined,
-    openTelemetrySpanProcessors: createSpanProcessors(envVars),
 
     // Mirror the onError filtering: drop 4xx errors and known noisy connection codes.
     // Applies to any direct Sentry.captureException() calls that bypass onError().
@@ -106,9 +85,8 @@ export function createSentryInitOptions(
     // consume a full month's Sentry error quota by itself (see sentry-spike-protection.mts).
     beforeSend: otelOnly ? () => null : withSpikeProtection(composeSentryBeforeSend(filterEvent)),
 
-    // Scrub request URLs and credentials from errors, transactions, and spans.
+    // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan,
-    beforeSendTransaction,
   }
 }
 
@@ -118,13 +96,11 @@ function getTestSentryClient(): TestSentryClient | undefined {
 
 export function shouldInitializeSentry(
   envVars: NodeJS.ProcessEnv = process.env,
-  hasExternalOtelPreload = hasExternalOtelAutoInstrumentationPreload(),
   testClient: TestSentryClient | undefined = getTestSentryClient(),
 ): boolean {
   const isTestRuntime = envVars.NODE_ENV === 'test'
   const testRuntimeOptIn = envVars.OTEL_ENABLED === '1'
-  const hasExternalOtelOwner = envVars.OTEL_ENABLED === '1' && hasExternalOtelPreload
-  return !testClient && (!isTestRuntime || testRuntimeOptIn) && !hasExternalOtelOwner
+  return !testClient && (!isTestRuntime || testRuntimeOptIn)
 }
 
 if (shouldInitializeSentry()) {
