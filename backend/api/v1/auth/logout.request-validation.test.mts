@@ -3,7 +3,7 @@ import { v7 } from 'uuid'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { createDeviceAndSessionTokens } from '@services/jwt-session'
+import { createDeviceAndSessionTokens, isSessionRevoked } from '@services/jwt-session'
 
 // Covers the post-parse runtime request-contract validation added for issue #322, layered on top
 // of logout's existing manual web-push-binding checks (see logout.test.mts for those). A JSON
@@ -12,17 +12,19 @@ import { createDeviceAndSessionTokens } from '@services/jwt-session'
 // route's manual parsing/session-lookup logic runs. See
 // backend/services/runtime-request-validation for the shared registry these tests exercise.
 describe('POST /api/v1/auth/logout - request contract validation', () => {
-  async function createTestCookies(): Promise<{ dtCookie: string; stCookie: string }> {
+  async function createTestCookies(): Promise<{ dtCookie: string; stCookie: string; sid: string }> {
     const user = await createTestUser()
-    const tokens = await createDeviceAndSessionTokens({ did: v7(), sid: v7(), uid: user.id })
+    const sid = v7()
+    const tokens = await createDeviceAndSessionTokens({ did: v7(), sid, uid: user.id })
     return {
       dtCookie: `dt=${tokens.deviceToken.token}`,
       stCookie: `st=${tokens.sessionToken.token}`,
+      sid,
     }
   }
 
-  it('returns 422 for a wrong-typed push binding field', async () => {
-    const { dtCookie, stCookie } = await createTestCookies()
+  it('returns 422 for a wrong-typed push binding field without revoking the session', async () => {
+    const { dtCookie, stCookie, sid } = await createTestCookies()
     const response = await createRequest()
       .post('/api/v1/auth/logout')
       .set('Cookie', [dtCookie, stCookie])
@@ -31,6 +33,7 @@ describe('POST /api/v1/auth/logout - request contract validation', () => {
       .expect(422)
 
     expect(response.headers['set-cookie']).toBeUndefined()
+    await expect(isSessionRevoked(sid)).resolves.toBe(false)
   })
 
   it('returns 422 for an unknown push binding field before clearing cookies', async () => {
