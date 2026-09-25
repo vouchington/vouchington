@@ -1,7 +1,7 @@
 id: codex-hooks-no-network
 language: Tsx
 severity: error
-message: 'Hooks are local: no gh, no git network subcommands, and no HTTP. Network-backed checks belong in the validators (dev/pr-description.mts, dev/plan-issue.mts) or CI.'
+message: 'Hook policy is local: no gh, no git network subcommands, and no HTTP. Network-backed checks belong in the validators (dev/pr-description.mts, dev/plan-issue.mts) or CI.'
 files:
   - 'dev/codex-hooks/**/*.mts'
 ignores:
