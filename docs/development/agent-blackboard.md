@@ -269,7 +269,8 @@ backstop.
 
 The hook must stay listed in the Claude Code sandbox's `sandbox.excludedCommands`
 (`.claude/settings.json`), alongside `blackboard-journal.mts`, `retrospective-save.mts`, and
-`retrospective-facts`. The sandbox denies `AGENT_BLACKBOARD_TOKEN` and blocks egress, so a
+`pnpm exec vouchington retrospective-facts` (covered by the broader `pnpm exec *` entry). The
+sandbox denies `AGENT_BLACKBOARD_TOKEN` and blocks egress, so a
 sandboxed probe cannot determine deployment health. `dev/check-blackboard.mts` detects
 `SANDBOX_RUNTIME=1` and emits a "probe skipped" context note instead of a false stop-work
 directive.
