@@ -28,18 +28,28 @@ export type AutotaggerReceiptDigestInput = {
 
 /**
  * Hashes the exact sanitized request identity for a C6 autotagger receipt:
- * the wrapped state, the rendered candidate question IDs/text in request
- * order, scope, the effective candidate-set cap, the classifier/prompt
- * revision, and the active provider/model revision. Changing any of these
- * changes the digest, which creates a new receipt row and a new immutable
- * batch ID rather than reusing or mutating an existing one (see
+ * the wrapped state, the rendered candidate question IDs/text, scope, the
+ * effective candidate-set cap, the classifier/prompt revision, and the
+ * active provider/model revision. Changing any of these changes the digest,
+ * which creates a new receipt row and a new immutable batch ID rather than
+ * reusing or mutating an existing one (see
  * docs/overview/architecture/structured-decisions.md).
+ *
+ * `questions` is sorted by `candidateId` before hashing (not by whatever
+ * order it happens to arrive in) so that two calls describing the exact same
+ * candidate set produce the same digest even if the caller's candidate
+ * ordering is not itself guaranteed stable across a retry (e.g. an
+ * embedding-similarity ranking with ties). The digest identifies the work,
+ * not the order it was presented to the provider in.
  */
 export function computeAutotaggerReceiptDigest(input: AutotaggerReceiptDigestInput): Buffer {
+  const sortedQuestions = input.questions.toSorted((a, b) =>
+    a.candidateId < b.candidateId ? -1 : a.candidateId > b.candidateId ? 1 : 0,
+  )
   const canonical = JSON.stringify({
     digestVersion: AUTOTAGGER_RECEIPT_DIGEST_VERSION,
     state: input.state,
-    questions: input.questions.map(question => ({
+    questions: sortedQuestions.map(question => ({
       questionId: question.questionId,
       question: question.question,
       candidateId: question.candidateId,
