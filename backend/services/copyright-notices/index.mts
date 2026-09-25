@@ -21,8 +21,8 @@ export {
   markCopyrightEmailIntakeResponseFailed,
   markCopyrightEmailIntakeResponseSent,
   markCopyrightEmailIntakeResponseBouncedBySesMessageId,
-  listRecoverableCopyrightEmailIntakeResponses,
   prepareCopyrightEmailIntakeResponseDelivery,
+  searchRecoverableCopyrightEmailIntakeResponseIds,
 } from './email-intake-responses.mts'
 export { getCopyrightNoticePrivateAggregate } from './get.mts'
 export {
@@ -92,8 +92,8 @@ export {
   markCopyrightDeliveryIntentSent,
   markCopyrightDeliveryIntentEmailSent,
   markCopyrightDeliveryIntentBouncedBySesMessageId,
-  listRecoverableCopyrightDeliveryIntents,
   replayFailedCopyrightDeliveryIntent,
+  searchRecoverableCopyrightDeliveryIntentIds,
 } from './delivery-intents.mts'
 export {
   deliverCopyrightInAppNotification,

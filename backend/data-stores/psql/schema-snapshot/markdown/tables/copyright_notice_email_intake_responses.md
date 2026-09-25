@@ -60,7 +60,7 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_email_intake_copyright_notice_email_intak_key5`: `CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key5 ON public.copyright_notice_email_intake_responses USING btree (copyright_notice_email_intake_id)`
 - `copyright_notice_email_intake_responses_idempotency_key_key`: `CREATE UNIQUE INDEX copyright_notice_email_intake_responses_idempotency_key_key ON public.copyright_notice_email_intake_responses USING btree (idempotency_key)`
 - `copyright_notice_email_intake_responses_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_responses_pkey ON public.copyright_notice_email_intake_responses USING btree (id)`
-- `idx_copyright_email_intake_responses__pending`: `CREATE INDEX idx_copyright_email_intake_responses__pending ON public.copyright_notice_email_intake_responses USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)`
+- `idx_copyright_email_intake_responses__recoverable`: `CREATE INDEX idx_copyright_email_intake_responses__recoverable ON public.copyright_notice_email_intake_responses USING btree (id) WHERE (state = ANY (ARRAY['pending'::text, 'claimed'::text]))`
 - `idx_copyright_email_intake_responses__ses_message`: `CREATE INDEX idx_copyright_email_intake_responses__ses_message ON public.copyright_notice_email_intake_responses USING btree (ses_message_id) WHERE (ses_message_id IS NOT NULL)`
 
 **Triggers:**

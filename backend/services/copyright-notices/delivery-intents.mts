@@ -1,5 +1,5 @@
 /* oxlint-disable max-lines -- Delivery transitions stay centralized around one durable-intent invariant. */
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -8,6 +8,12 @@ import type {
   CopyrightDeliveryIntentRecord,
   CopyrightDeliveryRecipientRecord,
 } from './delivery-types.mts'
+import {
+  parseCopyrightSweepPageOptions,
+  toCopyrightSweepIdPage,
+  type CopyrightSweepIdPage,
+  type CopyrightSweepPageOptions,
+} from './sweep-id-pages.mts'
 export type {
   CopyrightDeliveryIntentRecord,
   CopyrightDeliveryRecipientRecord,
@@ -250,29 +256,29 @@ export async function recordCopyrightDeliveryRecipient(input: {
   await transaction.commit()
 }
 
-export async function listRecoverableCopyrightDeliveryIntents(
-  limit: number,
-): Promise<CopyrightDeliveryIntentRecord[]> {
-  const { rows } =
-    await write<CopyrightDeliveryIntentRecord>(sql`/* listRecoverableCopyrightDeliveryIntents */
-    WITH exhausted AS (
-      UPDATE copyright_notice_delivery_intents
-      SET state = 'failed', claimed_at = NULL, failed_at = CURRENT_TIMESTAMP, next_attempt_at = NULL
-      WHERE state = 'claimed'
-        AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'
-        AND delivery_attempt_count >= 5
-    )
-    SELECT id, copyright_notice_id, copyright_notice_submission_id,
-      copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind,
-      channel, state, ses_message_id, delivery_attempt_count
+/**
+ * Pages one channel's delivery intents that are due or whose claim lease expired. Expired claims at
+ * the retry cap stay listed: `claimCopyrightDeliveryIntent` fails them when their job runs.
+ */
+export async function searchRecoverableCopyrightDeliveryIntentIds(
+  options: CopyrightSweepPageOptions & { channel: CopyrightDeliveryIntentRecord['channel'] },
+): Promise<CopyrightSweepIdPage> {
+  const { limit, afterId } = parseCopyrightSweepPageOptions(
+    options,
+    'Invalid copyright delivery intent cursor',
+  )
+  const query = sql`/* searchRecoverableCopyrightDeliveryIntentIds */
+    SELECT id
     FROM copyright_notice_delivery_intents
-    WHERE (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
-      OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'
-        AND delivery_attempt_count < 5)
-    ORDER BY id
-    LIMIT ${limit}
-  `)
-  return rows
+    WHERE channel = ${options.channel}
+      AND (
+        (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
+        OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes')
+      )`
+  if (afterId) query.append(sql`\n      AND id > ${afterId}`)
+  query.append(sql`\n    ORDER BY id LIMIT ${limit + 1}`)
+  const { rows } = await read<{ id: string }>(query)
+  return toCopyrightSweepIdPage(rows, limit)
 }
 
 export async function replayFailedCopyrightDeliveryIntent(input: {

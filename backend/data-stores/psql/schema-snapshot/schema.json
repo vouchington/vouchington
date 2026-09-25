@@ -21510,33 +21510,6 @@
           "unique": false,
           "valid": true
         },
-        "idx_copyright_delivery_intents__pending": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_delivery_intents__pending ON public.copyright_notice_delivery_intents USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "next_attempt_at",
-              "descending": false,
-              "expression": "next_attempt_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(state = 'pending'::text)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_copyright_delivery_intents__recipient_user": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -21552,6 +21525,33 @@
             }
           ],
           "predicate": "(recipient_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_delivery_intents__recoverable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_delivery_intents__recoverable ON public.copyright_notice_delivery_intents USING btree (channel, id) WHERE (state = ANY (ARRAY['pending'::text, 'claimed'::text]))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "channel",
+              "descending": false,
+              "expression": "channel",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(state = ANY (ARRAY['pending'::text, 'claimed'::text]))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -23371,19 +23371,12 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_email_intake_responses__pending": {
+        "idx_copyright_email_intake_responses__recoverable": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_email_intake_responses__pending ON public.copyright_notice_email_intake_responses USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)",
+          "definition": "CREATE INDEX idx_copyright_email_intake_responses__recoverable ON public.copyright_notice_email_intake_responses USING btree (id) WHERE (state = ANY (ARRAY['pending'::text, 'claimed'::text]))",
           "includedColumns": [],
           "keys": [
-            {
-              "column": "next_attempt_at",
-              "descending": false,
-              "expression": "next_attempt_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            },
             {
               "column": "id",
               "descending": false,
@@ -23392,7 +23385,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(state = 'pending'::text)",
+          "predicate": "(state = ANY (ARRAY['pending'::text, 'claimed'::text]))",
           "primary": false,
           "ready": true,
           "unique": false,

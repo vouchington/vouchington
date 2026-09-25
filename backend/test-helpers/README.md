@@ -206,7 +206,14 @@ copyright agent-dispatch sweep, so `toEqual([])` proves the owned record is not 
 `readTestOwnedCopyrightSweepIds(searchPage, id)` from
 `@voucha/test-helpers/services/copyright-notices/sweep-ids` does the same for any copyright
 reconcile page function that returns a `CopyrightSweepIdPage`; wrap a page function that takes `now`
-as `options => searchPage({ ...options, now })`.
+or `channel` as `options => searchPage({ ...options, now })`.
+
+Delivery claims compare their 15-minute lease with the database's `CURRENT_TIMESTAMP`, so a test
+cannot advance the clock past it. `expireTestCopyrightDeliveryIntentClaim(id, attempts)` and
+`expireTestCopyrightEmailIntakeResponseClaim(id, attempts)` from
+`@voucha/test-helpers/data-stores/psql/copyright-delivery-claims` age one owned claimed row's lease
+and set its attempt count, so a test can assert the sweep lists it and the next claim reclaims or
+fails it.
 
 ### Embedding collisions
 
