@@ -39,7 +39,10 @@ force-push, a `--no-verify` retry, a merge from automation, or a PR opened ready
 It is not a security boundary. A command can always reach the same effect through forms the hook
 never sees (`python -c`, `node -e`, a script file, `echo … | bash`), so the hook does not parse
 obfuscated or indirect forms, and bypass reports of that kind are out of scope. The boundaries are
-the OS sandbox (layer 2), the harness permission prompts, and branch protection on `main`.
+the OS sandbox (layer 2), branch protection on `main`, and the harness permission prompt when the
+session's approval mode asks for one. A mode that skips approval, such as a Codex bypass or
+full-auto session, leaves only the first two (see
+[the decision flow](reference-merge-authority-decision-flow.md)).
 
 The hook blocks coarsely and allows precisely. A block may overmatch, and any block in a command
 beats an allow. In automation, for example, any command that names `gh` together with a merge
