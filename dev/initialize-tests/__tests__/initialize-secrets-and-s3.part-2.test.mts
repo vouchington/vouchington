@@ -10,7 +10,7 @@ import { promisify } from 'node:util'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { initializeBashArgs } from '../../test-helpers/initialize.mts'
+import { initializeBashArgs, runInitializeHelperStatus } from '../../test-helpers/initialize.mts'
 
 const execFileAsync = promisify(execFile)
 
@@ -36,35 +36,6 @@ async function runHelper({ cwd, script, home }: { cwd: string; script: string; h
   return result.stdout.trim()
 }
 
-async function runHelperStatus({
-  cwd,
-  script,
-  home,
-}: {
-  cwd: string
-  script: string
-  home?: string
-}): Promise<{ exitCode: number; stderr: string; stdout: string }> {
-  try {
-    const result = await execFileAsync('bash', initializeBashArgs(script), {
-      cwd,
-      env: {
-        ...process.env,
-        HOME: home ?? dirname(cwd),
-      },
-    })
-
-    return { exitCode: 0, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
-  } catch (err: unknown) {
-    const e = err as { code?: number; stderr?: string; stdout?: string }
-    return {
-      exitCode: typeof e.code === 'number' ? e.code : 1,
-      stderr: (e.stderr ?? '').trim(),
-      stdout: (e.stdout ?? '').trim(),
-    }
-  }
-}
-
 describe('initialize secrets and S3 helpers', () => {
   afterEach(async () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
@@ -73,7 +44,7 @@ describe('initialize secrets and S3 helpers', () => {
   it('allows blank or incomplete S3 credential pairs with opt-in setup guidance', async () => {
     const cwd = await makeWorktreeDir('feature-s3-credentials-incomplete')
 
-    const result = await runHelperStatus({
+    const result = await runInitializeHelperStatus({
       cwd,
       script: `
       S3_AWS_ACCESS_KEY_ID='   '
@@ -84,7 +55,7 @@ describe('initialize secrets and S3 helpers', () => {
       `,
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result.code).toBe(0)
     expect(result.stderr).toContain('S3 credentials are not configured')
     expect(result.stderr).toContain('The app can start')
     expect(result.stderr).toContain('S3_AWS_SECRET_ACCESS_KEY')

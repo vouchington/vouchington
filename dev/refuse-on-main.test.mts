@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { sourceBashArgs } from './test-helpers/initialize.mts'
+import { runSourcedBash, sourceBashArgs } from './test-helpers/initialize.mts'
 
 describe('refuse-on-main', () => {
   const execFileAsync = promisify(execFile)
@@ -56,7 +56,7 @@ describe('refuse-on-main', () => {
     prepareToplevel?: boolean
     processTmpdir?: string
     extraEnv?: Record<string, string | undefined>
-  }): Promise<{ exitCode: number; stderr: string; stdout: string }> {
+  }): Promise<{ code: number | null; stderr: string; stdout: string }> {
     if (prepareToplevel) {
       if (isMainWorktree) {
         await mkdir(join(gitToplevel, '.git'), { recursive: true })
@@ -99,55 +99,45 @@ describe('refuse-on-main', () => {
       else env[key] = value
     }
 
-    try {
-      const { stderr, stdout } = await execFileAsync(
-        'bash',
-        sourceBashArgs(helperPath, script, [explicitRepoRoot ? gitToplevel : '']),
-        { cwd, env },
-      )
-      return { exitCode: 0, stderr: stderr.trim(), stdout: stdout.trim() }
-    } catch (err: unknown) {
-      const e = err as { code?: number; stderr?: string; stdout?: string }
-      return {
-        exitCode: typeof e.code === 'number' ? e.code : 1,
-        stderr: (e.stderr ?? '').trim(),
-        stdout: (e.stdout ?? '').trim(),
-      }
-    }
+    const result = await runSourcedBash(helperPath, script, [explicitRepoRoot ? gitToplevel : ''], {
+      cwd,
+      env,
+    })
+    return { code: result.code, stderr: result.stderr, stdout: result.stdout }
   }
 
   describe('refuse_on_main', () => {
     it('exits 1 when .git is a directory (main worktree)', async () => {
       const gitToplevel = await makeToplevel()
-      const { exitCode, stderr } = await run({
+      const { code, stderr } = await run({
         gitToplevel,
         isMainWorktree: true,
         processTmpdir: await makeIsolatedTmp(),
       })
-      expect(exitCode).toBe(1)
+      expect(code).toBe(1)
       expect(stderr).toContain('refuses to run on the main worktree')
       expect(stderr).toContain('FORCE_MAIN_RESET=1')
     })
 
     it('exits 0 when .git is a directory under .grok/worktrees', async () => {
-      const { exitCode, stderr } = await run({
+      const { code, stderr } = await run({
         gitToplevel: await makeGrokToplevel(),
         isMainWorktree: true,
         processTmpdir: await makeIsolatedTmp(),
       })
-      expect(exitCode).toBe(0)
+      expect(code).toBe(0)
       expect(stderr).not.toContain('WARNING')
       expect(stderr).not.toContain('refuses to run on the main worktree')
     })
 
     it('exits 0 when .git is a directory under TMPDIR', async () => {
       const gitToplevel = await makeToplevel()
-      const { exitCode, stderr } = await run({
+      const { code, stderr } = await run({
         gitToplevel,
         isMainWorktree: true,
         processTmpdir: await realpath(tmpdir()),
       })
-      expect(exitCode).toBe(0)
+      expect(code).toBe(0)
       expect(stderr).not.toContain('WARNING')
       expect(stderr).not.toContain('refuses to run on the main worktree')
     })
@@ -156,12 +146,12 @@ describe('refuse-on-main', () => {
       const processTmp = await makeIsolatedTmp()
       const gitToplevel = join(processTmp, 'clone')
       await mkdir(gitToplevel, { recursive: true })
-      const { exitCode, stderr } = await run({
+      const { code, stderr } = await run({
         gitToplevel,
         isMainWorktree: true,
         extraEnv: { TMPDIR: undefined, TMP: processTmp, TEMP: undefined },
       })
-      expect(exitCode).toBe(0)
+      expect(code).toBe(0)
       expect(stderr).not.toContain('WARNING')
     })
 
@@ -176,7 +166,7 @@ describe('refuse-on-main', () => {
         isMainWorktree: true,
         processTmpdir,
       })
-      expect(allowed.exitCode).toBe(0)
+      expect(allowed.code).toBe(0)
       expect(allowed.stderr).not.toContain('WARNING')
 
       const sibling = join(dirname(processTmpdir), `${basename(processTmpdir)}sibling`)
@@ -188,19 +178,19 @@ describe('refuse-on-main', () => {
         isMainWorktree: true,
         processTmpdir,
       })
-      expect(refused.exitCode).toBe(1)
+      expect(refused.code).toBe(1)
       expect(refused.stderr).toContain('refuses to run on the main worktree')
     })
 
     it('treats an empty toplevel and a missing TMPDIR as non-disposable', async () => {
       const missingTmp = join(await makeIsolatedTmp(), 'missing-tmp')
       const gitToplevel = await makeToplevel()
-      const { exitCode, stderr } = await run({
+      const { code, stderr } = await run({
         gitToplevel,
         isMainWorktree: true,
         extraEnv: { TMPDIR: missingTmp, TMP: undefined, TEMP: undefined },
       })
-      expect(exitCode).toBe(1)
+      expect(code).toBe(1)
       expect(stderr).toContain('refuses to run on the main worktree')
 
       const empty = await execFileAsync(
@@ -212,19 +202,19 @@ describe('refuse-on-main', () => {
 
     it('exits 0 when .git is a file (sub-worktree)', async () => {
       const gitToplevel = await makeToplevel()
-      const { exitCode } = await run({ gitToplevel, isMainWorktree: false })
-      expect(exitCode).toBe(0)
+      const { code } = await run({ gitToplevel, isMainWorktree: false })
+      expect(code).toBe(0)
     })
 
     it('exits 0 with warning when FORCE_MAIN_RESET=1 on main worktree', async () => {
       const gitToplevel = await makeToplevel()
-      const { exitCode, stderr } = await run({
+      const { code, stderr } = await run({
         gitToplevel,
         isMainWorktree: true,
         forceMainReset: true,
         processTmpdir: await makeIsolatedTmp(),
       })
-      expect(exitCode).toBe(0)
+      expect(code).toBe(0)
       expect(stderr).toContain('WARNING')
       expect(stderr).toContain('FORCE_MAIN_RESET=1')
     })
@@ -234,7 +224,7 @@ describe('refuse-on-main', () => {
       const callerToplevel = await makeToplevel()
       await writeFile(join(callerToplevel, '.git'), `gitdir: /fake/.git/worktrees/test\n`)
 
-      const { exitCode, stderr } = await run({
+      const { code, stderr } = await run({
         gitToplevel: mainToplevel,
         isMainWorktree: true,
         explicitRepoRoot: true,
@@ -242,7 +232,7 @@ describe('refuse-on-main', () => {
         processTmpdir: await makeIsolatedTmp(),
       })
 
-      expect(exitCode).toBe(1)
+      expect(code).toBe(1)
       expect(stderr).toContain('refuses to run on the main worktree')
     })
 
@@ -251,7 +241,7 @@ describe('refuse-on-main', () => {
       const callerToplevel = await makeToplevel()
       await writeFile(join(callerToplevel, '.git'), `gitdir: /fake/.git/worktrees/test\n`)
 
-      const { exitCode, stderr, stdout } = await run({
+      const { code, stderr, stdout } = await run({
         gitToplevel: mainToplevel,
         isMainWorktree: true,
         explicitRepoRoot: true,
@@ -260,7 +250,7 @@ describe('refuse-on-main', () => {
         processTmpdir: await makeIsolatedTmp(),
       })
 
-      expect(exitCode).toBe(0)
+      expect(code).toBe(0)
       expect(stderr).toContain('WARNING')
       expect(stdout).toBe(`cwd:${await realpath(callerToplevel)}`)
     })
@@ -269,7 +259,7 @@ describe('refuse-on-main', () => {
       const callerToplevel = await makeToplevel()
       await writeFile(join(callerToplevel, '.git'), `gitdir: /fake/.git/worktrees/test\n`)
 
-      const { exitCode, stderr } = await run({
+      const { code, stderr } = await run({
         gitToplevel: join(callerToplevel, 'missing'),
         isMainWorktree: false,
         explicitRepoRoot: true,
@@ -277,7 +267,7 @@ describe('refuse-on-main', () => {
         prepareToplevel: false,
       })
 
-      expect(exitCode).toBe(1)
+      expect(code).toBe(1)
       expect(stderr).toContain('cannot inspect repo root')
       expect(stderr).toContain('Refusing to continue')
     })

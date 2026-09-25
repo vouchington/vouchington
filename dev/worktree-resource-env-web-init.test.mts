@@ -1,19 +1,14 @@
-import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { sourceBashArgs } from './test-helpers/initialize.mts'
+import { runWorktreeResourceEnv as run } from './test-helpers/initialize.mts'
 
 // Split out of worktree-resource-env.test.mts (which covers
 // worktree_resource_is_main/validate_backend_init/refuse_shared_resources_*)
 // to stay under the 300-line test-file cap once web-init coverage was added.
 describe('worktree_resource_validate_web_init', () => {
-  const execFileAsync = promisify(execFile)
-  const helperPath = fileURLToPath(new URL('./lib/worktree-resource-env.sh', import.meta.url))
   const testDirs: string[] = []
 
   afterEach(async () =>
@@ -30,47 +25,6 @@ describe('worktree_resource_validate_web_init', () => {
     const dir = await mkdtemp(join(tmpdir(), 'voucha-isolated-tmp-'))
     testDirs.push(dir)
     return dir
-  }
-
-  async function run({
-    gitToplevel,
-    isMainWorktree,
-    processTmpdir,
-    script,
-  }: {
-    gitToplevel: string
-    isMainWorktree: boolean
-    processTmpdir?: string
-    script: string
-  }): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-    if (isMainWorktree) {
-      await mkdir(join(gitToplevel, '.git'), { recursive: true })
-    } else {
-      await writeFile(join(gitToplevel, '.git'), 'gitdir: /fake/.git/worktrees/test\n')
-    }
-
-    const env: Record<string, string> = {}
-    for (const [k, v] of Object.entries(process.env)) {
-      if (v !== undefined) env[k] = v
-    }
-    if (processTmpdir !== undefined) {
-      env.TMPDIR = processTmpdir
-    }
-
-    try {
-      const { stdout, stderr } = await execFileAsync('bash', sourceBashArgs(helperPath, script), {
-        cwd: gitToplevel,
-        env,
-      })
-      return { exitCode: 0, stdout: stdout.trim(), stderr: stderr.trim() }
-    } catch (err: unknown) {
-      const e = err as { code?: number; stdout?: string; stderr?: string }
-      return {
-        exitCode: typeof e.code === 'number' ? e.code : 1,
-        stdout: (e.stdout ?? '').trim(),
-        stderr: (e.stderr ?? '').trim(),
-      }
-    }
   }
 
   const PORTS = {
@@ -127,7 +81,7 @@ IMAGE_ORIGIN=http://localhost:${PORTS.imageLambda}
     await writeBackendEnv(gitToplevel, worktreeDir)
     await writeWebEnvLocal(gitToplevel)
 
-    const { exitCode, stdout } = await run({
+    const { code, stdout } = await run({
       gitToplevel,
       isMainWorktree: true,
       processTmpdir: await makeIsolatedTmp(),
@@ -136,7 +90,7 @@ IMAGE_ORIGIN=http://localhost:${PORTS.imageLambda}
         printf '%s:%s' "$?" "$WORKTREE_RESOURCE_STATUS"
       `,
     })
-    expect(exitCode).toBe(0)
+    expect(code).toBe(0)
     expect(stdout).toBe('1:missing-worker-env')
   })
 
@@ -146,7 +100,7 @@ IMAGE_ORIGIN=http://localhost:${PORTS.imageLambda}
     await writeBackendEnv(gitToplevel, worktreeDir)
     await writeWorkerEnv(gitToplevel)
 
-    const { exitCode, stdout } = await run({
+    const { code, stdout } = await run({
       gitToplevel,
       isMainWorktree: true,
       processTmpdir: await makeIsolatedTmp(),
@@ -155,7 +109,7 @@ IMAGE_ORIGIN=http://localhost:${PORTS.imageLambda}
         printf '%s:%s' "$?" "$WORKTREE_RESOURCE_STATUS"
       `,
     })
-    expect(exitCode).toBe(0)
+    expect(code).toBe(0)
     expect(stdout).toBe('1:missing-web-env-local')
   })
 
@@ -166,7 +120,7 @@ IMAGE_ORIGIN=http://localhost:${PORTS.imageLambda}
     await writeWorkerEnv(gitToplevel)
     await writeWebEnvLocal(gitToplevel, '9999')
 
-    const { exitCode, stdout } = await run({
+    const { code, stdout } = await run({
       gitToplevel,
       isMainWorktree: true,
       processTmpdir: await makeIsolatedTmp(),
@@ -175,7 +129,7 @@ IMAGE_ORIGIN=http://localhost:${PORTS.imageLambda}
         printf '%s:%s' "$?" "$WORKTREE_RESOURCE_STATUS"
       `,
     })
-    expect(exitCode).toBe(0)
+    expect(code).toBe(0)
     expect(stdout).toBe('1:stale-web-ports')
   })
 
@@ -202,7 +156,7 @@ export WORKER_PORT=${PORTS.worker}
     await writeWorkerEnv(gitToplevel)
     await writeWebEnvLocal(gitToplevel)
 
-    const { exitCode, stdout, stderr } = await run({
+    const { code, stdout, stderr } = await run({
       gitToplevel,
       isMainWorktree: true,
       processTmpdir: await makeIsolatedTmp(),
@@ -213,7 +167,7 @@ export WORKER_PORT=${PORTS.worker}
       `,
     })
     expect(stderr).not.toContain('unbound variable')
-    expect(exitCode).toBe(0)
+    expect(code).toBe(0)
     expect(stdout).toBe('1:stale-web-ports')
   })
 
@@ -224,7 +178,7 @@ export WORKER_PORT=${PORTS.worker}
     await writeWorkerEnv(gitToplevel)
     await writeWebEnvLocal(gitToplevel)
 
-    const { exitCode, stdout } = await run({
+    const { code, stdout } = await run({
       gitToplevel,
       isMainWorktree: true,
       processTmpdir: await makeIsolatedTmp(),
@@ -233,7 +187,7 @@ export WORKER_PORT=${PORTS.worker}
         printf '%s:%s' "$?" "$WORKTREE_RESOURCE_STATUS"
       `,
     })
-    expect(exitCode).toBe(0)
+    expect(code).toBe(0)
     expect(stdout).toBe('0:ok')
   })
 })
