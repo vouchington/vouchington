@@ -40,9 +40,9 @@ It is not a security boundary. A command can always reach the same effect throug
 never sees (`python -c`, `node -e`, a script file, `echo … | bash`), so the hook does not parse
 obfuscated or indirect forms, and bypass reports of that kind are out of scope. The boundaries are
 the OS sandbox (layer 2), branch protection on `main`, and the harness permission prompt when the
-session's approval mode asks for one. A mode that skips approval, such as a Codex bypass or
-full-auto session, leaves only the first two (see
-[the decision flow](reference-merge-authority-decision-flow.md)).
+session's approval mode asks for one. Codex `--ask-for-approval never` skips the prompt and leaves
+the first two; `--dangerously-bypass-approvals-and-sandbox` also drops the OS sandbox and leaves only
+branch protection (see [the decision flow](reference-merge-authority-decision-flow.md)).
 
 The hook blocks coarsely and allows precisely. A block may overmatch, and any block in a command
 beats an allow. In automation, for example, any command text the hook reads that names `gh`
