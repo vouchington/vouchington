@@ -11,7 +11,7 @@
   ],
   "autoRun": {
     "allow_instructions": [
-      "Allow pnpm, git, gh, rtk, node, cargo, docker, npx of known local tools, and ./dev/* scripts used in the Voucha local loop.",
+      "Allow pnpm, git, gh, node, cargo, docker, npx of known local tools, and ./dev/* scripts used in the Voucha local loop.",
       "Allow git fetch origin, git rebase origin/main, and git push --force-with-lease after a rebase.",
       "Allow node dev/pr-description.mts and node dev/plan-issue.mts."
     ],
