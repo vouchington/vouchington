@@ -125,7 +125,7 @@
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/auto-instrumentations-node": "^0.80.0",
     "@playwright/test": "1.63.0",
-    "@redocly/cli": "^2.51.2",
+    "@redocly/cli": "^2.54.2",
     "@storybook/addon-vitest": "^10.6.0",
     "@ts-shared/utils": "workspace:^",
     "@types/jsdom": "^30.0.0",
