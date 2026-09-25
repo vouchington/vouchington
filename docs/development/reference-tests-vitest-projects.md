@@ -30,8 +30,10 @@ budget, so one slow test doesn't mask a regression in every other test in that p
 The same headroom rule applies one layer down: a test that spawns a child process with its own
 timeout must keep that timeout strictly below its project's `testTimeout`, and must report the
 child's signal/timeout state on the result instead of coercing a kill into a generic failure code —
-see `RUN_TMUX_TIMEOUT_MS` and `RunTmuxResult` in
-[`dev/test-helpers/run-tmux.mts`](../../dev/test-helpers/run-tmux.mts) for the pattern.
+use `runProcess`/`RunProcessResult` from
+[`dev/test-helpers/run-process.mts`](../../dev/test-helpers/run-process.mts), which has no default
+timeout of its own (callers opt in via `timeoutMs`). See `RUN_TMUX_TIMEOUT_MS` in
+[`dev/test-helpers/run-tmux.mts`](../../dev/test-helpers/run-tmux.mts) for an example caller.
 
 A first exec of a freshly written executable file is expensive on macOS — roughly 200ms idle, over
 1s under full-suite load — while re-execing an already-run file costs single-digit milliseconds. A
