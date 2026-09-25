@@ -27123,7 +27123,7 @@
       "columns": {
         "copyright_repeat_infringer_incident_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Incident this disposition removes from the operative count.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27178,7 +27178,7 @@
         },
         "recorded_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time the moderator recorded the disposition.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27189,7 +27189,7 @@
         },
         "recorded_by_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Moderator who recorded the disposition. Null after that account is erased.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27231,7 +27231,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "copyright_repeat_infringer_di_copyright_repeat_infringer_in_key": {
           "accessMethod": "btree",
@@ -27403,7 +27403,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "copyright_repeat_infringer_in_account_user_id_copyright_not_key": {
           "accessMethod": "btree",
@@ -27520,7 +27520,7 @@
       "columns": {
         "account_user_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Account whose second operative incident opened this review.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27553,7 +27553,7 @@
         },
         "opened_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time the second operative incident opened the review.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27575,7 +27575,7 @@
         },
         "outcome_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time the moderator recorded the outcome. Null while the review is open.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27586,7 +27586,7 @@
         },
         "outcome_by_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Moderator who recorded the outcome. Null while the review is open, or after that account is erased.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27639,7 +27639,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "copyright_repeat_infringer_reviews_pkey": {
           "accessMethod": "btree",

@@ -119,8 +119,15 @@ COMMENT ON COLUMN copyright_repeat_infringer_incidents.account_user_id IS 'Post 
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.copyright_notice_id IS 'Copyright notice this incident belongs to. Several targets on one notice are still one incident.';
 COMMENT ON COLUMN copyright_repeat_infringer_incidents.operative IS 'Whether this notice still counts toward the repeat-infringer review threshold.';
 COMMENT ON TABLE copyright_repeat_infringer_dispositions IS 'Staff decision that a confirmed incident no longer counts: withdrawn, duplicate, or abusive.';
+COMMENT ON COLUMN copyright_repeat_infringer_dispositions.copyright_repeat_infringer_incident_id IS 'Incident this disposition removes from the operative count.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.disposition IS 'Why the incident stopped counting. Restoration is not a disposition.';
 COMMENT ON COLUMN copyright_repeat_infringer_dispositions.rationale_ciphertext IS 'Encrypted staff rationale for removing the incident.';
+COMMENT ON COLUMN copyright_repeat_infringer_dispositions.recorded_at IS 'Time the moderator recorded the disposition.';
+COMMENT ON COLUMN copyright_repeat_infringer_dispositions.recorded_by_id IS 'Moderator who recorded the disposition. Null after that account is erased.';
 COMMENT ON TABLE copyright_repeat_infringer_reviews IS 'Required staff review opened when an account reaches two operative incidents. Opening a review does not suspend the account.';
+COMMENT ON COLUMN copyright_repeat_infringer_reviews.account_user_id IS 'Account whose second operative incident opened this review.';
+COMMENT ON COLUMN copyright_repeat_infringer_reviews.opened_at IS 'Time the second operative incident opened the review.';
 COMMENT ON COLUMN copyright_repeat_infringer_reviews.outcome IS 'Staff outcome. Null while the review is open. Restrict and terminate are applied by a later administrator action.';
+COMMENT ON COLUMN copyright_repeat_infringer_reviews.outcome_at IS 'Time the moderator recorded the outcome. Null while the review is open.';
+COMMENT ON COLUMN copyright_repeat_infringer_reviews.outcome_by_id IS 'Moderator who recorded the outcome. Null while the review is open, or after that account is erased.';
 COMMENT ON COLUMN copyright_repeat_infringer_reviews.rationale_ciphertext IS 'Encrypted staff rationale recorded with the outcome.';
