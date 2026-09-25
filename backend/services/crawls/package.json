@@ -21,7 +21,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1137.0",
+    "@aws-sdk/client-s3": "^3.1138.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@jongleberry/vurst-prompt": "^0.4.3",

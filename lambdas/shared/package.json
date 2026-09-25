@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@aws-sdk/client-ssm": "^3.1137.0",
+    "@aws-sdk/client-ssm": "^3.1138.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
     "@opentelemetry/sdk-trace-base": "^2.11.0",
     "@sentry/aws-serverless": "10.75.1",
