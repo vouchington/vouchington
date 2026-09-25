@@ -21,7 +21,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1137.0",
+    "@aws-sdk/client-s3": "^3.1138.0",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@services/posts": "workspace:^",
