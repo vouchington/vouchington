@@ -12,14 +12,13 @@ import { apiRequestContract } from '../../response-contract.mts'
 import { validateRequestContract } from '../../response-helpers.mts'
 import { readOptionalJsonBody } from './optional-json-body.mts'
 
-// Both fields are optional at the schema level: a body carrying neither (or no JSON body at
-// all) is the normal no-push-cleanup logout. Only a body carrying exactly one of the two is
-// rejected, by the manual pairing assert below -- JSON Schema `required` can't express "both or
-// neither" from this TS type, so that check stays a manual assert after the generated contract
-// validates each present field's type/shape.
+// Both fields are required together in the generated schema: a body carrying neither (or no
+// JSON body at all) is the normal no-push-cleanup logout and never reaches the schema check
+// below (see the `!hasEndpoint` early return) -- only a body that supplies at least one of the
+// two fields is validated against this all-or-nothing shape.
 type LogoutRequest = {
-  web_push_endpoint?: string
-  web_push_subscription_id?: string
+  web_push_endpoint: string
+  web_push_subscription_id: string
 }
 
 app.route('/api/v1/auth/logout').post(async ctx => {
@@ -74,7 +73,6 @@ async function parseLogoutPushBinding(ctx: Context) {
     400,
     'logout request body must be an object',
   )
-  validateRequestContract(ctx, 'POST:/api/v1/auth/logout', { body })
   const request = body as LogoutRequest
   const endpoint = request.web_push_endpoint
   const subscriptionId = request.web_push_subscription_id
@@ -86,6 +84,10 @@ async function parseLogoutPushBinding(ctx: Context) {
     'web push binding must include endpoint and subscription id',
   )
   if (!hasEndpoint) return undefined
+  // Both fields are present at this point, so the schema's `required` pair is satisfiable; this
+  // runs before the URL/UUID-specific 400 checks below so a wrong-typed field or an unrecognized
+  // top-level field gets the schema's 422, not one of those checks' 400.
+  validateRequestContract(ctx, 'POST:/api/v1/auth/logout', { body })
   const endpointUrl = typeof endpoint === 'string' ? parseHttpsEndpoint(endpoint) : undefined
   ctx.assert(endpointUrl, 400, 'web_push_endpoint must be a valid HTTPS URL')
   ctx.assert(
