@@ -27,6 +27,7 @@ const CLASSIFIER_FIXTURES: ReadonlyArray<{
   { path: 'web/components.json', category: 'tooling', service: 'web' },
   { path: 'backend/agents/.oxlintrc.json', category: 'tooling', service: 'backend' },
   { path: 'renovate.json', category: 'tooling', service: 'tooling' },
+  { path: '.jscpd.json', category: 'tooling', service: 'tooling' },
   // Runtime/data JSON → source (not a config-JSON basename)
   { path: 'api-fixtures/v1/client-intents.json', category: 'source', service: 'tooling' },
   // Nested docs → tooling (README.md / CLAUDE.md at any depth)
@@ -151,12 +152,14 @@ describe('dev/cloc', () => {
       'backend/services/posts/index.mts',
       'web/app/page.tsx',
       'package.json',
+      '.jscpd.json',
       'articles/news.md', // off-allowlist
     ])
     const targets = countTargetsFor(files)
     expect(targets).toContain('backend')
     expect(targets).toContain('web')
     expect(targets).toContain('package.json')
+    expect(targets).toContain('.jscpd.json')
     expect(targets).not.toContain('.')
     expect(targets).not.toContain('articles')
   })

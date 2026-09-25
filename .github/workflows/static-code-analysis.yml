@@ -66,6 +66,16 @@ jobs:
         if: ${{ inputs.docs_only != true }}
         run: pnpm run ast-grep
         timeout-minutes: 3
+      # The jscpd ratchet diffs a pull request against its merge commit's first parent, which needs
+      # the unshallowed history, and other runs against the merge-base with origin/main. A main push
+      # has no base branch to ratchet against, so both steps skip there.
+      - uses: ./.github/actions/fetch-base-ref
+        if: ${{ inputs.docs_only != true && github.event_name != 'push' }}
+        timeout-minutes: 3
+      - name: jscpd new-clone ratchet
+        if: ${{ inputs.docs_only != true && github.event_name != 'push' }}
+        run: pnpm run jscpd
+        timeout-minutes: 3
       - run: pnpm exec syncpack lint && pnpm exec syncpack format --check
         if: ${{ inputs.docs_only != true }}
         timeout-minutes: 2
