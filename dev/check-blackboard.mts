@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFileCb)
-type BlackboardSessionsClient = import('./blackboard/client.mts').BlackboardSessionsClient
 
 // Called by Claude Code and Codex hooks at session start; stdout is injected as context.
 // Blackboard is a hard session prerequisite (journaling/retrospective/distill all depend
@@ -16,12 +15,10 @@ type BlackboardSessionsClient = import('./blackboard/client.mts').BlackboardSess
 // Environment:
 //   CHECK_BLACKBOARD_SKIP=1  Skip the probe entirely (for offline/CI tests).
 
-export async function runCheckBlackboard(
-  options: { env?: NodeJS.ProcessEnv; sessions?: BlackboardSessionsClient } = {},
-): Promise<void> {
-  const { probeBlackboard, clientDependencies } = await loadBlackboardModules()
+export async function runCheckBlackboard(options: { env?: NodeJS.ProcessEnv } = {}): Promise<void> {
+  const { probeBlackboard } = await loadBlackboardModules()
   try {
-    await probeBlackboard(options.env, clientDependencies({ sessions: options.sessions }))
+    await probeBlackboard(options.env)
   } catch (error) {
     throw new Error(
       `sessions list probe failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -36,11 +33,7 @@ class BlackboardModuleUnavailableError extends Error {}
 
 async function loadBlackboardModules() {
   try {
-    const [portableBlackboard, client] = await Promise.all([
-      import('vouchington-tooling/agent-blackboard'),
-      import('./blackboard/client.mts'),
-    ])
-    return { ...portableBlackboard, ...client }
+    return await import('vouchington-tooling/agent-blackboard')
   } catch (error) {
     if (!(error instanceof Error) || !('code' in error)) throw error
     const mentionsBlackboardPackage =

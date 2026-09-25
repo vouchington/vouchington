@@ -1,10 +1,6 @@
 import { formatJournalEntries, readJournal } from 'vouchington-tooling/agent-blackboard'
 
-import {
-  clientDependencies,
-  isBlackboardNotFound,
-  type BlackboardEntriesClient,
-} from '../blackboard/client.mts'
+import { isBlackboardNotFound } from '../blackboard/client.mts'
 import { parseFlagArgs, type FlagKey } from '../blackboard/parse-flag-args.mts'
 import { requireSessionId } from '../agent-session-id/resolve.mts'
 
@@ -35,7 +31,6 @@ function parseArgs(argv: string[]): ParsedArgs {
 export async function runEntries(
   argv: string[],
   env: NodeJS.ProcessEnv = process.env,
-  entriesClient?: BlackboardEntriesClient,
   cwd: string = process.cwd(),
 ): Promise<string> {
   const parsed = parseArgs(argv)
@@ -47,9 +42,7 @@ export async function runEntries(
     newRootCodexSession: parsed.newRootCodexSession,
   })
   try {
-    const entries = await readJournal(sessionId, env, {
-      ...clientDependencies({ entries: entriesClient }),
-    })
+    const entries = await readJournal(sessionId, env)
     return formatJournalEntries(sessionId, entries)
   } catch (error) {
     if (isBlackboardNotFound(error)) return `No journal entries found for session ${sessionId}.`

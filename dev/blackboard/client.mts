@@ -1,8 +1,5 @@
 import { AgentBlackboardError, Entries, Sessions, type ClientConfig } from 'agent-blackboard'
-import {
-  resolveBlackboardConnection as resolvePortableBlackboardConnection,
-  type BlackboardClientDependencies,
-} from 'vouchington-tooling/agent-blackboard'
+import { resolveBlackboardConnection as resolvePortableBlackboardConnection } from 'vouchington-tooling/agent-blackboard'
 
 export type BlackboardConnection = ClientConfig
 
@@ -24,57 +21,6 @@ export function isBlackboardNotFound(error: unknown): boolean {
     if (current instanceof AgentBlackboardError) return current.status === 404
   }
   return false
-}
-
-// The portable helpers accept a lazy client loader so their optional peer remains optional.
-// Vouchington keeps these thin adapters solely for existing callers and their focused test seams.
-export function clientDependencies(clients: {
-  sessions?: BlackboardSessionsClient
-  entries?: BlackboardEntriesClient
-}): BlackboardClientDependencies | undefined {
-  if (!clients.sessions && !clients.entries) return undefined
-  return {
-    loadClient: async () => ({
-      Sessions: class {
-        private readonly connection: BlackboardConnection
-
-        constructor(connection: BlackboardConnection) {
-          this.connection = connection
-        }
-
-        ensure(input: unknown) {
-          return (clients.sessions ?? createSessionsClient(this.connection)).ensure(input as never)
-        }
-
-        list(input: unknown) {
-          return (clients.sessions ?? createSessionsClient(this.connection)).list(input as never)
-        }
-
-        patch(input: unknown) {
-          return (clients.sessions ?? createSessionsClient(this.connection)).patch(input as never)
-        }
-
-        get(id: string) {
-          return (clients.sessions ?? createSessionsClient(this.connection)).get(id)
-        }
-      },
-      Entries: class {
-        private readonly connection: BlackboardConnection
-
-        constructor(connection: BlackboardConnection) {
-          this.connection = connection
-        }
-
-        append(input: unknown) {
-          return (clients.entries ?? createEntriesClient(this.connection)).append(input as never)
-        }
-
-        get(input: unknown) {
-          return (clients.entries ?? createEntriesClient(this.connection)).get(input as never)
-        }
-      },
-    }),
-  }
 }
 
 // Resolves the public agent-blackboard client configuration for the hosted deployment.

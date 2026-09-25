@@ -1,10 +1,5 @@
 import { appendJournal } from 'vouchington-tooling/agent-blackboard'
 
-import {
-  clientDependencies,
-  type BlackboardEntriesClient,
-  type BlackboardSessionsClient,
-} from '../blackboard/client.mts'
 import { parseFlagArgs, type FlagKey } from '../blackboard/parse-flag-args.mts'
 import {
   requireBlackboardIdentity,
@@ -81,10 +76,6 @@ export class BlackboardJournalError extends Error {
 export async function runAppend(
   argv: string[],
   env: NodeJS.ProcessEnv = process.env,
-  clients: {
-    sessions?: BlackboardSessionsClient
-    entries?: BlackboardEntriesClient
-  } = {},
   cwd = process.cwd(),
 ): Promise<string> {
   const parsed = parseArgs(argv)
@@ -125,7 +116,6 @@ export async function runAppend(
       repositories: parsed.repositories ?? [DEFAULT_JOURNAL_REPOSITORY],
       markdownFile: noteFile,
       timestamp,
-      dependencies: clientDependencies(clients),
     })
   } catch (error) {
     throw new BlackboardJournalError(

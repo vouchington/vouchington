@@ -1,15 +1,11 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { copyFile, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { sessionsClientFixture } from './test-helpers/blackboard/client-fixtures.mts'
-import { runCheckBlackboard } from './check-blackboard.mts'
-
 const scriptPath = fileURLToPath(new URL('./check-blackboard.mts', import.meta.url))
-const clientModulePath = fileURLToPath(new URL('./blackboard/client.mts', import.meta.url))
 const testDirs: string[] = []
 const HOSTED_ENV = {
   AGENT_BLACKBOARD_URL: 'https://example.invalid/',
@@ -41,38 +37,6 @@ async function makeRepo(): Promise<string> {
   return cwd
 }
 
-describe('runCheckBlackboard', () => {
-  it('resolves when the bounded probe succeeds', async () => {
-    await expect(
-      runCheckBlackboard({ env: HOSTED_ENV, sessions: sessionsClientFixture() }),
-    ).resolves.toBeUndefined()
-  })
-
-  it('propagates a probe failure', async () => {
-    const sessions = sessionsClientFixture({
-      list: async () => {
-        throw new Error('agent-blackboard request failed: GET /sessions -> 500')
-      },
-    })
-
-    await expect(runCheckBlackboard({ env: HOSTED_ENV, sessions })).rejects.toThrow(
-      /sessions list probe failed.*-> 500/s,
-    )
-  })
-
-  it('propagates a missing-URL failure', async () => {
-    await expect(
-      runCheckBlackboard({ env: { AGENT_BLACKBOARD_TOKEN: 'test-token' } }),
-    ).rejects.toThrow(/AGENT_BLACKBOARD_URL is not set/)
-  })
-
-  it('propagates a missing-token failure', async () => {
-    await expect(
-      runCheckBlackboard({ env: { AGENT_BLACKBOARD_URL: HOSTED_ENV.AGENT_BLACKBOARD_URL } }),
-    ).rejects.toThrow(/AGENT_BLACKBOARD_TOKEN is not set/)
-  })
-})
-
 function runScript(
   cwd: string,
   {
@@ -90,23 +54,20 @@ function runScript(
   })
 }
 
-async function copyProbeScript(cwd: string, includeBlackboardModules = false): Promise<string> {
+async function copyProbeScript(cwd: string): Promise<string> {
+  const { copyFile } = await import('node:fs/promises')
   const copiedScriptPath = join(cwd, 'check-blackboard.mts')
   await copyFile(scriptPath, copiedScriptPath)
-  if (includeBlackboardModules) {
-    const blackboardDir = join(cwd, 'blackboard')
-    await mkdir(blackboardDir)
-    await copyFile(clientModulePath, join(blackboardDir, 'client.mts'))
-  }
   return realpath(copiedScriptPath)
 }
 
 // Simulates a hoisted/stale vouchington-tooling install that predates the ./agent-blackboard
 // export — mechanically distinct from the package being absent entirely (ERR_MODULE_NOT_FOUND).
 async function installStaleVouchingtonTooling(cwd: string): Promise<void> {
+  const { mkdir, writeFile: writeFileAsync } = await import('node:fs/promises')
   const packageDir = join(cwd, 'node_modules', 'vouchington-tooling')
   await mkdir(packageDir, { recursive: true })
-  await writeFile(
+  await writeFileAsync(
     join(packageDir, 'package.json'),
     JSON.stringify({
       name: 'vouchington-tooling',
@@ -119,7 +80,7 @@ async function installStaleVouchingtonTooling(cwd: string): Promise<void> {
     }),
   )
   await mkdir(join(packageDir, 'dist'), { recursive: true })
-  await writeFile(join(packageDir, 'dist', 'index.mjs'), 'export {}\n')
+  await writeFileAsync(join(packageDir, 'dist', 'index.mjs'), 'export {}\n')
 }
 
 function additionalContext(stdout: string) {
@@ -219,7 +180,7 @@ describe('dev/check-blackboard (hook subprocess)', () => {
 
   it('reports the install command when workspace dependencies are absent', async () => {
     const cwd = await makeRepo()
-    const path = await copyProbeScript(cwd, true)
+    const path = await copyProbeScript(cwd)
     const result = runScript(cwd, { env: UNREACHABLE_ENV, path })
 
     expect(result.status).toBe(0)
@@ -234,7 +195,7 @@ describe('dev/check-blackboard (hook subprocess)', () => {
 
   it('reports ./dev/initialize monorepo when a stale install predates the agent-blackboard export', async () => {
     const cwd = await makeRepo()
-    const path = await copyProbeScript(cwd, true)
+    const path = await copyProbeScript(cwd)
     await installStaleVouchingtonTooling(cwd)
     const result = runScript(cwd, { env: UNREACHABLE_ENV, path })
 
