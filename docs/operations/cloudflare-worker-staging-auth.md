@@ -29,27 +29,30 @@ in private `vouchington-infra` operator runbooks.
 These application-owned routes bypass staging Basic Auth only for the listed methods. Their own
 signature, bearer, OAuth-state, or public-discovery boundary remains in force.
 
-| Path                                                | Methods       | Caller              | Auth mechanism                       |
-| --------------------------------------------------- | ------------- | ------------------- | ------------------------------------ |
-| `/api/v1/mcp`                                       | `POST`        | MCP clients         | Bearer API key                       |
-| `/api/v1/admin/mcp`                                 | `POST`        | MCP clients         | Bearer API key                       |
-| `/api/v1/memberships/apple-app-store/notifications` | `POST`        | Apple App Store     | signed payload at backend            |
-| `/api/v1/memberships/google-play/notifications`     | `POST`        | Google Pub/Sub      | OIDC JWT at backend                  |
-| `/.well-known/webfinger`                            | `GET`         | Fediverse servers   | none (public discovery)              |
-| `/.well-known/nodeinfo`                             | `GET`         | Fediverse servers   | none (public discovery)              |
-| `/nodeinfo/2.0`                                     | `GET`         | Fediverse servers   | none (public discovery)              |
-| `/ap/users/{id}`                                    | `GET`         | Fediverse servers   | none (public actor document)         |
-| `/ap/inbox`                                         | `POST`        | Fediverse servers   | HTTP signature                       |
-| `/client-metadata.json`                             | `GET`         | AT Protocol servers | none (public OAuth metadata)         |
-| `/auth/callback/facebook/broker`                    | `GET`         | Facebook OAuth      | OAuth state                          |
-| `/auth/callback/x/broker`                           | `GET`         | X OAuth             | OAuth state                          |
-| `/auth/callback/github/broker`                      | `GET`         | GitHub OAuth        | OAuth state                          |
-| `/register`                                         | `POST`        | OAuth clients       | DCR metadata validation              |
-| `/revoke`                                           | `POST`        | OAuth clients       | OAuth client authentication          |
-| `/token`                                            | `POST`        | OAuth clients       | OAuth client authentication and PKCE |
-| `/infra/ping`                                       | `GET`, `HEAD` | Health checks       | none (public)                        |
-| `/infra/cache-purge`                                | `POST`        | Backend             | shared key                           |
-| `/manifest.webmanifest`                             | `GET`, `HEAD` | Browsers (PWA)      | none (spec-mandated anonymous fetch) |
+| Path                                                     | Methods       | Caller              | Auth mechanism                       |
+| -------------------------------------------------------- | ------------- | ------------------- | ------------------------------------ |
+| `/api/v1/mcp`                                            | `POST`        | MCP clients         | Bearer API key or OAuth access token |
+| `/api/v1/admin/mcp`                                      | `POST`        | MCP clients         | Bearer API key or OAuth access token |
+| `/api/v1/memberships/apple-app-store/notifications`      | `POST`        | Apple App Store     | signed payload at backend            |
+| `/api/v1/memberships/google-play/notifications`          | `POST`        | Google Pub/Sub      | OIDC JWT at backend                  |
+| `/.well-known/webfinger`                                 | `GET`         | Fediverse servers   | none (public discovery)              |
+| `/.well-known/nodeinfo`                                  | `GET`         | Fediverse servers   | none (public discovery)              |
+| `/.well-known/oauth-authorization-server`                | `GET`         | OAuth clients       | none (RFC 8414 discovery)            |
+| `/.well-known/oauth-protected-resource/api/v1/mcp`       | `GET`         | MCP clients         | none (RFC 9728 discovery)            |
+| `/.well-known/oauth-protected-resource/api/v1/admin/mcp` | `GET`         | MCP clients         | none (RFC 9728 discovery)            |
+| `/nodeinfo/2.0`                                          | `GET`         | Fediverse servers   | none (public discovery)              |
+| `/ap/users/{id}`                                         | `GET`         | Fediverse servers   | none (public actor document)         |
+| `/ap/inbox`                                              | `POST`        | Fediverse servers   | HTTP signature                       |
+| `/client-metadata.json`                                  | `GET`         | AT Protocol servers | none (public OAuth metadata)         |
+| `/auth/callback/facebook/broker`                         | `GET`         | Facebook OAuth      | OAuth state                          |
+| `/auth/callback/x/broker`                                | `GET`         | X OAuth             | OAuth state                          |
+| `/auth/callback/github/broker`                           | `GET`         | GitHub OAuth        | OAuth state                          |
+| `/register`                                              | `POST`        | OAuth clients       | DCR metadata validation              |
+| `/revoke`                                                | `POST`        | OAuth clients       | OAuth client authentication          |
+| `/token`                                                 | `POST`        | OAuth clients       | OAuth client authentication and PKCE |
+| `/infra/ping`                                            | `GET`, `HEAD` | Health checks       | none (public)                        |
+| `/infra/cache-purge`                                     | `POST`        | Backend             | shared key                           |
+| `/manifest.webmanifest`                                  | `GET`, `HEAD` | Browsers (PWA)      | none (spec-mandated anonymous fetch) |
 
 `/ap/users/{id}` matches exactly one UUID segment, case-insensitively, with an optional trailing
 slash. All other rows are exact normalized path matches. Wrong methods remain protected.

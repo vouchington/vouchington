@@ -9,8 +9,9 @@ import {
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
+import { getOAuthResourceUrl } from '@services/oauth-authorization-server'
 
-const RESOURCE = 'http://localhost:2900/api/v1/mcp'
+const RESOURCE = getOAuthResourceUrl('user')
 const SCOPE = 'mcp.user:read mcp.user:write'
 let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
 

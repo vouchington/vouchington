@@ -15,6 +15,10 @@ required canonical scopes in registry metadata; the registry validates surface a
 listing and calling enforce the same requirement. `mcp.user:*` and `mcp.admin:*` remain explicit
 compatibility grants for existing keys, while new keys can request a resource scope.
 
+The same coverage rule (`hasEveryScope`) decides whether an OAuth client's registered scopes cover
+a requested scope. `listScopesForAudience` feeds OAuth discovery metadata, and
+`withScopePrerequisites` completes the scope set an MCP `insufficient_scope` challenge asks for.
+
 ## Related
 
 - [API keys](../../../docs/requirements/users/api-keys.md)

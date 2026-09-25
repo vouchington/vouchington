@@ -3,7 +3,14 @@ import { createOAuthBrowserBindingHash } from './browser-binding.mts'
 import { AUTHORIZATION_REQUEST_TTL_MS } from './constants.mts'
 import { assertClientAuthorizationRequest, getOAuthClient } from './clients.mts'
 import { OAuthProtocolError, invalidRequest } from './errors.mts'
-import { parseOAuthScopes, validatePkceChallenge, validateResource } from './validation.mts'
+import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
+import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
+import {
+  assertScopesMatchResource,
+  parseOAuthScopes,
+  validatePkceChallenge,
+  validateResource,
+} from './validation.mts'
 import type { ApiScope } from '@modules/scopes'
 import type { OAuthAuthorizationRequestView, OAuthClient } from './types.mts'
 
@@ -50,6 +57,9 @@ export async function beginOAuthAuthorizationRequest(
 ): Promise<{ request_id: string }> {
   const validated = await validateOAuthAuthorizationRequest(input)
   const { client, codeChallenge, resource, scopes, state } = validated
+  if (!(await mayUserAuthorizeOAuthResource(input.userId, resource))) {
+    throw new OAuthProtocolError('access_denied', 'administrator role required', 403)
+  }
 
   await using query = await beginTransaction()
   const browserBindingHash = createOAuthBrowserBindingHash(input.deviceId, input.sessionId)
@@ -102,11 +112,12 @@ export async function validateOAuthAuthorizationRequest(
   }
   const scopes = parseOAuthScopes(input.scope)
   const resource = validateResource(input.resource)
+  assertScopesMatchResource(scopes, resource)
   const codeChallenge = validatePkceChallenge(input.codeChallenge, input.codeChallengeMethod)
   const client = await getOAuthClient(input.clientId)
   if (!client) throw new OAuthProtocolError('unauthorized_client', 'client is not registered')
   assertClientAuthorizationRequest(client, input.redirectUri, scopes)
-  return { client, codeChallenge, resource, scopes, state: input.state }
+  return { client, codeChallenge, resource: resource.url, scopes, state: input.state }
 }
 
 export async function getOAuthAuthorizationRequestForUser(
@@ -151,11 +162,11 @@ export async function getOAuthAuthorizationErrorRedirect(input: {
 }): Promise<string | null> {
   const client = await getOAuthClient(input.clientId)
   if (!client?.redirect_uris.includes(input.redirectUri)) return null
-  const redirect = new URL(input.redirectUri)
-  redirect.searchParams.set('error', input.error.code)
-  redirect.searchParams.set('error_description', input.error.message)
-  if (typeof input.state === 'string' && input.state.length <= 1024) {
-    redirect.searchParams.set('state', input.state)
-  }
-  return redirect.toString()
+  return buildOAuthAuthorizationResponseUrl(input.redirectUri, {
+    error: input.error.code,
+    error_description: input.error.message,
+    ...(typeof input.state === 'string' && input.state.length <= 1024
+      ? { state: input.state }
+      : {}),
+  })
 }

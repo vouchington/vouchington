@@ -43,10 +43,10 @@ describe('OAuth client and authorization validation', () => {
       expect.objectContaining({ code: 'invalid_redirect_uri' }),
     )
     expect(() => validateResource('https://attacker.example/api/v1/mcp')).toThrowError(
-      expect.objectContaining({ code: 'invalid_request' }),
+      expect.objectContaining({ code: 'invalid_target' }),
     )
     expect(() => validateResource('http://127.0.0.1:9999/api/v1/mcp')).toThrowError(
-      expect.objectContaining({ code: 'invalid_request' }),
+      expect.objectContaining({ code: 'invalid_target' }),
     )
   })
 
@@ -70,14 +70,23 @@ describe('OAuth client and authorization validation', () => {
 
   it.each([
     ['a missing value', undefined],
+    ['an empty value', ''],
+  ])('rejects a resource with %s as a malformed request', (_name, resource) => {
+    expect(() => validateResource(resource)).toThrowError(
+      expect.objectContaining({ code: 'invalid_request' }),
+    )
+  })
+
+  it.each([
     ['a malformed URI', 'not a URI'],
     ['a non-HTTPS remote URI', 'http://example.com/api/v1/mcp'],
     ['userinfo', 'https://tests+oauth-resource@voucha.ai/api/v1/mcp'],
-    ['a query', 'https://example.com/api/v1/mcp?debug=true'],
+    ['a query', `${TEST_OAUTH_RESOURCE}?debug=true`],
+    ['a trailing slash', `${TEST_OAUTH_RESOURCE}/`],
     ['an unsupported path', 'https://example.com/api/v1/other'],
-  ])('rejects a resource with %s', (_name, resource) => {
+  ])('rejects a resource with %s as an invalid target', (_name, resource) => {
     expect(() => validateResource(resource)).toThrowError(
-      expect.objectContaining({ code: 'invalid_request' }),
+      expect.objectContaining({ code: 'invalid_target' }),
     )
   })
 
@@ -169,5 +178,38 @@ describe('OAuth client and authorization validation', () => {
         state: randomBytes(16).toString('base64url'),
       }),
     ).rejects.toMatchObject({ code: 'invalid_request' })
+  })
+
+  // Registers a client for `registeredScope`, then validates an authorization for `requestedScope`.
+  async function authorizeRegisteredScope(registeredScope: string, requestedScope: string) {
+    const redirectUri = randomTestOAuthRedirectUri()
+    const client = await registerOAuthClient({
+      client_name: `Scope coverage ${randomBytes(6).toString('hex')}`,
+      redirect_uris: [redirectUri],
+      scope: registeredScope,
+    })
+    const verifier = randomBytes(32).toString('base64url')
+    return validateOAuthAuthorizationRequest({
+      clientId: client.client_id,
+      codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
+      codeChallengeMethod: 'S256',
+      redirectUri,
+      resource: TEST_OAUTH_RESOURCE,
+      responseType: 'code',
+      scope: requestedScope,
+      state: randomBytes(16).toString('base64url'),
+    })
+  }
+
+  it('rejects a requested scope that the registered scopes do not cover', async () => {
+    await expect(authorizeRegisteredScope('mcp.user:read', TEST_OAUTH_SCOPE)).rejects.toMatchObject(
+      { code: 'invalid_scope' },
+    )
+  })
+
+  it('accepts resource scopes covered by the registered MCP audience scopes', async () => {
+    await expect(
+      authorizeRegisteredScope(TEST_OAUTH_SCOPE, 'cards:read cards:write'),
+    ).resolves.toMatchObject({ scopes: ['cards:read', 'cards:write'] })
   })
 })

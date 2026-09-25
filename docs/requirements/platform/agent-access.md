@@ -30,7 +30,11 @@ How Voucha steers AI agents to its API and MCP server instead of the website.
   - Pages at that path never carry discovery `Link` headers.
   - `robots.txt` and traffic advice keep disallowing it. Crawl rules apply to indexing crawlers,
     not to authenticated requests.
-- Tools are discovered by calling `tools/list` with a user MCP key. Public discovery does not link
+- Agents authenticate with OAuth, discovered from the MCP server's `401` `WWW-Authenticate`
+  challenge (RFC 9728), or with a user MCP API key. The protected-resource metadata is linked only
+  from that challenge, so discovery documents name no further path; see
+  [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md#protected-resources-and-discovery).
+- Tools are discovered by calling `tools/list` with that credential. Public discovery does not link
   the MCP catalog page on the docs site, because that page requires Basic Auth.
 - The admin MCP server never appears in public discovery. Staff docs own it, in the
   [admin API README](../../../backend/api/v1/admin/README.md#mcp-clients).

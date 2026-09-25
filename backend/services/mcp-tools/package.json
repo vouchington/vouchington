@@ -16,6 +16,8 @@
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@modules/on-error": "workspace:^",
     "@modules/scopes": "workspace:^",
+    "@services/api-keys": "workspace:^",
+    "@services/oauth-authorization-server": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/tools": "workspace:^",
     "ajv": "^8.20.0",

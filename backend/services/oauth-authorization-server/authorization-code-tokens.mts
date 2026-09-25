@@ -6,7 +6,7 @@ import { OAUTH_SECRET_PURPOSES, REFRESH_TOKEN_TTL_MS } from './constants.mts'
 import { assertOAuthClientAuthentication, getOAuthClient } from './clients.mts'
 import { OAuthProtocolError } from './errors.mts'
 import { insertOAuthTokenPair } from './token-pairs.mts'
-import { validatePkceVerifier } from './validation.mts'
+import { assertTokenRequestResource, validatePkceVerifier } from './validation.mts'
 import type { ApiScope } from '@modules/scopes'
 import type { OAuthClient, OAuthTokenResponse } from './types.mts'
 
@@ -29,6 +29,7 @@ export async function exchangeOAuthAuthorizationCode(input: {
   code: string
   codeVerifier: unknown
   redirectUri: string
+  resource?: string
 }): Promise<OAuthTokenResponse> {
   await using query = await beginTransaction()
   const client = await getOAuthClient(input.clientId, query)
@@ -38,6 +39,7 @@ export async function exchangeOAuthAuthorizationCode(input: {
   const code = await lockAuthorizationCode(input.code, query)
   if (!code) throw new OAuthProtocolError('invalid_grant', 'authorization code is invalid')
   assertCodeExchange(code, client, input, verifier)
+  assertTokenRequestResource(input.resource, code.resource)
 
   const tokens = await completeAuthorizationCodeExchange(code, query)
   await query.commit()

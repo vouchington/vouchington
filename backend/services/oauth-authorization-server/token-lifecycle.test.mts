@@ -47,9 +47,9 @@ describe('OAuth token revocation and retention', () => {
     })
 
     await revokeOAuthToken({ clientId: other.client_id, token: tokens.access_token })
-    await expect(validateOAuthAccessToken(tokens.access_token)).resolves.not.toBeNull()
+    await expect(validateOAuthAccessToken(tokens.access_token, 'user')).resolves.not.toBeNull()
     await revokeOAuthToken({ clientId: flow.client.client_id, token: tokens.access_token })
-    await expect(validateOAuthAccessToken(tokens.access_token)).resolves.toBeNull()
+    await expect(validateOAuthAccessToken(tokens.access_token, 'user')).resolves.toBeNull()
     await expect(
       getTestOAuthTokenRevocationState({ accessToken: tokens.access_token }),
     ).resolves.toMatchObject({ accessTokenRevoked: true })
@@ -69,7 +69,7 @@ describe('OAuth token revocation and retention', () => {
 
     await revokeOAuthToken({ clientId: flow.client.client_id, token: tokens.refresh_token })
 
-    await expect(validateOAuthAccessToken(tokens.access_token)).resolves.toBeNull()
+    await expect(validateOAuthAccessToken(tokens.access_token, 'user')).resolves.toBeNull()
     await expect(
       getTestOAuthTokenRevocationState({
         accessToken: tokens.access_token,
@@ -152,7 +152,7 @@ describe('OAuth token revocation and retention', () => {
     })
     await revokeTestOAuthGrant(flow.client.client_id)
 
-    await expect(validateOAuthAccessToken(tokens.access_token)).resolves.toBeNull()
+    await expect(validateOAuthAccessToken(tokens.access_token, 'user')).resolves.toBeNull()
     await expect(
       exchangeOAuthRefreshToken({
         clientId: flow.client.client_id,

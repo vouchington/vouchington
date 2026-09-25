@@ -159,8 +159,6 @@ export function hasScope(scopes: readonly ApiScope[], requiredScope: ApiScope): 
   return false
 }
 
-export { hasEveryScope, hasScopeAudience } from './authorization.mts'
-
 export function validateScopeSet(
   input: readonly string[],
   options: {
