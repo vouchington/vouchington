@@ -24,7 +24,7 @@
     "@data-stores/psql": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@services/notifications": "workspace:^",
-    "p-map": "7.0.7",
+    "p-map": "7.0.8",
     "sql-template-strings": "^2.2.2",
     "web-push": "^3.6.7"
   },
