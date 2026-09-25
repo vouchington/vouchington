@@ -279,24 +279,27 @@ importers:
       '@agents/_shared':
         specifier: workspace:^
         version: link:../_shared
+      '@agents/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/openai-utils':
+      '@modules/structured-decisions':
         specifier: workspace:^
-        version: link:../../modules/openai-utils
+        version: link:../../modules/structured-decisions
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../../services/ai-usage
       '@services/autotagger':
         specifier: workspace:^
         version: link:../../services/autotagger
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../../services/classifiers
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../../services/conversations-messages
@@ -318,13 +321,10 @@ importers:
       '@voucha/tools':
         specifier: workspace:^
         version: link:../../tools
-      openai:
-        specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.2)
-    devDependencies:
-      '@modules/openrouter-utils':
+      '@voucha/types':
         specifier: workspace:^
-        version: link:../../modules/openrouter-utils
+        version: link:../../types
+    devDependencies:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds

@@ -79,6 +79,34 @@ export async function sanitizeClassifierExternalContentParts(
   }) as ClassifierSafeText
 }
 
+const CANDIDATE_PLACEHOLDER = '{{candidate}}'
+
+/**
+ * Renders a classifier's DB-owned question template for one candidate: sanitizes the candidate's
+ * display name as a title (it is short, attacker-influenceable, user-facing text -- the same
+ * treatment a post/RSS title gets) and substitutes it into the template's placeholder. The
+ * template itself is trusted, operator-authored instruction text (a `classifier_prompt_versions`
+ * row), not external content, so unlike `sanitizeClassifierExternalContent*` this never calls
+ * `wrapExternalContent` -- there is nothing here to mark as an external-source content block.
+ *
+ * Kept in this module (rather than letting a caller cast a substituted string to
+ * `ClassifierSafeText` itself) so sanitizing the untrusted half of the output and branding the
+ * result stay coupled, matching every other export here.
+ */
+export async function renderClassifierCandidateQuestion(
+  template: string,
+  candidateName: string,
+): Promise<ClassifierSafeText> {
+  const occurrences = template.split(CANDIDATE_PLACEHOLDER).length - 1
+  if (occurrences !== 1) {
+    throw new Error(
+      `Classifier question template must contain exactly one ${CANDIDATE_PLACEHOLDER} placeholder`,
+    )
+  }
+  const sanitizedName = await sanitizePromptInjection(candidateName, { isTitle: true })
+  return template.replace(CANDIDATE_PLACEHOLDER, sanitizedName) as ClassifierSafeText
+}
+
 export function classifierPrompt(
   strings: TemplateStringsArray,
   ...externalValues: readonly ClassifierSafeText[]

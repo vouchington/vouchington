@@ -144,6 +144,12 @@ export async function createCategoryTopicRelationsInTransaction(
 /**
  * Returns topics already mapped from RSS feed category tags for a given feed item.
  * Used by the autotagger to seed its evaluation with feed-declared categories.
+ *
+ * Ordered by `t.id` (not just LIMITed) so a truncated result is deterministic across calls: the
+ * autotagger classifier dispatch hashes this ordered candidate list into its receipt digest, and a
+ * result order that could vary between two calls over the same underlying rows would let a retry
+ * mint a different digest for what is logically the same decision -- the same replay blind spot
+ * `c08f7d75` closed for the embedding-similarity candidate search.
  */
 export async function getRssFeedItemMappedTopics(
   rss_feed_item_id: string,
@@ -158,6 +164,7 @@ export async function getRssFeedItemMappedTopics(
       AND rfc.topic_id IS NOT NULL
       AND t.deleted_at IS NULL
       AND t.merged_into_topic_id IS NULL
+    ORDER BY t.id
     LIMIT $2
     `,
     [rss_feed_item_id, limit],
