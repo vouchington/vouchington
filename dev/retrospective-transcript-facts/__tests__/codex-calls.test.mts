@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { isGitPushInvocation } from '../command-match.mts'
 import {
   commandsFromCodexCall,
-  countStructuredFailure,
   isCodexCallOutputFailure,
+  isStructuredFailure,
 } from '../codex-calls.mts'
 
 function execCall(input: string): Record<string, unknown> {
@@ -122,6 +122,14 @@ describe('commandsFromCodexCall — nested tools.exec_command(...) programs (#81
     expect(commandsFromCodexCall(execCall(program))).toEqual([])
   })
 
+  it('skips a call whose argument is not a JSON object literal and keeps scanning past it', () => {
+    const program = [
+      'await tools.exec_command(notJson);',
+      'await tools.exec_command({cmd:"git status"});',
+    ].join('\n')
+    expect(commandsFromCodexCall(execCall(program))).toEqual(['git status'])
+  })
+
   it('real fixture: extracts an rg search pattern that merely mentions git push, and does not classify it as one', () => {
     const commands = commandsFromCodexCall(execCall(REAL_RG_PATTERN_NEGATIVE_PROGRAM))
     expect(commands).toHaveLength(1)
@@ -136,19 +144,13 @@ describe('commandsFromCodexCall — nested tools.exec_command(...) programs (#81
   })
 })
 
-describe('countStructuredFailure', () => {
-  it('counts a failed payload once and dedupes repeats by call_id', () => {
-    const failedCallIds = new Set<string>()
-    expect(countStructuredFailure({ status: 'failed', call_id: 'call-1' }, failedCallIds)).toBe(
-      true,
-    )
-    expect(countStructuredFailure({ status: 'failed', call_id: 'call-1' }, failedCallIds)).toBe(
-      false,
-    )
+describe('isStructuredFailure', () => {
+  it('matches a success: false payload, not just status or is_error', () => {
+    expect(isStructuredFailure({ success: false })).toBe(true)
   })
 
-  it('does not count a payload with no failure signal', () => {
-    expect(countStructuredFailure({ status: 'completed' }, new Set())).toBe(false)
+  it('does not match a payload with no failure signal', () => {
+    expect(isStructuredFailure({ status: 'completed' })).toBe(false)
   })
 })
 

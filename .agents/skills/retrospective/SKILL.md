@@ -14,7 +14,7 @@ Claude Code and Codex load `vouchington-workflow:retrospective`; Grok, Cursor, a
 **Budget: ≤10 tool calls, ≤5 minutes, ≤25k tokens.** Aggregate already-captured facts; do not
 re-mine transcripts. Do not dispatch a subagent or read raw session JSONL, and do not use
 `grep`, `rg`, `jq`, or `awk` over transcripts. Permitted evidence sources are
-`./dev/retrospective-facts`, `node dev/retrospective-transcript-facts.mts`,
+`./dev/retrospective-facts`, `pnpm exec vouchington retrospective-transcript`,
 `node dev/session-friction/report.mts`, and `node dev/blackboard-journal.mts entries [--root-codex]`.
 Unanswerable evidence is `unknown — no journal`, never a guess.
 

@@ -46,11 +46,6 @@
     },
     {
       "scope": "tooling",
-      "file": "dev/retrospective-transcript-facts/compute-codex.mts",
-      "complexity": 69
-    },
-    {
-      "scope": "tooling",
       "file": "dev/retrospective-transcript-facts/compute-stream.mts",
       "complexity": 100
     },

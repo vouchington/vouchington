@@ -1,4 +1,4 @@
-import type { TranscriptFacts } from '../retrospective-transcript-facts/compute.mts'
+import type { TranscriptFacts } from '../retrospective-transcript-facts/compute-shared.mts'
 import { formatTranscriptFacts } from '../retrospective-transcript-facts/format.mts'
 import { AUTO_APPEND_HEADING_PREFIX } from './checkpoint-entry.mts'
 import type { MilestoneKind } from './checkpoints.mts'

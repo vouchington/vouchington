@@ -221,7 +221,7 @@ structural `checkpoint` field (`dev/journal-checkpoint/checkpoint-entry.mts`'s `
 reflection — without depending on the rendered `## Auto-append: ` heading:
 
 1. **Post-compaction** — a SessionStart hook gated to the `compact` restart source computes the same
-   facts as `node dev/retrospective-transcript-facts.mts` from the pre-compaction transcript and
+   facts as `pnpm exec vouchington retrospective-transcript` from the pre-compaction transcript and
    journals them.
 2. **Repeated command failure** — a PostToolUse hook tracks high-signal test/lint/CI command
    failures (`vitest`, `playwright`, `no-mistakes`, `tsgo`, `oxlint`, `gh run`, `pr-shepherd`) in a

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { TranscriptFacts } from '../compute.mts'
+import type { TranscriptFacts } from '../compute-shared.mts'
 import { formatTranscriptFacts, formatUnavailable } from '../format.mts'
 
 describe('formatTranscriptFacts', () => {

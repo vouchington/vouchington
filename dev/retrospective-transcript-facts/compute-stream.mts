@@ -1,7 +1,7 @@
 import {
   commandsFromCodexCall,
-  countStructuredFailure,
   isCodexCallOutputFailure,
+  isStructuredFailure,
 } from './codex-calls.mts'
 import { applyCodexMessage } from './codex-messages.mts'
 import {
@@ -119,7 +119,7 @@ async function applyCodex(
   state: { previous: TokenTotals; compacted: number; events: number },
 ): Promise<void> {
   const payload = asRecord(record.payload)
-  const isMessage = applyCodexMessage(record, payload, facts, false)
+  const isMessage = applyCodexMessage(record, payload, facts)
   if (record.type === 'compacted') state.compacted++
   if (record.type === 'event_msg' && payload?.type === 'context_compacted') state.events++
   if (
@@ -150,7 +150,7 @@ async function uniqueFailure(
   failedIds: FileBackedSet,
 ): Promise<boolean> {
   const callId = typeof payload.call_id === 'string' ? payload.call_id : undefined
-  if (!callId) return countStructuredFailure(payload, new Set<string>())
+  if (!callId) return isStructuredFailure(payload)
   if (payload.status !== 'failed' && payload.is_error !== true && payload.success !== false)
     return false
   return failedIds.add(callId)

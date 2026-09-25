@@ -4,9 +4,8 @@ export function applyCodexMessage(
   record: ParsedLine,
   payload: Record<string, unknown> | undefined,
   facts: TranscriptFacts,
-  isSubagent: boolean,
 ): boolean {
-  if (isSubagent || !payload) return false
+  if (!payload) return false
 
   if (record.type === 'event_msg' && payload.type === 'user_message') {
     facts.userPrompts++

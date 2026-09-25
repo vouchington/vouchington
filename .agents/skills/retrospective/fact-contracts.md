@@ -6,7 +6,7 @@ the canonical retrospective skill's evidence boundary.
 
 ## Transcript Facts
 
-`node dev/retrospective-transcript-facts.mts` resolves Codex from `CODEX_THREAD_ID` and nested
+`pnpm exec vouchington retrospective-transcript` resolves Codex from `CODEX_THREAD_ID` and nested
 `~/.codex/sessions/**/rollout-*<id>.jsonl` files, including recursive subagents; otherwise it
 resolves Claude Code from `CLAUDE_CODE_SESSION_ID` and `~/.claude/projects/*/<id>.jsonl`, including
 sibling subagent files. Codex takes precedence when both environment IDs exist.
