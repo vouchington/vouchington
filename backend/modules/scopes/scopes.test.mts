@@ -5,7 +5,7 @@ import {
   hasScope,
   parseApiScope,
   validateScopeSet,
-} from './scopes.mts'
+} from './index.mts'
 
 describe('validateScopeSet', () => {
   it('parses only exact catalogue values', () => {

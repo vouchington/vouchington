@@ -1,9 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto'
+import type { APIRequestContext } from '@playwright/test'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { expect, test } from '../../helpers/test.mts'
 
-const RESOURCE = 'http://localhost:2900/api/v1/mcp'
+const USER_MCP_RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource/api/v1/mcp'
 const SCOPES = 'mcp.user:read mcp.user:write'
 
 test.describe('OAuth consent', () => {
@@ -29,6 +30,7 @@ test.describe('OAuth consent', () => {
     const registrationBody = await registration.text()
     expect(registration.status(), registrationBody).toBe(201)
     const client = JSON.parse(registrationBody) as { client_id: string; client_name: string }
+    const resource = await discoverUserMcpResource(registrationContext)
     await registrationContext.dispose()
     const verifier = randomBytes(32).toString('base64url')
     const challenge = createHash('sha256').update(verifier).digest('base64url')
@@ -38,7 +40,7 @@ test.describe('OAuth consent', () => {
       code_challenge: challenge,
       code_challenge_method: 'S256',
       redirect_uri: redirectUri,
-      resource: RESOURCE,
+      resource,
       response_type: 'code',
       scope: SCOPES,
       state,
@@ -52,7 +54,7 @@ test.describe('OAuth consent', () => {
     await expect(page).toHaveURL(/\/oauth\/consent\?request_id=/)
     await expect(page.getByTestId('oauth-consent-card')).toBeVisible()
     await expect(page.getByTestId('oauth-consent-title')).toContainText(client.client_name)
-    await expect(page.getByTestId('oauth-consent-resource')).toHaveText(RESOURCE)
+    await expect(page.getByTestId('oauth-consent-resource')).toHaveText(resource)
     await expect(page.getByTestId('oauth-consent-scopes')).toContainText('mcp.user:read')
     await expect(page.getByTestId('oauth-consent-scopes')).toContainText('mcp.user:write')
 
@@ -90,6 +92,7 @@ test.describe('OAuth consent', () => {
     const registrationBody = await registration.text()
     expect(registration.status(), registrationBody).toBe(201)
     const client = JSON.parse(registrationBody) as { client_id: string }
+    const resource = await discoverUserMcpResource(registrationContext)
     await registrationContext.dispose()
     const verifier = randomBytes(32).toString('base64url')
     const state = randomBytes(16).toString('base64url')
@@ -98,7 +101,7 @@ test.describe('OAuth consent', () => {
       code_challenge: createHash('sha256').update(verifier).digest('base64url'),
       code_challenge_method: 'S256',
       redirect_uri: redirectUri,
-      resource: RESOURCE,
+      resource,
       response_type: 'code',
       scope: SCOPES,
       state,
@@ -117,6 +120,14 @@ test.describe('OAuth consent', () => {
     expect(callback.searchParams.get('state')).toBe(state)
   })
 })
+
+// MCP clients learn the canonical resource from RFC 9728 metadata rather than hardcoding an origin.
+async function discoverUserMcpResource(context: APIRequestContext): Promise<string> {
+  const response = await context.get(USER_MCP_RESOURCE_METADATA_PATH)
+  const body = await response.text()
+  expect(response.status(), body).toBe(200)
+  return (JSON.parse(body) as { resource: string }).resource
+}
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

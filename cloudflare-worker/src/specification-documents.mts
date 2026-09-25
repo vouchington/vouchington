@@ -33,7 +33,7 @@ export function buildLlmsTxt(env: Env): string {
 
 > Voucha is a community platform for reviews, discussions, and curated content about rewards programs, credit cards, and personal finance.
 
-Public content listed here needs no authentication. The one authenticated interface listed is the user MCP server under Agent Access (MCP), which needs the user's own API key. Private resources and URLs containing bearer credentials such as RSS \`apikey\` query parameters are intentionally omitted.
+Public content listed here needs no authentication. The one authenticated interface listed is the user MCP server under Agent Access (MCP), which needs the user's OAuth approval or own API key. Private resources and URLs containing bearer credentials such as RSS \`apikey\` query parameters are intentionally omitted.
 
 ## Docs
 

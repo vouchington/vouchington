@@ -42,8 +42,9 @@ Scopes use the strict lowercase `<resource>:<action>` grammar. Dot-delimited res
 surface and audience, such as `mcp.user` and `mcp.admin`. Unknown, whitespace-padded, case-normalized,
 duplicate, or write-without-read scope sets are rejected. RSS keys accept only `rss:read`; MCP keys
 accept scopes for exactly one user or admin audience, never both, and admin scopes require an administrator owner.
-OAuth grants may compose scopes from multiple resource audiences when the authorization server is
-added, while API keys remain bound to one audience.
+OAuth access tokens are the alternative MCP credential. Each grant binds to one protected resource,
+so its scopes also belong to that resource's audience; see the
+[OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md#protected-resources-and-discovery).
 
 MCP keys must be either user MCP or admin MCP, not both. Admin MCP scopes can only be created by administrators.
 

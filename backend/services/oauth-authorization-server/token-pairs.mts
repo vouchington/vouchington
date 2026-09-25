@@ -2,7 +2,11 @@ import { randomBytes } from 'node:crypto'
 import type { QueryExecutor } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
-import { ACCESS_TOKEN_TTL_MS, OAUTH_SECRET_PURPOSES } from './constants.mts'
+import {
+  ACCESS_TOKEN_TTL_MS,
+  OAUTH_ACCESS_TOKEN_PREFIX,
+  OAUTH_SECRET_PURPOSES,
+} from './constants.mts'
 import type { ApiScope } from '@modules/scopes'
 import type { OAuthTokenResponse } from './types.mts'
 
@@ -18,7 +22,7 @@ export async function insertOAuthTokenPair(
   },
   query: QueryExecutor,
 ): Promise<OAuthTokenResponse> {
-  const accessToken = `voucha_access_${randomBytes(32).toString('base64url')}`
+  const accessToken = `${OAUTH_ACCESS_TOKEN_PREFIX}${randomBytes(32).toString('base64url')}`
   const refreshToken = `voucha_refresh_${randomBytes(32).toString('base64url')}`
   const now = Date.now()
   const accessExpiresAt = new Date(

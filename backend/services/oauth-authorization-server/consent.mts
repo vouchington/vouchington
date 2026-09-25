@@ -4,6 +4,8 @@ import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { AUTHORIZATION_CODE_TTL_MS, OAUTH_SECRET_PURPOSES } from './constants.mts'
 import { OAuthProtocolError } from './errors.mts'
+import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
+import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
 import type { ApiScope } from '@modules/scopes'
 
 type AuthorizationRequestRow = {
@@ -29,7 +31,10 @@ export async function decideOAuthAuthorizationRequest(
     throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
   }
 
-  if (decision === 'deny') {
+  if (
+    decision === 'deny' ||
+    !(await mayUserAuthorizeOAuthResource(request.user_id, request.resource, query))
+  ) {
     await denyAuthorizationRequest(request, query)
     await query.commit()
     return { redirect_uri: buildAuthorizationRedirect(request, { error: 'access_denied' }) }
@@ -177,9 +182,8 @@ function buildAuthorizationRedirect(
   request: Pick<AuthorizationRequestRow, 'redirect_uri' | 'state'>,
   result: { code: string } | { error: string },
 ): string {
-  const redirect = new URL(request.redirect_uri)
-  if ('code' in result) redirect.searchParams.set('code', result.code)
-  else redirect.searchParams.set('error', result.error)
-  redirect.searchParams.set('state', request.state)
-  return redirect.toString()
+  return buildOAuthAuthorizationResponseUrl(request.redirect_uri, {
+    ...result,
+    state: request.state,
+  })
 }

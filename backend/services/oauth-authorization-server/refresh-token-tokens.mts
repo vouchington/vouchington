@@ -6,7 +6,7 @@ import { assertOAuthClientAuthentication, getOAuthClient } from './clients.mts'
 import { OAuthProtocolError } from './errors.mts'
 import { revokeOAuthRefreshFamily } from './refresh-family.mts'
 import { insertOAuthTokenPair } from './token-pairs.mts'
-import { assertScopeSubset, parseOAuthScopes } from './validation.mts'
+import { assertScopeSubset, assertTokenRequestResource, parseOAuthScopes } from './validation.mts'
 import type { ApiScope } from '@modules/scopes'
 import type { OAuthClient, OAuthTokenResponse } from './types.mts'
 
@@ -30,6 +30,7 @@ export async function exchangeOAuthRefreshToken(input: {
   clientId: string
   clientSecret?: string
   refreshToken: string
+  resource?: string
   scope?: string
 }): Promise<OAuthTokenResponse> {
   await using query = await beginTransaction()
@@ -46,6 +47,7 @@ export async function exchangeOAuthRefreshToken(input: {
     throw new OAuthProtocolError('invalid_grant', 'refresh token is invalid')
   }
   assertRefreshTokenActive(token)
+  assertTokenRequestResource(input.resource, token.resource)
   const scopes = input.scope === undefined ? token.scopes : parseOAuthScopes(input.scope)
   assertScopeSubset(scopes, token.scopes)
   const tokens = await rotateRefreshToken(token, scopes, query)

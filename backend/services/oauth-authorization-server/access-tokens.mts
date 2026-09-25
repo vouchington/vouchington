@@ -1,12 +1,17 @@
 import { write } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
-import { OAUTH_SECRET_PURPOSES } from './constants.mts'
-import type { ApiScope } from '@modules/scopes'
+import { OAUTH_ACCESS_TOKEN_PREFIX, OAUTH_SECRET_PURPOSES } from './constants.mts'
+import { getOAuthResourceUrl, type OAuthResourceAudience } from './resources.mts'
 import type { OAuthAccessPrincipal } from './types.mts'
 
+export function isOAuthAccessToken(rawToken: string): boolean {
+  return rawToken.startsWith(OAUTH_ACCESS_TOKEN_PREFIX)
+}
+
+// A token authenticates only to the canonical resource it was issued for.
 export async function validateOAuthAccessToken(
   rawToken: string,
-  options: { resource?: string; requiredScopes?: ApiScope[] } = {},
+  audience: OAuthResourceAudience,
 ): Promise<OAuthAccessPrincipal | null> {
   const result = await write<OAuthAccessPrincipal>(
     `/* validateOAuthAccessToken */ UPDATE oauth_access_tokens AS access
@@ -25,14 +30,9 @@ export async function validateOAuthAccessToken(
          WHERE suspension.user_id = oauth_grant.user_id
            AND suspension.lifted_at IS NULL
        )
-       AND ($2::text IS NULL OR access.resource = $2)
-       AND ($3::text[] IS NULL OR access.scopes @> $3::text[])
+       AND access.resource = $2
      RETURNING client.client_id, oauth_grant.user_id, access.resource, access.scopes, access.expires_at`,
-    [
-      hashToken(OAUTH_SECRET_PURPOSES.accessToken, rawToken),
-      options.resource ?? null,
-      options.requiredScopes ?? null,
-    ],
+    [hashToken(OAUTH_SECRET_PURPOSES.accessToken, rawToken), getOAuthResourceUrl(audience)],
   )
   return result.rows[0] ?? null
 }
