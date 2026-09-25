@@ -1,6 +1,9 @@
-// Each check reads one simple command: the span after `git` stops at `|`, `;`, `&`, and newline,
-// so a flag on a piped or chained command (`git commit -F msg | tail -n 20`) is not a git flag.
-export const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
+import {
+  readBacktickSubstitution,
+  readParenthesizedSubstitution,
+} from './shell-command-substitutions.mts'
+
+const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
   {
     pattern:
       /\bgit\s+push\b[^|;&\n]*(?:^|[\s])(?:--force(?!-with-lease(?:\b|=))\b|-[A-Za-z]*f[A-Za-z]*\b|\+[^;&|()\s]+)/,
@@ -40,6 +43,41 @@ export const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
     reason: 'Overriding core.hooksPath disables git hooks. Fix the underlying failure instead.',
   },
 ]
+
+/**
+ * Why a git command breaks repository policy, or null. Each check reads one simple command: the
+ * span after `git` stops at `|`, `;`, `&`, and newline, so a flag on a piped or chained command
+ * (`git commit -F msg | tail -n 20`) is not a git flag. A command substitution's own separators are
+ * blanked first, so `git push origin $(git branch --show-current | head -1) --force` is one command.
+ */
+export function findBlockedGitReason(command: string): string | null {
+  const text = blankSubstitutionSeparators(command)
+  return blockedGitPatterns.find(({ pattern }) => pattern.test(text))?.reason ?? null
+}
+
+function blankSubstitutionSeparators(command: string): string {
+  let result = ''
+  for (let index = 0; index < command.length; index += 1) {
+    const endIndex = substitutionEndIndex(command, index)
+    if (endIndex === null) {
+      result += command[index]
+      continue
+    }
+    result += command.slice(index, endIndex + 1).replace(/[|;&\n]/g, ' ')
+    index = endIndex
+  }
+  return result
+}
+
+function substitutionEndIndex(command: string, index: number): number | null {
+  if (command.startsWith('$(', index)) {
+    return readParenthesizedSubstitution(command, index + 2)?.endIndex ?? null
+  }
+  if (command[index] === '`') {
+    return readBacktickSubstitution(command, index + 1)?.endIndex ?? null
+  }
+  return null
+}
 
 export const blockedHookBypassPatterns: Array<{ pattern: RegExp; reason: string }> = [
   {

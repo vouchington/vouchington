@@ -11,8 +11,8 @@ import {
 } from './policy-helpers.mts'
 import {
   blockedDevServerPatterns,
-  blockedGitPatterns,
   blockedHookBypassPatterns,
+  findBlockedGitReason,
 } from './policy/blocked-command-patterns.mts'
 import { DEFAULT_AUTOMATION_CONTEXT } from './policy/core.mts'
 import { hookToolInput } from './policy/hook-payload.mts'
@@ -108,10 +108,9 @@ export function findPreToolUseBlock(
         }
       }
 
-      for (const { pattern, reason } of blockedGitPatterns) {
-        if (pattern.test(commandToInspect)) {
-          return { reason }
-        }
+      const reason = findBlockedGitReason(commandToInspect)
+      if (reason !== null) {
+        return { reason }
       }
     }
   }

@@ -20,6 +20,7 @@ describe('Codex hook git policy command scope', () => {
     ['git status | grep --no-verify', 'no-verify'],
     ['git commit -F msg | tail -n 20', 'commit -n'],
     ['git status; echo -c core.hooksPath=x', 'core.hooksPath'],
+    ['git push origin $(git branch --show-current | head -1); tail -f log', 'force push'],
   ])('ignores a flag on a later command: %s (%s)', command => {
     expect(blockReason(command)).toBeUndefined()
   })
@@ -31,6 +32,9 @@ describe('Codex hook git policy command scope', () => {
     ['git checkout main && git checkout --ours a.txt', 'checkout --ours'],
     ['git log\ngit push -f', 'Force pushes'],
     ['git push origin $(git branch --show-current) --force', 'Force pushes'],
+    ['git push origin $(git branch --show-current | head -1) --force', 'Force pushes'],
+    ['git push origin `git branch --show-current | head -1` --force', 'Force pushes'],
+    ['git commit -m x --date $(date -u | tr -d Z) -n', '-n bypasses'],
     ["bash -c 'git commit -n -m x'", '-n bypasses'],
   ])('still blocks a banned flag on its own git command: %s', (command, reasonText) => {
     expect(blockReason(command)).toContain(reasonText)
@@ -71,6 +75,8 @@ describe('Codex hook git policy command scope', () => {
     ['cat <<EOF\n$(git push --force)\nEOF', 'Force pushes'],
     ["git commit -F - <<'EOF'\nmsg\nEOF\ngit push --force", 'Force pushes'],
     ["git commit -F - <<'EOF' && HUSKY=0 git push\nmsg\nEOF", 'HUSKY=0'],
+    ["bash <<'EOF'\nbash -c 'git push --force'\nEOF", 'Force pushes'],
+    ["cat <<EOF\n$(bash -c 'HUSKY=0 git push')\nEOF", 'HUSKY=0'],
   ])('still inspects heredoc text a shell runs: %s', (command, reasonText) => {
     expect(blockReason(command)).toContain(reasonText)
   })

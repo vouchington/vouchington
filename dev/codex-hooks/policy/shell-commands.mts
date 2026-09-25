@@ -19,26 +19,25 @@ export function stripGitGlobalOptionsForPolicy(command: string): string {
 }
 
 /**
- * The command text and the scripts nested in it that the git, hook-bypass, and dev-server policies
- * read. A heredoc body is data (a `git commit -F -` message) unless a shell may read it as its
- * script, but an unquoted-delimiter body still runs its command substitutions.
+ * The scripts the git, hook-bypass, and dev-server policies read: the command text, each heredoc
+ * body a shell may read as its script, and each substitution an unquoted-delimiter body runs, each
+ * with the `bash -c` scripts nested in it. Any other heredoc body is data (a `git commit -F -`
+ * message).
  */
 export function commandsToInspectForGitPolicy(command: string): string[] {
-  const unfolded = command.replace(/\\\n/g, ' ')
-  const { bodySubstitutions, shellBodies, textWithoutBodies } = stripNonShellHeredocBodies(unfolded)
-  const normalizedCommand = stripGitGlobalOptionsForPolicy(textWithoutBodies)
-  return [
-    stripQuotedShellText(normalizedCommand),
-    ...extractShellCommandArguments(normalizedCommand).map(
-      ({ command: shellCommand, inheritsEditor }) =>
-        stripQuotedShellText(
+  const { bodySubstitutions, shellBodies, textWithoutBodies } = stripNonShellHeredocBodies(
+    command.replace(/\\\n/g, ' '),
+  )
+  return [textWithoutBodies, ...shellBodies, ...bodySubstitutions].flatMap(script => {
+    const normalizedScript = stripGitGlobalOptionsForPolicy(script.replace(/\\\n/g, ' '))
+    return [
+      normalizedScript,
+      ...extractShellCommandArguments(normalizedScript).map(
+        ({ command: shellCommand, inheritsEditor }) =>
           `${inheritsEditor ? 'export GIT_EDITOR=true; ' : ''}${stripGitGlobalOptionsForPolicy(shellCommand)}`,
-        ),
-    ),
-    ...[...shellBodies, ...bodySubstitutions].map(script =>
-      stripQuotedShellText(stripGitGlobalOptionsForPolicy(script.replace(/\\\n/g, ' '))),
-    ),
-  ]
+      ),
+    ].map(text => stripQuotedShellText(text))
+  })
 }
 
 export type ShellCommandArgument = {
