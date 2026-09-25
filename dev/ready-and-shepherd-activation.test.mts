@@ -35,8 +35,8 @@ describe('ready-and-shepherd activation boundary', () => {
       expect(ready.indexOf(disabled)).toBeLessThan(ready.indexOf(mutation))
     }
     // '/shepherd dispatched' is a de facto report-field identifier that recurs across every
-    // activation-outcome branch in the skill (see #10813/#11019: don't pin the reason text next to
-    // it — that's reworded prose, not the identifier).
+    // activation-outcome branch in the skill; the reason text after it is reworded prose, not
+    // part of the identifier, so it's intentionally not pinned here.
     expect(ready).toContain('/shepherd dispatched')
   })
 

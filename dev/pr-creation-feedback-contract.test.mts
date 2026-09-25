@@ -43,7 +43,9 @@ describe('agent-authored PR creation feedback contract', () => {
 
   it('authorizes one provenance-checked draft feedback PR before the retrospective', () => {
     const triage = normalized('.agents/skills/triage-prs/SKILL.md')
-    const actionTimeRefresh = triage.indexOf('Step 6a')
+    // Scoped past the intro's forward reference to Step 6a so this lands on the section itself,
+    // matching the earlier 'refreshes queue feedback' test's scoping.
+    const actionTimeRefresh = triage.indexOf('Step 6a', triage.indexOf('PR creation feedback:'))
     const feedbackPublication = triage.indexOf('pr-creation-feedback-origin: triage-prs')
     const duplicateResolution = triage.indexOf('Duplicate resolution')
     const disposition = triage.indexOf('Retrospective disposition')
