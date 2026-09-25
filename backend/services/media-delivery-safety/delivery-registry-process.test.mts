@@ -13,7 +13,6 @@ import {
 import {
   compensateFailedImageDeliveryMutation,
   getImagePlacementDeliveryKey,
-  listRecoverableMediaDeliveryRegistryKeys,
   processMediaDeliveryRegistryRecord,
   stageImagePlacementDeliveryRecord,
 } from './index.mts'
@@ -24,7 +23,7 @@ describe('media delivery registry processor', () => {
     vi.unstubAllEnvs()
   })
 
-  it('projects a staged placement then records a retryable provider failure', async () => {
+  it('projects a staged placement then retries its provider failure after backoff', async () => {
     const user = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
     await setTestUserProfileImage(user.id, imageId)
@@ -35,6 +34,7 @@ describe('media delivery registry processor', () => {
       .spyOn(mediaDeliveryRegistryProvider, 'putMediaDeliveryRegistryRecord')
       .mockResolvedValueOnce({ $metadata: {} })
       .mockRejectedValueOnce(new Error('registry outage'))
+      .mockResolvedValueOnce({ $metadata: {} })
     vi.spyOn(mediaDeliveryRegistryProvider, 'invalidateMediaDeliveryPath').mockResolvedValue({
       $metadata: {},
     })
@@ -71,8 +71,13 @@ describe('media delivery registry processor', () => {
       state: 'pending',
     })
     await expect(
-      listRecoverableMediaDeliveryRegistryKeys(10, new Date(Date.now() + 2 * 60 * 1000)),
-    ).resolves.toContain(deliveryKey)
+      processMediaDeliveryRegistryRecord(deliveryKey, new Date(Date.now() + 2 * 60 * 1000)),
+    ).resolves.toBe('completed')
+    expect(put).toHaveBeenCalledTimes(3)
+    expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({
+      desired_state: 'withheld',
+      state: 'completed',
+    })
   })
 
   it('republishes current post placements after a rolled-back delivery mutation', async () => {
